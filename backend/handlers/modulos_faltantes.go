@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -483,7 +484,7 @@ var (
 		Table:         "empresa_dian_configuracion",
 		SearchColumns: []string{"nit", "razon_social", "tipo_ambiente", "estado_dian", "prefijo", "resolucion_numero"},
 		AllowedColumns: []string{
-			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "software_id", "software_pin",
+			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "produccion_local_activa", "software_id", "software_pin",
 			"usar_software_compartido", "software_id_compartido_ref", "software_pin_compartido_ref",
 			"modo_operacion_descripcion", "modo_operacion_fecha_inicio", "modo_operacion_fecha_termino",
 			"test_set_id", "certificado_url", "certificado_clave_ref", "prefijo", "resolucion_numero",
@@ -6997,13 +6998,151 @@ func normalizeIntegracionEndpoint(raw string) string {
 	return parsed.String()
 }
 
+func normalizePublicIntegracionEndpoint(raw string) string {
+	normalized := normalizeHTTPIntegracionEndpoint(raw)
+	if normalized == "" {
+		return ""
+	}
+	parsed, err := url.Parse(normalized)
+	if err != nil || parsed == nil {
+		return ""
+	}
+	host := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(parsed.Hostname()), "."))
+	if host == "" || host == "localhost" || strings.HasSuffix(host, ".localhost") || strings.HasSuffix(host, ".local") {
+		return ""
+	}
+	if ip := net.ParseIP(host); ip != nil && !isPublicOutboundIP(ip) {
+		return ""
+	}
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
+func normalizeHTTPIntegracionEndpoint(raw string) string {
+	normalized := normalizeIntegracionEndpoint(raw)
+	if normalized == "" {
+		return ""
+	}
+	parsed, err := url.Parse(normalized)
+	if err != nil || parsed == nil || parsed.User != nil {
+		return ""
+	}
+	scheme := strings.ToLower(strings.TrimSpace(parsed.Scheme))
+	if scheme != "http" && scheme != "https" {
+		return ""
+	}
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
+func isPublicOutboundIP(ip net.IP) bool {
+	if ip == nil || !ip.IsGlobalUnicast() || ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsMulticast() {
+		return false
+	}
+	if ip4 := ip.To4(); ip4 != nil {
+		switch {
+		case ip4[0] == 100 && ip4[1] >= 64 && ip4[1] <= 127:
+			return false
+		case ip4[0] == 192 && ip4[1] == 0 && (ip4[2] == 0 || ip4[2] == 2):
+			return false
+		case ip4[0] == 198 && (ip4[1] == 18 || ip4[1] == 19 || (ip4[1] == 51 && ip4[2] == 100)):
+			return false
+		case ip4[0] == 203 && ip4[1] == 0 && ip4[2] == 113:
+			return false
+		case ip4[0] >= 240:
+			return false
+		}
+		return true
+	}
+	return !ip.IsUnspecified() && !strings.HasPrefix(strings.ToLower(ip.String()), "2001:db8:")
+}
+
+func sameOutboundOrigin(left, right *url.URL) bool {
+	if left == nil || right == nil {
+		return false
+	}
+	return strings.EqualFold(left.Scheme, right.Scheme) &&
+		strings.EqualFold(strings.TrimSuffix(left.Hostname(), "."), strings.TrimSuffix(right.Hostname(), ".")) &&
+		left.Port() == right.Port()
+}
+
+func dialPublicOutbound(ctx context.Context, network, address string) (net.Conn, error) {
+	host, port, err := net.SplitHostPort(address)
+	if err != nil || strings.TrimSpace(host) == "" || strings.TrimSpace(port) == "" {
+		return nil, errors.New("destino externo invalido")
+	}
+	addresses, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil || len(addresses) == 0 {
+		return nil, errors.New("no se pudo resolver el destino externo")
+	}
+	for _, address := range addresses {
+		if !isPublicOutboundIP(address.IP) {
+			return nil, errors.New("destino externo bloqueado por politica de red")
+		}
+	}
+	dialer := &net.Dialer{Timeout: 8 * time.Second, KeepAlive: 30 * time.Second}
+	var lastErr error
+	for _, address := range addresses {
+		conn, dialErr := dialer.DialContext(ctx, network, net.JoinHostPort(address.IP.String(), port))
+		if dialErr == nil {
+			return conn, nil
+		}
+		lastErr = dialErr
+	}
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return nil, errors.New("no se pudo conectar con el destino externo")
+}
+
+func publicOutboundHTTPClient(timeout time.Duration, origin *url.URL) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = nil
+	transport.DialContext = dialPublicOutbound
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("demasiadas redirecciones externas")
+			}
+			if req == nil || req.URL == nil || normalizePublicIntegracionEndpoint(req.URL.String()) == "" || !sameOutboundOrigin(origin, req.URL) {
+				return errors.New("redireccion externa fuera del origen permitido")
+			}
+			return nil
+		},
+	}
+}
+
+func publicOutboundHTTPClientForEndpoint(timeout time.Duration, endpoint string) *http.Client {
+	origin, _ := url.Parse(endpoint)
+	return publicOutboundHTTPClient(timeout, origin)
+}
+
+var dianOutboundHTTPClientForEndpoint = publicOutboundHTTPClientForEndpoint
+
+func dianAcuseEndpointAllowed(configured, candidate string) (string, bool) {
+	configured = normalizePublicIntegracionEndpoint(configured)
+	candidate = normalizePublicIntegracionEndpoint(candidate)
+	if configured == "" || candidate == "" {
+		return "", false
+	}
+	configuredURL, configuredErr := url.Parse(configured)
+	candidateURL, candidateErr := url.Parse(candidate)
+	if configuredErr != nil || candidateErr != nil || !sameOutboundOrigin(configuredURL, candidateURL) {
+		return "", false
+	}
+	return candidateURL.String(), true
+}
+
 func runIntegracionProbe(endpoint string) (int, bool, int64, string) {
-	endpoint = normalizeIntegracionEndpoint(endpoint)
+	endpoint = normalizePublicIntegracionEndpoint(endpoint)
 	if endpoint == "" {
 		return 0, false, 0, "endpoint no configurado o invalido"
 	}
 
-	client := &http.Client{Timeout: 8 * time.Second}
+	origin, _ := url.Parse(endpoint)
+	client := publicOutboundHTTPClient(8*time.Second, origin)
 	methods := []string{http.MethodHead, http.MethodGet}
 	startedAt := time.Now()
 	lastErr := ""
@@ -7624,6 +7763,10 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 		}
+		if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
+			http.Error(w, "accion DIAN no soportada", http.StatusBadRequest)
+			return
+		}
 
 		base.ServeHTTP(w, r)
 	}
@@ -7640,6 +7783,7 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	prepareDIANConfigSaveActivation(payload)
 	applyGenericDefaultValues(payload, cfgDIAN.DefaultValues)
 	ensureGenericCode(payload, cfgDIAN.CodeColumn, cfgDIAN.CodePrefix)
 	if hasAllowedColumn(cfgDIAN.AllowedColumns, "usuario_creador") && isEmptyGenericValue(payload["usuario_creador"]) {
@@ -7698,6 +7842,20 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		resp["configuracion_pais_warning"] = "La configuracion DIAN se guardo, pero no se pudo sincronizar la configuracion fiscal por pais."
 	}
 	writeJSON(w, status, resp)
+}
+
+func prepareDIANConfigSaveActivation(payload map[string]interface{}) {
+	if payload == nil {
+		return
+	}
+	// La activacion productiva solo puede cambiar a true mediante el flujo
+	// validado action=activar_produccion_local. Un guardado ordinario puede
+	// desactivarla al volver explicitamente a habilitacion, pero nunca elevarla.
+	delete(payload, "produccion_local_activa")
+	delete(payload, "estado_dian")
+	if strings.EqualFold(strings.TrimSpace(genericStringValue(payload["tipo_ambiente"])), "habilitacion") {
+		payload["produccion_local_activa"] = 0
+	}
 }
 
 func syncDIANConfigToFacturacionPais(dbEmp *sql.DB, empresaID int64, cfg map[string]interface{}, actorEmail string) error {
@@ -9510,6 +9668,9 @@ func updateDIANConfigFields(dbEmp *sql.DB, empresaID int64, cfg map[string]inter
 	if id <= 0 {
 		return nil
 	}
+	if ambiente, ok := updates["tipo_ambiente"]; ok && strings.EqualFold(strings.TrimSpace(genericStringValue(ambiente)), "habilitacion") {
+		updates["produccion_local_activa"] = 0
+	}
 	if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, id, updates, cfgDIAN.AllowedColumns); err != nil {
 		return err
 	}
@@ -10191,23 +10352,33 @@ func signDIANXMLXAdESBase(cfg map[string]interface{}, empresaID int64, payload m
 }
 
 func isDIANOfficialEndpoint(endpoint string) bool {
-	parsed, err := url.Parse(strings.TrimSpace(endpoint))
-	if err != nil {
+	endpoint = normalizePublicIntegracionEndpoint(endpoint)
+	parsed, err := url.Parse(endpoint)
+	if err != nil || parsed == nil || !strings.EqualFold(parsed.Scheme, "https") {
 		return false
 	}
-	host := strings.ToLower(parsed.Host)
-	return strings.Contains(host, "dian.gov.co")
+	host := strings.ToLower(strings.TrimSuffix(parsed.Hostname(), "."))
+	return host == "dian.gov.co" || strings.HasSuffix(host, ".dian.gov.co")
 }
 
 func dianConfiguredEndpoint(cfg map[string]interface{}, payload map[string]interface{}) string {
 	if payload == nil {
 		payload = map[string]interface{}{}
 	}
-	return normalizeIntegracionEndpoint(dianFirstNonBlank(
+	configured := genericStringValue(cfg["url_dian"])
+	requested := dianFirstNonBlank(
 		genericStringValue(payload["url_dian"]),
 		genericStringValue(payload["endpoint"]),
-		genericStringValue(cfg["url_dian"]),
-	))
+		configured,
+	)
+	configured = normalizeHTTPIntegracionEndpoint(configured)
+	requested = normalizeHTTPIntegracionEndpoint(requested)
+	configuredURL, configuredErr := url.Parse(configured)
+	requestedURL, requestedErr := url.Parse(requested)
+	if configuredErr != nil || requestedErr != nil || configured == "" || requested == "" || !sameOutboundOrigin(configuredURL, requestedURL) {
+		return ""
+	}
+	return requestedURL.String()
 }
 
 func dianTokenRequiredForEndpoint(cfg map[string]interface{}, payload map[string]interface{}) bool {
@@ -10219,7 +10390,7 @@ func dianTokenRequiredForEndpoint(cfg map[string]interface{}, payload map[string
 }
 
 func normalizeDIANSOAPEndpoint(endpoint string) string {
-	endpoint = normalizeIntegracionEndpoint(endpoint)
+	endpoint = normalizeHTTPIntegracionEndpoint(endpoint)
 	if endpoint == "" {
 		return ""
 	}
@@ -11104,7 +11275,7 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := dianOutboundHTTPClientForEndpoint(30*time.Second, soapEndpoint)
 	startedAt := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
@@ -11288,7 +11459,7 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 	}
 
 	startedAt := time.Now()
-	resp, err := (&http.Client{Timeout: 20 * time.Second}).Do(req)
+	resp, err := dianOutboundHTTPClientForEndpoint(20*time.Second, soapEndpoint).Do(req)
 	if err != nil {
 		return map[string]interface{}{
 			"ok":                  false,
@@ -11430,7 +11601,7 @@ func consultarDIANNumberingRange(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	req.Header.Set("User-Agent", "powerfulcontrolsystem-dian-soap/1.0")
 
 	startedAt := time.Now()
-	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+	resp, err := dianOutboundHTTPClientForEndpoint(30*time.Second, endpoint).Do(req)
 	if err != nil {
 		return map[string]interface{}{
 			"ok":             false,
@@ -11700,7 +11871,7 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := &http.Client{Timeout: 12 * time.Second}
+	client := dianOutboundHTTPClientForEndpoint(12*time.Second, endpoint)
 	startedAt := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
@@ -11818,14 +11989,16 @@ func consultarDIANAcuseReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		return nil, http.StatusBadRequest, fmt.Errorf("documento_codigo, cufe o track_id es obligatorio para consultar acuse")
 	}
 
-	endpoint := normalizeIntegracionEndpoint(dianFirstNonBlank(
+	configuredEndpoint := genericStringValue(cfg["url_dian"])
+	requestedEndpoint := dianFirstNonBlank(
 		genericStringValue(payload["url_acuse"]),
 		strings.TrimSpace(r.URL.Query().Get("url_acuse")),
 		genericStringValue(payload["url_dian"]),
-		genericStringValue(cfg["url_dian"]),
-	))
-	if endpoint == "" {
-		return nil, http.StatusBadRequest, fmt.Errorf("url_dian/url_acuse no configurada o invalida")
+		configuredEndpoint,
+	)
+	endpoint, allowed := dianAcuseEndpointAllowed(configuredEndpoint, requestedEndpoint)
+	if !allowed {
+		return nil, http.StatusBadRequest, fmt.Errorf("url_dian/url_acuse no configurada o fuera del origen permitido")
 	}
 
 	token := strings.TrimSpace(genericStringValue(payload["token"]))
@@ -11864,7 +12037,8 @@ func consultarDIANAcuseReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	requestOrigin, _ := url.Parse(endpoint)
+	client := publicOutboundHTTPClient(10*time.Second, requestOrigin)
 	startedAt := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
@@ -11938,7 +12112,7 @@ func runDIANReconexion(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int6
 		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
 	}
 
-	endpoint := normalizeIntegracionEndpoint(dianFirstNonBlank(genericStringValue(payload["url_dian"]), genericStringValue(cfg["url_dian"])))
+	endpoint := dianConfiguredEndpoint(cfg, payload)
 	if endpoint == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("url_dian no configurada o invalida")
 	}
@@ -12707,6 +12881,16 @@ func activateDIANProductionLocal(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	if payload == nil {
 		payload = map[string]interface{}{}
 	}
+	if parseTruthy(genericStringValue(cfg["produccion_local_activa"])) {
+		return map[string]interface{}{
+			"ok":                       true,
+			"empresa_id":               empresaID,
+			"estado_dian":              genericStringDefault(cfg["estado_dian"], "produccion_local_activa"),
+			"tipo_ambiente":            genericStringDefault(cfg["tipo_ambiente"], "produccion"),
+			"produccion_local_activa":  true,
+			"activacion_ya_confirmada": true,
+		}, http.StatusOK, nil
+	}
 
 	estadoActual := strings.ToLower(strings.TrimSpace(genericStringValue(cfg["estado_dian"])))
 	confirmadoDIAN := parseTruthy(dianPayloadString(payload, "confirmado_dian", "confirmar_habilitacion_dian", "habilitado_en_dian"))
@@ -12760,8 +12944,9 @@ func activateDIANProductionLocal(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	}
 
 	updates := map[string]interface{}{
-		"tipo_ambiente": "produccion",
-		"estado_dian":   "produccion_local_activa",
+		"tipo_ambiente":           "produccion",
+		"produccion_local_activa": 1,
+		"estado_dian":             "produccion_local_activa",
 		"observaciones": appendStateMachineObservation(
 			genericStringValue(cfg["observaciones"]),
 			genericStringValue(cfg["estado_dian"]),
@@ -12778,14 +12963,15 @@ func activateDIANProductionLocal(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	}
 
 	return map[string]interface{}{
-		"ok":              true,
-		"empresa_id":      empresaID,
-		"estado_dian":     "produccion_local_activa",
-		"tipo_ambiente":   "produccion",
-		"url_dian":        urlProduccion,
-		"advertencia":     "Este boton cambia la configuracion local del sistema. La habilitacion oficial y el paso a produccion se verifican en la plataforma DIAN.",
-		"siguiente_paso":  "Emitir documentos reales solo con resolucion/rangos de produccion asociados y monitorear acuses DIAN.",
-		"confirmado_dian": confirmadoDIAN || estadoActual == "habilitacion_aprobada",
+		"ok":                      true,
+		"empresa_id":              empresaID,
+		"estado_dian":             "produccion_local_activa",
+		"tipo_ambiente":           "produccion",
+		"produccion_local_activa": true,
+		"url_dian":                urlProduccion,
+		"advertencia":             "Este boton cambia la configuracion local del sistema. La habilitacion oficial y el paso a produccion se verifican en la plataforma DIAN.",
+		"siguiente_paso":          "Emitir documentos reales solo con resolucion/rangos de produccion asociados y monitorear acuses DIAN.",
+		"confirmado_dian":         confirmadoDIAN || estadoActual == "habilitacion_aprobada",
 	}, http.StatusOK, nil
 }
 

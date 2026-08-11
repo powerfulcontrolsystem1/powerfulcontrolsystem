@@ -1009,6 +1009,141 @@ Actualizacion 2026-08-08, prueba real PCS y colision de ventas reutilizables:
 La evidencia histórica P108 sirve como línea base y evita repetir pruebas
 independientes del artefacto, pero no aumenta automáticamente estas cifras.
 
+Actualización 2026-08-08, descarga privada CxP/IA y SSRF por redirección:
+
+- La descarga real del soporte privado `SCI-0004` aprobó autenticación,
+  pertenencia a `empresa_id=12`, adjunto forzado, `no-store`, `nosniff` y cero
+  fuga de ruta; sin sesión respondió 401, el cruce a empresa 53 respondió 404 y
+  los identificadores ausente/manipulado respondieron 400.
+- La auditoría local cerró una brecha de defensa en profundidad del callback
+  OnlyOffice: cada redirección vuelve a validar esquema, host y puerto contra el
+  Document Server configurado. Las pruebas demuestran que el mismo origen
+  continúa funcionando y que un segundo origen no recibe la solicitud.
+- El arreglo permanece local sin PR ni despliegue. P109-009 sigue parcial y el
+  avance permanece en **53,3 % de implementación**, **0 % de certificación del
+  arreglo local** y **NO-GO**.
+
+Actualización 2026-08-08, salidas HTTP DIAN e integraciones:
+
+- Se cerró localmente SSRF en probes, envio/acuse/reconexion DIAN y operaciones
+  SOAP, además de despacho/health de proveedor fiscal: solo HTTP(S) público,
+  resolución DNS validada, cero redes privadas o especiales y redirecciones
+  limitadas al mismo origen.
+- Los overrides DIAN deben conservar el origen configurado para la empresa y la
+  clasificación oficial exige HTTPS sobre `dian.gov.co` o subdominio exacto.
+  Dominios parecidos, loopback y metadata cloud quedan rechazados.
+- Las pruebas negativas, los sets DIAN de contrato, Go completo, vet y preflight
+  estricto aprobaron sin emitir documentos ni modificar datos. El cambio sigue
+  local sin PR ni despliegue; P109-009 permanece parcial y el Plan conserva
+  **53,3 %**, **0 % de certificación del arreglo local** y **NO-GO**.
+
+Actualización 2026-08-08, papelera recuperable de soportes CxP/IA:
+
+- Se implementó localmente eliminación lógica y recuperación con motivo,
+  actor, auditoría y bloqueo transaccional por `empresa_id`; el archivo y el
+  historial no se destruyen.
+- Los soportes eliminados no pueden descargarse, editarse, procesarse con IA ni
+  contabilizarse. La recuperación falla si existe duplicado activo y los
+  soportes contabilizados/convertidos no pueden enviarse a papelera.
+- La UI separa Activos/Papelera y habilita únicamente las acciones compatibles.
+  Las pruebas Go y contratos de interfaz aprobaron, pero falta desplegar el
+  candidato y repetir el ciclo autenticado/visual en PCS y en empresa A/B.
+- P109-002 y P109-008 continúan parciales. El avance permanece en **53,3 % de
+  implementación**, **0 % de certificación del arreglo local** y **NO-GO**.
+
+Actualización 2026-08-08, adjuntos hostiles, cancelación IA y retención:
+
+- La admisión local ahora contrasta firma/extensión, fija MIME y rechaza XML
+  activo, DTD, entidades, instrucciones y documentos mal formados antes de
+  escribir. Un fallo posterior de base limpia el archivo nuevo confinado.
+- `Cancelar IA` aborta navegador y transporte Responses mediante el contexto de
+  la petición; una prueba con proveedor lento local confirmó `context.Canceled`.
+- La vista previa de retención filtra por empresa solo eliminados antiguos no
+  contabilizados y calcula bytes sin ejecutar purga.
+- Esto no sustituye antivirus, carrera Linux, proveedor real, purga certificada
+  ni UAT PCS/A-B. P109-002, P109-008 y P109-009 continúan parciales; el avance
+  permanece **53,3 %**, la certificación del cambio local **0 %** y **NO-GO**.
+
+Actualización 2026-08-08, protocolo antivirus para soportes:
+
+- Se integró localmente `clamd` por INSTREAM con deadlines, respuesta limitada,
+  rechazo de malware antes de escritura y modo obligatorio fail-closed.
+- Un servidor TCP simulado aprobó limpio, `FOUND`, modo opcional y caída
+  obligatoria. Compose y ejemplos exponen la configuración apagada por defecto.
+- Falta desplegar/actualizar firmas y comprobar ClamAV real en staging, carga
+  EICAR controlada, métricas y recuperación ante caída. P109-008/P109-009 siguen
+  parciales; permanece **53,3 %**, certificación local **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, depuración segura de soportes CxP/IA:
+
+- Se implementó localmente la transición final `eliminado -> purgado` para un
+  soporte no contabilizado que ya cumple retención. Exige Delete, motivo,
+  antigüedad y confirmación exacta del código bajo bloqueo por `empresa_id`.
+- La fila y sus eventos se conservan; el archivo se procesa con cuarentena,
+  rollback si la transacción falla y eliminación solo después del commit. Un
+  registro purgado no se descarga, opera ni recupera.
+- Se cerró la fabricación de referencias privadas por JSON y cada consumo del
+  archivo exige el prefijo exacto de la empresa. Las pruebas locales cubren
+  A/B, commit/rollback, fechas y contrato PostgreSQL preparado.
+- No se ejecutó purga real, staging ni restore posterior; P109-008 continúa
+  parcial. El avance formal permanece en **53,3 % de implementación**, **0 % de
+  certificación del cambio local** y **NO-GO**.
+- La depuración se endureció como saga `eliminado -> purga_pendiente -> purgado`:
+  inicio y final son idempotentes y un reintento recupera caídas en cada frontera
+  archivo/base. Cuarentenas múltiples se rechazan sin elegir arbitrariamente.
+- `cuarentena_preview` ofrece diagnóstico Read por empresa con registros,
+  archivos y bytes, sin nombres, rutas ni mutación. Esto mejora operación local,
+  pero no sustituye la prueba de caída real, restore, réplica A/B ni staging.
+- La saga incorpora advisory lock por empresa entre replicas, replay idempotente
+  incluso después de finalizar y alerta de pendientes envejecidos. El runbook
+  oficial prohíbe SQL/borrado manual y exige backup antes de una recuperación.
+
+Actualización 2026-08-09, observabilidad de la depuración CxP/IA:
+
+- `/metrics` publica únicamente agregados globales de sagas pendientes,
+  pendientes por al menos 15 minutos y finalizadas, con estado de consulta y
+  sin etiquetas de empresa, usuario, soporte, nombre o ruta privada.
+- Prometheus incorpora la alerta crítica `PCSSoporteIAPurgaVencida`, Grafana
+  presenta pendientes/vencidas y el runbook dirige al flujo oficial reanudable.
+- Pruebas locales de render, contrato y vet aprobaron. Falta desplegar, provocar
+  y resolver una saga vencida en staging y comprobar entrega externa; P109-010
+  sigue parcial, el avance permanece **53,3 %** y el veredicto **NO-GO**.
+
+Actualización 2026-08-09, telemetría del antivirus de soportes:
+
+- El scanner clamd registra contadores atomicos agregados para limpio, malware,
+  indisponible y omitido, además de modo obligatorio/configurado. Las métricas
+  no contienen dimensiones empresariales, usuarios, archivos ni rutas.
+- Prometheus alerta configuración fail-closed incompleta, indisponibilidad,
+  omisión y malware bloqueado; Grafana muestra resultados recientes por job.
+- Pruebas locales cubren los cuatro resultados y 64 llamadas simultáneas. Falta
+  clamd real con firmas, EICAR controlada, recuperación y recepción externa en
+  staging; P109-008/P109-010 siguen parciales, permanece **53,3 %** y **NO-GO**.
+
+Actualización 2026-08-09, evals adversariales de extracción IA:
+
+- El parser limita tamaño, claves, tipos, líneas, textos y rangos; rechaza NaN,
+  infinito, negativos, confianza fuera de 0..1 y fechas inválidas. Faltantes o
+  descuadres obligan revisión humana antes de cualquier aprobación.
+- Se publican seis resultados agregados de extracción y alertas para proveedor,
+  respuesta inválida y persistencia, sin empresa, documento, prompt o respuesta.
+- Casos adversariales y 64 registros simultáneos aprobaron localmente. Falta el
+  candidato desplegado, proveedor real y A/B; P109-002/P109-010 siguen parciales,
+  el avance permanece **53,3 %** y el veredicto **NO-GO**.
+
+Actualización 2026-08-09, integridad de archivos privados de soportes:
+
+- Descarga y envío a IA verifican SHA-256, archivo regular y tamaño acotado. Un
+  contenido alterado o hash inválido falla antes de servir o llamar proveedor.
+- La respuesta fuerza attachment, MIME canónico/binario y cabeceras sandbox,
+  nosniff, same-origin, no-referrer, DENY y no-store. Métrica, alerta y panel no
+  contienen empresa, soporte, hash, nombre ni ruta.
+- El incidente usa `FOR UPDATE` por empresa, invalida una aprobación abierta y
+  registra evento minimizado en la misma transacción; terminales se preservan.
+- Las pruebas locales de bytes, stream, MIME y contrato aprobaron. Falta fixture
+  PostgreSQL reversible desplegado y A/B; el ensayo quedó preparado pero hizo
+  SKIP sin DSN. P109-009 sigue parcial, permanece **53,3 %** y **NO-GO**.
+
 ## 9. Siguiente orden para Terra alto
 
 P109-000 ya está aprobada para `ea9642dd...` y P109-011 para `c8094f5b`;
@@ -1017,10 +1152,12 @@ continuar así:
 
 1. confirmar que staging conserva los cuatro digests registrados y producción
    conserva sus imágenes anteriores;
-2. cerrar P109-001 únicamente cuando exista una segunda identidad/empresa A/B
-   autorizada, sin usar la sesión global como prueba de aislamiento;
-3. completar en P109-002 confirmación/cancelación, doble clic, degradación del
-   proveedor y evals, sin convertir automáticamente el borrador en pago;
+2. conservar la matriz A/B ya aprobada con identidad no global y cerrar
+   P109-001 únicamente después de la carrera reversible y la conciliación del
+   contador autorizado;
+3. desplegar el candidato aislado y repetir en P109-002/P109-008 la papelera,
+   descarga bloqueada, recuperación, duplicado y botones IA en PCS y empresa
+   A/B; completar además confirmación/cancelación, degradación y evals;
 4. ejecutar UAT contable/fiscal de P109-003 con contador autorizado;
 5. completar acciones mutantes de P109-004 por rol y flujo oficial;
 6. continuar cuatro cajas, DIAN, receptor externo y piloto solo cuando
@@ -1029,3 +1166,290 @@ continuar así:
    una fase parcial.
 
 No debe saltar a producción ni llamar 100 % a un bloque con pendientes.
+
+Actualización 2026-08-09, pruebas reales PCS y correcciones del candidato local:
+
+- El barrido autenticado cubrió 48 variantes de 24 rutas críticas y aisló
+  desbordamiento móvil DIAN, CSP de Mailu y permiso/licencia de Centro IA.
+- Las impresiones reales de `1PCS5` en Carta, compacta y POS demostraron QR y
+  datos fiscales, pero descubrieron recursos relativos rotos dentro de blobs;
+  el candidato ya resuelve hoja, logos y QR contra el origen seguro.
+- La captura CxP/IA controlada permitió extracción y edición y terminó rechazada
+  sin cuenta por pagar, pago o asiento.
+- El cifrado legado del buzón PCS se renovó por el flujo oficial. El candidato
+  corrige la renovación Mailu para actualizar por PATCH antes de crear por POST.
+- DIAN presenta ambiente/rango reales, pero el indicador de producción local se
+  perdía cuando `estado_dian` era sobrescrito por un envío. El candidato ya lo
+  separa en un indicador persistente, migra evidencia histórica y bloquea la
+  autoactivación desde el CRUD; la compuerta continúa hasta desplegar, reconciliar
+  PCS y repetir un envío/acuse controlado.
+- Preflight profesional completo y pruebas enfocadas pasan. P109-005/P109-007
+  siguen parciales porque falta desplegar el candidato, repetir visual/IMAP,
+  comprobar empresa A/B y cerrar el estado DIAN. El avance permanece **53,3 %
+  de implementación**, **0 % de certificación del arreglo local** y **NO-GO**.
+
+Actualización 2026-08-09, candidato `17c55dd8` y prioridad web:
+
+- El primer digest detectó correctamente que el indicador DIAN dependía del
+  bootstrap heredado y quedó invalidado. El segundo candidato incorporó la
+  migración inmutable `20260809-001-dian-local-production-flag-v1`; workflow,
+  respaldo, promoción por cuatro digests, ledger, checksum, constraint,
+  backfill transaccional, salud y aislamiento de producción aprobaron.
+- El barrido autenticado del mismo candidato cubrió 48 variantes de 24 rutas:
+  46 aprobaron y las dos revisiones corresponden a la URL heredada inexistente
+  `inventario.html`. Centro IA, correo y DIAN ya no reproducen los hallazgos
+  anteriores. La impresión sintética volvió a aprobar 20/20 y se inspeccionó
+  Carta, POS, QR y 96 filas.
+- Por decisión explícita del propietario se prioriza terminar la aplicación
+  web. La aplicación móvil nativa continúa formalmente aplazada y su código se
+  conserva. Solo se mantiene como requisito de la web la usabilidad responsive
+  mínima en navegador móvil; no se agregan funciones móviles al alcance del
+  piloto.
+- P109-000 queda aprobado para `17c55dd8`. P109-005 y P109-007 siguen parciales
+  por documentos físicos/reales, Mailu/IMAP y la prueba fiscal controlada. El
+  avance permanece **53,3 % de implementación**, la certificación del candidato
+  sube a **6,7 %** y el veredicto continúa **NO-GO**.
+
+Actualización 2026-08-09, CxP/IA autenticada en el candidato `17c55dd8`:
+
+- PCS radicó `SCI-0009`, extrajo los datos mediante IA, permitió editar la
+  lectura, vinculó proveedor, aprobó y rechazó con trazabilidad completa. La
+  aprobación no se contabilizó.
+- La repetición exacta quedó bloqueada como `SCI-0010` duplicado. Un segundo
+  soporte `SCI-0011` confirmó que **Cancelar IA** aborta la petición y conserva
+  `radicado`; luego se rechazó por el flujo oficial.
+- La conciliación pasó de 8 a 11 soportes y mantuvo sin cambios 3 CxP, 5 pagos y
+  5 movimientos. La bandeja se comprobó visualmente con filas, columnas,
+  importes, estados y confianza organizados.
+- La papelera visual permanece pendiente porque el navegador interno no soporta
+  `prompt()`; una sesión administrativa independiente recibió 403. La empresa
+  inexistente devolvió cero datos, pero no sustituye una identidad A/B real.
+- P109-002 y P109-008 siguen parciales. El avance permanece **53,3 % de
+  implementación**, **6,7 % de certificación del candidato** y **NO-GO**.
+
+Actualización 2026-08-09, dialogos verificables de papelera CxP/IA:
+
+- Se sustituyeron `confirm`/`prompt` nativos por un dialogo propio con foco,
+  cancelacion, motivo obligatorio y confirmacion fuerte por codigo.
+- El payload y el endpoint no cambian; permisos, retencion, auditoria y
+  aislamiento por `empresa_id` permanecen bajo control del backend.
+- Sintaxis, contratos y paquetes enfocados aprobaron localmente. P109-008 no
+  recibe credito adicional hasta construir el candidato y repetir papelera y
+  recuperacion visualmente en staging. Permanece **53,3 %**, **6,7 %** y
+  **NO-GO**.
+
+Actualización 2026-08-09, papelera visual en el candidato `34cfd852`:
+
+- Release inmutable `31303668393`, preflight 22/22, respaldo de ambas bases y
+  promoción por cuatro digests sin build en staging aprobaron.
+- El nuevo diálogo validó motivo obligatorio, envió `SCI-0009` a Papelera y
+  mostró el bloqueo seguro de recuperación por el duplicado activo `SCI-0010`.
+- Tras enviar también el duplicado QA a Papelera, `SCI-0009` se recuperó con
+  auditoría. CxP/pagos/movimientos permanecieron 3/5/5.
+- P109-008 continúa parcial por retención, caída, antivirus y A/B. El avance de
+  implementación permanece **53,3 %** y el veredicto **NO-GO**. La certificación
+  formal del nuevo SHA se recalculará al repetir la compuerta completa P109-000.
+
+Actualización 2026-08-09, verificación ampliada de `34cfd852`:
+
+- Digests efectivos, migrador 0, salud/listo, worker y producción sana fueron
+  comprobados. E2E `31304164994` aprobó escritorio/móvil sin hallazgos; impresión
+  20/20 y matrices de roles/pagos quedaron `ok`.
+- El endpoint rechazó con 401 eliminar/restaurar sin sesión y la empresa
+  inexistente. No hubo mutaciones.
+- P109-000 sigue parcial: falta PR/fusión y los drills exactos de base vacía y
+  upgrade. El avance permanece **53,3 %**, la certificación formal del SHA
+  exacto continúa **0 %** hasta cerrar la compuerta y el veredicto es **NO-GO**.
+
+Actualización 2026-08-09, drills exactos de migración de `34cfd852`:
+
+- El digest inmutable del migrador aprobó base vacía, segunda pasada
+  idempotente, fallo cerrado por drift de checksum y recuperación. El esquema
+  terminó con 337 tablas empresariales, 49 globales y ledger 20/10.
+- El upgrade de una copia lógica consistente de staging conservó 350 tablas
+  empresariales y 59 globales antes/después; ambas pasadas aplicaron cero
+  migraciones nuevas y el rol runtime continuó sin DDL.
+- La limpieza dejó cero contenedores, redes y volúmenes efímeros. Staging
+  conservó salud/listo y sus digests; PCS mantuvo CxP/pagos/movimientos 3/5/5;
+  producción permaneció saludable y sin despliegue.
+- La parte técnica pendiente de P109-000 queda aprobada. La fase continúa
+  formalmente parcial porque el candidato no tiene PR/revisión/fusión a `main`,
+  conforme a la instrucción de no crear PR. El avance permanece **53,3 % de
+  implementación**, **0 % de certificación formal del SHA** y **NO-GO**.
+
+Actualización 2026-08-09, retención real y antivirus de `34cfd852`:
+
+- En PCS, la vista previa con retención de un día informó cero candidatos. El
+  intento de depurar `SCI-0010`, con motivo y código fuerte correctos, fue
+  rechazado por no cumplir la retención; visualmente conservó estado eliminado.
+- PostgreSQL confirmó cero eventos de purga y mantuvo CxP/pagos/movimientos
+  3/5/5. La sesión autenticada se cerró al terminar.
+- Las métricas reales muestran antivirus `required=0`, `configured=0`, cero
+  escaneos y ningún servicio clamd en el VPS. Se registra como bloqueo, no PASS.
+- P109-008 y P109-010 siguen parciales por depuración vencida/reanudable,
+  antivirus real, A/B y señales operativas restantes. El avance permanece
+  **53,3 %**, la certificación formal del SHA **0 %** y el veredicto **NO-GO**.
+
+Actualización 2026-08-09, identidad A/B no global e integración PostgreSQL:
+
+- Una identidad empresarial temporal recuperó su acceso mediante el correo
+  oficial y probó soportes IA, finanzas, contabilidad, DIAN y documentos. PCS
+  cargó sus vistas; `empresa_id=7` fue rechazada fuera del alcance y no mostró
+  filas ni datos de PCS.
+- El intento visible de enviar `SCI-0011` a papelera fue rechazado por permiso
+  efectivo; la consulta posterior conservó el soporte activo/rechazado. La
+  cuenta quedó inactiva por HTTP 204 y su sesión previa respondió unauthorized.
+- PostgreSQL 16 efímero aprobó papelera, restauración, duplicado, retención,
+  bloqueo contable, incidente de integridad, purga reanudable/idempotente,
+  precisión monetaria y bandera DIAN por empresa. El fixture usa los esquemas
+  reales de migración y las tablas funcionales del ensayo son temporales.
+- Túnel y contenedor efímeros fueron retirados; producción no cambió. La prueba
+  A/B deja de ser pendiente, pero P109-001 conserva carrera/conciliación humana,
+  P109-002 proveedor/degradación y P109-008 antivirus/purga vencida/restore.
+  La compuerta profesional aprobó sus 20 controles y la regresión Go completa
+  aprobó pruebas y vet.
+  Ninguna fase parcial cerró todos sus criterios: el avance formal permanece
+  **53,3 % de implementación**, **0 % de certificación formal del SHA** y
+  **NO-GO**.
+
+Actualización 2026-08-09, durabilidad outbox y Centro IA:
+
+- PostgreSQL 16 efímero aprobó deduplicación outbox, reclamación concurrente
+  única, lease vencido, recuperación, dead-letter y pago CxP idempotente/A-B.
+  El túnel, contenedor y listener temporal fueron retirados al finalizar.
+- En staging PCS, el Centro IA cargó siete funciones, ejecutó diagnóstico y
+  consulta no mutante en modo agente; el interruptor inició y terminó apagado,
+  sin crear efectos financieros. La bandeja CxP/IA mostró su duplicado QA
+  bloqueado y no editable.
+- La revisión visual detectó Markdown literal en el resultado IA. El candidato
+  local ya lo muestra con títulos/listas/énfasis mediante escape previo y sin
+  dependencias; exige despliegue aislado y repetición visual antes de crédito.
+- P109-002 y P109-010 permanecen parciales por criterios operativos externos y
+  del candidato final. El avance formal continúa **53,3 %**, la certificación
+  formal **0 %** y el veredicto **NO-GO**.
+
+Actualización 2026-08-09, candidato `bb285968` en staging:
+
+- El candidato aislado de Centro IA se construyó desde SHA exacto fuera del
+  checkout productivo y dejó health/readiness y los cuatro servicios saludables.
+  La revisión visual confirmó títulos, listas y énfasis seguros, sin Markdown
+  literal ni HTML del proveedor interpretado.
+- Se ejecutaron las siete funciones IA visibles como recomendaciones, con modo
+  agente apagado al inicio y al cierre. Las invariantes PCS siguieron en 3 CxP,
+  5 pagos y 5 movimientos; únicamente quedó un soporte demo duplicado bloqueado.
+- La compuerta resolvió el runtime Node y Chrome instalado; el E2E completo
+  registró 363 variantes antes del timeout externo y el dirigido aprobó 2/2
+  vistas, 108 botones y cero errores. Impresión 20/20 y carga p95 411 ms/error
+  0 % aprobaron.
+- El manifest se corrigió para exigir el digest de frontend. P109-000/P109-004
+  no se aprueban: faltan cuatro imágenes inmutables, fusión/revisión y el
+  inventario E2E completo. El avance permanece **53,3 %**, certificación **0 %**
+  y **NO-GO**.
+
+Actualización 2026-08-09, candidato inmutable `31915619` promovido solo a staging:
+
+- El workflow `31308770525` construyó una sola vez API, migrador, worker y
+  frontend desde el SHA completo `31915619a74227216b9590b5268e036b3e6a51b4`.
+  Trivy, los cuatro SBOM, publicación en GHCR y la validación de Compose por
+  digest aprobaron en la misma ejecución.
+- Los cuatro digests publicados se promovieron con
+  `vps-staging-digest-up.sh`; el script no reconstruyó código. Staging quedó
+  `health=ok`, `ready=ready`, API/worker/frontend saludables y migrador con
+  exit code `0`. El ledger registra
+  `platform:20260809-001-dian-local-production-flag-v1:applied` y la columna
+  DIAN existe. Las imágenes y salud de producción fueron verificadas sin cambio.
+- `qa_e2e_buttons.cjs` ya puede reanudar el inventario por lotes ordenados con
+  offset/tamaño explícitos, y sus reportes guardan ambos datos. Esta mejora
+  aún no es una ejecución total: P109-004 conserva pendiente la matriz de
+  acciones mutantes, roles e IA y no recibe crédito adicional hasta completar
+  todos los lotes autenticados.
+- P109-000 conserva estado **parcial** por la política vigente de no crear PR:
+  el SHA no está revisado ni fusionado a `main`. El avance de implementación
+  permanece **53,3 %**, la certificación formal **0 %** y el veredicto
+  **NO-GO**.
+
+Actualización 2026-08-09, SHA actual `3676cc02` en staging:
+
+- El workflow `31319557537` volvió a aprobar construcción única, Trivy, SBOM,
+  publicación y Compose para el SHA que añade la reanudación E2E por lotes.
+- Sus cuatro digests exactos fueron promovidos sin build. API, worker y frontend
+  alcanzaron estado saludable; migrador terminó `0`; `/health` y `/ready` de
+  staging aprobaron. Las tres imágenes y la salud de producción siguen intactas.
+- No se altera la fórmula: P109-000 permanece parcial sin PR/fusión y el plan
+  sigue en **53,3 % de implementación**, **0 % de certificación formal**,
+  **NO-GO**.
+
+Actualización 2026-08-09, capacidad VPS y revisión visual financiera:
+
+- El panel staging informó 87 % de disco. La inspección aisló 17,2 GB de
+  imágenes Docker sin uso y 2,5 GB de caché de build; no se tocaron volúmenes,
+  bases ni respaldos. La limpieza recuperable liberó 28,2 GB y redujo el uso
+  de `/` a 60 %. Staging y producción conservaron salud correcta.
+- Con sesión oficial PCS se comprobó visualmente Finanzas/CxP: formulario,
+  tabla de 11 cierres y controles de acciones aparecen organizados. A 390 px,
+  el ancho de documento fue exactamente 390 px, hubo cero botones visibles sin
+  etiqueta y cero errores de consola. Esta es evidencia no mutante y no
+  sustituye las pruebas de cuatro cajas, roles ni conciliación contable.
+- P109-005/P109-009 permanecen parciales; el avance formal continúa **53,3 %**
+  y **NO-GO**.
+
+Actualización 2026-08-09, hallazgo del barrido E2E de Renta IA:
+
+- Los lotes autenticados detectaron dos POST bloqueados al abrir Renta IA. La
+  causa fue un cálculo automático en el arranque de la pantalla. El candidato
+  local elimina ese POST: la consulta financiera y cualquier uso de IA requieren
+  el clic explícito del usuario. Debe construirse y repetirse el lote antes de
+  acreditar la corrección.
+
+Actualización 2026-08-09, barrido autenticado completo por lotes:
+
+- Cuatro ejecuciones CI recorrieron las 309 rutas en escritorio y móvil: 618
+  vistas, 11.258 botones inventariados y 75 clics seguros. La carga GET de 500
+  solicitudes aprobó con p95 135 ms y 0 % de errores.
+- Renta IA se repitió sobre el digest corregido `e51228dd`: 2/2 vistas `ok`,
+  cero mutaciones bloqueadas y cero errores.
+- Persisten seis escrituras automáticas de páginas públicas y dos respuestas
+  502 de ayuda móvil. La repetición de páginas públicas aprobó 10/10 al separar
+  y bloquear su telemetría; la repetición aislada de ayudas móviles aprobó y no
+  reprodujo los 502 transitorios. P109-004 sigue **parcial** por acciones
+  mutantes, roles y botones IA. El avance
+  formal continúa **53,3 %**, **NO-GO**.
+
+Actualización 2026-08-09, restore integral del snapshot vigente:
+
+- El snapshot `20260809_031501` aprobó restore PostgreSQL aislado con los
+  nueve tarballs obligatorios, dos bases PCS, cinco tablas críticas filtradas
+  por empresa y tres checksums de soportes IA privados.
+- El RTO observado fue 27 s y el RPO 50.544 s; el contenedor temporal se
+  eliminó automáticamente. No se modificaron staging activo ni producción.
+- P109-008 continúa parcial por réplica A/B, pérdida de réplica y rollback
+  coordinado. No cambia la fórmula: **53,3 %**, certificación formal **0 %**
+  y **NO-GO**.
+
+Actualización 2026-08-09, Finanzas/CxP responsive en staging:
+
+- La revisión autenticada de PCS validó los formularios financieros y las seis
+  tablas CxP/CxC en móvil (390 px), sin desborde horizontal, sin botones sin
+  etiqueta y sin errores de consola. La carga CxP con IA conserva revisión
+  humana antes de guardar.
+- La inspección fue solo lectura; P109-005 continúa parcial por dispositivos,
+  impresión física, accesibilidad completa y roles. La fórmula permanece en
+  **53,3 %**, certificación formal **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, sondeo público seguro de staging:
+
+- Salud, readiness y portada pública respondieron HTTP 200; las seis cabeceras
+  de endurecimiento aplicables estuvieron presentes. La portada pública no
+  declara `Cache-Control`, observación que no se extrapola a rutas autenticadas.
+- P109-009 continúa parcial por DAST hostil, aislamiento A/B y recursos
+  autenticados. La fórmula permanece **53,3 %**, certificación formal **0 %**
+  y **NO-GO**.
+
+Actualización 2026-08-09, auditoría de observabilidad del candidato:
+
+- El preflight aislado encontró que `runtime_state_log` era una alerta estática
+  falsa: el registro vive en su handler y no necesariamente como archivo antes
+  del arranque. El auditor ahora revisa ambas fuentes reales.
+- El resto de la compuerta breve aprobó. P109-010 continúa parcial por alertas
+  externas, responsables y ensayo antivirus real; el avance sigue **53,3 %**,
+  certificación formal **0 %** y **NO-GO**.

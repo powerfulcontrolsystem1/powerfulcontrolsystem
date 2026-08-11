@@ -641,3 +641,13 @@ y salvo usa `action=paz_y_salvo`. La cobranza profesional vive en
 `cobranza.html` y `/api/empresa/cobranza`, con configuracion/worker por empresa.
 `Nomina > Configuracion legal > Agente internet` consulta propuestas Colombia
 2026 y guarda solo el campo aprobado a traves de `/api/empresa/nomina`.
+## Actualizacion 2026-08-08 - DIAN e integraciones sin SSRF
+
+- `facturacion_electronica / DIAN Colombia`: las acciones de envio, acuse,
+  numeracion y reconexion conservan `empresa_id`, permisos existentes y el
+  origen de `url_dian` configurado; el transporte rechaza destinos privados y
+  redirecciones cruzadas. El despacho/health por `api_base_url` aplica la misma
+  politica antes de conectar.
+- `integraciones empresariales`: `health_check`, `sync_manual` y monitoreo usan
+  la misma politica de salida publica. Un endpoint bloqueado queda no alcanzable
+  y no recibe conexión.

@@ -1,3 +1,84 @@
+2026-08-09: Dialogos verificables para acciones CxP/IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria` y
+  `frontend_ux`.
+- Aprobar, rechazar, contabilizar, enviar a papelera, recuperar y depurar usan
+  un dialogo accesible propio en vez de `confirm`/`prompt` nativos.
+- Papelera, recuperacion y depuracion exigen motivo; la depuracion conserva la
+  confirmacion fuerte por codigo. El backend mantiene permisos, aislamiento
+  por `empresa_id`, retencion, idempotencia y auditoria como autoridad final.
+
+2026-08-09: Integridad y descarga segura de soportes CxP/IA.
+- Modulos afectados: `soportes_compras_ia`, `almacenamiento_privado`,
+  `seguridad_multiempresa`, `IA empresarial` y `observabilidad`.
+- Descarga y extracción verifican SHA-256, tamaño y archivo regular antes de
+  consumir contenido. MIME/cabeceras fuerzan una respuesta adjunta y aislada.
+- Los fallos se observan agregados, sin tenant, hash, nombre ni ruta privada.
+- El incidente bloquea por empresa, invalida una aprobación abierta y registra
+  evento mínimo en la misma transacción; terminales contables se conservan.
+
+2026-08-09: Evals y telemetria de extracción IA de soportes.
+- Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `evaluaciones`,
+  `observabilidad`, `Prometheus`, `Grafana` y `Alertmanager`.
+- La respuesta IA queda limitada por tamaño, claves, tipos, textos, importes,
+  fechas y confianza antes de persistir; anomalías fallan cerradas o fuerzan
+  revisión humana.
+- Resultados operativos agregados distinguen éxito consistente, revisión,
+  cancelación y fallos de proveedor, contrato o persistencia sin datos privados.
+
+2026-08-09: Observabilidad del antivirus de soportes CxP/IA.
+- Modulos afectados: `soportes_compras_ia`, `antivirus`, `observabilidad`,
+  `Prometheus`, `Grafana` y `Alertmanager`.
+- El scanner publica contadores atomicos agregados por resultado y estado de
+  configuracion/obligatoriedad, sin dimensiones de empresa, usuario o archivo.
+- Alertas cubren fail-closed sin endpoint, indisponibilidad, omision y malware.
+
+2026-08-09: Observabilidad de depuracion CxP/IA.
+- Modulos afectados: `observabilidad`, `soportes_compras_ia`, `Prometheus`,
+  `Grafana`, `Alertmanager` y `operacion_vps`.
+- Las metricas agregan pendientes, vencidos y finalizados sin etiquetas de
+  empresa/soporte/usuario; una alerta y panel operativos conducen al runbook
+  seguro de reanudacion.
+
+2026-08-09: Depuracion segura de soportes de compras IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `almacenamiento_privado`,
+  `auditoria`, `seguridad_multiempresa` y `frontend_ux`.
+- Un soporte no contabilizado que supera la retencion en papelera puede quedar
+  `purgado`: se destruye el archivo mediante cuarentena/rollback coordinado,
+  pero se conservan fila, datos contables y eventos como tumba no recuperable.
+- La accion exige Delete, motivo, codigo exacto y `empresa_id` en lectura,
+  bloqueo y escritura. Las rutas privadas se atan a la empresa y el JSON manual
+  no puede fabricar metadatos de adjunto.
+- La depuracion usa una saga reanudable `eliminado -> purga_pendiente -> purgado`:
+  recupera caidas en cada frontera archivo/base y rechaza cuarentenas ambiguas.
+  Un diagnostico de solo lectura compara pendientes, archivos y bytes del tenant.
+- Un advisory lock PostgreSQL serializa depuraciones por empresa entre replicas;
+  replays completos y `os.ErrNotExist` concurrente no duplican efectos. El
+  diagnostico alerta pendientes envejecidos con umbral acotado.
+
+2026-08-08: Admision hostil, cancelacion IA y retencion de soportes.
+- Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `almacenamiento`,
+  `seguridad_multiempresa` y `frontend_ux`.
+- La carga contrasta extensión y firma, usa MIME canónico, analiza XML estricto
+  y rechaza DTD, entidades, instrucciones y elementos activos. Integra ClamAV
+  `clamd` por INSTREAM con modo opcional u obligatorio fail-closed.
+- Un fallo de persistencia limpia únicamente el archivo privado recién creado;
+  la extracción IA usa el contexto de la petición y puede cancelarse desde UI.
+- La vista previa de retención filtra eliminados antiguos no contabilizados por
+  `empresa_id`, reporta cantidad/bytes y no borra ni expone archivos.
+- El protocolo antivirus se probó con un clamd local simulado para limpio,
+  malware, desactivado y obligatorio sin servicio; falta el daemon real de VPS.
+
+2026-08-08: Papelera recuperable de soportes de compras IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria`,
+  `seguridad_multiempresa` y `frontend_ux`.
+- La bandeja separa activos y eliminados. Enviar o recuperar exige motivo y
+  conserva archivo, estado funcional, actor y eventos; no existe borrado fisico.
+- Los adjuntos eliminados no se exponen ni descargan, y las acciones de IA,
+  revision, aprobacion, rechazo y contabilizacion fallan cerradas hasta recuperar.
+- La recuperacion rechaza duplicados activos por hash/documento y un soporte
+  contabilizado o ya convertido nunca puede ocultarse. Todas las consultas y
+  transiciones mantienen `empresa_id` en lectura, bloqueo y escritura.
+
 2026-08-08: Soportes de compras IA y cuota empresarial.
 - Modulos afectados: `soportes_compras_ia`, `almacenamiento_empresarial`,
   `compras`, `CxP`, `seguridad_multiempresa`.
@@ -55,6 +136,17 @@
 - `DecommissionRemovedEntertainmentArtifacts` elimina la tabla exclusiva `super_juegos_records` al arrancar, de forma idempotente.
 - No se afecta el catalogo fiscal DIAN de documentos equivalentes para juegos de suerte y azar, porque corresponde a una categoria legal ajena al modulo recreativo.
 - La nueva lectura obligatoria de agentes inicia en `contexto_general_del_sistema.md` y se amplia por `contexto_especifico_del_sistema.md`.
+
+2026-08-08: Salidas HTTP seguras para DIAN e integraciones.
+- Modulos afectados: `facturacion_electronica`, `DIAN Colombia` e
+  `integraciones empresariales`.
+- Backend: probes, envio, acuse, `GetStatusZip`, `GetNumberingRange` y reconexion
+  bloquean SSRF por protocolo, DNS/IP, redes privadas y redirecciones cruzadas;
+  la regla tambien cubre despacho y health de proveedores por `api_base_url`.
+- Multiempresa: un endpoint recibido en payload debe conservar el origen de
+  `url_dian` guardado para la misma empresa; no cambia wrappers ni permisos.
+- Alcance fiscal: no modifica XML, firma, CUFE, consecutivos, tablas ni estados
+  DIAN y no ejecuta emisiones durante la validacion local.
 
 2026-07-09: Facturas electronicas compactas y tutorial DIAN.
 - Modulos afectados: `facturacion_electronica`, `ventas`, `super_administrador`, `documentacion_ayuda`.

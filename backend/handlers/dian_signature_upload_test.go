@@ -79,6 +79,11 @@ type testDIANSOAPServerStats struct {
 
 func newTestDIANSOAPServer(t *testing.T) (*httptest.Server, *testDIANSOAPServerStats) {
 	t.Helper()
+	previousClientFactory := dianOutboundHTTPClientForEndpoint
+	dianOutboundHTTPClientForEndpoint = func(timeout time.Duration, _ string) *http.Client {
+		return &http.Client{Timeout: timeout}
+	}
+	t.Cleanup(func() { dianOutboundHTTPClientForEndpoint = previousClientFactory })
 	stats := &testDIANSOAPServerStats{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bodyBytes, _ := io.ReadAll(r.Body)

@@ -52,6 +52,7 @@ const imageDigests = {
   PCS_API_IMAGE_DIGEST: imageDigestStatus("PCS_API_IMAGE_DIGEST"),
   PCS_MIGRATE_IMAGE_DIGEST: imageDigestStatus("PCS_MIGRATE_IMAGE_DIGEST"),
   PCS_WORKER_IMAGE_DIGEST: imageDigestStatus("PCS_WORKER_IMAGE_DIGEST"),
+  PCS_FRONTEND_IMAGE_DIGEST: imageDigestStatus("PCS_FRONTEND_IMAGE_DIGEST"),
 };
 const releaseGaps = [];
 if (status.trim() !== "") releaseGaps.push("working_tree_dirty");

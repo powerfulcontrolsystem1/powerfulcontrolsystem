@@ -17,7 +17,7 @@ fi
 install -d -m 0750 /opt/pcs-domotica /etc/pcs-domotica
 
 cat > /etc/pcs-domotica/agent.json <<'PCS_CONFIG'
-{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.0.0"}
+{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.1.0"}
 PCS_CONFIG
 chmod 0600 /etc/pcs-domotica/agent.json
 
@@ -284,6 +284,7 @@ def read_vedirect(path="/dev/ttyUSB0"):
 
 def main():
     config = ensure_enrolled(load_config())
+    boot_id = os.urandom(16).hex()
     watcher = threading.Thread(target=monitor_inputs, args=(config,), daemon=True)
     watcher.start()
     backoff = 1
@@ -294,6 +295,7 @@ def main():
                 "hostname": socket.gethostname(),
                 "local_ip": local_ip(),
                 "agent_version": config.get("agent_version", "1.0.0"),
+                "boot_id": boot_id,
             }, timeout=35)
             with inputs_lock:
                 inputs_cache[:] = response.get("inputs", []) if isinstance(response.get("inputs"), list) else []
@@ -313,6 +315,9 @@ def main():
                     "result": result,
                     "error": error,
                 }, timeout=20)
+                restore_delay_ms = int(command.get("restore_delay_ms", 0) or 0)
+                if ok and restore_delay_ms > 0:
+                    stop_event.wait(min(1000, restore_delay_ms) / 1000.0)
             if time.monotonic() >= next_solar:
                 sample = read_vedirect()
                 if sample:

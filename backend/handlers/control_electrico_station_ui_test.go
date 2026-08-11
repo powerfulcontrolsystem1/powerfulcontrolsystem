@@ -63,6 +63,8 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"programacion_inicio",
 		"programacion_fin",
 		"datetime-local",
+		"conectadas');",
+		"device-footer.has-photo",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
@@ -73,5 +75,18 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 	}
 	if strings.Contains(source, "Modo: ' + escapeHtml(rele.modo") || strings.Contains(source, "raspberryStatusHTML(rele.raspberry_id)") {
 		t.Fatal("las tarjetas no deben repetir modo ni estado textual de Raspberry")
+	}
+}
+
+func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(page)
+	for _, marker := range []string{"raspberry-gpio-toggle", "raspberry-gpio-test", "api('probar_gpio')", "pulso de prueba de un segundo"} {
+		if !strings.Contains(source, marker) {
+			t.Fatalf("la configuracion de Raspberry no contiene %q", marker)
+		}
 	}
 }

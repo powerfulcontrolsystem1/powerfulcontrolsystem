@@ -473,7 +473,10 @@
         var v = normalize(raw);
         if (!v) return "";
         var lower = v.toLowerCase();
-        if (lower.indexOf("http://") === 0 || lower.indexOf("https://") === 0 || v.indexOf("/") === 0) {
+        if (v.indexOf("/") === 0) {
+          return window.location.origin.replace(/\/$/, "") + v;
+        }
+        if (lower.indexOf("http://") === 0 || lower.indexOf("https://") === 0) {
           return v;
         }
         return "";
@@ -1090,7 +1093,7 @@
         return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
           '<meta name="viewport" content="width=device-width,initial-scale=1">' +
           '<title>' + escapeHtml((item && item.documento_codigo) || "Documento") + '</title>' +
-          '<link rel="stylesheet" href="/estilos.css">' +
+          '<link rel="stylesheet" href="' + escapeHtml(window.location.origin.replace(/\/$/, "") + "/estilos.css") + '">' +
           '<style>' +
             'body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light;font-size:' + facturaPrintFontSize(cfg, formato) + 'px;}' +
             '.factura-print-shell{max-width:' + (formato === "compacta" ? "780" : "1120") + 'px;margin:0 auto;padding:28px 18px 42px;background:#fff;}' +

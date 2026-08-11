@@ -62,6 +62,8 @@ func TestDomoticaInstallerTemplateIsSelfContainedAndSecretSafe(t *testing.T) {
 		"StartLimitIntervalSec=0",
 		"Restart=always",
 		"backoff = min(30, backoff * 2)",
+		"boot_id = os.urandom(16).hex()",
+		"restore_delay_ms",
 		"one-time-enrollment-token",
 	} {
 		if !strings.Contains(body, marker) {

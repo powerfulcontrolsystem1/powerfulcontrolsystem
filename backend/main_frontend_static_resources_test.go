@@ -88,6 +88,10 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 	if strings.Contains(staticHeaders, "*.powerfulcontrolsystem.com") {
 		t.Fatal("Nextcloud framing must not rely on a wildcard company origin")
 	}
+	mailOrigin := "https://mail.powerfulcontrolsystem.com"
+	if count := strings.Count(staticHeaders, mailOrigin); count != 2 {
+		t.Fatalf("corporate Mailu origin must appear once in enforced CSP and once in report-only CSP; got %d", count)
+	}
 	reportOnlyHeader := ""
 	for _, line := range strings.Split(staticHeaders, "\n") {
 		if strings.HasPrefix(line, "add_header Content-Security-Policy-Report-Only ") {

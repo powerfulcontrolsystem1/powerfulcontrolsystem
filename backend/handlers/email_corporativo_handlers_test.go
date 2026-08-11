@@ -47,6 +47,42 @@ func TestCorporateEmailProvisionModeKeepsMailuAPI(t *testing.T) {
 	}
 }
 
+func TestCorporateEmailMailuAPIUpdatesExistingUserBeforeCreating(t *testing.T) {
+	payload := mailuAPIUserPayloadForAccount(dbpkg.EmpresaEmailCorporativo{Email: "empresa+qa@example.test"}, "temporary-secret", 2)
+	var calls []string
+	status, err := upsertCorporateEmailMailuAPIUser(func(method, path string, got interface{}) (int, error) {
+		calls = append(calls, method+" "+path)
+		if got != payload {
+			t.Fatalf("unexpected Mailu payload: %#v", got)
+		}
+		return http.StatusNoContent, nil
+	}, payload.Email, payload)
+	if err != nil || status != http.StatusNoContent {
+		t.Fatalf("update existing Mailu user status=%d err=%v", status, err)
+	}
+	if got, want := strings.Join(calls, ","), "PATCH /v1/user/empresa+qa@example.test"; got != want {
+		t.Fatalf("existing Mailu user sequence=%q, want %q", got, want)
+	}
+}
+
+func TestCorporateEmailMailuAPICreatesOnlyAfterNotFound(t *testing.T) {
+	payload := mailuAPIUserPayloadForAccount(dbpkg.EmpresaEmailCorporativo{Email: "nueva@example.test"}, "temporary-secret", 2)
+	var calls []string
+	status, err := upsertCorporateEmailMailuAPIUser(func(method, path string, _ interface{}) (int, error) {
+		calls = append(calls, method+" "+path)
+		if method == http.MethodPatch {
+			return http.StatusNotFound, nil
+		}
+		return http.StatusCreated, nil
+	}, payload.Email, payload)
+	if err != nil || status != http.StatusCreated {
+		t.Fatalf("create missing Mailu user status=%d err=%v", status, err)
+	}
+	if got, want := strings.Join(calls, ","), "PATCH /v1/user/nueva@example.test,POST /v1/user"; got != want {
+		t.Fatalf("missing Mailu user sequence=%q, want %q", got, want)
+	}
+}
+
 func TestCorporateEmailDirectScriptIsPinnedToReviewedPath(t *testing.T) {
 	if err := validateCorporateEmailDirectScript(corporateEmailDirectProvisionScript, corporateEmailDirectProvisionScript); err != nil {
 		t.Fatalf("approved direct script rejected: %v", err)

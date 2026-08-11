@@ -2114,12 +2114,16 @@ func resolvePortalTercerosPermissionAction(r *http.Request) string {
 func resolveSoportesComprasIAPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "dashboard", "soportes", "eventos":
+	case "dashboard", "soportes", "eventos", "retencion_preview", "cuarentena_preview":
 		return permActionRead
 	case "aprobar", "rechazar", "contabilizar":
 		return permActionApprove
 	case "extraer_ia", "editar_revision":
 		return permActionUpdate
+	case "restaurar":
+		return permActionUpdate
+	case "eliminar", "purgar":
+		return permActionDelete
 	case "radicar", "seed_demo":
 		return permActionCreate
 	}

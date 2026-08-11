@@ -2081,6 +2081,10 @@ func facturacionExtractReferenciaExterna(raw string) string {
 }
 
 func dispatchFacturacionProveedorHTTP(url string, payload map[string]interface{}) facturacionProveedorDispatchResult {
+	url = normalizePublicIntegracionEndpoint(url)
+	if url == "" {
+		return facturacionProveedorDispatchResult{Success: false, Error: "endpoint de proveedor fiscal no permitido", ConnectivityFailure: true}
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return facturacionProveedorDispatchResult{Success: false, Error: "no se pudo serializar request de integracion"}
@@ -2093,7 +2097,7 @@ func dispatchFacturacionProveedorHTTP(url string, payload map[string]interface{}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	client := &http.Client{Timeout: 8 * time.Second}
+	client := publicOutboundHTTPClientForEndpoint(8*time.Second, url)
 	resp, err := client.Do(req)
 	if err != nil {
 		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
@@ -2431,15 +2435,20 @@ func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisC
 		out["estado_conexion"] = "sin_endpoint"
 		out["mensaje"] = "api_base_url no configurado para proveedor DIAN"
 	} else {
-		endpoint := strings.TrimRight(apiBaseURL, "/")
-		client := &http.Client{Timeout: 4 * time.Second}
+		endpoint := normalizePublicIntegracionEndpoint(strings.TrimRight(apiBaseURL, "/"))
+		if endpoint == "" {
+			out["estado_conexion"] = "sin_endpoint"
+			out["mensaje"] = "api_base_url invalido o no permitido para proveedor DIAN"
+			out["accion_recomendada"] = "bloquear_facturacion_electronica"
+			return out
+		}
 		req, err := http.NewRequest(http.MethodHead, endpoint, nil)
 		if err != nil {
 			out["estado_conexion"] = "sin_endpoint"
 			out["mensaje"] = "api_base_url invalido para proveedor DIAN"
 		} else {
 			req.Header.Set("Accept", "application/json")
-			resp, err := client.Do(req)
+			resp, err := publicOutboundHTTPClientForEndpoint(4*time.Second, endpoint).Do(req)
 			if err != nil {
 				if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
 					out["mensaje"] = "timeout al detectar servidor DIAN/proveedor"

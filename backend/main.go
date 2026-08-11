@@ -52,14 +52,25 @@ type prometheusQueueMetrics struct {
 	queryOK       float64
 }
 
+type prometheusSupportPurgeMetrics struct {
+	pending int64
+	stale   int64
+	purged  int64
+	queryOK float64
+}
+
 type prometheusOperationalMetrics struct {
-	businessDBReady float64
-	superDBReady    float64
-	workerAge       float64
-	workerQueryOK   float64
-	businessOutbox  prometheusQueueMetrics
-	superOutbox     prometheusQueueMetrics
-	asyncJobs       prometheusQueueMetrics
+	businessDBReady  float64
+	superDBReady     float64
+	workerAge        float64
+	workerQueryOK    float64
+	businessOutbox   prometheusQueueMetrics
+	superOutbox      prometheusQueueMetrics
+	asyncJobs        prometheusQueueMetrics
+	supportPurge     prometheusSupportPurgeMetrics
+	supportAV        handlers.SupportAntivirusMetrics
+	supportExtract   handlers.SupportExtractionMetrics
+	supportIntegrity uint64
 }
 
 type prometheusOperationalCache struct {
@@ -119,12 +130,34 @@ func collectAsyncJobMetrics(ctx context.Context, dbConn *sql.DB) prometheusQueue
 	return result
 }
 
+func collectSupportPurgeMetrics(ctx context.Context, dbConn *sql.DB) prometheusSupportPurgeMetrics {
+	var result prometheusSupportPurgeMetrics
+	if dbConn == nil {
+		return result
+	}
+	err := dbConn.QueryRowContext(ctx, `SELECT
+		COUNT(*) FILTER (WHERE estado = 'purga_pendiente'),
+		COUNT(*) FILTER (WHERE estado = 'purga_pendiente'
+			AND COALESCE(NULLIF(fecha_actualizacion, ''), fecha_creacion) ~ '^\d{4}-\d{2}-\d{2}'
+			AND CAST(COALESCE(NULLIF(fecha_actualizacion, ''), fecha_creacion) AS TIMESTAMP) <= CURRENT_TIMESTAMP - INTERVAL '15 minutes'),
+		COUNT(*) FILTER (WHERE estado = 'purgado')
+		FROM empresa_soportes_compras_ia`).Scan(&result.pending, &result.stale, &result.purged)
+	if err == nil {
+		result.queryOK = 1
+	}
+	return result
+}
+
 func collectPrometheusOperationalMetrics(ctx context.Context, businessDB, superDB *sql.DB) prometheusOperationalMetrics {
 	result := defaultPrometheusOperationalMetrics()
+	result.supportAV = handlers.SupportAntivirusOperationalMetrics()
+	result.supportExtract = handlers.SupportExtractionOperationalMetrics()
+	result.supportIntegrity = handlers.SupportFileOperationalMetrics()
 	result.businessDBReady = databaseReady(ctx, businessDB)
 	result.superDBReady = databaseReady(ctx, superDB)
 	if result.businessDBReady == 1 {
 		result.businessOutbox = collectOutboxMetrics(ctx, businessDB)
+		result.supportPurge = collectSupportPurgeMetrics(ctx, businessDB)
 	}
 	if result.superDBReady == 1 {
 		result.superOutbox = collectOutboxMetrics(ctx, superDB)
@@ -200,7 +233,47 @@ func renderPrometheusMetrics(values prometheusOperationalMetrics) string {
 	builder.WriteString("# HELP pcs_async_jobs_expired_leases_total Durable jobs with expired leases.\n")
 	builder.WriteString("# TYPE pcs_async_jobs_expired_leases_total gauge\n")
 	writePrometheusQueueMetrics(&builder, "pcs_async_jobs", "super_jobs", values.asyncJobs)
+	builder.WriteString("# HELP pcs_support_purge_pending_total Purchase-support purge sagas awaiting completion.\n")
+	builder.WriteString("# TYPE pcs_support_purge_pending_total gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_purge_pending_total %d\n", values.supportPurge.pending)
+	builder.WriteString("# HELP pcs_support_purge_stale_total Purchase-support purge sagas pending for at least fifteen minutes.\n")
+	builder.WriteString("# TYPE pcs_support_purge_stale_total gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_purge_stale_total %d\n", values.supportPurge.stale)
+	builder.WriteString("# HELP pcs_support_purged_total Purchase supports whose private file purge completed.\n")
+	builder.WriteString("# TYPE pcs_support_purged_total gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_purged_total %d\n", values.supportPurge.purged)
+	fmt.Fprintf(&builder, "pcs_observability_query_success{source=\"support_purge\"} %.0f\n", values.supportPurge.queryOK)
+	builder.WriteString("# HELP pcs_support_antivirus_scans_total Purchase-support antivirus outcomes since process start.\n")
+	builder.WriteString("# TYPE pcs_support_antivirus_scans_total counter\n")
+	fmt.Fprintf(&builder, "pcs_support_antivirus_scans_total{result=\"clean\"} %d\n", values.supportAV.Clean)
+	fmt.Fprintf(&builder, "pcs_support_antivirus_scans_total{result=\"malware\"} %d\n", values.supportAV.Malware)
+	fmt.Fprintf(&builder, "pcs_support_antivirus_scans_total{result=\"unavailable\"} %d\n", values.supportAV.Unavailable)
+	fmt.Fprintf(&builder, "pcs_support_antivirus_scans_total{result=\"bypassed\"} %d\n", values.supportAV.Bypassed)
+	builder.WriteString("# HELP pcs_support_antivirus_required Whether support uploads require an antivirus verdict.\n")
+	builder.WriteString("# TYPE pcs_support_antivirus_required gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_antivirus_required %.0f\n", boolPrometheus(values.supportAV.Required))
+	builder.WriteString("# HELP pcs_support_antivirus_configured Whether a clamd endpoint is configured.\n")
+	builder.WriteString("# TYPE pcs_support_antivirus_configured gauge\n")
+	fmt.Fprintf(&builder, "pcs_support_antivirus_configured %.0f\n", boolPrometheus(values.supportAV.Configured))
+	builder.WriteString("# HELP pcs_support_ai_extractions_total Purchase-support IA extraction outcomes since process start.\n")
+	builder.WriteString("# TYPE pcs_support_ai_extractions_total counter\n")
+	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"consistent\"} %d\n", values.supportExtract.Consistent)
+	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"human_review\"} %d\n", values.supportExtract.HumanReview)
+	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"provider_error\"} %d\n", values.supportExtract.ProviderError)
+	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"invalid_response\"} %d\n", values.supportExtract.InvalidResponse)
+	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"canceled\"} %d\n", values.supportExtract.Canceled)
+	fmt.Fprintf(&builder, "pcs_support_ai_extractions_total{result=\"persistence_error\"} %d\n", values.supportExtract.Persistence)
+	builder.WriteString("# HELP pcs_support_file_integrity_failures_total Purchase-support private files rejected by integrity validation.\n")
+	builder.WriteString("# TYPE pcs_support_file_integrity_failures_total counter\n")
+	fmt.Fprintf(&builder, "pcs_support_file_integrity_failures_total %d\n", values.supportIntegrity)
 	return builder.String()
+}
+
+func boolPrometheus(value bool) float64 {
+	if value {
+		return 1
+	}
+	return 0
 }
 
 // prometheusMetricsHandler exposes bounded aggregate operational signals. It

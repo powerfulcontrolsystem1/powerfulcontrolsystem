@@ -40,6 +40,8 @@ const EMAIL = process.env.PCS_QA_EMAIL || "";
 const PASSWORD = process.env.PCS_QA_PASSWORD || "";
 const EMPRESA_ID = process.env.PCS_QA_EMPRESA_ID || "";
 const MAX_PAGES = Number(process.env.PCS_QA_MAX_PAGES || "0");
+const ROUTE_OFFSET = Number(process.env.PCS_QA_ROUTE_OFFSET || "0");
+const ROUTE_BATCH_SIZE = Number(process.env.PCS_QA_ROUTE_BATCH_SIZE || "0");
 const MAX_SAFE_CLICKS_PER_PAGE = Number(process.env.PCS_QA_MAX_SAFE_CLICKS_PER_PAGE || "8");
 const SETTLE_MS = Number(process.env.PCS_QA_SETTLE_MS || "450");
 const NETWORK_IDLE_TIMEOUT_MS = Number(process.env.PCS_QA_NETWORK_IDLE_TIMEOUT_MS || "3500");
@@ -62,6 +64,7 @@ const VIEWPORTS = (process.env.PCS_QA_VIEWPORTS || "desktop,mobile")
 const CHROME_EXECUTABLE = process.env.PCS_QA_CHROME_EXECUTABLE || "";
 const VALIDATE_RUNTIME_ONLY = process.env.PCS_QA_VALIDATE_RUNTIME === "1";
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const NON_OPERATIONAL_MUTATION_PATHS = new Set(["/api/public/portal_visitas"]);
 
 // "Cerrar" y "Cancelar" no son universalmente inocuos: pueden cerrar caja,
 // anular un flujo operativo o descartar un formulario. El auditor solo pulsa
@@ -103,7 +106,7 @@ function discoverRoutes() {
       }
       return parsed.pathname + parsed.search + parsed.hash;
     });
-    return MAX_PAGES > 0 ? normalized.slice(0, MAX_PAGES) : normalized;
+    return sliceRouteBatch(normalized);
   }
   const files = walk(WEB_ROOT)
     .map(routeForFile)
@@ -112,7 +115,21 @@ function discoverRoutes() {
       const score = (r) => (r.startsWith("/administrar_empresa") ? 0 : r.startsWith("/super") ? 1 : 2);
       return score(a) - score(b) || a.localeCompare(b);
     });
-  return MAX_PAGES > 0 ? files.slice(0, MAX_PAGES) : files;
+  return sliceRouteBatch(files);
+}
+
+// El inventario completo puede superar el límite de un ejecutor remoto. El
+// desplazamiento y el tamaño de lote permiten recorrerlo de forma determinista
+// sin ocultar rutas ni mezclar resultados de distintas corridas.
+function sliceRouteBatch(routes) {
+  if (!Number.isInteger(ROUTE_OFFSET) || ROUTE_OFFSET < 0) {
+    throw new Error("PCS_QA_ROUTE_OFFSET debe ser un entero mayor o igual a cero.");
+  }
+  if (!Number.isInteger(ROUTE_BATCH_SIZE) || ROUTE_BATCH_SIZE < 0) {
+    throw new Error("PCS_QA_ROUTE_BATCH_SIZE debe ser un entero mayor o igual a cero.");
+  }
+  const effectiveSize = ROUTE_BATCH_SIZE > 0 ? ROUTE_BATCH_SIZE : MAX_PAGES;
+  return effectiveSize > 0 ? routes.slice(ROUTE_OFFSET, ROUTE_OFFSET + effectiveSize) : routes.slice(ROUTE_OFFSET);
 }
 
 function ensureDir(dir) {
@@ -276,6 +293,7 @@ async function auditRoute(context, route, viewport) {
   const responseErrors = [];
   const dialogs = [];
   const blockedMutations = [];
+  const telemetryMutations = [];
   let navigatingForAudit = false;
   // Esta auditoria solo valida navegacion y presentacion. Incluso si una
   // etiqueta, un dataset o un indice dinamico se clasifican mal, la red es la
@@ -284,6 +302,12 @@ async function auditRoute(context, route, viewport) {
     const request = routeHandler.request();
     const method = request.method().toUpperCase();
     if (MUTATING_METHODS.has(method)) {
+      const requestPath = new URL(request.url()).pathname;
+      if (NON_OPERATIONAL_MUTATION_PATHS.has(requestPath)) {
+        telemetryMutations.push({ method, url: request.url(), resourceType: request.resourceType() });
+        await routeHandler.abort("blockedbyclient");
+        return;
+      }
       blockedMutations.push({ method, url: request.url(), resourceType: request.resourceType() });
       await routeHandler.abort("blockedbyclient");
       return;
@@ -314,7 +338,7 @@ async function auditRoute(context, route, viewport) {
   });
 
   const url = BASE_URL + route;
-  const result = { route, viewport: viewport.name, url, status: "ok", buttons: [], clicked: [], skipped: [], blockedMutations, issues: [], consoleErrors, pageErrors, requestFailures, responseErrors, dialogs, screenshot: "" };
+  const result = { route, viewport: viewport.name, url, status: "ok", buttons: [], clicked: [], skipped: [], blockedMutations, telemetryMutations, issues: [], consoleErrors, pageErrors, requestFailures, responseErrors, dialogs, screenshot: "" };
   const resetAuditPage = async () => {
     navigatingForAudit = true;
     try {
@@ -424,8 +448,9 @@ function summarize(results) {
   const clicked = results.reduce((n, item) => n + item.clicked.length, 0);
   const unsafe = results.reduce((n, item) => n + item.skipped.length, 0);
   const blockedMutations = results.reduce((n, item) => n + item.blockedMutations.length, 0);
+  const telemetryMutations = results.reduce((n, item) => n + (item.telemetryMutations || []).length, 0);
   const pagesWithErrors = results.filter((item) => item.status !== "ok" || item.pageErrors.length || item.consoleErrors.length || item.requestFailures.length || item.responseErrors.length || item.issues.length);
-  return { totalPages: results.length, byStatus, totalButtons, clicked, unsafe, blockedMutations, pagesWithErrors: pagesWithErrors.length };
+  return { totalPages: results.length, byStatus, totalButtons, clicked, unsafe, blockedMutations, telemetryMutations, pagesWithErrors: pagesWithErrors.length };
 }
 
 function writeMarkdown(results, summary) {
@@ -435,10 +460,13 @@ function writeMarkdown(results, summary) {
   lines.push("- Base URL: `" + BASE_URL + "`");
   lines.push("- Empresa: `" + EMPRESA_ID + "`");
   lines.push("- Paginas recorridas: `" + summary.totalPages + "`");
+  lines.push("- Desplazamiento de rutas: `" + ROUTE_OFFSET + "`");
+  lines.push("- Tamano de lote: `" + (ROUTE_BATCH_SIZE || MAX_PAGES || "completo") + "`");
   lines.push("- Botones detectados: `" + summary.totalButtons + "`");
   lines.push("- Clicks seguros ejecutados: `" + summary.clicked + "`");
   lines.push("- Acciones riesgosas omitidas: `" + summary.unsafe + "`");
   lines.push("- Mutaciones bloqueadas por la guardia: `" + summary.blockedMutations + "`");
+  lines.push("- Telemetria no operativa bloqueada: `" + summary.telemetryMutations + "`");
   lines.push("- Paginas con hallazgos: `" + summary.pagesWithErrors + "`");
   lines.push("");
   lines.push("## Hallazgos");
@@ -504,7 +532,7 @@ async function main() {
   const summary = summarize(allResults);
   fs.writeFileSync(path.join(OUT_DIR, "results.json"), JSON.stringify({ summary, results: allResults }, null, 2), "utf8");
   writeMarkdown(allResults, summary);
-  process.stdout.write(JSON.stringify({ outDir: OUT_DIR, summary }, null, 2) + "\n");
+  process.stdout.write(JSON.stringify({ outDir: OUT_DIR, routeOffset: ROUTE_OFFSET, routeBatchSize: ROUTE_BATCH_SIZE || MAX_PAGES || 0, summary }, null, 2) + "\n");
 }
 
 main().catch((err) => {

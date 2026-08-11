@@ -1,30 +1,40 @@
 package handlers
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"math"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
 
 const (
-	maxSoporteComprasIAUploadBytes    = 15 << 20
-	soporteComprasIAAdvisoryNamespace = int64(0x534349)
-	soporteComprasIAStorageNamespace  = int64(0x534351)
+	maxSoporteComprasIAUploadBytes     = 15 << 20
+	maxSoporteComprasIAExtractionBytes = 128 << 10
+	soporteComprasIAAdvisoryNamespace  = int64(0x534349)
+	soporteComprasIAStorageNamespace   = int64(0x534351)
+	soporteComprasIAPurgeNamespace     = int64(0x534350)
 )
 
 var soporteComprasIAAllowedExt = map[string]bool{
@@ -34,6 +44,89 @@ var soporteComprasIAAllowedExt = map[string]bool{
 	".webp": true,
 	".pdf":  true,
 	".xml":  true,
+}
+
+var (
+	soporteComprasIAAntivirusClean            atomic.Uint64
+	soporteComprasIAAntivirusMalware          atomic.Uint64
+	soporteComprasIAAntivirusUnavailable      atomic.Uint64
+	soporteComprasIAAntivirusBypassed         atomic.Uint64
+	soporteComprasIAExtractionConsistent      atomic.Uint64
+	soporteComprasIAExtractionHumanReview     atomic.Uint64
+	soporteComprasIAExtractionProviderError   atomic.Uint64
+	soporteComprasIAExtractionInvalidResponse atomic.Uint64
+	soporteComprasIAExtractionCanceled        atomic.Uint64
+	soporteComprasIAExtractionPersistence     atomic.Uint64
+	soporteComprasIAFileIntegrityFailures     atomic.Uint64
+)
+
+// SupportAntivirusMetrics contains process-level, tenant-free counters for the
+// private purchase-support scanner. Result values are intentionally bounded.
+type SupportAntivirusMetrics struct {
+	Clean       uint64
+	Malware     uint64
+	Unavailable uint64
+	Bypassed    uint64
+	Required    bool
+	Configured  bool
+}
+
+// SupportAntivirusOperationalMetrics returns aggregate scanner state without
+// company, user, filename, route, provider response or attachment contents.
+func SupportAntivirusOperationalMetrics() SupportAntivirusMetrics {
+	return SupportAntivirusMetrics{
+		Clean:       soporteComprasIAAntivirusClean.Load(),
+		Malware:     soporteComprasIAAntivirusMalware.Load(),
+		Unavailable: soporteComprasIAAntivirusUnavailable.Load(),
+		Bypassed:    soporteComprasIAAntivirusBypassed.Load(),
+		Required:    parseBoolSoporteComprasIA(os.Getenv("PCS_SUPPORTS_CLAMAV_REQUIRED")),
+		Configured:  strings.TrimSpace(os.Getenv("PCS_SUPPORTS_CLAMAV_ADDR")) != "",
+	}
+}
+
+// SupportExtractionMetrics contains bounded process-level outcomes for the IA
+// extraction pipeline. It deliberately excludes tenant and document data.
+type SupportExtractionMetrics struct {
+	Consistent      uint64
+	HumanReview     uint64
+	ProviderError   uint64
+	InvalidResponse uint64
+	Canceled        uint64
+	Persistence     uint64
+}
+
+func SupportExtractionOperationalMetrics() SupportExtractionMetrics {
+	return SupportExtractionMetrics{
+		Consistent:      soporteComprasIAExtractionConsistent.Load(),
+		HumanReview:     soporteComprasIAExtractionHumanReview.Load(),
+		ProviderError:   soporteComprasIAExtractionProviderError.Load(),
+		InvalidResponse: soporteComprasIAExtractionInvalidResponse.Load(),
+		Canceled:        soporteComprasIAExtractionCanceled.Load(),
+		Persistence:     soporteComprasIAExtractionPersistence.Load(),
+	}
+}
+
+func recordSupportExtractionOutcome(outcome string) {
+	switch outcome {
+	case "consistent":
+		soporteComprasIAExtractionConsistent.Add(1)
+	case "human_review":
+		soporteComprasIAExtractionHumanReview.Add(1)
+	case "provider_error":
+		soporteComprasIAExtractionProviderError.Add(1)
+	case "invalid_response":
+		soporteComprasIAExtractionInvalidResponse.Add(1)
+	case "canceled":
+		soporteComprasIAExtractionCanceled.Add(1)
+	case "persistence_error":
+		soporteComprasIAExtractionPersistence.Add(1)
+	}
+}
+
+// SupportFileOperationalMetrics exposes only an aggregate integrity failure
+// counter. It never reports a tenant, document, hash or private path.
+func SupportFileOperationalMetrics() uint64 {
+	return soporteComprasIAFileIntegrityFailures.Load()
 }
 
 // EmpresaSoportesComprasIAHandler administra la captura inteligente de compras y gastos.
@@ -71,7 +164,8 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "dashboard": dashboard})
 	case "soportes":
 		estado := r.URL.Query().Get("estado")
-		rows, err := dbpkg.ListEmpresaSoportesComprasIA(dbEmp, empresaID, estado, 300)
+		registro := r.URL.Query().Get("registro")
+		rows, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, estado, registro, 300)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -80,6 +174,40 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 			exposeSoporteComprasIAURL(&rows[i])
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soportes": rows})
+	case "retencion_preview":
+		days := parseSoporteComprasIARetentionDays(r.URL.Query().Get("retencion_dias"))
+		rows, err := dbpkg.ListEmpresaSoportesComprasIARetencion(dbEmp, empresaID, days, 300)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		bytes := soporteComprasIARetentionBytes(rows)
+		for i := range rows {
+			exposeSoporteComprasIAURL(&rows[i])
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok": true, "retencion_dias": days, "candidatos": len(rows), "bytes": bytes, "soportes": rows,
+		})
+	case "cuarentena_preview":
+		thresholdMinutes := parseSoporteComprasIAQuarantineThreshold(r.URL.Query().Get("umbral_minutos"))
+		pending, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, "", "purga_pendiente", 500)
+		if err != nil {
+			log.Printf("[soportes_compras_ia] diagnostico cuarentena empresa_id=%d: %v", empresaID, err)
+			http.Error(w, "no se pudo consultar el diagnostico de cuarentena", http.StatusInternalServerError)
+			return
+		}
+		files, bytes, err := soporteComprasIAQuarantineStats(empresaID)
+		if err != nil {
+			log.Printf("[soportes_compras_ia] filesystem cuarentena empresa_id=%d: %v", empresaID, err)
+			http.Error(w, "no se pudo inspeccionar la cuarentena privada", http.StatusInternalServerError)
+			return
+		}
+		stale := countSoporteComprasIAStalePending(pending, time.Now(), time.Duration(thresholdMinutes)*time.Minute)
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok": true, "registros_pendientes": len(pending), "archivos_cuarentena": files,
+			"bytes": bytes, "umbral_minutos": thresholdMinutes,
+			"pendientes_vencidos": stale, "requiere_revision": len(pending) != files || stale > 0,
+		})
 	case "descargar":
 		downloadSoporteComprasIA(w, r, dbEmp, empresaID)
 	case "eventos":
@@ -101,6 +229,14 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 	case "radicar":
 		row, err := radicarSoporteComprasIA(r, dbEmp, dbSuper, empresaID, usuario)
 		if err != nil {
+			if errors.Is(err, errSoporteComprasIAMalware) {
+				writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "error": "El antivirus rechazo el archivo del soporte"})
+				return
+			}
+			if errors.Is(err, errSoporteComprasIAAntivirusUnavailable) {
+				writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "error": "El antivirus de soportes no esta disponible. Intenta nuevamente."})
+				return
+			}
 			if errors.Is(err, errSoporteComprasIAStorageQuota) {
 				writeJSON(w, http.StatusInsufficientStorage, map[string]interface{}{
 					"ok":    false,
@@ -205,6 +341,71 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		}
 		exposeSoporteComprasIAURL(&row)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
+	case "eliminar", "restaurar":
+		payload, err := decodeSoporteComprasIAActionPayload(r)
+		if err != nil || payload.SoporteID <= 0 {
+			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		next := "eliminado"
+		if action == "restaurar" {
+			next = "activo"
+		}
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIARegistroEstado(dbEmp, empresaID, payload.SoporteID, next, usuario, payload.Observaciones)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		exposeSoporteComprasIAURL(&row)
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
+	case "purgar":
+		payload, err := decodeSoporteComprasIAActionPayload(r)
+		if err != nil || payload.SoporteID <= 0 {
+			http.Error(w, "datos de depuracion invalidos", http.StatusBadRequest)
+			return
+		}
+		releasePurge, err := acquireSoporteComprasIAPurgeLock(r, dbEmp, empresaID)
+		if err != nil {
+			log.Printf("[soportes_compras_ia] lock depuracion empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+			http.Error(w, "otra depuracion de la empresa esta en curso; reintenta", http.StatusConflict)
+			return
+		}
+		defer releasePurge()
+		row, err := dbpkg.GetEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID)
+		if err != nil {
+			http.Error(w, "soporte no disponible", http.StatusNotFound)
+			return
+		}
+		quarantine, err := prepareSoporteComprasIAPurgeFile(row)
+		if err != nil {
+			http.Error(w, "el archivo privado no se pudo preparar de forma segura", http.StatusConflict)
+			return
+		}
+		if _, err := dbpkg.BeginPurgeEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, payload.RetentionDays, payload.Confirmation, usuario, payload.Observaciones); err != nil {
+			if rollbackErr := quarantine.rollback(); rollbackErr != nil {
+				log.Printf("[soportes_compras_ia] ALERTA rollback de cuarentena fallo empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, rollbackErr)
+			}
+			if isSoporteComprasIAPurgePublicValidation(err) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			} else {
+				log.Printf("[soportes_compras_ia] inicio de depuracion empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+				http.Error(w, "no se pudo iniciar la depuracion del soporte", http.StatusInternalServerError)
+			}
+			return
+		}
+		if err := quarantine.commit(); err != nil {
+			log.Printf("[soportes_compras_ia] depuracion pendiente empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+			http.Error(w, "la depuracion quedo pendiente y puede reintentarse de forma segura", http.StatusServiceUnavailable)
+			return
+		}
+		purged, err := dbpkg.FinalizePurgeEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, usuario)
+		if err != nil {
+			log.Printf("[soportes_compras_ia] archivo eliminado con metadato pendiente empresa_id=%d soporte_id=%d: %v", empresaID, payload.SoporteID, err)
+			http.Error(w, "el archivo fue eliminado y la auditoria final quedo pendiente; reintenta", http.StatusServiceUnavailable)
+			return
+		}
+		exposeSoporteComprasIAURL(&purged)
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": purged})
 	case "seed_demo":
 		row, err := seedSoporteComprasIADemo(dbEmp, empresaID, usuario)
 		if err != nil {
@@ -217,9 +418,33 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 	}
 }
 
+func isSoporteComprasIAPurgePublicValidation(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := err.Error()
+	for _, allowed := range []string{
+		"empresa_id y soporte_id son obligatorios",
+		"retencion_dias debe estar entre 1 y 3650",
+		"el motivo es obligatorio",
+		"el motivo no puede superar 500 caracteres",
+		"la confirmacion no coincide con el codigo del soporte",
+		"solo un soporte de la papelera puede depurarse",
+		"un soporte contabilizado no puede depurarse porque conserva trazabilidad contable",
+		"el soporte aun no cumple la retencion configurada",
+	} {
+		if message == allowed {
+			return true
+		}
+	}
+	return false
+}
+
 type soporteComprasIAActionPayload struct {
 	SoporteID     int64  `json:"soporte_id"`
 	Observaciones string `json:"observaciones"`
+	RetentionDays int    `json:"retencion_dias"`
+	Confirmation  string `json:"confirmacion"`
 }
 
 type soporteComprasIARevisionPayload struct {
@@ -235,6 +460,8 @@ func decodeSoporteComprasIAActionPayload(r *http.Request) (soporteComprasIAActio
 	}
 	p.SoporteID, _ = strconv.ParseInt(strings.TrimSpace(r.FormValue("soporte_id")), 10, 64)
 	p.Observaciones = strings.TrimSpace(r.FormValue("observaciones"))
+	p.RetentionDays, _ = strconv.Atoi(strings.TrimSpace(r.FormValue("retencion_dias")))
+	p.Confirmation = strings.TrimSpace(r.FormValue("confirmacion"))
 	return p, nil
 }
 
@@ -280,6 +507,12 @@ func radicarSoporteComprasIA(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID 
 		}
 		row = soporteComprasIAFromForm(r, row)
 		if att != nil {
+			if err := validateSoporteComprasIAAttachment(att); err != nil {
+				return row, err
+			}
+			if err := scanSoporteComprasIAAttachment(att); err != nil {
+				return row, err
+			}
 			release, err := acquireSoporteComprasIAStorageLock(r, dbEmp, empresaID)
 			if err != nil {
 				return row, err
@@ -298,7 +531,12 @@ func radicarSoporteComprasIA(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID 
 			row.ArchivoHash = hash
 			row.Origen = origen
 		}
-		return dbpkg.CreateEmpresaSoporteComprasIA(dbEmp, row)
+		created, err := dbpkg.CreateEmpresaSoporteComprasIA(dbEmp, row)
+		if err != nil {
+			cleanupUnpersistedSoporteComprasIAAttachment(row.ArchivoURL)
+			return row, err
+		}
+		return created, nil
 	}
 
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&row); err != nil {
@@ -307,10 +545,20 @@ func radicarSoporteComprasIA(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID 
 	row.EmpresaID = empresaID
 	row.Usuario = usuario
 	row.ModeloIA = dbpkg.EmpresaSoporteComprasIAModeloDefault
+	row = sanitizeManualSoporteComprasIA(row)
 	if row.EstadoSoporte == "" {
 		row.EstadoSoporte = "radicado"
 	}
 	return dbpkg.CreateEmpresaSoporteComprasIA(dbEmp, row)
+}
+
+func sanitizeManualSoporteComprasIA(row dbpkg.EmpresaSoporteComprasIA) dbpkg.EmpresaSoporteComprasIA {
+	row.ArchivoURL = ""
+	row.ArchivoNombre = ""
+	row.ArchivoMime = ""
+	row.ArchivoHash = ""
+	row.Origen = "manual"
+	return row
 }
 
 func validateSoporteComprasIAStorageUpload(dbEmp, dbSuper *sql.DB, empresaID, attachmentBytes int64) error {
@@ -338,12 +586,366 @@ func validateSoporteComprasIAStorageUploadWithUsage(cfg empresaStorageConfig, us
 	return nil
 }
 
+func validateSoporteComprasIAAttachment(att *aiAttachment) error {
+	if att == nil || len(att.Bytes) == 0 {
+		return errors.New("el archivo del soporte esta vacio")
+	}
+	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(att.Filename)))
+	if !soporteComprasIAAllowedExt[ext] {
+		return errors.New("extension no permitida para soporte")
+	}
+	detected := strings.ToLower(strings.TrimSpace(http.DetectContentType(att.Bytes)))
+	switch ext {
+	case ".png":
+		if detected != "image/png" {
+			return errors.New("el contenido no corresponde a una imagen PNG")
+		}
+		att.MimeType = "image/png"
+	case ".jpg", ".jpeg":
+		if detected != "image/jpeg" {
+			return errors.New("el contenido no corresponde a una imagen JPEG")
+		}
+		att.MimeType = "image/jpeg"
+	case ".webp":
+		if detected != "image/webp" {
+			return errors.New("el contenido no corresponde a una imagen WebP")
+		}
+		att.MimeType = "image/webp"
+	case ".pdf":
+		if !bytes.HasPrefix(bytes.TrimSpace(att.Bytes), []byte("%PDF-")) {
+			return errors.New("el contenido no corresponde a un PDF")
+		}
+		att.MimeType = "application/pdf"
+	case ".xml":
+		if err := validateSoporteComprasIAXML(att.Bytes); err != nil {
+			return err
+		}
+		att.MimeType = "application/xml"
+	default:
+		return errors.New("tipo de soporte no permitido")
+	}
+	return nil
+}
+
+func validateSoporteComprasIAXML(raw []byte) error {
+	if len(bytes.TrimSpace(raw)) == 0 || !bytes.HasPrefix(bytes.TrimSpace(raw), []byte("<")) || bytes.IndexByte(raw, 0) >= 0 {
+		return errors.New("el XML del soporte es invalido")
+	}
+	decoder := xml.NewDecoder(bytes.NewReader(raw))
+	decoder.Strict = true
+	depth := 0
+	tokens := 0
+	for {
+		token, err := decoder.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return errors.New("el XML del soporte no esta bien formado")
+		}
+		tokens++
+		if tokens > 250000 {
+			return errors.New("el XML del soporte supera la complejidad permitida")
+		}
+		switch value := token.(type) {
+		case xml.Directive:
+			return errors.New("el XML no permite DTD, entidades ni directivas")
+		case xml.ProcInst:
+			if !strings.EqualFold(strings.TrimSpace(value.Target), "xml") {
+				return errors.New("el XML no permite instrucciones de procesamiento")
+			}
+		case xml.StartElement:
+			depth++
+			if depth > 128 {
+				return errors.New("el XML supera la profundidad permitida")
+			}
+			switch strings.ToLower(strings.TrimSpace(value.Name.Local)) {
+			case "script", "iframe", "object", "embed", "applet":
+				return errors.New("el XML contiene elementos activos no permitidos")
+			}
+		case xml.EndElement:
+			depth--
+			if depth < 0 {
+				return errors.New("el XML del soporte no esta bien formado")
+			}
+		}
+	}
+	if depth != 0 || tokens == 0 {
+		return errors.New("el XML del soporte no esta bien formado")
+	}
+	return nil
+}
+
+func scanSoporteComprasIAAttachment(att *aiAttachment) (scanErr error) {
+	addr := strings.TrimSpace(os.Getenv("PCS_SUPPORTS_CLAMAV_ADDR"))
+	required := parseBoolSoporteComprasIA(os.Getenv("PCS_SUPPORTS_CLAMAV_REQUIRED"))
+	defer func() {
+		switch {
+		case addr == "" && !required:
+			soporteComprasIAAntivirusBypassed.Add(1)
+		case scanErr == nil:
+			soporteComprasIAAntivirusClean.Add(1)
+		case errors.Is(scanErr, errSoporteComprasIAMalware):
+			soporteComprasIAAntivirusMalware.Add(1)
+		default:
+			soporteComprasIAAntivirusUnavailable.Add(1)
+		}
+	}()
+	if addr == "" {
+		if required {
+			return errSoporteComprasIAAntivirusUnavailable
+		}
+		return nil
+	}
+	if att == nil || len(att.Bytes) == 0 {
+		return errors.New("el archivo del soporte esta vacio")
+	}
+	conn, err := net.DialTimeout("tcp", addr, 3*time.Second)
+	if err != nil {
+		return fmt.Errorf("%w: conexion no disponible", errSoporteComprasIAAntivirusUnavailable)
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
+	if _, err := conn.Write([]byte("zINSTREAM\x00")); err != nil {
+		return fmt.Errorf("%w: no se pudo iniciar el analisis", errSoporteComprasIAAntivirusUnavailable)
+	}
+	for offset := 0; offset < len(att.Bytes); {
+		end := offset + 32*1024
+		if end > len(att.Bytes) {
+			end = len(att.Bytes)
+		}
+		chunk := att.Bytes[offset:end]
+		// #nosec G115 -- chunk is bounded above by 32 KiB immediately above.
+		if err := binary.Write(conn, binary.BigEndian, uint32(len(chunk))); err != nil {
+			return fmt.Errorf("%w: envio interrumpido", errSoporteComprasIAAntivirusUnavailable)
+		}
+		if _, err := conn.Write(chunk); err != nil {
+			return fmt.Errorf("%w: envio interrumpido", errSoporteComprasIAAntivirusUnavailable)
+		}
+		offset = end
+	}
+	if err := binary.Write(conn, binary.BigEndian, uint32(0)); err != nil {
+		return fmt.Errorf("%w: no se pudo finalizar el analisis", errSoporteComprasIAAntivirusUnavailable)
+	}
+	response, err := bufio.NewReader(io.LimitReader(conn, 4096)).ReadString(0)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return fmt.Errorf("%w: respuesta invalida", errSoporteComprasIAAntivirusUnavailable)
+	}
+	response = strings.TrimSpace(strings.TrimRight(response, "\x00"))
+	upper := strings.ToUpper(response)
+	if strings.Contains(upper, " FOUND") || strings.HasSuffix(upper, "FOUND") {
+		return errSoporteComprasIAMalware
+	}
+	if !strings.HasSuffix(upper, "OK") {
+		return fmt.Errorf("%w: resultado no concluyente", errSoporteComprasIAAntivirusUnavailable)
+	}
+	return nil
+}
+
+func cleanupUnpersistedSoporteComprasIAAttachment(privateURL string) {
+	path, err := safeSoporteComprasIAPathFromURL(privateURL)
+	if err != nil {
+		return
+	}
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Printf("[soportes_compras_ia] no se pudo limpiar adjunto sin fila: %v", err)
+	}
+}
+
+type soporteComprasIAPurgeFile struct {
+	original   string
+	quarantine string
+}
+
+func prepareSoporteComprasIAPurgeFile(row dbpkg.EmpresaSoporteComprasIA) (soporteComprasIAPurgeFile, error) {
+	if strings.TrimSpace(row.ArchivoURL) == "" {
+		return soporteComprasIAPurgeFile{}, nil
+	}
+	path, err := safeSoporteComprasIAPathCandidateForEmpresa(row.ArchivoURL, row.EmpresaID)
+	if err != nil {
+		return soporteComprasIAPurgeFile{}, err
+	}
+	info, statErr := os.Lstat(path)
+	if statErr == nil {
+		if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+			return soporteComprasIAPurgeFile{}, errors.New("el archivo privado no es regular")
+		}
+	} else if !errors.Is(statErr, os.ErrNotExist) {
+		return soporteComprasIAPurgeFile{}, statErr
+	} else {
+		matches, globErr := filepath.Glob(path + ".purge-????????????????????????")
+		if globErr != nil {
+			return soporteComprasIAPurgeFile{}, globErr
+		}
+		valid := make([]string, 0, len(matches))
+		for _, match := range matches {
+			matchInfo, matchErr := os.Lstat(match)
+			if matchErr == nil && matchInfo.Mode().IsRegular() && matchInfo.Mode()&os.ModeSymlink == 0 {
+				valid = append(valid, match)
+			}
+		}
+		if len(valid) == 1 {
+			return soporteComprasIAPurgeFile{original: path, quarantine: valid[0]}, nil
+		}
+		if len(valid) > 1 {
+			return soporteComprasIAPurgeFile{}, errors.New("existen varias cuarentenas para el soporte")
+		}
+		if strings.EqualFold(strings.TrimSpace(row.Estado), "purga_pendiente") {
+			// La fase de archivo ya terminó y solo falta cerrar la transacción.
+			return soporteComprasIAPurgeFile{}, nil
+		}
+		return soporteComprasIAPurgeFile{}, errors.New("archivo privado no disponible para depuracion")
+	}
+	random := make([]byte, 12)
+	if _, err := rand.Read(random); err != nil {
+		return soporteComprasIAPurgeFile{}, errors.New("no se pudo crear la cuarentena privada")
+	}
+	quarantine := path + ".purge-" + hex.EncodeToString(random)
+	if err := os.Rename(path, quarantine); err != nil {
+		return soporteComprasIAPurgeFile{}, err
+	}
+	return soporteComprasIAPurgeFile{original: path, quarantine: quarantine}, nil
+}
+
+func (f soporteComprasIAPurgeFile) rollback() error {
+	if f.quarantine == "" {
+		return nil
+	}
+	return os.Rename(f.quarantine, f.original)
+}
+
+func (f soporteComprasIAPurgeFile) commit() error {
+	if f.quarantine == "" {
+		return nil
+	}
+	if err := os.Remove(f.quarantine); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+func parseSoporteComprasIARetentionDays(raw string) int {
+	days, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || days < 1 || days > 3650 {
+		return 90
+	}
+	return days
+}
+
+func soporteComprasIARetentionBytes(rows []dbpkg.EmpresaSoporteComprasIA) int64 {
+	var total int64
+	for i := range rows {
+		path, err := safeSoporteComprasIAPathForEmpresa(rows[i].ArchivoURL, rows[i].EmpresaID)
+		if err != nil {
+			continue
+		}
+		info, err := os.Lstat(path)
+		if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		total += info.Size()
+	}
+	return total
+}
+
+func soporteComprasIAQuarantineStats(empresaID int64) (int, int64, error) {
+	if empresaID <= 0 {
+		return 0, 0, errors.New("empresa invalida para cuarentena")
+	}
+	tenantDir := filepath.Join(soporteComprasIAPrivateRoot(), "empresa_"+strconv.FormatInt(empresaID, 10))
+	entries, err := os.ReadDir(tenantDir)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, 0, nil
+	}
+	if err != nil {
+		return 0, 0, err
+	}
+	count := 0
+	var total int64
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || !isSoporteComprasIAQuarantineName(entry.Name()) {
+			continue
+		}
+		info, infoErr := entry.Info()
+		if infoErr != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		count++
+		total += info.Size()
+	}
+	return count, total, nil
+}
+
+func isSoporteComprasIAQuarantineName(name string) bool {
+	marker := strings.LastIndex(name, ".purge-")
+	if marker <= 0 {
+		return false
+	}
+	suffix := name[marker+len(".purge-"):]
+	if len(suffix) != 24 {
+		return false
+	}
+	_, err := hex.DecodeString(suffix)
+	return err == nil
+}
+
+func parseSoporteComprasIAQuarantineThreshold(raw string) int {
+	minutes, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || minutes < 5 || minutes > 1440 {
+		return 15
+	}
+	return minutes
+}
+
+func countSoporteComprasIAStalePending(rows []dbpkg.EmpresaSoporteComprasIA, now time.Time, threshold time.Duration) int {
+	if threshold <= 0 {
+		threshold = 15 * time.Minute
+	}
+	count := 0
+	for i := range rows {
+		raw := strings.TrimSpace(rows[i].FechaActualizacion)
+		if raw == "" {
+			raw = strings.TrimSpace(rows[i].FechaCreacion)
+		}
+		parsed, ok := parseSoporteComprasIAOperationalTime(raw, now.Location())
+		if ok && !parsed.After(now) && now.Sub(parsed) >= threshold {
+			count++
+		}
+	}
+	return count
+}
+
+func parseSoporteComprasIAOperationalTime(raw string, location *time.Location) (time.Time, bool) {
+	if location == nil {
+		location = time.UTC
+	}
+	for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05.999999999Z07:00", "2006-01-02 15:04:05Z07:00", "2006-01-02 15:04:05.999999999-07", "2006-01-02 15:04:05-07"} {
+		if parsed, err := time.Parse(layout, strings.TrimSpace(raw)); err == nil {
+			return parsed, true
+		}
+	}
+	for _, layout := range []string{"2006-01-02 15:04:05.999999999", "2006-01-02 15:04:05", "2006-01-02"} {
+		if parsed, err := time.ParseInLocation(layout, strings.TrimSpace(raw), location); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
 // acquireSoporteComprasIAStorageLock serializa la comprobacion de cuota, la
 // escritura privada y el registro del soporte para una empresa entre replicas.
 // El candado vive en PostgreSQL, por lo que no depende de memoria del proceso.
 func acquireSoporteComprasIAStorageLock(r *http.Request, dbEmp *sql.DB, empresaID int64) (func(), error) {
+	return acquireSoporteComprasIAAdvisoryLock(r, dbEmp, soporteComprasIAStorageNamespace, empresaID, "cuota")
+}
+
+func acquireSoporteComprasIAPurgeLock(r *http.Request, dbEmp *sql.DB, empresaID int64) (func(), error) {
+	return acquireSoporteComprasIAAdvisoryLock(r, dbEmp, soporteComprasIAPurgeNamespace, empresaID, "depuracion")
+}
+
+func acquireSoporteComprasIAAdvisoryLock(r *http.Request, dbEmp *sql.DB, namespace, empresaID int64, operation string) (func(), error) {
 	if r == nil || dbEmp == nil || empresaID <= 0 || empresaID > math.MaxInt32 {
-		return nil, errors.New("empresa invalida para cuota de soportes")
+		return nil, errors.New("empresa invalida para lock de soportes")
 	}
 	conn, err := dbEmp.Conn(r.Context())
 	if err != nil {
@@ -364,7 +966,7 @@ func acquireSoporteComprasIAStorageLock(r *http.Request, dbEmp *sql.DB, empresaI
 				defer releaseCancel()
 				var unlocked bool
 				if err := conn.QueryRowContext(releaseCtx, `SELECT pg_advisory_unlock($1::integer,$2::integer)`, soporteComprasIAStorageNamespace, empresaID).Scan(&unlocked); err != nil || !unlocked {
-					log.Printf("[soportes_compras_ia] no se pudo liberar lock de cuota empresa_id=%d: %v", empresaID, err)
+					log.Printf("[soportes_compras_ia] no se pudo liberar lock de %s empresa_id=%d: %v", operation, empresaID, err)
 				}
 				_ = conn.Close()
 			}, nil
@@ -425,10 +1027,7 @@ func saveSoporteComprasIAAttachment(att *aiAttachment, empresaID int64) (string,
 	if err := os.WriteFile(absPath, att.Bytes, 0o600); err != nil {
 		return "", "", "", "", "", err
 	}
-	mimeType := strings.TrimSpace(att.MimeType)
-	if mimeType == "" {
-		mimeType = mimeFromSoporteComprasIAExt(ext)
-	}
+	mimeType := mimeFromSoporteComprasIAExt(ext)
 	origen := origenFromSoporteComprasIAExt(ext, mimeType)
 	url := "private://soportes_compras_ia/" + fmt.Sprintf("empresa_%d", empresaID) + "/" + fileName
 	return url, fileName, mimeType, dbpkg.EmpresaSoporteComprasIAHashBytes(att.Bytes), origen, nil
@@ -446,6 +1045,10 @@ func soporteComprasIADownloadURL(empresaID, soporteID int64) string {
 }
 
 func exposeSoporteComprasIAURL(row *dbpkg.EmpresaSoporteComprasIA) {
+	if row != nil && !strings.EqualFold(strings.TrimSpace(row.Estado), "activo") {
+		row.ArchivoURL = ""
+		return
+	}
 	if row != nil && row.ID > 0 && strings.HasPrefix(strings.TrimSpace(row.ArchivoURL), "private://") {
 		row.ArchivoURL = soporteComprasIADownloadURL(row.EmpresaID, row.ID)
 	}
@@ -457,12 +1060,12 @@ func downloadSoporteComprasIA(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		http.Error(w, "soporte invalido", http.StatusBadRequest)
 		return
 	}
-	row, err := dbpkg.GetEmpresaSoporteComprasIA(dbEmp, empresaID, soporteID)
+	row, err := dbpkg.GetEmpresaSoporteComprasIAActivo(dbEmp, empresaID, soporteID)
 	if err != nil {
 		http.Error(w, "archivo no disponible", http.StatusNotFound)
 		return
 	}
-	path, err := safeSoporteComprasIAPathFromURL(row.ArchivoURL)
+	path, err := safeSoporteComprasIAPathForEmpresa(row.ArchivoURL, row.EmpresaID)
 	if err != nil {
 		http.Error(w, "archivo no disponible", http.StatusNotFound)
 		return
@@ -478,9 +1081,28 @@ func downloadSoporteComprasIA(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		http.Error(w, "archivo no disponible", http.StatusNotFound)
 		return
 	}
+	if info.Size() < 1 || info.Size() > maxSoporteComprasIAUploadBytes {
+		_ = supportFileIntegrityFailure()
+		recordSoporteComprasIAIntegrityIncident(dbEmp, row, adminEmailFromRequest(r), "descarga")
+		http.Error(w, "integridad del archivo no valida", http.StatusConflict)
+		return
+	}
+	if err := verifySoporteComprasIAReaderIntegrity(file, row.ArchivoHash); err != nil {
+		recordSoporteComprasIAIntegrityIncident(dbEmp, row, adminEmailFromRequest(r), "descarga")
+		http.Error(w, "integridad del archivo no valida", http.StatusConflict)
+		return
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("Content-Type", strings.TrimSpace(row.ArchivoMime))
+	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'")
+	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("X-Frame-Options", "DENY")
+	downloadMIME := "application/octet-stream"
+	if strings.TrimSpace(row.ArchivoHash) != "" {
+		downloadMIME = safeSoporteComprasIADownloadMIME(row.ArchivoMime, path)
+	}
+	w.Header().Set("Content-Type", downloadMIME)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", sanitizeComprobanteBaseName(row.ArchivoNombre)+filepath.Ext(path)))
 	http.ServeContent(w, r, filepath.Base(path), info.ModTime(), file)
 }
@@ -495,6 +1117,9 @@ var (
 	errSoporteComprasIASinAdjunto           = errors.New("soporte sin adjunto privado disponible")
 	errSoporteComprasIAStorageQuota         = errors.New("limite de almacenamiento empresarial alcanzado")
 	errSoporteComprasIAStorageBusy          = errors.New("otra carga de almacenamiento empresarial esta en curso")
+	errSoporteComprasIAMalware              = errors.New("el antivirus rechazo el archivo del soporte")
+	errSoporteComprasIAAntivirusUnavailable = errors.New("el antivirus de soportes no esta disponible")
+	errSoporteComprasIAIntegrity            = errors.New("la integridad del archivo del soporte no es valida")
 )
 
 func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
@@ -515,7 +1140,7 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	if payload.SoporteID <= 0 {
 		return dbpkg.EmpresaSoporteComprasIA{}, errSoporteComprasIASolicitudInvalida
 	}
-	current, err := dbpkg.GetEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID)
+	current, err := dbpkg.GetEmpresaSoporteComprasIAActivo(dbEmp, empresaID, payload.SoporteID)
 	if err != nil {
 		return dbpkg.EmpresaSoporteComprasIA{}, err
 	}
@@ -526,6 +1151,9 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	}
 	att, err := loadSoporteComprasIAAttachment(current)
 	if err != nil {
+		if errors.Is(err, errSoporteComprasIAIntegrity) {
+			recordSoporteComprasIAIntegrityIncident(dbEmp, current, usuario, "extraccion_ia")
+		}
 		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: %v", errSoporteComprasIASinAdjunto, err)
 	}
 	release, err := acquireSoporteComprasIAExtractionLock(r, dbEmp, empresaID, payload.SoporteID)
@@ -540,12 +1168,23 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
 	systemPrompt := soporteComprasIASystemPrompt()
 	pregunta := "Extrae y normaliza este soporte de compra o gasto de Colombia. Responde solo JSON valido, sin explicaciones."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att, nil, nil)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			recordSupportExtractionOutcome("canceled")
+			if refundErr := dbpkg.RefundEmpresaAgenteUsoDiario(dbEmp, dbpkg.EmpresaAgenteUsoDiario{
+				EmpresaID: empresaID, FechaUso: time.Now().Format("2006-01-02"), ConsultasAvanzadas: 1, SegundosUsados: 5,
+			}); refundErr != nil {
+				log.Printf("[soportes_compras_ia] no se pudo devolver reserva IA cancelada empresa_id=%d: %v", empresaID, refundErr)
+			}
+		} else {
+			recordSupportExtractionOutcome("provider_error")
+		}
 		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: %w", errSoporteComprasIAProveedor, err)
 	}
 	extracted, compactJSON, err := parseSoporteComprasIAExtraction(respuesta)
 	if err != nil {
+		recordSupportExtractionOutcome("invalid_response")
 		return dbpkg.EmpresaSoporteComprasIA{}, fmt.Errorf("%w: respuesta invalida", errSoporteComprasIAProveedor)
 	}
 	extracted = evaluateSoporteComprasIAExtraction(extracted)
@@ -555,7 +1194,13 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	extracted.Usuario = usuario
 	updated, err := dbpkg.UpdateEmpresaSoporteComprasIAExtraccion(dbEmp, empresaID, payload.SoporteID, extracted, usuario)
 	if err != nil {
+		recordSupportExtractionOutcome("persistence_error")
 		return dbpkg.EmpresaSoporteComprasIA{}, err
+	}
+	if extracted.RequiereRevisionHumana {
+		recordSupportExtractionOutcome("human_review")
+	} else {
+		recordSupportExtractionOutcome("consistent")
 	}
 	_, _ = dbpkg.RegisterEmpresaAIConsulta(dbEmp, dbpkg.EmpresaAIConsulta{
 		EmpresaID:        empresaID,
@@ -604,7 +1249,18 @@ func acquireSoporteComprasIAExtractionLock(r *http.Request, dbEmp *sql.DB, empre
 func evaluateSoporteComprasIAExtraction(row dbpkg.EmpresaSoporteComprasIA) dbpkg.EmpresaSoporteComprasIA {
 	expected := row.Subtotal + row.ImpuestoIVA - row.RetencionFuente - row.RetencionICA - row.RetencionIVA
 	tolerance := math.Max(1, math.Abs(expected)*0.01)
-	if strings.TrimSpace(row.ProveedorNombre) == "" || strings.TrimSpace(row.DocumentoNumero) == "" || row.Total <= 0 || row.ConfianzaIA < 0.85 || math.Abs(row.Total-expected) > tolerance {
+	invalidMoney := false
+	for _, value := range []float64{row.Subtotal, row.ImpuestoIVA, row.RetencionFuente, row.RetencionICA, row.RetencionIVA, row.Total} {
+		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 {
+			invalidMoney = true
+			break
+		}
+	}
+	if strings.TrimSpace(row.ProveedorNombre) == "" || strings.TrimSpace(row.DocumentoNumero) == "" ||
+		strings.TrimSpace(row.DocumentoTipo) == "" || strings.TrimSpace(row.FechaDocumento) == "" ||
+		!strings.EqualFold(strings.TrimSpace(row.Moneda), "COP") || row.Total <= 0 ||
+		row.ConfianzaIA < 0.85 || row.ConfianzaIA > 1 || math.IsNaN(row.ConfianzaIA) || math.IsInf(row.ConfianzaIA, 0) ||
+		invalidMoney || math.IsNaN(expected) || math.IsInf(expected, 0) || math.Abs(row.Total-expected) > tolerance {
 		row.RequiereRevisionHumana = true
 	}
 	return row
@@ -641,10 +1297,19 @@ Usa numeros sin separadores de miles. Si falta un dato, deja cadena vacia o 0. M
 }
 
 func parseSoporteComprasIAExtraction(raw string) (dbpkg.EmpresaSoporteComprasIA, string, error) {
+	if len(raw) == 0 || len(raw) > maxSoporteComprasIAExtractionBytes {
+		return dbpkg.EmpresaSoporteComprasIA{}, "", errors.New("respuesta IA fuera del limite permitido")
+	}
 	candidate := extractJSONCandidate(raw)
+	if len(candidate) == 0 || len(candidate) > maxSoporteComprasIAExtractionBytes {
+		return dbpkg.EmpresaSoporteComprasIA{}, "", errors.New("JSON IA fuera del limite permitido")
+	}
 	var data map[string]interface{}
 	if err := json.Unmarshal([]byte(candidate), &data); err != nil {
 		return dbpkg.EmpresaSoporteComprasIA{}, "", fmt.Errorf("respuesta IA no es JSON valido: %w", err)
+	}
+	if err := validateSoporteComprasIAExtractionSchema(data); err != nil {
+		return dbpkg.EmpresaSoporteComprasIA{}, "", err
 	}
 	compactBytes, _ := json.Marshal(data)
 	row := dbpkg.EmpresaSoporteComprasIA{
@@ -669,7 +1334,72 @@ func parseSoporteComprasIAExtraction(raw string) (dbpkg.EmpresaSoporteComprasIA,
 		RequiereRevisionHumana: boolFromMap(data, "requiere_revision_humana"),
 		Observaciones:          stringFromMap(data, "observaciones"),
 	}
+	if err := validateSoporteComprasIAExtractionValues(row); err != nil {
+		return dbpkg.EmpresaSoporteComprasIA{}, "", err
+	}
 	return row, string(compactBytes), nil
+}
+
+func validateSoporteComprasIAExtractionSchema(data map[string]interface{}) error {
+	allowed := map[string]struct{}{
+		"tipo_soporte": {}, "proveedor_nombre": {}, "proveedor_nit": {},
+		"documento_tipo": {}, "documento_numero": {}, "fecha_documento": {},
+		"fecha_vencimiento": {}, "subtotal": {}, "impuesto_iva": {},
+		"retencion_fuente": {}, "retencion_ica": {}, "retencion_iva": {},
+		"total": {}, "moneda": {}, "categoria_contable": {}, "centro_costo": {},
+		"impacta_inventario": {}, "confianza_ia": {}, "requiere_revision_humana": {},
+		"lineas_detectadas": {}, "observaciones": {},
+	}
+	for key := range data {
+		if _, ok := allowed[key]; !ok {
+			return fmt.Errorf("respuesta IA contiene campo no permitido: %s", key)
+		}
+	}
+	for key, value := range data {
+		if key == "lineas_detectadas" {
+			if value == nil {
+				continue
+			}
+			lines, ok := value.([]interface{})
+			if !ok || len(lines) > 500 {
+				return errors.New("respuesta IA contiene lineas_detectadas invalidas")
+			}
+			continue
+		}
+		switch value.(type) {
+		case nil, string, float64, bool:
+		default:
+			return fmt.Errorf("respuesta IA contiene tipo invalido para %s", key)
+		}
+	}
+	return nil
+}
+
+func validateSoporteComprasIAExtractionValues(row dbpkg.EmpresaSoporteComprasIA) error {
+	textLimits := map[string]struct {
+		value string
+		limit int
+	}{
+		"tipo_soporte": {row.TipoSoporte, 40}, "proveedor_nombre": {row.ProveedorNombre, 200},
+		"proveedor_nit": {row.ProveedorNIT, 40}, "documento_tipo": {row.DocumentoTipo, 50},
+		"documento_numero": {row.DocumentoNumero, 100}, "moneda": {row.Moneda, 8},
+		"categoria_contable": {row.CategoriaContable, 160}, "centro_costo": {row.CentroCosto, 160},
+		"observaciones": {row.Observaciones, 2000},
+	}
+	for field, item := range textLimits {
+		if len(item.value) > item.limit {
+			return fmt.Errorf("respuesta IA excede limite de %s", field)
+		}
+	}
+	for _, value := range []float64{row.Subtotal, row.ImpuestoIVA, row.RetencionFuente, row.RetencionICA, row.RetencionIVA, row.Total} {
+		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > 1e15 {
+			return errors.New("respuesta IA contiene valor monetario invalido")
+		}
+	}
+	if math.IsNaN(row.ConfianzaIA) || math.IsInf(row.ConfianzaIA, 0) || row.ConfianzaIA < 0 || row.ConfianzaIA > 1 {
+		return errors.New("respuesta IA contiene confianza invalida")
+	}
+	return nil
 }
 
 func extractJSONCandidate(raw string) string {
@@ -690,15 +1420,104 @@ func loadSoporteComprasIAAttachment(row dbpkg.EmpresaSoporteComprasIA) (*aiAttac
 	if strings.TrimSpace(row.ArchivoURL) == "" {
 		return nil, errors.New("el soporte no tiene archivo adjunto para analisis IA")
 	}
-	path, err := safeSoporteComprasIAPathFromURL(row.ArchivoURL)
+	path, err := safeSoporteComprasIAPathForEmpresa(row.ArchivoURL, row.EmpresaID)
 	if err != nil {
 		return nil, err
 	}
-	b, err := os.ReadFile(path) // #nosec G304 -- path is an existing regular file resolved inside the private support root above.
+	file, err := os.Open(path) // #nosec G304 -- path is an existing regular file resolved inside the private support root above.
 	if err != nil {
 		return nil, err
 	}
-	return &aiAttachment{Filename: row.ArchivoNombre, MimeType: row.ArchivoMime, Bytes: b}, nil
+	defer func() { _ = file.Close() }()
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Size() < 1 || info.Size() > maxSoporteComprasIAUploadBytes {
+		return nil, supportFileIntegrityFailure()
+	}
+	b, err := io.ReadAll(io.LimitReader(file, maxSoporteComprasIAUploadBytes+1))
+	if err != nil || len(b) < 1 || len(b) > maxSoporteComprasIAUploadBytes {
+		return nil, supportFileIntegrityFailure()
+	}
+	if err := verifySoporteComprasIABytesIntegrity(b, row.ArchivoHash); err != nil {
+		return nil, err
+	}
+	att := &aiAttachment{Filename: row.ArchivoNombre, MimeType: row.ArchivoMime, Bytes: b}
+	if err := validateSoporteComprasIAAttachment(att); err != nil {
+		return nil, supportFileIntegrityFailure()
+	}
+	return att, nil
+}
+
+func verifySoporteComprasIAReaderIntegrity(file *os.File, expectedHash string) error {
+	if file == nil {
+		return supportFileIntegrityFailure()
+	}
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return supportFileIntegrityFailure()
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return supportFileIntegrityFailure()
+	}
+	return verifySoporteComprasIADigest(hasher.Sum(nil), expectedHash)
+}
+
+func verifySoporteComprasIABytesIntegrity(content []byte, expectedHash string) error {
+	sum := sha256.Sum256(content)
+	return verifySoporteComprasIADigest(sum[:], expectedHash)
+}
+
+func verifySoporteComprasIADigest(actual []byte, expectedHash string) error {
+	expectedHash = strings.ToLower(strings.TrimSpace(expectedHash))
+	if expectedHash == "" {
+		return nil
+	}
+	expected, err := hex.DecodeString(expectedHash)
+	if err != nil || len(expected) != sha256.Size || len(actual) != sha256.Size || subtle.ConstantTimeCompare(actual, expected) != 1 {
+		return supportFileIntegrityFailure()
+	}
+	return nil
+}
+
+func supportFileIntegrityFailure() error {
+	soporteComprasIAFileIntegrityFailures.Add(1)
+	return errSoporteComprasIAIntegrity
+}
+
+func recordSoporteComprasIAIntegrityIncident(dbEmp *sql.DB, row dbpkg.EmpresaSoporteComprasIA, actor, channel string) {
+	if dbEmp == nil || row.EmpresaID <= 0 || row.ID <= 0 {
+		return
+	}
+	if err := dbpkg.MarkEmpresaSoporteComprasIAIntegrityIncident(dbEmp, row.EmpresaID, row.ID,
+		strings.TrimSpace(actor), strings.TrimSpace(channel)); err != nil {
+		log.Printf("[soportes_compras_ia] auditoria integridad no disponible empresa_id=%d soporte_id=%d", row.EmpresaID, row.ID)
+	}
+}
+
+func safeSoporteComprasIADownloadMIME(storedMIME, path string) string {
+	storedMIME = strings.ToLower(strings.TrimSpace(storedMIME))
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".png":
+		if storedMIME == "image/png" {
+			return storedMIME
+		}
+	case ".jpg", ".jpeg":
+		if storedMIME == "image/jpeg" {
+			return storedMIME
+		}
+	case ".webp":
+		if storedMIME == "image/webp" {
+			return storedMIME
+		}
+	case ".pdf":
+		if storedMIME == "application/pdf" {
+			return storedMIME
+		}
+	case ".xml":
+		if storedMIME == "application/xml" || storedMIME == "text/xml" {
+			return "application/xml"
+		}
+	}
+	return "application/octet-stream"
 }
 
 func safeSoporteComprasIAPathFromURL(url string) (string, error) {
@@ -712,6 +1531,50 @@ func safeSoporteComprasIAPathFromURL(url string) (string, error) {
 		return "", errors.New("ruta de soporte fuera del directorio permitido")
 	}
 	return resolveExistingPrivateFileUnderRoot(root, abs)
+}
+
+func safeSoporteComprasIAPathForEmpresa(url string, empresaID int64) (string, error) {
+	candidate, err := safeSoporteComprasIAPathCandidateForEmpresa(url, empresaID)
+	if err != nil {
+		return "", err
+	}
+	return resolveExistingPrivateFileUnderRoot(soporteComprasIAPrivateRoot(), candidate)
+}
+
+func safeSoporteComprasIAPathCandidateForEmpresa(url string, empresaID int64) (string, error) {
+	if empresaID <= 0 {
+		return "", errors.New("empresa invalida para archivo privado")
+	}
+	prefix := "private://soportes_compras_ia/empresa_" + strconv.FormatInt(empresaID, 10) + "/"
+	if !strings.HasPrefix(strings.TrimSpace(url), prefix) {
+		return "", errors.New("el archivo privado no pertenece a la empresa")
+	}
+	clean := strings.TrimPrefix(strings.TrimSpace(url), "private://soportes_compras_ia/")
+	root, err := filepath.Abs(filepath.Clean(soporteComprasIAPrivateRoot()))
+	if err != nil {
+		return "", errors.New("directorio privado no disponible")
+	}
+	candidate, err := filepath.Abs(filepath.Clean(filepath.Join(root, filepath.FromSlash(clean))))
+	if err != nil {
+		return "", errors.New("archivo privado no disponible")
+	}
+	rel, err := filepath.Rel(root, candidate)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || filepath.IsAbs(rel) {
+		return "", errors.New("ruta de soporte fuera del directorio permitido")
+	}
+	parentResolved, err := filepath.EvalSymlinks(filepath.Dir(candidate))
+	if err != nil {
+		return "", errors.New("directorio privado no disponible")
+	}
+	rootResolved, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return "", errors.New("directorio privado no disponible")
+	}
+	resolvedRel, err := filepath.Rel(rootResolved, parentResolved)
+	if err != nil || resolvedRel == ".." || strings.HasPrefix(resolvedRel, ".."+string(os.PathSeparator)) || filepath.IsAbs(resolvedRel) {
+		return "", errors.New("directorio privado fuera del tenant")
+	}
+	return candidate, nil
 }
 
 // resolveExistingPrivateFileUnderRoot rejects traversal and symlink escapes before
@@ -915,7 +1778,9 @@ func normalizeDateString(raw string) string {
 		}
 	}
 	if len(raw) >= 10 {
-		return raw[:10]
+		if t, err := time.Parse("2006-01-02", raw[:10]); err == nil {
+			return t.Format("2006-01-02")
+		}
 	}
-	return raw
+	return ""
 }

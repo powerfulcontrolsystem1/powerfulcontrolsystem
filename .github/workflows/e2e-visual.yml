@@ -17,6 +17,14 @@ on:
         description: "Limite de paginas, 0 para todas"
         required: true
         default: "40"
+      route_offset:
+        description: "Desplazamiento determinista dentro del inventario de rutas"
+        required: true
+        default: "0"
+      route_batch_size:
+        description: "Rutas por lote, 0 para usar max_pages o todas"
+        required: true
+        default: "40"
       routes:
         description: "Rutas separadas por coma para una repeticion dirigida (opcional)"
         required: false
@@ -60,6 +68,8 @@ jobs:
           PCS_QA_EMAIL: ${{ secrets.PCS_QA_EMAIL }}
           PCS_QA_PASSWORD: ${{ secrets.PCS_QA_PASSWORD }}
           PCS_QA_MAX_PAGES: ${{ inputs.max_pages || '40' }}
+          PCS_QA_ROUTE_OFFSET: ${{ inputs.route_offset || '0' }}
+          PCS_QA_ROUTE_BATCH_SIZE: ${{ inputs.route_batch_size || '40' }}
           PCS_QA_ROUTES: ${{ inputs.routes || '' }}
           PCS_QA_VIEWPORTS: ${{ inputs.viewports || 'desktop,mobile' }}
           PCS_QA_MAX_SAFE_CLICKS_PER_PAGE: ${{ inputs.max_safe_clicks || '8' }}

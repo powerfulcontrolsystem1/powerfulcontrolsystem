@@ -132,6 +132,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				},
 			},
 			{
+				Version:     "20260809-001-dian-local-production-flag-v1",
+				Description: "dedicated local production activation gate for each DIAN tenant",
+				Body:        empresaDIANLocalProductionFlagFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyEmpresaDIANLocalProductionFlagTx(ctx, tx)
+				},
+			},
+			{
 				Version:     "20260809-002-domotica-raspberry-tunnel-v1",
 				Description: "secure outbound Raspberry tunnel, GPIO inputs and daily transfer accounting",
 				Body:        empresaControlElectricoTunnelSchemaFingerprint,
@@ -153,6 +161,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Body:        empresaControlElectricoScheduleSchemaFingerprint,
 				Apply: func(_ context.Context, tx *sql.Tx) error {
 					return applyEmpresaControlElectricoScheduleSchemaTx(tx)
+				},
+			},
+			{
+				Version:     "20260811-002-domotica-restart-category-v1",
+				Description: "idempotent Raspberry restart recovery and electronic equipment categories",
+				Body:        empresaControlElectricoRestartCategorySchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaControlElectricoRestartCategorySchemaTx(tx)
 				},
 			},
 		}, nil

@@ -3454,3 +3454,8 @@
 ## 2026-08-11 - Correccion de migracion Domotica
 
 - Se versionan las columnas `programacion_inicio` y `programacion_fin` de los relés para que el rango de fecha/hora llegue al esquema empresarial antes de que la API lo consulte.
+## [2026-08-11] Recuperación y diagnóstico Domótica
+- [Raspberry] El agente se reconecta por systemd y, después de un reinicio, restaura únicamente los relés confirmados encendidos de forma secuencial, con un segundo entre salidas.
+- [Operación] La configuración permite probar cada GPIO BCM de una Raspberry conectada con un pulso activo-bajo de un segundo que no queda diferido si el túnel está caído.
+- [Datos] Los aparatos admiten categoría y los reportes filtran consumo y estado por categoría o equipo; cada comando queda en bitácora empresarial.
+- [Guía] El tutorial de Domótica explica el instalador inicial, túnel, identificación de GPIO, polaridad y seguridad eléctrica.

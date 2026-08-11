@@ -18,6 +18,30 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$node = $env:PCS_NODE_PATH
+if ([string]::IsNullOrWhiteSpace($node)) {
+  $node = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
+}
+if (-not (Test-Path -LiteralPath $node)) {
+  $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
+  if ($nodeCommand) {
+    $node = $nodeCommand.Source
+  } else {
+    throw "No se encontro Node.js. Defina PCS_NODE_PATH o instale node en PATH."
+  }
+}
+if ([string]::IsNullOrWhiteSpace($env:PCS_QA_CHROME_EXECUTABLE)) {
+  $chromeCandidates = @(
+    (Join-Path $env:ProgramFiles "Google\Chrome\Application\chrome.exe"),
+    (Join-Path ${env:ProgramFiles(x86)} "Google\Chrome\Application\chrome.exe"),
+    (Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"),
+    (Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe")
+  ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+  $installedChrome = $chromeCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+  if ($installedChrome) {
+    $env:PCS_QA_CHROME_EXECUTABLE = $installedChrome
+  }
+}
 Push-Location $repoRoot
 try {
   & .\scripts\profesional_preflight.ps1 -Full
@@ -50,19 +74,19 @@ try {
     $env:PCS_QA_BASE_URL = $E2EBaseUrl
     $env:PCS_QA_EMPRESA_ID = $EmpresaId
     $env:PCS_QA_VIEWPORTS = "desktop,mobile"
-    & node tools\qa_e2e_buttons.cjs
+    & $node tools\qa_e2e_buttons.cjs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    & node tools\qa_print_formats.cjs
+    & $node tools\qa_print_formats.cjs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   }
 
   if (-not $SkipLoadSmoke) {
     $env:PCS_LOAD_BASE_URL = $E2EBaseUrl
-    & node tools\load_smoke_test.mjs
+    & $node tools\load_smoke_test.mjs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   }
 
-  & node tools\release_manifest.mjs --strict
+  & $node tools\release_manifest.mjs --strict
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   Write-Host "[OK] Release gate completado." -ForegroundColor Green

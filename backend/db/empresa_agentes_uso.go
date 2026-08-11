@@ -100,3 +100,29 @@ func AddEmpresaAgenteUsoDiario(dbConn *sql.DB, in EmpresaAgenteUsoDiario) error 
 		in.EmpresaID, in.FechaUso, in.SegundosUsados, in.ConsultasAvanzadas, in.ConsultasLigeras, strings.TrimSpace(in.UsuarioCreador))
 	return err
 }
+
+// RefundEmpresaAgenteUsoDiario revierte exclusivamente una reserva que no
+// llego a consumirse. GREATEST evita contadores negativos ante reintentos o
+// cancelaciones concurrentes.
+func RefundEmpresaAgenteUsoDiario(dbConn *sql.DB, in EmpresaAgenteUsoDiario) error {
+	if in.EmpresaID <= 0 {
+		return fmt.Errorf("empresa_id requerido")
+	}
+	if in.SegundosUsados < 0 || in.ConsultasAvanzadas < 0 || in.ConsultasLigeras < 0 {
+		return fmt.Errorf("los valores a devolver no pueden ser negativos")
+	}
+	if err := EnsureEmpresaAgentesUsoSchema(dbConn); err != nil {
+		return err
+	}
+	in.FechaUso = strings.TrimSpace(in.FechaUso)
+	if in.FechaUso == "" {
+		in.FechaUso = time.Now().Format("2006-01-02")
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_agentes_uso_diario SET
+		segundos_usados=GREATEST(0,COALESCE(segundos_usados,0)-?),
+		consultas_avanzadas=GREATEST(0,COALESCE(consultas_avanzadas,0)-?),
+		consultas_ligeras=GREATEST(0,COALESCE(consultas_ligeras,0)-?),
+		fecha_actualizacion=CURRENT_TIMESTAMP
+		WHERE empresa_id=? AND fecha_uso=?`, in.SegundosUsados, in.ConsultasAvanzadas, in.ConsultasLigeras, in.EmpresaID, in.FechaUso)
+	return err
+}

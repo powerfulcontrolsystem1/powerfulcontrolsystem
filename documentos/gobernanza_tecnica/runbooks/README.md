@@ -32,6 +32,8 @@ Los runbooks convierten fallas repetibles o diagnosticos delicados en procedimie
 - `checklist_evidencia_documental_para_qa_y_soporte.md`: creada.
 - `runbook_tls_staging_y_servicios_plan_105.md`: recuperacion segura de TLS
   vencido en staging, OnlyOffice y Nextcloud, con validacion externa obligatoria.
+- `runbook_depuracion_soportes_ia_y_cuarentena.md`: diagnostico y reanudacion
+  segura de la saga de depuracion privada, sin SQL ni borrado manual.
 
 ## Runbooks prioritarios siguientes
 

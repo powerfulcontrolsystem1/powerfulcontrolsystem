@@ -688,6 +688,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			digito_verificacion TEXT,
 			razon_social TEXT,
 			tipo_ambiente TEXT DEFAULT 'habilitacion',
+			produccion_local_activa INTEGER DEFAULT 0,
 			software_id TEXT,
 			software_pin TEXT,
 			usar_software_compartido INTEGER DEFAULT 0,
@@ -926,6 +927,19 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "usar_software_compartido", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "produccion_local_activa", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if _, err := execSQLCompat(dbConn, `UPDATE empresa_dian_configuracion
+		SET produccion_local_activa = 1
+		WHERE COALESCE(produccion_local_activa, 0) = 0
+		  AND LOWER(TRIM(COALESCE(tipo_ambiente, ''))) = 'produccion'
+		  AND (
+			LOWER(TRIM(COALESCE(estado_dian, ''))) = 'produccion_local_activa'
+			OR LOWER(COALESCE(observaciones, '')) LIKE '%por dian_activar_produccion_local%'
+		  )`); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "software_id_compartido_ref", "TEXT"); err != nil {

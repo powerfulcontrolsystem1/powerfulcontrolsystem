@@ -629,7 +629,7 @@ func securityContentSecurityPolicyWithInline(allowInline bool) string {
 		providerStyles = append(providerStyles, "'unsafe-inline'")
 	}
 	providerConnect := []string{"'self'", "https://api.openai.com", "https://accounts.google.com", "https://checkout.epayco.co", "https://secure.epayco.co", "https://checkout.wompi.co"}
-	providerFrames := []string{"'self'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
+	providerFrames := []string{"'self'", "https://mail.powerfulcontrolsystem.com", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
 	providerImages := []string{"'self'", "data:", "blob:", "https://lh3.googleusercontent.com"}
 
 	documentOrigins := cspOriginsFromEnv("ONLYOFFICE_DOCUMENT_SERVER_URL", "NEXTCLOUD_BASE_URL")

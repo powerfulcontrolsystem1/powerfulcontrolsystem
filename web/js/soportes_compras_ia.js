@@ -7,8 +7,12 @@
     soportes: [],
     proveedores: [],
     selected: null,
-    filters: { estado: "", tipo: "", search: "" },
-    loading: false
+    filters: { estado: "", registro: "activo", tipo: "", search: "" },
+    loading: false,
+    activeAction: "",
+    activeController: null,
+    dialogResolve: null,
+    dialogLastFocus: null
   };
 
   var labels = {
@@ -19,6 +23,10 @@
     contabilizado: "Contabilizado",
     rechazado: "Rechazado",
     duplicado: "Duplicado",
+    activo: "Activo",
+    eliminado: "Eliminado",
+    purga_pendiente: "Depuracion pendiente",
+    purgado: "Depurado",
     gasto: "Gasto",
     compra: "Compra",
     documento_soporte: "Documento soporte",
@@ -59,9 +67,116 @@
     target.classList.toggle("is-error", !!isError);
   }
 
+  function closeActionDialog(result) {
+    var dialog = el("captureActionDialog");
+    if (dialog && dialog.open) dialog.close();
+    var resolve = state.dialogResolve;
+    state.dialogResolve = null;
+    if (state.dialogLastFocus && typeof state.dialogLastFocus.focus === "function") state.dialogLastFocus.focus();
+    state.dialogLastFocus = null;
+    if (resolve) resolve(result || null);
+  }
+
+  function requestActionInput(action) {
+    if (action === "extraer_ia") return Promise.resolve({ motivo: "", retentionDays: 0, confirmation: "" });
+    if (state.dialogResolve) return Promise.resolve(null);
+    var selectedCode = String(state.selected && state.selected.codigo || "").trim();
+    var configs = {
+      aprobar: { title: "Aprobar soporte", message: "Confirma que revisaste proveedor, documento, impuestos y total.", submit: "Aprobar" },
+      rechazar: { title: "Rechazar soporte", message: "La acción quedará registrada y no generará una cuenta por pagar.", submit: "Rechazar", danger: true },
+      contabilizar: { title: "Contabilizar soporte", message: "Se creará la cuenta por pagar con los datos aprobados. Esta acción no registra ningún pago.", submit: "Crear cuenta por pagar" },
+      eliminar: { title: "Enviar a papelera", message: "El archivo y la auditoría se conservarán y el soporte podrá recuperarse.", submit: "Enviar a papelera", motive: "Motivo obligatorio para enviar el soporte a la papelera", danger: true },
+      restaurar: { title: "Recuperar soporte", message: "El soporte volverá a la bandeja activa con toda su auditoría.", submit: "Recuperar", motive: "Motivo obligatorio para recuperar el soporte" },
+      purgar: { title: "Depurar archivo privado", message: "Esta acción elimina definitivamente el archivo privado y no se puede deshacer. La fila y la auditoría se conservarán.", submit: "Depurar definitivamente", motive: "Motivo obligatorio para depurar el archivo", confirmation: selectedCode, danger: true }
+    };
+    var config = configs[action];
+    if (!config) return Promise.resolve(null);
+    var dialog = el("captureActionDialog");
+    if (!dialog || typeof dialog.showModal !== "function") {
+      msg("El diálogo de confirmación no está disponible en este navegador.", true);
+      return Promise.resolve(null);
+    }
+    state.dialogLastFocus = document.activeElement;
+    dialog.dataset.action = action;
+    dialog.dataset.confirmation = config.confirmation || "";
+    el("captureActionTitle").textContent = config.title;
+    el("captureActionMessage").textContent = config.message;
+    el("captureActionSubmit").textContent = config.submit;
+    el("captureActionSubmit").classList.toggle("primary", !config.danger);
+    el("captureActionSubmit").classList.toggle("danger", !!config.danger);
+    el("captureActionMotivoField").hidden = !config.motive;
+    el("captureActionMotivoField").querySelector("label").textContent = config.motive || "Motivo obligatorio";
+    el("captureActionMotivo").value = "";
+    el("captureActionConfirmacionField").hidden = !config.confirmation;
+    el("captureActionConfirmacionLabel").textContent = config.confirmation ? "Escribe " + config.confirmation + " para confirmar" : "Código de confirmación";
+    el("captureActionConfirmacion").value = "";
+    el("captureActionError").textContent = "";
+    dialog.showModal();
+    setTimeout(function () {
+      var target = config.motive ? el("captureActionMotivo") : (config.confirmation ? el("captureActionConfirmacion") : el("captureActionSubmit"));
+      if (target) target.focus();
+    }, 0);
+    return new Promise(function (resolve) { state.dialogResolve = resolve; });
+  }
+
+  var actionStates = {
+    extraer_ia: ["radicado", "extraido", "en_revision"],
+    aprobar: ["radicado", "extraido", "en_revision"],
+    rechazar: ["radicado", "extraido", "en_revision", "aprobado"],
+    contabilizar: ["aprobado"]
+  };
+
+  function selectedState() {
+    return String(state.selected && state.selected.estado_soporte || "").toLowerCase();
+  }
+
+  function actionAllowed(action) {
+    if (!state.selected) return false;
+    var registro = String(state.selected.estado || "activo").toLowerCase();
+    if (action === "restaurar") return registro === "eliminado";
+    if (action === "purgar") return (registro === "eliminado" || registro === "purga_pendiente") && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
+    if (action === "eliminar") return registro === "activo" && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
+    return registro === "activo" && (actionStates[action] || []).indexOf(selectedState()) >= 0;
+  }
+
+  function syncActionControls() {
+    var actions = {
+      btnExtraer: "extraer_ia",
+      btnAprobar: "aprobar",
+      btnRechazar: "rechazar",
+      btnContabilizar: "contabilizar",
+      btnEliminar: "eliminar",
+      btnRestaurar: "restaurar",
+      btnPurgar: "purgar"
+    };
+    Object.keys(actions).forEach(function (id) {
+      var button = el(id);
+      if (!button) return;
+      var allowed = actionAllowed(actions[id]);
+      button.disabled = state.loading || !allowed;
+      button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
+      button.title = !state.selected ? "Selecciona un soporte primero." : (!allowed ? "Accion no disponible para el estado " + label(selectedState()) + "." : "");
+    });
+    var saveButton = el("btnGuardarRevision");
+    if (saveButton) {
+      var editable = !!state.selected && String(state.selected.estado || "activo").toLowerCase() === "activo" && ["radicado", "extraido", "en_revision", "aprobado"].indexOf(selectedState()) >= 0;
+      saveButton.disabled = state.loading || !editable;
+      saveButton.setAttribute("aria-disabled", saveButton.disabled ? "true" : "false");
+      saveButton.title = editable ? "" : "Solo puedes editar un soporte activo pendiente de contabilizar.";
+    }
+    var cancelButton = el("btnCancelarIA");
+    if (cancelButton) {
+      var cancellable = state.loading && state.activeAction === "extraer_ia" && !!state.activeController;
+      cancelButton.disabled = !cancellable;
+      cancelButton.setAttribute("aria-disabled", cancelButton.disabled ? "true" : "false");
+      cancelButton.title = cancellable ? "Cancelar la solicitud IA en curso." : "No hay una extraccion IA en curso.";
+    }
+  }
+
   function setBusy(on, text) {
     state.loading = !!on;
     document.querySelectorAll(".capture-btn").forEach(function (btn) { btn.disabled = !!on; });
+    syncActionControls();
     if (text) msg(text);
   }
 
@@ -148,9 +263,11 @@
     return '<table class="capture-table"><thead><tr><th>Codigo</th><th>Estado</th><th>Proveedor</th><th>Documento</th><th>Fecha</th><th>Total</th><th>Confianza</th><th>Control</th><th>Archivo</th></tr></thead><tbody>' +
       rows.map(function (s) {
         var selected = state.selected && String(state.selected.id) === String(s.id);
-        var archivo = safeHref(s.archivo_url);
+        var archivo = String(s.estado || "activo").toLowerCase() === "activo" ? safeHref(s.archivo_url) : "";
         var control = s.duplicado_soporte_id ? "Duplicado #" + s.duplicado_soporte_id : (s.requiere_revision_humana ? "Revision humana" : "OK");
-        return '<tr data-id="' + esc(s.id) + '" class="' + (selected ? "is-selected" : "") + '"><td><strong>' + esc(s.codigo || "-") + '</strong><br><span class="capture-muted">' + esc(label(s.tipo_soporte)) + '</span></td><td>' + chip(s.estado_soporte) + '</td><td>' + esc(s.proveedor_nombre || "Sin proveedor") + '<br><span class="capture-muted">' + esc(s.proveedor_nit || "-") + '</span></td><td>' + esc(label(s.documento_tipo)) + '<br><span class="capture-muted">' + esc(s.documento_numero || "-") + '</span></td><td>' + esc(s.fecha_documento || "-") + '<br><span class="capture-muted">Vence ' + esc(s.fecha_vencimiento || "-") + '</span></td><td class="num"><strong>' + money(s.total || 0) + '</strong></td><td>' + progress(s.confianza_ia || 0) + '</td><td>' + esc(control) + '</td><td>' + (archivo ? '<a href="' + esc(archivo) + '" target="_blank" rel="noopener">Ver</a>' : '<span class="capture-muted">Manual</span>') + '</td></tr>';
+        var recordState = String(s.estado || "activo").toLowerCase();
+        var recordChip = recordState === "eliminado" ? '<br>' + chip("eliminado", "capture-bad") : (recordState === "purga_pendiente" ? '<br>' + chip("purga_pendiente", "capture-warn") : (recordState === "purgado" ? '<br>' + chip("purgado", "capture-bad") : ""));
+        return '<tr data-id="' + esc(s.id) + '" class="' + (selected ? "is-selected" : "") + '"><td><strong>' + esc(s.codigo || "-") + '</strong><br><span class="capture-muted">' + esc(label(s.tipo_soporte)) + '</span></td><td>' + chip(s.estado_soporte) + recordChip + '</td><td>' + esc(s.proveedor_nombre || "Sin proveedor") + '<br><span class="capture-muted">' + esc(s.proveedor_nit || "-") + '</span></td><td>' + esc(label(s.documento_tipo)) + '<br><span class="capture-muted">' + esc(s.documento_numero || "-") + '</span></td><td>' + esc(s.fecha_documento || "-") + '<br><span class="capture-muted">Vence ' + esc(s.fecha_vencimiento || "-") + '</span></td><td class="num"><strong>' + money(s.total || 0) + '</strong></td><td>' + progress(s.confianza_ia || 0) + '</td><td>' + esc(control) + '</td><td>' + (archivo ? '<a href="' + esc(archivo) + '" target="_blank" rel="noopener">Ver</a>' : '<span class="capture-muted">No disponible</span>') + '</td></tr>';
       }).join("") + '</tbody></table>';
   }
 
@@ -165,11 +282,13 @@
     if (!s) {
       el("captureDetail").innerHTML = '<div class="capture-empty">Selecciona un soporte en la bandeja para revisar datos extraidos, totales y controles.</div>';
       el("captureEvents").innerHTML = '<div class="capture-empty">Sin soporte seleccionado.</div>';
+      syncActionControls();
       return;
     }
     var fields = [
       ["Codigo", s.codigo],
       ["Estado", label(s.estado_soporte)],
+      ["Registro", label(s.estado || "activo")],
       ["Tipo", label(s.tipo_soporte)],
       ["Proveedor", s.proveedor_nombre],
       ["NIT", s.proveedor_nit],
@@ -192,6 +311,7 @@
       return '<div class="capture-detail-item"><span>' + esc(f[0]) + '</span><strong>' + esc(f[1] || "-") + '</strong></div>';
     }).join("");
     fillRevisionForm(s);
+    syncActionControls();
   }
 
   function setValue(id, value) { if (el(id)) el(id).value = value == null ? "" : value; }
@@ -295,7 +415,7 @@
     setBusy(true, "Cargando captura inteligente...");
     return Promise.all([
       api("dashboard"),
-      api("soportes", null, state.filters.estado ? "&estado=" + encodeURIComponent(state.filters.estado) : ""),
+      api("soportes", null, (state.filters.estado ? "&estado=" + encodeURIComponent(state.filters.estado) : "") + "&registro=" + encodeURIComponent(state.filters.registro)),
       loadProveedores()
     ]).then(function (res) {
       state.dashboard = res[0].dashboard || {};
@@ -340,20 +460,36 @@
       msg("Selecciona un soporte primero.", true);
       return;
     }
-    var confirmations = {
-      aprobar: "Confirma que revisaste proveedor, documento, impuestos y total. ¿Aprobar este soporte?",
-      rechazar: "¿Rechazar este soporte? La acción quedará registrada y no generará una cuenta por pagar.",
-      contabilizar: "¿Crear la cuenta por pagar con los datos aprobados? Esta acción no registra ningún pago."
-    };
-    if (confirmations[action] && !window.confirm(confirmations[action])) return;
-    setBusy(true, text);
-    api(action, { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id }) }).then(function () {
-      msg("Accion completada.");
-      return load();
-    }).catch(function (e) {
-      msg(e.message, true);
-    }).finally(function () {
-      setBusy(false);
+    if (!actionAllowed(action)) {
+      msg("Accion no disponible para el estado " + label(selectedState()) + ".", true);
+      syncActionControls();
+      return;
+    }
+    requestActionInput(action).then(function (input) {
+      if (!input) return;
+      var controller = action === "extraer_ia" && typeof AbortController !== "undefined" ? new AbortController() : null;
+      state.activeAction = action;
+      state.activeController = controller;
+      setBusy(true, text);
+      var options = { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: input.motivo, retencion_dias: input.retentionDays, confirmacion: input.confirmation }) };
+      if (controller) options.signal = controller.signal;
+      return api(action, options).then(function () {
+        if (state.activeController === controller) {
+          state.activeController = null;
+          state.activeAction = "";
+        }
+        msg("Accion completada.");
+        return load();
+      }).catch(function (e) {
+        if (e && e.name === "AbortError") msg("Extraccion IA cancelada. El soporte conserva su estado anterior.");
+        else msg(e.message, true);
+      }).finally(function () {
+        if (state.activeController === controller) {
+          state.activeController = null;
+          state.activeAction = "";
+        }
+        setBusy(false);
+      });
     });
   }
 
@@ -361,6 +497,10 @@
     ev.preventDefault();
     if (!state.selected) {
       msg("Selecciona un soporte primero.", true);
+      return;
+    }
+    if (String(state.selected.estado || "activo").toLowerCase() !== "activo") {
+      msg("Recupera el soporte antes de editar sus datos.", true);
       return;
     }
     var proveedorId = Number(val("editProveedor")) || 0;
@@ -395,9 +535,38 @@
     });
   }
 
+  function retentionPreview() {
+    var days = Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90)));
+    setValue("retencionDias", days);
+    setBusy(true, "Calculando retencion de papelera...");
+    api("retencion_preview", null, "&retencion_dias=" + encodeURIComponent(days)).then(function (data) {
+      var bytes = Number(data.bytes || 0);
+      var size = bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + " MB" : (bytes / 1024).toFixed(2) + " KB";
+      el("retencionPreviewMsg").textContent = (data.candidatos || 0) + " soporte(s) superan " + days + " dias; espacio privado: " + size + ". Vista previa sin borrado.";
+      msg("Vista previa de retencion actualizada.");
+    }).catch(function (e) {
+      el("retencionPreviewMsg").textContent = "No se pudo calcular la retencion.";
+      msg(e.message, true);
+    }).finally(function () { setBusy(false); });
+  }
+
+  function quarantinePreview() {
+    setBusy(true, "Inspeccionando cuarentena privada...");
+    api("cuarentena_preview").then(function (data) {
+      var bytes = Number(data.bytes || 0);
+      var size = bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + " MB" : (bytes / 1024).toFixed(2) + " KB";
+      var mismatch = data.requiere_revision ? " Requiere revision: registros y archivos no coinciden." : " Registros y archivos coinciden.";
+      var stale = Number(data.pendientes_vencidos || 0);
+      el("retencionPreviewMsg").textContent = (data.registros_pendientes || 0) + " registro(s) pendiente(s), " + (data.archivos_cuarentena || 0) + " archivo(s), " + size + "; " + stale + " supera(n) " + (data.umbral_minutos || 15) + " min." + mismatch;
+      msg("Diagnostico de cuarentena actualizado.", !!data.requiere_revision || stale > 0);
+    }).catch(function (e) {
+      msg(e.message, true);
+    }).finally(function () { setBusy(false); });
+  }
+
   function exportCSV() {
-    var rows = [["ID", "Codigo", "Estado", "Tipo", "Proveedor", "NIT", "Documento", "Fecha", "Vencimiento", "Total", "Confianza"]].concat(rowList().map(function (s) {
-      return [s.id, s.codigo, s.estado_soporte, s.tipo_soporte, s.proveedor_nombre, s.proveedor_nit, s.documento_numero, s.fecha_documento, s.fecha_vencimiento, s.total, s.confianza_ia];
+    var rows = [["ID", "Codigo", "Estado", "Registro", "Tipo", "Proveedor", "NIT", "Documento", "Fecha", "Vencimiento", "Total", "Confianza"]].concat(rowList().map(function (s) {
+      return [s.id, s.codigo, s.estado_soporte, s.estado, s.tipo_soporte, s.proveedor_nombre, s.proveedor_nit, s.documento_numero, s.fecha_documento, s.fecha_vencimiento, s.total, s.confianza_ia];
     }));
     var csv = rows.map(function (row) {
       return row.map(function (v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }).join(";");
@@ -418,7 +587,7 @@
     if (!raw) return "";
     try {
       var url = new URL(raw, window.location.origin);
-      if ((url.protocol === "http:" || url.protocol === "https:") && (url.origin === window.location.origin || raw.indexOf("/") !== 0)) return url.href;
+      if ((url.protocol === "http:" || url.protocol === "https:") && url.origin === window.location.origin) return url.href;
       if (raw.indexOf("/") === 0 && url.origin === window.location.origin) return url.pathname + url.search + url.hash;
     } catch (_) {}
     return "";
@@ -440,6 +609,32 @@
 
   el("formSoporte").addEventListener("submit", submitForm);
   el("formEditarSoporte").addEventListener("submit", saveRevision);
+  el("captureActionForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var action = el("captureActionDialog").dataset.action || "";
+    var motivoRequired = !el("captureActionMotivoField").hidden;
+    var motivo = el("captureActionMotivo").value.trim();
+    var expected = el("captureActionDialog").dataset.confirmation || "";
+    var confirmation = el("captureActionConfirmacion").value.trim();
+    if (motivoRequired && !motivo) {
+      el("captureActionError").textContent = "Debes registrar un motivo para mantener la auditoría.";
+      el("captureActionMotivo").focus();
+      return;
+    }
+    if (expected && confirmation !== expected) {
+      el("captureActionError").textContent = "El código de confirmación no coincide.";
+      el("captureActionConfirmacion").focus();
+      return;
+    }
+    closeActionDialog({
+      motivo: motivo,
+      retentionDays: action === "purgar" ? Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90))) : 0,
+      confirmation: confirmation
+    });
+  });
+  el("captureActionCancel").addEventListener("click", function () { closeActionDialog(null); });
+  el("captureActionClose").addEventListener("click", function () { closeActionDialog(null); });
+  el("captureActionDialog").addEventListener("cancel", function (ev) { ev.preventDefault(); closeActionDialog(null); });
   el("editProveedor").addEventListener("change", function () {
     var p = state.proveedores.find(function (item) { return String(item.id) === String(this.value); }, this);
     if (!p) return;
@@ -450,11 +645,20 @@
   el("captureRefresh").addEventListener("click", load);
   el("captureSeed").addEventListener("click", seedDemo);
   el("captureExport").addEventListener("click", exportCSV);
+  el("btnRetencionPreview").addEventListener("click", retentionPreview);
+  el("btnCuarentenaPreview").addEventListener("click", quarantinePreview);
   el("btnExtraer").addEventListener("click", function () { actionSelected("extraer_ia", "Extrayendo datos con IA..."); });
+  el("btnCancelarIA").addEventListener("click", function () {
+    if (state.activeController && state.activeAction === "extraer_ia") state.activeController.abort();
+  });
   el("btnAprobar").addEventListener("click", function () { actionSelected("aprobar", "Aprobando soporte..."); });
   el("btnRechazar").addEventListener("click", function () { actionSelected("rechazar", "Rechazando soporte..."); });
   el("btnContabilizar").addEventListener("click", function () { actionSelected("contabilizar", "Generando cuenta por pagar..."); });
+  el("btnEliminar").addEventListener("click", function () { actionSelected("eliminar", "Enviando soporte a la papelera..."); });
+  el("btnRestaurar").addEventListener("click", function () { actionSelected("restaurar", "Recuperando soporte..."); });
+  el("btnPurgar").addEventListener("click", function () { actionSelected("purgar", "Depurando archivo privado..."); });
   el("estadoFilter").addEventListener("change", function () { state.filters.estado = this.value; load(); });
+  el("registroFilter").addEventListener("change", function () { state.filters.registro = this.value; state.selected = null; load(); });
   el("tipoFilter").addEventListener("change", function () { state.filters.tipo = this.value; renderTables(); });
   el("searchFilter").addEventListener("input", function () { state.filters.search = this.value || ""; renderTables(); });
 
