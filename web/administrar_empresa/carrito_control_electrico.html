@@ -319,6 +319,9 @@
         <p id="cartElectricMeta" class="cart-electric-meta">Cargando estacion...</p>
       </div>
       <div class="cart-electric-actions">
+        <label id="cartElectricStationFilterWrap" class="form-help" hidden>Ver estación
+          <select id="cartElectricStationFilter" class="form-input"></select>
+        </label>
         <button id="cartElectricRefreshBtn" class="btn secondary" type="button">Actualizar</button>
         <button id="cartElectricBackBtn" class="btn secondary" type="button">Volver</button>
       </div>
@@ -378,6 +381,8 @@
       eventos: [],
       raspberryPIs: [],
       returnTo: '',
+      allStations: false,
+      stationFilterID: 0,
       sendingID: 0
 	  , selectedReleID: 0, timers: JSON.parse(localStorage.getItem('pcsDomoticaTimers') || '{}')
     };
@@ -422,6 +427,8 @@
     }
 
     function buildBackURL() {
+
+      if (state.returnTo === 'admin') return '/administrar_empresa/panel.html?empresa_id=' + encodeURIComponent(state.empresaID);
       if (state.returnTo === 'estaciones') {
         return '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(state.empresaID);
       }
@@ -429,6 +436,10 @@
     }
 
     function setMeta() {
+      if (state.allStations) {
+        document.getElementById('cartElectricMeta').textContent = 'Todos los equipos electrónicos de estaciones y habitaciones';
+        return;
+      }
       const parts = [];
       if (state.estacionNombre) parts.push(state.estacionNombre);
       if (state.estacionID) parts.push('Estacion #' + state.estacionID);
@@ -550,8 +561,8 @@
     function render() {
       const grid = document.getElementById('cartElectricGrid');
       const cfg = state.config || {};
-      const reles = Array.isArray(state.reles) ? state.reles : [];
-      const sensores = Array.isArray(state.sensores) ? state.sensores : [];
+      const reles = (Array.isArray(state.reles) ? state.reles : []).filter(function(rele) { return !state.stationFilterID || Number(rele.estacion_id) === state.stationFilterID; });
+      const sensores = (Array.isArray(state.sensores) ? state.sensores : []).filter(function(sensor) { return !state.stationFilterID || Number(sensor.estacion_id) === state.stationFilterID; });
       const total = reles.length;
       const onCount = reles.filter(function(rele) {
         const raw = normalize(rele.ultimo_estado).toLowerCase();
@@ -570,7 +581,7 @@
         return;
       }
       if (!reles.length && !sensores.length) {
-        grid.innerHTML = '<div class="alert">Esta estacion no tiene equipos ni sensores configurados en Domotica.</div>';
+        grid.innerHTML = '<div class="alert">No hay equipos ni sensores configurados para la selección actual.</div>';
         return;
       }
 
@@ -614,12 +625,27 @@
     }
 
     async function fetchControls() {
-      if (!state.empresaID || !state.estacionID) {
-        setMessage('No se pudo identificar la empresa o la estacion.', 'error');
+      if (!state.empresaID || (!state.allStations && !state.estacionID)) {
+        setMessage('No se pudo identificar la empresa o la estación.', 'error');
         render();
         return;
       }
       setMessage('Cargando aparatos...', '');
+      if (state.allStations) {
+        const base = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=';
+        const responses = await Promise.all(['config', 'reles', 'reglas', 'eventos', 'raspberry_pis'].map(function(action) {
+          return fetch(base + action, { credentials: 'same-origin' }).then(async function(res) { await ensureOk(res); return res.json(); });
+        }));
+        state.config = responses[0] || {};
+        state.reles = Array.isArray(responses[1]) ? responses[1] : [];
+        state.sensores = Array.isArray(responses[2]) ? responses[2] : [];
+        state.eventos = Array.isArray(responses[3]) ? responses[3] : [];
+        state.raspberryPIs = Array.isArray(responses[4]) ? responses[4] : [];
+        populateStationFilter();
+        setMessage('', '');
+        render();
+        return;
+      }
       const url = new URL('/api/empresa/control_electrico', window.location.origin);
       url.searchParams.set('empresa_id', String(state.empresaID));
       url.searchParams.set('action', 'estacion_controls');
@@ -646,12 +672,13 @@
         state.sendingID = id;
         setMessage(estado === 'on' ? 'Encendiendo aparato...' : 'Apagando aparato...', '');
         render();
+        const rele = state.reles.find(function(item) { return Number(item.id) === id; }) || {};
         const url = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=probar_rele';
         const res = await fetch(url, {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ estacion_id: state.estacionID, rele_id: id, estado: estado })
+          body: JSON.stringify({ estacion_id: Number(rele.estacion_id || state.estacionID || 0), rele_id: id, estado: estado })
         });
         await ensureOk(res);
         const result = await res.json();
@@ -679,6 +706,21 @@
       document.getElementById('cartElectricScheduleOff').value = normalize(rele.programacion_fin) || scheduleDateTimeValue(rele.hora_apagado, defaultOff, rele.hora_encendido);
       document.getElementById('cartElectricScheduleDays').value = rele.programacion_dias || 'todos';
       document.getElementById('cartElectricScheduleDialog').showModal();
+    }
+
+    function populateStationFilter() {
+      const wrap = document.getElementById('cartElectricStationFilterWrap');
+      const select = document.getElementById('cartElectricStationFilter');
+      if (!wrap || !select || !state.allStations) return;
+      const stations = {};
+      state.reles.forEach(function(rele) {
+        const id = Number(rele.estacion_id || 0);
+        if (id) stations[id] = normalize(rele.estacion_nombre) || ('Estación #' + id);
+      });
+      const selected = String(state.stationFilterID || 0);
+      select.innerHTML = '<option value="0">Todas las estaciones</option>' + Object.keys(stations).sort(function(a, b) { return Number(a) - Number(b); }).map(function(id) { return '<option value="' + escapeHtml(id) + '">' + escapeHtml(stations[id]) + '</option>'; }).join('');
+      select.value = selected;
+      wrap.hidden = false;
     }
 
     function localDateTimeValue(date) {
@@ -722,8 +764,10 @@
 
     function bootstrap() {
       const params = new URLSearchParams(window.location.search || '');
-      state.empresaID = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+      state.empresaID = parsePositiveInt(params.get('empresa_id') || params.get('id')) || (typeof window.__resolveEmpresaIdContext === 'function' ? parsePositiveInt(window.__resolveEmpresaIdContext()) : 0);
       state.estacionID = parsePositiveInt(params.get('estacion_id'));
+      state.allStations = normalize(params.get('vista') || params.get('mode')).toLowerCase() === 'todas';
+      state.stationFilterID = parsePositiveInt(params.get('filtro_estacion'));
       state.estacionNombre = normalize(params.get('estacion_nombre'));
       state.carritoID = parsePositiveInt(params.get('carrito_id'));
       state.carritoCodigo = normalize(params.get('carrito_codigo'));
@@ -732,7 +776,12 @@
       render();
 
       const backBtn = document.getElementById('cartElectricBackBtn');
-      backBtn.textContent = state.returnTo === 'estaciones' ? 'Volver a estaciones' : 'Volver al carrito';
+      backBtn.textContent = state.returnTo === 'admin' ? 'Volver al panel' : (state.returnTo === 'estaciones' ? 'Volver a estaciones' : 'Volver al carrito');
+
+      if (state.allStations) {
+        document.title = 'Equipos electrónicos de Domótica';
+        document.querySelector('.cart-electric-header h1').innerHTML = '<span aria-hidden="true">⚡</span> Equipos electrónicos de Domótica';
+      }
 
       backBtn.addEventListener('click', function() {
         window.location.href = buildBackURL();
@@ -741,6 +790,10 @@
         fetchControls().catch(function(err) {
           setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');
         });
+      });
+      document.getElementById('cartElectricStationFilter').addEventListener('change', function(ev) {
+        state.stationFilterID = parsePositiveInt(ev.target.value);
+        render();
       });
       document.getElementById('cartElectricGrid').addEventListener('click', function(ev) {
         const schedule = ev.target && ev.target.closest ? ev.target.closest('[data-control-schedule]') : null;
@@ -752,7 +805,7 @@
       });
       document.getElementById('cartElectricScheduleForm').addEventListener('submit', function(ev) { ev.preventDefault(); saveSchedule().catch(function(err) { setMessage(err.message || 'No se pudo guardar programación.', 'error'); }); });
 		document.getElementById('cartElectricTimerForm').addEventListener('click', function(ev){const p=ev.target.closest('[data-timer-preset]');if(!p)return;const n=Number(p.getAttribute('data-timer-preset'));document.getElementById('cartElectricTimerHours').value=Math.floor(n/3600);document.getElementById('cartElectricTimerMinutes').value=Math.floor(n%3600/60);document.getElementById('cartElectricTimerSeconds').value=n%60;});
-		document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:state.estacionID,rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); state.timers[String(state.selectedReleID)]=Date.now()+sec*1000;localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers));document.getElementById('cartElectricTimerDialog').close(); await fetchControls(); setMessage('Temporizador iniciado.','success'); });
+		document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const rele=state.reles.find(x=>Number(x.id)===state.selectedReleID)||{}; const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:Number(rele.estacion_id||state.estacionID||0),rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); state.timers[String(state.selectedReleID)]=Date.now()+sec*1000;localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers));document.getElementById('cartElectricTimerDialog').close(); await fetchControls(); setMessage('Temporizador iniciado.','success'); });
 		setInterval(function(){ if(Object.keys(state.timers).length) render(); },1000);
 
       fetchControls().catch(function(err) {

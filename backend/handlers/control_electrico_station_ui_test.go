@@ -78,6 +78,18 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 	}
 }
 
+func TestDomoticaConfigurationExposesSafeRaspberryOperations(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
+	if err != nil {
+		t.Fatalf("read domotica configuration: %v", err)
+	}
+	for _, marker := range []string{"raspberry-connection-test", "raspberry-restart", "raspberry-shutdown", "api('raspberry_operacion')", "window.confirm"} {
+		if !strings.Contains(string(content), marker) {
+			t.Fatalf("domotica configuration missing raspberry operation marker %q", marker)
+		}
+	}
+}
+
 func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
 	if err != nil {

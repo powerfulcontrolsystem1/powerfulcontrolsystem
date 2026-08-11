@@ -17,7 +17,7 @@ fi
 install -d -m 0750 /opt/pcs-domotica /etc/pcs-domotica
 
 cat > /etc/pcs-domotica/agent.json <<'PCS_CONFIG'
-{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.1.0"}
+{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.2.0"}
 PCS_CONFIG
 chmod 0600 /etc/pcs-domotica/agent.json
 
@@ -180,6 +180,13 @@ def ensure_enrolled(config):
 
 
 def execute_command(command):
+    operation = str(command.get("operacion", "")).lower()
+    if operation in ("reiniciar", "apagar"):
+        # El ACK sale antes de la accion para que el VPS registre la orden; la
+        # orden se limita a systemctl y nunca acepta comandos arbitrarios.
+        action = "reboot" if operation == "reiniciar" else "poweroff"
+        threading.Timer(2.0, lambda: subprocess.run(["/bin/systemctl", action], check=False, timeout=10)).start()
+        return "Operacion {} programada".format(operation)
     pin = int(command.get("gpio_pin", -1))
     state = str(command.get("estado", "")).lower()
     if state not in ("on", "off"):
