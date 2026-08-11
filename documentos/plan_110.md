@@ -753,3 +753,11 @@ autoriza ni ejecuta despliegue productivo.
   faltan las compuertas de carga, operación y ensayo general. El avance se
   mantiene en **15,4 %**, con certificación final y preparación productiva en
   **0 %**; veredicto **NO-GO**.
+
+## Actualización 2026-08-11, DAST autenticado no mutante
+
+- El candidato `9ee2fe9a` superó la comprobación dinámica autenticada de
+  sesión, CSRF, Origin, CORS, límite por empresa y logout, sin crear datos.
+- P110-007 permanece **parcial**: aún requiere DAST integral, CSP evaluada,
+  matriz A/B de dominios y alerta externa. El avance se mantiene en **15,4 %**
+  y el veredicto sigue siendo **NO-GO**.

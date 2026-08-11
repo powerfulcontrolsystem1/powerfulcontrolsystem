@@ -41828,3 +41828,11 @@ acumulativa.
   controles de rollback, cero huérfanos y limpieza completa; RTO 226 s y
   rollback RTO 98 s quedan pendientes de aceptación operativa. Producción no
   fue modificada.
+2026-08-11: Plan 110 / DAST autenticado del candidato aislado.
+- El candidato `9ee2fe9a` confirmó con sesión administrativa temporal que las
+  lecturas CxP anónimas rechazan, las autenticadas respetan límite empresarial,
+  y los POST sin CSRF, con Origin externo o cuerpo inválido no mutan datos.
+  El logout revocó la sesión y CORS externo no fue permisivo. La evidencia no
+  contiene credenciales, cookies ni respuestas empresariales. P110-007 sigue
+  parcial por DAST integral, CSP, A/B completo y alertas externas; producción
+  no fue modificada.
