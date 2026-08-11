@@ -70,3 +70,20 @@ func TestEmpresaCatalogIncludesControlElectricoTunnelMigration(t *testing.T) {
 	}
 	t.Fatal("falta la migracion versionada del tunel de domotica")
 }
+
+func TestEmpresaCatalogIncludesControlElectricoScheduleMigration(t *testing.T) {
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version != "20260811-001-domotica-datetime-schedule-v1" {
+			continue
+		}
+		if migration.Body != empresaControlElectricoScheduleSchemaFingerprint || migration.Apply == nil {
+			t.Fatal("la migracion de programacion fechada debe ser inmutable y ejecutable")
+		}
+		return
+	}
+	t.Fatal("falta la migracion versionada de programacion fechada de domotica")
+}
