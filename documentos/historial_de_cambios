@@ -41890,6 +41890,9 @@ acumulativa.
   referencia de certificado, referencia de clave, rango, TestSetId y emisión
   local activa en el entorno principal. La brecha es de paridad del staging;
   no se copió ningún secreto fiscal entre entornos.
+- La identidad del backend principal resolvió ambas referencias, analizó la
+  clave RSA y el certificado X.509 y confirmó que forman el mismo par. No se
+  expusieron ni modificaron secretos fiscales.
 - La repetición autenticada del asistente IA respondió la consulta neutra con
   modo agente apagado y sin errores de consola. El error previo de observador
   no se reprodujo, pero P110-003/P110-004 no se cierran hasta cubrir toda la

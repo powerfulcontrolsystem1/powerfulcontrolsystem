@@ -40,6 +40,18 @@ la empresa. Copiar una clave privada fiscal al entorno de pruebas amplía el
 alcance de un secreto; requiere un mecanismo de restauración seguro o una
 autorización explícita y acotada antes de ejecutarse.
 
+## Validación criptográfica del principal, sin revelar secretos
+
+Desde la identidad de ejecución del backend principal se comprobó que las dos
+referencias de archivo se resuelven a archivos no vacíos y legibles. Se analizó
+la clave como RSA y el certificado como X.509; ambos análisis aprobaron. La
+clave pública derivada de la privada coincide con la clave pública del
+certificado. No se imprimieron rutas, nombres de archivo, NIT, huellas, fechas
+ni contenido criptográfico.
+
+Conclusión: PCS tiene el par de firma válido y accesible al backend principal.
+No hay base para reemplazar, regenerar ni modificar su firma.
+
 ## Decisión segura
 
 No se emitió una venta/factura ni se solicitó una nota crédito: en staging,
