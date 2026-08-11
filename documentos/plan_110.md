@@ -771,3 +771,12 @@ autoriza ni ejecuta despliegue productivo.
   outbox, reportes con diferencia cero y UAT firmado del contador. Implementación
   P110: **19,2 %** (cinco fases parciales de 13); certificación y preparación
   productiva: **0 %**; veredicto **NO-GO**.
+
+## Actualización 2026-08-11, visual de finanzas y observabilidad
+
+- La revisión visual autenticada confirma que CxP y sus abonos se muestran en
+  filas/columnas con totales y estados, sin errores de consola. La conciliación
+  exhibe pendientes contables que requieren revisión independiente.
+- P110-009 queda bloqueada por capacidad/alertas visibles y porque Alertmanager
+  no tiene un receptor externo aprobado. El avance formal no cambia: **19,2 %**
+  de implementación, **0 %** de certificación y **NO-GO**.

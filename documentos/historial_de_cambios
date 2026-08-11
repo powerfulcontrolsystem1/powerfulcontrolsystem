@@ -41847,3 +41847,11 @@ acumulativa.
   La conciliación y la vista previa sanitizada del outbox respondieron 200 para
   PCS sin reactivar eventos. P110-002 queda parcial por conciliación/UAT
   independientes pendientes; producción no cambió.
+2026-08-11: Plan 110 / revisión visual de finanzas y riesgos de operación.
+- La pantalla de finanzas de PCS cargó CxP en columnas y filas, mostró los
+  ensayos pagados y no presentó errores o advertencias de consola. La
+  conciliación visual conservó diferencia monetaria cero, pero informó eventos
+  pendientes/con error; no se ejecutó procesamiento ni una mutación contable.
+- El panel de staging mostró CPU y disco sobre los umbrales operativos,
+  alertas críticas acumuladas y ausencia de receptor externo aprobado. Estos
+  hallazgos bloquean P110-009 y no se interpretan como certificación.

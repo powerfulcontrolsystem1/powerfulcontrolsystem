@@ -12915,6 +12915,12 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_cxp_concurrencia_candidato_6bed2315.md`:
   conserva la corrección contractual y la prueba oficial concurrente de CxP:
   proveedor derivado en servidor, idempotencia, bloqueo de sobrepago y saldo.
+- `documentos/evidencia_plan_110/P110-005/2026-08-11_revision_visual_finanzas_cxp_6bed2315.md`:
+  registra el recorrido visual autenticado de finanzas/CxP y sus pendientes
+  contables sin ejecutar acciones mutantes sobre los datos existentes.
+- `documentos/evidencia_plan_110/P110-009/2026-08-11_hallazgos_operativos_visuales_staging.md`:
+  conserva los hallazgos observables de CPU, disco, alertas y receptor externo
+  que bloquean la compuerta de observabilidad.
 - `documentos/plan_110.md`: plan de cierre verificable preparado para
   GPT-5.6 Terra con razonamiento medio; transforma las brechas restantes del
   Plan 109 en 13 compuertas ordenadas de integración, finanzas, IA, regresión
