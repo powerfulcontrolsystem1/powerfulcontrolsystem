@@ -1,3 +1,91 @@
+2026-08-09
+- `deploy/docker-compose.staging-antivirus.yml`:
+  overlay exclusivo de staging que incorpora ClamAV por digest, red interna,
+  volumen de firmas, healthcheck y dependencia fail-closed del backend.
+- `documentos/evidencia_plan_109/P109-010/2026-08-09_clamav_staging_candidate.md`:
+  registra el candidato ClamAV, sus límites locales y la matriz real de limpio,
+  EICAR, caída, recuperación y alertas pendientes en staging.
+- `documentos/evidencia_plan_109/P109-002/2026-08-11_extraccion_ia_real_staging.md`:
+  registra extracción IA real controlada, degradación segura y revisión humana
+  auditable en PCS staging, sin contabilización.
+- `documentos/evidencia_plan_109/P109-001/2026-08-09_aislamiento_y_concurrencia_cxp_staging.md`:
+  registra la matriz A/B de CxP, proveedores y outbox, más la prueba real de
+  idempotencia concurrente y bloqueo de sobrepago realizada solo en PCS staging.
+- `documentos/evidencia_plan_109/P109-006/2026-08-09_cuatro_cajas_digest_349712fb.md`:
+  registra release exacto, cuatro recuperaciones por correo, cuatro sesiones,
+  cajas y ventas simultaneas, rechazo idempotente, cierre limpio, revocacion y
+  comprobante PDF visual del digest servido por staging.
+- `tools/qa_authenticated_invoice_pdf.cjs`: inicia sesion por el flujo oficial,
+  sustituye opcionalmente solo la vista candidata y genera un PDF A4 de una
+  factura real sin registrar credenciales ni cookies.
+- `tools/qa_corporate_mail_autologin.cjs`: comprueba de forma saneada la cadena
+  de acceso automatico al buzón Mailu y registra solo estados, hosts y rutas.
+- `documentos/evidencia_plan_109/P109-005/2026-08-09_factura_pdf_real_y_buzon_pcs.md`:
+  documenta la inspeccion visual del PDF real y el bloqueo verificable para
+  crear cuatro identidades confirmadas en PCS.
+- `documentos/evidencia_plan_109/P109-008/2026-08-09_retencion_papelera_staging_34cfd852.md`:
+  documenta la vista previa y el rechazo visual/transaccional de una depuracion
+  antes de cumplir la retencion en PCS, sin efectos financieros.
+- `documentos/evidencia_plan_109/P109-010/2026-08-09_antivirus_staging_34cfd852.md`:
+  registra que el antivirus real de staging sigue desactivado y sin clamd, con
+  las condiciones verificables necesarias para cerrar la compuerta.
+- `documentos/evidencia_plan_109/P109-000/2026-08-09_drills_migracion_34cfd852.md`:
+  registra base vacia, segunda pasada, drift de checksum, upgrade de snapshot,
+  limpieza total, salud y conciliacion del candidato exacto por digest.
+- `web/administrar_empresa/soportes_compras_ia.html`: agrega dialogo responsive
+  y accesible para acciones humanas y destructivas de soportes.
+- `web/js/soportes_compras_ia.js`: sustituye dialogos nativos por captura
+  asincrona de motivo/codigo, restaura foco y conserva el payload oficial.
+- `backend/handlers/soportes_compras_ia_revision_contract_test.go`: exige el
+  dialogo comprobable y bloquea la reintroduccion de `prompt`/`confirm`.
+- `documentos/evidencia_plan_109/P109-008/2026-08-09_dialogo_papelera_staging_34cfd852.md`:
+  registra release inmutable, respaldo, dialogo visual, validacion obligatoria,
+  bloqueo por duplicado, papelera/recuperacion y conciliacion sin efectos CxP.
+- `documentos/evidencia_plan_109/P109-000/2026-08-09_verificacion_candidato_34cfd852.md`:
+  registra digests efectivos, salud, producción intacta, E2E responsive,
+  impresiones, matrices y rechazos sin sesión del nuevo candidato.
+- `documentos/evidencia_plan_109/P109-009/2026-08-09_integridad_descarga_soportes_local.md`:
+  evidencia local de SHA-256, límites, MIME, cabeceras y alerta agregada para
+  archivos privados de soportes.
+- `documentos/evidencia_plan_109/P109-002/2026-08-09_evals_adversariales_telemetria_local.md`:
+  evidencia local de esquema acotado, valores hostiles, revisión humana y
+  resultados operativos agregados de extracción IA.
+- `documentos/evidencia_plan_109/P109-010/2026-08-09_observabilidad_antivirus_soportes_local.md`:
+  evidencia local de contadores atomicos, alertas y paneles del antivirus de
+  soportes sin datos empresariales ni contenido de archivos.
+- `documentos/evidencia_plan_109/P109-010/2026-08-09_observabilidad_depuracion_soportes_ia_local.md`:
+  evidencia local de metricas, alerta, panel y runbook para sagas de depuracion
+  vencidas sin etiquetas empresariales ni datos privados.
+- `documentos/gobernanza_tecnica/runbooks/runbook_depuracion_soportes_ia_y_cuarentena.md`:
+  procedimiento de diagnostico, reintento idempotente, escalamiento y
+  validacion posterior de cuarentena sin SQL ni borrado manual.
+- `backend/db/soportes_compras_ia.go`: agrega tumba `purgado`, validacion
+  transaccional de retencion/codigo, estado reanudable `purga_pendiente` y
+  auditoria de inicio/final por empresa.
+- `backend/db/soportes_compras_ia_postgres_test.go`: amplía el ensayo opcional
+  con depuracion, cruce A/B, confirmacion, URL invalidada y no recuperacion.
+- `backend/handlers/soportes_compras_ia.go`: coordina cuarentena/rollback del
+  archivo, reanuda caidas entre fases, diagnostica cuarentena por tenant, ata
+  rutas privadas a la empresa, serializa replicas con advisory lock, detecta
+  pendientes envejecidos y sanea adjuntos falsificados en JSON.
+- `backend/handlers/soportes_compras_ia_path_test.go`: cubre rutas A/B,
+  cuarentena reversible/definitiva, reintento concurrente, umbral de antiguedad
+  y saneamiento de radicacion manual.
+- `backend/handlers/empresa_permisos.go`: asigna `purgar` a Delete.
+- `web/administrar_empresa/soportes_compras_ia.html` y
+  `web/js/soportes_compras_ia.js`: agregan Depurados, confirmacion fuerte y
+  boton de depuracion condicionado por estado, pendientes reanudables y
+  diagnostico de solo lectura.
+- `documentos/evidencia_plan_109/P109-008/2026-08-09_purga_segura_soportes_ia_local.md`:
+  registra diseño, pruebas locales y limites de certificacion sin borrar PCS.
+- `documentos/reportes_profesionales/preflight_20260809_000638.md`: cierre
+  profesional Full/Strict con 22 compuertas aprobadas para el bloque local.
+- `documentos/reportes_profesionales/preflight_20260809_001839.md`: revalidacion
+  Full/Strict 22/22 de saga reanudable y diagnostico de cuarentena.
+- `documentos/reportes_profesionales/preflight_20260809_002303.md`: revalidacion
+  final 22/22 posterior al saneamiento de errores internos del endpoint.
+- `documentos/reportes_profesionales/preflight_20260809_003237.md`: cierre 22/22
+  de lock entre replicas, replay, antiguedad y runbook operativo.
 2026-08-08
 - `backend/handlers/soportes_compras_ia.go`: aplica cuota empresarial y maximo
   configurado antes de persistir adjuntos privados CxP/IA.
@@ -12732,3 +12820,89 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   tecnica compacta de arquitectura, componentes, persistencia y controles.
 - `backend/handlers/control_electrico_station_ui_test.go`: contrato visible del
   boton unico por estacion, su check, equipos, sensores y multiples Raspberry.
+- `documentos/evidencia_plan_109/P109-002/2026-08-08_extraccion_edicion_duplicado_pcs.md`:
+  registra la extracción IA real de un XML sintético en PCS, edición humana,
+  auditoría, rechazo, control de duplicado, conciliación sin CxP/outbox y la
+  corrección local de botones según el estado del soporte.
+- `documentos/evidencia_plan_109/P109-009/2026-08-08_subida_hostil_xss_ia_pcs.md`:
+  registra el bloqueo de HTML activo, tratamiento seguro de instrucciones y
+  texto XSS dentro de XML, escape visible, rechazo oficial y conciliación sin
+  efectos contables en PCS.
+- `documentos/evidencia_plan_109/P109-005/2026-08-09_pruebas_reales_pcs.md`:
+  consolida el barrido autenticado responsive, impresiones del documento real,
+  captura CxP/IA reversible, diagnóstico DIAN y reparación segura del cifrado
+  del buzón, con resultados y compuertas pendientes del candidato local.
+- `backend/db/dian_local_production_flag_migration.go`: migración inmutable y
+  transaccional del indicador local DIAN, con backfill limitado a evidencia
+  histórica explícita, valor obligatorio y constraint binario.
+- `backend/db/dian_local_production_flag_migration_test.go`: contrato del
+  catálogo y prueba PostgreSQL idempotente del backfill positivo y negativo.
+- `documentos/evidencia_plan_109/P109-000/2026-08-09_candidato_17c55dd8_migracion_dian.md`:
+  registra el segundo release inmutable, respaldo, migración/ledger DIAN,
+  aislamiento productivo, barrido autenticado, revisión visual e impresiones.
+- `documentos/evidencia_plan_109/P109-002/2026-08-09_cxp_ia_staging_17c55dd8.md`:
+  documenta extracción y cancelación IA, edición, aprobación, rechazo,
+  duplicado, revisión visual y conciliación sin CxP, pagos ni movimientos en el
+  candidato desplegado exclusivamente en staging.
+- `documentos/evidencia_plan_109/P109-009/2026-08-09_aislamiento_ab_identidad_no_global_34cfd852.md`:
+  registra recuperación oficial, matriz A/B de cinco módulos, denegación por
+  permiso efectivo, no mutación y revocación de la identidad temporal.
+- `documentos/evidencia_plan_109/P109-008/2026-08-09_postgres_papelera_integridad_71984cb5.md`:
+  conserva la integración PostgreSQL aislada de papelera, restauración,
+  integridad, purga idempotente y la limpieza del contenedor efímero.
+- `documentos/evidencia_plan_109/P109-008/2026-08-09_restore_integral_snapshot_20260809_031501.md`:
+  registra la restauración temporal del snapshot vigente, integridad de los
+  tarballs, datos críticos por empresa, checksums privados, RPO/RTO y límites
+  pendientes de réplica/rollback.
+- `documentos/evidencia_plan_109/P109-005/2026-08-09_finanzas_cxp_responsive_staging.md`:
+  conserva la revisión visual móvil autenticada de Finanzas/CxP, sus tablas,
+  etiquetas, consola y alcance no mutante.
+- `documentos/evidencia_plan_109/P109-009/2026-08-09_sondeo_publico_staging_cabeceras.md`:
+  registra salud, readiness y cabeceras públicas del staging, separando el
+  caché de la portada de los controles autenticados.
+- `tools/observability_report.mjs`: comprueba recursos de observabilidad y
+  reconoce el registro de estado runtime en el handler dedicado, sin exigir
+  versionar archivos creados durante la ejecución.
+- `documentos/evidencia_plan_109/P109-012/2026-08-09_compilacion_total_y_vet_candidato_08272c56.md`:
+  registra la compilación por grupos, `go vet`, preflight y la diferencia frente
+  al timeout inconcluso de la orden global.
+- `scripts/vps_p109_restore_app_validation.ps1`: ejecuta el restore de
+  aplicación P109 por SSH usando solo digests inmutables, recursos temporales y
+  limpieza garantizada; reconoce el nombre vigente `pcs-staging-backend` sin
+  relajar el requisito de digest y puede descargar una imagen faltante
+  únicamente por digest cuando se solicita de forma explícita.
+- `documentos/evidencia_plan_109/P109-008/2026-08-09_restore_aplicacion_digest_actual_staging.md`:
+  registra el restore de aplicación del candidato actual y los controles aún
+  pendientes de réplica/rollback autenticados.
+- `documentos/evidencia_plan_109/P109-005/2026-08-09_qa_impresion_20_formatos_candidato_actual.md`:
+  conserva los veinte formatos sintéticos, PDF, QR, paginación y límites de
+  impresión física/accesibilidad.
+- `documentos/evidencia_plan_109/P109-010/2026-08-09_outbox_lease_dead_recovery_postgres.md`:
+  documenta los controles PostgreSQL aislados de lease, dead-letter,
+  recuperación, deduplicación y pago CxP idempotente.
+- `documentos/evidencia_plan_109/P109-002/2026-08-09_centro_ia_visual_y_modo_agente_34cfd852.md`:
+  registra las pruebas visibles del Centro IA, modo agente reversible, duplicado
+  CxP/IA y la corrección local segura de presentación Markdown.
+- `documentos/evidencia_plan_109/P109-000/2026-08-09_candidato_bb285968_centro_ia_staging.md`:
+  registra el despliegue aislado, validación visual, E2E parcial/dirigido,
+  impresión, carga y compuerta fail-closed del candidato Centro IA.
+- `documentos/evidencia_plan_109/P109-004/2026-08-09_e2e_parcial_y_regresion_dirigida_bb285968.md`:
+  conserva el timeout del inventario completo y el PASS dirigido de escritorio
+  y móvil, sin presentarlo como cobertura total.
+- `documentos/releases/release_2026.08.09.json` y `.md`:
+  manifest generado de la compuerta; registra SHA, origen, digests requeridos y
+  bloqueos que impiden certificar el release.
+
+2026-08-11
+- `documentos/evidencia_plan_110/P110-000/2026-08-11_auditoria_integracion_y_alcance.md`:
+  registra la auditoría inicial de ramas, staging, alcance web/PWA y domótica,
+  sin presentar servicios saludables como certificación.
+- `documentos/evidencia_plan_110/P110-001/2026-08-11_fuente_cxp_canonica_y_guardia_persistencia.md`:
+  conserva la decisión ADR vigente, la guardia en persistencia y las pruebas
+  focalizadas que impiden volver a escribir CxP histórica.
+- `documentos/plan_110.md`: plan de cierre verificable preparado para
+  GPT-5.6 Terra con razonamiento medio; transforma las brechas restantes del
+  Plan 109 en 13 compuertas ordenadas de integración, finanzas, IA, regresión
+  web, calidad visual, integraciones, seguridad, restore, operación, ensayo,
+  piloto y promoción productiva. Autoriza las pruebas reales PCS mediante la
+  cuenta segura declarada en `AGENTS.md` sin duplicar credenciales en Git.

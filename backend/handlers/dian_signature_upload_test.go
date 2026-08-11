@@ -409,6 +409,15 @@ func TestBuildDIANGetStatusZipEnvelope(t *testing.T) {
 	}
 }
 
+func TestDIANSyntheticSyncHistoryIDIsNeverReconsultable(t *testing.T) {
+	if !dianIsSyntheticSyncHistoryID("sync:FV-123") {
+		t.Fatal("expected sync history key to be synthetic")
+	}
+	if dianIsSyntheticSyncHistoryID("TRACK-123") {
+		t.Fatal("a DIAN TrackId must remain reconsultable")
+	}
+}
+
 func TestValidateDIANCredentialRefsDoesNotRequireTokenForOfficialSOAP(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
 	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{})

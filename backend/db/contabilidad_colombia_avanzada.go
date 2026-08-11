@@ -1253,6 +1253,9 @@ func CreateEmpresaCarteraCXP(dbConn *sql.DB, x EmpresaCarteraCXP) (int64, error)
 	if x.Tipo != "cxc" && x.Tipo != "cxp" {
 		return 0, errors.New("tipo debe ser cxc o cxp")
 	}
+	if err := rejectEmpresaCarteraCXPHistorica(x.Tipo); err != nil {
+		return 0, err
+	}
 	x.FechaEmision = firstContabilidadValue(x.FechaEmision, time.Now().Format("2006-01-02"))
 	x.FechaVencimiento = firstContabilidadValue(x.FechaVencimiento, x.FechaEmision)
 	x.Estado = firstContabilidadValue(x.Estado, "pendiente")
@@ -1327,6 +1330,9 @@ func AplicarEmpresaCarteraCXPAbono(dbConn *sql.DB, empresaID, id int64, monto fl
 	if err != nil {
 		return result, err
 	}
+	if err := rejectEmpresaCarteraCXPHistorica(row.Tipo); err != nil {
+		return result, err
+	}
 	saldoAnterior := roundContabilidad(maxFloat64(row.Saldo, 0))
 	if saldoAnterior <= 0 {
 		return result, errors.New("la cartera seleccionada no tiene saldo pendiente")
@@ -1377,6 +1383,20 @@ func AplicarEmpresaCarteraCXPAbono(dbConn *sql.DB, empresaID, id int64, monto fl
 		DocumentoContable: strings.TrimSpace(row.Documento),
 	}
 	return result, nil
+}
+
+// ErrEmpresaCarteraCXPHistoricaReadOnly protects the P106/P110 decision that
+// supplier CxP writes live exclusively in empresa_cuentas_por_pagar. The
+// advanced accounting table remains queryable only for historical
+// reconciliation, even when this database helper is called outside its HTTP
+// handler.
+var ErrEmpresaCarteraCXPHistoricaReadOnly = errors.New("la cartera CxP historica es de solo lectura; use Finanzas > Cartera de proveedores")
+
+func rejectEmpresaCarteraCXPHistorica(tipo string) error {
+	if strings.EqualFold(strings.TrimSpace(tipo), "cxp") {
+		return ErrEmpresaCarteraCXPHistoricaReadOnly
+	}
+	return nil
 }
 
 func BuildEmpresaCarteraCXPEdades(dbConn *sql.DB, empresaID int64, tipo, fechaCorte string) (EmpresaCarteraCXPEdadesResumen, error) {

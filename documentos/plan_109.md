@@ -1453,3 +1453,145 @@ Actualización 2026-08-09, auditoría de observabilidad del candidato:
 - El resto de la compuerta breve aprobó. P109-010 continúa parcial por alertas
   externas, responsables y ensayo antivirus real; el avance sigue **53,3 %**,
   certificación formal **0 %** y **NO-GO**.
+Actualización 2026-08-09, compilación íntegra del candidato P109:
+
+- La compilación de todos los paquetes y herramientas Go se completó por grupos
+  y `go vet ./...` aprobó. El preflight estándar volvió a aprobar 20/20;
+  el timeout de la orden global se mantiene explícitamente inconcluso.
+- P109-012 conserva pendientes humanos de soporte/capacitación. No cambia la
+  fórmula: **53,3 %**, certificación formal **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, restore de aplicación del digest activo:
+
+- El candidato activo de staging restauró sus dos bases y API en recursos
+  efímeros: health/ready 200, cinco tablas, 31 filas críticas PCS y archivos
+  privados sin huérfanos. El rol runtime permaneció sin DDL.
+- P109-008 sigue parcial porque falta la variante autenticada con réplica A/B,
+  hostiles y rollback coordinado sobre este mismo candidato. La fórmula se
+  mantiene en **53,3 %**, certificación formal **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, QA de impresión del candidato actual:
+
+- Veinte formatos Carta/POS aprobaron PDF, QR, imágenes, filas, columnas y
+  paginación; factura y recibo extensos alcanzaron seis páginas cada uno sin
+  recortes.
+- P109-005 conserva impresión física, dispositivos reales y accesibilidad como
+  aceptación pendiente. La fórmula sigue **53,3 %**, certificación formal
+  **0 %** y **NO-GO**.
+
+Actualización 2026-08-09, impresión virtual real y prerrequisito de usuarios:
+
+- Chrome imprimió la factura real PCS `1PCS6` en dos páginas A4 contra las APIs
+  autenticadas. El candidato recuperó el logo oficial y dejó encabezado, cinco
+  columnas, importes, CUFE, URL, observaciones y QR sin recortes; la regresión
+  sintética aprobó 20/20 formatos.
+- La repetición de cuatro usuarios no puede declararse: en el PCS servido existe
+  una sola identidad confirmada activa. El buzón propio está provisionado, pero
+  IMAP rechaza la consulta y el acceso SnappyMail termina 302/302/403. El arreglo
+  de host SSO queda probado localmente y requiere despliegue antes de emitir y
+  confirmar tres invitaciones nuevas.
+- Con P109-008 ya aprobada técnicamente en snapshot aislado, el avance formal
+  vigente es **56,7 % de implementación**, certificación formal **0 %** y
+  **NO-GO**. P109-005 continúa parcial y P109-006 conserva su aprobación previa
+  de staging sin extrapolarla al PCS servido actual.
+
+Actualización 2026-08-09, repetición de cuatro cajas sobre el digest `349712fb`:
+
+- El workflow inmutable `31334057174` publicó API, migrador, worker y frontend
+  para el SHA completo; los cuatro digests se promovieron solo a staging.
+  Health, ready y login aprobaron, mientras las imágenes de producción se
+  conservaron sin cambios.
+- Los cuatro usuarios temporales confirmados se activaron, recuperaron su clave
+  mediante cuatro correos reales y abrieron cuatro sesiones independientes con
+  cookies y CSRF distintos. Después abrieron cuatro cajas simultáneas, crearon
+  cuatro ventas de COP 100, pagaron con efectivo, débito, Nequi y transferencia
+  y recibieron cuatro comprobantes no fiscales.
+- Los cuatro reintentos de pago devolvieron HTTP 409. Las cajas cerraron con
+  teórico igual a físico y cero incidencias. Al desactivar los usuarios, las
+  cuatro sesiones quedaron revocadas con HTTP 401.
+- La vista servida de staging imprimió uno de los comprobantes nuevos en una
+  página A4, 74.865 bytes y cero imágenes rotas; la inspección visual confirmó
+  filas, cinco columnas, importes, logo y observaciones sin recortes.
+- P109-006 queda aprobada para el digest exacto. La implementación permanece en
+  **56,7 %** porque no cerró una fase nueva del plan; la certificación formal del
+  candidato sube a **6,7 %**. P109-005, Mailu corporativo, UAT humano, piloto y
+  las demás compuertas P0/P1 mantienen **NO-GO**.
+
+Actualización 2026-08-09, aislamiento y carrera CxP del digest `349712fb`:
+
+- P109-001 ejecutó una matriz A/B de lectura entre PCS y una segunda empresa
+  activa: CxP, proveedores, reconciliación y recuperación outbox permanecieron
+  separados; una CxP de PCS consultada desde la segunda empresa devolvió 404.
+- En PCS se creó una obligación de ensayo de COP 2 por el flujo oficial. Dos
+  pagos simultáneos con la misma clave devolvieron un solo pago/movimiento y un
+  replay idempotente; dos claves distintas por el último COP resultaron en un
+  pago HTTP 200 y un rechazo HTTP 409, con saldo final COP 0 y estado pagada.
+- P109-001 conserva estado **parcial** por la conciliación/aceptación humana y
+  la recuperación operativa de un evento elegible del mismo candidato. No se
+  cierra una fase adicional: la implementación sigue en **56,7 %**, la
+  certificación exacta en **6,7 %** y el veredicto en **NO-GO**.
+
+Actualización 2026-08-09, candidato ClamAV de staging:
+
+- Se preparó un overlay exclusivo de staging con ClamAV oficial fijado por
+  digest, red interna, volumen de firmas, healthcheck y modo obligatorio
+  fail-closed para soportes CxP/IA. Los scripts de staging y de promoción por
+  digest exigen y arrancan ese servicio; producción no incorpora el overlay.
+- Las pruebas Go simuladas aprobaron limpio, malware/EICAR, caída y métricas.
+  La estación local no dispone de Docker/WSL, así que la prueba con firmas
+  reales y alertas queda pendiente del despliegue aislado del candidato.
+- No se cierra fase adicional: la implementación permanece en **56,7 %**, la
+  certificación exacta en **6,7 %** y el estado en **NO-GO**.
+
+Actualización 2026-08-11, prueba real fail-closed de ClamAV en staging:
+
+- El candidato `e70a9406` está desplegado solo en staging con `clamav` sano,
+  `/ready` 200 y modo obligatorio. La interfaz autenticada de PCS aceptó un
+  archivo limpio, rechazó EICAR sin crear soporte y bloqueó una carga limpia
+  cuando se detuvo únicamente el servicio antivirus.
+- Al recuperar el healthcheck del servicio, una nueva carga limpia fue aceptada.
+  Las métricas agregadas verificaron una ocurrencia limpia, una de malware y una
+  de indisponibilidad, sin etiquetas empresariales ni nombres de adjuntos.
+- P109-010 sigue **parcial**: falta confirmar entrega, deduplicación y
+  resolución en el receptor externo de alertas, además de las demás señales P0,
+  responsables y simulacro de incidente. La implementación continúa en
+  **56,7 %**, certificación formal **6,7 %**, con **NO-GO**.
+
+Actualización 2026-08-11, extracción IA controlada en PCS staging:
+
+- `Extraer IA` se ejecutó por el flujo visible y autenticado sobre un soporte de
+  prueba. La respuesta insuficiente no creó una CxP: quedó en revisión humana y
+  el backend registró el resultado agregado correspondiente.
+- La revisión humana editable se guardó y quedó auditada sin aprobación ni
+  contabilización. P109-002 sigue parcial por los botones y escenarios IA que
+  faltan, aislamiento A/B y las evaluaciones completas; la fórmula permanece
+  **56,7 %** de implementación, **6,7 %** de certificación y **NO-GO**.
+
+Actualización 2026-08-11, carga de reglas antivirus en observabilidad:
+
+- Prometheus de staging retenía una versión anterior del archivo montado. Tras
+  recrear exclusivamente ese contenedor con su entorno de monitoreo existente,
+  `promtool` validó 17 reglas y quedaron montadas las cuatro alertas de
+  antivirus. No se modificaron backend, datos, ClamAV ni producción.
+- Falta probar entrega/deduplicación/resolución en un receptor externo aprobado.
+  P109-010 permanece parcial y la fórmula sigue **56,7 %**, **6,7 %** y
+  **NO-GO**.
+
+Actualización 2026-08-11, recepción interna de alerta antivirus:
+
+- La caída controlada de ClamAV generó rechazo fail-closed desde la interfaz;
+  Prometheus evaluó `PCSAntivirusSoportesNoDisponible` como firing y
+  Alertmanager interno la recibió. ClamAV se recuperó sano.
+- La resolución depende de la ventana de diez minutos y el receptor externo
+  permanece sin configurar, por lo que P109-010 continúa **parcial** y el
+  veredicto **NO-GO** no cambia.
+
+Actualización 2026-08-11, preparación del drill de restauración por digest:
+
+- El validador P109 reconoce la topología actual de staging, cuyo contenedor
+  API se denomina `pcs-staging-backend`; conserva el nombre anterior como
+  compatibilidad y exige en ambos casos una referencia `@sha256` válida.
+- El candidato inmutable se construye, analiza y publica de forma separada
+  antes de ejecutar el restore. Mientras no existan los cuatro digests
+  publicados y no termine el drill, P109-008 no se declara aprobado y el
+  veredicto sigue **NO-GO**.

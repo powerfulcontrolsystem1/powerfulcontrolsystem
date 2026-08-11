@@ -507,10 +507,14 @@ func radicarSoporteComprasIA(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID 
 		}
 		row = soporteComprasIAFromForm(r, row)
 		if att != nil {
-			if err := validateSoporteComprasIAAttachment(att); err != nil {
+			// Scan the raw multipart bytes before format-specific parsing. This lets
+			// the official EICAR probe be rejected even though it is intentionally
+			// not a valid business document, and ensures no untrusted bytes reach
+			// a parser or storage when antivirus is required.
+			if err := scanSoporteComprasIAAttachment(att); err != nil {
 				return row, err
 			}
-			if err := scanSoporteComprasIAAttachment(att); err != nil {
+			if err := validateSoporteComprasIAAttachment(att); err != nil {
 				return row, err
 			}
 			release, err := acquireSoporteComprasIAStorageLock(r, dbEmp, empresaID)

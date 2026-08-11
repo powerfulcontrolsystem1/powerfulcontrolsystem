@@ -225,10 +225,12 @@ func TestStagingDigestPromotionRequiresAllExactImagesBeforeRecreate(t *testing.T
 	for _, required := range []string{
 		"PLATFORM_COMPOSE_FILE",
 		"STAGING_COMPOSE_FILE",
+		"STAGING_ANTIVIRUS_COMPOSE_FILE",
 		"RELEASE_COMPOSE_FILE",
+		"PCS_CLAMAV_IMAGE_DIGEST",
 		`config --images`,
 		`grep -Fqx "$image"`,
-		`up -d --no-build postgres migrate backend worker frontend`,
+		`up -d --no-build postgres migrate clamav backend worker frontend`,
 	} {
 		if !strings.Contains(script, required) {
 			t.Fatalf("staging digest promotion must enforce %q", required)

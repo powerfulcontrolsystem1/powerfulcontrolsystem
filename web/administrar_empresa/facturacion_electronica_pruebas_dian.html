@@ -1241,6 +1241,8 @@
         '<th>Fecha</th><th>Documento</th><th>Tipo</th><th>Estado</th><th>Mensaje DIAN</th><th>TrackId / ZipKey</th><th>Acciones</th>' +
         '</tr></thead><tbody>' + items.map(function(row) {
           const track = txt(row.track_id || row.zip_key);
+          const reconsultable = row && row.reconsultable !== false && track.indexOf("sync:") !== 0;
+          const trackLabel = track.indexOf("sync:") === 0 ? "Acuse sincrónico (sin TrackId)" : track;
           const mensaje = txt(row.status_description || row.acuse_mensaje || row.status_message || "Sin mensaje final");
           const fecha = txt(row.fecha_ultimo_acuse || row.fecha_envio || row.fecha_actualizacion || row.fecha_creacion);
           return '<tr>' +
@@ -1249,8 +1251,8 @@
             '<td>' + escapeHTML(row.tipo_documento || "-") + '</td>' +
             '<td>' + renderPill(row.acuse_estado || row.estado_dian || "pendiente") + '</td>' +
             '<td>' + escapeHTML(mensaje) + '</td>' +
-            '<td class="dian-track-key">' + escapeHTML(track) + '</td>' +
-            '<td><button type="button" class="btn secondary dian-track-reconsultar" data-track="' + escapeHTML(track) + '">Reconsultar</button></td>' +
+            '<td class="dian-track-key">' + escapeHTML(trackLabel) + '</td>' +
+            '<td><button type="button" class="btn secondary dian-track-reconsultar" data-track="' + escapeHTML(track) + '"' + (reconsultable ? '' : ' disabled title="El acuse síncrono ya fue recibido; DIAN no entregó TrackId para GetStatusZip."') + '>Reconsultar</button></td>' +
           '</tr>';
         }).join("") + '</tbody></table></div>';
     }
