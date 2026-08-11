@@ -153,10 +153,11 @@
 
     .device-photo {
       position: absolute;
-      top: 11px;
+      top: auto;
+      bottom: 72px;
       right: 11px;
-      width: 54px;
-      height: 54px;
+      width: 48px;
+      height: 48px;
       object-fit: contain;
       padding: 4px;
       border: 1px solid var(--cart-electric-line);
@@ -171,13 +172,14 @@
     }
 
     .device-body {
-      padding: 13px 80px 13px 13px;
+      padding: 13px;
       display: grid;
       gap: 10px;
     }
 
     .device-title-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 8px;
       justify-content: space-between;
       align-items: flex-start;
@@ -190,9 +192,8 @@
 
     .device-title strong {
       display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow-wrap: anywhere;
+      white-space: normal;
       font-size: 1rem;
     }
 
@@ -322,6 +323,10 @@
         <strong id="cartElectricTotalDevices">0</strong>
       </div>
       <div class="cart-electric-kpi">
+        <small>Raspberry conectadas</small>
+        <strong id="cartElectricControllers">0 / 0</strong>
+      </div>
+      <div class="cart-electric-kpi">
         <small>Encendidos</small>
         <strong id="cartElectricOnDevices">0</strong>
       </div>
@@ -332,10 +337,6 @@
       <div class="cart-electric-kpi">
         <small>Sensores</small>
         <strong id="cartElectricSensors">0</strong>
-      </div>
-      <div class="cart-electric-kpi">
-        <small>Raspberry conectadas</small>
-        <strong id="cartElectricControllers">0 / 0</strong>
       </div>
     </section>
 
@@ -348,7 +349,7 @@
         <header class="domotica-device-head"><div><p class="form-help mt-0 mb-4">Programación</p><h2 id="cartElectricScheduleTitle" class="section-heading">Equipo</h2></div><button class="btn secondary" value="cancel">Cerrar</button></header>
         <div class="domotica-device-body">
           <label class="form-help inline-check"><input id="cartElectricScheduleEnabled" type="checkbox"> Activar programación</label>
-          <div class="form-row"><div class="form-col"><label class="form-label" for="cartElectricScheduleOn">Encender</label><input id="cartElectricScheduleOn" class="form-input" type="time"></div><div class="form-col"><label class="form-label" for="cartElectricScheduleOff">Apagar</label><input id="cartElectricScheduleOff" class="form-input" type="time"></div></div>
+          <div class="form-row"><div class="form-col"><label class="form-label" for="cartElectricScheduleOn">Encender (fecha y hora)</label><input id="cartElectricScheduleOn" class="form-input" type="datetime-local"></div><div class="form-col"><label class="form-label" for="cartElectricScheduleOff">Apagar (fecha y hora)</label><input id="cartElectricScheduleOff" class="form-input" type="datetime-local"></div></div>
           <label class="form-label" for="cartElectricScheduleDays">Días</label><select id="cartElectricScheduleDays" class="form-input"><option value="todos">Todos</option><option value="lunes_viernes">Lunes a viernes</option><option value="sabado_domingo">Sábado y domingo</option></select>
         </div>
         <footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button id="cartElectricScheduleSave" class="btn primary" value="default">Guardar programación</button></footer>
@@ -442,6 +443,9 @@
 
     function scheduleLabel(rele) {
       if (!rele || !rele.programacion_habilitada) return 'Sin programacion';
+      if (normalize(rele.programacion_inicio) || normalize(rele.programacion_fin)) {
+        return 'Encendido ' + (normalize(rele.programacion_inicio) || '--') + ' | Apagado ' + (normalize(rele.programacion_fin) || '--');
+      }
       const on = normalize(rele.hora_encendido) || '--:--';
       const off = normalize(rele.hora_apagado) || '--:--';
       const days = normalize(rele.programacion_dias) || 'todos';
@@ -577,8 +581,6 @@
             '</div>' +
             '<div class="device-details">' +
               '<span>GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' | ' + escapeHtml(rele.raspberry_nombre || rele.raspberry_ip || 'Raspberry principal') + '</span>' +
-              raspberryStatusHTML(rele.raspberry_id) +
-              '<span>Modo: ' + escapeHtml(rele.modo || 'manual') + '</span>' +
               '<span>' + escapeHtml(scheduleLabel(rele)) + '</span>' +
               (normalize(rele.ultimo_error) ? '<span class="error">' + escapeHtml(rele.ultimo_error) + '</span>' : '') +
             '</div>' +
@@ -660,10 +662,29 @@
       state.selectedReleID = Number(releID);
       document.getElementById('cartElectricScheduleTitle').textContent = rele.relay_name || 'Equipo';
       document.getElementById('cartElectricScheduleEnabled').checked = !!rele.programacion_habilitada;
-      document.getElementById('cartElectricScheduleOn').value = rele.hora_encendido || '';
-      document.getElementById('cartElectricScheduleOff').value = rele.hora_apagado || '';
+      const now = new Date();
+      now.setSeconds(0, 0);
+      const defaultOn = new Date(now.getTime() + 5 * 60 * 1000);
+      const defaultOff = new Date(defaultOn.getTime() + 60 * 60 * 1000);
+      document.getElementById('cartElectricScheduleOn').value = normalize(rele.programacion_inicio) || scheduleDateTimeValue(rele.hora_encendido, defaultOn);
+      document.getElementById('cartElectricScheduleOff').value = normalize(rele.programacion_fin) || scheduleDateTimeValue(rele.hora_apagado, defaultOff, rele.hora_encendido);
       document.getElementById('cartElectricScheduleDays').value = rele.programacion_dias || 'todos';
       document.getElementById('cartElectricScheduleDialog').showModal();
+    }
+
+    function localDateTimeValue(date) {
+      const pad = function(value) { return String(value).padStart(2, '0'); };
+      return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+    }
+
+    function scheduleDateTimeValue(hour, fallback, onHour) {
+      const value = normalize(hour);
+      if (!/^\d{2}:\d{2}$/.test(value)) return localDateTimeValue(fallback);
+      const date = new Date(fallback.getTime());
+      const [hours, minutes] = value.split(':').map(Number);
+      date.setHours(hours, minutes, 0, 0);
+      if (onHour && /^\d{2}:\d{2}$/.test(normalize(onHour)) && value <= normalize(onHour)) date.setDate(date.getDate() + 1);
+      return localDateTimeValue(date);
     }
 
     async function saveSchedule() {
@@ -672,8 +693,16 @@
       const enabled = document.getElementById('cartElectricScheduleEnabled').checked;
       const on = document.getElementById('cartElectricScheduleOn').value;
       const off = document.getElementById('cartElectricScheduleOff').value;
-      if (enabled && (!on || !off || on === off)) throw new Error('Indica horarios de encendido y apagado diferentes.');
-      const payload = Object.assign({}, rele, { programacion_habilitada: enabled, hora_encendido: on, hora_apagado: off, programacion_dias: document.getElementById('cartElectricScheduleDays').value, programacion_timezone: rele.programacion_timezone || 'America/Bogota' });
+      if (enabled && (!on || !off || on >= off)) throw new Error('Indica una fecha y hora de encendido anteriores al apagado.');
+      const payload = Object.assign({}, rele, {
+        programacion_habilitada: enabled,
+        programacion_inicio: enabled ? on : '',
+        programacion_fin: enabled ? off : '',
+        hora_encendido: enabled ? on.slice(11, 16) : '',
+        hora_apagado: enabled ? off.slice(11, 16) : '',
+        programacion_dias: enabled ? 'todos' : document.getElementById('cartElectricScheduleDays').value,
+        programacion_timezone: rele.programacion_timezone || 'America/Bogota'
+      });
       const url = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=rele';
       const res = await fetch(url, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       await ensureOk(res);

@@ -3453,6 +3453,8 @@
 
 - [UX] La pagina operativa de equipos conserva solo control y programacion; el enlace «Editar» queda disponible unicamente en Configuracion.
 - [UX] El acceso Domotica del carrito queda separado del selector y resuelve la estacion desde el contexto real del carrito antes de abrir sus equipos.
+- [UX] Las tarjetas de equipos muestran el nombre completo sin obstrucciones, reservan la conectividad Raspberry para el resumen superior y eliminan el modo interno de la tarjeta.
+- [Programacion] El formulario permite seleccionar fecha y hora de encendido y apagado, incluso atravesando medianoche; se conservan las agendas antiguas basadas en hora/días.
 
 ### Ubicacion del acceso de Domotica en el carrito
 - [UX] Se retira el boton Domotica de las tarjetas de estaciones.
