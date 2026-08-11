@@ -12930,6 +12930,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-003/2026-08-11_asistente_ia_no_operativo_21a4f2cf.md`:
   conserva la prueba visual y no mutante del asistente IA con modo agente
   desactivado, más el hallazgo de consola pendiente de atribución.
+- `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
+  registra la conciliación autenticada sin pendientes ni desfases del candidato
+  actual, sin sustituir la aceptación humana contable.
 - `documentos/plan_110.md`: plan de cierre verificable preparado para
   GPT-5.6 Terra con razonamiento medio; transforma las brechas restantes del
   Plan 109 en 13 compuertas ordenadas de integración, finanzas, IA, regresión

@@ -41870,6 +41870,11 @@ acumulativa.
 - En staging, el endpoint oficial procesó siete eventos con cero fallos. La
   conciliación de agosto cerró con cero pendientes, cero errores y diferencia
   monetaria cero. Falta conciliación y UAT independiente; producción no cambió.
+2026-08-11: Plan 110 / conciliación contable del candidato final actual.
+- El candidato `516936c7` confirmó por la API autenticada que agosto tiene cero
+  eventos pendientes, cero errores, cero desfase de eventos y cero diferencia
+  monetaria. Los hitos operativos siguen auditados fuera del cotejo de partida
+  doble. La aceptación del contador continúa pendiente; producción no cambió.
 2026-08-11: Plan 110 / primera prueba IA sin efectos operativos.
 - El asistente IA de PCS respondió una consulta neutra bajo modo agente
   desactivado y no ejecutó acciones ni amplió permisos. Se detectó un error
