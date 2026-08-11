@@ -12936,6 +12936,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-006/2026-08-11_bloqueo_configuracion_dian_pcs.md`:
   conserva la comprobación visual de la ausencia de configuración DIAN de PCS
   en staging y la decisión de no emitir evidencia fiscal inválida.
+- `documentos/evidencia_plan_110/P110-005/2026-08-11_qa_impresion_y_responsive_129dcaef.md`:
+  registra la batería reproducible de 20 formatos, su inspección visual y la
+  revisión responsive autenticada de Finanzas en PCS/staging.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.

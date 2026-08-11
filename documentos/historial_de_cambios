@@ -41894,3 +41894,12 @@ acumulativa.
   modo agente apagado y sin errores de consola. El error previo de observador
   no se reprodujo, pero P110-003/P110-004 no se cierran hasta cubrir toda la
   matriz de botones, permisos y vistas. Producción no cambió.
+2026-08-11: Plan 110 / regresión de impresión y revisión móvil.
+- La batería reproducible aprobó 20/20 formatos Carta/POS, incluidos QR,
+  autoimpresión y documentos extensos de seis páginas. La inspección visual de
+  la factura extensa confirmó encabezados, columnas, importes, total y QR sin
+  recortes.
+- Finanzas de PCS/staging se revisó a 390 px con etiquetas y controles visibles
+  en la sección recorrida, sin errores de consola. P110-005 queda parcial hasta
+  completar formatos reales, accesibilidad asistida y firma de impresión física;
+  producción no cambió.

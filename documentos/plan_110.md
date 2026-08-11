@@ -818,3 +818,12 @@ autoriza ni ejecuta despliegue productivo.
   acotada, confirmar que staging no apunte a un ambiente fiscal no autorizado
   y ejecutar el flujo oficial mínimo. El avance no cambia: **23,1 %**,
   certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-11, impresión y responsive
+
+- La regresión reproducible aprobó 20/20 formatos Carta/POS y la factura
+  extensa se inspeccionó visualmente sin recortes de filas, columnas, total ni
+  QR. Finanzas PCS/staging mantuvo controles etiquetados y visibles a 390 px.
+- P110-005 pasa a **parcial**; restan documentos reales, tableta, lector/zoom
+  e impresión física. El avance formal sube a **26,9 %** (siete fases parciales
+  de 13), certificación **0 %** y veredicto **NO-GO**.
