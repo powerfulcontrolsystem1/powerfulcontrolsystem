@@ -41916,3 +41916,8 @@ acumulativa.
   resolubilidad de referencias DIAN entre principal y staging sin copiar ni
   revelar secretos. La ejecución VPS confirmó principal completo y staging sin
   configuración PCS; no se modificaron servicios ni datos fiscales.
+2026-08-11: Plan 110 / compuerta de entrega externa de Alertmanager.
+- Se añadió `vps-alertmanager-delivery-audit.sh`, que distingue una alerta
+  interna de una entrega externa sin mostrar destinos. En el VPS confirmó
+  servicio sano, cero alertas activas y solo receptor interno; devolvió bloqueo
+  controlado hasta contar con un canal aprobado y simulacro completo.
