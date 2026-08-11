@@ -1,182 +1,3 @@
-2026-08-09: Plan 109 / dialogos verificables para papelera CxP-IA.
-- La pantalla de soportes reemplaza `window.prompt` y `window.confirm` por un
-  dialogo modal accesible, responsive y automatizable.
-- Motivo y codigo se validan antes de enviar; el endpoint conserva la segunda
-  validacion, los permisos efectivos y el filtro `empresa_id`.
-- Sintaxis JavaScript, contratos enfocados, `handlers`, `db`, `utils` y
-  `git diff --check` aprobaron localmente. Falta candidato y repeticion visual
-  de papelera/recuperacion en staging; produccion no cambia.
-- El candidato `34cfd852` aprobó release inmutable, respaldo y promoción por
-  cuatro digests en staging. El diálogo validó motivo, papelera, bloqueo por
-  duplicado y recuperación; la conciliación mantuvo CxP/pagos/movimientos en
-  3/5/5. Producción permaneció sin cambios.
-- La repetición E2E `31304164994` aprobó la página en escritorio/móvil sin
-  hallazgos, impresiones 20/20 y matrices de roles/pagos. Mutaciones sin sesión
-  devolvieron 401. P109-000 no cierra sin fusión y drills de migración exactos.
-
-2026-08-09: Plan 109 / cobertura E2E autenticada y corrección Renta IA.
-- Cuatro lotes CI recorrieron 618 vistas (309 rutas por escritorio/móvil) e
-  inventariaron 11.258 botones, bloqueando toda mutación durante el QA.
-- `renta_ia.html` ya no calcula al cargar; sobre el digest corregido aprobó 2/2
-  vistas sin POST automático, errores ni mutaciones bloqueadas.
-- Persisten seis escrituras automáticas públicas y dos 502 de ayuda móvil; no
-  se declara cobertura total hasta resolver/excluirlos y probar roles/mutantes.
-- El auditor ahora separa y bloquea el contador público de visitas como
-  telemetría no operativa; no exceptúa otros métodos o rutas mutantes.
-- La repetición `31323978918` aprobó las cinco páginas públicas en escritorio y
-  móvil (10/10) con cero mutaciones operativas; los diez eventos de telemetría
-  quedaron bloqueados y auditados.
-- La repetición móvil aislada `31325595643` aprobó Ayuda APIs y Ayuda
-  contextual: los 502 del lote paralelo fueron transitorios y no quedan como
-  fallo funcional reproducible.
-
-2026-08-09: Plan 109 / integridad de archivos privados CxP-IA.
-- Descarga y carga hacia IA verifican SHA-256 persistido en tiempo constante,
-  archivo regular y tamaño 1..15 MiB. Alteración, hash inválido o exceso fallan
-  cerrados antes de servir o invocar proveedor.
-- La descarga restringe MIME por extensión y agrega sandbox, nosniff,
-  same-origin, no-referrer, DENY, no-store y attachment. Un legado sin hash se
-  sirve binario y revalida firma antes de IA.
-- Métrica, alerta crítica y panel registran solo el total agregado de fallos.
-  Pruebas de contenido, stream, MIME y cabeceras aprobaron localmente.
-- El incidente usa `FOR UPDATE` por empresa: limpia una aprobación vigente,
-  fuerza revisión humana y escribe evento minimizado en la misma transacción;
-  contabilizados/rechazados/duplicados conservan su estado terminal.
-- La prueba PostgreSQL A/B, aprobación y terminal quedó preparada pero hizo
-  SKIP local por DSN ausente; no recibe crédito dinámico.
-- Sin staging ni archivos PCS: P109-009 sigue parcial; permanece 53,3 % y NO-GO.
-
-2026-08-09: Plan 109 / evals adversariales y telemetria de extracción CxP-IA.
-- El parser IA limita 128 KiB, claves/tipos declarados, 500 líneas, longitudes y
-  rangos. Rechaza NaN, infinito, negativos, confianza fuera de 0..1 e importes
-  desproporcionados; fechas inválidas dejan de aceptarse por recorte.
-- La evaluación exige revisión ante fecha/tipo/moneda faltante, baja confianza o
-  descuadre. Contadores atomicos registran seis resultados acotados sin empresa,
-  usuario, documento, prompt ni respuesta.
-- Prometheus alerta proveedor, contrato o persistencia; Grafana muestra los
-  resultados. Pruebas adversariales y 64 registros simultáneos aprobaron.
-- Sin proveedor, staging ni mutación PCS: P109-002/P109-010 siguen parciales,
-  Plan 109 permanece 53,3 % y NO-GO.
-
-2026-08-09: Plan 109 / telemetria del antivirus de soportes CxP-IA.
-- El scanner clamd cuenta con atomicos los resultados limpio, malware,
-  indisponible y omitido; `/metrics` agrega los contadores y los gauges de modo
-  obligatorio/configurado sin etiquetas empresariales ni datos del adjunto.
-- Se agregan cuatro alertas: obligatorio sin endpoint, analisis no disponible,
-  analisis omitido y malware bloqueado. Grafana presenta estado y resultados.
-- Pruebas cubren los cuatro resultados, configuración y 64 invocaciones
-  simultaneas. El daemon real, EICAR controlada y recepción externa siguen
-  pendientes; P109-008/P109-010 continúan parciales, 53,3 % y NO-GO.
-
-2026-08-09: Plan 109 / observabilidad de depuracion CxP-IA.
-- `/metrics` incorpora conteos agregados de sagas pendientes, vencidas a 15
-  minutos y finalizadas, mas señal explícita de éxito de consulta. No publica
-  empresa, soporte, usuario, nombre ni ruta privada como etiqueta.
-- Prometheus alerta `PCSSoporteIAPurgaVencida` tras dos minutos; Grafana agrega
-  paneles de pendientes/vencidas y el runbook de observabilidad enlaza la
-  recuperación oficial sin SQL ni borrado manual.
-- Pruebas enfocadas y vet aprobaron; faltan despliegue del candidato, inyección
-  real y receptor externo. P109-010 sigue parcial, Plan 109 permanece 53,3 % y
-  NO-GO.
-
-2026-08-09: Plan 109 / depuracion segura y tumbas auditables CxP-IA.
-- Se agrega `purgar` con permiso Delete, retencion 1..3650 dias, motivo y
-  confirmacion exacta del codigo. Solo acepta registros eliminados no
-  contabilizados/convertidos y revalida todo bajo `FOR UPDATE` por `empresa_id`.
-- El archivo se mueve a cuarentena local antes de la transaccion: un rechazo o
-  carrera restaura el original; tras commit se elimina y la fila queda
-  `purgado`, sin URL y no recuperable, conservando datos y evento auditable.
-- Cargas JSON/manuales ya no aceptan rutas, hash, MIME o nombre de adjunto del
-  cliente. Descarga, IA, retencion y depuracion verifican el directorio privado
-  exacto de la empresa, cerrando referencias cruzadas heredadas/falsificadas.
-- Pruebas enfocadas cubren cuarentena commit/rollback, referencia A/B,
-  saneamiento manual, fechas y contrato PostgreSQL preparado; Go completo, vet,
-  sintaxis JS, preflight 22/22 y UI local responsive aprobaron. No se depuro PCS,
-  no hubo PR/push/despliegue. P109-008 sigue parcial y Plan 109 permanece en
-  53,3 % de implementacion, 0 % de certificacion de este cambio y NO-GO.
-- Endurecimiento posterior: la purga ahora es saga reanudable con estado visible
-  `purga_pendiente`, inicio/final transaccionales e idempotentes y recuperacion de
-  caidas antes de base, antes de borrar o antes de finalizar. Cuarentenas
-  multiples fallan cerradas.
-- Se agrega `cuarentena_preview` con permiso Read: cuenta solo archivos validos
-  y bytes del directorio del tenant, compara registros pendientes y no expone
-  nombres/rutas ni modifica archivos.
-- Go completo, vet, sintaxis JS, preflight Full/Strict 22/22 y verificacion
-  visual local de escritorio/movil aprobaron nuevamente; sin mutacion PCS.
-- La revisión del checklist multiempresa confirmó wrapper/licencia, Read/Delete,
-  `empresa_id` en SQL y filesystem, confirmación fuerte, idempotencia y auditoría;
-  errores internos de base/ruta no se devuelven al cliente.
-- La saga agrega advisory lock PostgreSQL por empresa para coordinar replicas;
-  replays posteriores a `purgado` y borrados concurrentes de la misma cuarentena
-  son idempotentes. El diagnostico marca pendientes que superan 5..1440 minutos.
-- Se documenta el runbook operativo: solo usa flujo oficial, exige backup y
-  prohibe SQL, borrado manual o mover cuarentenas entre empresas.
-- Go completo, vet, JavaScript, preflight 22/22 y revision visual local
-  escritorio/movil aprobaron; PostgreSQL dinámico y staging siguen pendientes.
-
-2026-08-08: Plan 109 / adjuntos hostiles, cancelacion IA y retencion segura.
-- Soportes CxP/IA valida firmas PNG/JPEG/WebP/PDF/XML, fija MIME canónico y
-  rechaza suplantación, XML mal formado, DTD, entidades, instrucciones y
-  elementos activos antes de cuota o escritura.
-- Si la fila falla después de guardar, se limpia solo el adjunto nuevo dentro
-  de la raíz privada validada para evitar archivos huérfanos.
-- `Cancelar IA` aborta el fetch, propaga `r.Context()` hasta Responses API y
-  conserva el cierre diferido del lock distribuido. Una prueba con proveedor
-  lento local demuestra la cancelación del transporte; la reserva avanzada se
-  devuelve con `GREATEST(0,...)` para no penalizar ni crear saldos negativos.
-- La vista previa de retención lista por `empresa_id` únicamente eliminados
-  antiguos no contabilizados y calcula bytes seguros sin borrar archivos.
-- Se integra `clamd` por INSTREAM, timeout y respuesta acotada. El modo REQUIRED
-  falla cerrado con HTTP 503 si el scanner no está disponible y malware devuelve
-  422 sin escribir; pruebas TCP locales cubren OK, FOUND, opcional y caída.
-- Falta activar ClamAV real, purga física certificada, PostgreSQL dinámico y UAT
-  PCS/staging. P109-002/P109-008/P109-009 siguen parciales; 53,3 % y NO-GO.
-
-2026-08-08: Plan 109 / papelera recuperable para soportes CxP-IA.
-- Se agrega eliminacion logica y recuperacion con motivo obligatorio, actor,
-  transaccion bloqueada y evento auditable por `empresa_id`; archivos y eventos
-  no se borran fisicamente.
-- Un soporte eliminado queda fuera de descargas, IA, edicion, aprobacion,
-  rechazo y contabilizacion. La recuperacion rechaza duplicados activos y los
-  soportes contabilizados/convertidos no pueden ocultarse.
-- La interfaz separa Activos/Papelera, habilita solo botones compatibles,
-  identifica el registro eliminado y limita enlaces de adjuntos al mismo origen.
-- El wrapper asigna explicitamente `eliminar` a permiso Delete y `restaurar` a
-  Update; ninguna accion hereda Create solo por utilizar POST.
-- Go completo, vet, sintaxis JS, contratos visuales, revision responsive local y
-  las 22 compuertas del preflight estricto aprobaron. `-race` no fue ejecutable
-  porque este runtime Go no tiene CGO; queda pendiente en Linux/staging. Sin PR,
-  push, despliegue ni mutacion PCS; P109-002/P109-008 siguen parciales y el
-  avance formal permanece en 53,3 %.
-- Se deja una integración PostgreSQL reproducible y aislada para A/B, duplicado,
-  auditoria y bloqueo contable. En este equipo queda SKIP porque no existe DSN
-  de pruebas ni Docker; no se declara como evidencia dinámica aprobada.
-
-2026-08-08: Plan 109 / SSRF en salidas DIAN e integraciones.
-- Los probes empresariales y los clientes DIAN usan un transporte que valida
-  DNS/IP publica, bloquea redes privadas/especiales, ignora proxies de entorno
-  y permite redirecciones solo dentro del mismo origen.
-- `url_dian`, `endpoint` y `url_acuse` ya no pueden cambiar de origen respecto
-  de la configuracion DIAN de la empresa. Solo HTTPS sobre `dian.gov.co` o sus
-  subdominios exactos se clasifica como servicio oficial.
-- El despacho HTTP y el health check de proveedores fiscales por `api_base_url`
-  usan la misma politica y bloquean un endpoint privado antes de conectar.
-- Las pruebas negativas, los sets DIAN simulados por servidor de test, Go
-  completo, vet y preflight estricto aprobaron; los inventarios regenerados
-  conservan 204 rutas protegidas, cero revisiones y 106 llamadas runtime
-  `Ensure`. No hubo envio fiscal, datos ni despliegue; P109-009 sigue parcial y
-  el avance formal permanece en 53,3 %.
-
-2026-08-08: Plan 109 / descarga privada CxP-IA y redirecciones SSRF.
-- El soporte privado de PCS aprobó descarga autenticada como adjunto sin caché,
-  `nosniff` ni fuga de ruta; el mismo objeto quedó bloqueado sin sesión, con
-  empresa cruzada y con identificadores ausentes o manipulados.
-- El callback OnlyOffice vuelve a validar esquema, host y puerto en cada salto
-  HTTP, rechaza redirecciones fuera del Document Server configurado y conserva
-  redirecciones relativas legítimas. Las pruebas enfocadas y vet aprobaron.
-- El cambio permanece local, sin PR, push ni despliegue. P109-009 sigue parcial
-  y no aumenta el 53,3 % formal hasta cerrar todos sus criterios.
-
 2026-08-08: Plan 109 / cuota empresarial para soportes CxP/IA.
 - La carga privada de `soportes_compras_ia` suma ahora archivos publicos y
   privados del mismo `empresa_id`, aplica la configuracion corporativa de
@@ -40562,6 +40383,37 @@ Archivos modificados:
   ni se invocó IA.
 - P108-006 continúa parcial hasta probar carga, lectura editable, confirmación,
   duplicados, tenant y conversión CxP con configuración IA segura.
+2026-07-29: Plan 108 / invariantes CxP y revalidación de impresión.
+- Las pruebas dirigidas de CxP aprobaron contratos de fuente canónica,
+  aislamiento empresarial, idempotencia, importes finitos, saldos no negativos,
+  catálogo de proveedores y dependencias de conversión desde soportes IA.
+- Se repitió la auditoría del motor común de impresión: 18 de 18 casos
+  correctos y las tres rutas de autoimpresión previstas llamaron una sola vez a
+  `window.print()`. El simulacro de migración aislado de staging no se inició
+  porque el canal SSH del VPS agotó tiempo; se registra como inconcluso, sin
+  modificar el origen ni contar como aprobación de P108-002 o P108-005.
+
+2026-07-29: Plan 108 / seguridad dinámica sin sesión en staging con TLS válido.
+- Ruta empresarial con empresa manipulada y preflight CORS de origen externo
+  devolvieron 401 sin datos ni cabeceras de autorización. `/metrics` respondió
+  solo disponibilidad con `no-store`; no se usaron sesiones ni datos reales.
+- P108-017 sigue parcial hasta completar DAST autenticado, pruebas A/B y el
+  endurecimiento restante de CSP.
+
+2026-07-29: Plan 108 / evidencia visual responsive de Finanzas.
+- En staging del candidato `41be623a`, la pantalla real de Finanzas pasó en
+  escritorio y móvil: 94 controles detectados, 8 interacciones no mutantes,
+  sin errores de consola/red ni desbordamiento horizontal. Las capturas fueron
+  revisadas visualmente.
+- La evidencia no certifica guardados, impresión, roles restrictivos o efectos
+  financieros; P108-012 conserva estado parcial.
+
+2026-07-29: Plan 108 / evidencia de backpressure autenticado en staging.
+- Cinco rondas de lectura autenticada alcanzaron el límite seguro por empresa:
+  2.390 respuestas 200, 110 respuestas 429 controladas y cero 5xx. El peor p95
+  fue 138 ms y el backend registró `rate_limit` sin degradarse.
+- La prueba no contiene operaciones de negocio ni certifica capacidad total;
+  P108-019 permanece parcial.
 
 2026-07-29: Plan 108 / carga autenticada ampliada en staging.
 - El candidato `41be623a` atendió 500 GET autenticados de solo lectura, con
@@ -41376,211 +41228,6 @@ acumulativa.
   minúsculas, rechazo de códigos SHA-256 internos y JSON inválido.
 - La descripción del código de corrección 2 usa el literal DIAN `Anulación de
   factura electrónica`, evitando además la notificación CBF04 observada.
-
-2026-08-08: Plan 109 / prueba real de captura CxP con IA y controles por estado.
-
-- PCS radicó un XML sintético, extrajo automáticamente proveedor, NIT,
-  documento, fecha, subtotal, IVA y total, permitió editar la revisión humana
-  y conservó la auditoría antes del rechazo oficial.
-- La repetición del mismo archivo quedó en estado `duplicado` y no creó cuenta
-  por pagar, pago, asiento ni evento outbox de contabilización.
-- La bandeja deshabilita localmente Extraer IA, Aprobar, Rechazar y
-  Contabilizar cuando el estado seleccionado no admite la acción, manteniendo
-  además la validación del backend como cierre de seguridad.
-- La corrección queda en una rama local sin PR ni despliegue. Las pruebas de
-  sintaxis, soportes, Go completo, vet y diff-check aprobaron.
-
-2026-08-08: Plan 109 / DAST de adjuntos y salida IA no confiable en PCS.
-
-- Un archivo HTML con script fue bloqueado antes de persistir; un XML con una
-  instrucción hostil y texto tipo `img/onerror` fue tratado como documento, no
-  como orden ejecutable.
-- La extracción dejó revisión humana, escapó el contenido en la tabla y no
-  creó imagen, script, CxP, pago, asiento ni outbox. El soporte se rechazó por
-  el endpoint oficial autenticado.
-- Se agregaron pruebas para mantener HTML/SVG/JavaScript fuera de las
-  extensiones admitidas y exigir escape de los valores extraídos en la UI.
-
-2026-08-09: Plan 109 / pruebas reales PCS, impresiones y correo Mailu.
-
-- Un barrido autenticado recorrió 24 rutas críticas en escritorio y móvil. Se
-  corrigió el desbordamiento de la configuración DIAN sin convertir la tabla
-  extensa en desbordamiento de toda la página.
-- Las impresiones reales de `1PCS5` revelaron que las ventanas blob no resolvían
-  hoja global, logo ni QR relativos. Los recursos de raíz ahora se convierten a
-  URL absoluta del mismo origen antes de crear la representación imprimible.
-- El CSP estático y dinámico admite únicamente el origen exacto del webmail
-  corporativo, sin comodines de empresa.
-- El cifrado legado del buzón PCS se renovó por el flujo oficial y quedó bajo el
-  identificador activo. La integración Mailu ahora actualiza primero el usuario
-  existente con PATCH y solo crea con POST ante 404, evitando falsos éxitos de
-  renovación que terminaban en rechazo IMAP.
-- La captura CxP/IA controlada terminó rechazada y conciliada sin cartera, pago
-  ni asiento. Una inconsistencia P0 del indicador DIAN impidió correctamente
-  emitir otro documento fiscal. El candidato separa ahora
-  `produccion_local_activa` del estado del último envío, migra únicamente
-  activaciones con evidencia histórica, bloquea autoactivación desde el CRUD y
-  limpia el indicador al volver a habilitación.
-- Go enfocado/raíz, sintaxis JavaScript, contrato de blob, preflight profesional
-  completo y diff-check aprobaron. El candidato no fue desplegado ni certificado.
-
-2026-08-09: Plan 109 / ejecución E2E autenticada por lotes.
-
-- `tools/qa_e2e_buttons.cjs` incorpora `PCS_QA_ROUTE_OFFSET` y
-  `PCS_QA_ROUTE_BATCH_SIZE`: ambos validan enteros no negativos y recortan el
-  inventario ordenado antes de multiplicarlo por escritorio/móvil.
-- El reporte registra desplazamiento y tamaño del lote. Esto permite continuar
-  una corrida interrumpida sin presentar un timeout parcial como cobertura
-  completa; la guardia contra mutaciones, la clasificación de riesgo y la
-  matriz manual de roles/IA se conservan intactas.
-- `documentos/comandos_codex.md` documenta el uso seguro: destino,
-  credenciales y evidencia se mantienen fuera del repositorio.
-- El workflow `31319557537` construyó, escaneó, generó SBOM y publicó el SHA
-  `3676cc02` una sola vez. Sus cuatro digests se promovieron sin build a
-  staging, que quedó saludable con migrador `0`; producción permaneció intacta.
-- El workflow manual `E2E Visual QA` recibe ahora offset y tamaño de lote y
-  transmite ambos al auditor; los lotes autenticados pueden cubrir el
-  inventario completo con los secretos CI, sin exponer credenciales ni ejecutar
-  solicitudes mutantes.
-- La evidencia de los lotes iniciales detectó que `renta_ia.html` enviaba un
-  POST de cálculo al cargar. Se eliminó esa ejecución automática: el cálculo y
-  el análisis IA solo se solicitan por acción visible y explícita del usuario.
-
-2026-08-09: Plan 109 / capacidad Docker y QA visual financiero.
-
-- El VPS alcanzó 88 % de uso por imágenes Docker inactivas y caché de build.
-  Tras verificar que no se afectarían contenedores, volúmenes, bases ni copias,
-  se ejecutó exclusivamente `docker image prune -a -f` y `docker builder prune
-  -a -f`; se recuperaron 28,2 GB y el uso bajó a 60 %.
-- Staging y producción respondieron health/readiness después de la limpieza.
-  La pantalla de Finanzas/CxP PCS aprobó inspección visual móvil a 390 px sin
-  desbordamiento horizontal, botones anónimos ni errores de consola.
-
-2026-08-09: Plan 109 / extracción inmutable del indicador DIAN.
-
-- El primer ensayo del candidato por digest en staging confirmó que CSP, salud
-  y servicios eran correctos, pero detectó que
-  `empresa_dian_configuracion.produccion_local_activa` seguía dependiendo del
-  bootstrap heredado, desactivado deliberadamente en staging.
-- Se agregó `20260809-001-dian-local-production-flag-v1` al catálogo empresarial
-  de `pcs-migrate`. La migración es transaccional, idempotente, agrega default,
-  obligatoriedad y constraint `0/1`, y preserva activaciones anteriores solo
-  con ambiente de producción y traza histórica explícita.
-- El hallazgo invalida la certificación del primer digest. Se requiere un nuevo
-  candidato inmutable y repetir migración, ledger, salud, aislamiento de
-  producción y pruebas autenticadas antes de cerrar la compuerta DIAN.
-
-2026-08-09: Plan 109 / segundo candidato DIAN y prioridad web.
-
-- El candidato `17c55dd8` se construyó una vez, se escaneó, publicó por cuatro
-  digests y se promovió únicamente a staging después de respaldar ambas bases.
-- Migrador, ledger, checksum, columna obligatoria, constraint binario y
-  backfill PostgreSQL reversible aprobaron. Salud y huella demostraron que los
-  servicios productivos no cambiaron.
-- El barrido autenticado del candidato aprobó 46/48 variantes; las dos
-  revisiones son la misma URL heredada `inventario.html` inexistente. Centro
-  IA, CSP/correo y DIAN dejaron de reproducir sus hallazgos previos. Las
-  impresiones aprobaron 20/20 y se revisaron Carta, POS, QR y 96 filas.
-- Se conserva la app móvil nativa para una fase posterior y se prioriza el
-  cierre web. Solo permanece el control responsive mínimo de la web móvil.
-- Tras comprobar cero referencias de contenedores, se retiraron únicamente los
-  cuatro digests del primer candidato DIAN invalidado. El uso del disco raíz
-  bajó de 80 % a 78 %; volúmenes, bases, respaldos e imágenes activas quedaron
-  intactos y staging/producción conservaron salud `ok`.
-
-2026-08-09: Plan 109 / drills exactos del candidato CxP por digest.
-
-- El migrador de `34cfd852` aprobó base vacía, repetición idempotente, detección
-  cerrada de drift de checksum y recuperación sin alterar esquema ni ledger.
-- El upgrade aislado de una copia lógica de staging conservó 350/59 tablas y
-  aprobó dos pasadas sin DDL en el rol runtime.
-- La limpieza retiró todos los recursos efímeros. Staging permaneció sano,
-  PCS conservó invariantes CxP 3/5/5 y producción no fue modificada.
-- No se creó PR. P109-000 solo conserva pendiente la revisión/fusión a `main`.
-
-2026-08-09: Plan 109 / retención real y diagnóstico antivirus de staging.
-
-- El flujo PCS mostró cero soportes vencidos a un día y bloqueó la depuración
-  confirmada de `SCI-0010` antes de la retención, sin iniciar saga ni afectar
-  las cuentas, pagos o movimientos 3/5/5.
-- La inspección visual aprobó filtros, diálogo, mensaje y tabla de papelera; la
-  sesión se cerró al finalizar.
-- Las métricas del candidato confirmaron que staging no exige ni configura
-  antivirus y el VPS no ejecuta clamd. Se conserva como bloqueo previo al
-  piloto; no se atribuye una aprobación simulada.
-
-2026-08-09: Plan 109 / aislamiento A-B e integración PostgreSQL CxP/IA.
-
-- Una identidad empresarial no global aprobó recuperación por correo, acceso a
-  cinco módulos propios y rechazo cruzado de otra empresa sin fuga visible.
-- El permiso efectivo bloqueó una acción de papelera y la limpieza desactivó la
-  cuenta por el endpoint oficial, revocando la sesión previa.
-- `backend/db/soportes_compras_ia_postgres_test.go` prepara los prerrequisitos
-  reales de migración antes de probar las tablas temporales de soportes.
-- PostgreSQL 16 aprobó aislamiento, papelera, restauración, integridad, purga
-  idempotente, precisión monetaria y bandera DIAN por empresa. El contenedor y
-  el túnel efímeros fueron eliminados; producción permaneció intacta.
-
-2026-08-09: Plan 109 / outbox durable y presentación segura de Centro IA.
-
-- La integración PostgreSQL aislada cubrió outbox idempotente, dos workers,
-  lease vencido, recuperación, dead-letter y evento contable CxP sin cruce de
-  empresa. La infraestructura efímera se retiró al terminar.
-- `web/administrar_empresa/centro_ia_empresarial.html` ahora transforma un
-  subconjunto de Markdown de IA solo después de escapar la salida; mantiene
-  títulos, listas y énfasis legibles sin interpretar HTML no confiable.
-- `backend/handlers/centro_ia_empresarial_render_contract_test.go` conserva el
-  contrato del renderizado seguro y evita que la vista vuelva a mostrar Markdown
-  literal.
-
-2026-08-09: Plan 109 / candidato Centro IA, compuerta y manifest de release.
-
-- `scripts/release_gate.ps1` resuelve el runtime Node y Chrome/Edge instalados
-  antes de E2E, impresión y carga, sin instalar dependencias ni depender de PATH.
-- `tools/release_manifest.mjs` incluye el digest obligatorio de frontend junto a
-  API, migrador y worker; la compuerta falla cerrada si cualquiera falta.
-- El SHA `bb285968` se validó visualmente solo en staging: siete funciones IA,
-  formato seguro, E2E dirigido, impresión 20/20 y carga sin errores. El E2E
-  completo quedó parcial por timeout externo y no se certificó producción.
-
-2026-08-09: Plan 109 / CxP e IA reales en el candidato de staging.
-
-- La captura oficial radicó, extrajo con IA, editó, vinculó proveedor, aprobó y
-  rechazó `SCI-0009`; el mismo archivo quedó bloqueado como duplicado en
-  `SCI-0010`.
-- `SCI-0011` confirmó que Cancelar IA conserva el estado anterior y evita
-  persistir una extracción terminada. Después se rechazó por el flujo oficial.
-- PostgreSQL mantuvo 3 CxP, 5 pagos y 5 movimientos; ninguna acción de prueba
-  contabilizó deuda. La bandeja se comprobó visualmente organizada.
-- Papelera/recuperación y A/B con segunda identidad siguen pendientes. No se
-  creó PR, no se desplegó código nuevo y producción no cambió.
-
-2026-08-09: Plan 109 / restore aislado del snapshot vigente.
-
-- `vps_restore_validation.ps1` restauró el snapshot `20260809_031501` en un
-  contenedor temporal y verificó los tarballs obligatorios, las dos bases, cinco
-  tablas críticas con `empresa_id=12` y tres checksums de soportes IA privados.
-- El RTO observado fue 27 s y el RPO 50.544 s; los recursos efímeros se
-  eliminaron al finalizar. No se modificaron staging activo ni producción.
-- La evidencia se registró en
-  `documentos/evidencia_plan_109/P109-008/2026-08-09_restore_integral_snapshot_20260809_031501.md`;
-  siguen pendientes la réplica A/B, pérdida de réplica y rollback coordinado.
-
-2026-08-09: Plan 109 / revisión visual móvil de Finanzas y CxP en staging.
-
-- La sesión autenticada de PCS comprobó a 390 px los formularios financieros,
-  seis tablas por filas/columnas y el botón de captura CxP con IA, sin guardar
-  datos ni subir archivos.
-- Se registraron 38 botones visibles con etiqueta y cero errores de consola o
-  desbordes horizontales. La evidencia conserva sus límites de accesibilidad,
-  impresión física, roles y cuatro cajas pendientes.
-
-2026-08-09: Plan 109 / sondeo público seguro de staging.
-
-- `/health`, `/ready` y la portada pública respondieron HTTP 200. HSTS, CSP,
-  nosniff, frame, referrer y permissions policy estuvieron presentes.
-- La portada no declara `Cache-Control`; queda registrado como contenido público
-  y no se extrapola a rutas autenticadas. No hubo sesión ni mutación.
 2026-08-09: Domotica Raspberry Pi por tunel HTTPS saliente.
 - Modulos afectados: `control_electrico`, `domotica`, `estaciones`,
   `super_administrador`, `seguridad_multiempresa`, `backend_db`, `frontend_ux`.
@@ -41598,15 +41245,6 @@ acumulativa.
 - QA local: paquetes `db` y `handlers` enfocados pasan; el agente Python y los
   scripts inline pasan parseo; `192.168.1.16:22` responde. La validacion fisica,
   PCS autenticada y despliegue se completan despues del candidato.
-
-2026-08-09: Plan 109 / corrección del auditor de estado runtime.
-
-- `tools/observability_report.mjs` valida el estado runtime desde el handler
-  que lo implementa, además de `main.go`, evitando un aviso falso cuando el
-  archivo de estado se crea únicamente en ejecución.
-- El reporte vuelve a exigir que exista una referencia real a
-  `server_runtime_state`; no se añade un archivo runtime vacío al repositorio.
-
 2026-08-09: Informes funcional y tecnico del modulo Domotica.
 
 - `documentos/informe_modulo_domotica_2026-08-09.md`: alcance funcional,

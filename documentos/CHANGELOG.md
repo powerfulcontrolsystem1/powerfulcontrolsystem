@@ -1,11 +1,3 @@
-## [2026-08-09] Dialogos verificables de soportes CxP/IA
-- [UX] Aprobar, rechazar, contabilizar, papelera, recuperacion y depuracion usan
-  un dialogo accesible propio en lugar de ventanas nativas bloqueantes.
-- [Auditoria] Papelera, recuperacion y depuracion exigen motivo; la depuracion
-  mantiene confirmacion fuerte por codigo antes del endpoint.
-- [Seguridad] El cambio no altera permisos ni persistencia: el backend conserva
-  validacion empresarial, retencion y transiciones por `empresa_id`.
-
 ## [2026-08-01] Confirmación e idempotencia CxP/IA
 - [IA] La extracción documental usa un lock PostgreSQL por soporte para impedir llamadas y cuotas duplicadas entre réplicas.
 - [CxP] Aprobar y rechazar son transacciones idempotentes; no se puede revivir un soporte rechazado, duplicado o contabilizado.
@@ -3462,7 +3454,8 @@
 ## 2026-08-11 - Correccion de migracion Domotica
 
 - Se versionan las columnas `programacion_inicio` y `programacion_fin` de los relés para que el rango de fecha/hora llegue al esquema empresarial antes de que la API lo consulte.
-## 2026-08-11 - Continuidad Raspberry y organización Domótica
-
-- El agente de Raspberry se reconecta después de reiniciar y PCS repone en cola, una por una con un segundo de separación, las salidas confirmadas encendidas antes del reinicio.
-- Se agrega categoría de equipo, tarjetas ordenadas por categoría, icono en la fila de acciones, consumo filtrable por equipo/categoría, bitácora y tutorial de instalación inicial.
+## [2026-08-11] Recuperación y diagnóstico Domótica
+- [Raspberry] El agente se reconecta por systemd y, después de un reinicio, restaura únicamente los relés confirmados encendidos de forma secuencial, con un segundo entre salidas.
+- [Operación] La configuración permite probar cada GPIO BCM de una Raspberry conectada con un pulso activo-bajo de un segundo que no queda diferido si el túnel está caído.
+- [Datos] Los aparatos admiten categoría y los reportes filtran consumo y estado por categoría o equipo; cada comando queda en bitácora empresarial.
+- [Guía] El tutorial de Domótica explica el instalador inicial, túnel, identificación de GPIO, polaridad y seguridad eléctrica.
