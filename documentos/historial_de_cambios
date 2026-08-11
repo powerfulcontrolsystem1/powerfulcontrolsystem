@@ -41726,3 +41726,12 @@ acumulativa.
 - El fallback no acepta tags ni referencias mutables: el drill sigue fallando
   cerrado si API o migrador no resuelven a un digest SHA-256 exacto. No se
   ejecutó restauración con imágenes mutables ni se modificó producción.
+2026-08-11: creación del Plan 110 de cierre productivo.
+- `documentos/plan_110.md` consolida exclusivamente las brechas materiales del
+  Plan 109 en 13 fases dependientes, con criterios de aceptación, reverso,
+  evidencia, matrices y compuerta GO/NO-GO para un único candidato inmutable.
+- Las pruebas reales quedan autorizadas en PCS usando la cuenta segura indicada
+  en `AGENTS.md`; el documento prohíbe duplicar o registrar su contraseña.
+- El plan prioriza la aplicación web responsive, exige probar todas las
+  funciones y botones IA incluidos y deja la aplicación móvil nativa fuera del
+  cierre. No se implementó, desplegó ni promovió código por esta planificación.

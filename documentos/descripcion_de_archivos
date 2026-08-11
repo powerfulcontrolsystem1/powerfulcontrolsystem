@@ -12936,3 +12936,11 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/releases/release_2026.08.09.json` y `.md`:
   manifest generado de la compuerta; registra SHA, origen, digests requeridos y
   bloqueos que impiden certificar el release.
+
+2026-08-11
+- `documentos/plan_110.md`: plan de cierre verificable preparado para
+  GPT-5.6 Terra con razonamiento medio; transforma las brechas restantes del
+  Plan 109 en 13 compuertas ordenadas de integración, finanzas, IA, regresión
+  web, calidad visual, integraciones, seguridad, restore, operación, ensayo,
+  piloto y promoción productiva. Autoriza las pruebas reales PCS mediante la
+  cuenta segura declarada en `AGENTS.md` sin duplicar credenciales en Git.
