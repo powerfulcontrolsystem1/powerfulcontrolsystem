@@ -20,7 +20,7 @@ var (
 	empresaControlElectricoSchemaReady bool
 )
 
-const empresaControlElectricoReleSelectColumns = `r.id, r.empresa_id, COALESCE(r.raspberry_id,0), COALESCE(rp.codigo,''), COALESCE(rp.nombre,''), COALESCE(rp.raspberry_ip,''), COALESCE(rp.tipo_controlador,'raspberry_gpio'), COALESCE(rp.proveedor,''), COALESCE(rp.base_url,''), r.estacion_id, COALESCE(r.estacion_codigo,''), COALESCE(r.estacion_nombre,''), COALESCE(r.salida_codigo,'principal'), COALESCE(r.tipo_carga,'luces'), COALESCE(r.integracion_tipo,'gpio'), COALESCE(r.fabricante,''), COALESCE(r.modelo,''), COALESCE(r.entity_id,''), COALESCE(r.device_id,''), COALESCE(r.capability,''), COALESCE(r.comando_on,''), COALESCE(r.comando_off,''), COALESCE(r.monitoreo_habilitado,0), COALESCE(r.potencia_w,0), COALESCE(r.sensor_consumo_entity_id,''), COALESCE(r.ultimo_consumo_w,0), COALESCE(r.ultimo_consumo_kwh,0), COALESCE(r.ultimo_voltaje_v,0), COALESCE(r.ultimo_corriente_a,0), COALESCE(r.gpio_pin,0), COALESCE(r.relay_name,''), COALESCE(r.active_high,1), COALESCE(r.pulso_ms,0), COALESCE(r.modo,'seguimiento_estacion'), COALESCE(r.encender_al_activar_estacion,1), COALESCE(r.apagar_al_desactivar_estacion,1), COALESCE(r.programacion_habilitada,0), COALESCE(r.hora_encendido,''), COALESCE(r.hora_apagado,''), COALESCE(r.programacion_dias,'todos'), COALESCE(r.programacion_timezone,'America/Bogota'), COALESCE(r.ultima_programacion_on,''), COALESCE(r.ultima_programacion_off,''), COALESCE(r.imagen_url,''), COALESCE(r.ultimo_estado,'desconocido'), COALESCE(r.ultimo_comando,''), COALESCE(r.ultimo_error,''), COALESCE(r.ultima_sincronizacion,''), COALESCE(r.fecha_creacion,''), COALESCE(r.fecha_actualizacion,''), COALESCE(r.usuario_creador,''), COALESCE(r.estado,'activo'), COALESCE(r.observaciones,'')`
+const empresaControlElectricoReleSelectColumns = `r.id, r.empresa_id, COALESCE(r.raspberry_id,0), COALESCE(rp.codigo,''), COALESCE(rp.nombre,''), COALESCE(rp.raspberry_ip,''), COALESCE(rp.tipo_controlador,'raspberry_gpio'), COALESCE(rp.proveedor,''), COALESCE(rp.base_url,''), r.estacion_id, COALESCE(r.estacion_codigo,''), COALESCE(r.estacion_nombre,''), COALESCE(r.salida_codigo,'principal'), COALESCE(r.tipo_carga,'luces'), COALESCE(r.integracion_tipo,'gpio'), COALESCE(r.fabricante,''), COALESCE(r.modelo,''), COALESCE(r.entity_id,''), COALESCE(r.device_id,''), COALESCE(r.capability,''), COALESCE(r.comando_on,''), COALESCE(r.comando_off,''), COALESCE(r.monitoreo_habilitado,0), COALESCE(r.potencia_w,0), COALESCE(r.sensor_consumo_entity_id,''), COALESCE(r.ultimo_consumo_w,0), COALESCE(r.ultimo_consumo_kwh,0), COALESCE(r.ultimo_voltaje_v,0), COALESCE(r.ultimo_corriente_a,0), COALESCE(r.gpio_pin,0), COALESCE(r.relay_name,''), COALESCE(r.active_high,1), COALESCE(r.pulso_ms,0), COALESCE(r.modo,'seguimiento_estacion'), COALESCE(r.encender_al_activar_estacion,1), COALESCE(r.apagar_al_desactivar_estacion,1), COALESCE(r.programacion_habilitada,0), COALESCE(r.hora_encendido,''), COALESCE(r.hora_apagado,''), COALESCE(r.programacion_inicio,''), COALESCE(r.programacion_fin,''), COALESCE(r.programacion_dias,'todos'), COALESCE(r.programacion_timezone,'America/Bogota'), COALESCE(r.ultima_programacion_on,''), COALESCE(r.ultima_programacion_off,''), COALESCE(r.imagen_url,''), COALESCE(r.ultimo_estado,'desconocido'), COALESCE(r.ultimo_comando,''), COALESCE(r.ultimo_error,''), COALESCE(r.ultima_sincronizacion,''), COALESCE(r.fecha_creacion,''), COALESCE(r.fecha_actualizacion,''), COALESCE(r.usuario_creador,''), COALESCE(r.estado,'activo'), COALESCE(r.observaciones,'')`
 
 // EmpresaControlElectricoConfig guarda la conexion principal contra la Raspberry Pi.
 type EmpresaControlElectricoConfig struct {
@@ -114,6 +114,8 @@ type EmpresaControlElectricoRele struct {
 	ProgramacionHabilitada   bool    `json:"programacion_habilitada"`
 	HoraEncendido            string  `json:"hora_encendido,omitempty"`
 	HoraApagado              string  `json:"hora_apagado,omitempty"`
+	ProgramacionInicio       string  `json:"programacion_inicio,omitempty"`
+	ProgramacionFin          string  `json:"programacion_fin,omitempty"`
 	ProgramacionDias         string  `json:"programacion_dias,omitempty"`
 	ProgramacionTimezone     string  `json:"programacion_timezone,omitempty"`
 	UltimaProgramacionOn     string  `json:"ultima_programacion_on,omitempty"`
@@ -292,6 +294,8 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			programacion_habilitada INTEGER DEFAULT 0,
 			hora_encendido TEXT,
 			hora_apagado TEXT,
+			programacion_inicio TEXT,
+			programacion_fin TEXT,
 			programacion_dias TEXT DEFAULT 'todos',
 			programacion_timezone TEXT DEFAULT 'America/Bogota',
 			ultima_programacion_on TEXT,
@@ -412,7 +416,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		"ultimo_corriente_a": "REAL DEFAULT 0",
 		"gpio_pin":           "INTEGER NOT NULL", "relay_name": "TEXT", "active_high": "INTEGER DEFAULT 1",
 		"pulso_ms": "INTEGER DEFAULT 0", "modo": "TEXT DEFAULT 'seguimiento_estacion'", "programacion_habilitada": "INTEGER DEFAULT 0",
-		"hora_encendido": "TEXT", "hora_apagado": "TEXT", "programacion_dias": "TEXT DEFAULT 'todos'",
+		"hora_encendido": "TEXT", "hora_apagado": "TEXT", "programacion_inicio": "TEXT", "programacion_fin": "TEXT", "programacion_dias": "TEXT DEFAULT 'todos'",
 		"programacion_timezone": "TEXT DEFAULT 'America/Bogota'", "ultima_programacion_on": "TEXT", "ultima_programacion_off": "TEXT",
 		"imagen_url": "TEXT", "ultimo_estado": "TEXT DEFAULT 'desconocido'",
 		"ultimo_comando": "TEXT", "ultimo_error": "TEXT", "ultima_sincronizacion": "TEXT",
@@ -686,7 +690,7 @@ func empresaControlElectricoReleScanDest(item *EmpresaControlElectricoRele, acti
 		&item.ComandoOn, &item.ComandoOff, monitoreoHabilitado, &item.PotenciaW, &item.SensorConsumoEntityID,
 		&item.UltimoConsumoW, &item.UltimoConsumoKWh, &item.UltimoVoltajeV, &item.UltimoCorrienteA,
 		&item.GPIOPin, &item.RelayName, activeHigh, &item.PulsoMS, &item.Modo, encenderAlActivar, apagarAlDesactivar, programacionHabilitada,
-		&item.HoraEncendido, &item.HoraApagado, &item.ProgramacionDias, &item.ProgramacionTimezone,
+		&item.HoraEncendido, &item.HoraApagado, &item.ProgramacionInicio, &item.ProgramacionFin, &item.ProgramacionDias, &item.ProgramacionTimezone,
 		&item.UltimaProgramacionOn, &item.UltimaProgramacionOff, &item.ImagenURL,
 		&item.UltimoEstado, &item.UltimoComando, &item.UltimoError, &item.UltimaSincronizacion,
 		&item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones,
@@ -816,7 +820,11 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 		if item.HoraEncendido == "" || item.HoraApagado == "" {
 			return 0, fmt.Errorf("hora_encendido y hora_apagado son obligatorias cuando la programacion esta activa")
 		}
-		if item.HoraEncendido == item.HoraApagado {
+		if item.ProgramacionInicio != "" || item.ProgramacionFin != "" {
+			if item.ProgramacionInicio == "" || item.ProgramacionFin == "" || item.ProgramacionInicio >= item.ProgramacionFin {
+				return 0, fmt.Errorf("programacion_inicio y programacion_fin deben definir un rango valido")
+			}
+		} else if item.HoraEncendido == item.HoraApagado {
 			return 0, fmt.Errorf("hora_encendido y hora_apagado deben ser diferentes")
 		}
 	}
@@ -857,12 +865,12 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 		}
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET raspberry_id=NULLIF(?,0), estacion_codigo=?, estacion_nombre=?, salida_codigo=?, tipo_carga=?, integracion_tipo=?, fabricante=?, modelo=?, entity_id=?, device_id=?, capability=?, comando_on=?, comando_off=?, monitoreo_habilitado=?, potencia_w=?, sensor_consumo_entity_id=?, gpio_pin=?, relay_name=?, active_high=?, pulso_ms=?, modo=?, encender_al_activar_estacion=?, apagar_al_desactivar_estacion=?, programacion_habilitada=?, hora_encendido=?, hora_apagado=?, programacion_dias=?, programacion_timezone=?, imagen_url=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
-			item.RaspberryID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.IntegracionTipo, item.Fabricante, item.Modelo, item.EntityID, item.DeviceID, item.Capability, item.ComandoOn, item.ComandoOff, boolInt(item.MonitoreoHabilitado), item.PotenciaW, item.SensorConsumoEntityID, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.EncenderAlActivarEstacion), boolInt(item.ApagarAlDesactivarEstacion), boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), existingID)
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET raspberry_id=NULLIF(?,0), estacion_codigo=?, estacion_nombre=?, salida_codigo=?, tipo_carga=?, integracion_tipo=?, fabricante=?, modelo=?, entity_id=?, device_id=?, capability=?, comando_on=?, comando_off=?, monitoreo_habilitado=?, potencia_w=?, sensor_consumo_entity_id=?, gpio_pin=?, relay_name=?, active_high=?, pulso_ms=?, modo=?, encender_al_activar_estacion=?, apagar_al_desactivar_estacion=?, programacion_habilitada=?, hora_encendido=?, hora_apagado=?, programacion_inicio=?, programacion_fin=?, programacion_dias=?, programacion_timezone=?, imagen_url=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
+			item.RaspberryID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.IntegracionTipo, item.Fabricante, item.Modelo, item.EntityID, item.DeviceID, item.Capability, item.ComandoOn, item.ComandoOff, boolInt(item.MonitoreoHabilitado), item.PotenciaW, item.SensorConsumoEntityID, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.EncenderAlActivarEstacion), boolInt(item.ApagarAlDesactivarEstacion), boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionInicio, item.ProgramacionFin, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reles (empresa_id, raspberry_id, estacion_id, estacion_codigo, estacion_nombre, salida_codigo, tipo_carga, integracion_tipo, fabricante, modelo, entity_id, device_id, capability, comando_on, comando_off, monitoreo_habilitado, potencia_w, sensor_consumo_entity_id, gpio_pin, relay_name, active_high, pulso_ms, modo, encender_al_activar_estacion, apagar_al_desactivar_estacion, programacion_habilitada, hora_encendido, hora_apagado, programacion_dias, programacion_timezone, imagen_url, ultimo_estado, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'desconocido', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
-		item.EmpresaID, item.RaspberryID, item.EstacionID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.IntegracionTipo, item.Fabricante, item.Modelo, item.EntityID, item.DeviceID, item.Capability, item.ComandoOn, item.ComandoOff, boolInt(item.MonitoreoHabilitado), item.PotenciaW, item.SensorConsumoEntityID, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.EncenderAlActivarEstacion), boolInt(item.ApagarAlDesactivarEstacion), boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reles (empresa_id, raspberry_id, estacion_id, estacion_codigo, estacion_nombre, salida_codigo, tipo_carga, integracion_tipo, fabricante, modelo, entity_id, device_id, capability, comando_on, comando_off, monitoreo_habilitado, potencia_w, sensor_consumo_entity_id, gpio_pin, relay_name, active_high, pulso_ms, modo, encender_al_activar_estacion, apagar_al_desactivar_estacion, programacion_habilitada, hora_encendido, hora_apagado, programacion_inicio, programacion_fin, programacion_dias, programacion_timezone, imagen_url, ultimo_estado, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'desconocido', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
+		item.EmpresaID, item.RaspberryID, item.EstacionID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.IntegracionTipo, item.Fabricante, item.Modelo, item.EntityID, item.DeviceID, item.Capability, item.ComandoOn, item.ComandoOff, boolInt(item.MonitoreoHabilitado), item.PotenciaW, item.SensorConsumoEntityID, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.EncenderAlActivarEstacion), boolInt(item.ApagarAlDesactivarEstacion), boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionInicio, item.ProgramacionFin, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
 }
 
 // SetEmpresaControlElectricoReleEstado cambia estado logico del mapeo.

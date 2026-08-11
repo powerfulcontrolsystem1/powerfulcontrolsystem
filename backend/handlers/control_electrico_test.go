@@ -144,3 +144,28 @@ func TestControlElectricoProgramacionDiaActivo(t *testing.T) {
 		t.Fatalf("viernes debe estar activo en lista 1,3,5")
 	}
 }
+
+func TestControlElectricoProgramacionRangoFechaHora(t *testing.T) {
+	// Una nevera programada de 20:00 de hoy a 06:00 del dia siguiente.
+	rele := dbpkg.EmpresaControlElectricoRele{
+		ID:                     11,
+		EmpresaID:              7,
+		ProgramacionHabilitada: true,
+		ProgramacionInicio:     "2026-05-04T20:00",
+		ProgramacionFin:        "2026-05-05T06:00",
+		ProgramacionTimezone:   "America/Bogota",
+	}
+	on := controlElectricoProgramacionDue(rele, time.Date(2026, 5, 5, 1, 0, 0, 0, time.UTC))
+	if len(on) != 1 || on[0].EstadoObjetivo != "on" {
+		t.Fatalf("rango nocturno no activo = %+v", on)
+	}
+	rele.UltimaProgramacionOn = "2026-05-04 20:00:00"
+	if got := controlElectricoProgramacionDue(rele, time.Date(2026, 5, 5, 1, 0, 0, 0, time.UTC)); len(got) != 0 {
+		t.Fatalf("encendido repetido = %+v", got)
+	}
+	// Al finalizar el rango se solicita apagar.
+	off := controlElectricoProgramacionDue(rele, time.Date(2026, 5, 5, 11, 0, 0, 0, time.UTC))
+	if len(off) != 1 || off[0].EstadoObjetivo != "off" {
+		t.Fatalf("fin del rango no solicita apagado = %+v", off)
+	}
+}

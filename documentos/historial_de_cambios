@@ -41299,6 +41299,11 @@ acumulativa.
 - Se aumenta la separacion visual entre el selector de accion y el boton Domotica.
 - El boton usa el resolvedor de estacion del carrito, evitando la referencia de estado inexistente que podia impedir la navegacion; si falta el carrito muestra un mensaje explicito.
 
+2026-08-11: Tarjetas y programacion fecha-hora de Domotica.
+- Las tarjetas dejan de repetir «Raspberry conectada» y «Modo: seguimiento_estacion»; el resumen superior concentra el conteo de aparatos y Raspberry.
+- El nombre del equipo se muestra completo y el icono queda en una zona inferior sin tapar el titulo.
+- Se agregan `programacion_inicio` y `programacion_fin` para guardar rangos fecha-hora, con compatibilidad para agendas antiguas de hora y dias.
+
 2026-08-10: Domotica dentro del carrito, junto al selector de acciones.
 - Se elimina el boton y la delegacion de Domotica de las tarjetas de estaciones.
 - El carrito mantiene un unico boton `⚡ Domotica` a la derecha del selector de accion; conserva el check de visibilidad por empresa/estacion y el comportamiento responsive.
