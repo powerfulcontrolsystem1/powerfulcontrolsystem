@@ -172,27 +172,28 @@ type EmpresaControlElectricoLectura struct {
 
 // EmpresaControlElectricoRegla define automatizaciones y alarmas por senal de sensor.
 type EmpresaControlElectricoRegla struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	Nombre             string `json:"nombre,omitempty"`
-	SensorCodigo       string `json:"sensor_codigo"`
-	SensorTipo         string `json:"sensor_tipo,omitempty"`
-	Condicion          string `json:"condicion"`
-	Valor              string `json:"valor"`
-	Accion             string `json:"accion"`
-	EstacionID         int64  `json:"estacion_id,omitempty"`
-	ReleID             int64  `json:"rele_id,omitempty"`
-	RaspberryID        int64  `json:"raspberry_id,omitempty"`
-	EntradaGPIOPin     int    `json:"entrada_gpio_pin"`
-	EntradaPull        string `json:"entrada_pull,omitempty"`
-	DebounceMS         int    `json:"debounce_ms,omitempty"`
-	AlarmaHabilitada   bool   `json:"alarma_habilitada"`
-	Severidad          string `json:"severidad,omitempty"`
-	Mensaje            string `json:"mensaje,omitempty"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
+	ID                   int64  `json:"id"`
+	EmpresaID            int64  `json:"empresa_id"`
+	Nombre               string `json:"nombre,omitempty"`
+	SensorCodigo         string `json:"sensor_codigo"`
+	SensorTipo           string `json:"sensor_tipo,omitempty"`
+	Condicion            string `json:"condicion"`
+	Valor                string `json:"valor"`
+	Accion               string `json:"accion"`
+	TemporizadorSegundos int    `json:"temporizador_segundos,omitempty"`
+	EstacionID           int64  `json:"estacion_id,omitempty"`
+	ReleID               int64  `json:"rele_id,omitempty"`
+	RaspberryID          int64  `json:"raspberry_id,omitempty"`
+	EntradaGPIOPin       int    `json:"entrada_gpio_pin"`
+	EntradaPull          string `json:"entrada_pull,omitempty"`
+	DebounceMS           int    `json:"debounce_ms,omitempty"`
+	AlarmaHabilitada     bool   `json:"alarma_habilitada"`
+	Severidad            string `json:"severidad,omitempty"`
+	Mensaje              string `json:"mensaje,omitempty"`
+	FechaCreacion        string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion   string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador       string `json:"usuario_creador,omitempty"`
+	Estado               string `json:"estado,omitempty"`
 }
 
 // EmpresaControlElectricoEstacion resume una estacion operativa y su mapeo electrico.
@@ -363,6 +364,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			condicion TEXT DEFAULT 'igual',
 			valor TEXT,
 			accion TEXT DEFAULT 'alarma',
+			temporizador_segundos INTEGER DEFAULT 0,
 			estacion_id INTEGER,
 			rele_id INTEGER,
 			alarma_habilitada INTEGER DEFAULT 1,
@@ -464,7 +466,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	}
 	reglaCols := map[string]string{
 		"empresa_id": "INTEGER NOT NULL", "nombre": "TEXT", "sensor_codigo": "TEXT", "sensor_tipo": "TEXT", "condicion": "TEXT DEFAULT 'igual'",
-		"valor": "TEXT", "accion": "TEXT DEFAULT 'alarma'", "estacion_id": "INTEGER", "rele_id": "INTEGER",
+		"valor": "TEXT", "accion": "TEXT DEFAULT 'alarma'", "temporizador_segundos": "INTEGER DEFAULT 0", "estacion_id": "INTEGER", "rele_id": "INTEGER",
 		"alarma_habilitada": "INTEGER DEFAULT 1", "severidad": "TEXT DEFAULT 'advertencia'", "mensaje": "TEXT",
 		"fecha_creacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "fecha_actualizacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
 		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'",
@@ -1030,7 +1032,7 @@ func listEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID, estacionID int
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
-	q := `SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(sensor_codigo,''), COALESCE(sensor_tipo,''), COALESCE(condicion,'igual'), COALESCE(valor,''), COALESCE(accion,'alarma'), COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(raspberry_id,0), COALESCE(entrada_gpio_pin,-1), COALESCE(entrada_pull,'none'), COALESCE(debounce_ms,250), COALESCE(alarma_habilitada,1), COALESCE(severidad,'advertencia'), COALESCE(mensaje,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo') FROM empresa_control_electrico_reglas WHERE empresa_id=?`
+	q := `SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(sensor_codigo,''), COALESCE(sensor_tipo,''), COALESCE(condicion,'igual'), COALESCE(valor,''), COALESCE(accion,'alarma'), COALESCE(temporizador_segundos,0), COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(raspberry_id,0), COALESCE(entrada_gpio_pin,-1), COALESCE(entrada_pull,'none'), COALESCE(debounce_ms,250), COALESCE(alarma_habilitada,1), COALESCE(severidad,'advertencia'), COALESCE(mensaje,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo') FROM empresa_control_electrico_reglas WHERE empresa_id=?`
 	args := []interface{}{empresaID}
 	if filterStation {
 		q += " AND estacion_id=?"
@@ -1049,7 +1051,7 @@ func listEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID, estacionID int
 	for rows.Next() {
 		var item EmpresaControlElectricoRegla
 		var alarma int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.SensorCodigo, &item.SensorTipo, &item.Condicion, &item.Valor, &item.Accion, &item.EstacionID, &item.ReleID, &item.RaspberryID, &item.EntradaGPIOPin, &item.EntradaPull, &item.DebounceMS, &alarma, &item.Severidad, &item.Mensaje, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.SensorCodigo, &item.SensorTipo, &item.Condicion, &item.Valor, &item.Accion, &item.TemporizadorSegundos, &item.EstacionID, &item.ReleID, &item.RaspberryID, &item.EntradaGPIOPin, &item.EntradaPull, &item.DebounceMS, &alarma, &item.Severidad, &item.Mensaje, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado); err != nil {
 			return nil, err
 		}
 		item.AlarmaHabilitada = alarma == 1
@@ -1065,6 +1067,9 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 		return 0, errors.New("empresa_id invalido")
 	}
 	normalizeEmpresaControlElectricoRegla(item)
+	if item.Accion == "encender_temporizado" && item.TemporizadorSegundos < 1 {
+		return 0, errors.New("temporizador_segundos es obligatorio para encender con temporizador")
+	}
 	if item.SensorCodigo == "" && item.RaspberryID > 0 && item.EntradaGPIOPin >= 0 {
 		item.SensorCodigo = fmt.Sprintf("gpio:%d", item.EntradaGPIOPin)
 	}
@@ -1091,7 +1096,7 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 		if _, err := GetEmpresaControlElectricoReleByID(dbConn, item.EmpresaID, item.ReleID); err != nil {
 			return 0, errors.New("rele_id no pertenece a esta empresa")
 		}
-	} else if item.Accion == "encender" || item.Accion == "apagar" {
+	} else if item.Accion == "encender" || item.Accion == "apagar" || item.Accion == "encender_temporizado" {
 		return 0, errors.New("rele_id es obligatorio para encender o apagar")
 	}
 	if item.ID > 0 {
@@ -1100,12 +1105,12 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 		if err != nil {
 			return 0, err
 		}
-		_, err = execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET nombre=?, sensor_codigo=?, sensor_tipo=?, condicion=?, valor=?, accion=?, estacion_id=NULLIF(?,0), rele_id=NULLIF(?,0), raspberry_id=NULLIF(?,0), entrada_gpio_pin=?, entrada_pull=?, debounce_ms=?, alarma_habilitada=?, severidad=?, mensaje=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=? WHERE empresa_id=? AND id=?`,
-			item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.EstacionID, item.ReleID, item.RaspberryID, item.EntradaGPIOPin, item.EntradaPull, item.DebounceMS, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado, item.EmpresaID, existingID)
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET nombre=?, sensor_codigo=?, sensor_tipo=?, condicion=?, valor=?, accion=?, temporizador_segundos=?, estacion_id=NULLIF(?,0), rele_id=NULLIF(?,0), raspberry_id=NULLIF(?,0), entrada_gpio_pin=?, entrada_pull=?, debounce_ms=?, alarma_habilitada=?, severidad=?, mensaje=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=? WHERE empresa_id=? AND id=?`,
+			item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.TemporizadorSegundos, item.EstacionID, item.ReleID, item.RaspberryID, item.EntradaGPIOPin, item.EntradaPull, item.DebounceMS, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado, item.EmpresaID, existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reglas (empresa_id, nombre, sensor_codigo, sensor_tipo, condicion, valor, accion, estacion_id, rele_id, raspberry_id, entrada_gpio_pin, entrada_pull, debounce_ms, alarma_habilitada, severidad, mensaje, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)`,
-		item.EmpresaID, item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.EstacionID, item.ReleID, item.RaspberryID, item.EntradaGPIOPin, item.EntradaPull, item.DebounceMS, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado)
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reglas (empresa_id, nombre, sensor_codigo, sensor_tipo, condicion, valor, accion, temporizador_segundos, estacion_id, rele_id, raspberry_id, entrada_gpio_pin, entrada_pull, debounce_ms, alarma_habilitada, severidad, mensaje, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)`,
+		item.EmpresaID, item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.TemporizadorSegundos, item.EstacionID, item.ReleID, item.RaspberryID, item.EntradaGPIOPin, item.EntradaPull, item.DebounceMS, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado)
 }
 
 func SetEmpresaControlElectricoReglaEstado(dbConn *sql.DB, empresaID, reglaID int64, estado string) error {
@@ -1365,6 +1370,12 @@ func normalizeEmpresaControlElectricoRele(item *EmpresaControlElectricoRele) {
 func normalizeEmpresaControlElectricoRegla(item *EmpresaControlElectricoRegla) {
 	if item == nil {
 		return
+	}
+	if item.TemporizadorSegundos < 0 {
+		item.TemporizadorSegundos = 0
+	}
+	if item.TemporizadorSegundos > 7*24*60*60 {
+		item.TemporizadorSegundos = 7 * 24 * 60 * 60
 	}
 	item.Nombre = truncateControlElectricoText(strings.TrimSpace(item.Nombre), 160)
 	item.SensorCodigo = truncateControlElectricoText(strings.TrimSpace(item.SensorCodigo), 180)
