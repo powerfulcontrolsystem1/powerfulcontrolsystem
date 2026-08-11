@@ -115,6 +115,16 @@ const (
 	maxAsientosWorkerRetries       = 50
 )
 
+// empresaEventoContableSinAsientoSQL lists audited operational milestones that
+// are intentionally excluded from the event-to-journal reconciliation. They
+// are marked processed without a journal entry by empresaEventoContableRequiereAsiento.
+const empresaEventoContableSinAsientoSQL = `(
+	(LOWER(COALESCE(modulo, '')) = 'ventas' AND LOWER(COALESCE(evento, '')) IN ('venta_sesion_activada', 'venta_activada', 'venta_suspendida', 'venta_reabierta'))
+	OR (LOWER(COALESCE(modulo, '')) = 'compras' AND LOWER(COALESCE(evento, '')) IN ('orden_compra_creada', 'orden_compra_actualizada', 'orden_compra_pendiente_aprobacion', 'orden_compra_aprobacion_parcial', 'orden_compra_aprobada', 'orden_compra_rechazada', 'orden_compra_activada', 'orden_compra_desactivada', 'orden_compra_eliminada', 'compra_recepcion_parcial', 'compra_documentos_validados', 'compra_documentos_inconsistentes', 'proveedor_registrado', 'proveedor_actualizado', 'proveedor_activado', 'proveedor_desactivado', 'proveedor_eliminado'))
+	OR (LOWER(COALESCE(modulo, '')) = 'facturacion' AND LOWER(COALESCE(evento, '')) IN ('configuracion_facturacion_actualizada', 'factura_integracion_enviada', 'factura_integracion_fallida', 'factura_contingencia_activada'))
+	OR (LOWER(COALESCE(modulo, '')) = 'finanzas' AND LOWER(COALESCE(evento, '')) IN ('periodo_contable_cerrado', 'periodo_contable_reabierto'))
+)`
+
 // EmpresaAsientosWorkerResumen resume una corrida global del worker de asientos.
 type EmpresaAsientosWorkerResumen struct {
 	EmpresasConPendientes int      `json:"empresas_con_pendientes"`
@@ -780,7 +790,8 @@ func GetEmpresaConciliacionContablePorPeriodo(dbConn *sql.DB, empresaID int64, f
 		COALESCE(SUM(CASE WHEN COALESCE(procesado, 0) = 1 THEN COALESCE(monto_total, 0) ELSE 0 END), 0),
 		COALESCE(MAX(fecha_evento), '')
 	FROM empresa_eventos_contables
-	WHERE empresa_id = ?`
+	WHERE empresa_id = ?
+		AND NOT ` + empresaEventoContableSinAsientoSQL
 	argsEventos := []interface{}{empresaID}
 	if !f.IncludeInactive {
 		queryEventos += ` AND COALESCE(estado, 'activo') = 'activo'`

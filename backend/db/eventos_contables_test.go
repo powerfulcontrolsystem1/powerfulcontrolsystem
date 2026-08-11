@@ -66,3 +66,11 @@ func TestEmpresaEventoContableRequiereAsientoExcluyeHitosOperativosSinValorFinan
 		}
 	}
 }
+
+func TestConciliacionExcluyeLosMismosHitosOperativosSinAsiento(t *testing.T) {
+	for _, want := range []string{"venta_sesion_activada", "proveedor_registrado", "periodo_contable_cerrado"} {
+		if !strings.Contains(empresaEventoContableSinAsientoSQL, want) {
+			t.Fatalf("la conciliacion debe excluir el hito sin asiento %q", want)
+		}
+	}
+}
