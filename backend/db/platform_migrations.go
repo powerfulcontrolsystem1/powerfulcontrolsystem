@@ -147,6 +147,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaControlElectricoStationAutomationSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260811-001-domotica-datetime-schedule-v1",
+				Description: "dated start and end scheduling for electronic equipment",
+				Body:        empresaControlElectricoScheduleSchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaControlElectricoScheduleSchemaTx(tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
