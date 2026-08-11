@@ -1577,3 +1577,12 @@ Actualización 2026-08-11, carga de reglas antivirus en observabilidad:
 - Falta probar entrega/deduplicación/resolución en un receptor externo aprobado.
   P109-010 permanece parcial y la fórmula sigue **56,7 %**, **6,7 %** y
   **NO-GO**.
+
+Actualización 2026-08-11, recepción interna de alerta antivirus:
+
+- La caída controlada de ClamAV generó rechazo fail-closed desde la interfaz;
+  Prometheus evaluó `PCSAntivirusSoportesNoDisponible` como firing y
+  Alertmanager interno la recibió. ClamAV se recuperó sano.
+- La resolución depende de la ventana de diez minutos y el receptor externo
+  permanece sin configurar, por lo que P109-010 continúa **parcial** y el
+  veredicto **NO-GO** no cambia.

@@ -53,6 +53,11 @@ explícitamente y levanta `clamav` junto con los servicios de staging.
   archivo de entorno de monitoreo ya existente; `promtool` confirmó 17 reglas
   y el contenedor pasó a montar las 132 líneas, incluidas las cuatro alertas
   de antivirus. Backend, base de datos, ClamAV y producción no se tocaron.
+- Con las reglas ya cargadas, una caída controlada de solo ClamAV generó un
+  rechazo visual fail-closed del archivo limpio. Prometheus evaluó
+  `PCSAntivirusSoportesNoDisponible` como `firing` y Alertmanager interno la
+  recibió. ClamAV se recuperó saludable; la resolución automática queda sujeta
+  a la ventana de 10 minutos de la regla y no se presentó como confirmada.
 
 ## Pendiente obligatorio de cierre
 

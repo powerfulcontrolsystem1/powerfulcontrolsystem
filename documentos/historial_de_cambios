@@ -41711,3 +41711,11 @@ acumulativa.
 - El receptor de Alertmanager continúa interno y no se habilitó correo ni
   webhook externo. P109-010 sigue parcial, 56,7 % de implementación, 6,7 % de
   certificación formal y NO-GO.
+2026-08-11: Plan 109 / alerta interna de indisponibilidad antivirus.
+- Una caída controlada de solo ClamAV produjo rechazo fail-closed visible. Con
+  las reglas recién montadas, Prometheus marcó
+  `PCSAntivirusSoportesNoDisponible` en firing y Alertmanager interno la
+  recibió; ClamAV volvió a healthy.
+- No se declara resolución ni entrega externa hasta superar la ventana de la
+  regla y contar con un receptor autorizado. P109-010 conserva estado parcial
+  y NO-GO.
