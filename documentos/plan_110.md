@@ -807,3 +807,14 @@ autoriza ni ejecuta despliegue productivo.
 - P110-003 queda **parcial**; faltan todos los botones y escenarios IA. La
   implementación sube a **23,1 %** (seis fases parciales de 13), certificación
   **0 %** y veredicto **NO-GO**.
+
+## Actualización 2026-08-11, paridad DIAN PCS
+
+- La configuración DIAN completa de PCS existe en el entorno principal, pero
+  la réplica aislada de staging no contiene su fila ni referencias de firma.
+  La comprobación fue de solo lectura y no expuso ni transfirió secretos.
+- P110-006 sigue pendiente: antes de emitir una factura de prueba se debe
+  restaurar la configuración y el material de firma por una vía segura y
+  acotada, confirmar que staging no apunte a un ambiente fiscal no autorizado
+  y ejecutar el flujo oficial mínimo. El avance no cambia: **23,1 %**,
+  certificación **0 %**, **NO-GO**.

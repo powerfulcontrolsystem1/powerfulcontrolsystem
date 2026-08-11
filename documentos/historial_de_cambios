@@ -41881,3 +41881,16 @@ acumulativa.
   aislado de `MutationObserver` en la consola, aún sin fuente atribuible.
   P110-003 queda parcial hasta completar la matriz IA y P110-004 debe
   investigarlo como regresión visual; producción no cambió.
+2026-08-11: Plan 110 / bloqueo seguro DIAN y repetición visual IA.
+- El Centro de habilitación DIAN de PCS/staging no tiene ambiente, firma,
+  rango ni TestSetId configurados. No se emitió un documento ni se generó una
+  nota crédito inválida; P110-006 permanece pendiente de configuración
+  empresarial válida y aceptación oficial.
+- El contraste solo lectura confirmó que PCS sí conserva una fila DIAN,
+  referencia de certificado, referencia de clave, rango, TestSetId y emisión
+  local activa en el entorno principal. La brecha es de paridad del staging;
+  no se copió ningún secreto fiscal entre entornos.
+- La repetición autenticada del asistente IA respondió la consulta neutra con
+  modo agente apagado y sin errores de consola. El error previo de observador
+  no se reprodujo, pero P110-003/P110-004 no se cierran hasta cubrir toda la
+  matriz de botones, permisos y vistas. Producción no cambió.
