@@ -1,10 +1,14 @@
 # Plan 110 - cierre verificable para entrada en producción
 
-Fecha de creación: 2026-08-11  
-Estado inicial: **NO-GO**  
-Modelo ejecutor previsto: **GPT-5.6 Terra con razonamiento medio**  
-Empresa autorizada para pruebas: **Powerful Control System (PCS)**  
-Ámbito prioritario: **aplicación web responsive**  
+Fecha de creación: 2026-08-11
+
+Estado inicial: **NO-GO**
+
+Modelo ejecutor previsto: **GPT-5.6 Terra con razonamiento medio**
+
+Empresa autorizada para pruebas: **Powerful Control System (PCS)**
+
+Ámbito prioritario: **aplicación web responsive**
 
 ## 1. Objetivo y condición de cierre
 
