@@ -3,8 +3,8 @@
   overlay exclusivo de staging que incorpora ClamAV por digest, red interna,
   volumen de firmas, healthcheck y dependencia fail-closed del backend.
 - `documentos/evidencia_plan_109/P109-010/2026-08-09_clamav_staging_candidate.md`:
-  registra el candidato ClamAV, sus límites locales y la matriz obligatoria de
-  limpio, EICAR, caída, recuperación y alertas en staging.
+  registra el candidato ClamAV, sus límites locales y la matriz real de limpio,
+  EICAR, caída, recuperación y alertas pendientes en staging.
 - `documentos/evidencia_plan_109/P109-001/2026-08-09_aislamiento_y_concurrencia_cxp_staging.md`:
   registra la matriz A/B de CxP, proveedores y outbox, más la prueba real de
   idempotencia concurrente y bloqueo de sobrepago realizada solo en PCS staging.

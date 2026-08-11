@@ -1543,3 +1543,17 @@ Actualización 2026-08-09, candidato ClamAV de staging:
   reales y alertas queda pendiente del despliegue aislado del candidato.
 - No se cierra fase adicional: la implementación permanece en **56,7 %**, la
   certificación exacta en **6,7 %** y el estado en **NO-GO**.
+
+Actualización 2026-08-11, prueba real fail-closed de ClamAV en staging:
+
+- El candidato `e70a9406` está desplegado solo en staging con `clamav` sano,
+  `/ready` 200 y modo obligatorio. La interfaz autenticada de PCS aceptó un
+  archivo limpio, rechazó EICAR sin crear soporte y bloqueó una carga limpia
+  cuando se detuvo únicamente el servicio antivirus.
+- Al recuperar el healthcheck del servicio, una nueva carga limpia fue aceptada.
+  Las métricas agregadas verificaron una ocurrencia limpia, una de malware y una
+  de indisponibilidad, sin etiquetas empresariales ni nombres de adjuntos.
+- P109-010 sigue **parcial**: falta confirmar entrega, deduplicación y
+  resolución en el receptor externo de alertas, además de las demás señales P0,
+  responsables y simulacro de incidente. La implementación continúa en
+  **56,7 %**, certificación formal **6,7 %**, con **NO-GO**.

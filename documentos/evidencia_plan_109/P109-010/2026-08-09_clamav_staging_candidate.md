@@ -2,7 +2,7 @@
 
 Fecha: 2026-08-09
 
-Estado: **preparado para despliegue controlado; no aprobado**.
+Estado: **parcial en staging; no aprobado para producción**.
 
 ## Cambio
 
@@ -32,18 +32,31 @@ explícitamente y levanta `clamav` junto con los servicios de staging.
 - La estación de trabajo no tiene Docker ni una distribución WSL; por ello
   `docker compose config` y el daemon real no se ejecutaron localmente.
 
-## Prueba pendiente obligatoria en staging
+## Verificación real en staging (2026-08-11)
 
-1. Promover el candidato por digest y esperar healthcheck de `clamav`.
-2. Subir un archivo limpio por el endpoint oficial y confirmar aceptación.
-3. Subir la cadena EICAR controlada y confirmar rechazo HTTP 422, sin archivo
-   persistido.
-4. Detener únicamente `pcs-staging-clamav`, reintentar el archivo limpio y
-   confirmar HTTP 503 fail-closed; reiniciar el servicio y confirmar
-   recuperación.
-5. Verificar contadores/alertas Prometheus y que no aparezcan nombres, rutas,
-   empresas o contenido de archivos en métricas.
+- Se construyó y recreó solamente `pcs-staging-backend` desde el candidato
+  `e70a9406`; `pcs-staging-clamav` quedó interno y saludable. `/ready` devolvió
+  `200` y ninguno de estos cambios se aplicó a producción.
+- Desde la interfaz autenticada de PCS (`empresa_id=12`), un XML limpio fue
+  aceptado y quedó visible en la bandeja. La sonda EICAR oficial fue rechazada
+  visualmente con el mensaje de antivirus; no creó una nueva fila de soporte.
+- Se detuvo únicamente `pcs-staging-clamav`: el mismo flujo de archivo limpio
+  respondió indisponible y no radicó el soporte. Tras iniciar el servicio y
+  recuperar su healthcheck, una carga limpia volvió a completarse.
+- Las métricas internas, sin dimensiones de empresa ni archivo, registraron
+  `clean=1`, `malware=1`, `unavailable=1` y `bypassed=0` después del reinicio.
+- Para que la sonda oficial sea bloqueable antes de cualquier parser, el backend
+  analiza los bytes multipart sin confiar en su formato y solo después valida
+  PNG/JPEG/WebP/PDF/XML; así no persiste ni entrega contenido hostil a parsers.
 
-No se modificó staging ni producción en este bloque. P109-010 y P109-008
-permanecen parciales hasta completar estas cinco verificaciones sobre el mismo
-digest.
+## Pendiente obligatorio de cierre
+
+1. Confirmar en el receptor externo la entrega, deduplicación y resolución de
+   las alertas de antivirus; los contadores se verificaron, pero esa entrega no.
+2. Completar las demás señales P0 de P109-010 (outbox/lease/disco) con sus
+   responsables, escalamiento, SLO y postmortem.
+3. Repetir la matriz sobre el digest final de liberación antes de cualquier
+   decisión GO/NO-GO.
+
+P109-010 permanece parcial hasta completar los cierres operativos anteriores.
+Producción permanece sin modificar.
