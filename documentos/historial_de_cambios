@@ -41794,7 +41794,9 @@ acumulativa.
   el nombre heredado. No se eliminó ni modificó ese contenedor.
 - `docker-compose.staging.yml` ahora fuerza `pcs-staging-upload-permissions` y
   el volumen `pcs_staging_web_uploads`; se añade un contrato Go que impide
-  reintroducir el nombre o volumen de la plataforma. El runner de restore
+  reintroducir el nombre o volumen de la plataforma. La inspección posterior
+  detectó recursos heredados aún montados por worker/migrate, por lo que el
+  override declara ahora sus volúmenes de staging compartidos. El runner de restore
   admite explícitamente la ruta privada de staging y resuelve el backend actual
   como imagen API. Debe reconstruirse el candidato antes de promoverlo;
   producción no cambió.

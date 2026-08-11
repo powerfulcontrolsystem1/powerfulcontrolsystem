@@ -256,6 +256,25 @@ func TestStagingUploadPermissionsUsesOnlyStagingNameAndVolume(t *testing.T) {
 			t.Fatalf("staging upload-permissions isolation missing %q", required)
 		}
 	}
+	for _, forbidden := range []string{
+		"- pcs_web_uploads:/app/web/uploads",
+		"- pcs_private_storage:/app/private_storage",
+		"- pcs_backups:/app/backup",
+		"- pcs_backend_logs:/app/backend/logs",
+	} {
+		if strings.Contains(compose, forbidden) {
+			t.Fatalf("staging compose must not retain inherited platform volume %q", forbidden)
+		}
+	}
+	for _, required := range []string{
+		"- pcs_staging_backend_logs:/app/backend/logs",
+		"- pcs_staging_private_storage:/app/private_storage",
+		"- pcs_staging_backups:/app/backup",
+	} {
+		if !strings.Contains(compose, required) {
+			t.Fatalf("staging worker and migrate isolation missing %q", required)
+		}
+	}
 }
 
 func TestRestoredAppDrillUsesExplicitStagingEnvironmentAndBackendDigest(t *testing.T) {

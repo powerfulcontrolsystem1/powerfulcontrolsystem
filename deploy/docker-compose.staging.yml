@@ -15,6 +15,8 @@ services:
       PCS_ENV: staging
       PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
       PCS_VPS_SECURITY_TMP_DIR: ${PCS_VPS_SECURITY_TMP_DIR:-/app/backend/logs/vps_security/tmp}
+    volumes:
+      - pcs_staging_private_storage:/app/private_storage
 
   worker:
     container_name: pcs-staging-worker
@@ -22,6 +24,14 @@ services:
       PCS_ENV: staging
       PCS_WORKER_ID: pcs-worker-staging
       PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
+    # El worker procesa adjuntos y backups diferidos: debe ver los mismos
+    # recursos de staging que el backend, no los nombres heredados del Compose
+    # de plataforma.
+    volumes:
+      - pcs_staging_backend_logs:/app/backend/logs
+      - pcs_staging_web_uploads:/app/web/uploads
+      - pcs_staging_private_storage:/app/private_storage
+      - pcs_staging_backups:/app/backup
 
   postgres:
     container_name: pcs-staging-postgres

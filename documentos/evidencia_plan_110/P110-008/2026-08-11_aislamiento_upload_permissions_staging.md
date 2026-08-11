@@ -29,6 +29,14 @@ La prueba `TestStagingUploadPermissionsUsesOnlyStagingNameAndVolume` exige los
 dos valores y la regresión de promoción exige también ClamAV en el conjunto de
 servicios recreados.
 
+La primera inspección posterior confirmó el nombre nuevo del init-container,
+pero mostró que `worker` y `migrate` seguían heredando los nombres de volumen
+del Compose base dentro del proyecto de staging. Se agregó el override completo
+de logs, uploads, almacenamiento privado y backups para worker, y de
+almacenamiento privado para migrate. Este segundo hallazgo obliga a regenerar el
+candidato: no se certifica una topología con adjuntos visibles en backend y no
+en worker.
+
 El ejecutor de restauración acepta ahora la ruta privada explícita de staging;
 no intenta inferirla dentro del checkout desechable. También resuelve
 `pcs-staging-backend` como la imagen API cuando consulta los digests activos.
@@ -43,8 +51,10 @@ Resultado: PASS.
 
 ## Pendiente
 
-Crear un nuevo candidato inmutable desde el commit que contiene el override,
-promoverlo a staging y ejecutar health, readiness, ClamAV y restore efímero.
+Crear un nuevo candidato inmutable desde el commit que contiene el override
+completo, promoverlo a staging y verificar que backend, worker, frontend,
+migrate e init-container monten exclusivamente los mismos recursos de staging;
+después ejecutar health, readiness, ClamAV y restore efímero.
 
 Estado: **parcial**. El hallazgo bloqueó una promoción insegura y no afectó
 producción.
