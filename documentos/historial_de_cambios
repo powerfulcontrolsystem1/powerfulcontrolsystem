@@ -41844,4 +41844,6 @@ acumulativa.
 - En staging aislado se creó una obligación de COP 2 por la API oficial, se
   verificó replay idempotente 200/200 con el mismo pago, y una carrera final
   200/409 sin sobrepago; el detalle cerró en saldo cero y estado pagada.
-  P110-002 queda parcial por conciliación/UAT pendientes; producción no cambió.
+  La conciliación y la vista previa sanitizada del outbox respondieron 200 para
+  PCS sin reactivar eventos. P110-002 queda parcial por conciliación/UAT
+  independientes pendientes; producción no cambió.

@@ -32,6 +32,15 @@ La obligación de ensayo queda pagada y auditada en staging, junto con sus
 movimientos y evento transaccional; no se revierte para no romper la
 trazabilidad financiera del propio ensayo.
 
+## Lecturas de conciliación y outbox
+
+Después del ensayo, `reconciliacion_fuentes` respondió HTTP 200 y confirmó
+alcance de empresa #12. La previsualización autenticada de recuperación del
+topic CxP también respondió HTTP 200 para la misma empresa; mostró un evento
+elegible sanitizado, sin `payload_json` ni material privado. No se reactivó
+ningún evento: esa acción se reserva para una incidencia real con responsable
+contable.
+
 ## Estado
 
 P110-002 queda **parcial**. Aún exige conciliación contable independiente,
