@@ -12900,6 +12900,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-001/2026-08-11_fuente_cxp_canonica_y_guardia_persistencia.md`:
   conserva la decisión ADR vigente, la guardia en persistencia y las pruebas
   focalizadas que impiden volver a escribir CxP histórica.
+- `documentos/evidencia_plan_110/P110-008/2026-08-11_aislamiento_upload_permissions_staging.md`:
+  registra el bloqueo seguro de promoción por colisión con la plataforma y el
+  override que separa nombre y volumen del init-container de staging.
 - `documentos/plan_110.md`: plan de cierre verificable preparado para
   GPT-5.6 Terra con razonamiento medio; transforma las brechas restantes del
   Plan 109 en 13 compuertas ordenadas de integración, finanzas, IA, regresión

@@ -241,6 +241,44 @@ func TestStagingDigestPromotionRequiresAllExactImagesBeforeRecreate(t *testing.T
 	}
 }
 
+func TestStagingUploadPermissionsUsesOnlyStagingNameAndVolume(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.staging.yml"))
+	if err != nil {
+		t.Fatalf("read staging compose: %v", err)
+	}
+	compose := string(raw)
+	for _, required := range []string{
+		"upload-permissions:",
+		"container_name: pcs-staging-upload-permissions",
+		"pcs_staging_web_uploads:/app/web/uploads",
+	} {
+		if !strings.Contains(compose, required) {
+			t.Fatalf("staging upload-permissions isolation missing %q", required)
+		}
+	}
+}
+
+func TestRestoredAppDrillUsesExplicitStagingEnvironmentAndBackendDigest(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "scripts", "vps_p109_restore_app_validation.ps1"))
+	if err != nil {
+		t.Fatalf("read restored app drill runner: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"[string]$SourceEnv = \"\"",
+		`if ([string]::IsNullOrWhiteSpace($SourceEnv)) { $SourceEnv = "$RemotePath/deploy/.env.staging" }`,
+		"source_env=$sourceEnvLit",
+		"pcs-staging-backend) env_name=PCS_API_IMAGE_DIGEST",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("restored app drill must enforce %q", required)
+		}
+	}
+	if strings.Contains(script, `if [ ! -f "$source_env" ]; then source_env="$remote_path/deploy/.env.platform"; fi`) {
+		t.Fatal("restored app drill must not fall back from isolated staging to platform configuration")
+	}
+}
+
 func TestOperationalVPSBackupRequiresPrivateStorage(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-backup-operacion.sh"))
 	if err != nil {

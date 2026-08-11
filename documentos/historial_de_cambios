@@ -41788,3 +41788,13 @@ acumulativa.
   incluido `go test ./...`, `go vet ./...`, auditorías y migraciones. Falta CI
   remoto, migración/restore del candidato final, conciliación con contador y
   pruebas autenticadas, por lo que no se promovió staging ni producción.
+2026-08-11: Plan 110 / aislamiento del init-container de uploads en staging.
+- La promoción por digest se detuvo antes de arrancar el nuevo backend al
+  detectar que `pcs-upload-permissions` pertenecía a la plataforma y ocupaba
+  el nombre heredado. No se eliminó ni modificó ese contenedor.
+- `docker-compose.staging.yml` ahora fuerza `pcs-staging-upload-permissions` y
+  el volumen `pcs_staging_web_uploads`; se añade un contrato Go que impide
+  reintroducir el nombre o volumen de la plataforma. El runner de restore
+  admite explícitamente la ruta privada de staging y resuelve el backend actual
+  como imagen API. Debe reconstruirse el candidato antes de promoverlo;
+  producción no cambió.

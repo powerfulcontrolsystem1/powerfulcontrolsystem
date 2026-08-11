@@ -703,3 +703,17 @@ autoriza ni ejecuta despliegue productivo.
 - No se desplegó ni se modificó producción. Implementación P110: **7,7 %**
   (dos fases parciales de 13); certificación del candidato final: **0 %**;
   preparación productiva: **0 %**; veredicto **NO-GO**.
+
+## Actualización 2026-08-11, aislamiento de staging P110-008
+
+- La primera promoción del candidato se detuvo de forma segura antes de crear
+  el nuevo backend: el init-container de permisos heredaba el nombre y volumen
+  de la plataforma. No se tocó el contenedor ni el volumen de la plataforma.
+- El override de staging ahora usa nombre y volumen exclusivos y queda cubierto
+  por una prueba de regresión. El runner de restore permite indicar el entorno
+  privado del staging aislado y reconoce el servicio backend actual. Se requiere
+  un candidato inmutable nuevo para comprobar Compose y restore; P110-008 queda
+  **parcial**.
+- No se desplegó ni se modificó producción. Implementación P110: **11,5 %**
+  (tres fases parciales de 13); certificación del candidato final: **0 %**;
+  preparación productiva: **0 %**; veredicto **NO-GO**.

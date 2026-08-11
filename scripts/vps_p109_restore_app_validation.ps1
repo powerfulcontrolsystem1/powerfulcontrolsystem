@@ -14,6 +14,7 @@ param(
   [int]$Port = 0,
   [string]$IdentityFile = "",
   [string]$RemotePath = "",
+  [string]$SourceEnv = "",
   [switch]$PullMissingImages,
   [switch]$VerifyReplica,
   [switch]$VerifyCoordinatedRollback,
@@ -38,6 +39,7 @@ if ([string]::IsNullOrWhiteSpace($IdentityFile) -and (Get-Variable -Name PcsVpsI
 
 if (-not $AllowRemoteTarget) { throw "Operacion remota bloqueada. Usa -AllowRemoteTarget solo en staging autorizado." }
 if ([string]::IsNullOrWhiteSpace($RemoteUser) -or [string]::IsNullOrWhiteSpace($RemoteHost) -or $Port -le 0 -or [string]::IsNullOrWhiteSpace($RemotePath)) { throw "Faltan datos privados de destino." }
+if ([string]::IsNullOrWhiteSpace($SourceEnv)) { $SourceEnv = "$RemotePath/deploy/.env.staging" }
 if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
   $configKey = Join-Path (Split-Path -Parent $deploymentConfig) "clave privada ssh.ppk"
   if (Test-Path -LiteralPath $configKey) { $IdentityFile = $configKey }
@@ -71,6 +73,7 @@ $sourceHash = (Get-FileHash -LiteralPath $drillSource -Algorithm SHA256).Hash.To
 $sourceBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($drillSource))
 $drillID = "p109-restore-app-" + (Get-Date -Format "yyyyMMddhhmmss")
 $remotePathLit = Convert-ToBashLiteral $RemotePath
+$sourceEnvLit = Convert-ToBashLiteral $SourceEnv
 $drillIDLit = Convert-ToBashLiteral $drillID
 $pullMissingValue = if ($PullMissingImages) { "1" } else { "0" }
 $verifyReplicaValue = if ($VerifyReplica) { "1" } else { "0" }
@@ -95,8 +98,7 @@ PCS_DRILL_B64
 actual_hash="`$(sha256sum "`$tmp_script" | awk '{print `$1}')"
 [ "`$actual_hash" = "$sourceHash" ] || { echo "[ERROR] El script remoto no coincide con el SHA-256 local." >&2; exit 1; }
 chmod 700 "`$tmp_script"
-source_env="`$remote_path/deploy/.env.staging"
-if [ ! -f "`$source_env" ]; then source_env="`$remote_path/deploy/.env.platform"; fi
+source_env=$sourceEnvLit
 [ -f "`$source_env" ] || { echo "[ERROR] Falta configuracion privada de staging." >&2; exit 1; }
 resolve_digest() {
   local container="`$1"
@@ -108,6 +110,7 @@ resolve_digest() {
   if [ -n "`$digest" ]; then printf '%s' "`$digest"; return 0; fi
   case "`$container" in
     pcs-staging-api) env_name=PCS_API_IMAGE_DIGEST ;;
+    pcs-staging-backend) env_name=PCS_API_IMAGE_DIGEST ;;
     pcs-staging-migrate) env_name=PCS_MIGRATE_IMAGE_DIGEST ;;
     *) return 0 ;;
   esac
