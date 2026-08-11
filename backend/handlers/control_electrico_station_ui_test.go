@@ -60,6 +60,9 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"raspberryStatusHTML",
 		"device-toggle-action",
 		"programado",
+		"programacion_inicio",
+		"programacion_fin",
+		"datetime-local",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
@@ -67,5 +70,8 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 	}
 	if strings.Contains(source, ">Editar</a>") || strings.Contains(source, "control_electrico.html?empresa_id=") {
 		t.Fatal("la pagina operativa de equipos no debe ofrecer edicion; debe quedar en configuracion")
+	}
+	if strings.Contains(source, "Modo: ' + escapeHtml(rele.modo") || strings.Contains(source, "raspberryStatusHTML(rele.raspberry_id)") {
+		t.Fatal("las tarjetas no deben repetir modo ni estado textual de Raspberry")
 	}
 }

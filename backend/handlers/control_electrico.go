@@ -859,6 +859,22 @@ func controlElectricoProgramacionDue(rele dbpkg.EmpresaControlElectricoRele, now
 		loc, _ = time.LoadLocation("America/Bogota")
 	}
 	local := now.In(loc)
+	if strings.TrimSpace(rele.ProgramacionInicio) != "" || strings.TrimSpace(rele.ProgramacionFin) != "" {
+		start, startOK := parseControlElectricoScheduleDateTime(rele.ProgramacionInicio, loc)
+		end, endOK := parseControlElectricoScheduleDateTime(rele.ProgramacionFin, loc)
+		if !startOK || !endOK || !start.Before(end) {
+			return nil
+		}
+		currentMinute := local.Truncate(time.Minute)
+		out := []controlElectricoProgramacionDueItem{}
+		if currentMinute.Equal(start.Truncate(time.Minute)) && !controlElectricoProgramacionEjecutadaEn(rele.UltimaProgramacionOn, start) {
+			out = append(out, controlElectricoProgramacionDueItem{EstadoObjetivo: "on", EjecutadoEn: local.Format("2006-01-02 15:04:05")})
+		}
+		if currentMinute.Equal(end.Truncate(time.Minute)) && !controlElectricoProgramacionEjecutadaEn(rele.UltimaProgramacionOff, end) {
+			out = append(out, controlElectricoProgramacionDueItem{EstadoObjetivo: "off", EjecutadoEn: local.Format("2006-01-02 15:04:05")})
+		}
+		return out
+	}
 	if !controlElectricoProgramacionDiaActivo(rele.ProgramacionDias, local.Weekday()) {
 		return nil
 	}
@@ -872,6 +888,28 @@ func controlElectricoProgramacionDue(rele dbpkg.EmpresaControlElectricoRele, now
 		out = append(out, controlElectricoProgramacionDueItem{EstadoObjetivo: "off", EjecutadoEn: currentStamp})
 	}
 	return out
+}
+
+func parseControlElectricoScheduleDateTime(raw string, loc *time.Location) (time.Time, bool) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return time.Time{}, false
+	}
+	for _, layout := range []string{"2006-01-02T15:04", "2006-01-02 15:04", time.RFC3339} {
+		parsed, err := time.ParseInLocation(layout, value, loc)
+		if err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func controlElectricoProgramacionEjecutadaEn(raw string, expected time.Time) bool {
+	value := strings.TrimSpace(raw)
+	if len(value) < 16 {
+		return false
+	}
+	return value[:16] == expected.Format("2006-01-02 15:04")
 }
 
 func controlElectricoProgramacionDiaActivo(raw string, weekday time.Weekday) bool {
