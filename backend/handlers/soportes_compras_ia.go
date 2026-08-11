@@ -715,6 +715,7 @@ func scanSoporteComprasIAAttachment(att *aiAttachment) (scanErr error) {
 			end = len(att.Bytes)
 		}
 		chunk := att.Bytes[offset:end]
+		// #nosec G115 -- chunk is bounded above by 32 KiB immediately above.
 		if err := binary.Write(conn, binary.BigEndian, uint32(len(chunk))); err != nil {
 			return fmt.Errorf("%w: envio interrumpido", errSoporteComprasIAAntivirusUnavailable)
 		}
