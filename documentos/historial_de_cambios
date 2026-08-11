@@ -41911,3 +41911,8 @@ acumulativa.
   focalizadas validaron aislamiento de empresa, límites de rol y activación
   explícita de IA. P110-004 sigue pendiente de identidades autenticadas y
   acciones mutantes permitidas/denegadas; producción no cambió.
+2026-08-11: Plan 110 / auditoría segura de paridad DIAN.
+- Se añadió `vps-dian-parity-audit.sh` para contrastar configuración y
+  resolubilidad de referencias DIAN entre principal y staging sin copiar ni
+  revelar secretos. La ejecución VPS confirmó principal completo y staging sin
+  configuración PCS; no se modificaron servicios ni datos fiscales.

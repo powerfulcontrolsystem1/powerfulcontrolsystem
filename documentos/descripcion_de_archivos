@@ -12942,6 +12942,11 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-004/2026-08-11_matriz_roles_estatica_y_contratos.md`:
   conserva el inventario estricto de rutas por rol y los contratos focalizados
   de aislamiento, sin sustituir la matriz autenticada de mutaciones.
+- `documentos/evidencia_plan_110/P110-006/2026-08-11_auditoria_paridad_dian_vps.md`:
+  documenta la ejecución saneada que contrasta la paridad DIAN de PCS entre
+  principal y staging sin exponer material fiscal sensible.
+- `deploy/scripts/vps-dian-parity-audit.sh`: auditoría VPS de solo lectura para
+  detectar desalineación de DIAN por empresa antes de emitir pruebas fiscales.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.
