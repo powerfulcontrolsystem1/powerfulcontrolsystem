@@ -516,6 +516,23 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				writeJSON(w, status, result)
 				return
 
+			case "probar_gpio":
+				var payload struct {
+					RaspberryID int64 `json:"raspberry_id"`
+					GPIOPin     int   `json:"gpio_pin"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				result := controlElectricoTestRaspberryGPIO(dbEmp, empresaID, payload.RaspberryID, payload.GPIOPin, strings.TrimSpace(adminEmailFromRequest(r)))
+				status := http.StatusOK
+				if !result.OK && !result.Skipped {
+					status = http.StatusBadGateway
+				}
+				writeJSON(w, status, result)
+				return
+
 			case "sincronizar":
 				estaciones, err := dbpkg.ListEmpresaControlElectricoEstaciones(dbEmp, empresaID)
 				if err != nil {
@@ -1128,6 +1145,63 @@ func dispatchControlElectricoTunnelCommand(dbEmp *sql.DB, cfg *dbpkg.EmpresaCont
 	default:
 		return controlElectricoDispatchResult{OK: true, Pending: true, Message: "Comando en cola del tunel seguro", URL: "tunnel://" + pi.DeviceUID}
 	}
+}
+
+// controlElectricoTestRaspberryGPIO ejecuta un pulso breve sobre una salida BCM
+// de una Raspberry ya aprovisionada. No crea un aparato ni altera su estado
+// persistente; sirve exclusivamente para identificar el canal de un relay.
+func controlElectricoTestRaspberryGPIO(dbEmp *sql.DB, empresaID, raspberryID int64, gpioPin int, actor string) controlElectricoDispatchResult {
+	if !controlElectricoTestableGPIO(gpioPin) {
+		return controlElectricoDispatchResult{OK: false, Error: "GPIO no disponible para prueba segura"}
+	}
+	pi, err := dbpkg.GetEmpresaControlElectricoRaspberryByID(dbEmp, empresaID, raspberryID, false)
+	if err != nil || pi == nil || strings.ToLower(strings.TrimSpace(pi.Estado)) != "activo" {
+		return controlElectricoDispatchResult{OK: false, Error: "Raspberry Pi no disponible para esta empresa"}
+	}
+	if !pi.TunnelEnabled || strings.TrimSpace(pi.DeviceUID) == "" {
+		return controlElectricoDispatchResult{OK: false, Error: "La Raspberry Pi no tiene tunel aprovisionado"}
+	}
+	if !domoticaTunnelSeenRecently(pi.LastSeen, 90*time.Second) {
+		return controlElectricoDispatchResult{OK: false, Error: "La Raspberry Pi no esta conectada; la prueba no se pondra en cola"}
+	}
+	cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, false)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: "No se pudo cargar la configuracion de domotica"}
+	}
+	if !cfg.Habilitado {
+		return controlElectricoDispatchResult{OK: false, Error: "El modulo de domotica no esta activo para esta empresa"}
+	}
+	// Los módulos de relé de uso habitual (incluido el de 16 canales de PCS)
+	// son activos en bajo; la prueba no deja la salida energizada al terminar.
+	payload := map[string]interface{}{"gpio_pin": gpioPin, "estado": "on", "active_high": false, "pulso_ms": 1000, "origen": "prueba_gpio", "actor": actor}
+	command, err := dbpkg.QueueEmpresaControlElectricoTunnelCommand(dbEmp, empresaID, pi.ID, 0, 0, gpioPin, "on", payload, actor, "prueba_gpio")
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
+	}
+	timeout := time.Duration(cfg.TimeoutMS) * time.Millisecond
+	if timeout < 500*time.Millisecond {
+		timeout = 2500 * time.Millisecond
+	}
+	completed, err := dbpkg.WaitEmpresaControlElectricoTunnelCommand(dbEmp, empresaID, pi.ID, command.CommandUID, timeout)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
+	}
+	if completed.Estado == "completado" {
+		return controlElectricoDispatchResult{OK: true, Message: "Pulso de prueba de un segundo confirmado por Raspberry Pi", URL: "tunnel://" + pi.DeviceUID}
+	}
+	if completed.Estado == "error" || completed.Estado == "expirado" {
+		return controlElectricoDispatchResult{OK: false, Error: firstNonEmpty(completed.Error, "La Raspberry Pi no pudo ejecutar la prueba")}
+	}
+	return controlElectricoDispatchResult{OK: true, Pending: true, Message: "Prueba GPIO enviada por el tunel seguro", URL: "tunnel://" + pi.DeviceUID}
+}
+
+func controlElectricoTestableGPIO(pin int) bool {
+	for _, allowed := range []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27} {
+		if pin == allowed {
+			return true
+		}
+	}
+	return false
 }
 
 func resolveControlElectricoDispatchConfig(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele) (*dbpkg.EmpresaControlElectricoConfig, int64, error) {

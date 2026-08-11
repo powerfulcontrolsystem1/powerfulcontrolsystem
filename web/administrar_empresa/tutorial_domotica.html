@@ -31,8 +31,8 @@
     <header class="guide-head">
       <div>
         <p class="guide-kicker">Domotica PCS</p>
-        <h1>Como agregar un equipo electrónico</h1>
-        <p class="guide-intro">Conecta cada equipo a una estación y a una salida GPIO de una Raspberry registrada. La empresa, la estación y la Raspberry quedan separadas del resto de empresas.</p>
+		<h1>Tutorial de instalación y equipos</h1>
+		<p class="guide-intro">Instale el programa inicial en cada Raspberry, confirme el túnel seguro y luego conecte cada equipo a una estación y a una salida GPIO. La empresa, estación y Raspberry permanecen aisladas.</p>
       </div>
       <a class="btn secondary" href="/administrar_empresa/control_electrico.html">Volver a Domotica</a>
     </header>
@@ -43,12 +43,14 @@
       <article class="guide-card"><div class="guide-num">3</div><h2>Salida física identificada</h2><p>Verifica el GPIO cableado al canal del relé antes de controlar una carga real.</p></article>
     </section>
 
-    <section class="guide-card" aria-label="Pasos para configurar un equipo">
-      <article class="guide-step"><div class="guide-num">1</div><div><h2>Abra Estaciones y aparatos</h2><p>En <strong>Domotica</strong>, abra la sección <strong>Estaciones y aparatos</strong>. Seleccione la estación en la que estará el equipo y pulse <strong>Agregar aparato</strong>.</p></div></article>
-      <article class="guide-step"><div class="guide-num">2</div><div><h2>Describa el equipo</h2><p>Indique un nombre claro, por ejemplo <code>Nevera estación 1</code>, tipo de carga, descripción, consumo estimado en watts y, si desea, cargue una foto. La imagen se mostrará en la tarjeta de esa estación.</p></div></article>
-      <article class="guide-step"><div class="guide-num">3</div><div><h2>Asigne Raspberry y GPIO</h2><p>Elija la Raspberry de la empresa y el número GPIO que llega al relé. Un GPIO solo puede pertenecer a un aparato activo de esa Raspberry. Para el módulo PCS de 16 relés se usan los canales instalados GPIO <code>2</code> a <code>17</code>.</p></div></article>
-      <article class="guide-step"><div class="guide-num">4</div><div><h2>Defina la polaridad y pruebe</h2><p>Para el módulo de 16 relés de PCS seleccione salida <strong>activa-baja</strong>: nivel bajo significa encendido. Guarde y use <strong>Probar relé</strong> primero sin una carga crítica conectada.</p></div></article>
-      <article class="guide-step"><div class="guide-num">5</div><div><h2>Programe y opere</h2><p>Active la programación si necesita horario de encendido y apagado. Desde el carrito de la estación pulse <strong>⚡ Domotica</strong> para abrir las tarjetas y encender, apagar, programar o editar cada equipo.</p></div></article>
+    <section class="guide-card" aria-label="Pasos para instalar y configurar Domótica">
+	  <article class="guide-step"><div class="guide-num">1</div><div><h2>Registre la Raspberry</h2><p>En <strong>Domótica &gt; Controladores locales</strong>, agregue la Raspberry de esta empresa. Cada placa debe tener su propio registro y su propio instalador.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">2</div><div><h2>Descargue y ejecute el programa inicial</h2><p>Desde el navegador de esa Raspberry pulse <strong>Generar instalador</strong>. Ejecute una única vez <code>sudo sh ~/Downloads/instalar-pcs-domotica-*.sh</code>. El servicio <code>pcs-domotica-agent</code> queda habilitado para iniciar automáticamente después de cada encendido.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">3</div><div><h2>Confirme conexión y recuperación</h2><p>El túnel HTTPS sale desde la Raspberry al VPS y se reconecta solo ante pérdida de red, Internet o reinicio. Tras reiniciar, PCS recupera únicamente los relés que estaban confirmados encendidos, de uno en uno y con un segundo entre cada activación.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">4</div><div><h2>Identifique cada salida GPIO</h2><p>En la tarjeta de la Raspberry pulse <strong>Probar GPIO</strong>. Cada botón envía un pulso de un segundo y vuelve a apagar la salida; úselo primero sin carga crítica. El pulso usa polaridad <strong>activa-baja</strong>, apropiada para el módulo PCS de 16 relés.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">5</div><div><h2>Agregue el equipo</h2><p>En <strong>Estaciones y aparatos</strong>, seleccione la estación y pulse <strong>Agregar aparato</strong>. Indique nombre, categoría, descripción, potencia nominal en watts y una foto opcional.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">6</div><div><h2>Asigne Raspberry y GPIO</h2><p>Elija la Raspberry y el GPIO BCM que llega al relé. Un GPIO solo puede pertenecer a un aparato activo de esa Raspberry. Verifique también la polaridad: para el módulo PCS de 16 relés normalmente se usa salida <strong>activa-baja</strong>.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">7</div><div><h2>Programe y audite</h2><p>Programe fechas y horas si aplica. El reporte de Domótica permite filtrar consumo por categoría/equipo y la bitácora conserva cada encendido, apagado y prueba técnica.</p></div></article>
     </section>
 
     <aside class="guide-note"><strong>Seguridad eléctrica:</strong> no conecte cargas de red directamente a los pines GPIO. Use módulos de relé adecuados, fuente aislada, protección eléctrica y un instalador calificado para cargas de potencia.</aside>

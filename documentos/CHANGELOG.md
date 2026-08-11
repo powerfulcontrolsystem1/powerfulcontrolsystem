@@ -3462,3 +3462,7 @@
 ## 2026-08-11 - Correccion de migracion Domotica
 
 - Se versionan las columnas `programacion_inicio` y `programacion_fin` de los relés para que el rango de fecha/hora llegue al esquema empresarial antes de que la API lo consulte.
+## 2026-08-11 - Continuidad Raspberry y organización Domótica
+
+- El agente de Raspberry se reconecta después de reiniciar y PCS repone en cola, una por una con un segundo de separación, las salidas confirmadas encendidas antes del reinicio.
+- Se agrega categoría de equipo, tarjetas ordenadas por categoría, icono en la fila de acciones, consumo filtrable por equipo/categoría, bitácora y tutorial de instalación inicial.

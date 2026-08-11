@@ -311,10 +311,19 @@ func handleDomoticaTunnelPoll(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		Hostname     string `json:"hostname"`
 		LocalIP      string `json:"local_ip"`
 		AgentVersion string `json:"agent_version"`
+		BootID       string `json:"boot_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "json invalido"})
 		return
+	}
+	recoveryQueued := 0
+	if strings.TrimSpace(payload.BootID) != "" {
+		var recoveryErr error
+		recoveryQueued, recoveryErr = dbpkg.QueueEmpresaControlElectricoTunnelRestoreOnBoot(dbEmp, device, payload.BootID)
+		if recoveryErr != nil {
+			log.Printf("[domotica_tunnel] restore queue empresa_id=%d raspberry_id=%d error: %v", device.EmpresaID, device.RaspberryID, recoveryErr)
+		}
 	}
 	deadline := time.Now().Add(20 * time.Second)
 	var command *dbpkg.EmpresaControlElectricoTunnelCommand
@@ -339,6 +348,9 @@ func handleDomoticaTunnelPoll(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		inputs = []dbpkg.EmpresaControlElectricoInputConfig{}
 	}
 	response := map[string]interface{}{"ok": true, "inputs": inputs, "server_time": time.Now().UTC().Format(time.RFC3339)}
+	if recoveryQueued > 0 {
+		response["recovery_queued"] = recoveryQueued
+	}
 	if command != nil {
 		var commandPayload map[string]interface{}
 		if err := json.Unmarshal([]byte(command.PayloadJSON), &commandPayload); err == nil {

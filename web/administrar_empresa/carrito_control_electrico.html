@@ -152,10 +152,7 @@
     .controller-chip.is-online::before { background: var(--cart-electric-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cart-electric-success) 18%, transparent); }
 
     .device-photo {
-      position: absolute;
-      top: auto;
-      bottom: 72px;
-      right: 11px;
+      position: static;
       width: 48px;
       height: 48px;
       object-fit: contain;
@@ -235,10 +232,12 @@
 
     .device-footer {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 8px;
+      align-items: center;
       padding: 0 13px 13px;
     }
+    .device-footer.has-photo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px; }
 
     .device-toggle-action { grid-column: 1 / -1; font-weight: 800; }
     .device-toggle-action.is-on { background: var(--cart-electric-success); color: #fff; border-color: var(--cart-electric-success); }
@@ -496,7 +495,7 @@
       const box = document.getElementById('cartElectricControllerSummary');
       const rows = Array.isArray(state.raspberryPIs) ? state.raspberryPIs : [];
       const online = rows.filter(raspberryOnline).length;
-      document.getElementById('cartElectricControllers').textContent = online + ' / ' + rows.length;
+      document.getElementById('cartElectricControllers').textContent = online + (online === 1 ? ' conectada' : ' conectadas');
       if (!box) return;
       if (!rows.length) {
         box.innerHTML = '<span class="controller-chip">Sin Raspberry registradas</span>';
@@ -564,17 +563,19 @@
         return;
       }
 
-      const devicesHTML = reles.map(function(rele) {
+      const devicesHTML = reles.slice().sort(function(a, b) {
+        return normalize(a && a.categoria || 'Sin categoria').localeCompare(normalize(b && b.categoria || 'Sin categoria'), 'es');
+      }).map(function(rele) {
         const info = estadoInfo(rele);
         const isOn = info.cls === 'is-on';
         const disabled = state.sendingID > 0 || !cfg.habilitado;
+        const hasPhoto = !!normalize(rele.imagen_url);
         return '<article class="device-card">' +
-          photoHTML(rele) +
           '<div class="device-body">' +
             '<div class="device-title-row">' +
               '<div class="device-title">' +
                 '<strong title="' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '">' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '</strong>' +
-                '<small>' + escapeHtml(rele.tipo_carga || rele.salida_codigo || 'salida') + '</small>' +
+                '<small>' + escapeHtml(rele.categoria || rele.tipo_carga || rele.salida_codigo || 'Sin categoria') + '</small>' +
               '</div>' +
               (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
               '<span class="status-pill ' + info.cls + '" aria-label="Estado: ' + escapeHtml(info.label) + '">' + escapeHtml(info.label) + '</span>' +
@@ -585,9 +586,10 @@
               (normalize(rele.ultimo_error) ? '<span class="error">' + escapeHtml(rele.ultimo_error) + '</span>' : '') +
             '</div>' +
           '</div>' +
-          '<div class="device-footer">' +
+          '<div class="device-footer' + (hasPhoto ? ' has-photo' : '') + '">' +
             '<button class="btn device-toggle-action ' + info.cls + '" type="button" data-control-toggle="' + (isOn ? 'off' : 'on') + '" data-rele-id="' + escapeHtml(rele.id || 0) + '" title="' + escapeHtml(controlLabel(rele, isOn)) + '"' + (disabled ? ' disabled' : '') + '>' + escapeHtml(controlLabel(rele, isOn)) + '</button>' +
             '<button class="btn secondary" type="button" data-control-schedule data-rele-id="' + escapeHtml(rele.id || 0) + '">Programar</button>' +
+            (hasPhoto ? photoHTML(rele) : '') +
           '</div>' +
         '</article>';
       }).join('');

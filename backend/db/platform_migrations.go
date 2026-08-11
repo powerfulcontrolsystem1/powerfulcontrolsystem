@@ -163,6 +163,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyEmpresaControlElectricoScheduleSchemaTx(tx)
 				},
 			},
+			{
+				Version:     "20260811-002-domotica-restart-category-v1",
+				Description: "idempotent Raspberry restart recovery and electronic equipment categories",
+				Body:        empresaControlElectricoRestartCategorySchemaFingerprint,
+				Apply: func(_ context.Context, tx *sql.Tx) error {
+					return applyEmpresaControlElectricoRestartCategorySchemaTx(tx)
+				},
+			},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

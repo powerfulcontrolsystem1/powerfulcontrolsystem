@@ -16,6 +16,8 @@ import (
 const (
 	controlElectricoTunnelEnrollmentTTL = 24 * time.Hour
 	controlElectricoTunnelCommandTTL    = 2 * time.Minute
+	controlElectricoRestoreCommandTTL   = 10 * time.Minute
+	controlElectricoRestoreDelayMS      = 1000
 )
 
 type EmpresaControlElectricoTunnelDevice struct {
@@ -237,8 +239,8 @@ func RecordEmpresaControlElectricoTunnelTraffic(dbConn *sql.DB, device *EmpresaC
 }
 
 func QueueEmpresaControlElectricoTunnelCommand(dbConn *sql.DB, empresaID, raspberryID, releID, estacionID int64, gpioPin int, targetState string, payload interface{}, actor, origen string) (*EmpresaControlElectricoTunnelCommand, error) {
-	if dbConn == nil || empresaID <= 0 || raspberryID <= 0 || releID <= 0 {
-		return nil, errors.New("empresa, raspberry y aparato son obligatorios")
+	if dbConn == nil || empresaID <= 0 || raspberryID <= 0 || releID < 0 {
+		return nil, errors.New("empresa y raspberry son obligatorias")
 	}
 	commandUID, err := generateControlElectricoTunnelSecret(24)
 	if err != nil {
@@ -262,6 +264,75 @@ func QueueEmpresaControlElectricoTunnelCommand(dbConn *sql.DB, empresaID, raspbe
 		return nil, err
 	}
 	return &EmpresaControlElectricoTunnelCommand{ID: id, EmpresaID: empresaID, RaspberryID: raspberryID, CommandUID: commandUID, ReleID: releID, EstacionID: estacionID, GPIOPin: gpioPin, EstadoObjetivo: targetState, PayloadJSON: string(body), Estado: "pendiente"}, nil
+}
+
+// QueueEmpresaControlElectricoTunnelRestoreOnBoot recrea, una sola vez por
+// arranque, los comandos ON previamente confirmados del dispositivo. La
+// transaccion evita duplicados en los reintentos de long polling y conserva el
+// filtro estricto por empresa y Raspberry.
+func QueueEmpresaControlElectricoTunnelRestoreOnBoot(dbConn *sql.DB, device *EmpresaControlElectricoTunnelDevice, bootID string) (int, error) {
+	if dbConn == nil || device == nil || device.EmpresaID <= 0 || device.RaspberryID <= 0 {
+		return 0, errors.New("dispositivo de tunel invalido")
+	}
+	bootID = truncateControlElectricoText(strings.TrimSpace(bootID), 96)
+	if bootID == "" {
+		return 0, nil
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	updated, err := execTxSQLCompat(tx, `UPDATE empresa_control_electrico_raspberry_pis SET last_boot_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=? AND COALESCE(last_boot_id,'')<>?`, bootID, device.EmpresaID, device.RaspberryID, bootID)
+	if err != nil {
+		return 0, err
+	}
+	changed, err := updated.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	if changed == 0 {
+		return 0, tx.Commit()
+	}
+	rows, err := queryTxSQLCompat(tx, `SELECT id, COALESCE(estacion_id,0), COALESCE(gpio_pin,0), COALESCE(active_high,1), COALESCE(pulso_ms,0), COALESCE(salida_codigo,''), COALESCE(relay_name,''), COALESCE(tipo_carga,'') FROM empresa_control_electrico_reles WHERE empresa_id=? AND raspberry_id=? AND LOWER(COALESCE(estado,'activo'))='activo' AND LOWER(COALESCE(ultimo_estado,''))='on' ORDER BY estacion_id, gpio_pin, id`, device.EmpresaID, device.RaspberryID)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	count := 0
+	expires := time.Now().UTC().Add(controlElectricoRestoreCommandTTL).Format(time.RFC3339)
+	for rows.Next() {
+		var releID, estacionID int64
+		var gpioPin, activeHigh, pulsoMS int
+		var salidaCodigo, relayName, tipoCarga string
+		if err := rows.Scan(&releID, &estacionID, &gpioPin, &activeHigh, &pulsoMS, &salidaCodigo, &relayName, &tipoCarga); err != nil {
+			return 0, err
+		}
+		commandUID, err := generateControlElectricoTunnelSecret(24)
+		if err != nil {
+			return 0, err
+		}
+		payload, err := json.Marshal(map[string]interface{}{
+			"relay_id": releID, "station_id": estacionID, "gpio_pin": gpioPin, "estado": "on",
+			"active_high": activeHigh == 1, "pulso_ms": pulsoMS, "salida_codigo": salidaCodigo,
+			"relay_name": relayName, "tipo_carga": tipoCarga, "origen": "raspberry_recovery",
+			"restore_delay_ms": controlElectricoRestoreDelayMS,
+		})
+		if err != nil {
+			return 0, err
+		}
+		if _, err := execTxSQLCompat(tx, `INSERT INTO empresa_control_electrico_comandos (empresa_id, raspberry_id, command_uid, rele_id, estacion_id, gpio_pin, estado_objetivo, payload_json, estado, intentos, solicitado_en, expira_en, usuario_creador, origen) VALUES (?, ?, ?, ?, ?, ?, 'on', ?, 'pendiente', 0, CURRENT_TIMESTAMP, ?, ?, 'raspberry_recovery')`, device.EmpresaID, device.RaspberryID, commandUID, releID, estacionID, gpioPin, string(payload), expires, device.DeviceUID); err != nil {
+			return 0, err
+		}
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func ClaimEmpresaControlElectricoTunnelCommand(dbConn *sql.DB, empresaID, raspberryID int64) (*EmpresaControlElectricoTunnelCommand, error) {

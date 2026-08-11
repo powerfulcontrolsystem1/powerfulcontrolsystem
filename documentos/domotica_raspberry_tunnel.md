@@ -1,6 +1,6 @@
 # Domotica Raspberry Pi por tunel HTTPS saliente
 
-Actualizacion: 2026-08-09
+Actualizacion: 2026-08-11
 
 ## Objetivo
 
@@ -82,12 +82,18 @@ GPIO no este reservado por I2C, SPI, UART u otra funcion del sistema.
 El backend rechaza que un GPIO activo se reutilice para dos aparatos o que el
 mismo pin quede simultaneamente como entrada y salida.
 
+En `Domotica > Raspberry`, el boton `Probar GPIO` muestra las salidas BCM
+admitidas de la placa. Cada prueba usa el tunel autenticado y aplica un pulso
+de un segundo que vuelve la salida a apagado; queda registrada en la bitacora.
+En el modulo PCS de 16 relés el pulso se emite activo-bajo. No debe usarse con
+cargas críticas conectadas.
+
 ## Persistencia
 
 - `empresa_control_electrico_raspberry_pis`: identidad, estado del tunel,
-  ultima actividad, version de agente y transferencia acumulada.
+  ultima actividad, version de agente, ultimo `boot_id` y transferencia acumulada.
 - `empresa_control_electrico_reles`: aparatos, estacion, GPIO de salida,
-  descripcion/foto, watts y agenda.
+  descripcion/foto, categoria, watts y agenda.
 - `empresa_control_electrico_reglas`: GPIO de entrada, pull, debounce, condicion
   y aparato objetivo.
 - `empresa_control_electrico_comandos`: cola durable y resultado.
@@ -119,3 +125,8 @@ conectarse automaticamente y recibe los comandos durables pendientes. systemd
 usa reinicio permanente y limite de arranque desactivado para recuperar tambien
 un cierre inesperado o el reinicio de la Raspberry. No requiere intervencion
 manual ni una IP publica en la empresa.
+
+En cada arranque el agente genera un identificador efimero de inicio. El VPS
+solo una vez por ese identificador reconstruye las salidas que quedaron
+confirmadas en estado `on`, ordenadas por estación/GPIO. El agente espera un
+segundo entre confirmaciones, evitando energizar todos los relés a la vez.

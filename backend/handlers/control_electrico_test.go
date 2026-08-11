@@ -26,6 +26,19 @@ func TestBuildControlElectricoEndpoint(t *testing.T) {
 	}
 }
 
+func TestControlElectricoTestableGPIO(t *testing.T) {
+	for _, pin := range []int{2, 17, 27} {
+		if !controlElectricoTestableGPIO(pin) {
+			t.Fatalf("GPIO %d debe estar habilitado para diagnostico", pin)
+		}
+	}
+	for _, pin := range []int{-1, 0, 1, 28} {
+		if controlElectricoTestableGPIO(pin) {
+			t.Fatalf("GPIO %d no debe estar habilitado para diagnostico", pin)
+		}
+	}
+}
+
 func TestSendControlElectricoRelayCommand(t *testing.T) {
 	var received controlElectricoCommandPayload
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

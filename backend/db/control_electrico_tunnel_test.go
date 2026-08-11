@@ -87,3 +87,20 @@ func TestEmpresaCatalogIncludesControlElectricoScheduleMigration(t *testing.T) {
 	}
 	t.Fatal("falta la migracion versionada de programacion fechada de domotica")
 }
+
+func TestEmpresaCatalogIncludesControlElectricoRestartCategoryMigration(t *testing.T) {
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version != "20260811-002-domotica-restart-category-v1" {
+			continue
+		}
+		if migration.Body != empresaControlElectricoRestartCategorySchemaFingerprint || migration.Apply == nil {
+			t.Fatal("la migracion de reinicio y categoria debe ser inmutable y ejecutable")
+		}
+		return
+	}
+	t.Fatal("falta la migracion versionada de reinicio y categoria de domotica")
+}

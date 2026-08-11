@@ -271,6 +271,15 @@
       justify-content: flex-end;
     }
 
+    .gpio-test-panel {
+      display: none;
+      gap: 6px;
+      grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+      padding-top: 4px;
+    }
+    .raspberry-item.gpio-test-open .gpio-test-panel { display: grid; }
+    .gpio-test-panel .btn { min-height: 34px; padding: 6px 8px; }
+
     .relay-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
@@ -508,7 +517,7 @@
         <p id="empresaInfo" class="electric-subtitle">Empresa: cargando...</p>
       </div>
       <div class="electric-actions">
-        <a class="btn secondary" href="/administrar_empresa/tutorial_domotica.html">Guia de equipos</a>
+		<a class="btn secondary" href="/administrar_empresa/tutorial_domotica.html" aria-label="Abrir tutorial de configuración de Domótica">Tutorial</a>
         <button id="scheduleBtn" class="btn secondary" type="button">Ejecutar agenda</button>
         <button id="syncBtn" class="btn secondary" type="button">Sincronizar</button>
         <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
@@ -766,6 +775,8 @@
       </div>
       <div id="reportSummary" class="report-grid"></div>
       <div id="reportBreakdown" class="report-note"></div>
+	  <div class="form-row" style="margin-top:12px;"><div class="form-col"><label class="form-label" for="reportCategoryFilter">Categoria</label><select id="reportCategoryFilter" class="form-input"><option value="">Todas</option></select></div><div class="form-col"><label class="form-label" for="reportDeviceFilter">Equipo</label><select id="reportDeviceFilter" class="form-input"><option value="">Todos</option></select></div></div>
+	  <div id="reportDeviceConsumption" class="electric-events" aria-live="polite"></div>
       <div class="report-actions">
         <button id="reportRefreshBtn" class="btn secondary" type="button">Actualizar reporte</button>
         <button id="reportPrintBtn" class="btn add" type="button">Imprimir reporte</button>
@@ -1004,6 +1015,7 @@
           estacion_nombre: estacion.estacion_nombre || ('Estacion ' + estacion.estacion_id),
           salida_codigo: rele.salida_codigo || 'luces',
           tipo_carga: rele.tipo_carga || 'luces',
+		  categoria: rele.categoria || '',
           gpio_pin: gpioDefault,
           relay_name: rele.relay_name || ('Lampara estacion ' + estacion.estacion_id),
           active_high: rele.active_high !== false,
@@ -1131,6 +1143,7 @@
               '<div class="form-col"><label class="form-label">Pulso ms</label><input class="form-input relay-pulse" type="number" min="0" max="60000" step="100" value="' + sanitize(data.pulso_ms) + '"></div>' +
               '<div class="form-col"><label class="form-label">Salida</label><input class="form-input relay-output" value="' + sanitize(data.salida_codigo) + '" placeholder="luces"></div>' +
               '<div class="form-col"><label class="form-label">Tipo</label><select class="form-input relay-type"><option value="luces"' + (data.tipo_carga === 'luces' ? ' selected' : '') + '>Lampara / luces</option><option value="motobomba"' + (data.tipo_carga === 'motobomba' ? ' selected' : '') + '>Motobomba</option><option value="jacuzzi"' + (data.tipo_carga === 'jacuzzi' ? ' selected' : '') + '>Jacuzzi</option><option value="aire"' + (data.tipo_carga === 'aire' ? ' selected' : '') + '>Aire</option><option value="puerta"' + (data.tipo_carga === 'puerta' ? ' selected' : '') + '>Puerta</option><option value="otro"' + (data.tipo_carga === 'otro' ? ' selected' : '') + '>Otro</option></select></div>' +
+			  '<div class="form-col"><label class="form-label">Categoria</label><input class="form-input relay-category" value="' + sanitize(data.categoria || '') + '" placeholder="Cocina, climatizacion, seguridad..."></div>' +
               '<div class="form-col span-2"><label class="form-label">Integracion</label><select class="form-input relay-integration">' + relayIntegrationOptions(data.integracion_tipo) + '</select></div>' +
               '<div class="form-col span-2"><label class="form-label">Raspberry Pi</label><select class="form-input relay-raspberry">' + raspberryOptions(data.raspberry_id) + '</select></div>' +
               '<div class="form-col"><label class="form-label">Fabricante</label><input class="form-input relay-maker" value="' + sanitize(data.fabricante) + '" placeholder="Shelly, Hue, Tuya..."></div>' +
@@ -1197,6 +1210,9 @@
           var inactive = String(pi.estado || 'activo').toLowerCase() !== 'activo';
           var primary = String(pi.codigo || '').toLowerCase() === 'principal';
           var online = tunnelOnline(pi);
+          var testButtons = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27].map(function(pin) {
+            return '<button class="btn secondary small raspberry-gpio-test" type="button" data-gpio-pin="' + pin + '"' + (!online ? ' disabled' : '') + '>GPIO ' + pin + '</button>';
+          }).join('');
           return '<article class="raspberry-item" data-raspberry-id="' + sanitize(pi.id || 0) + '">' +
             '<div class="raspberry-item-head">' +
               '<div class="raspberry-item-title">' +
@@ -1218,8 +1234,10 @@
             '<div class="raspberry-item-actions">' +
               '<button class="btn secondary small raspberry-edit" type="button">Editar</button>' +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn add small raspberry-provision" type="button">Generar instalador</button>' : '') +
+              (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-gpio-toggle" type="button">Probar GPIO</button>' : '') +
               (primary ? '<button class="btn secondary small" type="button" disabled>Principal</button>' : '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>') +
             '</div>' +
+            '<div class="gpio-test-panel" aria-label="Prueba de GPIO: cada boton envia un pulso de un segundo">' + testButtons + '</div>' +
           '</article>';
         }).join('');
       }
@@ -1375,7 +1393,38 @@
         if (breakdown) {
           breakdown.textContent = 'Por proveedor: ' + JSON.stringify(data.por_proveedor || {}) + ' | Por integracion: ' + JSON.stringify(data.por_tipo || {});
         }
+		renderDeviceConsumptionReport();
       }
+
+	  function renderDeviceConsumptionReport() {
+		var category = String($('reportCategoryFilter') && $('reportCategoryFilter').value || '');
+		var deviceID = String($('reportDeviceFilter') && $('reportDeviceFilter').value || '');
+		var rows = (state.reles || []).filter(function(rele) {
+		  return (!category || String(rele.categoria || '') === category) && (!deviceID || String(rele.id) === deviceID);
+		});
+		var box = $('reportDeviceConsumption');
+		if (!box) return;
+		if (!rows.length) { box.innerHTML = '<p class="form-help">No hay equipos para el filtro seleccionado.</p>'; return; }
+		box.innerHTML = rows.map(function(rele) {
+		  var name = rele.relay_name || rele.salida_codigo || ('Equipo #' + rele.id);
+		  var stateLabel = String(rele.ultimo_estado || 'desconocido').toLowerCase();
+		  return '<div class="event-row"><small>' + sanitize(rele.categoria || 'Sin categoria') + '</small><div class="event-main"><strong>' + sanitize(name) + '</strong> · ' + Number(rele.ultimo_consumo_w || 0).toFixed(1) + ' W · ' + Number(rele.ultimo_consumo_kwh || 0).toFixed(3) + ' kWh</div><span class="status-chip ' + (stateLabel === 'on' ? 'on' : 'off') + '">' + sanitize(stateLabel) + '</span></div>';
+		}).join('');
+	  }
+
+	  function populateReportFilters() {
+		var categorySelect = $('reportCategoryFilter');
+		var deviceSelect = $('reportDeviceFilter');
+		if (!categorySelect || !deviceSelect) return;
+		var previousCategory = categorySelect.value;
+		var previousDevice = deviceSelect.value;
+		var categories = Array.from(new Set((state.reles || []).map(function(rele) { return String(rele.categoria || 'Sin categoria'); }))).sort();
+		categorySelect.innerHTML = '<option value="">Todas</option>' + categories.map(function(value) { return '<option value="' + sanitize(value) + '">' + sanitize(value) + '</option>'; }).join('');
+		deviceSelect.innerHTML = '<option value="">Todos</option>' + (state.reles || []).map(function(rele) { return '<option value="' + sanitize(rele.id) + '">' + sanitize(rele.relay_name || rele.salida_codigo || ('Equipo #' + rele.id)) + '</option>'; }).join('');
+		categorySelect.value = previousCategory;
+		deviceSelect.value = previousDevice;
+		renderDeviceConsumptionReport();
+	  }
 
       async function loadReport() {
         try {
@@ -1398,6 +1447,7 @@
           state.reles = Array.isArray(data.reles) ? data.reles : [];
           state.eventos = Array.isArray(data.eventos) ? data.eventos : [];
           state.lecturas = Array.isArray(data.lecturas) ? data.lecturas : [];
+		  populateReportFilters();
           state.reglas = Array.isArray(data.reglas) ? data.reglas : [];
           applyConfig(state.config);
           renderRaspberryList();
@@ -1486,6 +1536,7 @@
           estacion_nombre: estacion.estacion_nombre || ('Estacion ' + estacionID),
           salida_codigo: card.querySelector('.relay-output').value.trim(),
           tipo_carga: card.querySelector('.relay-type').value,
+		  categoria: card.querySelector('.relay-category').value.trim(),
           integracion_tipo: card.querySelector('.relay-integration').value,
           fabricante: card.querySelector('.relay-maker').value.trim(),
           modelo: card.querySelector('.relay-model').value.trim(),
@@ -1592,6 +1643,10 @@
       }
 
       document.addEventListener('change', function (ev) {
+        if (ev.target && (ev.target.id === 'reportCategoryFilter' || ev.target.id === 'reportDeviceFilter')) {
+          renderDeviceConsumptionReport();
+          return;
+        }
         if (!ev.target.classList || !ev.target.classList.contains('relay-photo-file')) return;
         var card = ev.target.closest('.relay-card');
         if (!card || !ev.target.files || !ev.target.files.length) return;
@@ -1652,6 +1707,19 @@
             var provisionID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             await provisionRaspberryTunnel(provisionID);
             showMessage('Instalador seguro descargado. Ejecutalo una sola vez en la Raspberry Pi con sudo sh.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-gpio-toggle')) {
+            raspberryCard.classList.toggle('gpio-test-open');
+            showMessage('Cada GPIO enviara un pulso de prueba de un segundo. Verifica que el relay no controle una carga critica.', '');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-gpio-test')) {
+            var testPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            var testPin = Number(ev.target.getAttribute('data-gpio-pin') || -1);
+            ev.target.disabled = true;
+            try {
+              var testResult = await requestJSON(api('probar_gpio'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: testPiID, gpio_pin: testPin }) });
+              showMessage(testResult.message || ('GPIO ' + testPin + ' probado por un segundo.'), 'success');
+            } finally {
+              ev.target.disabled = false;
+            }
           } else if (raspberryCard && ev.target.classList.contains('raspberry-delete')) {
             var deleteID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             await deleteRaspberry(deleteID);
