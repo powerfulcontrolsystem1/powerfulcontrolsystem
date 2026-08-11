@@ -41819,3 +41819,12 @@ acumulativa.
   sin puertos públicos, con alias interno, capacidades mínimas, base temporal y
   espera explícita de `clamdscan`. Falta reconstruir el candidato y repetir A/B
   y rollback; producción no cambió.
+2026-08-11: Plan 110 / réplica A-B y rollback coordinado del restore.
+- El candidato `9ee2fe9a` levantó ClamAV obligatorio por digest dentro de la
+  red efímera. La réplica A creó un soporte oficial, B lo leyó con el mismo
+  checksum y siguió disponible tras retirar A.
+- El checkpoint de ambas bases y del almacenamiento privado se recuperó tras
+  simular su pérdida. El ensayo validó cinco dominios autenticados, siete
+  controles de rollback, cero huérfanos y limpieza completa; RTO 226 s y
+  rollback RTO 98 s quedan pendientes de aceptación operativa. Producción no
+  fue modificada.

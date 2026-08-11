@@ -742,3 +742,14 @@ autoriza ni ejecuta despliegue productivo.
 - Se debe crear un candidato nuevo y repetir la matriz A/B y rollback sobre el
   mismo digest. P110-008 sigue **parcial**; no cambia el **15,4 %** de
   implementación ni el veredicto **NO-GO**.
+
+## Actualización 2026-08-11, A/B y rollback del restore
+
+- El candidato `9ee2fe9a` aprobó la matriz aislada con ClamAV obligatorio:
+  creación en réplica A, descarga con checksum igual en B, continuidad tras
+  pérdida de A y rollback coordinado de dos bases y almacenamiento privado.
+  No quedaron recursos efímeros y staging permaneció sano.
+- P110-008 sigue **parcial** porque RPO/RTO aún no tienen aceptación firmada y
+  faltan las compuertas de carga, operación y ensayo general. El avance se
+  mantiene en **15,4 %**, con certificación final y preparación productiva en
+  **0 %**; veredicto **NO-GO**.
