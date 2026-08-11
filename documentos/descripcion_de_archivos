@@ -12903,6 +12903,12 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-008/2026-08-11_aislamiento_upload_permissions_staging.md`:
   registra el bloqueo seguro de promoción por colisión con la plataforma y el
   override que separa nombre y volumen del init-container de staging.
+- `documentos/evidencia_plan_110/P110-007/2026-08-11_clamav_http_candidato_final.md`:
+  conserva la prueba HTTP autenticada del candidato final: limpio, EICAR,
+  indisponibilidad fail-closed y recuperación, sin registrar credenciales.
+- `documentos/evidencia_plan_110/P110-008/2026-08-11_candidato_restore_final.md`:
+  documenta los digests promovidos, los montajes aislados y el restore efímero
+  del snapshot de staging con su RTO/RPO observado.
 - `documentos/plan_110.md`: plan de cierre verificable preparado para
   GPT-5.6 Terra con razonamiento medio; transforma las brechas restantes del
   Plan 109 en 13 compuertas ordenadas de integración, finanzas, IA, regresión

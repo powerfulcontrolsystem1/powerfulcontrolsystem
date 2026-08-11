@@ -717,3 +717,17 @@ autoriza ni ejecuta despliegue productivo.
 - No se desplegó ni se modificó producción. Implementación P110: **11,5 %**
   (tres fases parciales de 13); certificación del candidato final: **0 %**;
   preparación productiva: **0 %**; veredicto **NO-GO**.
+
+## Actualización 2026-08-11, candidato final, ClamAV y restore
+
+- P110-007 queda **parcial**: el candidato `fd6a4a8a` comprobó por HTTP
+  autenticado archivo limpio, EICAR previo a persistencia, caída fail-closed y
+  recuperación de ClamAV. Permanecen pendientes DAST, CSP, sesión, A/B integral,
+  concurrencia y escaneo final de seguridad.
+- P110-008 queda **parcial**: CI generó cuatro digests inmutables, staging los
+  promovió sin recompilar y el restore efímero validó dos bases, cinco tablas
+  críticas y el inventario privado (RTO observado 86 s). Faltan dos réplicas,
+  pérdida de A, rollback coordinado, RPO/RTO aceptado y firmas operativas.
+- No se desplegó ni se modificó producción. Implementación P110: **15,4 %**
+  (cuatro fases parciales de 13); certificación del candidato final: **0 %**;
+  preparación productiva: **0 %**; veredicto **NO-GO**.
