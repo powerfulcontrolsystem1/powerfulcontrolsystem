@@ -1557,3 +1557,13 @@ Actualización 2026-08-11, prueba real fail-closed de ClamAV en staging:
   resolución en el receptor externo de alertas, además de las demás señales P0,
   responsables y simulacro de incidente. La implementación continúa en
   **56,7 %**, certificación formal **6,7 %**, con **NO-GO**.
+
+Actualización 2026-08-11, extracción IA controlada en PCS staging:
+
+- `Extraer IA` se ejecutó por el flujo visible y autenticado sobre un soporte de
+  prueba. La respuesta insuficiente no creó una CxP: quedó en revisión humana y
+  el backend registró el resultado agregado correspondiente.
+- La revisión humana editable se guardó y quedó auditada sin aprobación ni
+  contabilización. P109-002 sigue parcial por los botones y escenarios IA que
+  faltan, aislamiento A/B y las evaluaciones completas; la fórmula permanece
+  **56,7 %** de implementación, **6,7 %** de certificación y **NO-GO**.

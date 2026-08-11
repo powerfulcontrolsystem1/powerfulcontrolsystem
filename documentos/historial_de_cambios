@@ -41697,3 +41697,10 @@ acumulativa.
   `unavailable=1`, `bypassed=0`. Falta probar recepción/deduplicación externa
   de alertas y las demás señales P0: implementación 56,7 %, certificación
   formal 6,7 % y veredicto NO-GO.
+2026-08-11: Plan 109 / extracción IA y revisión humana reales en staging.
+- PCS staging ejecutó `Extraer IA` sobre un soporte de prueba mediante el flujo
+  oficial; la lectura insuficiente quedó en revisión/duplicado, sin crear CxP.
+- La métrica agregada registró una revisión humana y la interfaz permitió
+  guardar una revisión auditable sin contabilizar. P109-002 continúa parcial:
+  faltan cancelación, reintento/error proveedor, campos reales, ReportSpec,
+  memoria A/B y evals completas. El plan sigue 56,7 %, 6,7 % certificado y NO-GO.

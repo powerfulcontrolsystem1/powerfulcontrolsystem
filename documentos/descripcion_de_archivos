@@ -5,6 +5,9 @@
 - `documentos/evidencia_plan_109/P109-010/2026-08-09_clamav_staging_candidate.md`:
   registra el candidato ClamAV, sus límites locales y la matriz real de limpio,
   EICAR, caída, recuperación y alertas pendientes en staging.
+- `documentos/evidencia_plan_109/P109-002/2026-08-11_extraccion_ia_real_staging.md`:
+  registra extracción IA real controlada, degradación segura y revisión humana
+  auditable en PCS staging, sin contabilización.
 - `documentos/evidencia_plan_109/P109-001/2026-08-09_aislamiento_y_concurrencia_cxp_staging.md`:
   registra la matriz A/B de CxP, proveedores y outbox, más la prueba real de
   idempotencia concurrente y bloqueo de sobrepago realizada solo en PCS staging.
