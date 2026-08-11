@@ -286,7 +286,10 @@ func TestRestoredAppDrillUsesExplicitStagingEnvironmentAndBackendDigest(t *testi
 	for _, required := range []string{
 		"[string]$SourceEnv = \"\"",
 		`if ([string]::IsNullOrWhiteSpace($SourceEnv)) { $SourceEnv = "$RemotePath/deploy/.env.staging" }`,
+		"[string]$BackupDir = \"\"",
+		`if ([string]::IsNullOrWhiteSpace($BackupDir)) { $BackupDir = "$RemotePath/backups/vps-snapshots" }`,
 		"source_env=$sourceEnvLit",
+		"BACKUP_DIR=$backupDirLit",
 		"pcs-staging-backend) env_name=PCS_API_IMAGE_DIGEST",
 	} {
 		if !strings.Contains(script, required) {

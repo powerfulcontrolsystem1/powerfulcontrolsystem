@@ -40,6 +40,11 @@ en worker.
 El ejecutor de restauración acepta ahora la ruta privada explícita de staging;
 no intenta inferirla dentro del checkout desechable. También resuelve
 `pcs-staging-backend` como la imagen API cuando consulta los digests activos.
+El inventario remoto confirmó que los snapshots viven fuera del checkout de
+candidato y contienen las dos piezas mínimas (base PostgreSQL y almacenamiento
+privado). Por ello el runner acepta también `BackupDir`: el operador pasa la
+ruta existente de staging sin copiar, listar contenidos sensibles ni usar una
+copia de plataforma.
 
 ## Validación local
 

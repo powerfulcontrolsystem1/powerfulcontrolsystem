@@ -15,6 +15,7 @@ param(
   [string]$IdentityFile = "",
   [string]$RemotePath = "",
   [string]$SourceEnv = "",
+  [string]$BackupDir = "",
   [switch]$PullMissingImages,
   [switch]$VerifyReplica,
   [switch]$VerifyCoordinatedRollback,
@@ -40,6 +41,7 @@ if ([string]::IsNullOrWhiteSpace($IdentityFile) -and (Get-Variable -Name PcsVpsI
 if (-not $AllowRemoteTarget) { throw "Operacion remota bloqueada. Usa -AllowRemoteTarget solo en staging autorizado." }
 if ([string]::IsNullOrWhiteSpace($RemoteUser) -or [string]::IsNullOrWhiteSpace($RemoteHost) -or $Port -le 0 -or [string]::IsNullOrWhiteSpace($RemotePath)) { throw "Faltan datos privados de destino." }
 if ([string]::IsNullOrWhiteSpace($SourceEnv)) { $SourceEnv = "$RemotePath/deploy/.env.staging" }
+if ([string]::IsNullOrWhiteSpace($BackupDir)) { $BackupDir = "$RemotePath/backups/vps-snapshots" }
 if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
   $configKey = Join-Path (Split-Path -Parent $deploymentConfig) "clave privada ssh.ppk"
   if (Test-Path -LiteralPath $configKey) { $IdentityFile = $configKey }
@@ -74,6 +76,7 @@ $sourceBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($drillSource))
 $drillID = "p109-restore-app-" + (Get-Date -Format "yyyyMMddhhmmss")
 $remotePathLit = Convert-ToBashLiteral $RemotePath
 $sourceEnvLit = Convert-ToBashLiteral $SourceEnv
+$backupDirLit = Convert-ToBashLiteral $BackupDir
 $drillIDLit = Convert-ToBashLiteral $drillID
 $pullMissingValue = if ($PullMissingImages) { "1" } else { "0" }
 $verifyReplicaValue = if ($VerifyReplica) { "1" } else { "0" }
@@ -135,7 +138,7 @@ if ! docker image inspect "`$migrate_image" >/dev/null 2>&1; then
   [ "$pullMissingValue" = "1" ] || { echo "[ERROR] La imagen migrador exacta no esta disponible localmente." >&2; exit 1; }
   docker pull "`$migrate_image" >/dev/null
 fi
-PROJECT_DIR="`$remote_path" SOURCE_ENV="`$source_env" P109_DRILL_ID="`$drill_id" \
+PROJECT_DIR="`$remote_path" SOURCE_ENV="`$source_env" BACKUP_DIR=$backupDirLit P109_DRILL_ID="`$drill_id" \
   PCS_API_IMAGE_DIGEST="`$api_image" PCS_MIGRATE_IMAGE_DIGEST="`$migrate_image" \
   P109_VERIFY_PRIVATE_INVENTORY=1 P109_VERIFY_REPLICA=$verifyReplicaValue \
   P109_VERIFY_COORDINATED_ROLLBACK=$verifyRollbackValue \
