@@ -49,7 +49,7 @@ func TestCxPConfigurationRequiresCanonicalRegisteredSupplier(t *testing.T) {
 	if cfgCxP.ValidatePayload == nil {
 		t.Fatal("CxP must validate its supplier payload")
 	}
-	for _, required := range []string{"proveedor_id", "proveedor_nombre", "documento_codigo"} {
+	for _, required := range []string{"proveedor_id", "documento_codigo"} {
 		found := false
 		for _, column := range cfgCxP.RequiredOnCreate {
 			if column == required {
@@ -59,6 +59,11 @@ func TestCxPConfigurationRequiresCanonicalRegisteredSupplier(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("CxP creation must require %q", required)
+		}
+	}
+	for _, required := range cfgCxP.RequiredOnCreate {
+		if required == "proveedor_nombre" {
+			t.Fatal("supplier name must be derived from the tenant-scoped proveedor_id, not supplied by the client")
 		}
 	}
 }

@@ -213,7 +213,11 @@ var (
 			"moneda", "periodo_contable", "referencia_pagos_json", "fecha_ultimo_pago", "conciliado_en", "conciliado_por",
 			"usuario_creador", "estado", "observaciones",
 		},
-		RequiredOnCreate: []string{"proveedor_id", "proveedor_nombre", "documento_codigo"},
+		// proveedor_nombre is derived server-side from proveedor_id by
+		// validateEmpresaCxPProveedorPayload. Requiring the derived value before
+		// that validation runs prevented the official create flow from accepting a
+		// registered supplier selected by ID.
+		RequiredOnCreate: []string{"proveedor_id", "documento_codigo"},
 		ValidatePayload:  validateEmpresaCxPProveedorPayload,
 		CodeColumn:       "codigo",
 		CodePrefix:       "CXP",
