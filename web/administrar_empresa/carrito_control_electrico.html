@@ -354,7 +354,7 @@
         <footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button id="cartElectricScheduleSave" class="btn primary" value="default">Guardar programación</button></footer>
       </form>
     </dialog>
-    <dialog id="cartElectricTimerDialog" class="domotica-device-dialog cart-electric-dialog"><form method="dialog" id="cartElectricTimerForm"><header class="domotica-device-head"><div><p class="form-help mt-0 mb-4">Temporizador</p><h2 id="cartElectricTimerTitle" class="section-heading">Equipo</h2></div><button class="btn secondary" value="cancel">Cerrar</button></header><div class="domotica-device-body"><p class="form-help">Enciende el equipo y lo apaga automáticamente al finalizar.</p><div class="form-row"><div class="form-col"><label class="form-label">Horas</label><input id="cartElectricTimerHours" class="form-input" type="number" min="0" max="168" value="0"></div><div class="form-col"><label class="form-label">Minutos</label><input id="cartElectricTimerMinutes" class="form-input" type="number" min="0" max="59" value="15"></div><div class="form-col"><label class="form-label">Segundos</label><input id="cartElectricTimerSeconds" class="form-input" type="number" min="0" max="59" value="0"></div></div></div><footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button class="btn primary" value="default">Iniciar temporizador</button></footer></form></dialog>
+    <dialog id="cartElectricTimerDialog" class="domotica-device-dialog cart-electric-dialog"><form method="dialog" id="cartElectricTimerForm"><header class="domotica-device-head"><div><p class="form-help mt-0 mb-4">Temporizador</p><h2 id="cartElectricTimerTitle" class="section-heading">Equipo</h2></div><button class="btn secondary" value="cancel">Cerrar</button></header><div class="domotica-device-body"><p class="form-help">Enciende el equipo y lo apaga automáticamente al finalizar.</p><div class="cart-electric-actions"><button class="btn secondary" type="button" data-timer-preset="900">15 minutos</button><button class="btn secondary" type="button" data-timer-preset="1800">30 minutos</button><button class="btn secondary" type="button" data-timer-preset="3600">1 hora</button></div><div class="form-row"><div class="form-col"><label class="form-label">Horas</label><input id="cartElectricTimerHours" class="form-input" type="number" min="0" max="168" value="0"></div><div class="form-col"><label class="form-label">Minutos</label><input id="cartElectricTimerMinutes" class="form-input" type="number" min="0" max="59" value="15"></div><div class="form-col"><label class="form-label">Segundos</label><input id="cartElectricTimerSeconds" class="form-input" type="number" min="0" max="59" value="0"></div></div></div><footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button class="btn primary" value="default">Iniciar temporizador</button></footer></form></dialog>
   </main>
 
   <script>
@@ -371,7 +371,7 @@
       raspberryPIs: [],
       returnTo: '',
       sendingID: 0
-      , selectedReleID: 0
+	  , selectedReleID: 0, timers: JSON.parse(localStorage.getItem('pcsDomoticaTimers') || '{}')
     };
 
     function parsePositiveInt(raw) {
@@ -384,6 +384,8 @@
     function normalize(raw) {
       return String(raw == null ? '' : raw).trim();
     }
+
+	function timerText(releID) { const until=Number(state.timers[String(releID)]||0); const left=Math.max(0,Math.ceil((until-Date.now())/1000)); if(!left){delete state.timers[String(releID)]; localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers)); return 'Temporizador';} const h=String(Math.floor(left/3600)).padStart(2,'0'),m=String(Math.floor(left%3600/60)).padStart(2,'0'),s=String(left%60).padStart(2,'0'); return h+' : '+m+' : '+s; }
 
     function escapeHtml(raw) {
       return normalize(raw)
@@ -590,7 +592,7 @@
           '<div class="device-footer' + (hasPhoto ? ' has-photo' : '') + '">' +
             '<button class="btn device-toggle-action ' + info.cls + '" type="button" data-control-toggle="' + (isOn ? 'off' : 'on') + '" data-rele-id="' + escapeHtml(rele.id || 0) + '" title="' + escapeHtml(controlLabel(rele, isOn)) + '"' + (disabled ? ' disabled' : '') + '>' + escapeHtml(controlLabel(rele, isOn)) + '</button>' +
             '<button class="btn secondary" type="button" data-control-schedule data-rele-id="' + escapeHtml(rele.id || 0) + '">Programar</button>' +
-			'<button class="btn secondary" type="button" data-control-timer data-rele-id="' + escapeHtml(rele.id || 0) + '">Temporizador</button>' +
+			'<button class="btn secondary" type="button" data-control-timer data-rele-id="' + escapeHtml(rele.id || 0) + '">' + timerText(rele.id) + '</button>' +
             (hasPhoto ? photoHTML(rele) : '') +
           '</div>' +
         '</article>';
@@ -746,7 +748,9 @@
         if (toggle) { sendCommand(toggle.getAttribute('data-rele-id'), toggle.getAttribute('data-control-toggle')); return; }
       });
       document.getElementById('cartElectricScheduleForm').addEventListener('submit', function(ev) { ev.preventDefault(); saveSchedule().catch(function(err) { setMessage(err.message || 'No se pudo guardar programación.', 'error'); }); });
-		document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:state.estacionID,rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); document.getElementById('cartElectricTimerDialog').close(); await fetchControls(); setMessage('Temporizador iniciado.','success'); });
+		document.getElementById('cartElectricTimerForm').addEventListener('click', function(ev){const p=ev.target.closest('[data-timer-preset]');if(!p)return;const n=Number(p.getAttribute('data-timer-preset'));document.getElementById('cartElectricTimerHours').value=Math.floor(n/3600);document.getElementById('cartElectricTimerMinutes').value=Math.floor(n%3600/60);document.getElementById('cartElectricTimerSeconds').value=n%60;});
+		document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:state.estacionID,rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); state.timers[String(state.selectedReleID)]=Date.now()+sec*1000;localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers));document.getElementById('cartElectricTimerDialog').close(); await fetchControls(); setMessage('Temporizador iniciado.','success'); });
+		setInterval(function(){ if(Object.keys(state.timers).length) render(); },1000);
 
       fetchControls().catch(function(err) {
         setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');
