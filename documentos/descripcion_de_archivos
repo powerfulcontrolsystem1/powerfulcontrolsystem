@@ -12924,6 +12924,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-006/2026-08-11_dian_lectura_candidato_6bed2315.md`:
   documenta la consulta autenticada y no mutante de conexión, reintentos y
   reconciliación DIAN del candidato, sin confundirla con aceptación fiscal.
+- `documentos/evidencia_plan_110/P110-002/2026-08-11_eventos_operativos_contables_21a4f2cf.md`:
+  registra la clasificación de hitos auditables sin asiento y la conciliación
+  posterior de la cola contable por el endpoint oficial.
 - `documentos/plan_110.md`: plan de cierre verificable preparado para
   GPT-5.6 Terra con razonamiento medio; transforma las brechas restantes del
   Plan 109 en 13 compuertas ordenadas de integración, finanzas, IA, regresión

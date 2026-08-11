@@ -41862,3 +41862,11 @@ acumulativa.
 - Las rutas DIAN de estado de conexión, reintentos y reconciliación respondieron
   200 para PCS; el estado indicó conexión en línea y cero reintentos. No se
   emitió ni anuló documento fiscal, por lo que P110-006 sigue pendiente.
+2026-08-11: Plan 110 / cierre de falsos pendientes contables.
+- El procesador ahora marca como procesados sin asiento los hitos operativos de
+  sesión de venta y proveedor registrado; siguen auditados y no generan partidas
+  dobles ficticias. Las pruebas focalizadas de base de datos y el candidato
+  inmutable aprobaron.
+- En staging, el endpoint oficial procesó siete eventos con cero fallos. La
+  conciliación de agosto cerró con cero pendientes, cero errores y diferencia
+  monetaria cero. Falta conciliación y UAT independiente; producción no cambió.

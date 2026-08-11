@@ -790,3 +790,11 @@ autoriza ni ejecuta despliegue productivo.
   reconciliación disponible. Falta evidencia fiscal oficial; P110-006 continúa
   pendiente y P110-009 no cierra sin carga, SLO y alerta externa. El avance se
   mantiene en **19,2 %** y el veredicto es **NO-GO**.
+
+## Actualización 2026-08-11, saneamiento de eventos contables
+
+- El candidato `21a4f2cf` clasificó y procesó los siete hitos operativos que
+  no requerían asiento. La conciliación de agosto quedó sin pendientes, sin
+  errores y con diferencia monetaria cero.
+- P110-002 continúa **parcial** hasta la aceptación independiente del contador.
+  El avance formal se mantiene en **19,2 %**, certificación **0 %** y **NO-GO**.
