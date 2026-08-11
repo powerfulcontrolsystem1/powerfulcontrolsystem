@@ -780,3 +780,13 @@ autoriza ni ejecuta despliegue productivo.
 - P110-009 queda bloqueada por capacidad/alertas visibles y porque Alertmanager
   no tiene un receptor externo aprobado. El avance formal no cambia: **19,2 %**
   de implementación, **0 %** de certificación y **NO-GO**.
+
+## Actualización 2026-08-11, capacidad y DIAN de lectura
+
+- Se redujo el uso de disco de staging de 88 % a 60 % recuperando solamente
+  caché de compilación y volúmenes anónimos huérfanos. Los servicios aislados y
+  sus endpoints de salud se mantuvieron correctos.
+- DIAN respondió en línea para estado de conexión, sin reintentos y con
+  reconciliación disponible. Falta evidencia fiscal oficial; P110-006 continúa
+  pendiente y P110-009 no cierra sin carga, SLO y alerta externa. El avance se
+  mantiene en **19,2 %** y el veredicto es **NO-GO**.
