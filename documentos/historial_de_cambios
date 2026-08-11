@@ -41903,3 +41903,8 @@ acumulativa.
   en la sección recorrida, sin errores de consola. P110-005 queda parcial hasta
   completar formatos reales, accesibilidad asistida y firma de impresión física;
   producción no cambió.
+2026-08-11: Plan 110 / contratos de permisos y matriz de roles.
+- El inventario estricto aprobó las rutas/páginas de seis roles y las pruebas
+  focalizadas validaron aislamiento de empresa, límites de rol y activación
+  explícita de IA. P110-004 sigue pendiente de identidades autenticadas y
+  acciones mutantes permitidas/denegadas; producción no cambió.
