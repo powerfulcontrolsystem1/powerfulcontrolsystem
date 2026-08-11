@@ -798,3 +798,12 @@ autoriza ni ejecuta despliegue productivo.
   errores y con diferencia monetaria cero.
 - P110-002 continúa **parcial** hasta la aceptación independiente del contador.
   El avance formal se mantiene en **19,2 %**, certificación **0 %** y **NO-GO**.
+
+## Actualización 2026-08-11, asistente IA no operativo
+
+- El asistente IA respondió una consulta neutra en PCS con modo agente
+  desactivado y sin efectos operativos. Se observó un error aislado de consola
+  pendiente de atribución, por lo que no se presenta como prueba limpia total.
+- P110-003 queda **parcial**; faltan todos los botones y escenarios IA. La
+  implementación sube a **23,1 %** (seis fases parciales de 13), certificación
+  **0 %** y veredicto **NO-GO**.
