@@ -41317,5 +41317,12 @@ acumulativa.
 
 2026-08-11: Consola empresarial de equipos de Domotica.
 - El submenu Analisis y control incluye Equipos Domotica: reutiliza la vista operativa para mostrar todos los equipos, incluida Venta directa cuando este registrada como estacion, o filtrarlos por estacion/habitacion.
+
+2026-08-11: Estado prioritario del temporizador en tarjetas de Domotica.
+- Al iniciar un temporizador la tarjeta muestra la salida activa y su boton principal pasa inmediatamente a Apagar; al finalizar limpia el temporizador y restablece el estado apagado visible.
+- Se elimina la etiqueta textual repetida de estado y se compactan aun mas las tarjetas operativas.
+
+2026-08-11: Estado visible de programacion de Domotica.
+- La tarjeta de cada equipo programado muestra el intervalo elegido y distingue entre `Programado · En espera` y `Programado · Funcionando ahora` segun la fecha/hora configurada.
 2026-08-11 | Domotica | Se agrega la migracion empresarial 20260811-001-domotica-datetime-schedule-v1 para crear de forma idempotente programacion_inicio y programacion_fin antes de atender controles de estacion. Corrige el 500 de tablas ya existentes que aun no tenian las columnas de rango fechado. | backend/db/control_electrico_schedule_migration.go, backend/db/platform_migrations.go, backend/db/control_electrico_tunnel_test.go, documentos/CHANGELOG.md
 2026-08-11 | Domotica | Se agrega recuperación idempotente por boot_id: cada Raspberry inicia y reconecta mediante systemd, recibe únicamente sus relés con último estado ON y los confirma en secuencia con un segundo de espera. Se añade categoría de equipo, consumo filtrable por equipo/categoría, bitácora, tutorial de instalación/GPIO y prueba individual temporal de cada salida BCM desde la tarjeta de la Raspberry. | backend/db/control_electrico_restart_category_migration.go, backend/db/control_electrico_tunnel.go, backend/handlers/control_electrico.go, backend/handlers/control_electrico_tunnel.go, backend/handlers/templates/instalar_domotica_raspberry.sh.tmpl, web/administrar_empresa/control_electrico.html, web/administrar_empresa/carrito_control_electrico.html, web/administrar_empresa/tutorial_domotica.html

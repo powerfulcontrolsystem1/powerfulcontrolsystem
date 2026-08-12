@@ -65,6 +65,12 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"datetime-local",
 		"conectadas');",
 		"device-footer.has-photo",
+		"function timerInfo(releID)",
+		"rele.ultimo_estado='off'",
+		"const isOn = info.cls === 'is-on' || timer.active",
+		"function scheduleState(rele)",
+		"Programado · Funcionando ahora",
+		"Programado · En espera",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
