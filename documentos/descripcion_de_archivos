@@ -12969,6 +12969,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `deploy/scripts/vps-stage-dian-from-primary.sh`: instala de forma controlada
   una configuración DIAN de una sola empresa en staging, preservando firma
   privada, forzando habilitación y evitando sobrescribir configuraciones previas.
+- `documentos/evidencia_plan_110/P110-006/2026-08-12_validacion_visual_dian_staging.md`:
+  registra la revisión autenticada de la preparación DIAN de PCS en staging y
+  distingue la validación no emisora del acuse fiscal externo pendiente.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.

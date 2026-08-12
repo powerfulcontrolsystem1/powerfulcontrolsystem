@@ -41946,3 +41946,7 @@ acumulativa.
 - La auditoría posterior confirmó configuración y referencias de firma completas
   en staging para PCS, con ambiente seguro y consecutivo reiniciado. No se
   emitieron documentos ni se modificó producción.
+2026-08-12: Plan 110 / validación visual DIAN autenticada en staging.
+- El centro DIAN de PCS mostró habilitación, emisión local apagada y datos de
+  preparación; la validación de credenciales avanzó el flujo sin emitir. El
+  diagnóstico no aportó una salida visible concluyente y se conserva como límite.

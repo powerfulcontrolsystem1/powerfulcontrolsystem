@@ -859,3 +859,6 @@ autoriza ni ejecuta despliegue productivo.
   permanece **parcial** hasta diagnosticar bajo sesión y obtener acuses oficiales
   DIAN; el avance formal se mantiene en **38,5 %**, certificación **0 %** y
   veredicto **NO-GO**.
+- La revisión visual autenticada confirmó esa configuración y validó las
+  credenciales sin emitir. El botón de diagnóstico no devolvió un resultado
+  adicional visible, por lo que no se infiere éxito fiscal ni cambia el avance.
