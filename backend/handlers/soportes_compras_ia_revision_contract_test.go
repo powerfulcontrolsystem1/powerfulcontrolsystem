@@ -111,7 +111,7 @@ func TestSoportesComprasIAExtractionRejectsAdversarialValues(t *testing.T) {
 
 func TestSupportExtractionMetricsAreBoundedAndConcurrent(t *testing.T) {
 	before := SupportExtractionOperationalMetrics()
-	for _, outcome := range []string{"human_review", "provider_error", "invalid_response", "canceled", "persistence_error", "unknown"} {
+	for _, outcome := range []string{"human_review", "provider_error", "invalid_response", "canceled", "timeout", "persistence_error", "unknown"} {
 		recordSupportExtractionOutcome(outcome)
 	}
 	const workers = 64
@@ -128,7 +128,7 @@ func TestSupportExtractionMetricsAreBoundedAndConcurrent(t *testing.T) {
 	after := SupportExtractionOperationalMetrics()
 	if after.Consistent-before.Consistent != workers || after.HumanReview-before.HumanReview != 1 ||
 		after.ProviderError-before.ProviderError != 1 || after.InvalidResponse-before.InvalidResponse != 1 ||
-		after.Canceled-before.Canceled != 1 || after.Persistence-before.Persistence != 1 {
+		after.Canceled-before.Canceled != 1 || after.Timeout-before.Timeout != 1 || after.Persistence-before.Persistence != 1 {
 		t.Fatalf("metricas IA inesperadas: before=%+v after=%+v", before, after)
 	}
 }
@@ -142,7 +142,8 @@ func TestSoportesComprasIAProviderAndDoubleClickContracts(t *testing.T) {
 	for _, want := range []string{
 		"pg_try_advisory_lock", "pg_advisory_unlock", "errSoporteComprasIAProcesamientoEnCurso",
 		"publicAIProviderError(err)", "http.StatusBadGateway", "http.StatusConflict",
-		"callOpenAIResponsesWithSystemPromptContext(r.Context()", "RefundEmpresaAgenteUsoDiario",
+		"callOpenAIResponsesWithSystemPromptContext(providerCtx", "RefundEmpresaAgenteUsoDiario",
+		"context.WithTimeout(r.Context(), soporteComprasIAExtractionTimeout)", "http.StatusGatewayTimeout",
 	} {
 		if !strings.Contains(source, want) {
 			t.Fatalf("contrato de concurrencia/degradacion ausente: %q", want)

@@ -294,10 +294,25 @@
         return String(value == null ? "" : value).trim();
       }
 
-      function fetchJSON(url) {
-        return fetch(url, { credentials: "same-origin" }).then(function (res) {
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          return res.json();
+      function csrfToken() {
+        var match = document.cookie.match(/(?:^|;\s*)pcs_csrf=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+      }
+
+      function fetchJSON(url, options) {
+        options = options && typeof options === "object" ? Object.assign({}, options) : {};
+        options.credentials = "same-origin";
+        var method = text(options.method || "GET").toUpperCase();
+        if (["POST", "PUT", "PATCH", "DELETE"].indexOf(method) !== -1) {
+          var token = csrfToken();
+          options.headers = new Headers(options.headers || {});
+          if (token) options.headers.set("X-CSRF-Token", token);
+        }
+        return fetch(url, options).then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (data) {
+            if (!res.ok) throw new Error(text(data.error) || "HTTP " + res.status);
+            return data;
+          });
         });
       }
 
@@ -429,8 +444,26 @@
           });
       }
 
+      function reconcileEmail() {
+        if (!empresaId) return Promise.reject(new Error("No se encontro empresa_id."));
+        return fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId) + "&check_webmail=1&check_unread=1&theme=" + encodeURIComponent(currentEmailThemeMode()), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reconcile: true })
+        }).then(render);
+      }
+
       if (refreshBtn) {
-        refreshBtn.addEventListener("click", loadEmail);
+        refreshBtn.addEventListener("click", function () {
+          refreshBtn.disabled = true;
+          refreshBtn.textContent = "Verificando Mailu...";
+          reconcileEmail().catch(function (err) {
+            setAlert(err && err.message ? err.message : "No se pudo verificar el buzon en Mailu.");
+          }).then(function () {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = "Actualizar";
+          });
+        });
       }
       try {
         new MutationObserver(function (mutations) {

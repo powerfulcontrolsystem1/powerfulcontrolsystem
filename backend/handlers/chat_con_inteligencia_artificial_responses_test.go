@@ -63,3 +63,44 @@ func TestOpenAIResponsesContextCancellationStopsProviderRequest(t *testing.T) {
 		t.Fatal("provider request did not stop after cancellation")
 	}
 }
+
+func TestOpenAIResponsesContextDeadlineStopsProviderRequest(t *testing.T) {
+	started := make(chan struct{})
+	releaseServer := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		select {
+		case <-r.Context().Done():
+		case <-releaseServer:
+		}
+	}))
+	defer func() {
+		close(releaseServer)
+		server.Close()
+	}()
+	controller := &EmpresaAIChatController{client: &http.Client{Timeout: 5 * time.Second}}
+	model := empresaAIModelDef{
+		Provider: "openai", UpstreamModel: "gpt-test",
+		Endpoint: server.URL + "/v1/responses", apiKeyOverride: "test-only",
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		_, _, _, err := controller.callOpenAIResponsesWithSystemPromptContext(ctx, model, "extraer", nil, "sistema", nil, nil, nil)
+		done <- err
+	}()
+	select {
+	case <-started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("provider request did not start")
+	}
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("deadline not propagated: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("provider request did not stop after deadline")
+	}
+}

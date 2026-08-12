@@ -1,3 +1,6 @@
+- 2026-08-12: `Plan 110: timeout IA, botones, Mailu y CSP de observacion` limita la extraccion de soportes a 90 segundos con cancelacion y devolucion de cuota, corrige el mensaje del boton IA de Productos hacia el shell superior, muestra guardas/errores GPT de Grafologia sin dialogs bloqueantes, inicia CxP/IA como borrador editable sin `window.confirm`, agrega inventario reproducible de 20 controles IA, concilia el buzon solo tras autenticar INBOX por el front Mailu y activa por defecto la CSP Report-Only estricta del backend. Las correcciones son locales y no se ejecuto `rs`.
+- 2026-08-12: `Plan 110: factura y nota crédito DIAN reales` registra la aceptación oficial de la factura `1PCS7` por COP 100 y de la nota crédito total `NC12000000113`; la factura quedó anulada y ambos acuses sincrónicos informaron `Procesado Correctamente.` sin reenvíos ni duplicados.
+- 2026-08-12: `Plan 110: adjunto CxP/IA con revisión humana` valida en staging la radicación antivirus, extracción real de XML, edición auditada y rechazo sin crear CxP, asiento, pago ni movimiento de inventario.
 - 2026-08-12: `Plan 110: bootstrap Mailu y restore autocontenido` fija `MAILU_VERSION=2024.06` cuando el entorno privado aún dependía del valor implícito de Compose, valida el formato `YYYY.MM` y hace que el drill aislado seleccione el snapshot completo más reciente dentro del directorio autorizado. Los fallos remotos muestran solo diagnósticos `[ERROR]/[WARN]` saneados. El restore efímero aprobó health/ready, migración, inventario privado sin huérfanos y limpieza automática.
 - 2026-08-12: `Domotica como destino opcional de estaciones` agrega un check empresarial, desactivado por defecto, para que estaciones/habitaciones abran directamente sus equipos electronicos y Venta directa abra la consola consolidada; al desactivarlo se conserva el carrito unificado. Se persiste por `empresa_id` en `estaciones_config.carrito_ui_global` sin tablas ni dependencias nuevas.
 - 2026-07-30: `Plan 109 de cierre ejecutivo para producción` audita los pendientes del Plan 108, corrige su base conservadora a 46,2 % porque cuatro cajas sigue pendiente, y reorganiza el cierre en 15 compuertas verificables para GPT-5.6 Terra alto. Cada fase define autorización, pruebas, evidencia, rollback y GO/NO-GO; el nuevo candidato inicia con 0 % de certificación hasta pasar release y staging.
@@ -4889,6 +4892,9 @@
   `aceptado`, no con el estado intermedio `enviado`.
 - Configuracion, documentos, colas, acuses y migracion permanecen aislados por
   `empresa_id`.
+- El QA reproducible de impresion del candidato actual aprobo 20/20 formatos
+  Carta/POS; la revision visual confirmo documentos extensos, totales y QR sin
+  recortes. La impresion fisica y accesibilidad asistida siguen pendientes.
 ## 2026-07-28
 
 - Se reparó el token CSRF de las acciones de Email corporativo Mailu y se

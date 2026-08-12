@@ -33,6 +33,17 @@ func TestFrontendStaticResourcesExist(t *testing.T) {
 	}
 }
 
+func TestBackendDefaultsToStrictCSPObservationWithoutBlockingCompatibility(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.platform.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	compose := string(raw)
+	if !strings.Contains(compose, `PCS_CSP_REPORT_ONLY_STRICT: ${PCS_CSP_REPORT_ONLY_STRICT:-1}`) {
+		t.Fatal("backend must observe strict CSP by default before enforcing removal of unsafe-inline")
+	}
+}
+
 func TestPublicDownloadsAreExplicitlyAllowlisted(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
 	if err != nil {
@@ -458,6 +469,10 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 			t.Fatalf("products keeps corrupted query separator %q", corrupted)
 		}
 	}
+	if !strings.Contains(string(products), "const chatHost = window.top") ||
+		!strings.Contains(string(products), "chatHost.postMessage({") {
+		t.Fatal("nested products page must open the company AI drawer in the top-level shell")
+	}
 
 	moduleScript, err := os.ReadFile(filepath.Join(root, "web", "js", "modulo_colombia_admin.js"))
 	if err != nil {
@@ -517,6 +532,49 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 	}
 	if !strings.Contains(string(domicilios), "function asArray(v)") || !strings.Contains(string(domicilios), "state.menu=asArray(menuData)") {
 		t.Fatal("Domicilios must render an empty menu response as an empty list")
+	}
+}
+
+func TestGrafologiaAIGuardsRenderInlineWithoutBlockingDialogs(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "js", "grafologia.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(raw)
+	for _, message := range []string{
+		"No se detecto empresa_id para analizar con GPT-5.5.",
+		"Carga una imagen manuscrita antes de analizar con GPT-5.5.",
+	} {
+		if !strings.Contains(content, `renderAIResult({ error: "`+message+`" }, false)`) {
+			t.Fatalf("Grafologia IA must render its guard inline: %s", message)
+		}
+		if strings.Contains(content, `alert("`+message+`")`) {
+			t.Fatalf("Grafologia IA must not block the browser with alert: %s", message)
+		}
+	}
+	if strings.Contains(content, `alert("No se pudo analizar con GPT-5.5:`) {
+		t.Fatal("Grafologia IA provider failures must remain visible inline without a blocking alert")
+	}
+}
+
+func TestFinanceCxPIAStartsEditableDraftWithoutBlockingConfirm(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "finanzas.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(raw)
+	if strings.Contains(content, "window.confirm('La lectura IA crea un borrador de cuenta por pagar") {
+		t.Fatal("CxP IA file selection must not depend on a blocking browser confirm")
+	}
+	for _, expected := range []string{
+		"tipoInput.value = 'cxp'",
+		"syncCarteraProveedorUI();",
+		"podrás revisar y editar los datos antes de guardar",
+		"document.getElementById('carteraSoporteIAArchivo').click();",
+	} {
+		if !strings.Contains(content, expected) {
+			t.Fatalf("CxP IA accessible draft contract is missing %q", expected)
+		}
 	}
 }
 

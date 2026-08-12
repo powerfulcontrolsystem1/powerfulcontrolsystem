@@ -1117,3 +1117,73 @@ autoriza ni ejecuta despliegue productivo.
 - P110-008 conserva estado **parcial**: falta repetir réplica autenticada y
   rollback sobre el próximo digest final y obtener aceptación de RPO/RTO. El
   avance formal continúa en **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, adjunto CxP/IA real con revisión humana
+
+- El candidato `945d1751` radicó un XML sintético limpio, extrajo por IA
+  proveedor, NIT, fechas, subtotal, IVA y total, permitió corregir los campos
+  leídos y registró la edición en auditoría.
+- El soporte `SCI-0028` se rechazó sin contabilizar y la búsqueda posterior del
+  documento en CxP no encontró registros. La IA no creó obligación, asiento,
+  pago ni movimiento de inventario.
+- P110-003 permanece **parcial** por timeout/cancelación deliberada, proveedor
+  caído, todos los botones/roles, evals y A/B. El avance formal continúa en
+  **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, factura y anulación DIAN reales
+
+- PCS cerró una venta real de `menta` por `COP 100`. DIAN aceptó la factura
+  `1PCS7` con acuse sincrónico y mensaje `Procesado Correctamente.`.
+- La anulación oficial generó la nota crédito total `NC12000000113`; DIAN
+  también la aceptó con `Procesado Correctamente.`. La factura quedó anulada y
+  la nota crédito emitida, sin reenvíos ni duplicados.
+- P110-006 permanece **parcial** por XML/PDF/CUFE/QR completos, impresión
+  física, empresa B, idempotencia por doble clic y demás integraciones. El
+  avance formal se mantiene en **38,5 %**, certificación **0 %**, **NO-GO**.
+- Por instrucción del usuario no se ejecutó `rs` en este bloque.
+
+## Actualización 2026-08-12, impresión virtual y revisión visual
+
+- El candidato `945d1751` generó 20/20 formatos Carta/POS sin casos a revisar
+  ni fallos de autoimpresión. Factura y recibo extensos conservaron 96 filas en
+  cinco páginas de detalle y una página final de resumen.
+- La revisión humana confirmó filas, columnas, importes, encabezados repetidos,
+  totales, firmas y QR sin recortes en factura Carta/POS y documentos extensos.
+- P110-005 permanece **parcial** hasta completar impresión física, tableta,
+  accesibilidad asistida y documentos PCS reales. El avance formal permanece
+  en **38,5 %**, certificación **0 %**, **NO-GO**.
+- Por instrucción del usuario no se ejecutó `rs` en este bloque.
+
+## Actualización 2026-08-12, matriz IA y cancelación segura
+
+- En PCS/staging el asistente central respondió una consulta neutra y el modo
+  agente presentó una propuesta con confirmación obligatoria. Se canceló y el
+  catálogo confirmó que no se creó el producto.
+- Compras, Egresos e Ingresos bloquearon correctamente la IA sin adjunto. El
+  inventario reproducible localizó 20 controles IA empresariales; Grafología
+  quedó inconclusa por un `alert` bloqueante y no se contabiliza como aprobada
+  en staging. Se corrigió localmente para mostrar guardas y errores en su panel.
+- Se corrigió localmente el botón IA de Productos, que enviaba el mensaje al
+  iframe en vez del shell superior, y se añadió timeout de 90 segundos con
+  cancelación, reembolso de cuota y métricas separadas para soportes IA.
+- Finanzas/CxP inicia ahora el borrador editable sin `window.confirm`: cambia
+  visiblemente el tipo a CxP, explica la revisión pendiente y conserva el
+  guardado como confirmación humana independiente.
+- Aprobaron `go test ./...`, `go vet` focalizado, auditoría profesional,
+  inventario IA, comprobación del diff y escaneo saneado de archivos cambiados.
+- Falta desplegar y repetir estas correcciones, cubrir los 20 controles por rol,
+  proveedor caído y evals A/B. P110-003 sigue **parcial**; avance formal
+  **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-12, reconciliación Mailu y CSP de observación
+
+- La página real de correo corporativo mostró un buzón pendiente, sin no leídos
+  verificables. La corrección local solo permite marcarlo provisionado después
+  de autenticar INBOX a través del front Mailu; el botón usa POST con CSRF y
+  conserva el estado anterior ante fallo.
+- El staging público conserva cabeceras HTTPS y el frontend ya observa una CSP
+  estricta. El backend aún heredaba `unsafe-inline`; el Compose local activa por
+  defecto la CSP Report-Only estricta sin modificar todavía la política aplicada.
+- Ambas correcciones requieren despliegue y repetición visual. P110-006 y
+  P110-007 continúan **parciales**; avance formal **38,5 %**, certificación
+  **0 %**, **NO-GO**. No se ejecutó `rs`.

@@ -181,6 +181,44 @@ func TestCorporateEmailIMAPAddressDefaultsToMailuWebmailPort(t *testing.T) {
 	}
 }
 
+func TestCorporateEmailIMAPAddressReplacesLegacyDirectService(t *testing.T) {
+	t.Setenv("EMAIL_CORPORATIVO_IMAP_ADDR", "mailu-imap:143")
+	t.Setenv("MAILU_IMAP_ADDR", "")
+	if got := corporateEmailIMAPAddress(); got != "mailu-front:10143" {
+		t.Fatalf("direccion IMAP heredada = %q; se esperaba canal interno de webmail", got)
+	}
+}
+
+func TestCorporateEmailProvisionReconciliationRequiresVerifiedInbox(t *testing.T) {
+	account := &dbpkg.EmpresaEmailCorporativo{EmpresaID: 12, EstadoProvision: "pendiente_provision"}
+	if shouldReconcileCorporateEmailProvision(account, corporateEmailUnreadStatus{Checked: true, OK: false}) {
+		t.Fatal("un INBOX rechazado no debe cambiar el estado de provision")
+	}
+	if !shouldReconcileCorporateEmailProvision(account, corporateEmailUnreadStatus{Checked: true, OK: true}) {
+		t.Fatal("un INBOX autenticado debe permitir reconciliar el estado")
+	}
+	account.EstadoProvision = "provisionado"
+	if shouldReconcileCorporateEmailProvision(account, corporateEmailUnreadStatus{Checked: true, OK: true}) {
+		t.Fatal("un buzon ya provisionado no debe registrar otra reconciliacion")
+	}
+}
+
+func TestCorporateEmailCompanyPageReconcilesMailuWithCSRFProtectedPost(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "email_corporativo.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		`JSON.stringify({ reconcile: true })`, `method: "POST"`,
+		`options.headers.set("X-CSRF-Token", token)`, `Verificando Mailu...`,
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("reconciliacion segura de Mailu ausente: %q", required)
+		}
+	}
+}
+
 func TestCorporateEmailSuperPageIncludesMaxAccountsField(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "super", "email_corporativo.html"))
 	if err != nil {
