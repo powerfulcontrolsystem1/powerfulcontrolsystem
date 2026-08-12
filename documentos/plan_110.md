@@ -896,3 +896,15 @@ autoriza ni ejecuta despliegue productivo.
   impresión física, réplica/rollback ni piloto.
 - El avance formal se mantiene en **38,5 %**, la certificación en **0 %** y el
   veredicto es **NO-GO**.
+
+## Actualización 2026-08-12, antivirus obligatorio en el candidato
+
+- Una caída controlada reveló que el backend previo de staging no llevaba la
+  configuración ClamAV obligatoria. Se promovió el candidato inmutable con su
+  overlay antivirus y se repitió la prueba visual: con ClamAV detenido la carga
+  limpia recibe indisponibilidad y no persiste el soporte; después se recuperó
+  el escáner y el endpoint de staging.
+- La sonda EICAR no alcanzó el navegador porque la protección local la eliminó
+  antes de enviarla. Se mantiene pendiente el rechazo HTTP EICAR, recuperación,
+  concurrencia y alertas P0. P110-007 permanece **parcial**; el avance formal
+  continúa en **38,5 %**, certificación **0 %**, **NO-GO**.

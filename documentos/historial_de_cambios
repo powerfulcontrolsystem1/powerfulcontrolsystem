@@ -41996,3 +41996,9 @@ acumulativa.
   configuración y entregó una alerta sintética única mediante Mailu con acuse
   SMTP remoto, seguida de su resolución. No se afectaron datos de PCS, DIAN ni
   producción; aún falta confirmar recepción/resolve y deduplicación operativa.
+2026-08-12: Plan 110 / fail-closed ClamAV en staging.
+- Se detectó que el backend antiguo de staging omitía las variables obligatorias
+  de antivirus por un Compose remoto incompleto. Se promovió el candidato
+  inmutable con el overlay antivirus y se comprobó visualmente que una carga
+  limpia se rechaza con 503 cuando ClamAV está detenido; el servicio fue
+  restaurado inmediatamente. El rechazo EICAR HTTP final sigue pendiente.
