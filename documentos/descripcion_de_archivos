@@ -1,4 +1,7 @@
 2026-08-12
+- `documentos/evidencia_plan_110/P110-000/2026-08-12_compuerta_automatica_repetida_post_cxp_ia.md`:
+  resultado saneado de la repetición solo lectura de health, DIAN y alertas de
+  staging posterior a la prueba visual CxP/IA.
 - `documentos/evidencia_plan_110/P110-003/2026-08-12_cxp_ia_demo_y_papelera_staging.md`:
   evidencia visual saneada del flujo autenticado de demo CxP/IA, revisión
   humana y traslado recuperable a papelera en PCS staging.
