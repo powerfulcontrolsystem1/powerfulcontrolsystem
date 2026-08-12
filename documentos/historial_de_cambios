@@ -1,3 +1,18 @@
+2026-08-12: Plan 110 / réplica autenticada y rollback del candidato d3d21414.
+- El restore efímero con la cuenta QA aprobó dos réplicas, cinco dominios
+  autenticados, negativos de archivos, rollback coordinado de datos/privados y
+  limpieza total. RTO: 223 s; RPO: 14.611 s, pendiente de aceptación humana.
+- El Centro IA corregido validó visualmente sus siete funciones como borradores
+  no mutantes. La deduplicación de Alertmanager también aprobó; ningún resultado
+  sustituye las compuertas humanas que mantienen P110 en NO-GO.
+
+2026-08-12: Plan 110 / restore aislado del candidato IA corregido.
+- El candidato `d3d21414` aprobó restauración efímera de ambas bases, migración
+  sin DDL runtime, API exacta, inventario privado sin huérfanos y cleanup total.
+  RTO observado: 115 s; RPO medido: 14.289 s, pendiente de aceptación humana.
+- No se tocó staging fuera de health/readiness. Aún faltan réplica autenticada,
+  rollback coordinado y la firma RPO/RTO para cerrar P110-008.
+
 2026-08-12: Plan 110 / repetición visual de impresiones y contratos UX.
 - Los 20 formatos Carta/POS aprobaron con Chrome local, incluidos documentos
   extensos, QR y autoimpresión; la inspección visual de la factura multipágina

@@ -971,3 +971,20 @@ autoriza ni ejecuta despliegue productivo.
   p95 de 907 ms y p99 de 1890 ms, sin mutaciones. Faltan cajas mutantes,
   recursos/SLO, resolución y deduplicación completa de alertas. P110-009 sigue
   **parcial**; avance formal **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, candidato IA corregido y rollback completo
+
+- La prueba autenticada descubrió que los IDs canónicos de algunas funciones
+  del Centro IA se normalizaban erróneamente a diagnóstico. El candidato
+  `d3d21414` corrigió el selector, aprobó Go completo, CI, escaneo, SBOM y
+  promoción exclusiva a staging. Las siete funciones del catálogo se repitieron
+  visualmente como recomendaciones/borradores, sin mutaciones de negocio.
+- El mismo digest aprobó restore aislado con dos réplicas autenticadas, cinco
+  dominios protegidos, negativos de archivos, rollback coordinado de ambas
+  bases y almacenamiento privado, y cleanup total. RTO total: 223 s; RPO
+  medido: 14.611 s, aún pendiente de aceptación humana.
+- Alertmanager consolidó dos publicaciones sintéticas idénticas en una alerta y
+  la resolución la eliminó. Quedan pendientes confirmación visible del receptor,
+  guardia y simulacro integral. No se añade una fase parcial nueva: el avance
+  formal permanece **38,5 %**, certificación **0 %** y **NO-GO** hasta completar
+  roles/cajas, UAT contable, impresión física, piloto y firmas.

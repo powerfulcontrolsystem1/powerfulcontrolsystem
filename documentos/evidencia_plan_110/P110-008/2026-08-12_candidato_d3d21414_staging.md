@@ -23,3 +23,17 @@ worker, frontend, PostgreSQL y ClamAV quedaron saludables; `/health` y
 El aviso de Compose sobre una red Mailu preexistente fue informativo: no impidió
 la recreación ni alteró la red. Esta evidencia no congela el candidato como
 final: cualquier cambio posterior exige repetir las certificaciones afectadas.
+
+## Restore aislado monitorizado
+
+Sobre un snapshot se restauraron ambas bases en PostgreSQL efímero, se ejecutó
+el migrador exacto sin DDL del runtime y se arrancó la API exacta contra esa
+copia. El smoke aprobó health/ready, dos bases, cinco tablas críticas y cuatro
+endpoints protegidos. El inventario privado encontró seis archivos y seis
+referencias, con cero huérfanos o referencias heredadas.
+
+El RTO observado fue 115 s; el RPO medido respecto al snapshot fue 14.289 s y
+requiere aceptación explícita de negocio (no se interpreta como aprobación).
+El script terminó con salida 0, eliminó contenedores, red y directorio temporal;
+staging conservó health/readiness correctos. Faltan réplica autenticada A/B,
+rollback coordinado de este digest y aceptación humana de RPO/RTO.
