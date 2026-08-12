@@ -12984,6 +12984,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-008/2026-08-12_candidato_1a6dc4fa_staging.md`:
   conserva los digests, CI y comprobaciones del candidato P110 activo en
   staging, junto con el límite operativo del Compose remoto.
+- `documentos/evidencia_plan_110/P110-008/2026-08-12_restore_aislado_1a6dc4fa.md`:
+  registra el restore efímero del candidato actual, su inventario privado,
+  mediciones observadas y limpieza posterior.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.

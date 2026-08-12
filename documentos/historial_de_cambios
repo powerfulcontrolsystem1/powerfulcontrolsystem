@@ -41974,3 +41974,10 @@ acumulativa.
 - La reconsulta oficial de DIAN persistió el acuse de habilitación como aceptado
   sin emitir otro documento. Se identificó que el checkout remoto aún omite el
   Compose antivirus en su comando predeterminado, por lo que P110-008 no cierra.
+2026-08-12: Plan 110 / restore aislado del candidato inmutable.
+- El candidato `1a6dc4fa` restauró snapshot, aplicó migrador sin privilegios DDL
+  y levantó API/ClamAV aislados con health/ready correctos. Se verificaron seis
+  referencias privadas sin huérfanos y limpieza total de recursos efímeros.
+- RTO observado: 119 s; RPO observado: 84351 s. No existe aún aceptación
+  contractual ni réplica autenticada/rollback coordinado, por lo que la fase
+  permanece parcial.

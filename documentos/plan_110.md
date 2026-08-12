@@ -876,3 +876,7 @@ autoriza ni ejecuta despliegue productivo.
   La reconsulta oficial del acuse DIAN persistió como aceptada sin emisión
   adicional. P110-008 continúa parcial por el drill final y la aceptación de
   RPO/RTO; el avance formal se mantiene en **38,5 %** y **NO-GO**.
+- El restore aislado del mismo candidato aprobó migrador sin DDL, health/ready,
+  inventario privado sin huérfanos y limpieza total con RTO observado de 119 s.
+  Siguen pendientes la réplica autenticada, rollback coordinado y firma de
+  objetivos RPO/RTO; no cambia el porcentaje formal.
