@@ -937,6 +937,10 @@ autoriza ni ejecuta despliegue productivo.
   monta almacenamiento privado obligatorio.
 - P110-001 se mantiene parcial por aceptación de ADR/rollback futuro; el
   avance formal sigue en **38,5 %**, certificación **0 %**, **NO-GO**.
+- El mismo candidato aprobó además tres negativos previos a migración, cinco
+  comprobaciones de rollback transaccional y cuatro de compatibilidad hacia
+  atrás con una API anterior. Se conserva la condición de parcial hasta la
+  aceptación de los responsables; el avance formal no cambia.
 
 ## Actualización 2026-08-12, CxP sobre el candidato actual
 

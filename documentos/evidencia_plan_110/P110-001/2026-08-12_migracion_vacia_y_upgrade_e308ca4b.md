@@ -33,6 +33,19 @@ super_tables_before=59 after=59
 Al finalizar se verificó que no quedaban contenedores ni volúmenes del prefijo
 del drill y que `health`/`ready` de staging seguían correctos.
 
+## Fallos de migración y compatibilidad hacia atrás
+
+Un segundo drill aislado ejecutó el migrador con rol sin DDL, forzó un fallo
+después del DDL y antes de escribir el ledger, y arrancó una API anterior
+disponible contra el esquema actualizado. Todos los recursos fueron efímeros.
+
+```text
+fallos_previos=3 rollback_transaccional=5 compatibilidad_anterior=4
+```
+
+La API previa respondió `health`/`ready` sin modificar el esquema; tras el
+cleanup no quedaron contenedores ni volúmenes del ensayo.
+
 ## Límite
 
 P110-001 sigue parcial hasta la revisión/aceptación del ADR y una estrategia

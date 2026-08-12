@@ -7,6 +7,9 @@
   cleanup; no se modificó el almacenamiento activo.
 - Tras ambos drills no quedaron contenedores ni volúmenes efímeros y staging
   mantuvo health/ready. P110-001 sigue parcial pendiente de aceptación humana.
+- Un segundo drill aislado aprobó rol migrador sin DDL, rollback después de DDL
+  antes de ledger y API anterior sobre esquema actualizado; no dejó residuos ni
+  habilita promoción sin las compuertas humanas restantes.
 
 2026-08-09: Plan 109 / cuatro sesiones y cajas sobre el digest 349712fb.
 - Release inmutable `31334057174` publico cuatro digests y promovio solo
