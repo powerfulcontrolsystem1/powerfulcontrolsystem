@@ -1050,3 +1050,10 @@ autoriza ni ejecuta despliegue productivo.
   mutaciones. Persisten conciliación independiente, roles, cajas, simulacro y
   aprobaciones humanas; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**.
+
+## Actualización 2026-08-12, lotes de permisos y contabilidad
+
+- Permisos, rol cajero, correo, tributario, contabilidad, contratos, domótica,
+  corte de caja y créditos aprobaron 48/48 vistas en ambos formatos sin
+  mutaciones. La cobertura visual no sustituye pruebas operativas por rol.
+- El avance formal permanece **38,5 %**, certificación **0 %**, **NO-GO**.

@@ -13083,3 +13083,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   evidencia saneada del tercer lote administrativo autenticado y sus límites.
 - `documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_administrativo_lote_036_staging.md`:
   evidencia saneada del cuarto lote administrativo autenticado y sus límites.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_048_060_staging.md`:
+  evidencia saneada de los lotes de permisos y contabilidad, con límites de
+  cobertura visual segura.
