@@ -10,6 +10,10 @@ function normalizeLineEndings(value) {
   return String(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
 
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function walk(relativeDir) {
   const root = path.join(repoRoot, relativeDir);
   const files = [];
@@ -22,7 +26,7 @@ function walk(relativeDir) {
       else if (entry.isFile() && entry.name.endsWith(".go") && !entry.name.endsWith("_test.go")) files.push(full);
     }
   }
-  return files.sort();
+  return files.sort(compareText);
 }
 
 function riskFor(relativePath) {
@@ -48,7 +52,7 @@ for (const fullPath of [...walk("backend/handlers"), ...walk("backend/internal")
     });
   }
 }
-entries.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
+entries.sort((a, b) => compareText(a.path, b.path) || a.line - b.line);
 const byRisk = new Map();
 for (const entry of entries) byRisk.set(entry.risk, (byRisk.get(entry.risk) ?? 0) + 1);
 
@@ -62,7 +66,7 @@ const lines = [
   "## Resumen",
   "",
   `- Llamadas inventariadas: ${entries.length}.`,
-  ...[...byRisk.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([risk, count]) => `- ${risk}: ${count}.`),
+  ...[...byRisk.entries()].sort(([a], [b]) => compareText(a, b)).map(([risk, count]) => `- ${risk}: ${count}.`),
   "",
   "## Registro",
   "",

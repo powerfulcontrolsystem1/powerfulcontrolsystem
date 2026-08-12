@@ -42247,3 +42247,10 @@ acumulativa.
   únicamente cambiaron referencias de línea y los tres validadores aprobaron.
 - La repetición de `rs` aprobó preflight completo y se detuvo cerrado antes de
   sincronizar por no estar la rama P110 integrada en `main`.
+2026-08-12: Plan 110 / endurecimiento del despliegue Windows a VPS.
+- El bootstrap OpenSSH se transmite por entrada estándar a `bash -s`; evita que
+  Windows reinterprete paréntesis u otros metacaracteres del script remoto y no
+  expone su contenido en los argumentos del proceso.
+- El inventario de funciones `Ensure*` usa orden ordinal determinista para que
+  `--check` produzca el mismo resultado en Windows y Linux; la misma regla se
+  aplica al inventario runtime y a la matriz de rutas multiempresa.

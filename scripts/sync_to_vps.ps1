@@ -1071,6 +1071,7 @@ function Invoke-ExternalWithRetry {
     [Parameter(Mandatory=$true)][string]$Label,
     [Parameter(Mandatory=$true)][string]$CommandPath,
     [Parameter(Mandatory=$true)][string[]]$Arguments,
+    [AllowNull()][string]$StandardInput = $null,
     [int]$MaxAttempts = 3,
     [switch]$RetryOnTimeoutOnly
   )
@@ -1081,7 +1082,15 @@ function Invoke-ExternalWithRetry {
 
   for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
     Write-Host ("[INFO] " + $Label + " (intento " + $attempt + "/" + $MaxAttempts + ")...")
-    $output = & $CommandPath @Arguments 2>&1
+    # OpenSSH on Windows can alter shell metacharacters when a long bootstrap
+    # script is passed as a command-line argument. Sending the script through
+    # stdin keeps it out of the process arguments and lets bash parse it
+    # exactly as generated.
+    if ($null -ne $StandardInput) {
+      $output = $StandardInput | & $CommandPath @Arguments 2>&1
+    } else {
+      $output = & $CommandPath @Arguments 2>&1
+    }
     $exitCode = $LASTEXITCODE
     if ($output) {
       $output | ForEach-Object { Write-TaggedExternalOutput -Line "$_" }
@@ -1583,6 +1592,7 @@ function Invoke-PuttySync {
   $extractArgs = @()
   $bootstrapCmd = ""
   $bootstrapArgs = @()
+  $bootstrapStandardInput = $null
   $restartCmd = ""
   $restartArgs = @()
   $tempCommandFiles = @()
@@ -1655,8 +1665,9 @@ function Invoke-PuttySync {
         '-p', "$Port",
         '-i', $identityResolved,
         $remoteTarget,
-        $bootstrapCmd
+        'bash -s'
       )
+      $bootstrapStandardInput = $bootstrapCmd
     }
   }
 
@@ -1738,7 +1749,7 @@ function Invoke-PuttySync {
     Invoke-ExternalWithRetry -Label "extracción remota" -CommandPath $extractCommandPath -Arguments $extractArgs -MaxAttempts $Retries -RetryOnTimeoutOnly
 
     if ($RunBootstrap) {
-      Invoke-ExternalWithRetry -Label "bootstrap remoto" -CommandPath $bootstrapCommandPath -Arguments $bootstrapArgs -MaxAttempts $Retries -RetryOnTimeoutOnly
+      Invoke-ExternalWithRetry -Label "bootstrap remoto" -CommandPath $bootstrapCommandPath -Arguments $bootstrapArgs -StandardInput $bootstrapStandardInput -MaxAttempts $Retries -RetryOnTimeoutOnly
     }
 
     if ($RestartServer) {

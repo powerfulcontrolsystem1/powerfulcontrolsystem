@@ -5,7 +5,7 @@ package db
 // legacySchemaCatalogSourceFingerprint freezes the reviewed source bodies of
 // every Ensure* step executed by the compatibility catalog. Changing a legacy
 // step changes this value and must be accompanied by a new immutable migration.
-const legacySchemaCatalogSourceFingerprint = "4b:d5:10:d6:07:ab:cf:e5:c1:65:03:a5:4a:cb:30:89:ce:98:9c:7f:6b:14:11:1c:05:19:03:5e:30:ff:17:66"
+const legacySchemaCatalogSourceFingerprint = "d0:5a:29:1d:23:45:45:6d:0f:c8:e4:14:8c:24:4f:46:bf:07:7c:0f:52:d9:9a:06:1e:dd:10:4a:7a:e1:1c:99"
 
 var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureAdminEmpresaCompartidaSchema": "82:45:70:3b:a8:07:9e:54:f0:75:ab:fd:53:df:33:f0:4a:2f:3e:a5:9c:cd:1c:28:48:2c:69:45:41:2c:de:f7",
@@ -45,7 +45,7 @@ var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureEmpresaConfiguracionOperativaSchema": "80:b6:bc:b9:5a:c0:01:2e:b2:6d:5a:24:21:fb:65:88:bb:9e:40:61:83:d4:f8:fe:37:ed:e1:a0:42:8e:92:69",
 	"EnsureEmpresaContabilidadColombiaAvanzadaSchema": "d3:14:2b:cf:55:10:6c:aa:1a:3d:52:c6:70:77:1b:6b:a8:72:ef:23:ca:f6:3a:60:7d:2a:42:06:46:45:a8:d0",
 	"EnsureEmpresaContabilidadColombiaSchema": "2d:00:ea:ab:4e:d5:f6:6e:e2:d5:26:b5:3e:52:a0:d9:c0:8e:7b:2d:ec:40:d4:30:b2:67:7d:65:1a:4e:4f:0f",
-	"EnsureEmpresaControlElectricoSchema": "00:0e:7c:75:cd:2b:9b:04:6a:3f:85:12:49:5d:08:51:58:78:67:11:51:4c:e3:3d:ed:a3:32:6b:ca:4f:25:16",
+	"EnsureEmpresaControlElectricoSchema": "df:ce:f0:39:61:4b:03:0c:99:c5:e7:c1:6e:b4:8e:12:22:c4:a8:87:bc:87:34:c5:9c:8b:e4:e1:84:32:0a:9e",
 	"EnsureEmpresaCorteCajaConfiguracionSchema": "cc:6d:9d:5f:43:68:32:eb:60:8b:4b:48:3c:ff:ad:2e:72:80:6c:6b:d0:0b:d1:8a:20:55:6d:42:af:6c:af:01",
 	"EnsureEmpresaCreditosSchema": "a0:0a:0f:6c:1f:d2:fd:e2:b1:48:f5:22:0a:5a:b5:23:7b:e2:d4:31:a9:df:9d:69:4d:be:71:f6:d4:95:0f:85",
 	"EnsureEmpresaDatafonosSchema": "51:b8:87:d6:31:6c:cc:8a:7e:f1:eb:9d:3d:2e:42:83:0c:bb:aa:e3:05:19:ac:fd:7b:db:4a:f2:f7:2b:dd:cc",
