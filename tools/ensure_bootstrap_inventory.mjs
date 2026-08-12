@@ -17,6 +17,10 @@ function normalizeLineEndings(value) {
   return String(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
 
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function validateFingerprintCanonicalization() {
   const lf = "func EnsureExample() {\n\treturn\n}\n";
   const crlf = lf.replace(/\n/g, "\r\n");
@@ -44,7 +48,7 @@ function walk(relativeDir) {
       else if (entry.isFile() && entry.name.endsWith(".go") && !entry.name.endsWith("_test.go")) result.push(full);
     }
   }
-  return result.sort();
+  return result.sort(compareText);
 }
 
 function functionBody(source, offset) {
@@ -105,7 +109,7 @@ for (const file of files) {
     });
   }
 }
-entries.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
+entries.sort((a, b) => compareText(a.path, b.path) || a.line - b.line);
 const counts = new Map();
 for (const entry of entries) counts.set(entry.classification, (counts.get(entry.classification) ?? 0) + 1);
 
@@ -125,7 +129,7 @@ const legacyCatalogNames = ["legacyEmpresaSchemaCatalog", "legacySuperSchemaCata
     if (!sourceFunctionsByName.has(match[1])) throw new Error(`legacy schema catalog step ${match[1]} has no source function`);
     return match[1];
   })
-  .sort();
+  .sort(compareText);
 const uniqueLegacyCatalogNames = [...new Set(legacyCatalogNames)];
 if (uniqueLegacyCatalogNames.length !== legacyCatalogNames.length) {
   throw new Error("legacy schema catalog contains duplicate Ensure steps");
@@ -149,7 +153,7 @@ const lines = [
   "",
   `- Funciones inventariadas: ${entries.length}.`,
   `- Huella del catalogo legado: \`${legacyCatalogFingerprint}\` (${legacyManifestEntries.length} pasos).`,
-  ...[...counts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `- ${key}: ${value}.`),
+  ...[...counts.entries()].sort(([a], [b]) => compareText(a, b)).map(([key, value]) => `- ${key}: ${value}.`),
   "- Fuente: `backend/db`, `backend/handlers` y `backend/main.go`; excluye pruebas.",
   "",
   "## Registro",

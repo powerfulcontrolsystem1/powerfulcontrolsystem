@@ -1101,7 +1101,10 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 func corporateEmailIMAPAddress() string {
 	value := strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_IMAP_ADDR", "MAILU_IMAP_ADDR"))
 	if value == "" {
-		value = "mailu-imap:143"
+		// Mailu reserva el puerto interno 10143 del front para conexiones del
+		// webmail. Con AUTH_REQUIRE_TOKENS activo, consultar directamente
+		// mailu-imap:143 rechaza la clave normal aunque el buzon sea valido.
+		value = "mailu-front:10143"
 	}
 	if !strings.Contains(value, ":") {
 		value += ":143"
