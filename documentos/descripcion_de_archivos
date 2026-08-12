@@ -1,4 +1,10 @@
 2026-08-12
+- `backend/handlers/empresa_ia_empresarial_test.go`:
+  regresión de los IDs canónicos y del fallback seguro del selector de acciones
+  del Centro IA empresarial.
+- `documentos/evidencia_plan_110/P110-003/2026-08-12_acciones_catalogo_ia_canonicas.md`:
+  hallazgo visual, corrección y alcance pendiente de despliegue del selector de
+  funciones IA empresariales.
 - `documentos/evidencia_plan_110/P110-003/2026-08-12_asistente_ia_real_y_modo_agente_staging.md`:
   matriz saneada de consulta IA real y propuesta no confirmada en modo agente
   mediante la interfaz autenticada de PCS staging.

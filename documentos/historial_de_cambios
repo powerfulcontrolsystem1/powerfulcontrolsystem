@@ -1,3 +1,11 @@
+2026-08-12: Plan 110 / corrección de selector de funciones Centro IA.
+- Se corrigió la normalización de IDs canónicos del catálogo IA: compras,
+  cumplimiento, cobranza e inventario ya no retroceden silenciosamente a
+  diagnóstico. Las acciones desconocidas conservan el cierre seguro a
+  diagnóstico y no ejecutan mutaciones.
+- Se añadió regresión Go de los siete IDs publicados; falta construir y validar
+  el nuevo digest en staging antes de acreditar las funciones afectadas.
+
 2026-08-12: Plan 110 / asistente IA real y modo agente en PCS staging.
 - Una consulta controlada recibió la respuesta esperada del proveedor IA y la
   interfaz informó el modelo activo sin revelar secretos. El modo agente mostró
