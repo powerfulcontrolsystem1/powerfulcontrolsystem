@@ -50,6 +50,7 @@ func TestDomoticaStationEntryPreferenceKeepsCartDefaultAndRedirectsCompanyMenu(t
 			"abrir_domotica_al_entrar_estacion: false",
 			"Abrir equipos electronicos al entrar a una estacion o a Venta directa",
 			"pcs-station-entry-navigation-updated",
+			"window.top && window.top !== window",
 		},
 		filepath.Join("..", "..", "web", "administrar_empresa", "estaciones.html"): {
 			"function openStationOperationalDestination",
