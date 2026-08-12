@@ -42201,3 +42201,7 @@ acumulativa.
 - Permisos, configuraciones, tributario, contabilidad, contratos, domótica,
   corte de caja y créditos aprobaron 48/48 vistas de escritorio y móvil sin
   mutaciones, dentro del alcance visual seguro.
+2026-08-12: Plan 110 / barridos administrativos 072 y 084.
+- CRM, documentos, egresos, correo, estaciones, facturación y finanzas
+  aprobaron 48/48 vistas entre escritorio y móvil. Los efectos fiscales se
+  omitieron explícitamente en la guardia de solo lectura.

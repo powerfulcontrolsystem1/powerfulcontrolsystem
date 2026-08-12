@@ -1057,3 +1057,10 @@ autoriza ni ejecuta despliegue productivo.
   corte de caja y créditos aprobaron 48/48 vistas en ambos formatos sin
   mutaciones. La cobertura visual no sustituye pruebas operativas por rol.
 - El avance formal permanece **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, lotes CRM y fiscal visual
+
+- CRM, documentos, egresos, correo, estaciones, facturación electrónica y
+  finanzas aprobaron 48/48 vistas en escritorio/móvil sin mutaciones. Las
+  acciones fiscales se omitieron expresamente por ser efectos reales.
+- El avance formal permanece **38,5 %**, certificación **0 %**, **NO-GO**.
