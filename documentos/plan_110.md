@@ -880,3 +880,6 @@ autoriza ni ejecuta despliegue productivo.
   inventario privado sin huérfanos y limpieza total con RTO observado de 119 s.
   Siguen pendientes la réplica autenticada, rollback coordinado y firma de
   objetivos RPO/RTO; no cambia el porcentaje formal.
+- La recarga visual autenticada del Centro DIAN confirmó estado `aceptado` en
+  habilitación y producción local sin activar. Esta confirmación no autoriza
+  emisión fiscal productiva ni promoción.
