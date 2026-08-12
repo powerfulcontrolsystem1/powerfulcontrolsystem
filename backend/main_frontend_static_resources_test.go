@@ -557,6 +557,27 @@ func TestGrafologiaAIGuardsRenderInlineWithoutBlockingDialogs(t *testing.T) {
 	}
 }
 
+func TestFinanceCxPIAStartsEditableDraftWithoutBlockingConfirm(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "finanzas.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(raw)
+	if strings.Contains(content, "window.confirm('La lectura IA crea un borrador de cuenta por pagar") {
+		t.Fatal("CxP IA file selection must not depend on a blocking browser confirm")
+	}
+	for _, expected := range []string{
+		"tipoInput.value = 'cxp'",
+		"syncCarteraProveedorUI();",
+		"podrás revisar y editar los datos antes de guardar",
+		"document.getElementById('carteraSoporteIAArchivo').click();",
+	} {
+		if !strings.Contains(content, expected) {
+			t.Fatalf("CxP IA accessible draft contract is missing %q", expected)
+		}
+	}
+}
+
 func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "web", "js", "super_page_tools.js"))
 	if err != nil {

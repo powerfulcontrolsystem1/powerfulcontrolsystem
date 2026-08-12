@@ -42329,6 +42329,9 @@ acumulativa.
   `alert` bloqueante. Las correcciones no se desplegaron porque no se ejecuto `rs`.
 - Aprobaron Go completo, `go vet` focalizado, auditoria profesional, inventario
   IA, comprobacion del diff y escaneo de secretos sobre archivos cambiados.
+- La carga CxP/IA desde Finanzas deja de depender de un `window.confirm` al
+  partir desde CxC: cambia el tipo visiblemente, conserva los datos editables y
+  no guarda la obligacion hasta la accion humana independiente.
 2026-08-12: Plan 110 / reconciliacion Mailu verificable.
 - Staging mostro el buzon empresarial pendiente y sin conteo verificable. La
   correccion local reconduce IMAP heredado al front Mailu y solo marca

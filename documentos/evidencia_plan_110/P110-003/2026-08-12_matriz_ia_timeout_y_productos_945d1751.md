@@ -33,6 +33,9 @@ Empresa: PCS de pruebas autorizadas
 - Grafologia presenta ahora las guardas y errores GPT dentro del panel accesible
   existente, sin dialogs bloqueantes. La regresion contractual conserva los dos
   mensajes previos y exige que no vuelvan a `alert`.
+- Finanzas/CxP ya no usa un `confirm` bloqueante al iniciar la carga desde la
+  vista CxC. Cambia visiblemente a CxP, explica que los datos siguen editables y
+  abre el selector. La confirmacion humana de negocio permanece en Guardar.
 
 ## Resultado y limite
 

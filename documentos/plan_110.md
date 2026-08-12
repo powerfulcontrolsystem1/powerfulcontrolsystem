@@ -1166,6 +1166,9 @@ autoriza ni ejecuta despliegue productivo.
 - Se corrigió localmente el botón IA de Productos, que enviaba el mensaje al
   iframe en vez del shell superior, y se añadió timeout de 90 segundos con
   cancelación, reembolso de cuota y métricas separadas para soportes IA.
+- Finanzas/CxP inicia ahora el borrador editable sin `window.confirm`: cambia
+  visiblemente el tipo a CxP, explica la revisión pendiente y conserva el
+  guardado como confirmación humana independiente.
 - Aprobaron `go test ./...`, `go vet` focalizado, auditoría profesional,
   inventario IA, comprobación del diff y escaneo saneado de archivos cambiados.
 - Falta desplegar y repetir estas correcciones, cubrir los 20 controles por rol,
