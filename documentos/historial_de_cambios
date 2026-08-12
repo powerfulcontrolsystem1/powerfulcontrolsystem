@@ -42191,3 +42191,9 @@ acumulativa.
 2026-08-12: Plan 110 / barrido administrativo autenticado lote 024.
 - IA, tareas, fiscal, cobranza y comisiones aprobaron 24/24 vistas entre ambos
   formatos, con guardia de solo lectura y sin mutaciones.
+2026-08-12: Plan 110 / recuperación auditada CxP y lote 036.
+- La recuperación de un único evento CxP dead de PCS verificó primero CSRF y
+  luego reactivó por el endpoint auditado; la previsualización posterior quedó
+  vacía y el worker se mantuvo sano.
+- Compras y configuraciones aprobaron 24/24 vistas en ambos formatos. Los
+  abortos del menú ocurrieron durante navegación interna y no son fallo final.

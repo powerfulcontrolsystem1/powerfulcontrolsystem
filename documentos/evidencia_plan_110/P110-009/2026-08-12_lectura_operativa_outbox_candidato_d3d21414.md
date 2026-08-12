@@ -29,12 +29,25 @@ previsualizar eventos exactos, confirmar empresa y tópico, motivo auditado y
 una acción explícita de superadministración. Reintentar sin esa conciliación
 podría duplicar o alterar un efecto contable.
 
+## Recuperación controlada de CxP en PCS
+
+La vista previa autenticada de recuperación mostró un único evento `dead` de
+CxP perteneciente a PCS, del tópico habilitado, sin recuperación previa y con
+la causa histórica de handler no habilitado. La primera mutación sin token CSRF
+recibió `403`; esa negativa confirmó la protección y no produjo cambios.
+
+Con el token CSRF legítimo de la misma sesión se ejecutó una sola reactivación
+por el endpoint auditado, con empresa, tópico, identificador y razón explícitos.
+Respondió `200`, reactivó una unidad y la vista previa posterior quedó en cero.
+Tras esperar al worker, `/health` y `/ready` aprobaron y no quedaron jobs
+asíncronos dead. La métrica global conserva un outbox dead de otro alcance; no
+se consultó ni modificó porque no pertenece a la recuperación PCS autorizada.
+
 ## Siguiente paso obligatorio
 
-Un responsable superadministrador debe abrir la recuperación de outbox,
-previsualizar los dos eventos, conciliar cada referencia con CxP/contabilidad
-y solo entonces decidir reintentar por el flujo auditado o documentar su
-retención. Después se debe comprobar `dead=0` (o una excepción formal) y repetir
-la alerta y el simulacro P110-009.
+La conciliación CxP de PCS debe incorporar la recuperación auditada y confirmar
+que el asiento/efecto correspondiente aparece una sola vez. El outbox global
+restante requiere responsable y alcance propios; no debe borrarse ni reintentarse
+desde una empresa ajena. Después se repite alerta y simulacro P110-009.
 
 **Resultado:** P110-009 sigue **parcial**; el estado global continúa **NO-GO**.

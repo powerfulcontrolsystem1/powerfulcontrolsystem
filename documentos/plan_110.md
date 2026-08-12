@@ -1039,3 +1039,14 @@ autoriza ni ejecuta despliegue productivo.
 - El lote de IA, tareas, fiscal, cobranza y comisiones aprobó 24/24 vistas sin
   errores ni mutaciones. P110-004 se mantiene parcial; avance formal **38,5 %**,
   certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, recuperación auditada CxP y cuarto lote
+
+- La recuperación CxP de PCS previsualizó un único dead elegible, verificó la
+  barrera CSRF y reactivó exactamente un evento por el flujo auditado. La vista
+  posterior quedó en cero y el worker continuó sano. Un dead agregado de otro
+  alcance permanece fuera de la empresa y no se alteró.
+- Compras y configuraciones aprobaron 24/24 vistas en escritorio/móvil sin
+  mutaciones. Persisten conciliación independiente, roles, cajas, simulacro y
+  aprobaciones humanas; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**.
