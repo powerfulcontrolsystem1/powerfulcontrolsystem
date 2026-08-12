@@ -36,6 +36,7 @@ type controlElectricoCommandPayload struct {
 	PulsoMS        int    `json:"pulso_ms"`
 	Origen         string `json:"origen,omitempty"`
 	Actor          string `json:"actor,omitempty"`
+	Operacion      string `json:"operacion,omitempty"`
 }
 
 type controlElectricoDispatchResult struct {
@@ -175,6 +176,9 @@ func evaluarControlElectricoReglasOrigen(dbEmp *sql.DB, empresaID int64, sensorC
 			target := regla.Accion == "encender"
 			result := controlElectricoDispatchManual(dbEmp, empresaID, regla.EstacionID, regla.ReleID, target, actor, "regla_sensor")
 			item["resultado"] = result
+		}
+		if regla.Accion == "encender_temporizado" {
+			item["resultado"] = controlElectricoStartTimer(dbEmp, empresaID, regla.EstacionID, regla.ReleID, regla.TemporizadorSegundos, actor, "regla_sensor_temporizador")
 		}
 		if regla.AlarmaHabilitada || regla.Accion == "alarma" {
 			_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
@@ -515,6 +519,23 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				}
 				writeJSON(w, status, result)
 				return
+			case "temporizador_rele":
+				var payload struct {
+					EstacionID       int64 `json:"estacion_id"`
+					ReleID           int64 `json:"rele_id"`
+					DuracionSegundos int   `json:"duracion_segundos"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				result := controlElectricoStartTimer(dbEmp, empresaID, payload.EstacionID, payload.ReleID, payload.DuracionSegundos, strings.TrimSpace(adminEmailFromRequest(r)), "temporizador_manual")
+				status := http.StatusOK
+				if !result.OK && !result.Skipped {
+					status = http.StatusBadGateway
+				}
+				writeJSON(w, status, result)
+				return
 
 			case "probar_gpio":
 				var payload struct {
@@ -526,6 +547,22 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					return
 				}
 				result := controlElectricoTestRaspberryGPIO(dbEmp, empresaID, payload.RaspberryID, payload.GPIOPin, strings.TrimSpace(adminEmailFromRequest(r)))
+				status := http.StatusOK
+				if !result.OK && !result.Skipped {
+					status = http.StatusBadGateway
+				}
+				writeJSON(w, status, result)
+				return
+			case "raspberry_operacion":
+				var payload struct {
+					RaspberryID int64  `json:"raspberry_id"`
+					Operacion   string `json:"operacion"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				result := controlElectricoRaspberryOperation(dbEmp, empresaID, payload.RaspberryID, payload.Operacion, strings.TrimSpace(adminEmailFromRequest(r)))
 				status := http.StatusOK
 				if !result.OK && !result.Skipped {
 					status = http.StatusBadGateway
@@ -671,6 +708,22 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func controlElectricoStartTimer(dbEmp *sql.DB, empresaID, estacionID, releID int64, seconds int, actor, origen string) controlElectricoDispatchResult {
+	if seconds < 1 || seconds > 7*24*60*60 {
+		return controlElectricoDispatchResult{OK: false, Error: "El temporizador debe estar entre 1 segundo y 7 dias"}
+	}
+	on := controlElectricoDispatchManual(dbEmp, empresaID, estacionID, releID, true, actor, origen)
+	if !on.OK && !on.Pending {
+		return on
+	}
+	_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{EmpresaID: empresaID, EstacionID: estacionID, ReleID: releID, Comando: "temporizador", EstadoObjetivo: "on", Resultado: "programado", Actor: actor, Origen: origen, MetadataJSON: fmt.Sprintf(`{"duracion_segundos":%d}`, seconds)})
+	time.AfterFunc(time.Duration(seconds)*time.Second, func() {
+		_ = controlElectricoDispatchManual(dbEmp, empresaID, estacionID, releID, false, "temporizador", "temporizador_expirado")
+	})
+	on.Message = fmt.Sprintf("Equipo encendido por %d segundos; apagado programado", seconds)
+	return on
 }
 
 func handleControlElectricoReleFotoUpload(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64) (int64, string, error) {
@@ -1193,6 +1246,53 @@ func controlElectricoTestRaspberryGPIO(dbEmp *sql.DB, empresaID, raspberryID int
 		return controlElectricoDispatchResult{OK: false, Error: firstNonEmpty(completed.Error, "La Raspberry Pi no pudo ejecutar la prueba")}
 	}
 	return controlElectricoDispatchResult{OK: true, Pending: true, Message: "Prueba GPIO enviada por el tunel seguro", URL: "tunnel://" + pi.DeviceUID}
+}
+
+// controlElectricoRaspberryOperation administra solo el agente que pertenece a
+// la empresa autenticada. Reiniciar y apagar se entregan por el tunel saliente:
+// el VPS nunca abre SSH ni una conexion entrante hacia la Raspberry.
+func controlElectricoRaspberryOperation(dbEmp *sql.DB, empresaID, raspberryID int64, operation, actor string) controlElectricoDispatchResult {
+	operation = strings.ToLower(strings.TrimSpace(operation))
+	if operation != "probar_conexion" && operation != "reiniciar" && operation != "apagar" {
+		return controlElectricoDispatchResult{OK: false, Error: "Operacion de Raspberry Pi no soportada"}
+	}
+	pi, err := dbpkg.GetEmpresaControlElectricoRaspberryByID(dbEmp, empresaID, raspberryID, false)
+	if err != nil || pi == nil {
+		return controlElectricoDispatchResult{OK: false, Error: "Raspberry Pi no disponible para esta empresa"}
+	}
+	if !pi.TunnelEnabled || strings.TrimSpace(pi.DeviceUID) == "" {
+		return controlElectricoDispatchResult{OK: false, Error: "La Raspberry Pi no tiene tunel aprovisionado"}
+	}
+	if !domoticaTunnelSeenRecently(pi.LastSeen, 90*time.Second) {
+		return controlElectricoDispatchResult{OK: false, Error: "La Raspberry Pi esta desconectada; no se enviara la operacion"}
+	}
+	if operation == "probar_conexion" {
+		return controlElectricoDispatchResult{OK: true, Message: "Conexion por tunel verificada; ultimo heartbeat " + strings.TrimSpace(pi.LastSeen), URL: "tunnel://" + pi.DeviceUID}
+	}
+	cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, false)
+	if err != nil || !cfg.Habilitado {
+		return controlElectricoDispatchResult{OK: false, Error: "El modulo de domotica no esta activo para esta empresa"}
+	}
+	payload := controlElectricoCommandPayload{EmpresaID: empresaID, RaspberryID: pi.ID, Estado: "operacion", Origen: "raspberry_" + operation, Actor: actor, Operacion: operation}
+	command, err := dbpkg.QueueEmpresaControlElectricoTunnelCommand(dbEmp, empresaID, pi.ID, 0, 0, 0, "operacion", payload, actor, "raspberry_"+operation)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
+	}
+	timeout := time.Duration(cfg.TimeoutMS) * time.Millisecond
+	if timeout < 500*time.Millisecond {
+		timeout = 2500 * time.Millisecond
+	}
+	completed, err := dbpkg.WaitEmpresaControlElectricoTunnelCommand(dbEmp, empresaID, pi.ID, command.CommandUID, timeout)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
+	}
+	if completed.Estado == "completado" {
+		return controlElectricoDispatchResult{OK: true, Message: "Operacion " + operation + " confirmada por Raspberry Pi", URL: "tunnel://" + pi.DeviceUID}
+	}
+	if completed.Estado == "error" || completed.Estado == "expirado" {
+		return controlElectricoDispatchResult{OK: false, Error: firstNonEmpty(completed.Error, "La Raspberry Pi no pudo ejecutar la operacion")}
+	}
+	return controlElectricoDispatchResult{OK: true, Pending: true, Message: "Operacion " + operation + " enviada por el tunel seguro", URL: "tunnel://" + pi.DeviceUID}
 }
 
 func controlElectricoTestableGPIO(pin int) bool {

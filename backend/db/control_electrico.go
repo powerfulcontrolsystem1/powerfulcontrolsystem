@@ -35,6 +35,7 @@ type EmpresaControlElectricoConfig struct {
 	TimeoutMS          int    `json:"timeout_ms"`
 	AutoSyncEstaciones bool   `json:"auto_sync_estaciones"`
 	FailSafeOnError    bool   `json:"fail_safe_on_error"`
+	ActivationDelaySec int    `json:"activation_delay_seconds"`
 	FechaCreacion      string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador     string `json:"usuario_creador,omitempty"`
@@ -172,27 +173,28 @@ type EmpresaControlElectricoLectura struct {
 
 // EmpresaControlElectricoRegla define automatizaciones y alarmas por senal de sensor.
 type EmpresaControlElectricoRegla struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	Nombre             string `json:"nombre,omitempty"`
-	SensorCodigo       string `json:"sensor_codigo"`
-	SensorTipo         string `json:"sensor_tipo,omitempty"`
-	Condicion          string `json:"condicion"`
-	Valor              string `json:"valor"`
-	Accion             string `json:"accion"`
-	EstacionID         int64  `json:"estacion_id,omitempty"`
-	ReleID             int64  `json:"rele_id,omitempty"`
-	RaspberryID        int64  `json:"raspberry_id,omitempty"`
-	EntradaGPIOPin     int    `json:"entrada_gpio_pin"`
-	EntradaPull        string `json:"entrada_pull,omitempty"`
-	DebounceMS         int    `json:"debounce_ms,omitempty"`
-	AlarmaHabilitada   bool   `json:"alarma_habilitada"`
-	Severidad          string `json:"severidad,omitempty"`
-	Mensaje            string `json:"mensaje,omitempty"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
+	ID                   int64  `json:"id"`
+	EmpresaID            int64  `json:"empresa_id"`
+	Nombre               string `json:"nombre,omitempty"`
+	SensorCodigo         string `json:"sensor_codigo"`
+	SensorTipo           string `json:"sensor_tipo,omitempty"`
+	Condicion            string `json:"condicion"`
+	Valor                string `json:"valor"`
+	Accion               string `json:"accion"`
+	TemporizadorSegundos int    `json:"temporizador_segundos,omitempty"`
+	EstacionID           int64  `json:"estacion_id,omitempty"`
+	ReleID               int64  `json:"rele_id,omitempty"`
+	RaspberryID          int64  `json:"raspberry_id,omitempty"`
+	EntradaGPIOPin       int    `json:"entrada_gpio_pin"`
+	EntradaPull          string `json:"entrada_pull,omitempty"`
+	DebounceMS           int    `json:"debounce_ms,omitempty"`
+	AlarmaHabilitada     bool   `json:"alarma_habilitada"`
+	Severidad            string `json:"severidad,omitempty"`
+	Mensaje              string `json:"mensaje,omitempty"`
+	FechaCreacion        string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion   string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador       string `json:"usuario_creador,omitempty"`
+	Estado               string `json:"estado,omitempty"`
 }
 
 // EmpresaControlElectricoEstacion resume una estacion operativa y su mapeo electrico.
@@ -235,6 +237,8 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			timeout_ms INTEGER DEFAULT 2500,
 			auto_sync_estaciones INTEGER DEFAULT 1,
 			fail_safe_on_error INTEGER DEFAULT 0,
+			activation_delay_seconds INTEGER NOT NULL DEFAULT 1,
+			next_activation_at TEXT,
 			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
@@ -363,6 +367,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			condicion TEXT DEFAULT 'igual',
 			valor TEXT,
 			accion TEXT DEFAULT 'alarma',
+			temporizador_segundos INTEGER DEFAULT 0,
 			estacion_id INTEGER,
 			rele_id INTEGER,
 			alarma_habilitada INTEGER DEFAULT 1,
@@ -385,7 +390,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	configCols := map[string]string{
 		"empresa_id": "INTEGER NOT NULL", "habilitado": "INTEGER DEFAULT 0", "raspberry_ip": "TEXT",
 		"raspberry_port": "INTEGER DEFAULT 8081", "api_path": "TEXT DEFAULT '/api/gpio/relay'", "api_token": "TEXT",
-		"timeout_ms": "INTEGER DEFAULT 2500", "auto_sync_estaciones": "INTEGER DEFAULT 1", "fail_safe_on_error": "INTEGER DEFAULT 0",
+		"timeout_ms": "INTEGER DEFAULT 2500", "auto_sync_estaciones": "INTEGER DEFAULT 1", "fail_safe_on_error": "INTEGER DEFAULT 0", "activation_delay_seconds": "INTEGER NOT NULL DEFAULT 1", "next_activation_at": "TEXT",
 		"fecha_creacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "fecha_actualizacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
 		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'", "observaciones": "TEXT",
 	}
@@ -464,7 +469,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	}
 	reglaCols := map[string]string{
 		"empresa_id": "INTEGER NOT NULL", "nombre": "TEXT", "sensor_codigo": "TEXT", "sensor_tipo": "TEXT", "condicion": "TEXT DEFAULT 'igual'",
-		"valor": "TEXT", "accion": "TEXT DEFAULT 'alarma'", "estacion_id": "INTEGER", "rele_id": "INTEGER",
+		"valor": "TEXT", "accion": "TEXT DEFAULT 'alarma'", "temporizador_segundos": "INTEGER DEFAULT 0", "estacion_id": "INTEGER", "rele_id": "INTEGER",
 		"alarma_habilitada": "INTEGER DEFAULT 1", "severidad": "TEXT DEFAULT 'advertencia'", "mensaje": "TEXT",
 		"fecha_creacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "fecha_actualizacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
 		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'",
@@ -512,10 +517,10 @@ func GetEmpresaControlElectricoConfig(dbConn *sql.DB, empresaID int64, includeTo
 		return nil, errors.New("empresa_id invalido")
 	}
 	cfg := defaultEmpresaControlElectricoConfig(empresaID)
-	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(habilitado,0), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(auto_sync_estaciones,1), COALESCE(fail_safe_on_error,0), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_config WHERE empresa_id = ? LIMIT 1`, empresaID)
+	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(habilitado,0), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(auto_sync_estaciones,1), COALESCE(fail_safe_on_error,0), COALESCE(activation_delay_seconds,1), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_config WHERE empresa_id = ? LIMIT 1`, empresaID)
 	var habilitado, autoSync, failSafe int
 	var token string
-	if err := row.Scan(&cfg.ID, &cfg.EmpresaID, &habilitado, &cfg.RaspberryIP, &cfg.RaspberryPort, &cfg.APIPath, &token, &cfg.TimeoutMS, &autoSync, &failSafe, &cfg.FechaCreacion, &cfg.FechaActualizacion, &cfg.UsuarioCreador, &cfg.Estado, &cfg.Observaciones); err != nil {
+	if err := row.Scan(&cfg.ID, &cfg.EmpresaID, &habilitado, &cfg.RaspberryIP, &cfg.RaspberryPort, &cfg.APIPath, &token, &cfg.TimeoutMS, &autoSync, &failSafe, &cfg.ActivationDelaySec, &cfg.FechaCreacion, &cfg.FechaActualizacion, &cfg.UsuarioCreador, &cfg.Estado, &cfg.Observaciones); err != nil {
 		if err == sql.ErrNoRows {
 			return cfg, nil
 		}
@@ -676,12 +681,12 @@ func UpsertEmpresaControlElectricoConfig(dbConn *sql.DB, cfg *EmpresaControlElec
 		token = strings.TrimSpace(cfg.APIToken)
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_config SET habilitado=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, auto_sync_estaciones=?, fail_safe_on_error=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
-			boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones), existingID)
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_config SET habilitado=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, auto_sync_estaciones=?, fail_safe_on_error=?, activation_delay_seconds=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
+			boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), cfg.ActivationDelaySec, strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones), existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_config (empresa_id, habilitado, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, auto_sync_estaciones, fail_safe_on_error, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
-		cfg.EmpresaID, boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_config (empresa_id, habilitado, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, auto_sync_estaciones, fail_safe_on_error, activation_delay_seconds, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
+		cfg.EmpresaID, boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), cfg.ActivationDelaySec, strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones))
 }
 
 func empresaControlElectricoReleScanDest(item *EmpresaControlElectricoRele, activeHigh, encenderAlActivar, apagarAlDesactivar, programacionHabilitada, monitoreoHabilitado *int) []interface{} {
@@ -1030,7 +1035,7 @@ func listEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID, estacionID int
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
-	q := `SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(sensor_codigo,''), COALESCE(sensor_tipo,''), COALESCE(condicion,'igual'), COALESCE(valor,''), COALESCE(accion,'alarma'), COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(raspberry_id,0), COALESCE(entrada_gpio_pin,-1), COALESCE(entrada_pull,'none'), COALESCE(debounce_ms,250), COALESCE(alarma_habilitada,1), COALESCE(severidad,'advertencia'), COALESCE(mensaje,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo') FROM empresa_control_electrico_reglas WHERE empresa_id=?`
+	q := `SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(sensor_codigo,''), COALESCE(sensor_tipo,''), COALESCE(condicion,'igual'), COALESCE(valor,''), COALESCE(accion,'alarma'), COALESCE(temporizador_segundos,0), COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(raspberry_id,0), COALESCE(entrada_gpio_pin,-1), COALESCE(entrada_pull,'none'), COALESCE(debounce_ms,250), COALESCE(alarma_habilitada,1), COALESCE(severidad,'advertencia'), COALESCE(mensaje,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo') FROM empresa_control_electrico_reglas WHERE empresa_id=?`
 	args := []interface{}{empresaID}
 	if filterStation {
 		q += " AND estacion_id=?"
@@ -1049,7 +1054,7 @@ func listEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID, estacionID int
 	for rows.Next() {
 		var item EmpresaControlElectricoRegla
 		var alarma int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.SensorCodigo, &item.SensorTipo, &item.Condicion, &item.Valor, &item.Accion, &item.EstacionID, &item.ReleID, &item.RaspberryID, &item.EntradaGPIOPin, &item.EntradaPull, &item.DebounceMS, &alarma, &item.Severidad, &item.Mensaje, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.SensorCodigo, &item.SensorTipo, &item.Condicion, &item.Valor, &item.Accion, &item.TemporizadorSegundos, &item.EstacionID, &item.ReleID, &item.RaspberryID, &item.EntradaGPIOPin, &item.EntradaPull, &item.DebounceMS, &alarma, &item.Severidad, &item.Mensaje, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado); err != nil {
 			return nil, err
 		}
 		item.AlarmaHabilitada = alarma == 1
@@ -1065,6 +1070,9 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 		return 0, errors.New("empresa_id invalido")
 	}
 	normalizeEmpresaControlElectricoRegla(item)
+	if item.Accion == "encender_temporizado" && item.TemporizadorSegundos < 1 {
+		return 0, errors.New("temporizador_segundos es obligatorio para encender con temporizador")
+	}
 	if item.SensorCodigo == "" && item.RaspberryID > 0 && item.EntradaGPIOPin >= 0 {
 		item.SensorCodigo = fmt.Sprintf("gpio:%d", item.EntradaGPIOPin)
 	}
@@ -1091,7 +1099,7 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 		if _, err := GetEmpresaControlElectricoReleByID(dbConn, item.EmpresaID, item.ReleID); err != nil {
 			return 0, errors.New("rele_id no pertenece a esta empresa")
 		}
-	} else if item.Accion == "encender" || item.Accion == "apagar" {
+	} else if item.Accion == "encender" || item.Accion == "apagar" || item.Accion == "encender_temporizado" {
 		return 0, errors.New("rele_id es obligatorio para encender o apagar")
 	}
 	if item.ID > 0 {
@@ -1100,12 +1108,12 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 		if err != nil {
 			return 0, err
 		}
-		_, err = execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET nombre=?, sensor_codigo=?, sensor_tipo=?, condicion=?, valor=?, accion=?, estacion_id=NULLIF(?,0), rele_id=NULLIF(?,0), raspberry_id=NULLIF(?,0), entrada_gpio_pin=?, entrada_pull=?, debounce_ms=?, alarma_habilitada=?, severidad=?, mensaje=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=? WHERE empresa_id=? AND id=?`,
-			item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.EstacionID, item.ReleID, item.RaspberryID, item.EntradaGPIOPin, item.EntradaPull, item.DebounceMS, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado, item.EmpresaID, existingID)
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET nombre=?, sensor_codigo=?, sensor_tipo=?, condicion=?, valor=?, accion=?, temporizador_segundos=?, estacion_id=NULLIF(?,0), rele_id=NULLIF(?,0), raspberry_id=NULLIF(?,0), entrada_gpio_pin=?, entrada_pull=?, debounce_ms=?, alarma_habilitada=?, severidad=?, mensaje=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=? WHERE empresa_id=? AND id=?`,
+			item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.TemporizadorSegundos, item.EstacionID, item.ReleID, item.RaspberryID, item.EntradaGPIOPin, item.EntradaPull, item.DebounceMS, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado, item.EmpresaID, existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reglas (empresa_id, nombre, sensor_codigo, sensor_tipo, condicion, valor, accion, estacion_id, rele_id, raspberry_id, entrada_gpio_pin, entrada_pull, debounce_ms, alarma_habilitada, severidad, mensaje, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)`,
-		item.EmpresaID, item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.EstacionID, item.ReleID, item.RaspberryID, item.EntradaGPIOPin, item.EntradaPull, item.DebounceMS, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado)
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reglas (empresa_id, nombre, sensor_codigo, sensor_tipo, condicion, valor, accion, temporizador_segundos, estacion_id, rele_id, raspberry_id, entrada_gpio_pin, entrada_pull, debounce_ms, alarma_habilitada, severidad, mensaje, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)`,
+		item.EmpresaID, item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.TemporizadorSegundos, item.EstacionID, item.ReleID, item.RaspberryID, item.EntradaGPIOPin, item.EntradaPull, item.DebounceMS, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado)
 }
 
 func SetEmpresaControlElectricoReglaEstado(dbConn *sql.DB, empresaID, reglaID int64, estado string) error {
@@ -1227,6 +1235,7 @@ func defaultEmpresaControlElectricoConfig(empresaID int64) *EmpresaControlElectr
 		RaspberryPort:      DefaultControlElectricoPort,
 		APIPath:            DefaultControlElectricoAPIPath,
 		TimeoutMS:          DefaultControlElectricoTimeoutMS,
+		ActivationDelaySec: 1,
 		AutoSyncEstaciones: true,
 		Estado:             "activo",
 	}
@@ -1255,6 +1264,12 @@ func normalizeEmpresaControlElectricoConfig(cfg *EmpresaControlElectricoConfig) 
 	}
 	if cfg.TimeoutMS > 15000 {
 		cfg.TimeoutMS = 15000
+	}
+	if cfg.ActivationDelaySec < 1 {
+		cfg.ActivationDelaySec = 1
+	}
+	if cfg.ActivationDelaySec > 60 {
+		cfg.ActivationDelaySec = 60
 	}
 	cfg.Estado = normalizeControlElectricoEstado(cfg.Estado)
 }
@@ -1365,6 +1380,12 @@ func normalizeEmpresaControlElectricoRele(item *EmpresaControlElectricoRele) {
 func normalizeEmpresaControlElectricoRegla(item *EmpresaControlElectricoRegla) {
 	if item == nil {
 		return
+	}
+	if item.TemporizadorSegundos < 0 {
+		item.TemporizadorSegundos = 0
+	}
+	if item.TemporizadorSegundos > 7*24*60*60 {
+		item.TemporizadorSegundos = 7 * 24 * 60 * 60
 	}
 	item.Nombre = truncateControlElectricoText(strings.TrimSpace(item.Nombre), 160)
 	item.SensorCodigo = truncateControlElectricoText(strings.TrimSpace(item.SensorCodigo), 180)

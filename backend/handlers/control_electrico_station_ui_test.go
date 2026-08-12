@@ -65,6 +65,12 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"datetime-local",
 		"conectadas');",
 		"device-footer.has-photo",
+		"function timerInfo(releID)",
+		"rele.ultimo_estado='off'",
+		"const isOn = info.cls === 'is-on' || timer.active",
+		"function scheduleState(rele)",
+		"Programado · Funcionando ahora",
+		"Programado · En espera",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
@@ -78,6 +84,18 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 	}
 }
 
+func TestDomoticaConfigurationExposesSafeRaspberryOperations(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
+	if err != nil {
+		t.Fatalf("read domotica configuration: %v", err)
+	}
+	for _, marker := range []string{"raspberry-connection-test", "raspberry-restart", "raspberry-shutdown", "api('raspberry_operacion')", "window.confirm"} {
+		if !strings.Contains(string(content), marker) {
+			t.Fatalf("domotica configuration missing raspberry operation marker %q", marker)
+		}
+	}
+}
+
 func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
 	if err != nil {
@@ -88,5 +106,8 @@ func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("la configuracion de Raspberry no contiene %q", marker)
 		}
+	}
+	for _, marker := range []string{"activationDelaySeconds", "activation_delay_seconds", "Cola única por empresa"} {
+		if !strings.Contains(source, marker) { t.Fatalf("la configuracion no contiene %q", marker) }
 	}
 }

@@ -41612,6 +41612,28 @@ acumulativa.
 2026-08-10: Domotica dentro del carrito, junto al selector de acciones.
 - Se elimina el boton y la delegacion de Domotica de las tarjetas de estaciones.
 - El carrito mantiene un unico boton `⚡ Domotica` a la derecha del selector de accion; conserva el check de visibilidad por empresa/estacion y el comportamiento responsive.
+
+2026-08-11: Vistas operativa y de configuracion diferenciadas para Domotica.
+- La vista operativa de equipos por estacion usa tarjetas mas compactas, colorea suavemente las salidas encendidas y muestra Encender/Apagar, Programar y Temporizador como controles uniformes en columna.
+- La vista operativa deja de exponer GPIO, Raspberry y agenda; esos datos tecnicos permanecen visibles en la tarjeta de Configuracion de Domotica.
+
+2026-08-11: Administracion segura de Raspberry Pi desde Domotica.
+- Cada Raspberry con tunel activo permite probar conexion, reiniciar o apagar mediante comandos salientes autenticados; reiniciar/apagar exige confirmacion visual y no abre SSH entrante desde el VPS.
+
+2026-08-11: Consola empresarial de equipos de Domotica.
+- El submenu Analisis y control incluye Equipos Domotica: reutiliza la vista operativa para mostrar todos los equipos, incluida Venta directa cuando este registrada como estacion, o filtrarlos por estacion/habitacion.
+
+2026-08-11: Estado prioritario del temporizador en tarjetas de Domotica.
+- Al iniciar un temporizador la tarjeta muestra la salida activa y su boton principal pasa inmediatamente a Apagar; al finalizar limpia el temporizador y restablece el estado apagado visible.
+- Se elimina la etiqueta textual repetida de estado y se compactan aun mas las tarjetas operativas.
+
+2026-08-11: Estado visible de programacion de Domotica.
+- La tarjeta de cada equipo programado muestra el intervalo elegido y distingue entre `Programado · En espera` y `Programado · Funcionando ahora` segun la fecha/hora configurada.
+
+2026-08-12: Cola empresarial de encendidos de Domotica.
+- La configuracion agrega `Espera entre encendidos`, con valor predeterminado de 1 segundo y rango seguro de 1 a 60 segundos.
+- Todo comando ON de la empresa, incluidos activacion automatica de estacion/habitacion y recuperacion tras reinicio de una Raspberry, reserva un turno transaccional; evita energizar dos cargas simultaneamente aun con varios cajeros o Raspberry conectadas.
+- El agente Raspberry se reconecta automaticamente mediante systemd (`Restart=always`) y, al reportar un nuevo boot_id, el VPS reconstruye solo los reles previamente confirmados ON usando la misma cola empresarial.
 2026-08-11 | Domotica | Se agrega la migracion empresarial 20260811-001-domotica-datetime-schedule-v1 para crear de forma idempotente programacion_inicio y programacion_fin antes de atender controles de estacion. Corrige el 500 de tablas ya existentes que aun no tenian las columnas de rango fechado. | backend/db/control_electrico_schedule_migration.go, backend/db/platform_migrations.go, backend/db/control_electrico_tunnel_test.go, documentos/CHANGELOG.md
 2026-08-11 | Domotica | Se agrega recuperación idempotente por boot_id: cada Raspberry inicia y reconecta mediante systemd, recibe únicamente sus relés con último estado ON y los confirma en secuencia con un segundo de espera. Se añade categoría de equipo, consumo filtrable por equipo/categoría, bitácora, tutorial de instalación/GPIO y prueba individual temporal de cada salida BCM desde la tarjeta de la Raspberry. | backend/db/control_electrico_restart_category_migration.go, backend/db/control_electrico_tunnel.go, backend/handlers/control_electrico.go, backend/handlers/control_electrico_tunnel.go, backend/handlers/templates/instalar_domotica_raspberry.sh.tmpl, web/administrar_empresa/control_electrico.html, web/administrar_empresa/carrito_control_electrico.html, web/administrar_empresa/tutorial_domotica.html
 2026-08-09: Plan 109 / capacidad Docker y QA visual financiero.

@@ -296,6 +296,20 @@
       min-width: 0;
     }
 
+    .relay-operational-summary {
+      display: grid;
+      gap: 4px;
+      padding: 9px 10px;
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--electric-panel) 76%, var(--electric-panel-soft));
+      color: var(--electric-muted);
+      font-size: .85rem;
+      line-height: 1.35;
+    }
+
+    .relay-operational-summary strong { color: var(--electric-text); }
+
     .relay-device {
       display: grid;
       grid-template-columns: 82px minmax(0, 1fr);
@@ -582,6 +596,11 @@
               <label class="form-label" for="timeoutMs">Timeout ms</label>
               <input id="timeoutMs" class="form-input" type="number" min="500" max="15000" step="100" value="2500">
             </div>
+            <div class="form-col">
+              <label class="form-label" for="activationDelaySeconds">Espera entre encendidos (segundos)</label>
+              <input id="activationDelaySeconds" class="form-input" type="number" min="1" max="60" step="1" value="1">
+              <p class="form-help">Cola única por empresa: protege la carga aunque varios cajeros activen equipos a la vez.</p>
+            </div>
             <label class="electric-switch" for="autoSync">
               <span>Auto sync</span>
               <input id="autoSync" type="checkbox" checked>
@@ -737,10 +756,12 @@
           <label class="form-label" for="ruleAccion">Tarea</label>
           <select id="ruleAccion" class="form-input">
             <option value="encender">Encender aparato</option>
+			<option value="encender_temporizado">Encender con temporizador</option>
             <option value="apagar">Apagar aparato</option>
             <option value="alarma">Solo alarma</option>
           </select>
         </div>
+		<div class="form-col"><label class="form-label" for="ruleTimerSeconds">Duración temporizador (segundos)</label><input id="ruleTimerSeconds" class="form-input" type="number" min="1" max="604800" value="900"></div>
         <div class="form-col">
           <label class="form-label" for="ruleRele">Aparato destino</label>
           <select id="ruleRele" class="form-input"></select>
@@ -916,6 +937,7 @@
         $('raspberryPort').value = cfg.raspberry_port || 8081;
         $('apiPath').value = cfg.api_path || '/api/gpio/relay';
         $('timeoutMs').value = cfg.timeout_ms || 2500;
+		$('activationDelaySeconds').value = cfg.activation_delay_seconds || 1;
         $('autoSync').checked = cfg.auto_sync_estaciones !== false;
         $('failSafe').checked = Boolean(cfg.fail_safe_on_error);
         $('observaciones').value = cfg.observaciones || '';
@@ -931,6 +953,7 @@
           api_path: $('apiPath').value.trim() || '/api/gpio/relay',
           api_token: $('apiToken').value.trim(),
           timeout_ms: Math.max(500, Math.min(15000, Number($('timeoutMs').value || 2500))),
+		  activation_delay_seconds: Math.max(1, Math.min(60, Number($('activationDelaySeconds').value || 1))),
           auto_sync_estaciones: $('autoSync').checked,
           fail_safe_on_error: $('failSafe').checked,
           estado: 'activo',
@@ -1119,7 +1142,7 @@
           var relayClass = isOn ? 'on' : (data.ultimo_estado === 'off' ? 'off' : 'warn');
           cards.push('<article class="relay-card" data-rele-id="' + sanitize(data.id || 0) + '" data-estacion-id="' + sanitize(estacion.estacion_id) + '">' +
             '<div class="relay-head">' +
-              '<div><h3>' + sanitize(data.estacion_nombre) + '</h3><div class="relay-meta">' +
+              '<div><h3>' + sanitize(data.relay_name || data.tipo_carga || data.salida_codigo || data.estacion_nombre) + '</h3><div class="relay-meta">' +
                 '<span class="status-chip ' + activeClass + '">' + (estacion.activa ? 'Estacion activa' : 'Estacion inactiva') + '</span>' +
                 '<span class="status-chip ' + relayClass + '">Aparato ' + sanitize(data.ultimo_estado || 'desconocido') + '</span>' +
                 (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
@@ -1128,6 +1151,10 @@
                 (data.programacion_habilitada ? '<span class="status-chip on">Agenda ' + sanitize(data.hora_encendido || '--:--') + ' / ' + sanitize(data.hora_apagado || '--:--') + '</span>' : '<span class="status-chip">Sin agenda</span>') +
               '</div></div>' +
               '<span class="status-chip">GPIO ' + sanitize(data.gpio_pin) + '</span>' +
+            '</div>' +
+            '<div class="relay-operational-summary">' +
+              '<strong>GPIO ' + sanitize(data.gpio_pin) + ' | ' + sanitize(data.raspberry_nombre || data.raspberry_codigo || 'Raspberry sin asignar') + ' - ' + sanitize(data.relay_name || data.salida_codigo || 'Salida') + '</strong>' +
+              '<span>' + (data.programacion_habilitada ? 'Programación: ' + sanitize(data.hora_encendido || '--:--') + ' a ' + sanitize(data.hora_apagado || '--:--') : 'Sin programación') + '</span>' +
             '</div>' +
             '<div class="relay-device">' +
               relayPhotoMarkup(data) +
@@ -1234,6 +1261,7 @@
             '<div class="raspberry-item-actions">' +
               '<button class="btn secondary small raspberry-edit" type="button">Editar</button>' +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn add small raspberry-provision" type="button">Generar instalador</button>' : '') +
+              (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-connection-test" type="button">Probar conexión</button><button class="btn secondary small raspberry-restart" type="button">Reiniciar</button><button class="btn danger small raspberry-shutdown" type="button">Apagar</button>' : '') +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-gpio-toggle" type="button">Probar GPIO</button>' : '') +
               (primary ? '<button class="btn secondary small" type="button" disabled>Principal</button>' : '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>') +
             '</div>' +
@@ -1289,6 +1317,7 @@
         $('ruleCondicion').value = 'igual';
         $('ruleValor').value = '';
         $('ruleAccion').value = 'alarma';
+		$('ruleTimerSeconds').value = '900';
         $('ruleRele').value = '';
         $('ruleSeveridad').value = 'advertencia';
         $('ruleAlarma').checked = true;
@@ -1307,6 +1336,7 @@
         $('ruleCondicion').value = rule.condicion || 'igual';
         $('ruleValor').value = rule.valor || '';
         $('ruleAccion').value = rule.accion || 'alarma';
+		$('ruleTimerSeconds').value = rule.temporizador_segundos || 900;
         $('ruleRele').value = rule.rele_id || '';
         $('ruleSeveridad').value = rule.severidad || 'advertencia';
         $('ruleAlarma').checked = rule.alarma_habilitada !== false;
@@ -1327,6 +1357,7 @@
           condicion: $('ruleCondicion').value,
           valor: $('ruleValor').value.trim(),
           accion: $('ruleAccion').value,
+		  temporizador_segundos: Number($('ruleTimerSeconds').value || 0),
           rele_id: releID,
           estacion_id: Number(rele.estacion_id || 0),
           alarma_habilitada: $('ruleAlarma').checked,
@@ -1707,6 +1738,20 @@
             var provisionID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             await provisionRaspberryTunnel(provisionID);
             showMessage('Instalador seguro descargado. Ejecutalo una sola vez en la Raspberry Pi con sudo sh.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-connection-test')) {
+            var connectionPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            var connectionResult = await requestJSON(api('raspberry_operacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: connectionPiID, operacion: 'probar_conexion' }) });
+            showMessage(connectionResult.message || 'Conexion por tunel verificada.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-restart')) {
+            var restartPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            if (!window.confirm('La Raspberry se reiniciara y se reconectara automaticamente. Continuar?')) return;
+            var restartResult = await requestJSON(api('raspberry_operacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: restartPiID, operacion: 'reiniciar' }) });
+            showMessage(restartResult.message || 'Reinicio enviado por el tunel seguro.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-shutdown')) {
+            var shutdownPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            if (!window.confirm('La Raspberry se apagara. Para volver a conectarla deberas energizarla de nuevo. Continuar?')) return;
+            var shutdownResult = await requestJSON(api('raspberry_operacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: shutdownPiID, operacion: 'apagar' }) });
+            showMessage(shutdownResult.message || 'Apagado enviado por el tunel seguro.', 'success');
           } else if (raspberryCard && ev.target.classList.contains('raspberry-gpio-toggle')) {
             raspberryCard.classList.toggle('gpio-test-open');
             showMessage('Cada GPIO enviara un pulso de prueba de un segundo. Verifica que el relay no controle una carga critica.', '');

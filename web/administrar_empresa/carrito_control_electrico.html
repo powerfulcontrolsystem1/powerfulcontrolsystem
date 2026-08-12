@@ -95,8 +95,8 @@
 
     .device-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      gap: 8px;
     }
 
     .device-card {
@@ -105,6 +105,12 @@
       display: grid;
       grid-template-rows: 1fr auto;
       position: relative;
+      transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .device-card.is-on {
+      background: color-mix(in srgb, var(--cart-electric-success) 9%, var(--cart-electric-panel));
+      border-color: color-mix(in srgb, var(--cart-electric-success) 38%, var(--cart-electric-line));
     }
 
     .sensor-card {
@@ -153,8 +159,8 @@
 
     .device-photo {
       position: static;
-      width: 48px;
-      height: 48px;
+      width: 42px;
+      height: 42px;
       object-fit: contain;
       padding: 4px;
       border: 1px solid var(--cart-electric-line);
@@ -169,9 +175,9 @@
     }
 
     .device-body {
-      padding: 13px;
+      padding: 9px 10px 2px;
       display: grid;
-      gap: 10px;
+      gap: 6px;
     }
 
     .device-title-row {
@@ -193,6 +199,20 @@
       white-space: normal;
       font-size: 1rem;
     }
+
+    .device-schedule-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      max-width: 100%;
+      color: var(--cart-electric-muted);
+      font-size: .76rem;
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    .device-schedule-state.is-running { color: var(--cart-electric-success); }
+    .device-schedule-state::before { content: '◷'; font-size: .9rem; }
 
     .device-title small,
     .device-details {
@@ -232,14 +252,16 @@
 
     .device-footer {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 8px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
       align-items: center;
-      padding: 0 13px 13px;
+      padding: 0 10px 10px;
     }
-    .device-footer.has-photo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px; }
+    .device-footer.has-photo { grid-template-columns: minmax(0, 1fr) 42px; }
 
-    .device-toggle-action { grid-column: 1 / -1; font-weight: 800; }
+    .device-footer .btn { grid-column: 1; width: 100%; min-height: 34px; }
+    .device-footer.has-photo .device-photo { grid-column: 2; grid-row: 3; justify-self: end; }
+    .device-toggle-action { font-weight: 800; }
     .device-toggle-action.is-on { background: var(--cart-electric-success); color: #fff; border-color: var(--cart-electric-success); }
     .device-toggle-action.is-off { background: var(--cart-electric-danger); color: #fff; border-color: var(--cart-electric-danger); }
 
@@ -311,6 +333,9 @@
         <p id="cartElectricMeta" class="cart-electric-meta">Cargando estacion...</p>
       </div>
       <div class="cart-electric-actions">
+        <label id="cartElectricStationFilterWrap" class="form-help" hidden>Ver estación
+          <select id="cartElectricStationFilter" class="form-input"></select>
+        </label>
         <button id="cartElectricRefreshBtn" class="btn secondary" type="button">Actualizar</button>
         <button id="cartElectricBackBtn" class="btn secondary" type="button">Volver</button>
       </div>
@@ -354,6 +379,7 @@
         <footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button id="cartElectricScheduleSave" class="btn primary" value="default">Guardar programación</button></footer>
       </form>
     </dialog>
+    <dialog id="cartElectricTimerDialog" class="domotica-device-dialog cart-electric-dialog"><form method="dialog" id="cartElectricTimerForm"><header class="domotica-device-head"><div><p class="form-help mt-0 mb-4">Temporizador</p><h2 id="cartElectricTimerTitle" class="section-heading">Equipo</h2></div><button class="btn secondary" value="cancel">Cerrar</button></header><div class="domotica-device-body"><p class="form-help">Enciende el equipo y lo apaga automáticamente al finalizar.</p><div class="cart-electric-actions"><button class="btn secondary" type="button" data-timer-preset="900">15 minutos</button><button class="btn secondary" type="button" data-timer-preset="1800">30 minutos</button><button class="btn secondary" type="button" data-timer-preset="3600">1 hora</button></div><div class="form-row"><div class="form-col"><label class="form-label">Horas</label><input id="cartElectricTimerHours" class="form-input" type="number" min="0" max="168" value="0"></div><div class="form-col"><label class="form-label">Minutos</label><input id="cartElectricTimerMinutes" class="form-input" type="number" min="0" max="59" value="15"></div><div class="form-col"><label class="form-label">Segundos</label><input id="cartElectricTimerSeconds" class="form-input" type="number" min="0" max="59" value="0"></div></div></div><footer class="domotica-device-footer"><button class="btn secondary" value="cancel">Cancelar</button><button class="btn primary" value="default">Iniciar temporizador</button></footer></form></dialog>
   </main>
 
   <script>
@@ -369,8 +395,10 @@
       eventos: [],
       raspberryPIs: [],
       returnTo: '',
+      allStations: false,
+      stationFilterID: 0,
       sendingID: 0
-      , selectedReleID: 0
+	  , selectedReleID: 0, timers: JSON.parse(localStorage.getItem('pcsDomoticaTimers') || '{}')
     };
 
     function parsePositiveInt(raw) {
@@ -383,6 +411,9 @@
     function normalize(raw) {
       return String(raw == null ? '' : raw).trim();
     }
+
+	function timerInfo(releID) { const key=String(releID); const until=Number(state.timers[key]||0); const left=Math.max(0,Math.ceil((until-Date.now())/1000)); if(!left && until){ delete state.timers[key]; const rele=state.reles.find(function(item){return Number(item.id)===Number(releID);}); if(rele) rele.ultimo_estado='off'; localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers)); } return { active:left>0, left:left }; }
+	function timerText(releID) { const info=timerInfo(releID); if(!info.active) return 'Temporizador'; const h=String(Math.floor(info.left/3600)).padStart(2,'0'),m=String(Math.floor(info.left%3600/60)).padStart(2,'0'),s=String(info.left%60).padStart(2,'0'); return h+' : '+m+' : '+s; }
 
     function escapeHtml(raw) {
       return normalize(raw)
@@ -411,6 +442,8 @@
     }
 
     function buildBackURL() {
+
+      if (state.returnTo === 'admin') return '/administrar_empresa/panel.html?empresa_id=' + encodeURIComponent(state.empresaID);
       if (state.returnTo === 'estaciones') {
         return '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(state.empresaID);
       }
@@ -418,6 +451,10 @@
     }
 
     function setMeta() {
+      if (state.allStations) {
+        document.getElementById('cartElectricMeta').textContent = 'Todos los equipos electrónicos de estaciones y habitaciones';
+        return;
+      }
       const parts = [];
       if (state.estacionNombre) parts.push(state.estacionNombre);
       if (state.estacionID) parts.push('Estacion #' + state.estacionID);
@@ -449,6 +486,27 @@
       const off = normalize(rele.hora_apagado) || '--:--';
       const days = normalize(rele.programacion_dias) || 'todos';
       return 'ON ' + on + ' | OFF ' + off + ' | ' + days;
+    }
+
+    function scheduleState(rele) {
+      if (!rele || !rele.programacion_habilitada) return null;
+      const startRaw = normalize(rele.programacion_inicio);
+      const endRaw = normalize(rele.programacion_fin);
+      const start = parseDate(startRaw);
+      const end = parseDate(endRaw);
+      const now = new Date();
+      if (start && end) {
+        const running = now >= start && now < end;
+        return { running: running, text: running ? 'Programado · Funcionando ahora' : 'Programado · En espera', detail: startRaw.replace('T', ' ') + ' — ' + endRaw.replace('T', ' ') };
+      }
+      const on = normalize(rele.hora_encendido);
+      const off = normalize(rele.hora_apagado);
+      if (!/^\d{2}:\d{2}$/.test(on) || !/^\d{2}:\d{2}$/.test(off)) return { running: false, text: 'Programado · En espera', detail: '' };
+      const minutes = now.getHours() * 60 + now.getMinutes();
+      const toMinutes = function(value) { const parts = value.split(':').map(Number); return parts[0] * 60 + parts[1]; };
+      const onMinutes = toMinutes(on), offMinutes = toMinutes(off);
+      const running = onMinutes === offMinutes ? false : (onMinutes < offMinutes ? minutes >= onMinutes && minutes < offMinutes : minutes >= onMinutes || minutes < offMinutes);
+      return { running: running, text: running ? 'Programado · Funcionando ahora' : 'Programado · En espera', detail: on + ' — ' + off };
     }
 
     function photoHTML(rele) {
@@ -539,8 +597,8 @@
     function render() {
       const grid = document.getElementById('cartElectricGrid');
       const cfg = state.config || {};
-      const reles = Array.isArray(state.reles) ? state.reles : [];
-      const sensores = Array.isArray(state.sensores) ? state.sensores : [];
+      const reles = (Array.isArray(state.reles) ? state.reles : []).filter(function(rele) { return !state.stationFilterID || Number(rele.estacion_id) === state.stationFilterID; });
+      const sensores = (Array.isArray(state.sensores) ? state.sensores : []).filter(function(sensor) { return !state.stationFilterID || Number(sensor.estacion_id) === state.stationFilterID; });
       const total = reles.length;
       const onCount = reles.filter(function(rele) {
         const raw = normalize(rele.ultimo_estado).toLowerCase();
@@ -559,7 +617,7 @@
         return;
       }
       if (!reles.length && !sensores.length) {
-        grid.innerHTML = '<div class="alert">Esta estacion no tiene equipos ni sensores configurados en Domotica.</div>';
+        grid.innerHTML = '<div class="alert">No hay equipos ni sensores configurados para la selección actual.</div>';
         return;
       }
 
@@ -567,28 +625,29 @@
         return normalize(a && a.categoria || 'Sin categoria').localeCompare(normalize(b && b.categoria || 'Sin categoria'), 'es');
       }).map(function(rele) {
         const info = estadoInfo(rele);
-        const isOn = info.cls === 'is-on';
+        const timer = timerInfo(rele.id);
+        const schedule = scheduleState(rele);
+        // Mientras el temporizador esta activo tiene prioridad visual sobre el
+        // ultimo heartbeat: el equipo fue ordenado a encenderse y el control
+        // principal debe ofrecer apagarlo de inmediato.
+        const isOn = info.cls === 'is-on' || timer.active;
         const disabled = state.sendingID > 0 || !cfg.habilitado;
         const hasPhoto = !!normalize(rele.imagen_url);
-        return '<article class="device-card">' +
+        return '<article class="device-card' + (isOn ? ' is-on' : '') + '">' +
           '<div class="device-body">' +
             '<div class="device-title-row">' +
               '<div class="device-title">' +
                 '<strong title="' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '">' + escapeHtml(rele.relay_name || rele.tipo_carga || 'Aparato') + '</strong>' +
                 '<small>' + escapeHtml(rele.categoria || rele.tipo_carga || rele.salida_codigo || 'Sin categoria') + '</small>' +
+				(schedule ? '<span class="device-schedule-state' + (schedule.running ? ' is-running' : '') + '" title="' + escapeHtml(schedule.detail || scheduleLabel(rele)) + '">' + escapeHtml(schedule.text) + (schedule.detail ? ' · ' + escapeHtml(schedule.detail) : '') + '</span>' : '') +
               '</div>' +
-              (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
-              '<span class="status-pill ' + info.cls + '" aria-label="Estado: ' + escapeHtml(info.label) + '">' + escapeHtml(info.label) + '</span>' +
-            '</div>' +
-            '<div class="device-details">' +
-              '<span>GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' | ' + escapeHtml(rele.raspberry_nombre || rele.raspberry_ip || 'Raspberry principal') + '</span>' +
-              '<span>' + escapeHtml(scheduleLabel(rele)) + '</span>' +
-              (normalize(rele.ultimo_error) ? '<span class="error">' + escapeHtml(rele.ultimo_error) + '</span>' : '') +
+              (isOn ? '<span class="electric-on-bolt" title="Salida activa" aria-label="Salida activa">⚡</span>' : '') +
             '</div>' +
           '</div>' +
           '<div class="device-footer' + (hasPhoto ? ' has-photo' : '') + '">' +
             '<button class="btn device-toggle-action ' + info.cls + '" type="button" data-control-toggle="' + (isOn ? 'off' : 'on') + '" data-rele-id="' + escapeHtml(rele.id || 0) + '" title="' + escapeHtml(controlLabel(rele, isOn)) + '"' + (disabled ? ' disabled' : '') + '>' + escapeHtml(controlLabel(rele, isOn)) + '</button>' +
             '<button class="btn secondary" type="button" data-control-schedule data-rele-id="' + escapeHtml(rele.id || 0) + '">Programar</button>' +
+			'<button class="btn secondary" type="button" data-control-timer data-rele-id="' + escapeHtml(rele.id || 0) + '">' + timerText(rele.id) + '</button>' +
             (hasPhoto ? photoHTML(rele) : '') +
           '</div>' +
         '</article>';
@@ -607,12 +666,27 @@
     }
 
     async function fetchControls() {
-      if (!state.empresaID || !state.estacionID) {
-        setMessage('No se pudo identificar la empresa o la estacion.', 'error');
+      if (!state.empresaID || (!state.allStations && !state.estacionID)) {
+        setMessage('No se pudo identificar la empresa o la estación.', 'error');
         render();
         return;
       }
       setMessage('Cargando aparatos...', '');
+      if (state.allStations) {
+        const base = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=';
+        const responses = await Promise.all(['config', 'reles', 'reglas', 'eventos', 'raspberry_pis'].map(function(action) {
+          return fetch(base + action, { credentials: 'same-origin' }).then(async function(res) { await ensureOk(res); return res.json(); });
+        }));
+        state.config = responses[0] || {};
+        state.reles = Array.isArray(responses[1]) ? responses[1] : [];
+        state.sensores = Array.isArray(responses[2]) ? responses[2] : [];
+        state.eventos = Array.isArray(responses[3]) ? responses[3] : [];
+        state.raspberryPIs = Array.isArray(responses[4]) ? responses[4] : [];
+        populateStationFilter();
+        setMessage('', '');
+        render();
+        return;
+      }
       const url = new URL('/api/empresa/control_electrico', window.location.origin);
       url.searchParams.set('empresa_id', String(state.empresaID));
       url.searchParams.set('action', 'estacion_controls');
@@ -636,15 +710,17 @@
         return;
       }
       try {
+		if (estado === 'off' && state.timers[String(id)]) { delete state.timers[String(id)]; localStorage.setItem('pcsDomoticaTimers', JSON.stringify(state.timers)); }
         state.sendingID = id;
         setMessage(estado === 'on' ? 'Encendiendo aparato...' : 'Apagando aparato...', '');
         render();
+        const rele = state.reles.find(function(item) { return Number(item.id) === id; }) || {};
         const url = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=probar_rele';
         const res = await fetch(url, {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ estacion_id: state.estacionID, rele_id: id, estado: estado })
+          body: JSON.stringify({ estacion_id: Number(rele.estacion_id || state.estacionID || 0), rele_id: id, estado: estado })
         });
         await ensureOk(res);
         const result = await res.json();
@@ -672,6 +748,21 @@
       document.getElementById('cartElectricScheduleOff').value = normalize(rele.programacion_fin) || scheduleDateTimeValue(rele.hora_apagado, defaultOff, rele.hora_encendido);
       document.getElementById('cartElectricScheduleDays').value = rele.programacion_dias || 'todos';
       document.getElementById('cartElectricScheduleDialog').showModal();
+    }
+
+    function populateStationFilter() {
+      const wrap = document.getElementById('cartElectricStationFilterWrap');
+      const select = document.getElementById('cartElectricStationFilter');
+      if (!wrap || !select || !state.allStations) return;
+      const stations = {};
+      state.reles.forEach(function(rele) {
+        const id = Number(rele.estacion_id || 0);
+        if (id) stations[id] = normalize(rele.estacion_nombre) || ('Estación #' + id);
+      });
+      const selected = String(state.stationFilterID || 0);
+      select.innerHTML = '<option value="0">Todas las estaciones</option>' + Object.keys(stations).sort(function(a, b) { return Number(a) - Number(b); }).map(function(id) { return '<option value="' + escapeHtml(id) + '">' + escapeHtml(stations[id]) + '</option>'; }).join('');
+      select.value = selected;
+      wrap.hidden = false;
     }
 
     function localDateTimeValue(date) {
@@ -715,8 +806,10 @@
 
     function bootstrap() {
       const params = new URLSearchParams(window.location.search || '');
-      state.empresaID = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+      state.empresaID = parsePositiveInt(params.get('empresa_id') || params.get('id')) || (typeof window.__resolveEmpresaIdContext === 'function' ? parsePositiveInt(window.__resolveEmpresaIdContext()) : 0);
       state.estacionID = parsePositiveInt(params.get('estacion_id'));
+      state.allStations = normalize(params.get('vista') || params.get('mode')).toLowerCase() === 'todas';
+      state.stationFilterID = parsePositiveInt(params.get('filtro_estacion'));
       state.estacionNombre = normalize(params.get('estacion_nombre'));
       state.carritoID = parsePositiveInt(params.get('carrito_id'));
       state.carritoCodigo = normalize(params.get('carrito_codigo'));
@@ -725,7 +818,12 @@
       render();
 
       const backBtn = document.getElementById('cartElectricBackBtn');
-      backBtn.textContent = state.returnTo === 'estaciones' ? 'Volver a estaciones' : 'Volver al carrito';
+      backBtn.textContent = state.returnTo === 'admin' ? 'Volver al panel' : (state.returnTo === 'estaciones' ? 'Volver a estaciones' : 'Volver al carrito');
+
+      if (state.allStations) {
+        document.title = 'Equipos electrónicos de Domótica';
+        document.querySelector('.cart-electric-header h1').innerHTML = '<span aria-hidden="true">⚡</span> Equipos electrónicos de Domótica';
+      }
 
       backBtn.addEventListener('click', function() {
         window.location.href = buildBackURL();
@@ -735,13 +833,22 @@
           setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');
         });
       });
+      document.getElementById('cartElectricStationFilter').addEventListener('change', function(ev) {
+        state.stationFilterID = parsePositiveInt(ev.target.value);
+        render();
+      });
       document.getElementById('cartElectricGrid').addEventListener('click', function(ev) {
         const schedule = ev.target && ev.target.closest ? ev.target.closest('[data-control-schedule]') : null;
         if (schedule) { openSchedule(schedule.getAttribute('data-rele-id')); return; }
+		const timer = ev.target && ev.target.closest ? ev.target.closest('[data-control-timer]') : null;
+		if (timer) { state.selectedReleID=parsePositiveInt(timer.getAttribute('data-rele-id')); const r=state.reles.find(x=>Number(x.id)===state.selectedReleID); document.getElementById('cartElectricTimerTitle').textContent=(r&&r.relay_name)||'Equipo'; document.getElementById('cartElectricTimerDialog').showModal(); return; }
         const toggle = ev.target && ev.target.closest ? ev.target.closest('[data-control-toggle]') : null;
         if (toggle) { sendCommand(toggle.getAttribute('data-rele-id'), toggle.getAttribute('data-control-toggle')); return; }
       });
       document.getElementById('cartElectricScheduleForm').addEventListener('submit', function(ev) { ev.preventDefault(); saveSchedule().catch(function(err) { setMessage(err.message || 'No se pudo guardar programación.', 'error'); }); });
+		document.getElementById('cartElectricTimerForm').addEventListener('click', function(ev){const p=ev.target.closest('[data-timer-preset]');if(!p)return;const n=Number(p.getAttribute('data-timer-preset'));document.getElementById('cartElectricTimerHours').value=Math.floor(n/3600);document.getElementById('cartElectricTimerMinutes').value=Math.floor(n%3600/60);document.getElementById('cartElectricTimerSeconds').value=n%60;});
+		document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const rele=state.reles.find(x=>Number(x.id)===state.selectedReleID)||{}; const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:Number(rele.estacion_id||state.estacionID||0),rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); rele.ultimo_estado='on'; state.timers[String(state.selectedReleID)]=Date.now()+sec*1000;localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers));document.getElementById('cartElectricTimerDialog').close(); render(); await fetchControls(); setMessage('Temporizador iniciado; el equipo quedara encendido hasta finalizar.','success'); });
+		setInterval(function(){ if(Object.keys(state.timers).length || state.reles.some(function(rele){return rele.programacion_habilitada;})) render(); },1000);
 
       fetchControls().catch(function(err) {
         setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');
