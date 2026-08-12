@@ -3,6 +3,8 @@
 - [Privacidad operativa] GPIO, Raspberry y programacion se consultan solo en Configuracion de Domotica, donde cada tarjeta conserva un resumen tecnico completo.
 - [Operacion] La tarjeta de cada Raspberry permite comprobar el tunel y solicitar reinicio o apagado con confirmacion; el agente 1.2 ejecuta exclusivamente las acciones permitidas por `systemctl`.
 - [Navegacion] Se agrega Equipos Domotica al panel empresarial, con vista de todas las estaciones, habitaciones y Venta directa si tiene equipos registrados, y filtro local por estacion.
+- [UX] El temporizador prevalece sobre el control manual mientras esta activo, actualiza el boton principal a Apagar y restablece la tarjeta al terminar; las tarjetas eliminan el texto repetido de estado y reducen su espacio visual.
+- [UX] Cada equipo con agenda indica el intervalo configurado y si se encuentra en espera o funcionando dentro de su horario.
 
 ## [2026-08-01] Confirmación e idempotencia CxP/IA
 - [IA] La extracción documental usa un lock PostgreSQL por soporte para impedir llamadas y cuotas duplicadas entre réplicas.
