@@ -24,10 +24,12 @@ restringido, UFW activo, servicios de staging sanos y uso de disco de 69 %.
 - La CSP pública conserva `unsafe-inline` para scripts y estilos, además de los
   orígenes externos necesarios de los proveedores. Requiere reducción gradual
   o una excepción formal con responsable y vencimiento antes de certificar.
-- El chequeo VPS informó que `fail2ban` no está habilitado. No se instaló ni se
-  cambió infraestructura en esta ejecución; su activación exige ventana,
-  configuración de exclusiones y verificación operativa.
+- `fail2ban` se instaló posteriormente, con la cárcel `sshd` limitada al puerto
+  SSH real 49222, máximo cinco intentos, ventana de diez minutos y baneo de una
+  hora. La validación de configuración, el servicio y la cárcel aprobaron sin
+  IP bloqueadas; UFW, SSH y staging continuaron sanos. El reverso es
+  `systemctl disable --now fail2ban`, retirar la cárcel y desinstalar el paquete
+  dentro de una ventana controlada.
 
 P110-007 continúa **parcial**: faltan DAST integral autenticado, A/B de todos
-los dominios, pruebas de archivo avanzadas, cierre CSP y el control operativo
-pendiente de hardening.
+los dominios, pruebas de archivo avanzadas y cierre CSP.

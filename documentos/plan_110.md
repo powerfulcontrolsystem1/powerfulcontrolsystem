@@ -924,10 +924,10 @@ autoriza ni ejecuta despliegue productivo.
   runtime, SLO y observabilidad aprobaron. En staging, las rutas empresariales
   anónimas y un preflight externo devolvieron `401`; la compuerta automática
   confirmó salud, paridad DIAN saneada y Alertmanager sin alertas activas.
-- Permanecen dos hallazgos verificables: la CSP contiene `unsafe-inline` y el
-  VPS no tiene `fail2ban` habilitado. No se modificó infraestructura para
-  ocultarlos. P110-007 y P110-009 continúan parciales; avance formal **38,5 %**,
-  certificación **0 %**, **NO-GO**.
+- La CSP conserva `unsafe-inline` como hallazgo verificable. El control SSH del
+  VPS se completó con `fail2ban` activo y una cárcel conservadora para el puerto
+  real, sin modificar SSH/UFW ni afectar staging. P110-007 y P110-009 continúan
+  parciales; avance formal **38,5 %**, certificación **0 %**, **NO-GO**.
 
 ## Actualización 2026-08-12, migración vacía y upgrade aislado
 
