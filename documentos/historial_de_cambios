@@ -42261,5 +42261,16 @@ acumulativa.
   logo oficial del computador dentro del mensaje.
 - Se corrigió el canal IMAP por defecto del contador de no leídos al puerto
   interno de webmail y se expuso correctamente `mailu_api` en la pantalla super.
-- La entrega externa, DKIM observado externamente, registro, invitación, reset y
-  rebote permanecen pendientes; P110-006 conserva estado parcial.
+- La entrega externa, DKIM observado externamente, reset y rebote permanecen
+  pendientes; P110-006 conserva estado parcial. El registro y las invitaciones
+  internas se validaron en el bloque siguiente.
+2026-08-12: Plan 110 / identidades reales y cuatro cajas PCS.
+- Se completaron por interfaz las invitaciones y registros contractuales de un
+  administrador, un contador y cuatro cajeros QA dedicados a la empresa 12.
+- La matriz autenticada confirmó accesos contables/operativos, denegaciones de
+  usuarios y cartera para cajeros, y 403 cruzado contra otra empresa.
+- Cuatro cajas ejecutaron 80 lecturas operativas concurrentes con 80 respuestas
+  200, p95 de 309 ms y p99 de 514 ms. Una ráfaga de 160 solicitudes también
+  tuvo cero errores, pero p95 de 7.749 ms y queda como señal de saturación.
+- La venta directa del cajero aprobó visualmente en 390 x 844 sin overflow; no
+  se generaron ventas ni documentos fiscales en esta fase.

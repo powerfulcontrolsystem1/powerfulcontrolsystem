@@ -29,11 +29,15 @@ DNS.
 - La pantalla superadministrador ocultaba el modo vigente `mailu_api` y lo
   rotulaba como manual. Se añadió la opción y el diagnóstico visual de API
   interna.
+- Se enviaron y recibieron seis invitaciones reales para los roles QA del Plan
+  110. Cada enlace abrió el registro oficial, exigió documento, contraseña,
+  confirmación y aceptación del contrato, y terminó en una sesión válida de la
+  empresa PCS.
 
 ## Límite
 
-Esta evidencia no prueba todavía registro, invitación, reset, rebote, recepción
-externa ni firma DKIM observada por un proveedor externo. El correo interno
+Esta evidencia prueba registro e invitación internos, pero no reset, rebote,
+recepción externa ni firma DKIM observada por un proveedor externo. El correo interno
 mostró `DKIM: none`, por lo que no se usa para certificar DKIM saliente. Tampoco
 resuelve el certificado BIMI comercial ni la prueba DIAN oficial; P110-006
 permanece parcial hasta publicar el ajuste y completar la matriz externa.
