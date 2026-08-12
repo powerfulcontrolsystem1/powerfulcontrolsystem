@@ -42007,3 +42007,9 @@ acumulativa.
   focalizadas de ledger, idempotencia, tenant, reconciliación solo lectura y
   bloqueo histórico aprobaron. La conciliación y UAT contable permanecen como
   compuertas humanas independientes.
+2026-08-12: Plan 110 / rechazo EICAR HTTP y limpieza QA.
+- La sonda estándar EICAR fue rechazada por el endpoint autenticado de soportes
+  con `422` antes de validación/persistencia, y su detección se comprobó en el
+  socket ClamAV. Los soportes creados únicamente durante intentos de QA se
+  enviaron a papelera mediante el flujo auditado; no hubo contabilidad, DIAN,
+  pagos ni cambios en producción.

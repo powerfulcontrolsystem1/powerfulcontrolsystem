@@ -905,8 +905,11 @@ autoriza ni ejecuta despliegue productivo.
   limpia recibe indisponibilidad y no persiste el soporte; después se recuperó
   el escáner y el endpoint de staging.
 - La sonda EICAR no alcanzó el navegador porque la protección local la eliminó
-  antes de enviarla. Se mantiene pendiente el rechazo HTTP EICAR, recuperación,
-  concurrencia y alertas P0. P110-007 permanece **parcial**; el avance formal
+  antes de enviarla. Posteriormente se ejecutó desde el VPS de staging por la
+  ruta HTTP autenticada: ClamAV la rechazó con `422` antes de persistencia. Se
+  enviaron a papelera los soportes QA creados durante intentos previos, mediante
+  la API auditada. Siguen pendientes recuperación, concurrencia y alertas P0.
+  P110-007 permanece **parcial**; el avance formal
   continúa en **38,5 %**, certificación **0 %**, **NO-GO**.
 
 ## Actualización 2026-08-12, CxP sobre el candidato actual

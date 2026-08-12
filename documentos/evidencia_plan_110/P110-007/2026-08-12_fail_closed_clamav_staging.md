@@ -33,8 +33,16 @@ reinicio normal y staging recuperó `/ready`.
 
 ## Límites de certificación
 
-El antivirus local eliminó la sonda EICAR antes de que el navegador pudiera
-entregarla; por tanto, esta ejecución no acredita el rechazo HTTP de EICAR del
-candidato final. También falta probar recuperación, concurrencia y alertas P0
-con el nuevo digest. P110-007 permanece **parcial** y el veredicto global sigue
-siendo **NO-GO**.
+La sonda EICAR se ejecutó desde el VPS de staging en un archivo XML de prueba,
+por el endpoint HTTP autenticado y con CSRF oficial. El resultado fue `422` con
+el mensaje de rechazo de antivirus; no se creó soporte ni archivo. La misma
+firma fue confirmada por el socket de ClamAV. El uso de XML evita que el propio
+antivirus local del equipo elimine la sonda antes de la solicitud y demuestra
+que el escaneo ocurre antes de la validación de formato o persistencia.
+
+Como limpieza, los siete soportes exclusivamente QA creados durante los intentos
+anteriores fueron enviados a papelera mediante la API autenticada; ninguno fue
+contabilizado ni afectó pagos, DIAN o producción.
+
+Faltan recuperación bajo carga, concurrencia y alertas P0 con el digest actual.
+P110-007 permanece **parcial** y el veredicto global sigue siendo **NO-GO**.
