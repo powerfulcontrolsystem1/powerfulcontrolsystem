@@ -1085,3 +1085,9 @@ autoriza ni ejecuta despliegue productivo.
   contratos focalizados de CxP, tenant, permisos, roles y archivos privados.
 - No sustituye usuarios reales, cajas simultáneas ni hardware; avance formal
   **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, barrido de superadministración
+
+- El panel superadministrador aprobó 32/32 vistas de escritorio y móvil,
+  incluidas alertas, auditoría, consumo y configuración, sin mutaciones.
+- El avance formal sigue en **38,5 %**, certificación **0 %**, **NO-GO**.

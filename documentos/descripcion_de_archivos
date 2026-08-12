@@ -13098,3 +13098,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_operativo_final_staging.md`:
   evidencia saneada del barrido operativo visual y los contratos de aislamiento
   de servidor, con límites de validación humana explícitos.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_superadministrador_staging.md`:
+  evidencia saneada del barrido visual del panel superadministrador, con sus
+  límites de operación humana explícitos.

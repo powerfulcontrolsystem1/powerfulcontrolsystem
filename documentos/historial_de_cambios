@@ -42216,3 +42216,6 @@ acumulativa.
   aprobaron 32/32 vistas en ambos formatos sin mutaciones.
 - Las pruebas focalizadas de CxP, tenant, permisos, roles y archivos privados
   aprobaron junto con `go vet` de handlers y db.
+2026-08-12: Plan 110 / barrido autenticado superadministrador.
+- Administradores, alertas, auditorías, consumo, IA y configuraciones aprobaron
+  32/32 vistas entre escritorio y móvil, con guardia de solo lectura.
