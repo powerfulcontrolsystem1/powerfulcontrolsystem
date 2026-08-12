@@ -32,6 +32,7 @@ import (
 const (
 	maxSoporteComprasIAUploadBytes     = 15 << 20
 	maxSoporteComprasIAExtractionBytes = 128 << 10
+	soporteComprasIAExtractionTimeout  = 90 * time.Second
 	soporteComprasIAAdvisoryNamespace  = int64(0x534349)
 	soporteComprasIAStorageNamespace   = int64(0x534351)
 	soporteComprasIAPurgeNamespace     = int64(0x534350)
@@ -56,6 +57,7 @@ var (
 	soporteComprasIAExtractionProviderError   atomic.Uint64
 	soporteComprasIAExtractionInvalidResponse atomic.Uint64
 	soporteComprasIAExtractionCanceled        atomic.Uint64
+	soporteComprasIAExtractionTimeouts        atomic.Uint64
 	soporteComprasIAExtractionPersistence     atomic.Uint64
 	soporteComprasIAFileIntegrityFailures     atomic.Uint64
 )
@@ -92,6 +94,7 @@ type SupportExtractionMetrics struct {
 	ProviderError   uint64
 	InvalidResponse uint64
 	Canceled        uint64
+	Timeout         uint64
 	Persistence     uint64
 }
 
@@ -102,6 +105,7 @@ func SupportExtractionOperationalMetrics() SupportExtractionMetrics {
 		ProviderError:   soporteComprasIAExtractionProviderError.Load(),
 		InvalidResponse: soporteComprasIAExtractionInvalidResponse.Load(),
 		Canceled:        soporteComprasIAExtractionCanceled.Load(),
+		Timeout:         soporteComprasIAExtractionTimeouts.Load(),
 		Persistence:     soporteComprasIAExtractionPersistence.Load(),
 	}
 }
@@ -118,6 +122,8 @@ func recordSupportExtractionOutcome(outcome string) {
 		soporteComprasIAExtractionInvalidResponse.Add(1)
 	case "canceled":
 		soporteComprasIAExtractionCanceled.Add(1)
+	case "timeout":
+		soporteComprasIAExtractionTimeouts.Add(1)
 	case "persistence_error":
 		soporteComprasIAExtractionPersistence.Add(1)
 	}
@@ -276,6 +282,12 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			} else if errors.Is(err, errSoporteComprasIASinAdjunto) {
 				status = http.StatusUnprocessableEntity
 				message = "El soporte no tiene un archivo privado disponible para analizar."
+			} else if errors.Is(err, context.DeadlineExceeded) {
+				status = http.StatusGatewayTimeout
+				message = "El proveedor de IA excedio el tiempo de espera. El soporte conserva su estado anterior."
+			} else if errors.Is(err, context.Canceled) {
+				status = http.StatusRequestTimeout
+				message = "La extraccion IA fue cancelada. El soporte conserva su estado anterior."
 			} else if errors.Is(err, errSoporteComprasIAProveedor) {
 				status = http.StatusBadGateway
 				message = publicAIProviderError(err)
@@ -1172,14 +1184,20 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
 	systemPrompt := soporteComprasIASystemPrompt()
 	pregunta := "Extrae y normaliza este soporte de compra o gasto de Colombia. Responde solo JSON valido, sin explicaciones."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil)
+	providerCtx, cancelProvider := context.WithTimeout(r.Context(), soporteComprasIAExtractionTimeout)
+	defer cancelProvider()
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(providerCtx, model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			recordSupportExtractionOutcome("canceled")
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			outcome := "canceled"
+			if errors.Is(err, context.DeadlineExceeded) {
+				outcome = "timeout"
+			}
+			recordSupportExtractionOutcome(outcome)
 			if refundErr := dbpkg.RefundEmpresaAgenteUsoDiario(dbEmp, dbpkg.EmpresaAgenteUsoDiario{
 				EmpresaID: empresaID, FechaUso: time.Now().Format("2006-01-02"), ConsultasAvanzadas: 1, SegundosUsados: 5,
 			}); refundErr != nil {
-				log.Printf("[soportes_compras_ia] no se pudo devolver reserva IA cancelada empresa_id=%d: %v", empresaID, refundErr)
+				log.Printf("[soportes_compras_ia] no se pudo devolver reserva IA interrumpida empresa_id=%d resultado=%s: %v", empresaID, outcome, refundErr)
 			}
 		} else {
 			recordSupportExtractionOutcome("provider_error")

@@ -13112,3 +13112,25 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   evidencia saneada del despliegue de Domótica, actualización inmediata del
   destino de Venta directa y restore efímero con selección automática del
   snapshot completo más reciente.
+- `documentos/evidencia_plan_110/P110-003/2026-08-12_adjunto_ia_real_revision_humana_945d1751.md`:
+  evidencia saneada del adjunto XML, extracción IA, edición humana auditada y
+  rechazo sin efecto contable en staging.
+- `documentos/evidencia_plan_110/P110-006/2026-08-12_factura_1pcs7_nota_credito_nc113.md`:
+  evidencia fiscal real de la factura y nota crédito aceptadas por DIAN en PCS,
+  con sus límites de impresión, idempotencia e aislamiento pendientes.
+- `documentos/evidencia_plan_110/P110-005/2026-08-12_impresion_virtual_20_formatos_945d1751.md`:
+  evidencia reproducible y saneada de 20 formatos Carta/POS, documentos
+  extensos, autoimpresión y revisión visual, con límites físicos y de
+  accesibilidad explícitos.
+- `tools/qa_ai_button_inventory.mjs`: inventario estatico reproducible de
+  controles IA en las paginas empresariales; produce JSON y Markdown sin
+  dependencias externas y no sustituye las pruebas funcionales por rol.
+- `documentos/evidencia_plan_110/P110-003/2026-08-12_matriz_ia_timeout_y_productos_945d1751.md`:
+  evidencia real y local diferenciada de confirmacion IA, guardas sin adjunto,
+  boton anidado de Productos, timeout/cancelacion y controles pendientes.
+- `documentos/evidencia_plan_110/P110-006/2026-08-12_reconciliacion_mailu_buzon_pcs.md`:
+  hallazgo real del buzon pendiente y contrato de reconciliacion por INBOX que
+  conserva el estado ante fallo.
+- `documentos/evidencia_plan_110/P110-007/2026-08-12_csp_report_only_estricta_por_defecto.md`:
+  comparacion de cabeceras observadas y cambio local de CSP Report-Only estricta
+  por defecto, con la CSP aplicada aun sin modificar.

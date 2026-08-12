@@ -42300,3 +42300,41 @@ acumulativa.
   seis archivos privados, seis referencias, cero huérfanos y limpieza total.
   RTO observado: 78 s; RPO observado: 59.854 s. P110-008 sigue parcial porque
   faltan réplica autenticada/rollback del candidato final y aceptación humana.
+2026-08-12: Plan 110 / adjunto real de CxP con IA y revisión humana.
+- Un XML sintético limpio se radicó en staging, fue extraído por IA y permitió
+  editar proveedor, centro de costo e impacto de inventario antes de rechazarlo.
+- La auditoría conservó extracción y edición; la búsqueda canónica confirmó que
+  el documento no creó CxP, asiento, pago ni movimiento de inventario.
+2026-08-12: Plan 110 / factura y nota crédito DIAN reales en PCS.
+- DIAN aceptó la factura `1PCS7` por `COP 100` y la nota crédito total
+  `NC12000000113`; ambos acuses sincrónicos informaron
+  `Procesado Correctamente.`.
+- La factura quedó anulada, la nota crédito emitida y no hubo reenvíos ni
+  duplicados. Por instrucción del usuario no se ejecutó `rs`.
+2026-08-12: Plan 110 / repetición de impresión virtual del candidato actual.
+- Chrome generó 20/20 formatos Carta/POS sin revisión ni fallos de
+  autoimpresión; factura y recibo extensos produjeron seis páginas cada uno.
+- La revisión visual confirmó filas, columnas, totales, encabezados repetidos,
+  firmas y QR sin recortes. P110-005 sigue parcial por impresión física,
+  accesibilidad asistida, tableta y documentos PCS reales. No se ejecutó `rs`.
+2026-08-12: Plan 110 / matriz IA, timeout y boton de Productos.
+- El asistente real exigio confirmacion para una propuesta de producto; se
+  cancelo y el catalogo demostro que no hubo alta. Compras, Egresos e Ingresos
+  mostraron la guarda sin adjunto.
+- Se inventariaron 20 controles IA. Se corrigio localmente el mensaje del boton
+  de Productos hacia el shell superior y la extraccion de soportes ahora limita
+  el proveedor a 90 segundos, distingue cancelacion/timeout y devuelve la cuota.
+- Grafologia quedo inconclusa por timeout del navegador y no cuenta como
+  aprobada. Las correcciones no se desplegaron porque no se ejecuto `rs`.
+- Aprobaron Go completo, `go vet` focalizado, auditoria profesional, inventario
+  IA, comprobacion del diff y escaneo de secretos sobre archivos cambiados.
+2026-08-12: Plan 110 / reconciliacion Mailu verificable.
+- Staging mostro el buzon empresarial pendiente y sin conteo verificable. La
+  correccion local reconduce IMAP heredado al front Mailu y solo marca
+  provisionado despues de autenticar INBOX mediante un POST protegido por CSRF.
+- Un fallo conserva el estado previo. Falta despliegue y repeticion visual.
+2026-08-12: Plan 110 / CSP estricta de observacion por defecto.
+- Staging conservo HSTS y cabeceras defensivas; el frontend observo CSP estricta,
+  pero el backend aun incluyo `unsafe-inline` en Report-Only.
+- El Compose local activa `PCS_CSP_REPORT_ONLY_STRICT=1` por defecto sin cambiar
+  la politica aplicada. Falta desplegar, observar reportes y retirar inline.

@@ -1100,6 +1100,12 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 
 func corporateEmailIMAPAddress() string {
 	value := strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_IMAP_ADDR", "MAILU_IMAP_ADDR"))
+	if strings.EqualFold(value, "mailu-imap:143") {
+		// AUTH_REQUIRE_TOKENS pertenece al salto interno front -> imap. Una
+		// credencial normal de buzon debe entrar por el front de Mailu, incluso
+		// cuando un despliegue anterior dejo configurado el servicio imap directo.
+		value = "mailu-front:10143"
+	}
 	if value == "" {
 		// Mailu reserva el puerto interno 10143 del front para conexiones del
 		// webmail. Con AUTH_REQUIRE_TOKENS activo, consultar directamente
@@ -1110,6 +1116,11 @@ func corporateEmailIMAPAddress() string {
 		value += ":143"
 	}
 	return value
+}
+
+func shouldReconcileCorporateEmailProvision(account *dbpkg.EmpresaEmailCorporativo, unread corporateEmailUnreadStatus) bool {
+	return account != nil && account.EmpresaID > 0 && unread.Checked && unread.OK &&
+		!strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado")
 }
 
 func corporateEmailIMAPQuote(value string) string {
@@ -1541,12 +1552,38 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			var payload struct {
 				AutoOpen        *bool  `json:"auto_open"`
 				NoAutoOpen      *bool  `json:"no_auto_open"`
+				Reconcile       bool   `json:"reconcile"`
 				Password        string `json:"password"`
 				NewPassword     string `json:"new_password"`
 				ConfirmPassword string `json:"confirm_password"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.Reconcile {
+				account, accountErr := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
+				if accountErr != nil || account == nil {
+					http.Error(w, "No se encontro el buzon corporativo de esta empresa", http.StatusNotFound)
+					return
+				}
+				unread := corporateEmailUnreadStatusFromIMAP(dbSuper, account)
+				if !shouldReconcileCorporateEmailProvision(account, unread) {
+					if strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") && unread.OK {
+						writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Buzon verificado en Mailu", checkWebmail, true, theme, prefs))
+						return
+					}
+					writeJSON(w, http.StatusConflict, map[string]interface{}{"ok": false, "error": "Mailu no pudo autenticar el INBOX del buzon; el estado anterior se conserva"})
+					return
+				}
+				if err := dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, empresaID, "provisionado", "", true); err != nil {
+					http.Error(w, "No se pudo reconciliar el estado del buzon", http.StatusInternalServerError)
+					return
+				}
+				if refreshed, refreshErr := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID); refreshErr == nil && refreshed != nil {
+					account = refreshed
+				}
+				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Buzon reconciliado con Mailu", checkWebmail, true, theme, prefs))
 				return
 			}
 			if payload.AutoOpen != nil {

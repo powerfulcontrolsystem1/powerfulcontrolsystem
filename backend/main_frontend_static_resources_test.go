@@ -33,6 +33,17 @@ func TestFrontendStaticResourcesExist(t *testing.T) {
 	}
 }
 
+func TestBackendDefaultsToStrictCSPObservationWithoutBlockingCompatibility(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.platform.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	compose := string(raw)
+	if !strings.Contains(compose, `PCS_CSP_REPORT_ONLY_STRICT: ${PCS_CSP_REPORT_ONLY_STRICT:-1}`) {
+		t.Fatal("backend must observe strict CSP by default before enforcing removal of unsafe-inline")
+	}
+}
+
 func TestPublicDownloadsAreExplicitlyAllowlisted(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
 	if err != nil {
@@ -457,6 +468,10 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 		if strings.Contains(string(products), corrupted) {
 			t.Fatalf("products keeps corrupted query separator %q", corrupted)
 		}
+	}
+	if !strings.Contains(string(products), "const chatHost = window.top") ||
+		!strings.Contains(string(products), "chatHost.postMessage({") {
+		t.Fatal("nested products page must open the company AI drawer in the top-level shell")
 	}
 
 	moduleScript, err := os.ReadFile(filepath.Join(root, "web", "js", "modulo_colombia_admin.js"))
