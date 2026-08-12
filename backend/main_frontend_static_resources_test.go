@@ -535,6 +535,28 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 	}
 }
 
+func TestGrafologiaAIGuardsRenderInlineWithoutBlockingDialogs(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "js", "grafologia.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(raw)
+	for _, message := range []string{
+		"No se detecto empresa_id para analizar con GPT-5.5.",
+		"Carga una imagen manuscrita antes de analizar con GPT-5.5.",
+	} {
+		if !strings.Contains(content, `renderAIResult({ error: "`+message+`" }, false)`) {
+			t.Fatalf("Grafologia IA must render its guard inline: %s", message)
+		}
+		if strings.Contains(content, `alert("`+message+`")`) {
+			t.Fatalf("Grafologia IA must not block the browser with alert: %s", message)
+		}
+	}
+	if strings.Contains(content, `alert("No se pudo analizar con GPT-5.5:`) {
+		t.Fatal("Grafologia IA provider failures must remain visible inline without a blocking alert")
+	}
+}
+
 func TestSuperPageToolsDoNotCoverMobileControls(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "web", "js", "super_page_tools.js"))
 	if err != nil {

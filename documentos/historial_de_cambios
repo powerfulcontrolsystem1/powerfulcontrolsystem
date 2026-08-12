@@ -42325,7 +42325,8 @@ acumulativa.
   de Productos hacia el shell superior y la extraccion de soportes ahora limita
   el proveedor a 90 segundos, distingue cancelacion/timeout y devuelve la cuota.
 - Grafologia quedo inconclusa por timeout del navegador y no cuenta como
-  aprobada. Las correcciones no se desplegaron porque no se ejecuto `rs`.
+  aprobada. Su guarda y errores GPT ahora se muestran en el panel accesible sin
+  `alert` bloqueante. Las correcciones no se desplegaron porque no se ejecuto `rs`.
 - Aprobaron Go completo, `go vet` focalizado, auditoria profesional, inventario
   IA, comprobacion del diff y escaneo de secretos sobre archivos cambiados.
 2026-08-12: Plan 110 / reconciliacion Mailu verificable.

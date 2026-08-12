@@ -16,7 +16,8 @@ Empresa: PCS de pruebas autorizadas
   asistente, pero no traslado el prompt al drawer superior. La causa fue el uso
   de `window.postMessage` dentro del iframe anidado.
 - El intento de pulsar Grafologia IA sin imagen no concluyo por timeout de la
-  interaccion del navegador y no se contabiliza como aprobado.
+  interaccion del navegador. El boton usaba un `alert` bloqueante para su guarda
+  sin imagen y no se contabiliza como aprobado en staging.
 
 ## Correcciones locales, aun no desplegadas
 
@@ -29,6 +30,9 @@ Empresa: PCS de pruebas autorizadas
   hasta la solicitud HTTP al proveedor.
 - `tools/qa_ai_button_inventory.mjs` inventario 20 controles IA empresariales de
   forma reproducible. El inventario no equivale a su aprobacion funcional.
+- Grafologia presenta ahora las guardas y errores GPT dentro del panel accesible
+  existente, sin dialogs bloqueantes. La regresion contractual conserva los dos
+  mensajes previos y exige que no vuelvan a `alert`.
 
 ## Resultado y limite
 

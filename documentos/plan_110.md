@@ -1161,7 +1161,8 @@ autoriza ni ejecuta despliegue productivo.
   catálogo confirmó que no se creó el producto.
 - Compras, Egresos e Ingresos bloquearon correctamente la IA sin adjunto. El
   inventario reproducible localizó 20 controles IA empresariales; Grafología
-  quedó inconclusa por timeout de interacción y no se contabiliza como aprobada.
+  quedó inconclusa por un `alert` bloqueante y no se contabiliza como aprobada
+  en staging. Se corrigió localmente para mostrar guardas y errores en su panel.
 - Se corrigió localmente el botón IA de Productos, que enviaba el mensaje al
   iframe en vez del shell superior, y se añadió timeout de 90 segundos con
   cancelación, reembolso de cuota y métricas separadas para soportes IA.

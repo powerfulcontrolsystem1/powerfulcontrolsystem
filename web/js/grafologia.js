@@ -473,12 +473,12 @@
 
   async function analyzeCurrentCanvasWithGPT55() {
     if (!empresaID || empresaID === "0") {
-      alert("No se detecto empresa_id para analizar con GPT-5.5.");
+      renderAIResult({ error: "No se detecto empresa_id para analizar con GPT-5.5." }, false);
       return;
     }
     var canvas = $("grafologiaCanvas");
     if (!state.image || !canvas) {
-      alert("Carga una imagen manuscrita antes de analizar con GPT-5.5.");
+      renderAIResult({ error: "Carga una imagen manuscrita antes de analizar con GPT-5.5." }, false);
       return;
     }
     renderAIResult(null, true);
@@ -505,7 +505,6 @@
       renderAIResult({
         error: err && err.message ? err.message : String(err || "No se pudo completar el analisis GPT-5.5.")
       }, false);
-      alert("No se pudo analizar con GPT-5.5: " + (err && err.message ? err.message : err));
     } finally {
       setLoading(false);
     }
