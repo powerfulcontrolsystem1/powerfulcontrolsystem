@@ -1,3 +1,8 @@
+2026-08-12
+- `documentos/evidencia_plan_110/P110-001/2026-08-12_migracion_vacia_y_upgrade_e308ca4b.md`:
+  evidencia saneada de migración vacía, drift de checksum y upgrade aislado de
+  una copia lógica de staging del candidato actual.
+
 2026-08-09
 - `deploy/docker-compose.staging-antivirus.yml`:
   overlay exclusivo de staging que incorpora ClamAV por digest, red interna,
@@ -13030,3 +13035,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-004/2026-08-12_regresion_roles_domotica_focalizada.md`:
   resultado saneado de pruebas de contratos de permisos, sesión y domótica sin
   efectos físicos ni mutaciones empresariales.
+- `documentos/evidencia_plan_110/P110-007/2026-08-12_cabeceras_hardening_y_acceso_anonimo.md`:
+  evidencia de acceso anónimo, cabeceras HTTPS, auditorías estáticas y hallazgos
+  de CSP/hardening que continúan abiertos.
+- `documentos/evidencia_plan_110/P110-009/2026-08-12_auditoria_observabilidad_y_compuerta.md`:
+  resultado de observabilidad, SLO y compuerta automática de staging, con sus
+  límites operativos explícitos.

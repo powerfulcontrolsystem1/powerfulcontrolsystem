@@ -918,6 +918,26 @@ autoriza ni ejecuta despliegue productivo.
   P110-007 permanece **parcial**; el avance formal
   continúa en **38,5 %**, certificación **0 %**, **NO-GO**.
 
+## Actualización 2026-08-12, controles de seguridad y observabilidad
+
+- Los contratos estáticos de cookies, sesión, CORS, scope empresarial, secretos
+  runtime, SLO y observabilidad aprobaron. En staging, las rutas empresariales
+  anónimas y un preflight externo devolvieron `401`; la compuerta automática
+  confirmó salud, paridad DIAN saneada y Alertmanager sin alertas activas.
+- Permanecen dos hallazgos verificables: la CSP contiene `unsafe-inline` y el
+  VPS no tiene `fail2ban` habilitado. No se modificó infraestructura para
+  ocultarlos. P110-007 y P110-009 continúan parciales; avance formal **38,5 %**,
+  certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, migración vacía y upgrade aislado
+
+- El migrador de `e308ca4b` aprobó base vacía, segunda pasada, checksum drift
+  fallido/corregido y upgrade de una copia lógica de staging sin cambiar el
+  número de tablas. La corrección quedó limitada al runner efímero, que ahora
+  monta almacenamiento privado obligatorio.
+- P110-001 se mantiene parcial por aceptación de ADR/rollback futuro; el
+  avance formal sigue en **38,5 %**, certificación **0 %**, **NO-GO**.
+
 ## Actualización 2026-08-12, CxP sobre el candidato actual
 
 - El esquema atómico `empresa_cxp_pagos` quedó comprobado en staging y las

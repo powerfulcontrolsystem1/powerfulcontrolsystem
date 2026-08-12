@@ -1,3 +1,13 @@
+2026-08-12: Plan 110 / migraciones aisladas del candidato e308ca4b.
+- La base vacía aprobó catálogo, segunda pasada, checksum drift con fallo
+  cerrado y recuperación. El upgrade de una copia lógica de staging aprobó dos
+  pasadas y mantuvo 352/59 tablas empresariales/superadministrador.
+- Se corrigió `vps-p108-upgrade-migration-drill.sh` para montar un directorio
+  privado temporal requerido por el candidato de producción y eliminarlo en
+  cleanup; no se modificó el almacenamiento activo.
+- Tras ambos drills no quedaron contenedores ni volúmenes efímeros y staging
+  mantuvo health/ready. P110-001 sigue parcial pendiente de aceptación humana.
+
 2026-08-09: Plan 109 / cuatro sesiones y cajas sobre el digest 349712fb.
 - Release inmutable `31334057174` publico cuatro digests y promovio solo
   staging; health, ready y login aprobaron y produccion conservo sus imagenes.
@@ -42055,3 +42065,13 @@ acumulativa.
 - La evidencia técnica conserva la distinción entre contratos de servidor y
   validación operativa: siguen requeridas identidades reales por rol, cuatro
   cajas y hardware registrado para certificar P110-004.
+
+2026-08-12: Plan 110 / controles dinámicos de acceso y hardening.
+- Las rutas empresariales anónimas y el preflight de origen externo de staging
+  rechazaron con 401; las cabeceras públicas verificadas incluyen HSTS,
+  nosniff, SAMEORIGIN y política de referente restrictiva.
+- Auditorías estáticas de seguridad, observabilidad y SLO aprobaron. La
+  compuerta automática de staging confirmó salud, paridad DIAN saneada y
+  Alertmanager sin alertas activas.
+- Se registraron sin corregir dos pendientes reales: CSP con `unsafe-inline` y
+  `fail2ban` no habilitado en VPS. P110-007/P110-009 siguen parciales y NO-GO.
