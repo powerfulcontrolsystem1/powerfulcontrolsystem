@@ -1033,3 +1033,9 @@ autoriza ni ejecuta despliegue productivo.
 - Doce pantallas adicionales aprobaron 24/24 vistas entre escritorio y móvil,
   incluidos carritos y domótica, sin mutaciones ni errores. P110-004 conserva
   estado parcial; el avance formal sigue en **38,5 %**, **NO-GO**.
+
+## Actualización 2026-08-12, tercer lote administrativo
+
+- El lote de IA, tareas, fiscal, cobranza y comisiones aprobó 24/24 vistas sin
+  errores ni mutaciones. P110-004 se mantiene parcial; avance formal **38,5 %**,
+  certificación **0 %**, **NO-GO**.
