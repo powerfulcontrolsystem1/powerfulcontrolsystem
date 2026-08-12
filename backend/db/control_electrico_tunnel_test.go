@@ -104,3 +104,20 @@ func TestEmpresaCatalogIncludesControlElectricoRestartCategoryMigration(t *testi
 	}
 	t.Fatal("falta la migracion versionada de reinicio y categoria de domotica")
 }
+
+func TestEmpresaCatalogIncludesControlElectricoActivationQueueMigration(t *testing.T) {
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version != "20260812-001-domotica-activation-queue-v1" {
+			continue
+		}
+		if migration.Body != empresaControlElectricoActivationQueueSchemaFingerprint || migration.Apply == nil {
+			t.Fatal("la migracion de cola de activacion debe ser inmutable y ejecutable")
+		}
+		return
+	}
+	t.Fatal("falta la migracion versionada de cola de activacion de domotica")
+}
