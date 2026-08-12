@@ -42181,3 +42181,7 @@ acumulativa.
   móvil sin errores ni mutaciones. El inventario inicial de CxP apuntaba a una
   pantalla inexistente; se corrigió a su integración real en Finanzas y se
   repitió el lote válido 8/8.
+2026-08-12: Plan 110 / barrido administrativo autenticado lote 000.
+- Doce pantallas administrativas aprobaron en escritorio y móvil (24/24) bajo
+  guardia de solo lectura. Los abortos del menú de productos fueron de
+  navegación interna; su página final cargó correctamente en ambos formatos.

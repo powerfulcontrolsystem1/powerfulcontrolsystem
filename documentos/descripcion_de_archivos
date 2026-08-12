@@ -13074,3 +13074,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_autenticado_critico_staging.md`:
   evidencia saneada del barrido autenticado de Finanzas/CxP, IA, DIAN y
   domótica en escritorio y móvil, con límites de acciones mutantes explícitos.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_administrativo_lote_000_staging.md`:
+  evidencia saneada del lote administrativo autenticado inicial, sus resultados
+  visuales y el análisis de abortos de navegación no funcionales.

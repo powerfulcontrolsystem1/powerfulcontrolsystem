@@ -1019,3 +1019,11 @@ autoriza ni ejecuta despliegue productivo.
 - El barrido omitió acciones de negocio por diseño. P110-004 no cierra hasta
   completar roles, cuatro cajas, hardware y evidencias humanas. El avance formal
   conserva **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, barrido administrativo autenticado
+
+- El lote inicial de 12 pantallas administrativas aprobó 24/24 vistas entre
+  escritorio y móvil. Los abortos de recursos del menú de productos ocurrieron
+  durante navegación interna y su pantalla final aprobó en ambos formatos.
+- Es cobertura visual segura, no validación mutante ni de roles. El avance
+  formal permanece **38,5 %**, certificación **0 %**, **NO-GO**.
