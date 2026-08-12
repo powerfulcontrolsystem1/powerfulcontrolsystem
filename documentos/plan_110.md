@@ -880,6 +880,12 @@ autoriza ni ejecuta despliegue productivo.
   inventario privado sin huérfanos y limpieza total con RTO observado de 119 s.
   Siguen pendientes la réplica autenticada, rollback coordinado y firma de
   objetivos RPO/RTO; no cambia el porcentaje formal.
+- El candidato actual `e308ca4b` repitió el restore con dos réplicas
+  autenticadas, transferencia A/B por SHA-256, negativos de archivos y rollback
+  coordinado de ambas bases más almacenamiento privado. El ensayo se limpió por
+  completo y observó 99 s de rollback y 226 s de RTO total. P110-008 conserva
+  estado parcial: faltan congelación final y aceptación humana de RPO/RTO; el
+  avance formal sigue en **38,5 %**, certificación **0 %**, **NO-GO**.
 - La recarga visual autenticada del Centro DIAN confirmó estado `aceptado` en
   habilitación y producción local sin activar. Esta confirmación no autoriza
   emisión fiscal productiva ni promoción.

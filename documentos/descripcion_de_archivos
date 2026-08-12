@@ -13018,3 +13018,8 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   web, calidad visual, integraciones, seguridad, restore, operación, ensayo,
   piloto y promoción productiva. Autoriza las pruebas reales PCS mediante la
   cuenta segura declarada en `AGENTS.md` sin duplicar credenciales en Git.
+2026-08-12
+- `documentos/evidencia_plan_110/P110-008/2026-08-12_restore_replicas_rollback_e308ca4b.md`:
+  evidencia saneada del restore aislado con dos réplicas autenticadas,
+  transferencia A/B, negativos de adjuntos y rollback coordinado sobre el
+  candidato actual del Plan 110.

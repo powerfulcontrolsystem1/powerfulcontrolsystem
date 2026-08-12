@@ -6,9 +6,11 @@ staging; revisión visual autenticada sobre PCS/staging.
 
 ## Impresión reproducible
 
-Se ejecutó `tools/qa_print_formats.cjs` usando Chrome instalado, sin instalar
-dependencias nuevas. Resultado: **20/20 OK**, cero casos a revisar y cero
-fallos de autoimpresión.
+Se repitió el 2026-08-12 `tools/qa_print_formats.cjs` usando Chrome instalado,
+sin instalar dependencias nuevas. Resultado: **20/20 OK**, cero casos a
+revisar y cero fallos de autoimpresión. La corrida dejó HTML, PDF y capturas
+reproducibles bajo `test_runs/qa_print_formats_2026-08-12T05-23-04/` (artefacto
+local no versionado).
 
 - Factura y recibo extensos Carta: seis páginas cada uno (cinco de detalle y
   una de resumen).
@@ -20,7 +22,9 @@ fallos de autoimpresión.
 
 La captura compuesta de la factura extensa fue revisada visualmente: conserva
 filas/columnas, encabezados de detalle repetidos, importes alineados, total
-separado y QR final sin recortes.
+separado y QR final sin recortes. La auditoría automática confirmó además seis
+páginas PDF, cinco páginas de detalle, una de resumen, 96 filas, cero imágenes
+rotas, cero errores de consola y ningún desbordamiento horizontal.
 
 ## Revisión visual móvil autenticada
 

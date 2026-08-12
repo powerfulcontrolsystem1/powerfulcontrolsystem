@@ -42027,3 +42027,13 @@ acumulativa.
 - La alerta P0 generada por la sonda EICAR se resolvió al vencer su ventana de
   evaluación; ClamAV, `/health` y `/ready` quedaron sanos. No se aplicaron
   silencios ni supresiones manuales.
+2026-08-12: Plan 110 / restore con réplica y rollback coordinado del candidato actual.
+- El drill aislado del candidato `e308ca4b` restauró snapshot, aplicó migrador
+  sin DDL y levantó dos APIs contra PostgreSQL y almacenamiento privado
+  efímeros; no modificó staging ni producción.
+- La carga autenticada A/B conservó SHA-256 tras retirar una réplica. Se
+  rechazaron empresa cruzada, HTML activo, exceso de tamaño y symlink; el
+  checkpoint de las dos bases y archivos se recuperó con login y cinco dominios
+  autenticados. La limpieza automática dejó cero recursos efímeros.
+- P110-008 continúa parcial: los RTO/RPO observados aún requieren aceptación
+  operativa y congelación del candidato final. El estado global sigue NO-GO.
