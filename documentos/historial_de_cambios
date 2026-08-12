@@ -42254,3 +42254,12 @@ acumulativa.
 - El inventario de funciones `Ensure*` usa orden ordinal determinista para que
   `--check` produzca el mismo resultado en Windows y Linux; la misma regla se
   aplica al inventario runtime y a la matriz de rutas multiempresa.
+2026-08-12: Plan 110 / recuperación real del correo corporativo PCS.
+- Se reconcilió la credencial cifrada del buzón empresarial con Mailu y el
+  autologin volvió a abrir la bandeja real dentro del panel de empresa.
+- Un correo real de soporte a PCS llegó a la bandeja y mostró visualmente el
+  logo oficial del computador dentro del mensaje.
+- Se corrigió el canal IMAP por defecto del contador de no leídos al puerto
+  interno de webmail y se expuso correctamente `mailu_api` en la pantalla super.
+- La entrega externa, DKIM observado externamente, registro, invitación, reset y
+  rebote permanecen pendientes; P110-006 conserva estado parcial.

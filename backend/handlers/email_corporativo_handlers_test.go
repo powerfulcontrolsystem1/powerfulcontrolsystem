@@ -173,6 +173,14 @@ func TestCorporateEmailParseStatusLineUnread(t *testing.T) {
 	}
 }
 
+func TestCorporateEmailIMAPAddressDefaultsToMailuWebmailPort(t *testing.T) {
+	t.Setenv("EMAIL_CORPORATIVO_IMAP_ADDR", "")
+	t.Setenv("MAILU_IMAP_ADDR", "")
+	if got := corporateEmailIMAPAddress(); got != "mailu-front:10143" {
+		t.Fatalf("direccion IMAP por defecto = %q; se esperaba canal interno de webmail", got)
+	}
+}
+
 func TestCorporateEmailSuperPageIncludesMaxAccountsField(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "super", "email_corporativo.html"))
 	if err != nil {
@@ -200,6 +208,8 @@ func TestCorporateEmailSuperPageIncludesBrandAvatarAndCSRF(t *testing.T) {
 	required := []string{
 		`src="/img/bimi-pcs.svg"`,
 		`src="/img/Logo pcs 1.png"`,
+		`<option value="mailu_api">Mailu API interna</option>`,
+		`? (apiProvisionEnabled ? "API interna" : "API incompleta")`,
 		`function readCSRFCookie()`,
 		`pcs_csrf`,
 		`headers.set("X-CSRF-Token", token)`,
