@@ -1,3 +1,10 @@
+2026-08-12: Plan 110 / deduplicación de Alertmanager en staging.
+- Dos publicaciones sintéticas de la misma alerta se consolidaron en una alerta
+  activa y la resolución la retiró por completo. No hubo datos empresariales ni
+  cambios de producción.
+- La entrega externa visible, guardia, carga mutante y simulacro integral
+  continúan pendientes; P110-009 no se cierra.
+
 2026-08-12: Plan 110 / candidato inmutable IA y repetición en staging.
 - El candidato `d3d21414` aprobó construcción, escaneo, SBOM y publicación por
   digest; staging se actualizó con esos digests y ClamAV fijado. Health y ready

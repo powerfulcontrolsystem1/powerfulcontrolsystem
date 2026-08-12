@@ -1,4 +1,7 @@
 2026-08-12
+- `documentos/evidencia_plan_110/P110-009/2026-08-12_alertmanager_deduplicacion_y_resolucion.md`:
+  evidencia saneada de alerta sintética duplicada, consolidación y resolución
+  observadas desde el API de Alertmanager en staging.
 - `documentos/evidencia_plan_110/P110-008/2026-08-12_candidato_d3d21414_staging.md`:
   cadena saneada del candidato inmutable, promoción exclusiva a staging y
   comprobación de salud posterior.
