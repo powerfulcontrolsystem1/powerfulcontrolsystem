@@ -1154,8 +1154,11 @@
         throw new Error(await res.text() || 'No se pudo guardar la configuracion de carrito.');
       }
       try {
-        if (window.parent && window.parent !== window) {
-          window.parent.postMessage({
+        const navigationMessageTarget = window.top && window.top !== window
+          ? window.top
+          : window.parent;
+        if (navigationMessageTarget && navigationMessageTarget !== window) {
+          navigationMessageTarget.postMessage({
             type: 'pcs-station-entry-navigation-updated',
             empresa_id: String(empresaId)
           }, window.location.origin);
