@@ -12987,6 +12987,13 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-008/2026-08-12_restore_aislado_1a6dc4fa.md`:
   registra el restore efímero del candidato actual, su inventario privado,
   mediciones observadas y limpieza posterior.
+- `deploy/monitoring/alertmanager.yml.tmpl`: plantilla sin secretos para la
+  entrega opcional de Alertmanager por Mailu interno.
+- `deploy/monitoring/alertmanager.runtime.yml`: configuración privada generada
+  solo en el VPS desde `.env.monitoring`; se excluye de Git.
+- `documentos/evidencia_plan_110/P110-009/2026-08-12_alertmanager_mailu_entrega_controlada.md`:
+  evidencia saneada del canal privado Mailu, del disparo sintético controlado y
+  de su resolución, con los límites aún necesarios para certificar alertas.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.

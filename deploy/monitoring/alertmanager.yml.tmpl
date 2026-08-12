@@ -1,0 +1,14 @@
+global:
+  resolve_timeout: 5m
+__SMTP_GLOBAL__
+
+route:
+  receiver: __PRIMARY_RECEIVER__
+  group_by: [alertname, service, job]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: observabilidad-interna
+__EMAIL_RECEIVER__

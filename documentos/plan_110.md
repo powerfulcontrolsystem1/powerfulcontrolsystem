@@ -883,3 +883,16 @@ autoriza ni ejecuta despliegue productivo.
 - La recarga visual autenticada del Centro DIAN confirmó estado `aceptado` en
   habilitación y producción local sin activar. Esta confirmación no autoriza
   emisión fiscal productiva ni promoción.
+
+## Actualización 2026-08-12, entrega externa de Alertmanager
+
+- Alertmanager usa ahora un relay Mailu interno mediante plantilla versionada y
+  configuración privada generada en el VPS. Se corrigió el permiso de lectura
+  del runtime y el despliegue espera su endpoint de salud antes de finalizar.
+- Un único aviso sintético autorizado fue aceptado por el relay externo y su
+  alerta se resolvió y desapareció del API. Falta la confirmación visual de
+  recepción/resolución, deduplicación y la guardia operativa; P110-009 queda
+  **parcial**. La evidencia no sustituye pruebas de cajas, UAT contable,
+  impresión física, réplica/rollback ni piloto.
+- El avance formal se mantiene en **38,5 %**, la certificación en **0 %** y el
+  veredicto es **NO-GO**.

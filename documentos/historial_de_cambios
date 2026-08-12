@@ -41985,3 +41985,14 @@ acumulativa.
 - Tras la reconsulta, el Centro DIAN de PCS mostró ambiente de habilitación,
   estado aceptado y producción local sin activar. No se emitieron documentos
   adicionales ni se modificó producción.
+2026-08-12: Plan 110 / canal Mailu para Alertmanager.
+- El monitoreo ahora genera una configuración privada de Alertmanager desde una
+  plantilla versionada y el entorno privado del VPS. Cuando se habilita, valida
+  remitente/destino, usa SMTP interno de Mailu y solicita su red privada sin
+  publicar puertos ni versionar destinatarios.
+2026-08-12: Plan 110 / simulacro de entrega de Alertmanager.
+- Se corrigieron los permisos de lectura del archivo runtime y la espera de
+  disponibilidad del script de monitoreo. Alertmanager quedó sano, validó su
+  configuración y entregó una alerta sintética única mediante Mailu con acuse
+  SMTP remoto, seguida de su resolución. No se afectaron datos de PCS, DIAN ni
+  producción; aún falta confirmar recepción/resolve y deduplicación operativa.
