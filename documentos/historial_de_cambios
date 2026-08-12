@@ -42223,3 +42223,5 @@ acumulativa.
 - `rs` se detuvo cerrado antes de sincronizar porque la rama P110 no es `main`.
 - Se regeneraron los inventarios `Ensure*`, runtime y de rutas multiempresa;
   únicamente cambiaron referencias de línea y los tres validadores aprobaron.
+- La repetición de `rs` aprobó preflight completo y se detuvo cerrado antes de
+  sincronizar por no estar la rama P110 integrada en `main`.

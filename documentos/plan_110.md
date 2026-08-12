@@ -1100,3 +1100,7 @@ autoriza ni ejecuta despliegue productivo.
   aprobaron 155 funciones `Ensure*`, 204 rutas multiempresa y 106 llamadas
   runtime; los cambios solo actualizan referencias de línea. El avance formal
   sigue en **38,5 %**, certificación **0 %**, **NO-GO**.
+- La repetición de `rs` aprobó todas sus auditorías y volvió a detenerse antes
+  de sincronizar por la protección de rama: `codex/p110-execution` no es
+  `main`. No es un fallo de staging ni autoriza desplegar sin integración
+  aprobada.
