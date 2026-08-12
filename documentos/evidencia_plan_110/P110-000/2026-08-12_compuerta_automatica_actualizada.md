@@ -10,7 +10,8 @@ modificó producción.
 
 Alertmanager mantenía una alerta activa `PCSAntivirusSoportesDetectoMalware`,
 esperada por la sonda EICAR controlada; ClamAV y staging ya estaban saludables.
-La alerta queda en ventana temporal de Prometheus y no se suprime manualmente.
+La alerta se resolvió de forma natural al vencer la ventana de Prometheus; no
+se suprimió ni silenció manualmente.
 
 La aprobación automática no equivale a GO: siguen pendientes roles/cajas,
 UAT, impresión física, restore/rollback integral y piloto.

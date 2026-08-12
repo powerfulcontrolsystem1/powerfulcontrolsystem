@@ -42023,3 +42023,7 @@ acumulativa.
   en staging. Una carga autenticada de 300 GET con concurrencia 15 tuvo cero
   errores, p95 de 907 ms y p99 de 1890 ms, sin mutaciones de negocio. Persisten
   las pruebas de cajas, SLO integral, incidentes y aceptación humana.
+2026-08-12: Plan 110 / resolución natural de alerta antivirus.
+- La alerta P0 generada por la sonda EICAR se resolvió al vencer su ventana de
+  evaluación; ClamAV, `/health` y `/ready` quedaron sanos. No se aplicaron
+  silencios ni supresiones manuales.
