@@ -12955,6 +12955,14 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   salud, paridad DIAN y entrega de Alertmanager para candidatos P110.
 - `documentos/evidencia_plan_110/P110-000/2026-08-11_compuerta_preproduccion_integrada.md`:
   registra el NO-GO automático del VPS y las condiciones verificadas.
+- `documentos/evidencia_plan_110/P110-009/2026-08-12_carga_autenticada_readonly.md`:
+  conserva la carga GET autenticada de PCS/staging y sus límites operativos.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_visual_critico_y_domotica.md`:
+  documenta el barrido visual limpio de superficies críticas y contratos de
+  domótica, sin presentar como validados los relés físicos.
+- `documentos/evidencia_plan_110/P110-006/2026-08-12_dns_mailu_y_bimi.md`:
+  conserva la comprobación de DNS y Mailu, distinguiendo el logo del cuerpo del
+  avatar externo que requiere certificado BIMI.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.

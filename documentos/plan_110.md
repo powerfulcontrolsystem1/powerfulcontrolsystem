@@ -827,3 +827,24 @@ autoriza ni ejecuta despliegue productivo.
 - P110-005 pasa a **parcial**; restan documentos reales, tableta, lector/zoom
   e impresión física. El avance formal sube a **26,9 %** (siete fases parciales
   de 13), certificación **0 %** y veredicto **NO-GO**.
+
+## Actualización 2026-08-12, carga y barrido crítico
+
+- La carga autenticada de lectura de PCS/staging aprobó con 240 solicitudes,
+  concurrencia 12, p95 306 ms, p99 674 ms y cero errores. El barrido crítico
+  web aprobó 10/10 vistas entre escritorio/móvil, y los contratos de domótica
+  aprobaron sin ejecutar pulsos físicos.
+- P110-004 y P110-009 pasan a **parcial**. Permanecen pendientes las acciones
+  mutantes por rol, cuatro cajas, hardware GPIO, alerta externa y simulacro.
+  El avance formal sube a **34,6 %** (nueve fases parciales de 13),
+  certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, correo corporativo
+
+- SPF, DKIM y DMARC de correo corporativo están publicados y Mailu está activo.
+  BIMI conserva el logo, pero sin VMC/CMC no garantiza el avatar externo del
+  remitente. No se enviaron correos durante esta comprobación.
+- P110-006 pasa a **parcial** por la evidencia de correo y la validación de
+  firma del principal. Sigue bloqueada la emisión DIAN en staging y faltan los
+  flujos reales de entrega. El avance formal sube a **38,5 %** (diez fases
+  parciales de 13), certificación **0 %**, **NO-GO**.

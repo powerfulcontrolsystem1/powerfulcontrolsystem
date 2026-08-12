@@ -41926,3 +41926,16 @@ acumulativa.
   paridad DIAN exigida y entrega externa de Alertmanager. La ejecución VPS
   terminó en NO-GO controlado por los dos bloqueos reales, sin tocar servicios,
   secretos ni documentos fiscales.
+2026-08-12: Plan 110 / carga autenticada y barrido crítico web.
+- La carga GET autenticada de 240 solicitudes sobre PCS/staging aprobó con p95
+  306 ms, p99 674 ms y cero errores. P110-009 queda parcial hasta completar
+  carga mutante de cajas, alerta externa y simulacro.
+- El barrido crítico de cinco superficies en escritorio/móvil aprobó 10/10
+  vistas, inventarió 610 botones y no ejecutó mutaciones. Los contratos de
+  domótica aprobaron; P110-004 queda parcial por roles/efectos reales y GPIO
+  físico supervisado. Producción no cambió.
+2026-08-12: Plan 110 / verificación DNS y Mailu corporativo.
+- SPF, DKIM y DMARC públicos se encontraron publicados, y los ocho contenedores
+  Mailu estaban activos. BIMI tiene logo pero no VMC/CMC, por lo que no garantiza
+  avatar externo. P110-006 pasa a parcial; continúan pendientes entrega real,
+  certificado BIMI comercial y evidencia fiscal DIAN desde staging.
