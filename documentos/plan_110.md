@@ -908,3 +908,12 @@ autoriza ni ejecuta despliegue productivo.
   antes de enviarla. Se mantiene pendiente el rechazo HTTP EICAR, recuperación,
   concurrencia y alertas P0. P110-007 permanece **parcial**; el avance formal
   continúa en **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, CxP sobre el candidato actual
+
+- El esquema atómico `empresa_cxp_pagos` quedó comprobado en staging y las
+  pruebas focalizadas aprobaron la idempotencia, bloqueo por empresa,
+  reconciliación solo lectura y protección de la tabla histórica.
+- No se infiere cierre financiero: siguen pendientes conciliación independiente,
+  recuperación elegible y UAT firmado del contador. El avance formal permanece
+  en **38,5 %**, certificación **0 %**, **NO-GO**.

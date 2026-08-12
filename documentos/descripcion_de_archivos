@@ -12997,6 +12997,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_fail_closed_clamav_staging.md`:
   hallazgo, corrección y prueba visual del fail-closed de ClamAV en staging,
   incluyendo el límite pendiente de rechazo EICAR por el endpoint HTTP real.
+- `documentos/evidencia_plan_110/P110-001/2026-08-12_invariantes_cxp_candidato_e308ca4b.md`:
+  comprobación saneada del esquema y las invariantes CxP sobre el candidato de
+  staging, sin sustituir la conciliación ni la aprobación contable humana.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.

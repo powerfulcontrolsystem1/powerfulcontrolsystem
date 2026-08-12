@@ -42002,3 +42002,8 @@ acumulativa.
   inmutable con el overlay antivirus y se comprobó visualmente que una carga
   limpia se rechaza con 503 cuando ClamAV está detenido; el servicio fue
   restaurado inmediatamente. El rechazo EICAR HTTP final sigue pendiente.
+2026-08-12: Plan 110 / invariantes CxP del candidato actual.
+- El esquema atómico de pagos CxP quedó presente en staging y las pruebas
+  focalizadas de ledger, idempotencia, tenant, reconciliación solo lectura y
+  bloqueo histórico aprobaron. La conciliación y UAT contable permanecen como
+  compuertas humanas independientes.
