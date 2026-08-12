@@ -1,4 +1,7 @@
 2026-08-12
+- `documentos/evidencia_plan_110/P110-008/2026-08-12_candidato_d3d21414_staging.md`:
+  cadena saneada del candidato inmutable, promoción exclusiva a staging y
+  comprobación de salud posterior.
 - `backend/handlers/empresa_ia_empresarial_test.go`:
   regresión de los IDs canónicos y del fallback seguro del selector de acciones
   del Centro IA empresarial.

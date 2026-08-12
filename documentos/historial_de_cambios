@@ -1,3 +1,13 @@
+2026-08-12: Plan 110 / candidato inmutable IA y repetición en staging.
+- El candidato `d3d21414` aprobó construcción, escaneo, SBOM y publicación por
+  digest; staging se actualizó con esos digests y ClamAV fijado. Health y ready
+  aprobaron, sin promoción a producción.
+- La repetición visual autenticada validó Compras y gastos IA y Cumplimiento
+  DIAN como recomendaciones no mutantes. Con ello se confirmó la corrección del
+  selector canónico. Se completó además la cobertura visible de las siete
+  funciones del catálogo, sin confirmar borradores ni ejecutar mutaciones; aun
+  así P110-003 y P110-008 continúan parciales por roles y fallos de proveedor.
+
 2026-08-12: Plan 110 / corrección de selector de funciones Centro IA.
 - Se corrigió la normalización de IDs canónicos del catálogo IA: compras,
   cumplimiento, cobranza e inventario ya no retroceden silenciosamente a
