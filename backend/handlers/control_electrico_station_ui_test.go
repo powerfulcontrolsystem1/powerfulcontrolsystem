@@ -43,6 +43,44 @@ func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
 	}
 }
 
+func TestDomoticaStationEntryPreferenceKeepsCartDefaultAndRedirectsCompanyMenu(t *testing.T) {
+	files := map[string][]string{
+		filepath.Join("..", "..", "web", "administrar_empresa", "configuracion_carrito_de_compra_empresa.html"): {
+			"carritoCfgAbrirDomoticaEstaciones",
+			"abrir_domotica_al_entrar_estacion: false",
+			"Abrir equipos electronicos al entrar a una estacion o a Venta directa",
+			"pcs-station-entry-navigation-updated",
+		},
+		filepath.Join("..", "..", "web", "administrar_empresa", "estaciones.html"): {
+			"function openStationOperationalDestination",
+			"openStationDomotica(stationID, stationName)",
+			"openStationOperationalDestination(stationID, stationName)",
+		},
+		filepath.Join("..", "..", "web", "administrar_empresa", "configuracion_de_estaciones.html"): {
+			"nextConfig.abrir_domotica_al_entrar_estacion = !!prev.abrir_domotica_al_entrar_estacion",
+		},
+		filepath.Join("..", "..", "web", "js", "administrar_empresa.js"): {
+			"stationEntryDomoticaEnabled",
+			"link.id === \"linkVentaDirecta\"",
+			"target.pathname = \"/administrar_empresa/carrito_control_electrico.html\"",
+			"target.searchParams.set(\"vista\", \"todas\")",
+			"function refreshDirectSaleDestination",
+		},
+	}
+	for path, markers := range files {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		source := string(content)
+		for _, marker := range markers {
+			if !strings.Contains(source, marker) {
+				t.Fatalf("%s no contiene %q", path, marker)
+			}
+		}
+	}
+}
+
 func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.T) {
 	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "carrito_control_electrico.html"))
 	if err != nil {
@@ -108,6 +146,8 @@ func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 		}
 	}
 	for _, marker := range []string{"activationDelaySeconds", "activation_delay_seconds", "Cola única por empresa"} {
-		if !strings.Contains(source, marker) { t.Fatalf("la configuracion no contiene %q", marker) }
+		if !strings.Contains(source, marker) {
+			t.Fatalf("la configuracion no contiene %q", marker)
+		}
 	}
 }

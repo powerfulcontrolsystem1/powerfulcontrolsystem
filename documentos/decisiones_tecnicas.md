@@ -130,6 +130,12 @@ trazabilidad en `documentos/historial_de_cambios`.
   cambios operativos.
 - Venta directa y estaciones deben compartir el mismo carrito unificado y las
   mismas reglas de configuracion.
+- El destino predeterminado de estaciones y `Venta directa` sigue siendo el
+  carrito unificado. Una empresa dedicada solo a Domotica puede activar
+  `estaciones_config.carrito_ui_global.abrir_domotica_al_entrar_estacion`; la
+  ruta de una estacion conserva su `estacion_id` y `Venta directa` abre la vista
+  consolidada. La preferencia no concede permisos, no desactiva facturacion y
+  nunca se comparte entre empresas.
 - Venta directa debe permitir abrir y salir de pantalla completa desde el propio
   carrito. Cuando se abre dentro del panel empresarial, el iframe principal debe
   permitir `fullscreen`.

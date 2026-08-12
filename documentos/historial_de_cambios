@@ -42274,3 +42274,18 @@ acumulativa.
   tuvo cero errores, pero p95 de 7.749 ms y queda como señal de saturación.
 - La venta directa del cajero aprobó visualmente en 390 x 844 sin overflow; no
   se generaron ventas ni documentos fiscales en esta fase.
+
+2026-08-12: Plan 110 / acceso directo opcional a equipos de Domotica.
+- Configuracion carrito agrega un check global por empresa, desactivado por
+  defecto, para abrir equipos electronicos al pulsar una estacion o habitacion.
+- Con el check activo, el enlace empresarial `Venta directa` abre la vista
+  consolidada de equipos; al desactivarlo recupera el carrito POS original sin
+  recargar el shell administrativo.
+- Persistencia: se reutiliza
+  `empresa_estacion_prefs.estaciones_config.carrito_ui_global.abrir_domotica_al_entrar_estacion`;
+  no se agregan tablas, endpoints, dependencias ni credenciales.
+- Seguridad: la empresa se deriva del contexto autenticado de
+  `/api/empresa/estacion_prefs`; las rutas de Domotica conservan permisos y el
+  filtro por `empresa_id` existentes.
+- QA local: prueba contractual Go del frontend, parseo de scripts inline con
+  Node empaquetado, `node --check` y `git diff --check`.

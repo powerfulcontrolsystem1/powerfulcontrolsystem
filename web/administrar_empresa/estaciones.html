@@ -107,7 +107,8 @@
         marcar_sucia_al_pagar: true,
         solo_activar_primer_clic: false,
         abrir_carrito_al_activar: true,
-        mostrar_boton_domotica: true
+        mostrar_boton_domotica: true,
+        abrir_domotica_al_entrar_estacion: false
       },
       dirtyByEstacion: {},
       camaras: [],
@@ -298,7 +299,8 @@
           mostrar_propina: false,
           mostrar_comision: false,
           permitir_pago_mixto: true,
-          mostrar_resumen_productos: true
+          mostrar_resumen_productos: true,
+          abrir_domotica_al_entrar_estacion: false
         };
       }
 
@@ -324,7 +326,8 @@
           mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : toBool(src.mostrar_propina),
           mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : toBool(src.mostrar_comision),
           permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : toBool(src.permitir_pago_mixto),
-          mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : toBool(src.mostrar_resumen_productos)
+          mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : toBool(src.mostrar_resumen_productos),
+          abrir_domotica_al_entrar_estacion: src.abrir_domotica_al_entrar_estacion === undefined ? base.abrir_domotica_al_entrar_estacion : toBool(src.abrir_domotica_al_entrar_estacion)
         });
       }
 
@@ -681,6 +684,7 @@
         if (!parsed) return null;
         const normalized = normalizeConfig(parsed);
         const ui = normalized.station_card_ui && typeof normalized.station_card_ui === 'object' ? normalized.station_card_ui : {};
+        const carritoUI = normalized.carrito_ui_global && typeof normalized.carrito_ui_global === 'object' ? normalized.carrito_ui_global : {};
         state.stationCardUI = Object.assign({}, state.stationCardUI, {
           mostrar_cliente_nombre: ui.mostrar_cliente_nombre === undefined ? true : !!ui.mostrar_cliente_nombre,
           mostrar_tarifa_resumen: ui.mostrar_tarifa_resumen === undefined ? true : !!ui.mostrar_tarifa_resumen,
@@ -689,7 +693,8 @@
           marcar_sucia_al_pagar: ui.marcar_sucia_al_pagar === undefined ? true : !!ui.marcar_sucia_al_pagar,
           solo_activar_primer_clic: ui.solo_activar_primer_clic === undefined ? ui.abrir_carrito_al_activar === false : !!ui.solo_activar_primer_clic,
           abrir_carrito_al_activar: ui.abrir_carrito_al_activar === undefined ? ui.solo_activar_primer_clic !== true : !!ui.abrir_carrito_al_activar,
-          mostrar_boton_domotica: ui.mostrar_boton_domotica === undefined ? true : !!ui.mostrar_boton_domotica
+          mostrar_boton_domotica: ui.mostrar_boton_domotica === undefined ? true : !!ui.mostrar_boton_domotica,
+          abrir_domotica_al_entrar_estacion: carritoUI.abrir_domotica_al_entrar_estacion === undefined ? false : !!carritoUI.abrir_domotica_al_entrar_estacion
         });
 
         state.dirtyByEstacion = {};
@@ -1009,14 +1014,23 @@
     }
 
     function openStationDomotica(stationID, stationName) {
-      if (!empresaId || Number(stationID || 0) <= 0) return;
+      const targetID = Number(stationID || 0);
+      if (!empresaId || targetID <= 0) return;
       const params = new URLSearchParams();
       params.set('empresa_id', String(empresaId));
-      params.set('estacion_id', String(stationID));
-      params.set('estacion_nombre', String(stationName || stationDefaultName(stationID, stationConfig || {})));
+      params.set('estacion_id', String(targetID));
+      params.set('estacion_nombre', String(stationName || stationDefaultName(targetID, stationConfig || {})));
       params.set('source', 'estaciones');
       params.set('return_to', 'estaciones');
       window.location.href = '/administrar_empresa/carrito_control_electrico.html?' + params.toString();
+    }
+
+    function openStationOperationalDestination(stationID, stationName) {
+      if (state.stationCardUI && state.stationCardUI.abrir_domotica_al_entrar_estacion) {
+        openStationDomotica(stationID, stationName);
+        return;
+      }
+      openStationCarrito(stationID, stationName, false);
     }
     function openCajaClosePage(stationName, cajaCodigo, cajaDescripcion) {
       if (!empresaId) return;
@@ -1480,8 +1494,13 @@
         return;
       }
 
+      if (state.stationCardUI && state.stationCardUI.abrir_domotica_al_entrar_estacion) {
+        openStationOperationalDestination(stationID, stationName);
+        return;
+      }
+
       if (shouldOpenCartWhenStationClicked(stationID)) {
-        openStationCarrito(stationID, stationName);
+        openStationOperationalDestination(stationID, stationName);
         return;
       }
 

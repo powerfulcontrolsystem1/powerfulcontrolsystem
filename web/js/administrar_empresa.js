@@ -129,6 +129,7 @@ try {
   var enterpriseAIVisibleLinks = {};
   var enterpriseMenuVisualConfig = { hiddenLinks: {} };
   var cashierAutoDirectSaleEnabled = false;
+  var stationEntryDomoticaEnabled = false;
   var adminPageURLsConfig = { enabled: false };
   var lastPermissionContext = null;
   var lastPermissionRole = "";
@@ -2097,6 +2098,9 @@ try {
     }
     var effectiveRole = normalizePermissionRole((lastPermissionContext && (lastPermissionContext.rol_efectivo || lastPermissionContext.rol || lastPermissionContext.role)) || lastPermissionRole || "");
     if (cashierAutoDirectSaleEnabled && effectiveRole === "cajero" && empresaId) {
+      if (stationEntryDomoticaEnabled) {
+        return "/administrar_empresa/carrito_control_electrico.html?empresa_id=" + encodeURIComponent(empresaId) + "&vista=todas&source=admin&return_to=admin";
+      }
       return "/administrar_empresa/carrito_de_compras.html?empresa_id=" + encodeURIComponent(empresaId) + "&modo=venta_directa&perm_page=linkVentaDirecta";
     }
     var preferred = preferredStartupFrameSrc(empresaId);
@@ -2131,6 +2135,7 @@ try {
 
   function fetchCashierAutoDirectSalePreference(empresaId) {
     cashierAutoDirectSaleEnabled = false;
+    stationEntryDomoticaEnabled = false;
     if (!empresaId) return Promise.resolve(false);
     return fetch("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
       .then(function (resp) {
@@ -2146,10 +2151,13 @@ try {
         var parsed = null;
         try { parsed = JSON.parse(pref.valor); } catch (e) { parsed = null; }
         cashierAutoDirectSaleEnabled = !!(parsed && parsed.cajero_auto_venta_directa);
+        var cartUI = parsed && parsed.carrito_ui_global && typeof parsed.carrito_ui_global === "object" ? parsed.carrito_ui_global : {};
+        stationEntryDomoticaEnabled = !!cartUI.abrir_domotica_al_entrar_estacion;
         return cashierAutoDirectSaleEnabled;
       })
       .catch(function () {
         cashierAutoDirectSaleEnabled = false;
+        stationEntryDomoticaEnabled = false;
         return false;
       });
   }
@@ -2157,11 +2165,22 @@ try {
   function setLinksWithEmpresa(empresaId) {
     frameLinks.forEach(function (link) {
       if (!link) return;
-      var href = link.getAttribute("href");
+      var href = link.getAttribute("data-pcs-base-href") || link.getAttribute("href");
       if (!href) return;
+      if (!link.getAttribute("data-pcs-base-href")) {
+        link.setAttribute("data-pcs-base-href", href);
+      }
       var target = new URL(href, window.location.origin);
       if (empresaId) {
         target.searchParams.set("empresa_id", empresaId);
+      }
+      if (link.id === "linkVentaDirecta" && stationEntryDomoticaEnabled) {
+        target.pathname = "/administrar_empresa/carrito_control_electrico.html";
+        target.search = "";
+        target.searchParams.set("empresa_id", empresaId);
+        target.searchParams.set("vista", "todas");
+        target.searchParams.set("source", "admin");
+        target.searchParams.set("return_to", "admin");
       }
       link.setAttribute("href", target.pathname + target.search);
 
@@ -2179,6 +2198,23 @@ try {
         syncBrowserURLWithFrame(linkHref, empresaId, false);
       });
     });
+  }
+
+  function refreshDirectSaleDestination(empresaId) {
+    var link = document.getElementById("linkVentaDirecta");
+    if (!link) return;
+    var href = link.getAttribute("data-pcs-base-href") || "/administrar_empresa/carrito_de_compras.html?modo=venta_directa&perm_page=linkVentaDirecta";
+    var target = new URL(href, window.location.origin);
+    if (empresaId) target.searchParams.set("empresa_id", empresaId);
+    if (stationEntryDomoticaEnabled) {
+      target.pathname = "/administrar_empresa/carrito_control_electrico.html";
+      target.search = "";
+      target.searchParams.set("empresa_id", empresaId);
+      target.searchParams.set("vista", "todas");
+      target.searchParams.set("source", "admin");
+      target.searchParams.set("return_to", "admin");
+    }
+    link.setAttribute("href", target.pathname + target.search);
   }
 
   function redirectToAdminLogin() {
@@ -2300,6 +2336,13 @@ try {
   window.addEventListener("message", function (event) {
     if (event.origin !== window.location.origin) return;
     var data = event.data || {};
+    if (data && data.type === "pcs-station-entry-navigation-updated") {
+      if (String(data.empresa_id || "") && String(data.empresa_id || "") !== String(id || "")) return;
+      fetchCashierAutoDirectSalePreference(id).then(function () {
+        refreshDirectSaleDestination(id);
+      });
+      return;
+    }
     if (!data || data.type !== "pcs-menu-visual-config-updated") return;
     if (String(data.empresa_id || "") && String(data.empresa_id || "") !== String(id || "")) return;
     fetchEmpresaMenuVisualConfig(id).then(function () {

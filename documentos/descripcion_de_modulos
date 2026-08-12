@@ -4796,3 +4796,13 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - Super administrador incorpora transferencia diaria/acumulada por dispositivo.
 - Seguridad: tokens solo como SHA-256, empresa derivada del dispositivo y
   regeneracion del instalador revoca el token anterior.
+
+2026-08-12: Domotica como destino operativo de estaciones
+- Configuracion carrito incorpora el check empresarial `Abrir equipos
+  electronicos al entrar a una estacion o a Venta directa`.
+- Desactivado, conserva el carrito y la facturacion como destino predeterminado.
+  Activado, cada estacion/habitacion abre su pagina de equipos y Venta directa
+  abre la consola consolidada de Domotica.
+- La preferencia se persiste en
+  `empresa_estacion_prefs.estaciones_config.carrito_ui_global`, se aplica por
+  `empresa_id` y reutiliza las rutas y permisos existentes de `control_electrico`.
