@@ -1,3 +1,11 @@
+2026-08-12: Plan 110 / revisión visual autenticada de finanzas, DIAN y domótica.
+- Finanzas mostró conciliación visible sin pendientes ni descuadres en los
+  períodos cargados; Domótica confirmó estado seguro sin Raspberry ni aparatos.
+  No se ejecutaron acciones de caja, cartera, relé ni túnel.
+- El Centro DIAN mantuvo habilitación y emisión local desactivada; no se emitió,
+  anuló ni reintentó documento fiscal. Los límites físicos, fiscales y de roles
+  conservan P110 parcial y NO-GO.
+
 2026-08-12: Plan 110 / réplica autenticada y rollback del candidato d3d21414.
 - El restore efímero con la cuenta QA aprobó dos réplicas, cinco dominios
   autenticados, negativos de archivos, rollback coordinado de datos/privados y

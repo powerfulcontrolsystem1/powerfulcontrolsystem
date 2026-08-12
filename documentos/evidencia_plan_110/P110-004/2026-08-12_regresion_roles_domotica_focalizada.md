@@ -26,3 +26,17 @@ rol ni una prueba física de relés.
 P110-004 sigue parcial hasta ejecutar la matriz mutante con identidades y
 cajas reales del candidato final; la validación GPIO requiere hardware PCS
 registrado y supervisión humana.
+
+## Revisión visual autenticada posterior
+
+En PCS/staging se actualizaron desde la interfaz las vistas de Finanzas y
+Domótica, sin acciones mutantes. Finanzas mostró tablas de movimientos y
+conciliación por período con dos períodos conciliados, cero pendientes, cero
+errores y desfase monetario cero en la vista actual. Los controles de cartera,
+extractos, exportación, procesamiento y estados quedaron visibles y etiquetados.
+
+Domótica confirmó el contexto de empresa, módulo activo y estado seguro sin
+hardware: cero Raspberry activas, cero estaciones, cero aparatos, consumo 0 W y
+sin último evento. No se pulsaron agenda, sincronización de túnel ni relés.
+Esto confirma que no se puede declarar validación GPIO física hasta registrar y
+supervisar hardware real.

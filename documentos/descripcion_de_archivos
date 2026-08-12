@@ -1,4 +1,7 @@
 2026-08-12
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_regresion_roles_domotica_focalizada.md`:
+  incorpora revisión visual autenticada de conciliación financiera y estado
+  seguro de Domótica sin hardware ni pulsos.
 - `documentos/evidencia_plan_110/P110-009/2026-08-12_alertmanager_deduplicacion_y_resolucion.md`:
   evidencia saneada de alerta sintética duplicada, consolidación y resolución
   observadas desde el API de Alertmanager en staging.

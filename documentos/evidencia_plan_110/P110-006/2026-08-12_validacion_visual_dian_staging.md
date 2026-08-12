@@ -21,3 +21,9 @@ La pantalla confirma la preparación y la interacción no emisora, pero no
 sustituye el acuse externo de DIAN. P110-006 continúa parcial y la promoción
 permanece en NO-GO hasta ejecutar el set oficial controlado, conservar los
 acuse(s) y completar los demás gates del plan.
+
+Una revisión posterior del centro de pruebas mantuvo el ambiente de habilitación
+y la emisión local desactivada. Se inspeccionó la trazabilidad histórica y los
+controles visibles sin pulsar emisión, cola, anulación ni producción. El estado
+histórico mostrado por la interfaz no se interpreta como un nuevo acuse fiscal;
+la evidencia de proveedor permanece la ya registrada y el bloqueo no cambia.
