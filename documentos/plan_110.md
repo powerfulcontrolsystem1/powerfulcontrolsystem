@@ -869,3 +869,6 @@ autoriza ni ejecuta despliegue productivo.
   set estaba aceptado. Se corrigió en el candidato una clasificación transitoria
   de esa respuesta positiva; hasta desplegarla y reconciliar los artefactos no
   cambia el avance ni el veredicto.
+- Las regresiones separadas de permisos, tenant, CxP, IA, firma DIAN y correo
+  aprobaron. Son evidencia técnica de servidor, no sustituyen usuarios reales
+  por rol ni elevan el porcentaje formal.

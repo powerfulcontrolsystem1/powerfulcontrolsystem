@@ -41962,3 +41962,8 @@ acumulativa.
   aceptado aun si `IsValid=false`, evitando registrar un rechazo inexistente.
   La regresión focalizada aprobó antes de un bloqueo de limpieza temporal de
   Windows posterior a las aserciones.
+2026-08-12: Plan 110 / regresiones focalizadas de aislamiento y permisos.
+- Aprobaron los conjuntos separados de manipulación de empresa, límites de rol,
+  CxP idempotente, IA aislada, impresoras empresariales, firma DIAN y correo
+  saneado. La ejecución amplia se mantuvo como inconclusa por tiempo y no se
+  utilizó para afirmar cobertura adicional.

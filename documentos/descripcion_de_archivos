@@ -12978,6 +12978,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-006/2026-08-12_envio_unico_habilitacion_y_clasificacion.md`:
   conserva el único envío DIAN de habilitación, su acuse oficial y el ajuste de
   clasificación que evita mostrarlo como rechazo fiscal.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_regresion_permisos_tenant_cxp_ia.md`:
+  conserva las regresiones deterministas de aislamiento por empresa, rol, CxP,
+  IA, firma y correo, sin sustituir la matriz operacional autenticada pendiente.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.
