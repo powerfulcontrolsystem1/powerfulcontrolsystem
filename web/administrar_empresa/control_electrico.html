@@ -596,6 +596,11 @@
               <label class="form-label" for="timeoutMs">Timeout ms</label>
               <input id="timeoutMs" class="form-input" type="number" min="500" max="15000" step="100" value="2500">
             </div>
+            <div class="form-col">
+              <label class="form-label" for="activationDelaySeconds">Espera entre encendidos (segundos)</label>
+              <input id="activationDelaySeconds" class="form-input" type="number" min="1" max="60" step="1" value="1">
+              <p class="form-help">Cola única por empresa: protege la carga aunque varios cajeros activen equipos a la vez.</p>
+            </div>
             <label class="electric-switch" for="autoSync">
               <span>Auto sync</span>
               <input id="autoSync" type="checkbox" checked>
@@ -932,6 +937,7 @@
         $('raspberryPort').value = cfg.raspberry_port || 8081;
         $('apiPath').value = cfg.api_path || '/api/gpio/relay';
         $('timeoutMs').value = cfg.timeout_ms || 2500;
+		$('activationDelaySeconds').value = cfg.activation_delay_seconds || 1;
         $('autoSync').checked = cfg.auto_sync_estaciones !== false;
         $('failSafe').checked = Boolean(cfg.fail_safe_on_error);
         $('observaciones').value = cfg.observaciones || '';
@@ -947,6 +953,7 @@
           api_path: $('apiPath').value.trim() || '/api/gpio/relay',
           api_token: $('apiToken').value.trim(),
           timeout_ms: Math.max(500, Math.min(15000, Number($('timeoutMs').value || 2500))),
+		  activation_delay_seconds: Math.max(1, Math.min(60, Number($('activationDelaySeconds').value || 1))),
           auto_sync_estaciones: $('autoSync').checked,
           fail_safe_on_error: $('failSafe').checked,
           estado: 'activo',

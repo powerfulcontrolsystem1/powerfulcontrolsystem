@@ -35,6 +35,7 @@ type EmpresaControlElectricoConfig struct {
 	TimeoutMS          int    `json:"timeout_ms"`
 	AutoSyncEstaciones bool   `json:"auto_sync_estaciones"`
 	FailSafeOnError    bool   `json:"fail_safe_on_error"`
+	ActivationDelaySec int    `json:"activation_delay_seconds"`
 	FechaCreacion      string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador     string `json:"usuario_creador,omitempty"`
@@ -236,6 +237,8 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			timeout_ms INTEGER DEFAULT 2500,
 			auto_sync_estaciones INTEGER DEFAULT 1,
 			fail_safe_on_error INTEGER DEFAULT 0,
+			activation_delay_seconds INTEGER NOT NULL DEFAULT 1,
+			next_activation_at TEXT,
 			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			usuario_creador TEXT,
@@ -387,7 +390,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	configCols := map[string]string{
 		"empresa_id": "INTEGER NOT NULL", "habilitado": "INTEGER DEFAULT 0", "raspberry_ip": "TEXT",
 		"raspberry_port": "INTEGER DEFAULT 8081", "api_path": "TEXT DEFAULT '/api/gpio/relay'", "api_token": "TEXT",
-		"timeout_ms": "INTEGER DEFAULT 2500", "auto_sync_estaciones": "INTEGER DEFAULT 1", "fail_safe_on_error": "INTEGER DEFAULT 0",
+		"timeout_ms": "INTEGER DEFAULT 2500", "auto_sync_estaciones": "INTEGER DEFAULT 1", "fail_safe_on_error": "INTEGER DEFAULT 0", "activation_delay_seconds": "INTEGER NOT NULL DEFAULT 1", "next_activation_at": "TEXT",
 		"fecha_creacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)", "fecha_actualizacion": "TEXT DEFAULT (CURRENT_TIMESTAMP)",
 		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'", "observaciones": "TEXT",
 	}
@@ -514,10 +517,10 @@ func GetEmpresaControlElectricoConfig(dbConn *sql.DB, empresaID int64, includeTo
 		return nil, errors.New("empresa_id invalido")
 	}
 	cfg := defaultEmpresaControlElectricoConfig(empresaID)
-	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(habilitado,0), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(auto_sync_estaciones,1), COALESCE(fail_safe_on_error,0), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_config WHERE empresa_id = ? LIMIT 1`, empresaID)
+	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(habilitado,0), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(auto_sync_estaciones,1), COALESCE(fail_safe_on_error,0), COALESCE(activation_delay_seconds,1), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_config WHERE empresa_id = ? LIMIT 1`, empresaID)
 	var habilitado, autoSync, failSafe int
 	var token string
-	if err := row.Scan(&cfg.ID, &cfg.EmpresaID, &habilitado, &cfg.RaspberryIP, &cfg.RaspberryPort, &cfg.APIPath, &token, &cfg.TimeoutMS, &autoSync, &failSafe, &cfg.FechaCreacion, &cfg.FechaActualizacion, &cfg.UsuarioCreador, &cfg.Estado, &cfg.Observaciones); err != nil {
+	if err := row.Scan(&cfg.ID, &cfg.EmpresaID, &habilitado, &cfg.RaspberryIP, &cfg.RaspberryPort, &cfg.APIPath, &token, &cfg.TimeoutMS, &autoSync, &failSafe, &cfg.ActivationDelaySec, &cfg.FechaCreacion, &cfg.FechaActualizacion, &cfg.UsuarioCreador, &cfg.Estado, &cfg.Observaciones); err != nil {
 		if err == sql.ErrNoRows {
 			return cfg, nil
 		}
@@ -678,12 +681,12 @@ func UpsertEmpresaControlElectricoConfig(dbConn *sql.DB, cfg *EmpresaControlElec
 		token = strings.TrimSpace(cfg.APIToken)
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_config SET habilitado=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, auto_sync_estaciones=?, fail_safe_on_error=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
-			boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones), existingID)
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_config SET habilitado=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, auto_sync_estaciones=?, fail_safe_on_error=?, activation_delay_seconds=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
+			boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), cfg.ActivationDelaySec, strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones), existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_config (empresa_id, habilitado, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, auto_sync_estaciones, fail_safe_on_error, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
-		cfg.EmpresaID, boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_config (empresa_id, habilitado, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, auto_sync_estaciones, fail_safe_on_error, activation_delay_seconds, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
+		cfg.EmpresaID, boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), cfg.ActivationDelaySec, strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones))
 }
 
 func empresaControlElectricoReleScanDest(item *EmpresaControlElectricoRele, activeHigh, encenderAlActivar, apagarAlDesactivar, programacionHabilitada, monitoreoHabilitado *int) []interface{} {
@@ -1232,6 +1235,7 @@ func defaultEmpresaControlElectricoConfig(empresaID int64) *EmpresaControlElectr
 		RaspberryPort:      DefaultControlElectricoPort,
 		APIPath:            DefaultControlElectricoAPIPath,
 		TimeoutMS:          DefaultControlElectricoTimeoutMS,
+		ActivationDelaySec: 1,
 		AutoSyncEstaciones: true,
 		Estado:             "activo",
 	}
@@ -1260,6 +1264,12 @@ func normalizeEmpresaControlElectricoConfig(cfg *EmpresaControlElectricoConfig) 
 	}
 	if cfg.TimeoutMS > 15000 {
 		cfg.TimeoutMS = 15000
+	}
+	if cfg.ActivationDelaySec < 1 {
+		cfg.ActivationDelaySec = 1
+	}
+	if cfg.ActivationDelaySec > 60 {
+		cfg.ActivationDelaySec = 60
 	}
 	cfg.Estado = normalizeControlElectricoEstado(cfg.Estado)
 }

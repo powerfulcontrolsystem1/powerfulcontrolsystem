@@ -107,4 +107,7 @@ func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 			t.Fatalf("la configuracion de Raspberry no contiene %q", marker)
 		}
 	}
+	for _, marker := range []string{"activationDelaySeconds", "activation_delay_seconds", "Cola única por empresa"} {
+		if !strings.Contains(source, marker) { t.Fatalf("la configuracion no contiene %q", marker) }
+	}
 }

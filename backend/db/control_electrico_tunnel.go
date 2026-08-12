@@ -17,7 +17,6 @@ const (
 	controlElectricoTunnelEnrollmentTTL = 24 * time.Hour
 	controlElectricoTunnelCommandTTL    = 2 * time.Minute
 	controlElectricoRestoreCommandTTL   = 10 * time.Minute
-	controlElectricoRestoreDelayMS      = 1000
 )
 
 type EmpresaControlElectricoTunnelDevice struct {
@@ -254,16 +253,76 @@ func QueueEmpresaControlElectricoTunnelCommand(dbConn *sql.DB, empresaID, raspbe
 		return nil, errors.New("comando de tunel demasiado grande")
 	}
 	targetState = strings.ToLower(strings.TrimSpace(targetState))
-	if targetState != "on" && targetState != "off" {
+	if targetState != "on" && targetState != "off" && targetState != "operacion" {
 		return nil, errors.New("estado objetivo invalido")
 	}
-	expires := time.Now().UTC().Add(controlElectricoTunnelCommandTTL).Format(time.RFC3339)
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_comandos (empresa_id, raspberry_id, command_uid, rele_id, estacion_id, gpio_pin, estado_objetivo, payload_json, estado, intentos, solicitado_en, expira_en, usuario_creador, origen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', 0, CURRENT_TIMESTAMP, ?, ?, ?)`,
-		empresaID, raspberryID, commandUID, releID, estacionID, gpioPin, targetState, string(body), expires, truncateControlElectricoText(actor, 180), truncateControlElectricoText(origen, 100))
+	availableAt := time.Now().UTC()
+	if targetState == "on" {
+		availableAt, _, err = reserveEmpresaControlElectricoActivationSlot(dbConn, empresaID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	expires := availableAt.Add(controlElectricoTunnelCommandTTL).Format(time.RFC3339Nano)
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_comandos (empresa_id, raspberry_id, command_uid, rele_id, estacion_id, gpio_pin, estado_objetivo, payload_json, estado, intentos, solicitado_en, disponible_desde, expira_en, usuario_creador, origen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', 0, CURRENT_TIMESTAMP, ?, ?, ?, ?)`,
+		empresaID, raspberryID, commandUID, releID, estacionID, gpioPin, targetState, string(body), availableAt.Format(time.RFC3339Nano), expires, truncateControlElectricoText(actor, 180), truncateControlElectricoText(origen, 100))
 	if err != nil {
 		return nil, err
 	}
 	return &EmpresaControlElectricoTunnelCommand{ID: id, EmpresaID: empresaID, RaspberryID: raspberryID, CommandUID: commandUID, ReleID: releID, EstacionID: estacionID, GPIOPin: gpioPin, EstadoObjetivo: targetState, PayloadJSON: string(body), Estado: "pendiente"}, nil
+}
+
+// reserveEmpresaControlElectricoActivationSlot reserves the next ON slot for
+// one company. The configuration row is locked transactionally, so commands
+// from different cashiers, stations or Raspberry Pis cannot energize loads at
+// the same instant.
+func reserveEmpresaControlElectricoActivationSlot(dbConn *sql.DB, empresaID int64) (time.Time, int, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return time.Time{}, 0, errors.New("empresa invalida para cola de activacion")
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return time.Time{}, 0, err
+	}
+	defer tx.Rollback()
+	slot, delay, err := reserveEmpresaControlElectricoActivationSlotTx(tx, empresaID)
+	if err != nil {
+		return time.Time{}, 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return time.Time{}, 0, err
+	}
+	return slot, delay, nil
+}
+
+func reserveEmpresaControlElectricoActivationSlotTx(tx *sql.Tx, empresaID int64) (time.Time, int, error) {
+	if tx == nil || empresaID <= 0 {
+		return time.Time{}, 0, errors.New("empresa invalida para cola de activacion")
+	}
+	if _, err := execTxSQLCompat(tx, `INSERT INTO empresa_control_electrico_config (empresa_id, habilitado, raspberry_port, api_path, timeout_ms, auto_sync_estaciones, activation_delay_seconds, estado) VALUES (?, 1, 8081, '/api/gpio/relay', 2500, 1, 1, 'activo') ON CONFLICT (empresa_id) DO NOTHING`, empresaID); err != nil {
+		return time.Time{}, 0, err
+	}
+	var delay int
+	var nextRaw string
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(activation_delay_seconds,1), COALESCE(next_activation_at,'') FROM empresa_control_electrico_config WHERE empresa_id=? FOR UPDATE`, empresaID).Scan(&delay, &nextRaw); err != nil {
+		return time.Time{}, 0, err
+	}
+	if delay < 1 {
+		delay = 1
+	}
+	if delay > 60 {
+		delay = 60
+	}
+	now := time.Now().UTC()
+	slot := now
+	if next, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(nextRaw)); err == nil && next.After(slot) {
+		slot = next
+	}
+	next := slot.Add(time.Duration(delay) * time.Second)
+	if _, err := execTxSQLCompat(tx, `UPDATE empresa_control_electrico_config SET activation_delay_seconds=?, next_activation_at=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=?`, delay, next.Format(time.RFC3339Nano), empresaID); err != nil {
+		return time.Time{}, 0, err
+	}
+	return slot, delay, nil
 }
 
 // QueueEmpresaControlElectricoTunnelRestoreOnBoot recrea, una sola vez por
@@ -300,7 +359,6 @@ func QueueEmpresaControlElectricoTunnelRestoreOnBoot(dbConn *sql.DB, device *Emp
 	}
 	defer rows.Close()
 	count := 0
-	expires := time.Now().UTC().Add(controlElectricoRestoreCommandTTL).Format(time.RFC3339)
 	for rows.Next() {
 		var releID, estacionID int64
 		var gpioPin, activeHigh, pulsoMS int
@@ -312,16 +370,21 @@ func QueueEmpresaControlElectricoTunnelRestoreOnBoot(dbConn *sql.DB, device *Emp
 		if err != nil {
 			return 0, err
 		}
+		availableAt, delay, err := reserveEmpresaControlElectricoActivationSlotTx(tx, device.EmpresaID)
+		if err != nil {
+			return 0, err
+		}
 		payload, err := json.Marshal(map[string]interface{}{
 			"relay_id": releID, "station_id": estacionID, "gpio_pin": gpioPin, "estado": "on",
 			"active_high": activeHigh == 1, "pulso_ms": pulsoMS, "salida_codigo": salidaCodigo,
 			"relay_name": relayName, "tipo_carga": tipoCarga, "origen": "raspberry_recovery",
-			"restore_delay_ms": controlElectricoRestoreDelayMS,
+			"restore_delay_ms": delay * 1000,
 		})
 		if err != nil {
 			return 0, err
 		}
-		if _, err := execTxSQLCompat(tx, `INSERT INTO empresa_control_electrico_comandos (empresa_id, raspberry_id, command_uid, rele_id, estacion_id, gpio_pin, estado_objetivo, payload_json, estado, intentos, solicitado_en, expira_en, usuario_creador, origen) VALUES (?, ?, ?, ?, ?, ?, 'on', ?, 'pendiente', 0, CURRENT_TIMESTAMP, ?, ?, 'raspberry_recovery')`, device.EmpresaID, device.RaspberryID, commandUID, releID, estacionID, gpioPin, string(payload), expires, device.DeviceUID); err != nil {
+		expires := availableAt.Add(controlElectricoRestoreCommandTTL).Format(time.RFC3339Nano)
+		if _, err := execTxSQLCompat(tx, `INSERT INTO empresa_control_electrico_comandos (empresa_id, raspberry_id, command_uid, rele_id, estacion_id, gpio_pin, estado_objetivo, payload_json, estado, intentos, solicitado_en, disponible_desde, expira_en, usuario_creador, origen) VALUES (?, ?, ?, ?, ?, ?, 'on', ?, 'pendiente', 0, CURRENT_TIMESTAMP, ?, ?, ?, 'raspberry_recovery')`, device.EmpresaID, device.RaspberryID, commandUID, releID, estacionID, gpioPin, string(payload), availableAt.Format(time.RFC3339Nano), expires, device.DeviceUID); err != nil {
 			return 0, err
 		}
 		count++
@@ -347,7 +410,7 @@ func ClaimEmpresaControlElectricoTunnelCommand(dbConn *sql.DB, empresaID, raspbe
 	_, _ = execTxSQLCompat(tx, `UPDATE empresa_control_electrico_comandos SET estado='pendiente', entregado_en=NULL WHERE empresa_id=? AND raspberry_id=? AND estado='entregado' AND intentos<3 AND CAST(NULLIF(entregado_en,'') AS TIMESTAMP)<CURRENT_TIMESTAMP-INTERVAL '30 seconds'`, empresaID, raspberryID)
 	_, _ = execTxSQLCompat(tx, `UPDATE empresa_control_electrico_comandos SET estado='expirado', completado_en=CURRENT_TIMESTAMP WHERE empresa_id=? AND raspberry_id=? AND estado IN ('pendiente','entregado') AND CAST(NULLIF(expira_en,'') AS TIMESTAMP)<CURRENT_TIMESTAMP`, empresaID, raspberryID)
 	var command EmpresaControlElectricoTunnelCommand
-	err = queryRowTxSQLCompat(tx, `SELECT id, empresa_id, raspberry_id, command_uid, COALESCE(rele_id,0), COALESCE(estacion_id,0), COALESCE(gpio_pin,0), COALESCE(estado_objetivo,''), COALESCE(payload_json,''), COALESCE(estado,''), COALESCE(intentos,0), COALESCE(resultado,''), COALESCE(error,'') FROM empresa_control_electrico_comandos WHERE empresa_id=? AND raspberry_id=? AND estado='pendiente' ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1`, empresaID, raspberryID).
+	err = queryRowTxSQLCompat(tx, `SELECT id, empresa_id, raspberry_id, command_uid, COALESCE(rele_id,0), COALESCE(estacion_id,0), COALESCE(gpio_pin,0), COALESCE(estado_objetivo,''), COALESCE(payload_json,''), COALESCE(estado,''), COALESCE(intentos,0), COALESCE(resultado,''), COALESCE(error,'') FROM empresa_control_electrico_comandos WHERE empresa_id=? AND raspberry_id=? AND estado='pendiente' AND (COALESCE(disponible_desde,'')='' OR CAST(NULLIF(disponible_desde,'') AS TIMESTAMP)<=CURRENT_TIMESTAMP) ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1`, empresaID, raspberryID).
 		Scan(&command.ID, &command.EmpresaID, &command.RaspberryID, &command.CommandUID, &command.ReleID, &command.EstacionID, &command.GPIOPin, &command.EstadoObjetivo, &command.PayloadJSON, &command.Estado, &command.Intentos, &command.Resultado, &command.Error)
 	if err != nil {
 		return nil, err

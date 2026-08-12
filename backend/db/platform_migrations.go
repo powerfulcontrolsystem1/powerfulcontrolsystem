@@ -172,6 +172,7 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				},
 			},
 			{Version: "20260811-003-domotica-timer-v1", Description: "timer duration for electronic equipment and sensor rules", Body: empresaControlElectricoTimerSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoTimerSchemaTx(tx) }},
+			{Version: "20260812-001-domotica-activation-queue-v1", Description: "company-wide serialized relay activation delay", Body: empresaControlElectricoActivationQueueSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoActivationQueueSchemaTx(tx) }},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
