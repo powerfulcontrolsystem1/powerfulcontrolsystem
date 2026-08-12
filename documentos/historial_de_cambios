@@ -1,3 +1,10 @@
+2026-08-12: Plan 110 / asistente IA real y modo agente en PCS staging.
+- Una consulta controlada recibió la respuesta esperada del proveedor IA y la
+  interfaz informó el modelo activo sin revelar secretos. El modo agente mostró
+  una propuesta inocua sin crear tarea ni ejecutar una confirmación.
+- Se conserva P110-003 parcial: no se probaron adjuntos, caída/timeout,
+  cancelación, doble envío ni todas las identidades y botones IA.
+
 2026-08-12: Plan 110 / repetición de compuerta automática de staging.
 - Health, readiness, paridad saneada DIAN y disponibilidad de Alertmanager
   aprobaron después de la prueba CxP/IA. La emisión fiscal de staging siguió
