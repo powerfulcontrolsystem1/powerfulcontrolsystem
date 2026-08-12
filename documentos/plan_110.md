@@ -848,3 +848,14 @@ autoriza ni ejecuta despliegue productivo.
   firma del principal. Sigue bloqueada la emisión DIAN en staging y faltan los
   flujos reales de entrega. El avance formal sube a **38,5 %** (diez fases
   parciales de 13), certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, réplica DIAN aislada en staging
+
+- La configuración DIAN de PCS y su par de firma se replicaron de manera
+  acotada al staging de la empresa 12. La auditoría independiente confirmó la
+  paridad requerida y las referencias legibles sin revelar secretos.
+- Staging quedó forzado a habilitación, sin emisión local, pendiente y con
+  consecutivo cero. No se emitió factura ni se alteró producción. P110-006
+  permanece **parcial** hasta diagnosticar bajo sesión y obtener acuses oficiales
+  DIAN; el avance formal se mantiene en **38,5 %**, certificación **0 %** y
+  veredicto **NO-GO**.

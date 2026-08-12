@@ -41939,3 +41939,10 @@ acumulativa.
   Mailu estaban activos. BIMI tiene logo pero no VMC/CMC, por lo que no garantiza
   avatar externo. P110-006 pasa a parcial; continúan pendientes entrega real,
   certificado BIMI comercial y evidencia fiscal DIAN desde staging.
+2026-08-12: Plan 110 / réplica DIAN aislada de PCS en staging.
+- Se añadió `vps-stage-dian-from-primary.sh`, con confirmación fuerte, empresa
+  única, firma privada, limpieza de parciales y prohibición de sobrescritura.
+  Replica solo hacia staging, fuerza habilitación y deja apagada la emisión local.
+- La auditoría posterior confirmó configuración y referencias de firma completas
+  en staging para PCS, con ambiente seguro y consecutivo reiniciado. No se
+  emitieron documentos ni se modificó producción.

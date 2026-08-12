@@ -12963,6 +12963,12 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-006/2026-08-12_dns_mailu_y_bimi.md`:
   conserva la comprobación de DNS y Mailu, distinguiendo el logo del cuerpo del
   avatar externo que requiere certificado BIMI.
+- `documentos/evidencia_plan_110/P110-006/2026-08-12_replicacion_dian_staging_pcs.md`:
+  conserva la réplica fiscal aislada de PCS hacia staging, sus salvaguardas y
+  la verificación de habilitación sin emisión.
+- `deploy/scripts/vps-stage-dian-from-primary.sh`: instala de forma controlada
+  una configuración DIAN de una sola empresa en staging, preservando firma
+  privada, forzando habilitación y evitando sobrescribir configuraciones previas.
 - `documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md`:
   registra la conciliación autenticada sin pendientes ni desfases del candidato
   actual, sin sustituir la aceptación humana contable.
