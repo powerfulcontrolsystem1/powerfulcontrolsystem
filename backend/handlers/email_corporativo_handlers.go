@@ -1794,6 +1794,13 @@ func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password, t
 	req.Header.Set("User-Agent", "PowerfulControlSystem-MailAutologin/1.0")
 	req.Header.Set("X-Remote-User", email)
 	req.Header.Set("X-Remote-User-Token", password)
+	if publicURL, parseErr := url.Parse(strings.TrimSpace(cfg.WebmailURL)); parseErr == nil && publicURL.Host != "" {
+		req.Host = publicURL.Host
+		req.Header.Set("X-Forwarded-Host", publicURL.Host)
+		if publicURL.Scheme != "" {
+			req.Header.Set("X-Forwarded-Proto", publicURL.Scheme)
+		}
+	}
 	res, err := client.Do(req)
 	if err != nil {
 		return "", nil, fmt.Errorf("SnappyMail rechazo la conexion")

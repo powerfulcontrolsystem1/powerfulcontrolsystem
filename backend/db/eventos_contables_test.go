@@ -54,3 +54,23 @@ func TestEmpresaEventoContableRequiereAsientoDistingueHitosPrecontables(t *testi
 		t.Fatalf("una compra contabilizada debe exigir asiento")
 	}
 }
+
+func TestEmpresaEventoContableRequiereAsientoExcluyeHitosOperativosSinValorFinanciero(t *testing.T) {
+	t.Parallel()
+	for _, evento := range []EmpresaEventoContable{
+		{EmpresaID: 7, Modulo: "ventas", Evento: "venta_sesion_activada"},
+		{EmpresaID: 7, Modulo: "compras", Evento: "proveedor_registrado"},
+	} {
+		if empresaEventoContableRequiereAsiento(evento) {
+			t.Fatalf("%s/%s debe conservar auditoria sin exigir partida doble", evento.Modulo, evento.Evento)
+		}
+	}
+}
+
+func TestConciliacionExcluyeLosMismosHitosOperativosSinAsiento(t *testing.T) {
+	for _, want := range []string{"venta_sesion_activada", "proveedor_registrado", "periodo_contable_cerrado"} {
+		if !strings.Contains(empresaEventoContableSinAsientoSQL, want) {
+			t.Fatalf("la conciliacion debe excluir el hito sin asiento %q", want)
+		}
+	}
+}

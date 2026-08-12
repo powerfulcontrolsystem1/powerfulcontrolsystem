@@ -409,6 +409,15 @@ func TestBuildDIANGetStatusZipEnvelope(t *testing.T) {
 	}
 }
 
+func TestDIANSyntheticSyncHistoryIDIsNeverReconsultable(t *testing.T) {
+	if !dianIsSyntheticSyncHistoryID("sync:FV-123") {
+		t.Fatal("expected sync history key to be synthetic")
+	}
+	if dianIsSyntheticSyncHistoryID("TRACK-123") {
+		t.Fatal("a DIAN TrackId must remain reconsultable")
+	}
+}
+
 func TestValidateDIANCredentialRefsDoesNotRequireTokenForOfficialSOAP(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
 	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{})
@@ -1095,6 +1104,21 @@ func TestResolveDIANAcuseFromStatusDescriptionPending(t *testing.T) {
 	}
 	if mensaje != "Batch en proceso de validacion." {
 		t.Fatalf("expected DIAN status description as message, got %q", mensaje)
+	}
+}
+
+func TestResolveDIANAcuseAcceptsOfficialSetStatusDescriptionEvenWhenIsValidFalse(t *testing.T) {
+	response := map[string]interface{}{
+		"is_valid":           "false",
+		"status_code":        "00",
+		"status_description": "Set de prueba con identificador example-test-set se encuentra Aceptado.",
+	}
+	estado, mensaje := resolveDIANAcuseFromResponse(http.StatusOK, response)
+	if estado != "aceptado" {
+		t.Fatalf("expected accepted official set status, got estado=%s mensaje=%s", estado, mensaje)
+	}
+	if !strings.Contains(strings.ToLower(mensaje), "acept") {
+		t.Fatalf("expected accepted message, got %q", mensaje)
 	}
 }
 

@@ -143,15 +143,15 @@ func normalizeEmpresaIAAccion(raw string) string {
 		return ""
 	case "factura", "factura_borrador", "borrador_factura", "cotizacion":
 		return "borrador_factura"
-	case "cobranza", "pagos", "record_payment":
+	case "cobranza", "pagos", "record_payment", "cobranza_pagos":
 		return "cobranza_pagos"
-	case "inventario", "productos", "stock":
+	case "inventario", "productos", "stock", "inventario_productos":
 		return "inventario_productos"
 	case "conciliacion", "conciliacion_bancaria", "bancos":
 		return "conciliacion_bancaria"
-	case "cumplimiento", "dian", "impuestos":
+	case "cumplimiento", "dian", "impuestos", "cumplimiento_dian":
 		return "cumplimiento_dian"
-	case "compras", "gastos", "soportes":
+	case "compras", "gastos", "soportes", "compras_gastos":
 		return "compras_gastos"
 	case "diagnostico", "diagnostico_erp", "analisis":
 		return "diagnostico_erp"

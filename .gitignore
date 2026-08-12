@@ -48,6 +48,8 @@ backend/.env.local
 .env.local
 deploy/.env.platform
 deploy/.env.staging
+deploy/monitoring/.env.monitoring
+deploy/monitoring/alertmanager.runtime.yml
 .gocache/
 .gotmp/
 .codex-gocache/

@@ -1,3 +1,13 @@
+2026-08-11: Plan 110 / guardia de fuente canónica CxP.
+- Módulos afectados: `finanzas`, `cartera de proveedores`, `contabilidad
+  avanzada` y `outbox CxP`.
+- Cambio funcional: la capa de datos bloquea nuevas CxP y abonos CxP en
+  `empresa_contabilidad_cartera_cxp`, incluso fuera del handler; las nuevas
+  obligaciones y pagos deben usar `empresa_cuentas_por_pagar` y
+  `empresa_cxp_pagos` por empresa.
+- Seguridad: la guardia conserva CxC histórico, no permite eludir la fuente
+  canónica mediante una llamada interna y no altera datos existentes.
+
 2026-08-09: Dialogos verificables para acciones CxP/IA.
 - Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria` y
   `frontend_ux`.

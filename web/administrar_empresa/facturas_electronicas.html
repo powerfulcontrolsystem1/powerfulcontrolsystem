@@ -938,9 +938,16 @@
         var empresaLabel = normalize(state.empresaNombre) || normalize(cfg.razon_social) || normalize(cfg.nombre_comercial) || ("Empresa #" + String(empresaID || ""));
         var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
         var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
-        var logoHtml = window.PCSPrint && window.PCSPrint.resolveDocumentLogos && window.PCSPrint.logosHTML
-          ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg, "factura"))
-          : (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '');
+        var systemLogoUrl = window.location.origin.replace(/\/$/, "") + "/img/logo.png";
+        var resolvedLogos = window.PCSPrint && window.PCSPrint.resolveDocumentLogos
+          ? window.PCSPrint.resolveDocumentLogos(cfg, "factura")
+          : (logoUrl ? [{ src: logoUrl, alt: "Logo empresa" }] : []);
+        if (!resolvedLogos.length && showLogo) resolvedLogos = [{ src: systemLogoUrl, alt: "Logo del sistema" }];
+        var logoHtml = resolvedLogos.map(function(logo) {
+          var src = safeUrl(logo && logo.src);
+          if (!src) return "";
+          return '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml((logo && logo.alt) || "Logo") + '" onerror="this.onerror=null;this.src=\'' + escapeHtml(systemLogoUrl) + '\'">';
+        }).join("");
         var legalBlock = showLegal ? buildLegalBlock(cfg) : "";
         var observaciones = normalize(item && item.observaciones) || "Sin observaciones registradas.";
         var qrBlock = printFieldEnabled(printItems, "qr_dian", item) ? printableQRHTML(getPrintableDocumentQR(item)) : "";
@@ -1095,12 +1102,23 @@
           '<title>' + escapeHtml((item && item.documento_codigo) || "Documento") + '</title>' +
           '<link rel="stylesheet" href="' + escapeHtml(window.location.origin.replace(/\/$/, "") + "/estilos.css") + '">' +
           '<style>' +
-            'body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light;font-size:' + facturaPrintFontSize(cfg, formato) + 'px;}' +
+            '*{box-sizing:border-box}html{background:#fff}body{margin:0;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;color-scheme:light;font-size:' + facturaPrintFontSize(cfg, formato) + 'px;line-height:1.38}' +
             '.factura-print-shell{max-width:' + (formato === "compacta" ? "780" : "1120") + 'px;margin:0 auto;padding:28px 18px 42px;background:#fff;}' +
             '.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;}' +
+            '.factura-print-sheet{border:1px solid #111827;border-top:4px solid #111827;background:#fff;color:#111827;overflow:hidden}' +
+            '.factura-print-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:20px 22px 16px;border-bottom:1px solid #111827}' +
+            '.factura-print-logo{display:flex;align-items:flex-start;gap:14px;min-width:0}.factura-print-logo img{display:block;width:auto;max-width:112px;max-height:58px;object-fit:contain;flex:0 0 auto}' +
+            '.factura-print-kicker{display:inline-block;border:1px solid #111827;padding:3px 7px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}' +
+            '.factura-print-head h3{margin:7px 0 3px;font-size:22px;line-height:1.15}.factura-print-head p{margin:0;color:#374151}' +
+            '.factura-print-company{flex:0 1 42%;min-width:210px;text-align:right}.factura-print-company strong,.factura-print-company span{display:block;overflow-wrap:anywhere}.factura-print-company span{margin-top:4px;font-size:10px;color:#374151;line-height:1.45}' +
+            '.factura-print-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid #111827}.factura-print-strip div{min-width:0;padding:10px 12px;border-right:1px solid #d1d5db}.factura-print-strip div:last-child{border-right:0}.factura-print-strip span{display:block;font-size:9px;color:#4b5563;text-transform:uppercase}.factura-print-strip strong{display:block;margin-top:2px;overflow-wrap:anywhere;word-break:break-word}' +
+            '.factura-print-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px 16px 0}.factura-print-panel{min-width:0;border:1px solid #9ca3af;padding:11px 12px;background:#fff}.factura-print-panel--full{margin:12px 16px 0}.factura-print-panel h4{margin:0 0 7px;font-size:11px;text-transform:uppercase}.factura-print-panel dl,.factura-print-doc-meta{margin:0}.factura-print-panel dl>div,.factura-print-doc-meta>div{display:grid;grid-template-columns:minmax(92px,34%) minmax(0,1fr);gap:10px;padding:5px 0;border-top:1px solid #e5e7eb}.factura-print-panel dl>div:first-child,.factura-print-doc-meta>div:first-child{border-top:0}.factura-print-panel dt,.factura-print-doc-meta dt{color:#4b5563}.factura-print-panel dd,.factura-print-doc-meta dd{min-width:0;margin:0;text-align:right;font-weight:700;overflow-wrap:anywhere;word-break:break-word}' +
+            '.factura-print-table{width:calc(100% - 48px)!important;max-width:calc(100% - 48px)!important;margin:12px 24px!important;border-collapse:collapse;table-layout:fixed;font-size:10px}.factura-print-table th,.factura-print-table td{border:1px solid #111827;padding:7px 6px;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}.factura-print-table th{background:#eef2f7;font-size:8px;text-transform:uppercase}.factura-print-table th:nth-child(1){width:21%}.factura-print-table th:nth-child(2){width:33%}.factura-print-table th:nth-child(3){width:9%}.factura-print-table th:nth-child(4),.factura-print-table th:nth-child(5){width:18.5%}.factura-print-table th:nth-child(n+3),.factura-print-table td:nth-child(n+3){text-align:right}' +
+            '.factura-print-total-table{width:310px;max-width:calc(100% - 32px);margin:0 16px 0 auto;border-collapse:collapse}.factura-print-total-table th,.factura-print-total-table td{border:1px solid #111827;padding:7px 9px}.factura-print-total-table th{text-align:left;background:#eef2f7;font-size:9px;text-transform:uppercase}.factura-print-total-table td{text-align:right;font-weight:800}' +
+            '.factura-print-note,.factura-print-legal{margin:12px 16px 0;padding:10px 12px;border:1px dashed #9ca3af;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.factura-print-note p{margin:4px 0 0}' +
             '.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}' +
-            '.factura-print-qr{text-align:center;border-top:1px dashed #9ca3af;margin-top:16px;padding-top:14px;color:#111827}.factura-print-qr img{width:132px;height:132px;object-fit:contain;display:block;margin:0 auto 7px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.35;overflow-wrap:anywhere}' +
-            '@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{padding:0}}' +
+            '.factura-print-qr{text-align:center;border-top:1px dashed #9ca3af;margin-top:16px;padding:14px 12px 0;color:#111827}.factura-print-qr img{width:132px;height:132px;object-fit:contain;display:block;margin:0 auto 7px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;max-width:100%;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.35;overflow-wrap:anywhere;word-break:break-word}' +
+            '@page{size:A4;margin:11mm}@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{max-width:none;padding:0}.factura-print-head,.factura-print-grid,.factura-print-panel,.factura-print-table tr,.factura-print-total-table,.factura-print-note,.factura-print-qr{break-inside:avoid;page-break-inside:avoid}}' +
           '</style></head><body>' +
           '<div class="factura-print-shell">' +
             '<div class="factura-print-toolbar">' +

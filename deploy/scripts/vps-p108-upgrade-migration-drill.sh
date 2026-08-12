@@ -29,6 +29,7 @@ volume="${P108_DRILL_ID}-pgdata"
 postgres="${P108_DRILL_ID}-postgres"
 migrate_first="${P108_DRILL_ID}-migrate-1"
 migrate_second="${P108_DRILL_ID}-migrate-2"
+workdir="/tmp/${P108_DRILL_ID}"
 
 for resource in "$postgres" "$migrate_first" "$migrate_second"; do
   docker container inspect "$resource" >/dev/null 2>&1 &&
@@ -38,15 +39,21 @@ docker volume inspect "$volume" >/dev/null 2>&1 &&
   fail "El volumen aislado ya existe y no será sobrescrito: $volume"
 docker network inspect "$network" >/dev/null 2>&1 &&
   fail "La red aislada ya existe y no será sobrescrita: $network"
+[ ! -e "$workdir" ] || fail "El directorio temporal aislado ya existe: $workdir"
 
 cleanup() {
   docker rm -f "$migrate_first" "$migrate_second" "$postgres" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
+  if [[ "$workdir" == /tmp/p108-upgrade-* ]]; then
+    rm -rf -- "$workdir"
+  fi
 }
 trap cleanup EXIT
 
 test_password="$(openssl rand -hex 24)"
+mkdir -p "$workdir/private_storage"
+chown 10001:10001 "$workdir/private_storage"
 source_user="$(docker exec "$SOURCE_POSTGRES_CONTAINER" sh -lc 'printf %s "$POSTGRES_USER"')"
 [ -n "$source_user" ] || fail "No se pudo resolver el usuario PostgreSQL de staging."
 
@@ -94,9 +101,11 @@ run_migrate() {
     -e PCS_RUNTIME_SCHEMA_BOOTSTRAP=0 \
     -e PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC=1 \
     -e PCS_MIGRATION_SKIP_EXTERNAL_SYNC=1 \
+    -e PCS_PRIVATE_STORAGE_DIR=/app/private_storage \
     -e DB_DIALECT=postgres \
     -e "DB_EMPRESAS_DSN=postgres://pcs:${test_password}@${postgres}:5432/pcs_empresas?sslmode=disable" \
     -e "DB_SUPERADMIN_DSN=postgres://pcs:${test_password}@${postgres}:5432/pcs_superadministrador?sslmode=disable" \
+    -v "$workdir/private_storage:/app/private_storage:rw" \
     --entrypoint /bin/sh \
     "$PCS_MIGRATE_IMAGE_DIGEST" \
     -ec '/app/backend/pcs-backend && /app/backend/pcs-migrate'

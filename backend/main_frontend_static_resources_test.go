@@ -225,10 +225,12 @@ func TestStagingDigestPromotionRequiresAllExactImagesBeforeRecreate(t *testing.T
 	for _, required := range []string{
 		"PLATFORM_COMPOSE_FILE",
 		"STAGING_COMPOSE_FILE",
+		"STAGING_ANTIVIRUS_COMPOSE_FILE",
 		"RELEASE_COMPOSE_FILE",
+		"PCS_CLAMAV_IMAGE_DIGEST",
 		`config --images`,
 		`grep -Fqx "$image"`,
-		`up -d --no-build postgres migrate backend worker frontend`,
+		`up -d --no-build postgres migrate clamav backend worker frontend`,
 	} {
 		if !strings.Contains(script, required) {
 			t.Fatalf("staging digest promotion must enforce %q", required)
@@ -236,6 +238,86 @@ func TestStagingDigestPromotionRequiresAllExactImagesBeforeRecreate(t *testing.T
 	}
 	if strings.Contains(script, `"${compose[@]}" up -d --no-build`+"\n") {
 		t.Fatal("staging digest promotion must not recreate the entire platform stack")
+	}
+}
+
+func TestStagingUploadPermissionsUsesOnlyStagingNameAndVolume(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.staging.yml"))
+	if err != nil {
+		t.Fatalf("read staging compose: %v", err)
+	}
+	compose := string(raw)
+	for _, required := range []string{
+		"upload-permissions:",
+		"container_name: pcs-staging-upload-permissions",
+		"pcs_staging_web_uploads:/app/web/uploads",
+	} {
+		if !strings.Contains(compose, required) {
+			t.Fatalf("staging upload-permissions isolation missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"- pcs_web_uploads:/app/web/uploads",
+		"- pcs_private_storage:/app/private_storage",
+		"- pcs_backups:/app/backup",
+		"- pcs_backend_logs:/app/backend/logs",
+	} {
+		if strings.Contains(compose, forbidden) {
+			t.Fatalf("staging compose must not retain inherited platform volume %q", forbidden)
+		}
+	}
+	for _, required := range []string{
+		"- pcs_staging_backend_logs:/app/backend/logs",
+		"- pcs_staging_private_storage:/app/private_storage",
+		"- pcs_staging_backups:/app/backup",
+	} {
+		if !strings.Contains(compose, required) {
+			t.Fatalf("staging worker and migrate isolation missing %q", required)
+		}
+	}
+}
+
+func TestRestoredAppDrillUsesExplicitStagingEnvironmentAndBackendDigest(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "scripts", "vps_p109_restore_app_validation.ps1"))
+	if err != nil {
+		t.Fatalf("read restored app drill runner: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"[string]$SourceEnv = \"\"",
+		`if ([string]::IsNullOrWhiteSpace($SourceEnv)) { $SourceEnv = "$RemotePath/deploy/.env.staging" }`,
+		"[string]$BackupDir = \"\"",
+		`if ([string]::IsNullOrWhiteSpace($BackupDir)) { $BackupDir = "$RemotePath/backups/vps-snapshots" }`,
+		"source_env=$sourceEnvLit",
+		"BACKUP_DIR=$backupDirLit",
+		"pcs-staging-backend) env_name=PCS_API_IMAGE_DIGEST",
+		"pcs-staging-clamav) env_name=PCS_CLAMAV_IMAGE_DIGEST",
+		"PCS_CLAMAV_IMAGE_DIGEST=\"`$clamav_image\"",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("restored app drill must enforce %q", required)
+		}
+	}
+	if strings.Contains(script, `if [ ! -f "$source_env" ]; then source_env="$remote_path/deploy/.env.platform"; fi`) {
+		t.Fatal("restored app drill must not fall back from isolated staging to platform configuration")
+	}
+}
+
+func TestRestoredAppDrillKeepsClamAVRequiredInsideIsolatedNetwork(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-p109-restored-app-drill.sh"))
+	if err != nil {
+		t.Fatalf("read restored app drill: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"PCS_CLAMAV_IMAGE_DIGEST=\"${PCS_CLAMAV_IMAGE_DIGEST:-}\"",
+		"--network-alias clamav",
+		"clamdscan --ping 1",
+		"ClamAV aislado no alcanzo readiness.",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("restored app drill must keep required ClamAV isolation %q", required)
+		}
 	}
 }
 

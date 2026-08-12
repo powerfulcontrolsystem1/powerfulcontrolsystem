@@ -1,0 +1,45 @@
+# Servicio exclusivo de staging para los soportes CxP/IA. La imagen queda
+# fijada por digest en el entorno privado y no publica el puerto de clamd.
+services:
+  clamav:
+    image: ${PCS_CLAMAV_IMAGE_DIGEST:?Defina PCS_CLAMAV_IMAGE_DIGEST con clamav/clamav@sha256}
+    container_name: pcs-staging-clamav
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    # La imagen oficial prepara /run/clamav y cambia al usuario clamscan durante
+    # /init. Conserva solamente las capacidades necesarias para ese bootstrap.
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,noexec,nosuid,size=16m
+    volumes:
+      - pcs_staging_clamav_db:/var/lib/clamav
+    expose:
+      - "3310"
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 1 >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+    networks:
+      pcs_internal:
+
+  backend:
+    depends_on:
+      clamav:
+        condition: service_healthy
+    environment:
+      PCS_SUPPORTS_CLAMAV_ADDR: ${PCS_SUPPORTS_CLAMAV_ADDR:-clamav:3310}
+      PCS_SUPPORTS_CLAMAV_REQUIRED: ${PCS_SUPPORTS_CLAMAV_REQUIRED:-1}
+
+volumes:
+  pcs_staging_clamav_db:
