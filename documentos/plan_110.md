@@ -1070,3 +1070,10 @@ autoriza ni ejecuta despliegue productivo.
 - Gestión documental, horarios, importaciones, impuestos, inventario, licencia,
   WMS, Nextcloud, NIIF y nómina aprobaron 48/48 vistas en ambos formatos sin
   mutaciones. El avance formal se mantiene en **38,5 %**, **NO-GO**.
+
+## Actualización 2026-08-12, lotes nómina, reportes y contador
+
+- Nómina, portal/suite contador, producción, bodegas, proveedores, reportes,
+  soporte y soportes IA aprobaron 64/64 vistas en escritorio y móvil sin
+  mutaciones. El avance formal conserva **38,5 %**, certificación **0 %**,
+  **NO-GO**.

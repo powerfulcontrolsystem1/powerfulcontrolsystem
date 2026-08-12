@@ -13092,3 +13092,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_096_108_staging.md`:
   evidencia saneada de los lotes documental e inventario, con límites de
   cobertura visual segura.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_120_136_staging.md`:
+  evidencia saneada de los lotes de nómina, reportes y contador, con límites de
+  cobertura visual segura.
