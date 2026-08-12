@@ -13068,3 +13068,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_auditorias_estaticas_candidato_d3d21414.md`:
   resultado saneado de las auditorías profesionales, seguridad, observabilidad
   y SLO sobre el checkout del candidato, con límites explícitos de cobertura.
+- `documentos/evidencia_plan_110/P110-009/2026-08-12_lectura_operativa_outbox_candidato_d3d21414.md`:
+  lectura saneada de salud, worker y métricas agregadas del candidato staging,
+  incluyendo el bloqueo de eventos outbox dead que requiere conciliación.

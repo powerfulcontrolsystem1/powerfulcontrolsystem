@@ -999,3 +999,13 @@ autoriza ni ejecuta despliegue productivo.
   no se contabiliza como aprobación. Persisten DAST integral, CSP, roles/cajas,
   simulacro y aceptaciones humanas. El avance formal continúa en **38,5 %**,
   certificación **0 %** y veredicto **NO-GO**.
+
+## Actualización 2026-08-12, lectura operativa de outbox
+
+- El staging del candidato `d3d21414` conserva backend, worker, frontend y
+  ClamAV saludables, sin reinicios ni errores recientes del worker. Heartbeat,
+  jobs en espera/proceso y leases vencidos permanecieron en cero.
+- La métrica empresarial reporta dos outbox `dead`. No se reintentaron a ciegas:
+  requieren previsualización por superadministración y conciliación CxP antes de
+  cualquier efecto. P110-009 continúa **parcial**, avance **38,5 %**,
+  certificación **0 %**, **NO-GO**.

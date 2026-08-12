@@ -42170,3 +42170,9 @@ acumulativa.
   sobre el checkout `d3d21414`, sin solicitudes externas ni datos sensibles.
 - La ejecución amplia de Go agotó el límite local y se conserva como
   inconclusa; no se usa para aumentar cobertura ni el avance formal.
+2026-08-12: Plan 110 / lectura operativa de outbox en staging.
+- El candidato `d3d21414` quedó sano en staging, con worker y ClamAV saludables
+  y sin reinicios o errores recientes en el filtro operativo.
+- Se detectaron dos eventos empresariales dead por métrica agregada. No se
+  reintentaron sin preview y conciliación CxP auditada; se registra como bloqueo
+  operativo real de P110-009.
