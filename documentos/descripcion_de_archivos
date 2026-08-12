@@ -13023,3 +13023,10 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   evidencia saneada del restore aislado con dos réplicas autenticadas,
   transferencia A/B, negativos de adjuntos y rollback coordinado sobre el
   candidato actual del Plan 110.
+2026-08-12
+- `tools/authenticated_load_smoke.cjs`: smoke autenticado de solo lectura que
+  registra el conteo agregado por estado HTTP junto a latencias y errores, para
+  evidenciar capacidad sin exponer sesión ni ejecutar mutaciones.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_regresion_roles_domotica_focalizada.md`:
+  resultado saneado de pruebas de contratos de permisos, sesión y domótica sin
+  efectos físicos ni mutaciones empresariales.

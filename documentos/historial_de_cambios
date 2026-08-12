@@ -42037,3 +42037,21 @@ acumulativa.
   autenticados. La limpieza automática dejó cero recursos efímeros.
 - P110-008 continúa parcial: los RTO/RPO observados aún requieren aceptación
   operativa y congelación del candidato final. El estado global sigue NO-GO.
+2026-08-12: Plan 110 / carga autenticada ampliada y diagnóstico de códigos.
+- `tools/authenticated_load_smoke.cjs` resume el conteo completo de estados HTTP
+  para diferenciar fallos funcionales de controles de límite de tasa sin
+  conservar sesiones ni secretos.
+- El candidato de staging aprobó 500 GET autenticados, concurrencia 20, cinco
+  superficies empresariales, 500 respuestas 200, p95 de 424 ms y p99 de 882 ms.
+  La ruta de permisos inicialmente mal escrita se descartó y se corrigió antes
+  del resultado válido.
+- P110-009 conserva estado parcial: faltan carga mutante de cajas, métricas de
+  recursos, simulacro de incidentes, deduplicación y guardia operativa.
+
+2026-08-12: Plan 110 / regresión focalizada de roles y domótica.
+- Las pruebas Go de permisos empresariales, invitaciones, sesión, CxP/IA y
+  control eléctrico, junto con `go vet` de handlers y db, aprobaron sin pulsos
+  GPIO ni cambios de datos.
+- La evidencia técnica conserva la distinción entre contratos de servidor y
+  validación operativa: siguen requeridas identidades reales por rol, cuatro
+  cajas y hardware registrado para certificar P110-004.

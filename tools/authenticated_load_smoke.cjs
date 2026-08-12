@@ -79,18 +79,23 @@ async function main() {
     }
     await Promise.all(Array.from({ length: concurrency }, () => worker()));
     const failures = samples.filter((sample) => sample.status < 200 || sample.status >= 400).length;
+    const statusCounts = samples.reduce((counts, sample) => {
+      const key = String(sample.status);
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
     const report = {
       generated_at: new Date().toISOString(), base_url: baseURL, empresa_id: Number(empresaID), routes,
       concurrency, requests, p50_ms: percentile(samples.map((sample) => sample.elapsedMS), 0.5),
       p95_ms: percentile(samples.map((sample) => sample.elapsedMS), 0.95),
       p99_ms: percentile(samples.map((sample) => sample.elapsedMS), 0.99), failures,
-      error_rate: Number((failures / samples.length).toFixed(4)),
+      error_rate: Number((failures / samples.length).toFixed(4)), status_counts: statusCounts,
       status: failures / samples.length <= maxErrorRate && percentile(samples.map((sample) => sample.elapsedMS), 0.95) <= thresholdMS ? "ok" : "warning",
       samples: samples.slice(0, 40)
     };
     fs.mkdirSync(outDir, { recursive: true });
     fs.writeFileSync(path.join(outDir, "authenticated_load_summary.json"), JSON.stringify(report, null, 2), "utf8");
-    process.stdout.write(JSON.stringify({ status: report.status, out_dir: outDir, requests: report.requests, p50_ms: report.p50_ms, p95_ms: report.p95_ms, p99_ms: report.p99_ms, failures: report.failures, error_rate: report.error_rate }) + "\n");
+    process.stdout.write(JSON.stringify({ status: report.status, out_dir: outDir, requests: report.requests, p50_ms: report.p50_ms, p95_ms: report.p95_ms, p99_ms: report.p99_ms, failures: report.failures, error_rate: report.error_rate, status_counts: report.status_counts }) + "\n");
     await context.close();
     if (report.status !== "ok") process.exitCode = 2;
   } finally {
