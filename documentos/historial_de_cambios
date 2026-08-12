@@ -1,3 +1,12 @@
+2026-08-12: Plan 110 / prueba visual controlada CxP-IA en PCS staging.
+- El flujo autenticado de captura IA creó un demo clasificado como duplicado,
+  expuso revisión humana editable y no generó CxP, pago, asiento, inventario ni
+  efecto en producción.
+- El soporte temporal se trasladó mediante la interfaz a papelera recuperable;
+  la verificación posterior retiró el caso de activos. No se depuró el archivo
+  ni se cerró P110-003: aún faltan proveedor IA real, timeout/cancelación y
+  matriz integral por rol.
+
 2026-08-12: Plan 110 / migraciones aisladas del candidato e308ca4b.
 - La base vacía aprobó catálogo, segunda pasada, checksum drift con fallo
   cerrado y recuperación. El upgrade de una copia lógica de staging aprobó dos

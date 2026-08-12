@@ -1,4 +1,7 @@
 2026-08-12
+- `documentos/evidencia_plan_110/P110-003/2026-08-12_cxp_ia_demo_y_papelera_staging.md`:
+  evidencia visual saneada del flujo autenticado de demo CxP/IA, revisión
+  humana y traslado recuperable a papelera en PCS staging.
 - `documentos/evidencia_plan_110/P110-001/2026-08-12_migracion_vacia_y_upgrade_e308ca4b.md`:
   evidencia saneada de migración vacía, drift de checksum y upgrade aislado de
   una copia lógica de staging del candidato actual.
