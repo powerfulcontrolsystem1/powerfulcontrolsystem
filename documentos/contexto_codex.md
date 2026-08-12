@@ -876,7 +876,11 @@ botones, desde handlers estaticos del backend.
 - Configuracion carrito: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`,
   `/api/empresa/estacion_prefs`; la visibilidad automatica de la tarjeta
   Domotica se guarda como `mostrar_tarjeta_domotica_carrito` dentro de
-  `carrito_ui_global` o del override por estacion.
+  `carrito_ui_global` o del override por estacion. La preferencia empresarial
+  `carrito_ui_global.abrir_domotica_al_entrar_estacion` es `false` por defecto;
+  cuando se activa, las tarjetas de estaciones/habitaciones abren directamente
+  sus equipos electronicos y el enlace `Venta directa` abre la consola
+  consolidada de equipos. No elimina ni cambia los permisos de venta.
 - Estaciones: `web/administrar_empresa/estaciones.html`,
   `/api/empresa/carritos_compra`.
 - Carrito y venta directa: `web/administrar_empresa/carrito_de_compras.html`,
