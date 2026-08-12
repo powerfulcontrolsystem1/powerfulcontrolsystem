@@ -1077,3 +1077,11 @@ autoriza ni ejecuta despliegue productivo.
   soporte y soportes IA aprobaron 64/64 vistas en escritorio y móvil sin
   mutaciones. El avance formal conserva **38,5 %**, certificación **0 %**,
   **NO-GO**.
+
+## Actualización 2026-08-12, barrido operativo y contratos de aislamiento
+
+- Tarifas, tesorería, turnos, domótica, caja, venta y superadministración
+  aprobaron 32/32 vistas en ambos formatos sin mutaciones. También aprobaron
+  contratos focalizados de CxP, tenant, permisos, roles y archivos privados.
+- No sustituye usuarios reales, cajas simultáneas ni hardware; avance formal
+  **38,5 %**, certificación **0 %**, **NO-GO**.

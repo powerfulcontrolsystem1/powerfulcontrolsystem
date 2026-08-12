@@ -42211,3 +42211,8 @@ acumulativa.
 2026-08-12: Plan 110 / barridos administrativos 120 y 136.
 - Nómina, contador, producción, bodegas, proveedores, reportes, soporte y
   soportes IA aprobaron 64/64 vistas en escritorio y móvil sin mutaciones.
+2026-08-12: Plan 110 / barrido operativo y contratos de aislamiento.
+- Tarifas, tesorería, turnos, domótica, caja, venta y superadministración
+  aprobaron 32/32 vistas en ambos formatos sin mutaciones.
+- Las pruebas focalizadas de CxP, tenant, permisos, roles y archivos privados
+  aprobaron junto con `go vet` de handlers y db.
