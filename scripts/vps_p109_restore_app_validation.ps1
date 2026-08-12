@@ -103,6 +103,14 @@ actual_hash="`$(sha256sum "`$tmp_script" | awk '{print `$1}')"
 chmod 700 "`$tmp_script"
 source_env=$sourceEnvLit
 [ -f "`$source_env" ] || { echo "[ERROR] Falta configuracion privada de staging." >&2; exit 1; }
+backup_dir=$backupDirLit
+if [ ! -f "`$backup_dir/postgres_all.sql.gz" ] && [ -d "`$backup_dir" ]; then
+  latest_snapshot="`$(find "`$backup_dir" -mindepth 1 -maxdepth 1 -type d -exec test -f '{}/postgres_all.sql.gz' ';' -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -n1 | cut -d' ' -f2-)"
+  if [ -n "`$latest_snapshot" ]; then
+    backup_dir="`$latest_snapshot"
+    echo "[RUN] Usando el snapshot completo mas reciente del directorio autorizado."
+  fi
+fi
 resolve_digest() {
   local container="`$1"
   local configured image_id digest env_name
@@ -145,7 +153,7 @@ if ! docker image inspect "`$clamav_image" >/dev/null 2>&1; then
   [ "$pullMissingValue" = "1" ] || { echo "[ERROR] La imagen ClamAV exacta no esta disponible localmente." >&2; exit 1; }
   docker pull "`$clamav_image" >/dev/null
 fi
-PROJECT_DIR="`$remote_path" SOURCE_ENV="`$source_env" BACKUP_DIR=$backupDirLit P109_DRILL_ID="`$drill_id" \
+PROJECT_DIR="`$remote_path" SOURCE_ENV="`$source_env" BACKUP_DIR="`$backup_dir" P109_DRILL_ID="`$drill_id" \
   PCS_API_IMAGE_DIGEST="`$api_image" PCS_MIGRATE_IMAGE_DIGEST="`$migrate_image" PCS_CLAMAV_IMAGE_DIGEST="`$clamav_image" \
   P109_VERIFY_PRIVATE_INVENTORY=1 P109_VERIFY_REPLICA=$verifyReplicaValue \
   P109_VERIFY_COORDINATED_ROLLBACK=$verifyRollbackValue \
@@ -167,7 +175,16 @@ try {
     $process.StandardInput.Write([IO.File]::ReadAllText($tmp)); $process.StandardInput.Close()
     $stdout = $process.StandardOutput.ReadToEnd(); $stderr = $process.StandardError.ReadToEnd(); $process.WaitForExit()
     if ($stdout) { Write-Output $stdout.TrimEnd() }
-    if ($process.ExitCode -ne 0 -and $stderr) { Write-Output "[ERROR] El drill remoto emitio diagnostico en stderr." }
+    if ($process.ExitCode -ne 0 -and $stderr) {
+      $safeDiagnostics = @($stderr -split "`r?`n" | Where-Object {
+        $_ -match '^\[(ERROR|WARN)\]' -or $_ -match '^ERROR:'
+      } | Select-Object -Last 12)
+      if ($safeDiagnostics.Count -gt 0) {
+        Write-Output ($safeDiagnostics -join "`n")
+      } else {
+        Write-Output "[ERROR] El drill remoto emitio diagnostico no publicable en stderr."
+      }
+    }
     $global:LASTEXITCODE = $process.ExitCode
   }
   if ($LASTEXITCODE -ne 0) { throw "El drill P109 de aplicación restaurada falló." }

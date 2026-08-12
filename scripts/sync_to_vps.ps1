@@ -711,8 +711,21 @@ if [ -f "$compose_env_file" ]; then
       fail "INVALID_RUNTIME_SCHEMA_BOOTSTRAP valor no permitido en deploy/.env.platform";
       ;;
   esac;
+  current_mailu_version="$(grep -E '^MAILU_VERSION=' "$compose_env_file" | tail -n1 | cut -d= -f2- || true)";
+  case "$current_mailu_version" in
+    '' )
+      upsert_compose_env MAILU_VERSION 2024.06;
+      ok "MAILU_VERSION fijada en deploy/.env.platform";
+      ;;
+    [0-9][0-9][0-9][0-9].[0-9][0-9])
+      ok "MAILU_VERSION existente conservada en deploy/.env.platform";
+      ;;
+    *)
+      fail "INVALID_MAILU_VERSION formato esperado YYYY.MM en deploy/.env.platform";
+      ;;
+  esac;
 else
-  warn "COMPOSE_ENV_MISSING no existe deploy/.env.platform; no se puede asegurar PCS_RUNTIME_SCHEMA_BOOTSTRAP";
+  warn "COMPOSE_ENV_MISSING no existe deploy/.env.platform; no se puede asegurar PCS_RUNTIME_SCHEMA_BOOTSTRAP ni MAILU_VERSION";
 fi;
 if [ -n "$effective_dbdialect" ]; then
   upsert_env DB_DIALECT "$effective_dbdialect";

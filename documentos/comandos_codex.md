@@ -159,6 +159,19 @@ El usuario suele pedir `ejecuta rs`. El script canonico vive en `scripts`:
 .\scripts\rs.ps1
 ```
 
+El drill de aplicación restaurada acepta el directorio padre de snapshots y
+selecciona automáticamente el subdirectorio completo más reciente. Siempre
+opera en PostgreSQL, red, puertos y almacenamiento efímeros:
+
+```powershell
+.\scripts\vps_p109_restore_app_validation.ps1 -AllowRemoteTarget
+```
+
+Para fijar un snapshot concreto, usar `-BackupDir` con la ruta remota del
+snapshot que contiene `postgres_all.sql.gz`. Los errores remotos se limitan a
+diagnósticos saneados `[ERROR]`/`[WARN]`; no agregar impresión de variables ni
+del stderr completo.
+
 No depender de un wrapper en la raiz del proyecto. Revisar el contenido del
 script antes de asumir su alcance. Puede encadenar preflight, actualizacion,
 sincronizacion y pasos operativos.
