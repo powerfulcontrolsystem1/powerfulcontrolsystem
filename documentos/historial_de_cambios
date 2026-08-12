@@ -42289,3 +42289,14 @@ acumulativa.
   filtro por `empresa_id` existentes.
 - QA local: prueba contractual Go del frontend, parseo de scripts inline con
   Node empaquetado, `node --check` y `git diff --check`.
+2026-08-12: Plan 110 / bootstrap Mailu y restauración aislada repetible.
+- El bootstrap del VPS fija `MAILU_VERSION=2024.06` solo cuando falta y rechaza
+  valores que no cumplen `YYYY.MM`; evita depender silenciosamente del default
+  de Compose sin cambiar una versión ya configurada.
+- El runner de restore selecciona el snapshot completo más reciente cuando se
+  le entrega el directorio padre autorizado y publica únicamente líneas
+  remotas `[ERROR]`/`[WARN]`, sin volcar stderr ni secretos.
+- El ensayo aislado aprobó `/health` y `/ready` 200, dos bases, cinco tablas,
+  seis archivos privados, seis referencias, cero huérfanos y limpieza total.
+  RTO observado: 78 s; RPO observado: 59.854 s. P110-008 sigue parcial porque
+  faltan réplica autenticada/rollback del candidato final y aceptación humana.

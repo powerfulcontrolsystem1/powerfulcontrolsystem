@@ -13108,3 +13108,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   `documentos/arquitectura/inventario_runtime_ensure.md` y
   `documentos/arquitectura/matriz_rutas_multiempresa.md`: inventarios generados
   que deben mantenerse sincronizados con el código y sus rutas registradas.
+- `documentos/evidencia_plan_110/P110-008/2026-08-12_restore_automatico_y_despliegue_domotica.md`:
+  evidencia saneada del despliegue de Domótica, actualización inmediata del
+  destino de Venta directa y restore efímero con selección automática del
+  snapshot completo más reciente.

@@ -1104,3 +1104,16 @@ autoriza ni ejecuta despliegue productivo.
   de sincronizar por la protección de rama: `codex/p110-execution` no es
   `main`. No es un fallo de staging ni autoriza desplegar sin integración
   aprobada.
+
+## Actualización 2026-08-12, despliegue Domótica y restore repetible
+
+- El acceso directo opcional a Domótica y su actualización inmediata entre
+  iframes fueron fusionados en `main`, desplegados con `rs` y verificados en
+  PCS: el enlace `Venta directa` cambió a equipos sin recarga y volvió al
+  carrito al desactivar el check. `/health` respondió 200 y Nginx validó.
+- El restore aislado seleccionó automáticamente el último snapshot completo,
+  aprobó health/ready, migración, dos bases, inventario privado sin huérfanos y
+  limpieza total. RTO observado 78 s y RPO observado 59.854 s.
+- P110-008 conserva estado **parcial**: falta repetir réplica autenticada y
+  rollback sobre el próximo digest final y obtener aceptación de RPO/RTO. El
+  avance formal continúa en **38,5 %**, certificación **0 %**, **NO-GO**.
