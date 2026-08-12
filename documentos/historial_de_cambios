@@ -42219,3 +42219,7 @@ acumulativa.
 2026-08-12: Plan 110 / barrido autenticado superadministrador.
 - Administradores, alertas, auditorías, consumo, IA y configuraciones aprobaron
   32/32 vistas entre escritorio y móvil, con guardia de solo lectura.
+2026-08-12: Plan 110 / corrección de inventarios de migración y rutas.
+- `rs` se detuvo cerrado antes de sincronizar porque la rama P110 no es `main`.
+- Se regeneraron los inventarios `Ensure*`, runtime y de rutas multiempresa;
+  únicamente cambiaron referencias de línea y los tres validadores aprobaron.

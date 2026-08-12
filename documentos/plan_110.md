@@ -1091,3 +1091,12 @@ autoriza ni ejecuta despliegue productivo.
 - El panel superadministrador aprobó 32/32 vistas de escritorio y móvil,
   incluidas alertas, auditoría, consumo y configuración, sin mutaciones.
 - El avance formal sigue en **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, compuerta rs e inventarios generados
+
+- `rs` ejecutó el preflight y se detuvo antes de sincronizar porque la rama
+  `codex/p110-execution` no es `main`; no se desplegó staging ni producción.
+- El preflight reveló inventarios generados desactualizados. Se regeneraron y
+  aprobaron 155 funciones `Ensure*`, 204 rutas multiempresa y 106 llamadas
+  runtime; los cambios solo actualizan referencias de línea. El avance formal
+  sigue en **38,5 %**, certificación **0 %**, **NO-GO**.

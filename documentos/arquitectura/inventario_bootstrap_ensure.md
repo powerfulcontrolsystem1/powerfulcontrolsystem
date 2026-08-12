@@ -88,7 +88,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaEnergiaSolarSchema` | [backend/db/energia_solar.go:108](../../backend/db/energia_solar.go#L108) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaEstacionColumnPreferencesSchema` | [backend/db/estacion_columnas_pref.go:24](../../backend/db/estacion_columnas_pref.go#L24) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEstacionVIPCodigosSchema` | [backend/db/estacion_vip_codigos.go:26](../../backend/db/estacion_vip_codigos.go#L26) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaEventosContablesSchema` | [backend/db/eventos_contables.go:251](../../backend/db/eventos_contables.go#L251) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaEventosContablesSchema` | [backend/db/eventos_contables.go:261](../../backend/db/eventos_contables.go#L261) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaFacturacionElectronicaSchema` | [backend/db/facturacion_electronica.go:337](../../backend/db/facturacion_electronica.go#L337) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaFinanzasSchema` | [backend/db/finanzas.go:186](../../backend/db/finanzas.go#L186) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaGimnasioSchema` | [backend/db/gimnasio.go:271](../../backend/db/gimnasio.go#L271) | DDL / indice / funcion | empresas o por confirmar |

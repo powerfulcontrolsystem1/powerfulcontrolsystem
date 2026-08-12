@@ -13101,3 +13101,7 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_superadministrador_staging.md`:
   evidencia saneada del barrido visual del panel superadministrador, con sus
   límites de operación humana explícitos.
+- `documentos/arquitectura/inventario_bootstrap_ensure.md`,
+  `documentos/arquitectura/inventario_runtime_ensure.md` y
+  `documentos/arquitectura/matriz_rutas_multiempresa.md`: inventarios generados
+  que deben mantenerse sincronizados con el código y sus rutas registradas.
