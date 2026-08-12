@@ -32,8 +32,8 @@ limpieza local, no un fallo de aserción.
 
 ## Límite
 
-La corrección queda en el candidato de código y todavía debe desplegarse a
-staging antes de reconsultar el TrackId. La evidencia DIAN externa confirma la
-aceptación del set, pero P110-006 sigue parcial: faltan la factura/nota de
-crédito fiscal de producción prevista por el plan y sus artefactos/conciliación
-oficiales.
+La corrección se desplegó en el candidato inmutable de staging y una reconsulta
+oficial del acuse persistió `estado=aceptado` y `acuse_aceptado=1`, sin emitir
+otro documento. La evidencia DIAN externa confirma la aceptación del set, pero
+P110-006 sigue parcial: faltan la factura/nota de crédito fiscal de producción
+prevista por el plan y sus artefactos/conciliación oficiales.

@@ -872,3 +872,7 @@ autoriza ni ejecuta despliegue productivo.
 - Las regresiones separadas de permisos, tenant, CxP, IA, firma DIAN y correo
   aprobaron. Son evidencia técnica de servidor, no sustituyen usuarios reales
   por rol ni elevan el porcentaje formal.
+- El candidato inmutable `1a6dc4fa` aprobó CI/SBOM y quedó activo en staging.
+  La reconsulta oficial del acuse DIAN persistió como aceptada sin emisión
+  adicional. P110-008 continúa parcial por el drill final y la aceptación de
+  RPO/RTO; el avance formal se mantiene en **38,5 %** y **NO-GO**.

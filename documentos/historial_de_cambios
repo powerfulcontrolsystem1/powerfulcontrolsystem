@@ -41967,3 +41967,10 @@ acumulativa.
   CxP idempotente, IA aislada, impresoras empresariales, firma DIAN y correo
   saneado. La ejecución amplia se mantuvo como inconclusa por tiempo y no se
   utilizó para afirmar cobertura adicional.
+2026-08-12: Plan 110 / candidato inmutable y reconsulta DIAN en staging.
+- El workflow del SHA `1a6dc4fa` aprobó build, escaneo, SBOM, publicación y
+  Compose. Sus cuatro digests se activaron en staging con health/ready y ClamAV
+  saludables; producción no cambió.
+- La reconsulta oficial de DIAN persistió el acuse de habilitación como aceptado
+  sin emitir otro documento. Se identificó que el checkout remoto aún omite el
+  Compose antivirus en su comando predeterminado, por lo que P110-008 no cierra.
