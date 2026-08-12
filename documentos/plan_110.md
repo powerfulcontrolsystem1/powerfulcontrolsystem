@@ -1027,3 +1027,9 @@ autoriza ni ejecuta despliegue productivo.
   durante navegación interna y su pantalla final aprobó en ambos formatos.
 - Es cobertura visual segura, no validación mutante ni de roles. El avance
   formal permanece **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, segundo lote administrativo
+
+- Doce pantallas adicionales aprobaron 24/24 vistas entre escritorio y móvil,
+  incluidos carritos y domótica, sin mutaciones ni errores. P110-004 conserva
+  estado parcial; el avance formal sigue en **38,5 %**, **NO-GO**.
