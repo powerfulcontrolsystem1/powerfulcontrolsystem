@@ -42165,3 +42165,8 @@ acumulativa.
   Alertmanager sin alertas activas.
 - Se registraron sin corregir dos pendientes reales: CSP con `unsafe-inline` y
   `fail2ban` no habilitado en VPS. P110-007/P110-009 siguen parciales y NO-GO.
+2026-08-12: Plan 110 / auditorías estáticas del candidato actual.
+- Los auditores profesionales, de seguridad, observabilidad y SLO aprobaron
+  sobre el checkout `d3d21414`, sin solicitudes externas ni datos sensibles.
+- La ejecución amplia de Go agotó el límite local y se conserva como
+  inconclusa; no se usa para aumentar cobertura ni el avance formal.

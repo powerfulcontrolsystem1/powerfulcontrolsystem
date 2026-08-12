@@ -988,3 +988,14 @@ autoriza ni ejecuta despliegue productivo.
   guardia y simulacro integral. No se añade una fase parcial nueva: el avance
   formal permanece **38,5 %**, certificación **0 %** y **NO-GO** hasta completar
   roles/cajas, UAT contable, impresión física, piloto y firmas.
+
+## Actualización 2026-08-12, auditorías estáticas del candidato actual
+
+- Las auditorías profesionales, de seguridad, observabilidad y SLO aprobaron
+  sobre el checkout del candidato `d3d21414`. Cubren sintaxis web, contratos de
+  sesión y scope empresarial, observabilidad de worker/cola y definición de
+  objetivos operativos.
+- La ejecución amplia de Go se agotó localmente sin un resultado concluyente y
+  no se contabiliza como aprobación. Persisten DAST integral, CSP, roles/cajas,
+  simulacro y aceptaciones humanas. El avance formal continúa en **38,5 %**,
+  certificación **0 %** y veredicto **NO-GO**.
