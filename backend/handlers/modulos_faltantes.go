@@ -8860,6 +8860,13 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 			return "enviado", dianFirstNonBlank(message, "documento procesado anteriormente por DIAN; requiere consulta/acuse original para confirmar aceptacion")
 		}
 		normalizedMessage := normalizeDIANAcuseEstado(message)
+		// GetStatusZip puede informar que el set completo fue aceptado aunque
+		// IsValid sea false para el lote/documento consultado. La descripcion
+		// oficial positiva debe prevalecer sobre la marca generica para no
+		// registrar un rechazo fiscal inexistente.
+		if normalizedMessage == "aceptado" {
+			return "aceptado", dianFirstNonBlank(message, "set de pruebas aceptado por DIAN")
+		}
 		if normalizedMessage == "pendiente" {
 			return "pendiente", dianFirstNonBlank(message, "Batch en proceso de validacion.")
 		}

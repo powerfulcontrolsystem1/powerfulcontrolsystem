@@ -865,3 +865,7 @@ autoriza ni ejecuta despliegue productivo.
 - La compuerta integrada volvió a aprobar salud y paridad DIAN; el bloqueo
   automático restante es Alertmanager sin canal externo verificable. Se mantiene
   **38,5 %**, certificación **0 %** y **NO-GO**.
+- Se emitió una única factura de habilitación controlada y DIAN informó que el
+  set estaba aceptado. Se corrigió en el candidato una clasificación transitoria
+  de esa respuesta positiva; hasta desplegarla y reconciliar los artefactos no
+  cambia el avance ni el veredicto.

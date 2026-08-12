@@ -41954,3 +41954,11 @@ acumulativa.
 - La compuerta VPS aprobó salud y paridad DIAN tras la réplica aislada. Persistió
   el NO-GO por falta de canal externo verificable en Alertmanager; no se tocaron
   servicios ni se emitieron documentos.
+2026-08-12: Plan 110 / acuse DIAN de habilitación y clasificación segura.
+- Una sola factura controlada de habilitación recibió TrackId y la consulta
+  oficial informó set aceptado. No se activó producción local ni se repitió el
+  documento.
+- `resolveDIANAcuseFromResponse` ahora prioriza una descripción oficial de set
+  aceptado aun si `IsValid=false`, evitando registrar un rechazo inexistente.
+  La regresión focalizada aprobó antes de un bloqueo de limpieza temporal de
+  Windows posterior a las aserciones.

@@ -1107,6 +1107,21 @@ func TestResolveDIANAcuseFromStatusDescriptionPending(t *testing.T) {
 	}
 }
 
+func TestResolveDIANAcuseAcceptsOfficialSetStatusDescriptionEvenWhenIsValidFalse(t *testing.T) {
+	response := map[string]interface{}{
+		"is_valid":           "false",
+		"status_code":        "00",
+		"status_description": "Set de prueba con identificador example-test-set se encuentra Aceptado.",
+	}
+	estado, mensaje := resolveDIANAcuseFromResponse(http.StatusOK, response)
+	if estado != "aceptado" {
+		t.Fatalf("expected accepted official set status, got estado=%s mensaje=%s", estado, mensaje)
+	}
+	if !strings.Contains(strings.ToLower(mensaje), "acept") {
+		t.Fatalf("expected accepted message, got %q", mensaje)
+	}
+}
+
 func validationResultHasCode(result map[string]interface{}, code string) bool {
 	for _, key := range []string{"issues", "warnings"} {
 		items, _ := result[key].([]map[string]interface{})
