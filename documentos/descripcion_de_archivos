@@ -13089,3 +13089,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_072_084_staging.md`:
   evidencia saneada de los lotes CRM y fiscal visual, con acciones fiscales
   excluidas explícitamente.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_096_108_staging.md`:
+  evidencia saneada de los lotes documental e inventario, con límites de
+  cobertura visual segura.

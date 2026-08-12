@@ -42205,3 +42205,6 @@ acumulativa.
 - CRM, documentos, egresos, correo, estaciones, facturación y finanzas
   aprobaron 48/48 vistas entre escritorio y móvil. Los efectos fiscales se
   omitieron explícitamente en la guardia de solo lectura.
+2026-08-12: Plan 110 / barridos administrativos 096 y 108.
+- Gestión documental, inventario, impuestos, licencias, WMS, Nextcloud, NIIF y
+  nómina aprobaron 48/48 vistas entre escritorio y móvil sin mutaciones.

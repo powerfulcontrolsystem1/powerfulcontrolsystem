@@ -1064,3 +1064,9 @@ autoriza ni ejecuta despliegue productivo.
   finanzas aprobaron 48/48 vistas en escritorio/móvil sin mutaciones. Las
   acciones fiscales se omitieron expresamente por ser efectos reales.
 - El avance formal permanece **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, lotes documental e inventario
+
+- Gestión documental, horarios, importaciones, impuestos, inventario, licencia,
+  WMS, Nextcloud, NIIF y nómina aprobaron 48/48 vistas en ambos formatos sin
+  mutaciones. El avance formal se mantiene en **38,5 %**, **NO-GO**.
