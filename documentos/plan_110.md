@@ -862,3 +862,6 @@ autoriza ni ejecuta despliegue productivo.
 - La revisión visual autenticada confirmó esa configuración y validó las
   credenciales sin emitir. El botón de diagnóstico no devolvió un resultado
   adicional visible, por lo que no se infiere éxito fiscal ni cambia el avance.
+- La compuerta integrada volvió a aprobar salud y paridad DIAN; el bloqueo
+  automático restante es Alertmanager sin canal externo verificable. Se mantiene
+  **38,5 %**, certificación **0 %** y **NO-GO**.

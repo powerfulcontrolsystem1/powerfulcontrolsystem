@@ -41950,3 +41950,7 @@ acumulativa.
 - El centro DIAN de PCS mostró habilitación, emisión local apagada y datos de
   preparación; la validación de credenciales avanzó el flujo sin emitir. El
   diagnóstico no aportó una salida visible concluyente y se conserva como límite.
+2026-08-12: Plan 110 / compuerta actualizada.
+- La compuerta VPS aprobó salud y paridad DIAN tras la réplica aislada. Persistió
+  el NO-GO por falta de canal externo verificable en Alertmanager; no se tocaron
+  servicios ni se emitieron documentos.
