@@ -1009,3 +1009,13 @@ autoriza ni ejecuta despliegue productivo.
   requieren previsualización por superadministración y conciliación CxP antes de
   cualquier efecto. P110-009 continúa **parcial**, avance **38,5 %**,
   certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, barrido autenticado crítico
+
+- Finanzas/CxP, Centro IA, pruebas DIAN y domótica aprobaron 8/8 en escritorio
+  y móvil bajo una sesión PCS de staging, sin errores visibles ni mutaciones.
+  Se corrigió el inventario: CxP está integrado en Finanzas y no posee una
+  pantalla independiente con el nombre usado inicialmente por el auditor.
+- El barrido omitió acciones de negocio por diseño. P110-004 no cierra hasta
+  completar roles, cuatro cajas, hardware y evidencias humanas. El avance formal
+  conserva **38,5 %**, certificación **0 %**, **NO-GO**.

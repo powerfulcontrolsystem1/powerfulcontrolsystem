@@ -13071,3 +13071,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-009/2026-08-12_lectura_operativa_outbox_candidato_d3d21414.md`:
   lectura saneada de salud, worker y métricas agregadas del candidato staging,
   incluyendo el bloqueo de eventos outbox dead que requiere conciliación.
+- `documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_autenticado_critico_staging.md`:
+  evidencia saneada del barrido autenticado de Finanzas/CxP, IA, DIAN y
+  domótica en escritorio y móvil, con límites de acciones mutantes explícitos.

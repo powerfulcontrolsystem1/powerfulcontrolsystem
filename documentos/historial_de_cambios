@@ -42176,3 +42176,8 @@ acumulativa.
 - Se detectaron dos eventos empresariales dead por métrica agregada. No se
   reintentaron sin preview y conciliación CxP auditada; se registra como bloqueo
   operativo real de P110-009.
+2026-08-12: Plan 110 / barrido autenticado crítico PCS en staging.
+- Finanzas/CxP, Centro IA, consola DIAN y domótica aprobaron en escritorio y
+  móvil sin errores ni mutaciones. El inventario inicial de CxP apuntaba a una
+  pantalla inexistente; se corrigió a su integración real en Finanzas y se
+  repitió el lote válido 8/8.
