@@ -39,3 +39,13 @@ P110-005 queda **parcial**, no certificada: faltan recorrido de todos los
 formatos con documentos PCS reales, tableta, zoom/lector de pantalla y firma de
 impresión física. Esta evidencia no declara aceptación DIAN ni reemplaza esos
 pasos.
+
+## Repetición posterior al candidato IA
+
+El 2026-08-12 se repitieron los 20 formatos con el Chrome instalado en el
+equipo (sin instalar dependencias): **20/20 OK**, cero casos a revisar y cero
+fallos de autoimpresión. La verificación manual de la factura extensa Carta
+confirmó filas, columnas, totales, QR y seis páginas sin recortes. También
+aprobaron en modo estricto las auditorías de consistencia UX y de
+permisos/licencias. Los artefactos permanecen locales y no contienen datos
+reales de clientes.

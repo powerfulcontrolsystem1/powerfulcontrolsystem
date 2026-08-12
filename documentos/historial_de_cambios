@@ -1,3 +1,11 @@
+2026-08-12: Plan 110 / repetición visual de impresiones y contratos UX.
+- Los 20 formatos Carta/POS aprobaron con Chrome local, incluidos documentos
+  extensos, QR y autoimpresión; la inspección visual de la factura multipágina
+  no mostró recortes de filas, columnas ni totales.
+- Las auditorías estrictas de consistencia UX y permisos/licencias aprobaron.
+  P110-005 sigue parcial hasta impresión física, accesibilidad asistida y
+  documentos reales controlados.
+
 2026-08-12: Plan 110 / deduplicación de Alertmanager en staging.
 - Dos publicaciones sintéticas de la misma alerta se consolidaron en una alerta
   activa y la resolución la retiró por completo. No hubo datos empresariales ni
