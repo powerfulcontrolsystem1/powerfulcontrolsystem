@@ -42013,3 +42013,13 @@ acumulativa.
   socket ClamAV. Los soportes creados únicamente durante intentos de QA se
   enviaron a papelera mediante el flujo auditado; no hubo contabilidad, DIAN,
   pagos ni cambios en producción.
+2026-08-12: Plan 110 / contratos IA y revisión humana.
+- Aprobaron los contratos focalizados de extracción estructurada, respuesta
+  adversarial, proveedor caído, doble clic, edición humana, proveedor canónico,
+  papelera, estado cerrado, memoria aislada y modo agente propiedad del servidor.
+  Esta evidencia no sustituye la matriz visual autenticada por rol.
+2026-08-12: Plan 110 / compuerta y carga del candidato actual.
+- La compuerta automática aprobó salud, paridad DIAN y canal externo de alertas
+  en staging. Una carga autenticada de 300 GET con concurrencia 15 tuvo cero
+  errores, p95 de 907 ms y p99 de 1890 ms, sin mutaciones de negocio. Persisten
+  las pruebas de cajas, SLO integral, incidentes y aceptación humana.

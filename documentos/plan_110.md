@@ -920,3 +920,24 @@ autoriza ni ejecuta despliegue productivo.
 - No se infiere cierre financiero: siguen pendientes conciliación independiente,
   recuperación elegible y UAT firmado del contador. El avance formal permanece
   en **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, contratos IA del candidato
+
+- Aprobaron los contratos de extracción IA, edición humana, proveedor canónico,
+  doble clic, estado cerrado, papelera y aislamiento de memoria; `go vet` de
+  handlers/db también aprobó. La IA no puede convertir una lectura en CxP sin
+  confirmación humana independiente.
+- Aún falta ejecutar todos los botones por rol y comprobar visualmente timeout,
+  cancelación y proveedor real. P110-003 continúa **parcial**, sin cambio de
+  avance formal: **38,5 %**, certificación **0 %**, **NO-GO**.
+
+## Actualización 2026-08-12, carga y compuerta automática
+
+- La compuerta automática actualizada aprobó salud, paridad DIAN y entrega
+  externa Alertmanager en staging. La alerta de malware activa corresponde a
+  la sonda EICAR controlada; ClamAV y staging se encuentran saludables y no se
+  suprimió la alerta manualmente.
+- La carga autenticada de 300 GET a concurrencia 15 aprobó con cero errores,
+  p95 de 907 ms y p99 de 1890 ms, sin mutaciones. Faltan cajas mutantes,
+  recursos/SLO, resolución y deduplicación completa de alertas. P110-009 sigue
+  **parcial**; avance formal **38,5 %**, certificación **0 %**, **NO-GO**.
