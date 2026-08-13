@@ -1187,3 +1187,16 @@ autoriza ni ejecuta despliegue productivo.
 - Ambas correcciones requieren despliegue y repetición visual. P110-006 y
   P110-007 continúan **parciales**; avance formal **38,5 %**, certificación
   **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-12, compuerta CSP y primer módulo sin inline
+
+- Se midieron 1.347 bloqueos CSP en 243 páginas. Grafología externalizó su
+  bloque de estilos y once atributos, quedó en cero y redujo el total a 1.335
+  bloqueos en 242 páginas; el área empresarial bajó de 975 a 963.
+- La nueva línea base falla en CI ante cualquier aumento global o por área y si
+  el archivo de referencia desaparece. Sus valores solo pueden disminuir.
+- La revisión visual local confirmó hoja CSS cargada, dos columnas en escritorio,
+  una columna/KPI 2x2 en móvil, cero errores de consola y cero overflow horizontal.
+- La deuda restante impide retirar `unsafe-inline` de la política aplicada;
+  P110-007 continúa **parcial**, avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.

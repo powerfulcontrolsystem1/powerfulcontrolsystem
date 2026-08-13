@@ -42342,3 +42342,9 @@ acumulativa.
   pero el backend aun incluyo `unsafe-inline` en Report-Only.
 - El Compose local activa `PCS_CSP_REPORT_ONLY_STRICT=1` por defecto sin cambiar
   la politica aplicada. Falta desplegar, observar reportes y retirar inline.
+2026-08-12: Plan 110 / linea base CSP decreciente y Grafologia sin inline.
+- El inventario inicial cuantifico 1.347 bloqueos en 243 paginas. Grafologia
+  externalizo su bloque de estilos y once atributos, quedo en cero y redujo el
+  total a 1.335 bloqueos en 242 paginas.
+- CI falla si aumenta cualquier total/area o desaparece la linea base. La deuda
+  restante conserva P110-007 parcial y no autoriza retirar `unsafe-inline`.
