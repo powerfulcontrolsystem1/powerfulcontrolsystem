@@ -165,19 +165,6 @@ func normalizeEmpresaBackupEstado(raw string) string {
 	return "activo"
 }
 
-func empresaBackupNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 500 {
-		limit = 500
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
 func empresaBackupLikePattern(raw string) string {
 	value := strings.TrimSpace(raw)
 	value = strings.ReplaceAll(value, "!", "!!")
@@ -989,7 +976,7 @@ func ListEmpresaBackups(dbConn *sql.DB, empresaID int64, filter EmpresaBackupFil
 		return nil, 0, errors.New("empresa_id invalido")
 	}
 
-	limit, offset := empresaBackupNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := " WHERE empresa_id = ?"
 	args := []interface{}{empresaID}
 

@@ -824,7 +824,7 @@ func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		},
 	}
 	for tableName, columns := range requiredColumns {
-		columnsOK, colErr := empresaFinanzasColumnsExist(dbConn, tableName, columns)
+		columnsOK, colErr := requiredTableColumnsExist(dbConn, tableName, columns)
 		if colErr != nil || !columnsOK {
 			PerfLogf("[perf][schema] finanzas missing columns table=%s ok=%v err=%v", tableName, columnsOK, colErr)
 			return false, colErr
@@ -838,64 +838,13 @@ func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		"ix_empresa_finanzas_periodos_empresa_estado",
 	}
 	for _, indexName := range requiredIndexes {
-		indexOK, idxErr := empresaFinanzasIndexExists(dbConn, indexName)
+		indexOK, idxErr := currentSchemaIndexExists(dbConn, indexName)
 		if idxErr != nil || !indexOK {
 			PerfLogf("[perf][schema] finanzas missing index %s ok=%v err=%v", indexName, indexOK, idxErr)
 			return false, idxErr
 		}
 	}
 	return true, nil
-}
-
-func empresaFinanzasColumnsExist(dbConn *sql.DB, tableName string, columns []string) (bool, error) {
-	if len(columns) == 0 {
-		return true, nil
-	}
-	found := make(map[string]bool, len(columns))
-	rows, err := querySQLCompat(dbConn, `
-		SELECT column_name
-		FROM information_schema.columns
-		WHERE table_schema = ANY (current_schemas(false))
-		  AND table_name = ?
-	`, strings.TrimSpace(tableName))
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var columnName string
-		if err := rows.Scan(&columnName); err != nil {
-			return false, err
-		}
-		found[strings.ToLower(strings.TrimSpace(columnName))] = true
-	}
-	if err := rows.Err(); err != nil {
-		return false, err
-	}
-	for _, columnName := range columns {
-		if !found[strings.ToLower(strings.TrimSpace(columnName))] {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func empresaFinanzasIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
-	var exists bool
-	query := `
-		SELECT EXISTS (
-			SELECT 1
-			FROM pg_indexes
-			WHERE schemaname = ANY (current_schemas(false))
-			  AND indexname = ?
-		)
-	`
-	err := queryRowSQLCompat(dbConn, query, strings.TrimSpace(indexName)).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
 
 // GetEmpresaFinanzasConfiguracion obtiene configuracion financiera por empresa con defaults seguros.

@@ -111,19 +111,6 @@ func ventaDigitalNormalizeMoneda(raw string) string {
 	return moneda
 }
 
-func ventaDigitalNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 500 {
-		limit = 500
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
 func ventaDigitalLikePattern(raw string) string {
 	value := strings.TrimSpace(raw)
 	value = strings.ReplaceAll(value, "!", "!!")
@@ -702,7 +689,7 @@ func ListSuperVentaDigitalItems(dbConn *sql.DB, filter SuperVentaDigitalItemsFil
 		return nil, 0, errors.New("db connection is nil")
 	}
 
-	limit, offset := ventaDigitalNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := "WHERE 1=1"
 	args := make([]interface{}, 0)
 
@@ -1108,7 +1095,7 @@ func ListSuperVentaDigitalOrders(dbConn *sql.DB, filter SuperVentaDigitalOrdersF
 		return nil, 0, errors.New("db connection is nil")
 	}
 
-	limit, offset := ventaDigitalNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := "WHERE 1=1"
 	args := make([]interface{}, 0)
 

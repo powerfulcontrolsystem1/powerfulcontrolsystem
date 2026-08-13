@@ -1,3 +1,19 @@
+2026-08-13: Plan 110 / consolidacion de helpers DB repetidos.
+- Carritos y Finanzas comparten un unico verificador de columnas PostgreSQL;
+  Chat/Tareas, Propinas, Reservas, Venta publica y Finanzas comparten la
+  verificacion de indices en esquemas visibles.
+- Backups empresariales, Soporte remoto, Venta digital y Venta publica
+  reutilizan una sola normalizacion de limite/offset con prueba de defaults,
+  tope y valores negativos. No cambian SQL de negocio, filtros `empresa_id`,
+  permisos, endpoints ni DDL.
+- La auditoria estructural baja de 52 a 49 grupos duplicados exactos y de 7.205
+  a 7.197 funciones de produccion; la linea base decreciente impide regresion.
+  Pruebas DB enfocadas y `go vet ./db` aprobaron. No se ejecuto `rs`.
+- La prueba IA real y sin modo agente señalo stock negativo; la API oficial
+  confirmo 2 alertas y deficit 19, pero la vista principal de Productos dejaba
+  los KPI en cero porque su bootstrap no cargaba el resumen. La vista ahora
+  invoca el endpoint existente y una regresion estatica protege el contrato.
+
 2026-08-13: Plan 110 / preconfiguracion empresarial sin DDL HTTP.
 - Productos, usuarios, configuracion operativa, comisiones, tarifas y Domotica
   validan esquema ya migrado antes de aplicar plantillas; la solicitud no crea

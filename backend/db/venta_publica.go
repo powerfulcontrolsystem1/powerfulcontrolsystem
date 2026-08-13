@@ -343,19 +343,6 @@ type EmpresaVentaPublicaOrdersFilter struct {
 	Offset          int
 }
 
-func ventaPublicaNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 500 {
-		limit = 500
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
 func ventaPublicaNormalizeEstado(raw string) string {
 	if strings.EqualFold(strings.TrimSpace(raw), "inactivo") {
 		return "inactivo"
@@ -967,28 +954,12 @@ func empresaVentaPublicaSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		"ix_venta_publica_ordenes_tx",
 	}
 	for _, indexName := range requiredIndexes {
-		ok, err := empresaVentaPublicaIndexExists(dbConn, indexName)
+		ok, err := currentSchemaIndexExists(dbConn, indexName)
 		if err != nil || !ok {
 			return false, err
 		}
 	}
 	return true, nil
-}
-
-func empresaVentaPublicaIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
-	var exists bool
-	err := queryRowSQLCompat(dbConn, `
-		SELECT EXISTS (
-			SELECT 1
-			FROM pg_indexes
-			WHERE schemaname = ANY (current_schemas(false))
-			  AND indexname = ?
-		)
-	`, indexName).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
 
 // ListEmpresaVentaPublicaPaginas lista las paginas publicas de una empresa.
@@ -1898,7 +1869,7 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 		return nil, 0, fmt.Errorf("empresa_id invalido")
 	}
 
-	limit, offset := ventaPublicaNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := `WHERE i.empresa_id = ?`
 	args := []interface{}{empresaID}
 	if !filter.IncludeInactive {
@@ -2396,7 +2367,7 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 		return nil, 0, err
 	}
 
-	limit, offset := ventaPublicaNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := `WHERE empresa_id = ?`
 	args := []interface{}{empresaID}
 	if !filter.IncludeInactive {

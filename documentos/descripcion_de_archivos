@@ -13213,3 +13213,5 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_linea_base_csp_y_grafologia_sin_inline.md`:
   medicion inicial/final, segundo lote sin eventos, compuerta CI y limite
   productivo de la deuda CSP.
+- `documentos/evidencia_plan_110/P110-004/2026-08-13_barrido_pcs_finanzas_dian_domotica.md`: evidencia autenticada y no mutante de Finanzas, Facturación y Domótica en PCS, escritorio y móvil.
+- `backend/main_productos_kpi_test.go`: contrato estático que obliga a la vista principal de Productos a cargar sus KPI reales de inventario.

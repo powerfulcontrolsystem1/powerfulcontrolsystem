@@ -1453,3 +1453,24 @@ autoriza ni ejecuta despliegue productivo.
 - Validación local con temporales/caché en D: aprobó pruebas, vet y
   `govulncheck ./...` con **0 vulnerabilidades alcanzables**. C: continúa
   prácticamente lleno; no se eliminó contenido al bloquearse la limpieza.
+
+## Actualización 2026-08-13, primer saneamiento de duplicación DB
+
+- Se consolidaron tres familias idénticas: verificación de columnas, consulta
+  de índices PostgreSQL y normalización de paginación. Once repositorios
+  reutilizan helpers internos sin cambiar consultas de negocio, filtros
+  `empresa_id`, permisos, endpoints ni autoridad DDL.
+- La compuerta estructural baja de **52 a 49** grupos duplicados exactos y la
+  línea base se reduce para impedir regresión. Las pruebas DB enfocadas y vet
+  aprobaron.
+- La comprobación visual autenticada del entorno publicado abrió PCS empresa
+  12 y confirmó panel, correo corporativo activo y navegación empresarial. Los
+  avisos DIAN visibles son históricos; no se reenviaron documentos fallidos.
+- Una consulta IA neutra, con modo agente desactivado, respondió sin propuesta
+  ni mutación y señaló dos stocks negativos. La API oficial confirmó **2**
+  alertas y déficit **19**, mientras la vista principal mostraba ceros porque no
+  inicializaba ese resumen. El candidato corrige el bootstrap y lo protege con
+  una prueba; falta repetir visualmente después de desplegarlo.
+- P110-001A continúa **parcial** porque persisten handlers monolíticos, acceso
+  DB sin contexto, errores ignorados y otras duplicaciones. El avance formal
+  conserva **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
