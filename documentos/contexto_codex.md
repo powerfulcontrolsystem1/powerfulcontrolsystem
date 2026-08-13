@@ -9,11 +9,25 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
-## Actualizacion 2026-07-24 - Plan 106 P0 en ejecucion controlada
+## Actualizacion 2026-08-13 - Plan 110 es la ruta activa
 
-- `documentos/plan_106.md` es el plan vigente para certificar produccion
-  general. Permanece en `NO-GO` para produccion; el usuario autorizo ejecutar
-  fases acotadas, sin `rs` ni efectos externos.
+- Abrir `documentos/plan_110.md` para cualquier trabajo de entrada en
+  producción. Los Planes 106 a 109 son antecedentes; no deben ejecutarse como
+  hoja vigente.
+- Estado formal: 38,5 % de implementación, 0 % de certificación del candidato y
+  `NO-GO`.
+- P110-001A exige caracterizar y sanear duplicación, ownership de esquema,
+  funciones críticas, contextos DB, errores descartados y deuda frontend sin
+  perder aislamiento por `empresa_id`, permisos ni cobertura.
+- No ejecutar `rs`, desplegar ni mutar PCS solo por leer este contexto; aplicar
+  la autorización y las compuertas ambientales vigentes del Plan 110.
+- Las secciones de Planes 106/108 que siguen se conservan únicamente como
+  historial técnico.
+
+## Historico 2026-07-24 - Plan 106 P0 en ejecucion controlada
+
+- En esa fecha `documentos/plan_106.md` era el plan de certificación. Hoy es un
+  antecedente del Plan 110 y no debe ejecutarse como hoja vigente.
 - El ejecutor recomendado es GPT-5.6 Terra alto, una fase P106 por vez; las
   decisiones P0 y el GO final deben revisarse con GPT-5.6 Sol alto.
 - El plan prioriza la unificacion de las dos fuentes CxP, la cobertura total de
@@ -1185,15 +1199,13 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
   no deben repetirse como cinco entradas del submenu. La pagina unica concentra
   proveedor, credencial, reglas, contexto, chat global y voz.
 
-## Plan 108 de entrada en producción 2026-07-25
+## Histórico - Plan 108 de entrada en producción 2026-07-25
 
-- `documentos/plan_108.md` reemplaza como hoja de ruta activa la ejecución
-  separada de los planes 106, 107 e IA y absorbe también los pendientes
-  vigentes de los planes 104, 105 y del plan final histórico.
+- `documentos/plan_108.md` reemplazó temporalmente la ejecución separada de los
+  planes 106, 107 e IA. Plan 110 absorbió los pendientes aún vigentes.
 - El estado es `NO-GO`: existe preflight local satisfactorio, pero todavía falta
   candidato inmutable, staging integral, migraciones fuera del runtime,
   aislamiento A/B, consistencia financiera, cierre contable e IA, pruebas
   visuales/impresas, concurrencia de cajas, proveedores, recuperación y piloto.
-- GPT-5.6 Terra medio debe comenzar por `P108-000`, conservar secretos fuera de
-  la documentación y no sumar certificación productiva antes de fijar SHA y
-  digest.
+- Esta orden se conserva solo como historia; el ejecutor actual comienza por la
+  fase abierta correspondiente de Plan 110.

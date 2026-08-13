@@ -1,6 +1,6 @@
 # Contexto especifico del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-16.
+Estado: vigente. Ultima actualizacion: 2026-08-13.
 
 Este documento amplia el
 [`Contexto general del sistema`](contexto_general_del_sistema.md). No se debe
@@ -8,6 +8,8 @@ leer completo por defecto: usar la seccion relacionada con la tarea.
 
 ## Inicio de cualquier cambio
 
+- Hoja de ruta activa de producción: `plan_110.md`; Planes 106 a 109 son
+  antecedentes y no órdenes vigentes.
 - Vision y alcance: `descripcion_del_proyecto`.
 - Ubicacion de paginas, APIs, tablas y pruebas: `mapa_modulos.md`.
 - Flujos de negocio: `flujos_operativos.md`.
