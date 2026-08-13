@@ -5,7 +5,7 @@ package db
 // legacySchemaCatalogSourceFingerprint freezes the reviewed source bodies of
 // every Ensure* step executed by the compatibility catalog. Changing a legacy
 // step changes this value and must be accompanied by a new immutable migration.
-const legacySchemaCatalogSourceFingerprint = "d0:5a:29:1d:23:45:45:6d:0f:c8:e4:14:8c:24:4f:46:bf:07:7c:0f:52:d9:9a:06:1e:dd:10:4a:7a:e1:1c:99"
+const legacySchemaCatalogSourceFingerprint = "de:7b:be:a2:b7:75:33:97:56:a0:b0:12:7b:f1:58:21:ac:38:60:b6:62:5e:07:60:10:0f:78:14:48:9c:d9:3f"
 
 var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureAdminEmpresaCompartidaSchema": "82:45:70:3b:a8:07:9e:54:f0:75:ab:fd:53:df:33:f0:4a:2f:3e:a5:9c:cd:1c:28:48:2c:69:45:41:2c:de:f7",
@@ -13,7 +13,7 @@ var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureAdministradoresAuthSchema": "9d:6d:eb:1f:d3:b3:9e:88:30:4c:f5:da:74:b6:54:3c:02:6d:1d:46:ce:48:aa:11:8b:fc:1a:18:af:54:04:a8",
 	"EnsureAsesorComercialSchema": "47:84:76:62:5a:8a:2d:e0:0a:2c:13:57:54:f5:67:c6:5a:00:d3:37:18:6c:d0:1f:9b:99:eb:2a:95:51:f9:e5",
 	"EnsureAyudaTicketsSchema": "1d:9e:1c:69:4c:2a:38:2d:a3:83:70:ed:f1:d2:68:b0:b3:88:cb:06:15:9a:dc:d9:22:e6:0d:b0:a2:76:8c:34",
-	"EnsureCanonicalTiposEmpresaPreconfigurables": "1a:29:fb:af:1c:96:04:1b:d7:52:d0:ac:af:9d:fb:bb:63:2a:72:65:1b:17:0c:cc:23:52:b4:f7:23:f9:70:1e",
+	"EnsureCanonicalTiposEmpresaPreconfigurables": "7f:af:64:8a:62:0c:a2:0e:11:ec:d6:49:4e:c5:ff:50:c0:c0:48:0b:44:be:ef:0e:11:58:a4:1b:aa:40:ae:c2",
 	"EnsureCatalogoLegalPaisSchema": "ea:12:8b:42:ee:11:e6:39:0d:e4:d3:1b:3a:ee:09:3b:65:44:21:ab:d5:67:83:aa:a1:35:b8:bc:23:d6:18:f8",
 	"EnsureDefaultSuperContract": "7f:c1:b3:11:8f:b9:25:83:86:4f:85:0d:20:a9:c9:ba:b8:8b:f6:1c:4a:cc:11:1b:dc:d6:0c:97:0b:1c:41:17",
 	"EnsureEmpresaAIChatSchema": "20:76:56:03:cf:3b:76:0b:ba:64:6e:3c:e3:d4:d8:c2:d4:77:40:06:1d:a0:4f:90:18:b1:2a:af:94:42:d8:80",

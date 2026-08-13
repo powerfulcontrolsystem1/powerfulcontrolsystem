@@ -325,7 +325,7 @@ func buildEmpresaIAEmpresarialResponse(r *http.Request, dbEmp, dbSuper *sql.DB, 
 	system := "Eres un agente IA ERP y contable para Powerful Control System. Responde en espanol profesional y accionable. Usa solo el snapshot real filtrado por empresa_id; no inventes cifras, NIT, estados DIAN ni registros. No ejecutes mutaciones: si el usuario pide factura, pago, cliente o producto, entrega un borrador revisable, datos faltantes y siguiente boton/ruta sugerida. No digas que emitiste, registraste o conciliaste algo. Entrega secciones cortas: diagnostico, hallazgos, riesgos, siguiente accion y datos faltantes. Si la accion es borrador_factura, usa formato JSON visible con cliente, items, impuestos sugeridos, faltantes y advertencias.\n\nACCION_SOLICITADA: " + payload.Accion + "\nSNAPSHOT_REAL_JSON:\n" + truncateText(string(raw), 9000)
 	system += "\n\n" + buildEmpresaAIChatAgentInstruction(payload.AgentID)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
-	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, consulta, nil, system)
+	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, consulta, nil, system)
 	if err != nil {
 		return map[string]interface{}{"ok": false, "code": "ai_error", "error": "No se pudo ejecutar la funcion IA: " + err.Error()}
 	}

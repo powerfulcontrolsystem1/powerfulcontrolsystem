@@ -522,7 +522,7 @@ func generateDynamicDocumentAIContent(ctx context.Context, dbEmp, dbSuper *sql.D
 	var err error
 	go func() {
 		defer close(done)
-		content, pt, ct, err = ctrl.generateResponseWithSystemPrompt(model, prompt, nil, system)
+		content, pt, ct, err = ctrl.generateResponseWithSystemPromptContext(ctx, model, prompt, nil, system)
 	}()
 	select {
 	case <-ctx.Done():

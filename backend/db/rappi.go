@@ -134,7 +134,7 @@ func GetEmpresaRappiConfig(dbConn *sql.DB, empresaID int64) (EmpresaRappiConfig,
 	if empresaID <= 0 {
 		return EmpresaRappiConfig{}, fmt.Errorf("empresa_id invalido")
 	}
-	if err := EnsureEmpresaRappiSchema(dbConn); err != nil {
+	if err := EmpresaRappiSchemaReady(dbConn); err != nil {
 		return EmpresaRappiConfig{}, err
 	}
 	var out EmpresaRappiConfig
@@ -190,7 +190,7 @@ func SaveEmpresaRappiConfig(dbConn *sql.DB, cfg EmpresaRappiConfig) error {
 	if cfg.EmpresaID <= 0 {
 		return fmt.Errorf("empresa_id invalido")
 	}
-	if err := EnsureEmpresaRappiSchema(dbConn); err != nil {
+	if err := EmpresaRappiSchemaReady(dbConn); err != nil {
 		return err
 	}
 	cfg.Ambiente = NormalizeRappiAmbiente(cfg.Ambiente)
@@ -238,7 +238,7 @@ func UpsertEmpresaRappiOrderLog(dbConn *sql.DB, row EmpresaRappiOrderLog) (int64
 	if row.EmpresaID <= 0 || strings.TrimSpace(row.RappiOrderID) == "" {
 		return 0, fmt.Errorf("empresa_id y rappi_order_id son obligatorios")
 	}
-	if err := EnsureEmpresaRappiSchema(dbConn); err != nil {
+	if err := EmpresaRappiSchemaReady(dbConn); err != nil {
 		return 0, err
 	}
 	if strings.TrimSpace(row.Moneda) == "" {
@@ -282,7 +282,7 @@ func ListEmpresaRappiOrderLogs(dbConn *sql.DB, empresaID int64, limit int) ([]Em
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
 	}
-	if err := EnsureEmpresaRappiSchema(dbConn); err != nil {
+	if err := EmpresaRappiSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if limit <= 0 || limit > 200 {

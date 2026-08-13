@@ -264,7 +264,7 @@ abierta.
 - 52 grupos de cuerpos de función idénticos;
 - 155 funciones `Ensure*`, 122 pasos de catálogo legado y 106 llamadas fuera
   del migrador, 31 de ellas alcanzables durante tráfico HTTP;
-- 1.841 llamadas DB sin contexto en código de producción y 748 errores
+- 1.841 llamadas DB sin contexto en código de producción y 777 resultados
   descartados explícitamente pendientes de clasificación;
 - al menos 100 grupos de declaraciones CSS idénticas, 209 scripts inline y
   deuda CSP en 195 páginas;
@@ -301,7 +301,7 @@ abierta.
    `ExecContext` y `BeginTx` en rutas críticas de dinero, fiscal, inventario,
    autenticación, archivos e IA. Un contexto desligado solo se permite para un
    job durable o cleanup con timeout, dueño y telemetría.
-8. Clasificar los 748 descartes explícitos como `cleanup seguro`, `best effort
+8. Clasificar los 777 descartes explícitos como `cleanup seguro`, `best effort
    observable` o `error obligatorio`. Decodificación, auditoría, evento fiscal,
    pago y mutación no pueden fallar silenciosamente.
 9. Consolidar primitivas visuales compartidas para pestañas, campos, chips,
@@ -1394,3 +1394,62 @@ autoriza ni ejecuta despliegue productivo.
 - La auditoría amplía el trabajo pendiente y no certifica código ni candidato.
   El avance formal continúa en **38,5 %**, certificación **0 %**, **NO-GO**. No
   se ejecutó `rs` ni se realizaron pruebas reales PCS.
+
+## Actualización 2026-08-13, compuerta estructural y cancelación IA
+
+- Una herramienta Go sin dependencias fija máximos decrecientes para funciones
+  extensas, duplicación exacta, contexto DB y resultados descartados. Preflight
+  y CI fallan ante cualquier aumento y publican evidencia JSON.
+- Doce flujos HTTP IA propagan `r.Context()` y los adjuntos/documentos también
+  conservan cancelación hasta OpenAI Responses, Chat Completions y Gemini. Tres
+  pruebas con servidor real de prueba confirmaron que cancelar corta el request.
+- Domótica ya no sincroniza la Raspberry principal desde la lectura resumen;
+  la compatibilidad se ejecuta al guardar configuración y el inventario de
+  llamadas `Ensure*` fuera del migrador baja de 106 a 104.
+- P110-001A continúa parcial: la compuerta evita regresión, pero la deuda base
+  todavía debe reducirse y clasificarse. Avance formal **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, DDL retirado de preconfiguración HTTP
+
+- La aplicación y limpieza de plantillas empresariales reemplazó diez llamadas
+  `Ensure*` por verificadores de esquema ya migrado para productos, usuarios,
+  configuración operativa, comisiones, tarifas por minuto/día/motel y Domótica.
+  Los verificadores no crean ni alteran objetos y fallan cerrados si falta el
+  contrato; toda escritura conserva su `empresa_id` recibido del flujo.
+- Los errores de las escrituras de limpieza dejan de descartarse. Una prueba
+  estructural impide reintroducir cualquiera de esas llamadas DDL en el handler.
+  Una segunda extracción aplica readiness a eventos contables, permisos finos,
+  Nextcloud, usuarios del correo masivo, Rappi y permisos por rol. El inventario
+  Alertas y agentes de mantenimiento también validan el contrato migrado sin
+  DDL en worker/handler. Correo empresarial deja de aprovisionar cuentas desde
+  GET; Nextcloud, plantillas/licencias y voz distinguen sincronización de
+  migración. El total baja de 104 a **72** y el subconjunto HTTP de 29 a **0**.
+- El fallo remoto inicial de `gosec` en el nuevo auditor se corrigió reduciendo
+  permisos del reporte a `0600`, del directorio a `0750` y documentando la ruta
+  del baseline como argumento local confiable de CI.
+- P110-001A sigue **parcial** porque restan 69 llamadas del bootstrap legado
+  exclusivo de migración y 3 del migrador dedicado, además de las otras deudas
+  medidas. Avance formal **38,5 %**, certificación
+  **0 %**, **NO-GO**. No se usó PCS, no se desplegó y no se ejecutó `rs`.
+
+## Actualización 2026-08-13, cero bootstrap Ensure en HTTP
+
+- El inventario reproducible confirma **0** llamadas `Ensure*` en handlers, 69
+  llamadas del bootstrap legado que producción permite solo al rol `migrate`
+  mediante decisión explícita y 3 del migrador dedicado. La compuerta ahora
+  falla si reaparece una llamada `Ensure*` en tráfico HTTP.
+- Los aprovisionamientos idempotentes conservan su intención y aislamiento:
+  alta/sincronización de correo, asignación Nextcloud, catálogo comercial y
+  token de voz. Consultar correo con GET es estrictamente lectura y una prueba
+  estructural protege ese contrato.
+- La fase no se marca terminada: falta trasladar las 69 inicializaciones del
+  puente legado al catálogo inmutable y repetir base vacía/upgrade; las 3 del
+  migrador son autoridad permitida. Avance formal
+  **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+- La compuerta `govulncheck` encontró vulnerabilidades alcanzables de la
+  biblioteca estándar en Go 1.25.12. Módulo, CI y Docker quedan alineados en
+  Go **1.25.13**, versión correctiva oficial; falta confirmación del CI remoto.
+- Validación local con temporales/caché en D: aprobó pruebas, vet y
+  `govulncheck ./...` con **0 vulnerabilidades alcanzables**. C: continúa
+  prácticamente lleno; no se eliminó contenido al bloquearse la limpieza.

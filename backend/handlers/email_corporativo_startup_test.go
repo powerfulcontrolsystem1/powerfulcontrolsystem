@@ -13,7 +13,7 @@ func TestCorporateEmailStartupProvisioningIsIdempotentAndEncrypted(t *testing.T)
 	}
 	src := string(raw)
 	for _, expected := range []string{
-		"func EnsureCorporateEmailProvisioningForExistingCompanies",
+		"func ProvisionCorporateEmailForExistingCompanies",
 		"corporateEmailInitialPasswordForProvision(dbSuper, account)",
 		"strings.EqualFold(strings.TrimSpace(account.EstadoProvision), \"provisionado\")",
 	} {

@@ -256,9 +256,6 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudo cargar configuracion de domotica", http.StatusInternalServerError)
 					return
 				}
-				if _, err := dbpkg.EnsureEmpresaControlElectricoPrimaryRaspberry(dbEmp, cfg); err != nil {
-					log.Printf("[control_electrico] ensure primary raspberry empresa_id=%d error: %v", empresaID, err)
-				}
 				cfg.APIToken = ""
 				estaciones, err := dbpkg.ListEmpresaControlElectricoEstaciones(dbEmp, empresaID)
 				if err != nil {
@@ -447,7 +444,11 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				}
 				cfg, _ := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, false)
 				if cfgWithToken, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, true); err == nil {
-					_, _ = dbpkg.EnsureEmpresaControlElectricoPrimaryRaspberry(dbEmp, cfgWithToken)
+					if _, syncErr := dbpkg.SyncEmpresaControlElectricoPrimaryRaspberry(dbEmp, cfgWithToken); syncErr != nil {
+						log.Printf("[control_electrico] sync primary raspberry empresa_id=%d error: %v", empresaID, syncErr)
+					}
+				} else {
+					log.Printf("[control_electrico] reload config for primary raspberry empresa_id=%d error: %v", empresaID, err)
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "config": cfg})
 				return

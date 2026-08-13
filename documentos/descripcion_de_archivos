@@ -1,4 +1,24 @@
 2026-08-13
+- `backend/db/preconfig_schema_readiness.go`: verificadores de solo lectura para
+  los contratos de productos, usuarios, configuración operativa, comisiones y
+  tarifas diarias usados por la preconfiguración empresarial.
+- `backend/handlers/empresa_preconfiguracion_schema_test.go`: impide que el
+  flujo HTTP reintroduzca inicializaciones DDL y exige verificadores fail-closed.
+- `backend/handlers/runtime_schema_readiness_test.go`: contrato estructural que
+  protege rutas seleccionadas de permisos, contabilidad, Nextcloud y correo
+  masivo contra el regreso de DDL en solicitudes y mantiene GET de correo sin
+  aprovisionamientos.
+- `backend/tools/code_quality_audit/main.go`: compuerta Go estándar de no
+  regresión para tamaño de funciones, duplicación exacta, contexto DB y
+  resultados descartados; genera evidencia JSON sin analizarse a sí misma.
+- `backend/tools/code_quality_audit/main_test.go`: contratos unitarios de la
+  comparación contra baseline y de la clasificación de llamadas DB.
+- `documentos/calidad/code_quality_baseline.json`: máximos temporales
+  decrecientes de deuda estructural para preflight y CI; no son una aceptación
+  productiva de los valores actuales.
+- `documentos/evidencia_plan_110/P110-001/2026-08-13_compuerta_calidad_y_cancelacion_ia.md`:
+  evidencia del control automático y de la propagación de cancelación a
+  OpenAI/Gemini desde solicitudes HTTP.
 - `documentos/evidencia_plan_110/P110-001/2026-08-13_auditoria_integral_duplicacion_calidad.md`:
   línea base documentada de duplicación, tamaño, ownership de esquema,
   contextos DB, errores descartados y deuda frontend; separa solapamientos
@@ -12290,7 +12310,8 @@ backend/handlers/runtime_health_test.go
   de formulario.
 - `tools/runtime_ensure_inventory.mjs` y
   `documentos/arquitectura/inventario_runtime_ensure.md`: registro generado de
-  llamadas `Ensure*` fuera del migrador, usado como gate de no crecimiento.
+  llamadas `Ensure*` por proceso y autoridad; bloquea cualquier reaparicion en
+  trafico HTTP y separa bootstrap legado de migrador dedicado.
 - `documentos/plan_103_cierre_produccion.md`: concilia el veredicto tecnico con el estado actual, registra el cierre de metricas y enumera gates externos obligatorios.
 - `backend/metrics/collector.go`: expone una recoleccion unica reutilizable por el worker, sin crear esquema.
 - `backend/cmd/pcs-worker/business_registry.go`: agenda la metrica operativa durable.

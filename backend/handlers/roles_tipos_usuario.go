@@ -131,8 +131,8 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
 			return
 		}
-		if err := dbpkg.EnsureRolesPermisosSchema(dbSuper); err != nil {
-			http.Error(w, "failed to ensure roles permisos schema: "+err.Error(), http.StatusInternalServerError)
+		if err := dbpkg.RolesPermisosSchemaReady(dbSuper); err != nil {
+			http.Error(w, "el esquema migrado de permisos por rol no esta disponible", http.StatusInternalServerError)
 			return
 		}
 

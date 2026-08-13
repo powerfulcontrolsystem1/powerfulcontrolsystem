@@ -53,7 +53,7 @@ func SuperMantenimientoAgentesHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		if err := dbpkg.EnsureSuperMantenimientoAgentesSchema(dbSuper); err != nil {
+		if err := dbpkg.SuperMantenimientoAgentesSchemaReady(dbSuper); err != nil {
 			writeSuperMantenimientoPublicError(w, r, http.StatusInternalServerError, "verificar esquema", err)
 			return
 		}

@@ -116,7 +116,8 @@ solo para jobs durables o cleanup acotado y documentado.
 
 ### P0/P1 - Errores ignorados sin política común
 
-Se encontraron 748 asignaciones explícitas `_ =` en Go de producción. No todas
+El AST encontró 777 asignaciones explícitas cuyo único destino es `_` en Go de
+producción. No todas
 son defectos: rollback, close y telemetría de mejor esfuerzo pueden ser
 intencionales. Sin embargo, el inventario incluye 41 decodificaciones JSON,
 168 lecturas `Scan`, 56 operaciones de evento/auditoría y 7 respuestas JSON
@@ -244,7 +245,7 @@ las entradas anteriores únicamente como historial.
    esquema en tráfico HTTP.
 4. Propagar contextos en rutas críticas empezando por DIAN, pagos, carrito,
    CxP, inventario, nómina e IA.
-5. Clasificar los 748 descartes; corregir primero entrada, auditoría, fiscal,
+5. Clasificar los 777 descartes; corregir primero entrada, auditoría, fiscal,
    dinero y seguridad.
 6. Consolidar utilidades idénticas con pruebas, sin crear un paquete genérico
    de reglas de negocio.

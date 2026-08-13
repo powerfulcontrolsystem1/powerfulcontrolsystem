@@ -1266,7 +1266,7 @@ func main() {
 			startupTrace("after_empresa_email_corporativo_env")
 			if strings.TrimSpace(os.Getenv("PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC")) == "1" {
 				log.Printf("INFO: sincronizacion inicial de emails corporativos omitida por PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC=1")
-			} else if created, err := handlers.EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
+			} else if created, err := handlers.SyncCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
 				log.Printf("warning: no se pudieron generar emails corporativos para empresas existentes: %v", err)
 			} else if created > 0 {
 				log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
@@ -1274,7 +1274,7 @@ func main() {
 			startupTrace("after_empresa_email_corporativo_existing_companies")
 			if migrationSkipsExternalSync {
 				log.Printf("INFO: aprovisionamiento Mailu externo omitido durante migracion")
-			} else if provisioned, err := handlers.EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper); err != nil {
+			} else if provisioned, err := handlers.ProvisionCorporateEmailForExistingCompanies(dbSuper); err != nil {
 				log.Printf("warning: no se pudieron aprovisionar todos los emails corporativos existentes: %v", err)
 			} else if provisioned > 0 {
 				log.Printf("INFO: emails corporativos aprovisionados para empresas existentes: %d", provisioned)
@@ -1288,7 +1288,7 @@ func main() {
 				log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
 			} else if migrationSkipsExternalSync {
 				log.Printf("INFO: aprovisionamiento Nextcloud externo omitido durante migracion")
-			} else if assigned, err := handlers.EnsureNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
+			} else if assigned, err := handlers.SyncNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
 				log.Printf("warning: no se pudieron asignar espacios Nextcloud a empresas existentes: %v", err)
 			} else if assigned > 0 {
 				log.Printf("INFO: espacios Nextcloud asignados a empresas existentes: %d", assigned)

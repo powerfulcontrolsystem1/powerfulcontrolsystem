@@ -104,3 +104,85 @@ func TestOpenAIResponsesContextDeadlineStopsProviderRequest(t *testing.T) {
 		t.Fatal("provider request did not stop after deadline")
 	}
 }
+
+func TestOpenAIChatCompletionsContextCancellationStopsProviderRequest(t *testing.T) {
+	started := make(chan struct{})
+	releaseServer := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		select {
+		case <-r.Context().Done():
+		case <-releaseServer:
+		}
+	}))
+	defer func() {
+		close(releaseServer)
+		server.Close()
+	}()
+	controller := &EmpresaAIChatController{client: &http.Client{Timeout: 5 * time.Second}}
+	model := empresaAIModelDef{
+		Provider: "openai", UpstreamModel: "gpt-test",
+		Endpoint: server.URL + "/v1/chat/completions", apiKeyOverride: "test-only",
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		_, _, _, err := controller.generateResponseWithSystemPromptContext(ctx, model, "consulta", nil, "sistema")
+		done <- err
+	}()
+	select {
+	case <-started:
+		cancel()
+	case <-time.After(2 * time.Second):
+		t.Fatal("provider request did not start")
+	}
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("cancellation not propagated: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("provider request did not stop after cancellation")
+	}
+}
+
+func TestGeminiContextCancellationStopsProviderRequest(t *testing.T) {
+	started := make(chan struct{})
+	releaseServer := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		select {
+		case <-r.Context().Done():
+		case <-releaseServer:
+		}
+	}))
+	defer func() {
+		close(releaseServer)
+		server.Close()
+	}()
+	controller := &EmpresaAIChatController{client: &http.Client{Timeout: 5 * time.Second}}
+	model := empresaAIModelDef{
+		Provider: "google", UpstreamModel: "gemini-test",
+		Endpoint: server.URL + "/generateContent", apiKeyOverride: "test-only",
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		_, _, _, err := controller.generateResponseWithSystemPromptContext(ctx, model, "consulta", nil, "sistema")
+		done <- err
+	}()
+	select {
+	case <-started:
+		cancel()
+	case <-time.After(2 * time.Second):
+		t.Fatal("provider request did not start")
+	}
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("cancellation not propagated: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("provider request did not stop after cancellation")
+	}
+}

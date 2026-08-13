@@ -36,7 +36,7 @@ jobs:
           # El proyecto conserva compatibilidad de lenguaje con Go 1.20, pero
           # el analisis de vulnerabilidades debe ejecutarse con una biblioteca
           # estandar corregida (Go 1.25 o posterior).
-          go-version: "1.25.12"
+          go-version: "1.25.13"
           cache-dependency-path: backend/go.sum
 
       - name: Setup Node
@@ -57,6 +57,10 @@ jobs:
           go mod verify
           go test ./...
           go vet ./...
+
+      - name: Structural code quality gate
+        working-directory: backend
+        run: go run ./tools/code_quality_audit -root . -baseline ../documentos/calidad/code_quality_baseline.json -out ../documentos/reportes_profesionales/code_quality.json
 
       - name: Go race detector
         timeout-minutes: 12
@@ -165,7 +169,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
-          go-version: "1.25.12"
+          go-version: "1.25.13"
           cache-dependency-path: backend/go.sum
 
       - name: Secret scan

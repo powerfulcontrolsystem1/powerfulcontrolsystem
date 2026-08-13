@@ -1,3 +1,34 @@
+2026-08-13: Plan 110 / preconfiguracion empresarial sin DDL HTTP.
+- Productos, usuarios, configuracion operativa, comisiones, tarifas y Domotica
+  validan esquema ya migrado antes de aplicar plantillas; la solicitud no crea
+  ni altera tablas y la limpieza ya no descarta errores de escritura.
+- Eventos contables, permisos finos, Nextcloud y destinatarios de correo masivo
+  tambien verifican esquema migrado; se suman Rappi y permisos por rol. El
+  alertas y agentes de mantenimiento. Correo, Nextcloud, plantillas y voz
+  distinguen aprovisionamiento explicito de migracion; GET de correo es solo
+  lectura. El inventario baja de 104 a 72 llamadas y de 29 a 0 en trafico HTTP.
+  El auditor corrige las tres alertas gosec del primer CI con ruta normalizada y
+  permisos privados para directorio/reporte. No se uso PCS ni se ejecuto `rs`.
+- El toolchain, CI y Docker suben de Go 1.25.12 a 1.25.13 por vulnerabilidades
+  alcanzables de biblioteca estandar reportadas por govulncheck. La repeticion
+  local con cache/temporales en D: informa cero vulnerabilidades alcanzables.
+- El inventario runtime distingue el migrador dedicado del bootstrap legado
+  protegido y falla si reaparece cualquier llamada `Ensure*` en handlers HTTP.
+  Las pruebas de configuracion mantienen DDL prohibido para API/worker en
+  produccion y exigen decision explicita para el rol `migrate`.
+
+2026-08-13: Plan 110 / compuerta estructural y cancelacion IA.
+- Preflight y CI bloquean aumentos de funciones extensas, duplicacion exacta,
+  llamadas DB sin contexto y resultados descartados mediante una herramienta
+  en Go estandar y una linea base decreciente.
+- Los handlers IA propagan `r.Context()` hasta OpenAI Responses, OpenAI Chat
+  Completions y Gemini; las pruebas confirman cancelacion real del request del
+  proveedor. No se alteraron permisos, `empresa_id`, datos ni cuotas.
+- La lectura resumen de Domotica deja de crear/sincronizar la Raspberry
+  principal; esa compatibilidad se ejecuta solo tras guardar configuracion y
+  registra cualquier fallo. El inventario runtime baja de 106 a 104 llamadas.
+- No se uso PCS, no se desplego y no se ejecuto `rs`.
+
 2026-08-13: Plan 110 / auditoria integral de duplicacion y calidad.
 - El barrido transversal cubre Go, HTML, JavaScript, CSS, rutas, permisos,
   esquema y modulos; descarta falsos positivos de rutas/IDs/paginas y registra

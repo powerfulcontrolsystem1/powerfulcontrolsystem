@@ -6,14 +6,14 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 
 ## Resumen
 
-- Funciones inventariadas: 155.
-- Huella del catalogo legado: `d05a291d2345456d0fc8e4148c244f46bf077c0f52d99a061edd104a7ae11c99` (122 pasos).
+- Funciones inventariadas: 147.
+- Huella del catalogo legado: `de7bbea2b775339756a0b0127bf15821ac3860b6625e0760100f7814489cd93f` (122 pasos).
 - DDL / indice / funcion: 118.
 - DDL catalogado de plataforma: 4.
 - compatibilidad PostgreSQL: 2.
-- provisionamiento de integracion: 5.
-- regla auxiliar o verificacion: 7.
-- seed o provisionamiento idempotente: 19.
+- provisionamiento de integracion: 4.
+- regla auxiliar o verificacion: 6.
+- seed o provisionamiento idempotente: 13.
 - Fuente: `backend/db`, `backend/handlers` y `backend/main.go`; excluye pruebas.
 
 ## Registro
@@ -56,7 +56,6 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureSuperContractSchema` | [backend/db/contrato_super.go:133](../../backend/db/contrato_super.go#L133) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureDefaultSuperContract` | [backend/db/contrato_super.go:231](../../backend/db/contrato_super.go#L231) | seed o provisionamiento idempotente | superadministrador o por confirmar |
 | `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:216](../../backend/db/control_electrico.go#L216) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/db/control_electrico.go:541](../../backend/db/control_electrico.go#L541) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureSuperCorreoNotificacionesPruebaSchema` | [backend/db/correo_notificaciones_prueba.go:44](../../backend/db/correo_notificaciones_prueba.go#L44) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaCorteCajaConfiguracionSchema` | [backend/db/corte_caja_configuracion.go:102](../../backend/db/corte_caja_configuracion.go#L102) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:662](../../backend/db/creditos.go#L662) | DDL / indice / funcion | empresas o por confirmar |
@@ -71,7 +70,6 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaDomiciliosSchema` | [backend/db/domicilios.go:209](../../backend/db/domicilios.go#L209) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureDrogueriaFarmaciaTipoEmpresaYLicencias` | [backend/db/drogueria_farmacia_bootstrap.go:67](../../backend/db/drogueria_farmacia_bootstrap.go#L67) | seed o provisionamiento idempotente | superadministrador o por confirmar |
 | `EnsureEmpresaEmailCorporativoSchema` | [backend/db/email_corporativo.go:32](../../backend/db/email_corporativo.go#L32) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/db/email_corporativo.go:317](../../backend/db/email_corporativo.go#L317) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureAdminEmpresaCompartidaSchema` | [backend/db/empresa_admin_compartida.go:97](../../backend/db/empresa_admin_compartida.go#L97) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaAgentesUsoSchema` | [backend/db/empresa_agentes_uso.go:19](../../backend/db/empresa_agentes_uso.go#L19) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaBuzonSchema` | [backend/db/empresa_buzon.go:97](../../backend/db/empresa_buzon.go#L97) | DDL / indice / funcion | empresas o por confirmar |
@@ -112,8 +110,6 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaModulosColombiaSchema` | [backend/db/modulos_empresariales_colombia.go:477](../../backend/db/modulos_empresariales_colombia.go#L477) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaModulosFaltantesSchema` | [backend/db/modulos_faltantes.go:103](../../backend/db/modulos_faltantes.go#L103) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNextcloudSchema` | [backend/db/nextcloud.go:14](../../backend/db/nextcloud.go#L14) | DDL catalogado de plataforma | empresas |
-| `EnsureEmpresaNextcloudAssignment` | [backend/db/nextcloud.go:105](../../backend/db/nextcloud.go#L105) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/db/nextcloud.go:122](../../backend/db/nextcloud.go#L122) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaNominaColombiaAvanzadaSchema` | [backend/db/nomina_colombia_avanzada.go:100](../../backend/db/nomina_colombia_avanzada.go#L100) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNominaSchema` | [backend/db/nomina_sueldos.go:387](../../backend/db/nomina_sueldos.go#L387) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaOdontologiaSchema` | [backend/db/odontologia.go:209](../../backend/db/odontologia.go#L209) | DDL / indice / funcion | empresas o por confirmar |
@@ -157,8 +153,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureAyudaTicketsSchema` | [backend/db/tickets_ayuda.go:85](../../backend/db/tickets_ayuda.go#L85) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureTipoEmpresaPreconfiguracionSchema` | [backend/db/tipo_empresa_preconfiguracion.go:475](../../backend/db/tipo_empresa_preconfiguracion.go#L475) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureCanonicalTiposEmpresaPreconfigurables` | [backend/db/tipo_empresa_preconfiguracion.go:788](../../backend/db/tipo_empresa_preconfiguracion.go#L788) | regla auxiliar o verificacion | empresas o por confirmar |
-| `EnsureDefaultRolesForTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1542](../../backend/db/tipo_empresa_preconfiguracion.go#L1542) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1945](../../backend/db/tipo_empresa_preconfiguracion.go#L1945) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureDefaultRolesForTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1548](../../backend/db/tipo_empresa_preconfiguracion.go#L1548) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1951](../../backend/db/tipo_empresa_preconfiguracion.go#L1951) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaTurnosAtencionSchema` | [backend/db/turnos_atencion.go:109](../../backend/db/turnos_atencion.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaUbicacionGPSSchema` | [backend/db/ubicacion_gps.go:66](../../backend/db/ubicacion_gps.go#L66) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureUsuarioConfiguracionSchema` | [backend/db/usuario_config_schema.go:12](../../backend/db/usuario_config_schema.go#L12) | DDL / indice / funcion | empresas o por confirmar |
@@ -168,10 +164,6 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureVentaPublicaSchema` | [backend/db/venta_publica.go:21](../../backend/db/venta_publica.go#L21) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaVentaPublicaSchema` | [backend/db/venta_publica.go:592](../../backend/db/venta_publica.go#L592) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureCorporateEmailConfigFromEnv` | [backend/handlers/email_corporativo_handlers.go:283](../../backend/handlers/email_corporativo_handlers.go#L283) | provisionamiento de integracion | empresas o por confirmar |
-| `EnsureEmpresaCorporateEmailAfterCreate` | [backend/handlers/email_corporativo_handlers.go:637](../../backend/handlers/email_corporativo_handlers.go#L637) | provisionamiento de integracion | empresas o por confirmar |
-| `EnsureCorporateEmailRowsForExistingCompanies` | [backend/handlers/email_corporativo_handlers.go:744](../../backend/handlers/email_corporativo_handlers.go#L744) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureCorporateEmailProvisioningForExistingCompanies` | [backend/handlers/email_corporativo_handlers.go:759](../../backend/handlers/email_corporativo_handlers.go#L759) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:228](../../backend/handlers/nextcloud.go#L228) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureNextcloudConfigFromEnv` | [backend/handlers/nextcloud.go:271](../../backend/handlers/nextcloud.go#L271) | provisionamiento de integracion | empresas o por confirmar |
 | `EnsureSensitiveSuperConfigEncrypted` | [backend/handlers/super_config_backup_handlers.go:58](../../backend/handlers/super_config_backup_handlers.go#L58) | provisionamiento de integracion | superadministrador o por confirmar |
 | `EnsureSuperContextoIALogicaNegocio` | [backend/handlers/super_portal_chat_ia_info.go:182](../../backend/handlers/super_portal_chat_ia_info.go#L182) | provisionamiento de integracion | superadministrador o por confirmar |

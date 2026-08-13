@@ -74,11 +74,11 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 			return result, nil
 		}
 	}
-	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaProductosSchemaReady(dbEmp); err != nil {
 		return result, err
 	}
 	if len(template.Usuarios) > 0 {
-		if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmp); err != nil {
+		if err := dbpkg.EmpresaUsuariosAuthSchemaReady(dbEmp); err != nil {
 			return result, err
 		}
 	}
@@ -383,7 +383,7 @@ func applyEmpresaPreconfigOperacion(dbEmp *sql.DB, empresaID int64, operacion db
 		}
 	}
 
-	if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaConfiguracionOperativaSchemaReady(dbEmp); err != nil {
 		return err
 	}
 	if _, err := dbpkg.UpsertEmpresaConfiguracionOperativa(dbEmp, dbpkg.EmpresaConfiguracionOperativa{
@@ -427,7 +427,7 @@ func applyEmpresaPreconfigOperacion(dbEmp *sql.DB, empresaID int64, operacion db
 	}
 
 	if operacion.ComisionesEnabled {
-		if err := dbpkg.EnsureEmpresaComisionesServicioSchema(dbEmp); err != nil {
+		if err := dbpkg.EmpresaComisionesServicioSchemaReady(dbEmp); err != nil {
 			return err
 		}
 		porcentaje := operacion.ComisionPorcentaje
@@ -986,7 +986,7 @@ func applyEmpresaPreconfigTarifas(dbEmp *sql.DB, empresaID int64, estaciones dbp
 	created := 0
 	var errs []string
 	if len(tarifas.PorMinutos) > 0 {
-		if err := dbpkg.EnsureEmpresaTarifasPorMinutosSchema(dbEmp); err != nil {
+		if err := dbpkg.EmpresaTarifasPorMinutosSchemaReady(dbEmp); err != nil {
 			errs = append(errs, "tarifas por minutos: "+err.Error())
 		} else {
 			for _, item := range tarifas.PorMinutos {
@@ -1018,7 +1018,7 @@ func applyEmpresaPreconfigTarifas(dbEmp *sql.DB, empresaID int64, estaciones dbp
 		}
 	}
 	if len(tarifas.PorDia) > 0 {
-		if err := dbpkg.EnsureEmpresaTarifasPorDiaSchema(dbEmp); err != nil {
+		if err := dbpkg.EmpresaTarifasPorDiaSchemaReady(dbEmp); err != nil {
 			errs = append(errs, "tarifas por dia: "+err.Error())
 		} else {
 			for _, item := range tarifas.PorDia {
@@ -1051,7 +1051,7 @@ func applyEmpresaPreconfigTarifas(dbEmp *sql.DB, empresaID int64, estaciones dbp
 		}
 	}
 	if len(tarifas.Motel) > 0 {
-		if err := dbpkg.EnsureEmpresaTarifasMotelSchema(dbEmp); err != nil {
+		if err := dbpkg.EmpresaTarifasMotelSchemaReady(dbEmp); err != nil {
 			errs = append(errs, "tarifas motel: "+err.Error())
 		} else {
 			for _, item := range tarifas.Motel {
@@ -1301,7 +1301,7 @@ func applyEmpresaPreconfigVehiculos(dbEmp *sql.DB, empresaID int64, cfg dbpkg.Ti
 func applyEmpresaPreconfigControlElectrico(dbEmp *sql.DB, empresaID int64, estaciones dbpkg.TipoEmpresaPreconfigEstaciones, cfg dbpkg.TipoEmpresaPreconfigControlElectrico, usuario string) (int, []string) {
 	created := 0
 	var errs []string
-	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaControlElectricoSchemaReady(dbEmp); err != nil {
 		return 0, []string{"control electrico: " + err.Error()}
 	}
 	if _, err := dbpkg.UpsertEmpresaControlElectricoConfig(dbEmp, &dbpkg.EmpresaControlElectricoConfig{
@@ -1440,7 +1440,9 @@ func clearEmpresaTipoPreconfiguracion(dbEmp *sql.DB, empresaID int64) (map[strin
 	if err != nil {
 		return nil, err
 	}
-	_ = clearEmpresaPreconfigOperacion(dbEmp, empresaID)
+	if err := clearEmpresaPreconfigOperacion(dbEmp, empresaID); err != nil {
+		return nil, err
+	}
 	return map[string]any{
 		"productos_eliminados":    productosEliminados,
 		"usuarios_eliminados":     usuariosEliminados,
@@ -1453,33 +1455,39 @@ func clearEmpresaPreconfigOperacion(dbEmp *sql.DB, empresaID int64) error {
 	if dbEmp == nil || empresaID <= 0 {
 		return nil
 	}
-	if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmp); err == nil {
-		_, _ = dbpkg.UpsertEmpresaConfiguracionOperativa(dbEmp, dbpkg.EmpresaConfiguracionOperativa{
-			EmpresaID:                       empresaID,
-			MetodoPagoEfectivo:              true,
-			MetodoPagoTarjetaCredito:        true,
-			MetodoPagoTarjetaDebito:         true,
-			MetodoPagoTransferenciaBancaria: true,
-			MetodoPagoMixto:                 true,
-			MetodoPagoCodigoDescuento:       true,
-			HabilitarPropinas:               true,
-			HabilitarComisiones:             false,
-			UsuarioCreador:                  "sistema.preconfiguracion",
-			Estado:                          "activo",
-			Observaciones:                   empresaPreconfigMarker + " limpieza de reglas operativas guia",
-		})
+	if err := dbpkg.EmpresaConfiguracionOperativaSchemaReady(dbEmp); err != nil {
+		return err
 	}
-	if err := dbpkg.EnsureEmpresaComisionesServicioSchema(dbEmp); err == nil {
-		_, _ = dbpkg.UpsertEmpresaComisionesServicioConfiguracion(dbEmp, dbpkg.EmpresaComisionesServicioConfiguracion{
-			EmpresaID:              empresaID,
-			HabilitarComisiones:    false,
-			PorcentajeComision:     10,
-			FiltroServicio:         "servicio",
-			AplicarAutomaticamente: false,
-			UsuarioCreador:         "sistema.preconfiguracion",
-			Estado:                 "inactivo",
-			Observaciones:          empresaPreconfigMarker + " limpieza de comisiones guia",
-		})
+	if _, err := dbpkg.UpsertEmpresaConfiguracionOperativa(dbEmp, dbpkg.EmpresaConfiguracionOperativa{
+		EmpresaID:                       empresaID,
+		MetodoPagoEfectivo:              true,
+		MetodoPagoTarjetaCredito:        true,
+		MetodoPagoTarjetaDebito:         true,
+		MetodoPagoTransferenciaBancaria: true,
+		MetodoPagoMixto:                 true,
+		MetodoPagoCodigoDescuento:       true,
+		HabilitarPropinas:               true,
+		HabilitarComisiones:             false,
+		UsuarioCreador:                  "sistema.preconfiguracion",
+		Estado:                          "activo",
+		Observaciones:                   empresaPreconfigMarker + " limpieza de reglas operativas guia",
+	}); err != nil {
+		return err
+	}
+	if err := dbpkg.EmpresaComisionesServicioSchemaReady(dbEmp); err != nil {
+		return err
+	}
+	if _, err := dbpkg.UpsertEmpresaComisionesServicioConfiguracion(dbEmp, dbpkg.EmpresaComisionesServicioConfiguracion{
+		EmpresaID:              empresaID,
+		HabilitarComisiones:    false,
+		PorcentajeComision:     10,
+		FiltroServicio:         "servicio",
+		AplicarAutomaticamente: false,
+		UsuarioCreador:         "sistema.preconfiguracion",
+		Estado:                 "inactivo",
+		Observaciones:          empresaPreconfigMarker + " limpieza de comisiones guia",
+	}); err != nil {
+		return err
 	}
 	return nil
 }

@@ -394,7 +394,7 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 
 	systemPrompt := buildIAPedidosSystemPrompt(estaciones, productos)
 	systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(agentID)
-	respText, promptTokens, completionTokens, err := c.generateResponseWithSystemPrompt(model, body.Mensaje, body.Historial, systemPrompt)
+	respText, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptContext(r.Context(), model, body.Mensaje, body.Historial, systemPrompt)
 	if err != nil {
 		if isProviderLimitError(err) {
 			c.writeLimitReached(w, body.EmpresaID, model, usoActual.Consultas)

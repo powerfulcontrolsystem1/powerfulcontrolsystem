@@ -843,8 +843,8 @@ func resolveAdminPermissionRoleForContext(dbSuper *sql.DB, adminEmail, rawRole s
 // EmpresaPermisosFinosHandler administra el techo fino de modulos, acciones y paginas para una empresa.
 func EmpresaPermisosFinosHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := dbpkg.EnsureEmpresaPermisosFinosSchema(dbSuper); err != nil {
-			http.Error(w, "failed to ensure empresa permisos finos schema: "+err.Error(), http.StatusInternalServerError)
+		if err := dbpkg.EmpresaPermisosFinosSchemaReady(dbSuper); err != nil {
+			http.Error(w, "el esquema migrado de permisos finos no esta disponible", http.StatusInternalServerError)
 			return
 		}
 

@@ -165,6 +165,15 @@ func EnsureLicenciasCatalogoGlobal(dbConn *sql.DB, usuario string) (int, error) 
 	return ensureLicenciasCatalogoGlobalNoSchema(dbConn, usuario)
 }
 
+// SyncLicenciasCatalogoGlobal sincroniza únicamente datos comerciales y exige
+// que pcs-migrate haya preparado previamente el esquema.
+func SyncLicenciasCatalogoGlobal(dbConn *sql.DB, usuario string) (int, error) {
+	if err := PlantillasLicenciasSchemaReady(dbConn); err != nil {
+		return 0, err
+	}
+	return ensureLicenciasCatalogoGlobalNoSchema(dbConn, usuario)
+}
+
 func ensureLicenciasCatalogoGlobalNoSchema(dbConn *sql.DB, usuario string) (int, error) {
 	if dbConn == nil {
 		return 0, nil
