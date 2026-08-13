@@ -1059,29 +1059,13 @@ func validarComprasDocumentos(dbEmp *sql.DB, empresaID, proveedorID int64, prove
 }
 
 func comprasFirstNonBlank(values ...string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func comprasFirstPositive(values ...float64) float64 {
-	for _, value := range values {
-		if value > 0 {
-			return value
-		}
-	}
-	return 0
+	return firstPositiveFloat64(values...)
 }
 
 func comprasFirstNonBlankInt64(values ...int64) int64 {
-	for _, value := range values {
-		if value > 0 {
-			return value
-		}
-	}
-	return 0
+	return firstPositiveInt64(values...)
 }

@@ -4920,3 +4920,6 @@
 
 - Consolida reglas repetidas de paginación, valores no vacíos y patrones LIKE
   en repositorios, con compuerta estructural decreciente y pruebas enfocadas.
+
+- Unifica wrappers equivalentes de auditoría, permisos y compras sobre helpers
+  de handlers ya existentes, con pruebas del paquete y vet aprobados.
