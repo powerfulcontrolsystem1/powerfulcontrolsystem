@@ -264,7 +264,7 @@ abierta.
 - 52 grupos de cuerpos de función idénticos;
 - 155 funciones `Ensure*`, 122 pasos de catálogo legado y 106 llamadas fuera
   del migrador, 31 de ellas alcanzables durante tráfico HTTP;
-- 1.841 llamadas DB sin contexto en código de producción y 748 errores
+- 1.841 llamadas DB sin contexto en código de producción y 777 resultados
   descartados explícitamente pendientes de clasificación;
 - al menos 100 grupos de declaraciones CSS idénticas, 209 scripts inline y
   deuda CSP en 195 páginas;
@@ -301,7 +301,7 @@ abierta.
    `ExecContext` y `BeginTx` en rutas críticas de dinero, fiscal, inventario,
    autenticación, archivos e IA. Un contexto desligado solo se permite para un
    job durable o cleanup con timeout, dueño y telemetría.
-8. Clasificar los 748 descartes explícitos como `cleanup seguro`, `best effort
+8. Clasificar los 777 descartes explícitos como `cleanup seguro`, `best effort
    observable` o `error obligatorio`. Decodificación, auditoría, evento fiscal,
    pago y mutación no pueden fallar silenciosamente.
 9. Consolidar primitivas visuales compartidas para pestañas, campos, chips,
@@ -1394,3 +1394,15 @@ autoriza ni ejecuta despliegue productivo.
 - La auditoría amplía el trabajo pendiente y no certifica código ni candidato.
   El avance formal continúa en **38,5 %**, certificación **0 %**, **NO-GO**. No
   se ejecutó `rs` ni se realizaron pruebas reales PCS.
+
+## Actualización 2026-08-13, compuerta estructural y cancelación IA
+
+- Una herramienta Go sin dependencias fija máximos decrecientes para funciones
+  extensas, duplicación exacta, contexto DB y resultados descartados. Preflight
+  y CI fallan ante cualquier aumento y publican evidencia JSON.
+- Doce flujos HTTP IA propagan `r.Context()` y los adjuntos/documentos también
+  conservan cancelación hasta OpenAI Responses, Chat Completions y Gemini. Tres
+  pruebas con servidor real de prueba confirmaron que cancelar corta el request.
+- P110-001A continúa parcial: la compuerta evita regresión, pero la deuda base
+  todavía debe reducirse y clasificarse. Avance formal **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.

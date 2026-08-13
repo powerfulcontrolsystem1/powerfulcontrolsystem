@@ -189,6 +189,18 @@ try {
       "Auditoria de migraciones finalizo con codigo $code"
     }
 
+    Invoke-Captured -Title "Compuerta de calidad estructural" -Required -Script {
+      $qualityReport = Join-Path $reportRoot "code_quality.json"
+      Push-Location backend
+      try {
+        & go run ./tools/code_quality_audit -root . -baseline ../documentos/calidad/code_quality_baseline.json -out $qualityReport
+        if ($LASTEXITCODE -ne 0) { throw "calidad estructural fallo con codigo $LASTEXITCODE" }
+      } finally {
+        Pop-Location
+      }
+      "Compuerta de calidad estructural sin regresiones"
+    }
+
     Invoke-Captured -Title "QA funcional por modulos criticos" -Required:$Strict -Script {
       & $nodeCmd tools\qa_module_contracts.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }

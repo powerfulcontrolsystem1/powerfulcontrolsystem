@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -45,7 +46,7 @@ func superAIServiceStatus(dbSuper *sql.DB) map[string]interface{} {
 	}
 }
 
-func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
+func runSuperAITest(ctx context.Context, dbSuper *sql.DB) (int, map[string]interface{}) {
 	if !isSuperAIEnabled(dbSuper) {
 		return http.StatusServiceUnavailable, map[string]interface{}{
 			"ok":             false,
@@ -86,7 +87,8 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	testController := &EmpresaAIChatController{dbSuper: dbSuper, client: &http.Client{Timeout: 20 * time.Second}}
 	_ = apiKey
 
-	respuesta, promptTokens, completionTokens, err := testController.generateResponseWithSystemPrompt(
+	respuesta, promptTokens, completionTokens, err := testController.generateResponseWithSystemPromptContext(
+		ctx,
 		model,
 		"Responde solo OK_PANEL_TEST",
 		nil,
@@ -153,7 +155,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "test") {
-				status, body := runSuperAITest(dbSuper)
+				status, body := runSuperAITest(r.Context(), dbSuper)
 				writeJSON(w, status, body)
 				return
 			}

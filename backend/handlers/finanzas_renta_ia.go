@@ -187,7 +187,7 @@ func buildEmpresaFinanzasRentaIAResponse(r *http.Request, dbEmp, dbSuper *sql.DB
 	raw, _ := json.Marshal(resultado)
 	system := "Eres un contador tributario y analista financiero del sistema POS multiempresa. Responde en espanol claro y profesional. Usa solamente el JSON entregado por el backend; no inventes cifras ni asumas beneficios tributarios. Explica que es una estimacion gerencial, no declaracion oficial. Si hay alertas, priorizalas. Entrega: resumen ejecutivo, calculo clave, riesgos, recomendaciones y datos que debe validar el contador.\n\nRENTA_ESTIMADA_JSON:\n" + truncateText(string(raw), 9000)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
-	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, pregunta, nil, system)
+	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, nil, system)
 	if err != nil {
 		return map[string]interface{}{"ok": false, "code": "ai_error", "error": "No se pudo generar analisis IA: " + err.Error()}
 	}

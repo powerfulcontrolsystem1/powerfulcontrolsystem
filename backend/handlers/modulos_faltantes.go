@@ -13422,7 +13422,7 @@ func importDIANNumeracionPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[str
 	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
 	systemPrompt := dianNumeracion1876IASystemPrompt()
 	pregunta := "Extrae los campos del Formulario 1876 de autorizacion de numeracion DIAN adjunto. Responde solo JSON valido."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att, nil, nil)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
 		return nil, http.StatusBadGateway, err
 	}

@@ -421,7 +421,7 @@ func handleEmpresaGrafologiaAnalizarIA(w http.ResponseWriter, r *http.Request, d
 		MimeType: mimeType,
 		Bytes:    data,
 	}
-	respuesta, promptTokens, completionTokens, err := ctrl.generateResponseWithSystemPromptAndAttachment(model, pregunta, nil, systemPrompt, att)
+	respuesta, promptTokens, completionTokens, err := ctrl.generateResponseWithSystemPromptAndAttachmentContext(r.Context(), model, pregunta, nil, systemPrompt, att)
 	if err != nil {
 		if isAICredentialUnavailableError(err) {
 			writeJSON(w, http.StatusOK, map[string]interface{}{

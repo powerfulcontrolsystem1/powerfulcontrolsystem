@@ -298,7 +298,7 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 
 	superMeta := c.base.dbSuper != nil
 	modoAsistente := normalizeAIAssistantMode(payload.ModoAsistente)
-	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente))
+	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPromptContext(r.Context(), model, payload.Pregunta, payload.Historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente))
 	if err != nil {
 		if isProviderLimitError(err) {
 			c.writeLimitReached(w, model, usoActual.Consultas)
@@ -474,7 +474,7 @@ func (c *SuperAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWriter
 	}
 
 	superMeta := c.base.dbSuper != nil
-	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente), att)
+	respuesta, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPromptAndAttachmentContext(r.Context(), model, preguntaFinal, historial, buildSuperAISystemPrompt(contexto, superMeta, empresaRO, modoAsistente), att)
 	if err != nil {
 		log.Printf("super IA attachment provider error: %v", err)
 		http.Error(w, "No se pudo consultar el proveedor de IA", http.StatusBadGateway)

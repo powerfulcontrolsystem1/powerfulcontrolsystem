@@ -58,6 +58,10 @@ jobs:
           go test ./...
           go vet ./...
 
+      - name: Structural code quality gate
+        working-directory: backend
+        run: go run ./tools/code_quality_audit -root . -baseline ../documentos/calidad/code_quality_baseline.json -out ../documentos/reportes_profesionales/code_quality.json
+
       - name: Go race detector
         timeout-minutes: 12
         working-directory: backend

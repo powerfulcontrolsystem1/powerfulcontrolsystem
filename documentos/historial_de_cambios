@@ -1,3 +1,12 @@
+2026-08-13: Plan 110 / compuerta estructural y cancelacion IA.
+- Preflight y CI bloquean aumentos de funciones extensas, duplicacion exacta,
+  llamadas DB sin contexto y resultados descartados mediante una herramienta
+  en Go estandar y una linea base decreciente.
+- Los handlers IA propagan `r.Context()` hasta OpenAI Responses, OpenAI Chat
+  Completions y Gemini; las pruebas confirman cancelacion real del request del
+  proveedor. No se alteraron permisos, `empresa_id`, datos ni cuotas.
+- No se uso PCS, no se desplego y no se ejecuto `rs`.
+
 2026-08-13: Plan 110 / auditoria integral de duplicacion y calidad.
 - El barrido transversal cubre Go, HTML, JavaScript, CSS, rutas, permisos,
   esquema y modulos; descarta falsos positivos de rutas/IDs/paginas y registra
