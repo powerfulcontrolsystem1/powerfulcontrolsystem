@@ -1200,3 +1200,45 @@ autoriza ni ejecuta despliegue productivo.
 - La deuda restante impide retirar `unsafe-inline` de la política aplicada;
   P110-007 continúa **parcial**, avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-12, eventos inline eliminados globalmente
+
+- Las nueve superficies que conservaban atributos `on*` migraron sus 19 eventos
+  a listeners explicitos, delegados o al helper comun de impresion e imagenes.
+  El inventario completo de `web/**/*.html` queda en cero eventos inline.
+- La deuda CSP baja de 1.335 a 1.316 bloqueos: 948 empresariales, 216 de
+  superadministracion y 138 publicos. La linea base de CI fue reducida para que
+  cualquier reintroduccion falle automaticamente.
+- Aprobaron sintaxis JavaScript/HTML, `go test ./...`, el preflight estricto,
+  Docker Compose y las auditorias de seguridad, permisos, UX, migraciones y
+  contratos. El inventario runtime se regenero tras detectar referencias de
+  linea desactualizadas, sin cambiar logica de negocio.
+- Todavia restan scripts, bloques `style` y atributos `style`; por eso no se
+  aplica una CSP sin `unsafe-inline`. P110-007 sigue **parcial**, avance formal
+  **38,5 %**, certificacion **0 %**, **NO-GO**. No se ejecuto `rs`.
+
+## Actualización 2026-08-12, CSS compartido en configuración empresarial
+
+- Seis accesos de configuración que duplicaban el mismo bloque `style` usan
+  ahora una hoja externa compartida: Cobro operativo, Formato monetario,
+  Pasarelas de pago, Perfil tributario Colombia, Productos y pedidos y Respaldo.
+- La deuda CSP baja de 1.316 a 1.310 bloqueos y de 242 a 236 páginas afectadas;
+  el área empresarial queda en 942 bloqueos sobre 140 páginas.
+- La revisión visual local comprobó las seis rutas, CSS cargado, iframe presente,
+  encabezado responsive y cero desborde horizontal. El contrato de recursos
+  estáticos, `go test ./...`, `go vet ./...` y el preflight estricto aprobaron;
+  la línea base decreciente fue actualizada.
+- P110-007 continúa **parcial**, avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-12, límites de tiempo en CI profesional
+
+- Una corrida de la PR quedó congelada después de aprobar preflight, tests
+  normales y secretos, específicamente en `go test -race` y build de imágenes;
+  se canceló y relanzó sin interpretar el bloqueo como fallo funcional.
+- El detector de carreras tiene ahora límite de doce minutos y timeout Go de
+  diez; la construcción de imágenes queda limitada a veinte minutos. El job
+  conserva además su límite global de 45 minutos.
+- La repetición Linux sigue siendo obligatoria porque el Go local de Windows no
+  dispone de CGO para `-race`. No cambia el avance formal: **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.

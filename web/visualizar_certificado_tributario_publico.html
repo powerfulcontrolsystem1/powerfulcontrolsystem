@@ -11,9 +11,10 @@
 </head>
 <body>
   <main class="ct-shell">
-    <div class="ct-actions"><button class="ct-btn" id="btnDownload" type="button">Registrar descarga</button><button class="ct-btn primary" onclick="window.print()" type="button">Imprimir / PDF</button></div>
+    <div class="ct-actions"><button class="ct-btn" id="btnDownload" type="button">Registrar descarga</button><button class="ct-btn primary" data-window-action="print" type="button">Imprimir / PDF</button></div>
     <section id="content" class="ct-card">Cargando certificado...</section>
   </main>
+  <script src="/js/ui_event_controls.js"></script>
   <script>
     (function(){
       var token=new URLSearchParams(location.search).get("token")||"";

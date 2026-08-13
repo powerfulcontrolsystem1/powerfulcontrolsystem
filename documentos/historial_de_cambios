@@ -1,3 +1,24 @@
+2026-08-12: Plan 110 / timeouts acotados del CI profesional.
+- El detector de carreras y la construccion de imagenes reciben limites por
+  paso despues de una ejecucion remota congelada durante horas. El race usa
+  tambien timeout interno de Go y sigue siendo obligatorio en Linux con CGO.
+- No se convirtio el timeout anterior en evidencia aprobada ni se ejecuto `rs`.
+
+2026-08-12: Plan 110 / CSS compartido de secciones de configuracion.
+- Cobro operativo, Formato monetario, Pasarelas, Perfil tributario Colombia,
+  Productos y pedidos y Respaldo externalizan su bloque visual identico.
+- El inventario CSP baja a 1.310 bloqueos en 236 paginas. Las seis rutas
+  aprobaron revision local responsive y contrato de recursos; no se ejecuto
+  `rs` y P110-007 permanece parcial.
+
+2026-08-12: Plan 110 / cero eventos inline y compuerta CSP reducida.
+- Se eliminaron los 19 atributos de evento restantes en nueve superficies web;
+  impresion, cierre, autoimpresion y respaldo de imagenes usan ahora el helper
+  comun, mientras las acciones operativas conservan listeners por modulo.
+- El inventario CSP baja a 1.316 bloqueos y cero eventos inline. Aprobaron la
+  suite Go completa, preflight estricto y auditorias; no se ejecuto `rs` y el
+  estado productivo permanece NO-GO por la deuda CSP restante.
+
 2026-08-12: Plan 110 / revisión visual autenticada de finanzas, DIAN y domótica.
 - Finanzas mostró conciliación visible sin pendientes ni descuadres en los
   períodos cargados; Domótica confirmó estado seguro sin Raspberry ni aparatos.

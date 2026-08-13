@@ -620,7 +620,7 @@ type staticResourceReference struct {
 }
 
 func collectFrontendStaticResourceReferences(webDir string) ([]staticResourceReference, error) {
-	htmlAttrPattern := regexp.MustCompile(`(?i)(?:href|src|action)\s*=\s*["']([^"']+)["']`)
+	htmlAttrPattern := regexp.MustCompile(`(?i)(?:^|\s)(?:href|src|action)\s*=\s*["']([^"']+)["']`)
 	cssURLPattern := regexp.MustCompile(`(?i)url\(\s*["']?([^"')]+)["']?\s*\)`)
 	scriptBlockPattern := regexp.MustCompile(`(?is)<script[\s\S]*?</script>`)
 	templateBlockPattern := regexp.MustCompile(`(?is)<template[\s\S]*?</template>`)

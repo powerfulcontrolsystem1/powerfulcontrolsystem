@@ -7,14 +7,17 @@ import (
 	"testing"
 )
 
-func TestCarritoPaymentButtonHasDirectAndDelegatedHandler(t *testing.T) {
+func TestCarritoPaymentButtonHasExplicitAndDelegatedHandlerWithoutInlineEvent(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "carrito_de_compras.html"))
 	if err != nil {
 		t.Fatalf("read carrito frontend: %v", err)
 	}
 	source := string(raw)
+	if strings.Contains(source, `onclick="handlePagarCarritoClick(event)"`) {
+		t.Fatal("carrito payment button must not restore an inline click event")
+	}
 	for _, required := range []string{
-		"onclick=\"handlePagarCarritoClick(event)\"",
+		`id="btnPagarCarrito"`,
 		"document.addEventListener('click'",
 		"btnPagarCarrito.addEventListener('click', handlePagarCarritoClick)",
 		"btn.dataset.paymentClickLock === '1'",
