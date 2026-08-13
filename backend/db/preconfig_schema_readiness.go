@@ -115,3 +115,21 @@ func RolesPermisosSchemaReady(dbConn *sql.DB) error {
 	}
 	return requireSchemaReadiness(dbConn, "permisos por rol", checks)
 }
+
+// SuperAlertasSchemaReady valida configuración y eventos ya migrados.
+func SuperAlertasSchemaReady(dbConn *sql.DB) error {
+	checks := []schemaReadinessCheck{
+		{"configuracion", `SELECT id FROM super_alertas_config WHERE 1=0`},
+		{"eventos", `SELECT id, tipo, fecha_evento FROM super_alertas_eventos WHERE 1=0`},
+	}
+	return requireSchemaReadiness(dbConn, "alertas de plataforma", checks)
+}
+
+// SuperMantenimientoAgentesSchemaReady valida agentes y hallazgos ya migrados.
+func SuperMantenimientoAgentesSchemaReady(dbConn *sql.DB) error {
+	checks := []schemaReadinessCheck{
+		{"agentes", `SELECT id, codigo FROM super_mantenimiento_agentes WHERE 1=0`},
+		{"hallazgos", `SELECT id, agente_codigo FROM super_mantenimiento_agente_hallazgos WHERE 1=0`},
+	}
+	return requireSchemaReadiness(dbConn, "agentes de mantenimiento", checks)
+}

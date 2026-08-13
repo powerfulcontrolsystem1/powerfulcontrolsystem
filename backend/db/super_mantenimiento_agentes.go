@@ -146,7 +146,7 @@ func UpsertSuperMantenimientoAgente(dbConn *sql.DB, item SuperMantenimientoAgent
 }
 
 func GetSuperMantenimientoAgente(dbConn *sql.DB, codigo string) (*SuperMantenimientoAgente, error) {
-	if err := EnsureSuperMantenimientoAgentesSchema(dbConn); err != nil {
+	if err := SuperMantenimientoAgentesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	row := queryRowSQLCompat(dbConn, `SELECT id, codigo, COALESCE(nombre,''), COALESCE(descripcion,''), COALESCE(habilitado,0),
@@ -164,7 +164,7 @@ func GetSuperMantenimientoAgente(dbConn *sql.DB, codigo string) (*SuperMantenimi
 }
 
 func ListSuperMantenimientoAgentes(dbConn *sql.DB) ([]SuperMantenimientoAgente, error) {
-	if err := EnsureSuperMantenimientoAgentesSchema(dbConn); err != nil {
+	if err := SuperMantenimientoAgentesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	rows, err := querySQLCompat(dbConn, `SELECT id, codigo, COALESCE(nombre,''), COALESCE(descripcion,''), COALESCE(habilitado,0),
@@ -202,7 +202,7 @@ func UpdateSuperMantenimientoAgenteRun(dbConn *sql.DB, codigo, estadoLectura, ob
 }
 
 func CreateSuperMantenimientoHallazgoIfNew(dbConn *sql.DB, item SuperMantenimientoHallazgo) (bool, int64, error) {
-	if err := EnsureSuperMantenimientoAgentesSchema(dbConn); err != nil {
+	if err := SuperMantenimientoAgentesSchemaReady(dbConn); err != nil {
 		return false, 0, err
 	}
 	item.AgenteCodigo = strings.TrimSpace(item.AgenteCodigo)
@@ -232,7 +232,7 @@ func CreateSuperMantenimientoHallazgoIfNew(dbConn *sql.DB, item SuperMantenimien
 }
 
 func ListSuperMantenimientoHallazgos(dbConn *sql.DB, agenteCodigo string, limit int) ([]SuperMantenimientoHallazgo, error) {
-	if err := EnsureSuperMantenimientoAgentesSchema(dbConn); err != nil {
+	if err := SuperMantenimientoAgentesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if limit <= 0 || limit > 200 {

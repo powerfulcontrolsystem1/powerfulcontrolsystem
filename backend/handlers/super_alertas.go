@@ -536,9 +536,9 @@ func StartSuperAlertasWorker(dbSuper *sql.DB, interval time.Duration, stopCh <-c
 	if interval <= 0 {
 		interval = time.Minute
 	}
-	if err := dbpkg.EnsureSuperAlertasSchema(dbSuper); err != nil {
-		log.Printf("super_alertas: no se pudo inicializar esquema: %v", err)
-		utils.ReportProcessError("super.alertas", "schema_init", "No se pudo inicializar el modulo de alertas", err, utils.ErrorLevelError, nil)
+	if err := dbpkg.SuperAlertasSchemaReady(dbSuper); err != nil {
+		log.Printf("super_alertas: esquema migrado no disponible: %v", err)
+		utils.ReportProcessError("super.alertas", "schema_ready", "El esquema migrado del modulo de alertas no esta disponible", err, utils.ErrorLevelError, nil)
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

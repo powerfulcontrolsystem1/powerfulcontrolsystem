@@ -50,10 +50,11 @@ tipo de empresa dejó de ejecutar diez llamadas DDL desde tráfico HTTP: product
 usuarios, configuración operativa, comisiones, tres clases de tarifas y
 Domótica verifican ahora el contrato migrado y fallan cerrados. La limpieza de
 esa preconfiguración tampoco descarta errores de sus dos escrituras. El
-inventario queda en 87 llamadas `Ensure*`, 12 de ellas HTTP, frente a 104/29 al
+inventario queda en 85 llamadas `Ensure*`, 10 de ellas HTTP, frente a 104/29 al
 inicio de este bloque. La segunda extracción cubre además eventos contables de
 Créditos/Devoluciones, permisos finos, Nextcloud y destinatarios empresariales
-de correo masivo; Rappi y permisos por rol completan este lote. Persisten 52
+de correo masivo; Rappi, permisos por rol, alertas y agentes de mantenimiento
+completan este lote. Persisten 52
 grupos duplicados y grandes handlers. Dos
 mutaciones GET de Domótica fueron retiradas: el nodo Raspberry principal ahora
 se sincroniza explícitamente solo al guardar configuración, con error observable

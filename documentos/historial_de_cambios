@@ -4,7 +4,8 @@
   ni altera tablas y la limpieza ya no descarta errores de escritura.
 - Eventos contables, permisos finos, Nextcloud y destinatarios de correo masivo
   tambien verifican esquema migrado; se suman Rappi y permisos por rol. El
-  inventario baja de 104 a 87 llamadas y de 29 a 12 en trafico HTTP.
+  alertas y agentes de mantenimiento. El inventario baja de 104 a 85 llamadas
+  y de 29 a 10 en trafico HTTP.
   El auditor corrige las tres alertas gosec del primer CI con ruta normalizada y
   permisos privados para directorio/reporte. No se uso PCS ni se ejecuto `rs`.
 
