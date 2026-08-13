@@ -1256,3 +1256,18 @@ autoriza ni ejecuta despliegue productivo.
   y el preflight estricto completo.
 - P110-007 continúa **parcial**, avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, lote CSS de 23 páginas
+
+- El shell empresarial, CRM, WMS, MRP, Ayuda de APIs, conceptos de marca,
+  auditorías, seguridad y configuración del superadministrador externalizaron
+  sus únicos bloques style; los trece accesos equivalentes comparten una
+  hoja y Nextcloud conserva una específica.
+- La deuda baja de 1.306 a 1.283 bloqueos y de 232 a 209 páginas; los bloques
+  style bajan de 177 a 154. Enlaces CSS, go test ./..., go vet ./...
+  y preflight estricto completo aprobaron.
+- La repetición visual desplegada continúa pendiente: el navegador interno
+  bloqueó file: y el servidor auxiliar local no escuchó. No se retiró
+  unsafe-inline.
+- P110-007 continúa **parcial**; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó rs.

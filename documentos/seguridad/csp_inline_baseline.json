@@ -1,23 +1,23 @@
 {
   "version": 1,
-  "captured_at": "2026-08-12",
+  "captured_at": "2026-08-13",
   "scope": "web/**/*.html",
   "policy": "Los conteos son maximos temporales y solo pueden disminuir. Cero es la condicion para retirar unsafe-inline de la CSP aplicada.",
   "totals": {
     "unprotected_inline_scripts": 223,
-    "unprotected_inline_style_blocks": 177,
+    "unprotected_inline_style_blocks": 154,
     "style_attributes": 906,
     "event_attributes": 0,
     "javascript_urls": 0,
-    "blockers": 1306,
-    "files": 232
+    "blockers": 1283,
+    "files": 209
   },
   "areas": {
-    "administrar_empresa": { "blockers": 938, "files": 136 },
-    "super": { "blockers": 216, "files": 57 },
-    "publico": { "blockers": 138, "files": 31 },
-    "ayuda": { "blockers": 11, "files": 5 },
+    "administrar_empresa": { "blockers": 935, "files": 133 },
+    "super": { "blockers": 199, "files": 40 },
+    "publico": { "blockers": 137, "files": 30 },
+    "ayuda": { "blockers": 10, "files": 4 },
     "epayco": { "blockers": 2, "files": 2 },
-    "img": { "blockers": 1, "files": 1 }
+    "img": { "blockers": 0, "files": 0 }
   }
 }

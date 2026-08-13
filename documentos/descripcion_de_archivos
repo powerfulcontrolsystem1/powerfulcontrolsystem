@@ -13154,6 +13154,21 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   descargas y guia operativa de soporte remoto.
 - `web/administrar_empresa/tutorial_domotica.css`: tema, pasos, tarjetas y
   breakpoint movil del tutorial de Domotica.
+- `web/administrar_empresa.css`, `web/administrar_empresa/crm_comercial.css`,
+  `web/administrar_empresa/logistica_wms.css` y
+  `web/administrar_empresa/produccion_mrp.css`: estilos externos del shell
+  empresarial y de los módulos CRM, WMS y MRP.
+- `web/ayuda/ayuda_apis.css` y
+  `web/img/brand/pcs-logo-concepts/preview.css`: estilos externos de la ayuda
+  técnica y la vista interna de conceptos de marca.
+- `web/super/auditoria_global.css`, `web/super/auditoria_super_admin.css` y
+  `web/super/seguridad.css`: estilos externos de auditoría y seguridad global.
+- `web/super/configuracion/seccion_configuracion.css`: hoja compartida por
+  trece accesos ligeros de configuración del superadministrador.
+- `web/super/configuracion/nextcloud.css`: estilos externos específicos de la
+  configuración global de Nextcloud.
+- `documentos/evidencia_plan_110/P110-007/2026-08-13_lote_css_23_paginas.md`:
+  alcance, medición, pruebas y límite visual del lote CSP de 23 páginas.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_linea_base_csp_y_grafologia_sin_inline.md`:
   medicion inicial/final, segundo lote sin eventos, compuerta CI y limite
   productivo de la deuda CSP.

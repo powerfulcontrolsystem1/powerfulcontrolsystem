@@ -42376,3 +42376,12 @@ acumulativa.
   total a 1.335 bloqueos en 242 paginas.
 - CI falla si aumenta cualquier total/area o desaparece la linea base. La deuda
   restante conserva P110-007 parcial y no autoriza retirar `unsafe-inline`.
+2026-08-13: Plan 110 / lote CSS externo de 23 páginas.
+- El shell empresarial, CRM, WMS, MRP, Ayuda de APIs, conceptos de marca,
+  auditorías, seguridad y configuración del superadministrador dejan de usar
+  sus únicos bloques style inline.
+- La línea base baja de 1.306 a 1.283 bloqueos y de 232 a 209 páginas. Aprobaron
+  enlaces de recursos, Go completo, vet y preflight estricto.
+- La validación visual local no se declara aprobada porque el navegador interno
+  bloqueó file: y el servidor auxiliar no escuchó. Debe repetirse sobre el
+  candidato desplegado. P110-007 sigue parcial y no se ejecutó rs.
