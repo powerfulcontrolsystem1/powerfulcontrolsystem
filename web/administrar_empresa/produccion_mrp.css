@@ -37,4 +37,3 @@
     html[data-theme^="dark"] .prod-head,html[data-theme^="dark"] .prod-box,html[data-theme^="dark"] .prod-kpi,html[data-theme^="dark"] .prod-tabs,html[data-theme^="dark"] .prod-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
     @media(max-width:1180px){.prod-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.prod-two,.prod-overview,.prod-command,.prod-bridge{grid-template-columns:1fr}.prod-head{display:grid}.prod-actions{justify-content:flex-start}.prod-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prod-meta-grid{grid-template-columns:1fr}.prod-mrp-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:720px){.prod-shell{padding:12px}.prod-grid,.prod-row,.prod-row.three,.prod-stage-grid,.prod-quick-grid,.prod-mrp-summary{grid-template-columns:1fr}.prod-tab{flex:1 1 42%}.prod-toolbar,.prod-toolbar-actions{display:grid}.prod-actions{display:grid;justify-content:stretch}}
-

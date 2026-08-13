@@ -33,4 +33,3 @@
     html[data-theme^="dark"] .wms-head,html[data-theme^="dark"] .wms-box,html[data-theme^="dark"] .wms-kpi,html[data-theme^="dark"] .wms-tabs,html[data-theme^="dark"] .wms-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
     @media(max-width:1180px){.wms-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.wms-grid,.wms-overview,.wms-command{grid-template-columns:1fr}.wms-head{display:grid}.wms-actions{justify-content:flex-start}.wms-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:720px){.wms-shell{padding:12px}.wms-kpis,.wms-row,.wms-row.three,.wms-stage-grid,.wms-quick-grid{grid-template-columns:1fr}.wms-tab{flex:1 1 42%}.wms-table{min-width:760px}.wms-toolbar,.wms-toolbar-actions{display:grid}.wms-actions{display:grid;justify-content:stretch}}
-

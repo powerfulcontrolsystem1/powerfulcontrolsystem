@@ -1,6 +1,6 @@
 # P110-007 - Lote CSS externo en 23 páginas
 
-Fecha: 2026-08-13  
+Fecha: 2026-08-13
 Ambiente: candidato local de la PR 162; producción y staging no modificados.
 
 ## Alcance
