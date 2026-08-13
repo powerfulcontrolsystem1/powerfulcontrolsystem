@@ -42454,3 +42454,8 @@ acumulativa.
   doce repositorios sin alterar consultas, permisos ni aislamiento empresarial.
 - La línea base estructural reduce duplicación exacta de 49 a 47 grupos e
   incorpora una prueba de regresión para el escape de `%`, `_` y `!`.
+
+2026-08-13 - Plan 110: compatibilidad de utilidades en handlers
+- Auditoría, permisos y compras delegan valores no vacíos y números positivos a
+  helpers canónicos con wrappers de compatibilidad; pruebas completas de
+  handlers y vet aprobadas, sin cambios de contrato ni datos.

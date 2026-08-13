@@ -427,10 +427,5 @@ func toString(value interface{}) string {
 }
 
 func firstNonBlank(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }

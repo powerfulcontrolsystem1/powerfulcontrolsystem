@@ -1486,3 +1486,16 @@ autoriza ni ejecuta despliegue productivo.
 - P110-001A permanece **parcial** por las deudas estructurales todavía medidas.
   El avance formal sigue en **38,5 %**, certificación **0 %**, **NO-GO**. No se
   usó PCS, no se desplegó y no se ejecutó `rs`.
+
+## Actualización 2026-08-13, compatibilidad de utilidades en handlers
+
+- Las superficies de auditoría, permisos y compras reutilizan los helpers
+  canónicos de valores no vacíos y números positivos mediante wrappers de
+  compatibilidad. No se alteraron rutas, permisos, `empresa_id`, transacciones
+  ni contratos de respuesta.
+- Las pruebas completas de `go test ./handlers`, `go vet ./handlers` y
+  `git diff --check` aprobaron. La métrica global no cambia porque permanecen
+  grupos equivalentes en otros dominios; se conserva la línea base sin
+  maquillarla.
+- P110-001A continúa parcial; el avance formal permanece en **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
