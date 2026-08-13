@@ -1474,3 +1474,15 @@ autoriza ni ejecuta despliegue productivo.
 - P110-001A continúa **parcial** porque persisten handlers monolíticos, acceso
   DB sin contexto, errores ignorados y otras duplicaciones. El avance formal
   conserva **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, segundo saneamiento de utilidades DB
+
+- Doce repositorios reutilizan ahora tres reglas comunes para valores no vacíos,
+  patrones `LIKE ... ESCAPE '!'` y paginación. Se eliminaron 104 líneas
+  repetidas sin modificar SQL, filtros `empresa_id`, permisos ni endpoints.
+- La compuerta baja de **49 a 47** grupos duplicados exactos y de 7.197 a 7.186
+  funciones productivas. La prueba de caracteres `%`, `_` y `!`, las pruebas DB
+  enfocadas y `go vet ./db` aprobaron.
+- P110-001A permanece **parcial** por las deudas estructurales todavía medidas.
+  El avance formal sigue en **38,5 %**, certificación **0 %**, **NO-GO**. No se
+  usó PCS, no se desplegó y no se ejecutó `rs`.

@@ -208,7 +208,7 @@ func ResolveEmpresaBuzonActor(dbEmp, dbSuper *sql.DB, empresaID int64, email str
 	actor := EmpresaBuzonActor{Tipo: "admin", Ref: email, Email: email, Nombre: email, Rol: "administrador"}
 	if dbSuper != nil {
 		if admin, err := GetAdminByEmailFull(dbSuper, email); err == nil && admin != nil {
-			actor.Nombre = firstNonEmptyDB(strings.TrimSpace(admin.Name), email)
+			actor.Nombre = firstNonBlankValue(strings.TrimSpace(admin.Name), email)
 			actor.Rol = strings.TrimSpace(admin.Role)
 		}
 	}
@@ -246,7 +246,7 @@ func CreateEmpresaBuzonMensaje(dbConn *sql.DB, msg EmpresaBuzonMensaje) (Empresa
 		msg.RemitenteTipo, msg.RemitenteRef, msg.RemitenteEmail, msg.RemitenteNombre,
 		msg.Titulo, msg.Mensaje, msg.Tipo, msg.Prioridad, msg.Modulo, msg.ReferenciaTipo, msg.ReferenciaID, msg.EnlaceURL,
 		msg.TareaEstado, msg.TareaVenceEn, msg.TareaCerradaEn, msg.TareaCierreDescripcion,
-		firstNonEmptyDB(msg.UsuarioCreador, msg.RemitenteEmail, msg.RemitenteRef, "sistema"),
+		firstNonBlankValue(msg.UsuarioCreador, msg.RemitenteEmail, msg.RemitenteRef, "sistema"),
 	).Scan(&id)
 	if err != nil {
 		return EmpresaBuzonMensaje{}, err
@@ -375,7 +375,7 @@ func CreateEmpresaChatMensaje(dbConn *sql.DB, empresaID int64, actor EmpresaBuzo
 		empresa_id, remitente_tipo, remitente_ref, remitente_email, remitente_nombre,
 		mensaje, estado, fecha_creacion, fecha_actualizacion, usuario_creador
 	) VALUES (?, ?, ?, ?, ?, ?, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
-	RETURNING id`, empresaID, actor.Tipo, actor.Ref, actor.Email, actor.Nombre, mensaje, firstNonEmptyDB(actor.Email, actor.Ref, "sistema")).Scan(&id)
+	RETURNING id`, empresaID, actor.Tipo, actor.Ref, actor.Email, actor.Nombre, mensaje, firstNonBlankValue(actor.Email, actor.Ref, "sistema")).Scan(&id)
 	if err != nil {
 		return EmpresaChatMensaje{}, err
 	}
@@ -543,8 +543,8 @@ func CreateEmpresaBodegaTransferNotification(dbConn *sql.DB, empresaID, producto
 	if len(recipients) == 0 {
 		return EmpresaBodegaTransferNotificationResult{}, nil
 	}
-	titulo := "Traslado recibido en " + firstNonEmptyDB(destino.Nombre, "bodega destino")
-	mensaje := fmt.Sprintf("Se trasladaron %.4g unidades de %s desde %s hacia %s.", cantidad, firstNonEmptyDB(producto.Nombre, fmt.Sprintf("producto %d", productoID)), firstNonEmptyDB(origen.Nombre, "bodega origen"), firstNonEmptyDB(destino.Nombre, "bodega destino"))
+	titulo := "Traslado recibido en " + firstNonBlankValue(destino.Nombre, "bodega destino")
+	mensaje := fmt.Sprintf("Se trasladaron %.4g unidades de %s desde %s hacia %s.", cantidad, firstNonBlankValue(producto.Nombre, fmt.Sprintf("producto %d", productoID)), firstNonBlankValue(origen.Nombre, "bodega origen"), firstNonBlankValue(destino.Nombre, "bodega destino"))
 	if strings.TrimSpace(referencia) != "" {
 		mensaje += " Referencia: " + truncateTextDB(strings.TrimSpace(referencia), 120) + "."
 	}
@@ -576,7 +576,7 @@ func CreateEmpresaBodegaTransferNotification(dbConn *sql.DB, empresaID, producto
 		}
 		if msg.ID > 0 {
 			result.Created++
-			result.Recipients = append(result.Recipients, firstNonEmptyDB(recipient.Email, recipient.Nombre, recipient.Ref))
+			result.Recipients = append(result.Recipients, firstNonBlankValue(recipient.Email, recipient.Nombre, recipient.Ref))
 		}
 	}
 	return result, nil
@@ -613,7 +613,7 @@ func normalizeEmpresaBuzonMensaje(msg *EmpresaBuzonMensaje) {
 	normalizeEmpresaBuzonActorFields(&msg.RemitenteTipo, &msg.RemitenteRef, &msg.RemitenteEmail, &msg.RemitenteNombre)
 	msg.Titulo = truncateTextDB(strings.TrimSpace(msg.Titulo), 180)
 	msg.Mensaje = truncateTextDB(strings.TrimSpace(msg.Mensaje), 3000)
-	msg.Tipo = firstNonEmptyDB(truncateTextDB(strings.TrimSpace(msg.Tipo), 80), "general")
+	msg.Tipo = firstNonBlankValue(truncateTextDB(strings.TrimSpace(msg.Tipo), 80), "general")
 	msg.Prioridad = normalizeEmpresaBuzonPrioridad(msg.Prioridad)
 	msg.Modulo = truncateTextDB(strings.TrimSpace(msg.Modulo), 80)
 	msg.ReferenciaTipo = truncateTextDB(strings.TrimSpace(msg.ReferenciaTipo), 80)

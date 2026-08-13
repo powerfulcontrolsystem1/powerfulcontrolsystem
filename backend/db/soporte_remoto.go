@@ -242,14 +242,6 @@ func soporteRemotoNormalizePlanLimit(raw int) int {
 	return raw
 }
 
-func soporteRemotoLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
-}
-
 func soporteRemotoBoolToInt(v bool) int {
 	if v {
 		return 1
@@ -1562,7 +1554,7 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 		where += " AND COALESCE(estado, 'activo') <> 'inactivo'"
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
-		pattern := soporteRemotoLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += ` AND (
 			LOWER(COALESCE(codigo_dispositivo, '')) LIKE LOWER(?) ESCAPE '!' OR
 			LOWER(COALESCE(nombre_equipo, '')) LIKE LOWER(?) ESCAPE '!' OR
@@ -2112,7 +2104,7 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 		args = append(args, estado)
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
-		pattern := soporteRemotoLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += ` AND (
 			LOWER(COALESCE(s.codigo_sesion, '')) LIKE LOWER(?) ESCAPE '!' OR
 			LOWER(COALESCE(s.solicitada_por, '')) LIKE LOWER(?) ESCAPE '!' OR

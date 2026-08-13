@@ -71,27 +71,6 @@ func normalizeEmpresaCalculadoraEstado(raw string) string {
 	return "activo"
 }
 
-func calcNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
-func calcLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
-}
-
 func calcNormalizeEtiquetas(values []string) []string {
 	seen := map[string]bool{}
 	out := make([]string, 0, len(values))
@@ -487,7 +466,7 @@ func calcBuildOperacionesFilterClause(filter EmpresaCalculadoraOperacionFilter, 
 	}
 	if strings.TrimSpace(filter.Etiqueta) != "" {
 		clauses = append(clauses, "LOWER(COALESCE(etiquetas_json, '')) LIKE LOWER(?) ESCAPE '!'")
-		args = append(args, calcLikePattern(filter.Etiqueta))
+		args = append(args, escapedContainsPattern(filter.Etiqueta))
 	}
 
 	if len(clauses) == 0 {
@@ -517,7 +496,7 @@ func ListEmpresaCalculadoraOperaciones(dbConn *sql.DB, empresaID int64, filter E
 		return nil, 0, err
 	}
 
-	limit, offset := calcNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 1000)
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,

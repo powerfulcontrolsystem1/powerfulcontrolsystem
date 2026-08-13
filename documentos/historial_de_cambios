@@ -42448,3 +42448,9 @@ acumulativa.
   1.283 a 1.269 bloqueos y de 209 a 195 páginas.
 - Falta repetir el lote visualmente sobre el candidato desplegado. P110-007
   continúa parcial, no se retiró unsafe-inline y no se ejecutó rs.
+2026-08-13 - Plan 110: segundo saneamiento de utilidades DB
+- Se centralizaron la selección del primer valor no vacío, el escape de patrones
+  LIKE y la paginación común en `db`, eliminando implementaciones idénticas de
+  doce repositorios sin alterar consultas, permisos ni aislamiento empresarial.
+- La línea base estructural reduce duplicación exacta de 49 a 47 grupos e
+  incorpora una prueba de regresión para el escape de `%`, `_` y `!`.

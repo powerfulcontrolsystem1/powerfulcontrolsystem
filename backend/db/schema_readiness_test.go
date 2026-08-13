@@ -185,3 +185,16 @@ func TestSuperContractSchemaReadyRejectsNilDatabase(t *testing.T) {
 		t.Fatal("super contract readiness accepted nil database")
 	}
 }
+
+func TestSharedRepositoryValueHelpers(t *testing.T) {
+	t.Parallel()
+	if got := firstNonBlankValue("  ", " value ", "fallback"); got != "value" {
+		t.Fatalf("first non-blank value = %q", got)
+	}
+	if got := firstNonBlankValue("", " \t "); got != "" {
+		t.Fatalf("empty values returned %q", got)
+	}
+	if got := escapedContainsPattern(" 50%!_off "); got != "%50!%!!!_off%" {
+		t.Fatalf("escaped LIKE pattern = %q", got)
+	}
+}
