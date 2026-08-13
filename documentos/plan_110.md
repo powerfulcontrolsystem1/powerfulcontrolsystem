@@ -173,7 +173,8 @@ datos personales innecesarios.
 El orden obligatorio es:
 
 1. P110-000: gobierno, alcance y fuente única de verdad.
-2. P110-001 a P110-007: correcciones funcionales y controles P0.
+2. P110-001, incluida su ampliación obligatoria P110-001A, y P110-002 a
+   P110-007: correcciones funcionales, saneamiento estructural y controles P0.
 3. P110-008: congelar y desplegar el candidato inmutable final en staging.
 4. P110-009: carga, observabilidad y simulacro sobre ese candidato.
 5. P110-010: ensayo general real PCS sobre el mismo digest.
@@ -209,6 +210,10 @@ Plan 109 en una matriz sin duplicados ni vacíos.
 7. Crear la matriz maestra:
    `requisito | origen P109 | módulo | responsable | ambiente | digest |
    evidencia | estado | bloqueo | fecha`.
+8. Crear la matriz canónica de capacidades:
+   `capacidad | página | API | servicio | tabla | permiso | propietario |
+   escritura canónica | alias/legado | fecha de retiro | rollback`. Una
+   similitud de nombre o estilo no permite fusionar módulos sin esta decisión.
 
 **Aceptación:** 100 % del inventario tiene alcance, responsable y criterio de
 aceptación; no existen módulos visibles sin clasificación.
@@ -245,6 +250,88 @@ conflictos o cambios sin propietario.
 irreversible sin estrategia probada.
 
 **Evidencia:** `documentos/evidencia_plan_110/P110-001/`.
+
+#### P110-001A - Consolidación de código, módulos y deuda técnica [P0/P1]
+
+Esta ampliación forma parte de P110-001 y no crea una fase adicional ni cambia
+el denominador de 13 fases. P110-001 no puede aprobarse mientras P110-001A esté
+abierta.
+
+**Línea base confirmada el 2026-08-13:**
+
+- 638 archivos Go y 7.183 funciones de producción; 450 funciones superan 100
+  líneas y 124 superan 200;
+- 52 grupos de cuerpos de función idénticos;
+- 155 funciones `Ensure*`, 122 pasos de catálogo legado y 106 llamadas fuera
+  del migrador, 31 de ellas alcanzables durante tráfico HTTP;
+- 1.841 llamadas DB sin contexto en código de producción y 748 errores
+  descartados explícitamente pendientes de clasificación;
+- al menos 100 grupos de declaraciones CSS idénticas, 209 scripts inline y
+  deuda CSP en 195 páginas;
+- cero rutas empresariales duplicadas, cero IDs HTML realmente duplicados y
+  cero archivos frontend completos idénticos en el barrido. No se autoriza una
+  reescritura general basada en falsos positivos.
+
+**Acciones obligatorias:**
+
+1. Congelar la matriz canónica por capacidad y clasificar cada página, ruta,
+   servicio y tabla como `canónica`, `fachada intencional`, `compatibilidad con
+   retiro` o `eliminada`. Toda compatibilidad debe tener propietario,
+   telemetría, fecha de retiro, prueba y reverso.
+2. Mantener MRP como producción canónica y decidir el retiro de
+   `/api/empresa/produccion/bom*`; mantener CxP canónica en
+   `empresa_cuentas_por_pagar` y probar que la tabla histórica no recibe CxP ni
+   abonos nuevos; clasificar cada CRUD genérico de `modulos_faltantes.go`.
+3. Crear pruebas de caracterización por acción antes de dividir
+   `EmpresaCarritosCompraHandler`, `EmpresaFacturacionElectronicaHandler`,
+   `EmpresaNominaSueldosHandler`, `EmpresaComprasDocumentosHandler`,
+   `EmpresaImpresorasHandler`, `EmpresaDIANColombiaHandler` y `main`.
+4. Separar handlers por caso de uso sin duplicar middleware, permiso,
+   `empresa_id`, validación, transacción, idempotencia ni auditoría. El archivo
+   coordinador debe registrar dependencias y delegar; no contener reglas de
+   negocio repetidas.
+5. Extraer únicamente utilidades idénticas con semántica compartida: primer
+   valor no vacío, límites/paginación, patrones LIKE, detección de índices,
+   períodos, host y entorno. Las coincidencias de dominio no se generalizan
+   sin contrato y pruebas.
+6. Dar a cada tabla un único dueño de esquema en migración inmutable. Eliminar
+   las definiciones múltiples de tablas IA/Nextcloud y dejar cero DDL o
+   `Ensure*` de esquema en tráfico HTTP; API y worker solo verifican readiness.
+7. Propagar `r.Context()` desde el handler y usar `QueryContext`,
+   `ExecContext` y `BeginTx` en rutas críticas de dinero, fiscal, inventario,
+   autenticación, archivos e IA. Un contexto desligado solo se permite para un
+   job durable o cleanup con timeout, dueño y telemetría.
+8. Clasificar los 748 descartes explícitos como `cleanup seguro`, `best effort
+   observable` o `error obligatorio`. Decodificación, auditoría, evento fiscal,
+   pago y mutación no pueden fallar silenciosamente.
+9. Consolidar primitivas visuales compartidas para pestañas, campos, chips,
+   tablas, diálogos e impresión. Migrar por lotes con evidencia responsive,
+   accesible y visual; compartir CSS no convierte dos módulos en uno.
+10. Inventariar `alert`, `confirm`, `prompt`, `document.write`, `innerHTML`,
+    `catch` vacío y `localStorage`. Eliminar los diálogos nativos de acciones
+    críticas, demostrar escape DOM, limitar almacenamiento local a preferencias
+    no autoritativas y hacer observables los fallos críticos.
+11. Versionar una compuerta de complejidad/duplicación y publicar cobertura Go
+    por paquete y total con timeout; exigir no regresión. Las rutas críticas
+    refactorizadas deben cubrir éxito, entrada inválida, permiso, tenant A/B,
+    concurrencia, cancelación, rollback y error externo.
+12. Actualizar los contextos vigentes para señalar Plan 110 como única hoja de
+    ruta activa y conservar planes anteriores solo como historial.
+
+**Aceptación:** cero fuentes de escritura duplicadas, cero DDL en tráfico HTTP,
+un dueño por tabla, cero duplicaciones exactas sin clasificar, contextos en
+operaciones críticas, descartes críticos corregidos, handlers caracterizados y
+divididos sin perder cobertura, contratos históricos con retiro gobernado y
+regresión completa en verde sobre el mismo candidato.
+
+**Rollback:** refactorizar en cortes pequeños protegidos por pruebas de
+caracterización; conservar adaptadores de compatibilidad con telemetría hasta
+probar uso cero; no mezclar cambios destructivos de datos con la división de
+código; revertir el corte completo si cambia contrato, tenant, saldo o salida
+imprimible.
+
+**Evidencia:**
+`documentos/evidencia_plan_110/P110-001/2026-08-13_auditoria_integral_duplicacion_calidad.md`.
 
 ### P110-002 - Finanzas, CxP y UAT del contador [P0]
 
@@ -594,6 +681,12 @@ exportación | archivo | caché/job | respuesta pública | auditoría | resultad
 `proveedor | ambiente | solicitud | idempotencia | identificador oficial |
 respuesta oficial | conciliación | reverso | responsable | resultado`
 
+### 7.7 Arquitectura y calidad de código
+
+`capacidad | página | API | servicio | tabla | dueño canónico | alias/legado |
+fecha de retiro | función/archivo crítico | duplicación | contexto DB |
+errores descartados | cobertura antes/después | rollback | resultado`
+
 ## 8. Criterios de parada inmediata
 
 Detener la fase afectada, conservar evidencia y aplicar rollback si ocurre:
@@ -607,6 +700,8 @@ Detener la fase afectada, conservar evidencia y aplicar rollback si ocurre:
 - alerta P0 no recibida o sin responsable;
 - 5xx sostenido, sobreventa, consecutivo duplicado o cuatro cajas descuadradas;
 - certificado/firma DIAN incorrecto o respuesta oficial no conciliada.
+- una segunda fuente de escritura, DDL durante tráfico, pérdida de filtro
+  `empresa_id` o refactorización sin prueba de caracterización y reverso.
 
 Un hallazgo P0 mantiene el plan en NO-GO, aunque otras fases continúen.
 
@@ -617,6 +712,8 @@ Solo se puede declarar GO cuando:
 - [ ] P110-000 a P110-011 están aprobadas.
 - [ ] Existe un único SHA y cuatro digests certificados.
 - [ ] CI, Trivy, SBOM, migraciones y staging están verdes.
+- [ ] P110-001A cerró fuentes duplicadas, DDL runtime, deuda crítica de
+  contexto/errores y contratos históricos sin reducir cobertura.
 - [ ] Todas las funciones y todos los botones IA incluidos tienen evidencia.
 - [ ] Matriz mutante por rol y aislamiento A/B están completos.
 - [ ] CxP/contabilidad tienen diferencia cero y UAT del contador firmado.
@@ -1271,3 +1368,29 @@ autoriza ni ejecuta despliegue productivo.
   unsafe-inline.
 - P110-007 continúa **parcial**; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó rs.
+
+## Actualización 2026-08-13, scripts externos en 14 páginas
+
+- Catorce páginas cuyo único bloqueo era un script inline usan ahora un
+  controlador externo en el mismo punto de ejecución; no se cambiaron contratos
+  de API, permisos ni datos.
+- La comparación con HEAD y node --check aprobaron 14/14. La deuda baja de
+  1.283 a 1.269 bloqueos y de 209 a 195 páginas; quedan 209 scripts inline.
+- La repetición visual y autenticada del candidato desplegado sigue pendiente.
+  P110-007 continúa **parcial**; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó rs.
+
+## Actualización 2026-08-13, auditoría integral de duplicación y calidad
+
+- El barrido estático cubrió 638 archivos Go y 421 recursos HTML/JS/CSS. Los
+  auditores de rutas multiempresa, permisos/licencias, seguridad, plantillas y
+  consistencia UX aprobaron; no aparecieron rutas empresariales duplicadas,
+  archivos frontend idénticos ni IDs DOM repetidos reales.
+- Se incorporó P110-001A para cerrar 106 llamadas `Ensure*` fuera del migrador,
+  52 grupos de funciones idénticas, 124 funciones de más de 200 líneas, acceso
+  DB sin contexto, errores descartados, repetición visual y contratos legados.
+- El intento de cobertura completa superó 60 segundos y quedó inconcluso; el
+  plan exige una línea base acotada antes de refactorizar handlers críticos.
+- La auditoría amplía el trabajo pendiente y no certifica código ni candidato.
+  El avance formal continúa en **38,5 %**, certificación **0 %**, **NO-GO**. No
+  se ejecutó `rs` ni se realizaron pruebas reales PCS.

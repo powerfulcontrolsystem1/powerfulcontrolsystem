@@ -1,3 +1,12 @@
+2026-08-13: Plan 110 / auditoria integral de duplicacion y calidad.
+- El barrido transversal cubre Go, HTML, JavaScript, CSS, rutas, permisos,
+  esquema y modulos; descarta falsos positivos de rutas/IDs/paginas y registra
+  deuda confirmada de DDL runtime, funciones extensas, contextos, errores
+  ignorados, utilidades y sistema visual.
+- P110-001A agrega criterios medibles, rollback y matriz canonica antes del
+  candidato final. Los contextos declaran Plan 110 como unica ruta activa.
+- No se modifico negocio, no se uso la cuenta PCS y no se ejecuto `rs`.
+
 2026-08-13: Plan 110 / cuatro modulos empresariales sin CSS inline.
 - Tesoreria, Proveedores de Firma Digital, Soporte remoto y Tutorial de Domotica
   usan hojas externas propias y quedan en cero bloqueos CSP por pagina.
@@ -42385,3 +42394,10 @@ acumulativa.
 - La validación visual local no se declara aprobada porque el navegador interno
   bloqueó file: y el servidor auxiliar no escuchó. Debe repetirse sobre el
   candidato desplegado. P110-007 sigue parcial y no se ejecutó rs.
+2026-08-13: Plan 110 / scripts externos en 14 páginas.
+- Catorce superficies empresariales, públicas y super mueven su único script
+  inline a un archivo externo en el mismo punto de ejecución.
+- La comparación exacta y node --check aprobaron 14/14; la deuda CSP baja de
+  1.283 a 1.269 bloqueos y de 209 a 195 páginas.
+- Falta repetir el lote visualmente sobre el candidato desplegado. P110-007
+  continúa parcial, no se retiró unsafe-inline y no se ejecutó rs.

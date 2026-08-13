@@ -1,11 +1,27 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-24.
+Estado: vigente. Ultima actualizacion: 2026-08-13.
 
-## Actualizacion 2026-07-24 - Plan 106 P0 en ejecucion controlada
+## Actualizacion 2026-08-13 - Plan 110 vigente y NO-GO
 
-- `documentos/plan_106.md` sustituye al Plan 105 como hoja de ruta principal
-  para certificar la entrada en produccion. Su veredicto inicial es `NO-GO`.
+- `documentos/plan_110.md` es la única hoja de ruta activa para el cierre de
+  producción. Los Planes 106 a 109 permanecen como historial y fuente de
+  evidencia, no como orden de ejecución vigente.
+- El avance formal documentado es 38,5 % de implementación, 0 % de
+  certificación del candidato y veredicto `NO-GO`.
+- P110-001A incorpora el saneamiento obligatorio de fuentes duplicadas,
+  autoridad DDL, handlers monolíticos, acceso DB sin contexto, errores
+  descartados y repetición frontend antes de congelar el candidato final.
+- La aplicación móvil nativa queda fuera del piloto. La web responsive, PWA,
+  domótica incluida por alcance y todas las pruebas reales autorizadas siguen
+  sujetas a las compuertas del Plan 110.
+- Las actualizaciones de Planes 106/108 que aparecen más abajo son históricas y
+  no reemplazan esta sección.
+
+## Historico 2026-07-24 - Plan 106 P0 en ejecucion controlada
+
+- En esa fecha, `documentos/plan_106.md` sustituyó al Plan 105 como hoja de ruta.
+  Hoy solo conserva evidencia histórica; la ruta activa es Plan 110.
 - El plan exige consolidar la cartera de proveedores porque hoy existen dos
   fuentes de verdad, probar todos los modulos/funciones/botones, cubrir todos
   los controles IA y ejecutar varias cajas simultaneas en una prueba real
@@ -261,13 +277,12 @@ Abrir `documentos/contexto_especifico_del_sistema.md`. Ese documento enlaza los
 mapas de modulos, flujos, datos, seguridad, comandos, decisiones, integraciones
 y runbooks vigentes.
 
-## Plan vigente de entrada en producción
+## Histórico - Plan 108 de entrada en producción
 
-- `documentos/plan_108.md` es la hoja de ruta consolidada vigente para el cierre
-  de producción. Integra los pendientes de los planes 106, 107, IA, 104, 105 y
-  del plan final histórico sin convertir evidencia local en certificación.
+- `documentos/plan_108.md` fue la hoja de ruta consolidada de ese ciclo. Sus
+  pendientes fueron absorbidos por Planes 109/110 y no constituyen una orden
+  vigente.
 - Su estado inicial es `NO-GO`. La primera fase ejecutable es `P108-000`, que
   exige un candidato limpio, inmutable y reproducible antes de staging o
   pruebas reales.
-- Los planes anteriores se conservan como antecedentes y requisitos de detalle;
-  el avance nuevo se registra contra identificadores `P108-*`.
+- Sus identificadores `P108-*` se conservan como trazabilidad histórica.
