@@ -4,6 +4,9 @@
   tarifas diarias usados por la preconfiguración empresarial.
 - `backend/handlers/empresa_preconfiguracion_schema_test.go`: impide que el
   flujo HTTP reintroduzca inicializaciones DDL y exige verificadores fail-closed.
+- `backend/handlers/runtime_schema_readiness_test.go`: contrato estructural que
+  protege rutas seleccionadas de permisos, contabilidad, Nextcloud y correo
+  masivo contra el regreso de DDL en solicitudes.
 - `backend/tools/code_quality_audit/main.go`: compuerta Go estándar de no
   regresión para tamaño de funciones, duplicación exacta, contexto DB y
   resultados descartados; genera evidencia JSON sin analizarse a sí misma.

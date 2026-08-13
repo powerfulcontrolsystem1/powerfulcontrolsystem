@@ -978,8 +978,8 @@ func handleEmpresaCreditosAbono(w http.ResponseWriter, r *http.Request, dbEmp *s
 	}
 
 	if policy.RegistrarEventoContable {
-		if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
-			integracionContable["error_evento_contable"] = "no se pudo preparar esquema de eventos contables"
+		if err := dbpkg.EmpresaEventosContablesSchemaReady(dbEmp); err != nil {
+			integracionContable["error_evento_contable"] = "el esquema migrado de eventos contables no esta disponible"
 		} else {
 			movimiento, okMov := creditosFindMovimientoByID(dbEmp, empresaID, payload.CreditoID, movID)
 			montoEvento := payload.Monto

@@ -85,6 +85,15 @@ func verifyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
 	return nil
 }
 
+// EmpresaNextcloudSchemaReady expone al API una verificacion estrictamente de
+// solo lectura. El esquema debe haber sido aplicado previamente por pcs-migrate.
+func EmpresaNextcloudSchemaReady(dbEmpresas *sql.DB) error {
+	if dbEmpresas == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	return verifyEmpresaNextcloudSchema(dbEmpresas)
+}
+
 func legacySchemaBootstrapDisabled() bool {
 	if !strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") {
 		return false

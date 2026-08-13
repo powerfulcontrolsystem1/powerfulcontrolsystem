@@ -2,7 +2,9 @@
 - Productos, usuarios, configuracion operativa, comisiones, tarifas y Domotica
   validan esquema ya migrado antes de aplicar plantillas; la solicitud no crea
   ni altera tablas y la limpieza ya no descarta errores de escritura.
-- El inventario runtime baja de 104 a 94 llamadas y de 29 a 19 en trafico HTTP.
+- Eventos contables, permisos finos, Nextcloud y destinatarios de correo masivo
+  tambien verifican esquema migrado. El inventario baja de 104 a 89 llamadas y
+  de 29 a 14 en trafico HTTP.
   El auditor corrige las tres alertas gosec del primer CI con ruta normalizada y
   permisos privados para directorio/reporte. No se uso PCS ni se ejecuto `rs`.
 

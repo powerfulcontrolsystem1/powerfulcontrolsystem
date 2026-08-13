@@ -2327,8 +2327,8 @@ func handleComprasDevolucionProveedorContabilizarAction(dbEmp *sql.DB, w http.Re
 		return
 	}
 
-	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
-		http.Error(w, "no se pudo preparar esquema de eventos contables", http.StatusInternalServerError)
+	if err := dbpkg.EmpresaEventosContablesSchemaReady(dbEmp); err != nil {
+		http.Error(w, "el esquema migrado de eventos contables no esta disponible", http.StatusInternalServerError)
 		return
 	}
 

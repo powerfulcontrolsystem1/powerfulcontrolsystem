@@ -79,3 +79,21 @@ func EmpresaTarifasPorDiaSchemaReady(dbConn *sql.DB) error {
 		{"empresa_tarifas_por_dia", `SELECT id, empresa_id, estacion_id FROM empresa_tarifas_por_dia WHERE 1=0`},
 	})
 }
+
+// EmpresaEventosContablesSchemaReady valida el contrato de eventos antes de
+// registrar integraciones contables desde HTTP, sin preparar el esquema.
+func EmpresaEventosContablesSchemaReady(dbConn *sql.DB) error {
+	return requireSchemaReadiness(dbConn, "eventos contables", []schemaReadinessCheck{
+		{"empresa_eventos_contables", `SELECT id, empresa_id, modulo, evento, entidad FROM empresa_eventos_contables WHERE 1=0`},
+	})
+}
+
+// EmpresaPermisosFinosSchemaReady valida tablas y columnas de autorización sin
+// otorgar al API capacidad DDL durante GET/POST.
+func EmpresaPermisosFinosSchemaReady(dbConn *sql.DB) error {
+	checks := []schemaReadinessCheck{
+		{"modulos", `SELECT id, empresa_id, modulo, accion, permitido FROM empresa_permisos_modulos WHERE 1=0`},
+		{"paginas", `SELECT id, empresa_id, pagina_clave, permitido FROM empresa_permisos_paginas WHERE 1=0`},
+	}
+	return requireSchemaReadiness(dbConn, "permisos finos empresariales", checks)
+}

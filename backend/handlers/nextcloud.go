@@ -208,7 +208,7 @@ func ensureNextcloudCompanyAccount(dbEmp *sql.DB, empresaID, quotaMB int64) (nex
 	if dbEmp == nil || empresaID <= 0 {
 		return account, fmt.Errorf("empresa invalida")
 	}
-	if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaNextcloudSchemaReady(dbEmp); err != nil {
 		return account, err
 	}
 	user := "pcs_empresa_" + strconv.FormatInt(empresaID, 10)

@@ -1419,10 +1419,12 @@ autoriza ni ejecuta despliegue productivo.
   contrato; toda escritura conserva su `empresa_id` recibido del flujo.
 - Los errores de las escrituras de limpieza dejan de descartarse. Una prueba
   estructural impide reintroducir cualquiera de esas llamadas DDL en el handler.
-  El inventario total baja de 104 a **94** y el subconjunto HTTP de 29 a **19**.
+  Una segunda extracción aplica readiness a eventos contables, permisos finos,
+  Nextcloud y usuarios del correo masivo. El inventario total baja de 104 a
+  **89** y el subconjunto HTTP de 29 a **14**.
 - El fallo remoto inicial de `gosec` en el nuevo auditor se corrigió reduciendo
   permisos del reporte a `0600`, del directorio a `0750` y documentando la ruta
   del baseline como argumento local confiable de CI.
-- P110-001A sigue **parcial** porque restan 19 llamadas HTTP y 72 de arranque,
+- P110-001A sigue **parcial** porque restan 14 llamadas HTTP y 72 de arranque,
   además de las otras deudas medidas. Avance formal **38,5 %**, certificación
   **0 %**, **NO-GO**. No se usó PCS, no se desplegó y no se ejecutó `rs`.
