@@ -396,19 +396,6 @@ func creditoWorkflowNormalizeEstado(raw string) string {
 	}
 }
 
-func creditoWorkflowNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
 func creditoWorkflowDefaultCodigo(empresaID, id int64, tipo string) string {
 	prefix := "WF"
 	switch creditoWorkflowNormalizeTipo(tipo) {
@@ -447,19 +434,6 @@ func creditoAppendObservacion(actual, extra string) string {
 		return extra
 	}
 	return actual + " | " + extra
-}
-
-func creditoNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
 }
 
 func creditoRound(v float64) float64 {
@@ -532,14 +506,6 @@ func creditoResolveClasificacion(estadoCredito, fechaVencimiento string, saldo f
 		return "vencido"
 	}
 	return "al_dia"
-}
-
-func creditoLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
 }
 
 func creditoDefaultCodigo(empresaID int64, id int64) string {
@@ -1478,7 +1444,7 @@ func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
 		args = append(args, strings.TrimSpace(filter.Hasta))
 	}
 	if strings.TrimSpace(filter.Q) != "" {
-		pattern := creditoLikePattern(filter.Q)
+		pattern := escapedContainsPattern(filter.Q)
 		clauses = append(clauses, "(LOWER(COALESCE(codigo, '')) LIKE LOWER(?) ESCAPE '!' OR LOWER(COALESCE(cliente_nombre, '')) LIKE LOWER(?) ESCAPE '!' OR LOWER(COALESCE(documento_origen, '')) LIKE LOWER(?) ESCAPE '!')")
 		args = append(args, pattern, pattern, pattern)
 	}
@@ -1524,7 +1490,7 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 		return nil, 0, err
 	}
 
-	limit, offset := creditoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 1000)
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
@@ -2359,7 +2325,7 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 		return nil, 0, err
 	}
 
-	limit, offset := creditoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 1000)
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
@@ -2838,7 +2804,7 @@ func ListEmpresaCreditoWorkflows(dbConn *sql.DB, empresaID int64, filter Empresa
 		return nil, 0, err
 	}
 
-	limit, offset := creditoWorkflowNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 1000)
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
@@ -3223,7 +3189,7 @@ func executeEmpresaCreditoReversoWorkflowTx(tx *sql.Tx, workflow *EmpresaCredito
 	WHERE empresa_id = ?
 	  AND credito_id = ?
 	  AND LOWER(COALESCE(tipo_movimiento, '')) = 'reverso'
-	  AND LOWER(COALESCE(observaciones, '')) LIKE LOWER(?) ESCAPE '!'`, workflow.EmpresaID, workflow.CreditoID, creditoLikePattern(fmt.Sprintf("movimiento_origen=%d", workflow.MovimientoOrigenID))).Scan(&reversosExistentes); err != nil {
+	  AND LOWER(COALESCE(observaciones, '')) LIKE LOWER(?) ESCAPE '!'`, workflow.EmpresaID, workflow.CreditoID, escapedContainsPattern(fmt.Sprintf("movimiento_origen=%d", workflow.MovimientoOrigenID))).Scan(&reversosExistentes); err != nil {
 		return 0, nil, err
 	}
 	if reversosExistentes > 0 {

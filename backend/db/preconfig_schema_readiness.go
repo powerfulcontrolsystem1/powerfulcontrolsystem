@@ -78,6 +78,27 @@ func normalizeListLimitOffset(limit, offset, defaultLimit, maxLimit int) (int, i
 	return limit, offset
 }
 
+// firstNonBlankValue returns the first non-empty value after trimming it. It is
+// shared by repositories so defaults are applied consistently.
+func firstNonBlankValue(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+// escapedContainsPattern builds a PostgreSQL LIKE pattern for clauses that use
+// ESCAPE '!'. Keeping the escaping here prevents repositories from drifting.
+func escapedContainsPattern(raw string) string {
+	value := strings.TrimSpace(raw)
+	value = strings.ReplaceAll(value, "!", "!!")
+	value = strings.ReplaceAll(value, "%", "!%")
+	value = strings.ReplaceAll(value, "_", "!_")
+	return "%" + value + "%"
+}
+
 func currentSchemaIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
 	if dbConn == nil {
 		return false, errors.New("conexion de base de datos no disponible")

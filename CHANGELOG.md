@@ -4916,3 +4916,7 @@
 - La cuota predeterminada de 1024 MB vuelve a ser válida en el formulario.
 - El panel Mailu deja de desbordar horizontalmente en pantallas móviles.
 - 2026-08-09: `Domotica Raspberry por tunel saliente` permite abrir PCS desde la Raspberry, descargar un instalador seguro y mantener un agente HTTPS hacia el VPS sin puertos entrantes. Agrega identidad unica, tokens hasheados, cola/ACK de GPIO, entradas con debounce, multiples aparatos por estacion, historial y transferencia diaria/acumulada por empresa y dispositivo en super administrador.
+## 2026-08-13 - Plan 110: utilidades DB comunes
+
+- Consolida reglas repetidas de paginación, valores no vacíos y patrones LIKE
+  en repositorios, con compuerta estructural decreciente y pruebas enfocadas.

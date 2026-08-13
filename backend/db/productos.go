@@ -3641,9 +3641,9 @@ func ActualizarEstadoOrdenCompraDesdeReposicion(dbConn *sql.DB, empresaID, prove
 		EstadoDocumento:      transition.estadoNuevo,
 		EstadoAnterior:       resolvedEstadoActual,
 		EventoUltimo:         transition.evento,
-		PeriodoContable:      firstNonBlank(periodoContable, docActual.PeriodoContable),
+		PeriodoContable:      firstNonBlankValue(periodoContable, docActual.PeriodoContable),
 		MontoTotal:           docActual.MontoTotal,
-		Moneda:               firstNonBlank(docActual.Moneda, "COP"),
+		Moneda:               firstNonBlankValue(docActual.Moneda, "COP"),
 		FechaDocumento:       docActual.FechaDocumento,
 		EntidadRelacionadaID: proveedorID,
 		UsuarioCreador:       strings.TrimSpace(usuario),
@@ -3669,16 +3669,6 @@ func ActualizarEstadoOrdenCompraDesdeReposicion(dbConn *sql.DB, empresaID, prove
 	}
 
 	return out, nil
-}
-
-func firstNonBlank(values ...string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
 }
 
 // TransferirProductoEntreBodegas mueve unidades entre bodegas de una empresa y registra movimiento.

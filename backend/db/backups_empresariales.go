@@ -165,14 +165,6 @@ func normalizeEmpresaBackupEstado(raw string) string {
 	return "activo"
 }
 
-func empresaBackupLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
-}
-
 func empresaBackupNormalizeTables(values []string) []string {
 	if len(values) == 0 {
 		return []string{}
@@ -739,7 +731,7 @@ func createEmpresaBackupSnapshotFromPayload(dbConn *sql.DB, empresaID int64, nom
 		payload.Version = empresaBackupsSchemaVersion
 	}
 	if strings.TrimSpace(payload.Scope) == "" {
-		payload.Scope = strings.TrimSpace(firstNonBlankString(alcance, "empresa"))
+		payload.Scope = firstNonBlankValue(alcance, "empresa")
 	}
 
 	rawSnapshot, err := json.Marshal(payload)
@@ -751,8 +743,8 @@ func createEmpresaBackupSnapshotFromPayload(dbConn *sql.DB, empresaID int64, nom
 	if cleanName == "" {
 		cleanName = fmt.Sprintf("Backup empresa %d %s", empresaID, time.Now().In(time.Local).Format("2006-01-02 15:04:05"))
 	}
-	cleanScope := strings.TrimSpace(firstNonBlankString(alcance, payload.Scope, "empresa"))
-	cleanType := strings.TrimSpace(firstNonBlankString(tipoBackup, "full"))
+	cleanScope := firstNonBlankValue(alcance, payload.Scope, "empresa")
+	cleanType := firstNonBlankValue(tipoBackup, "full")
 	includeTables = empresaBackupNormalizeTables(includeTables)
 	excludeTables = empresaBackupNormalizeTables(excludeTables)
 	if metadata == nil {
@@ -760,7 +752,7 @@ func createEmpresaBackupSnapshotFromPayload(dbConn *sql.DB, empresaID int64, nom
 	}
 	metadata["scope"] = cleanScope
 	metadata["version"] = strings.TrimSpace(payload.Version)
-	if creator := strings.TrimSpace(firstNonBlankString(payload.CreatedBy, usuario)); creator != "" {
+	if creator := firstNonBlankValue(payload.CreatedBy, usuario); creator != "" {
 		metadata["created_by"] = creator
 	}
 
@@ -801,7 +793,7 @@ func createEmpresaBackupSnapshotFromPayload(dbConn *sql.DB, empresaID int64, nom
 		empresaBackupHash(rawSnapshot),
 		string(rawSnapshot),
 		empresaBackupEncodeMetadataJSON(metadata),
-		strings.TrimSpace(firstNonBlankString(usuario, payload.CreatedBy, "sistema")),
+		firstNonBlankValue(usuario, payload.CreatedBy, "sistema"),
 		strings.TrimSpace(descripcion),
 	)
 	if err != nil {
@@ -822,7 +814,7 @@ func CreateEmpresaBackupSnapshot(dbConn *sql.DB, empresaID int64, nombre, descri
 	payload, err := BuildEmpresaBackupPayload(dbConn, empresaID, EmpresaBackupBuildOptions{
 		IncludeTables: options.IncludeTables,
 		ExcludeTables: options.ExcludeTables,
-		CreatedBy:     firstNonBlankString(strings.TrimSpace(options.CreatedBy), strings.TrimSpace(usuario)),
+		CreatedBy:     firstNonBlankValue(options.CreatedBy, usuario),
 	})
 	if err != nil {
 		return 0, err
@@ -986,7 +978,7 @@ func ListEmpresaBackups(dbConn *sql.DB, empresaID int64, filter EmpresaBackupFil
 
 	q := strings.TrimSpace(filter.Q)
 	if q != "" {
-		pattern := empresaBackupLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += " AND (LOWER(COALESCE(codigo, '')) LIKE LOWER(?) ESCAPE '!' OR LOWER(COALESCE(nombre, '')) LIKE LOWER(?) ESCAPE '!' OR LOWER(COALESCE(descripcion, '')) LIKE LOWER(?) ESCAPE '!')"
 		args = append(args, pattern, pattern, pattern)
 	}
@@ -1262,7 +1254,7 @@ func RestoreEmpresaBackupByID(dbConn *sql.DB, empresaID, backupID int64, usuario
 	}
 
 	now := time.Now().In(time.Local).Format("2006-01-02 15:04:05")
-	executor := strings.TrimSpace(firstNonBlankString(usuario, "sistema"))
+	executor := firstNonBlankValue(usuario, "sistema")
 	obs := strings.TrimSpace(observaciones)
 	if obs == "" {
 		obs = fmt.Sprintf("restaurado desde backup %s", strings.TrimSpace(backup.Codigo))

@@ -453,14 +453,6 @@ func ventaPublicaNormalizeEpaycoMode(raw string) string {
 	}
 }
 
-func ventaPublicaLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
-}
-
 func ventaPublicaBoolToInt(v bool) int {
 	if v {
 		return 1
@@ -1883,7 +1875,7 @@ func ListEmpresaVentaPublicaItems(dbConn *sql.DB, empresaID int64, filter Empres
 		args = append(args, pageSlug)
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
-		pattern := ventaPublicaLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += ` AND (
 			LOWER(COALESCE(i.codigo_publico, '')) LIKE LOWER(?) ESCAPE '!' OR
 			LOWER(COALESCE(i.nombre, '')) LIKE LOWER(?) ESCAPE '!' OR
@@ -2378,7 +2370,7 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 		args = append(args, status)
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
-		pattern := ventaPublicaLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += ` AND (
 			LOWER(COALESCE(codigo_orden, '')) LIKE LOWER(?) ESCAPE '!' OR
 			LOWER(COALESCE(comprador_nombre, '')) LIKE LOWER(?) ESCAPE '!' OR

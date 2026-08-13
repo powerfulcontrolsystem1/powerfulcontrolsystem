@@ -111,14 +111,6 @@ func ventaDigitalNormalizeMoneda(raw string) string {
 	return moneda
 }
 
-func ventaDigitalLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
-}
-
 func ventaDigitalBoolToInt(v bool) int {
 	if v {
 		return 1
@@ -697,7 +689,7 @@ func ListSuperVentaDigitalItems(dbConn *sql.DB, filter SuperVentaDigitalItemsFil
 		where += " AND COALESCE(estado, 'activo') <> 'inactivo'"
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
-		pattern := ventaDigitalLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += ` AND (
 			LOWER(COALESCE(codigo_publico, '')) LIKE LOWER(?) ESCAPE '!' OR
 			LOWER(COALESCE(nombre, '')) LIKE LOWER(?) ESCAPE '!' OR
@@ -1107,7 +1099,7 @@ func ListSuperVentaDigitalOrders(dbConn *sql.DB, filter SuperVentaDigitalOrdersF
 		args = append(args, status)
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
-		pattern := ventaDigitalLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += ` AND (
 			LOWER(COALESCE(codigo_orden, '')) LIKE LOWER(?) ESCAPE '!' OR
 			LOWER(COALESCE(comprador_nombre, '')) LIKE LOWER(?) ESCAPE '!' OR
