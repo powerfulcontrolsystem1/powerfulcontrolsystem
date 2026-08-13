@@ -182,3 +182,18 @@ func TestControlElectricoProgramacionRangoFechaHora(t *testing.T) {
 		t.Fatalf("fin del rango no solicita apagado = %+v", off)
 	}
 }
+
+func TestControlElectricoSensorScheduleState(t *testing.T) {
+	rele := dbpkg.EmpresaControlElectricoRele{
+		ProgramacionHabilitada: true,
+		ProgramacionInicio:     "2026-05-04T20:00",
+		ProgramacionFin:        "2026-05-05T06:00",
+		ProgramacionTimezone:   "America/Bogota",
+	}
+	if !controlElectricoProgramacionActivaAhora(rele, time.Date(2026, 5, 5, 1, 0, 0, 0, time.UTC)) {
+		t.Fatal("el sensor debe poder activar el aparato durante el rango programado")
+	}
+	if controlElectricoProgramacionActivaAhora(rele, time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC)) {
+		t.Fatal("el sensor no debe activar el aparato fuera del rango programado")
+	}
+}

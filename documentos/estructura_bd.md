@@ -2401,3 +2401,11 @@ la base de datos se usa unicamente para la comprobacion de disponibilidad.
 instalaciones antiguas donde la tabla ya existía sin la restricción declarada.
 La migración no elimina ni fusiona auditoría: ante duplicados falla cerrada para
 reconciliación operativa explícita.
+
+## Gobierno del túnel Domótica (2026-08-13)
+
+- Migración empresarial `20260813-001-domotica-governance-v1`.
+- `empresa_control_electrico_config`: `disconnect_alert_enabled`, `disconnect_alert_email`, `disconnect_grace_minutes`.
+- `empresa_control_electrico_raspberry_pis`: `disconnect_alerted_for_last_seen` y `disconnect_alerted_at` para deduplicar alertas de desconexión entre réplicas.
+- `empresa_control_electrico_limites_tunel`: una fila por `empresa_id`, cuota mensual MB, porcentaje de advertencia, bloqueo, auditoría y observaciones.
+- `empresa_control_electrico_trafico_diario` conserva RX/TX/solicitudes por `(empresa_id, raspberry_id, fecha)` y añade índice por empresa/fecha para agregación mensual.

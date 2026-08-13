@@ -6723,3 +6723,14 @@ timers heredados de API se conservan hasta que el worker los reemplace.
 - `web/administrar_empresa/control_electrico.html` genera el instalador y
   configura aparatos/reglas; `web/super/domotica_raspberry_trafico.html` muestra
   transferencia agregada sin secretos.
+
+## Actualización 2026-08-13 - gobierno de conectividad Domótica
+
+```text
+Raspberry -> HTTPS tunnel -> device_uid/token -> empresa_id + raspberry_id
+                                       |-> cuota mensual por empresa -> comando/entrada o HTTP 429
+Heartbeat -> worker durable -> espera de gracia -> buzón/campanita + correo + evento
+Super -> API auditada -> consumo agrupado -> umbral/límite/bloqueo por empresa
+```
+
+`control_electrico_governance.go` concentra política y estado; `control_electrico_monitoring.go` ejecuta alertas desde `pcs-worker`. La API empresarial conserva su wrapper de permisos y todas las consultas/mutaciones usan el `empresa_id` efectivo.

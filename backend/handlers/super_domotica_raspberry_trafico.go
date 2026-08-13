@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -12,18 +14,37 @@ import (
 
 type superDomoticaRaspberryTrafficRow struct {
 	dbpkg.EmpresaControlElectricoTraficoRaspberry
-	EmpresaNombre string `json:"empresa_nombre"`
-	Online        bool   `json:"online"`
-	TotalHuman    string `json:"total_human"`
-	TodayHuman    string `json:"today_human"`
+	EmpresaNombre string                                             `json:"empresa_nombre"`
+	Online        bool                                               `json:"online"`
+	TotalHuman    string                                             `json:"total_human"`
+	TodayHuman    string                                             `json:"today_human"`
+	MonthHuman    string                                             `json:"month_human"`
+	Policy        dbpkg.EmpresaControlElectricoTunnelPolicy          `json:"policy"`
+	Bandwidth     dbpkg.EmpresaControlElectricoTunnelBandwidthStatus `json:"bandwidth"`
+}
+
+type superDomoticaCompanyTrafficRow struct {
+	EmpresaID     int64                                              `json:"empresa_id"`
+	EmpresaNombre string                                             `json:"empresa_nombre"`
+	Devices       int                                                `json:"devices"`
+	Online        int                                                `json:"online"`
+	TodayBytes    int64                                              `json:"today_bytes"`
+	MonthBytes    int64                                              `json:"month_bytes"`
+	TotalBytes    int64                                              `json:"total_bytes"`
+	TodayHuman    string                                             `json:"today_human"`
+	MonthHuman    string                                             `json:"month_human"`
+	TotalHuman    string                                             `json:"total_human"`
+	Policy        dbpkg.EmpresaControlElectricoTunnelPolicy          `json:"policy"`
+	Bandwidth     dbpkg.EmpresaControlElectricoTunnelBandwidthStatus `json:"bandwidth"`
 }
 
 func SuperDomoticaRaspberryTrafficHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+		adminEmail, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper)
+		if !ok {
 			return
 		}
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodPut {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
@@ -31,6 +52,35 @@ func SuperDomoticaRaspberryTrafficHandler(dbSuper, dbEmp *sql.DB) http.HandlerFu
 			http.Error(w, "Metricas de tunel no disponibles", http.StatusServiceUnavailable)
 			return
 		}
+		if r.Method == http.MethodPut {
+			var policy dbpkg.EmpresaControlElectricoTunnelPolicy
+			if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&policy); err != nil {
+				http.Error(w, "Datos de limite invalidos", http.StatusBadRequest)
+				return
+			}
+			if policy.EmpresaID <= 0 {
+				http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+				return
+			}
+			if _, err := dbpkg.GetEmpresaByScopeID(dbEmp, policy.EmpresaID); err != nil {
+				http.Error(w, "Empresa no encontrada", http.StatusNotFound)
+				return
+			}
+			policy.UsuarioCreador = adminEmail
+			saved, err := dbpkg.UpsertEmpresaControlElectricoTunnelPolicy(dbEmp, policy)
+			if err != nil {
+				http.Error(w, "No se pudo guardar el limite", http.StatusInternalServerError)
+				return
+			}
+			status, err := dbpkg.EvaluateEmpresaControlElectricoTunnelBandwidth(dbEmp, policy.EmpresaID, time.Now().UTC())
+			if err != nil {
+				http.Error(w, "Limite guardado, pero no se pudo recalcular el consumo", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "policy": saved, "bandwidth": status})
+			return
+		}
+
 		traffic, err := dbpkg.ListEmpresaControlElectricoTraficoRaspberry(dbEmp)
 		if err != nil {
 			http.Error(w, "No se pudo cargar el trafico de Raspberry Pi", http.StatusInternalServerError)
@@ -46,9 +96,22 @@ func SuperDomoticaRaspberryTrafficHandler(dbSuper, dbEmp *sql.DB) http.HandlerFu
 			names[id] = strings.TrimSpace(empresa.Nombre)
 		}
 		rows := make([]superDomoticaRaspberryTrafficRow, 0, len(traffic))
+		companyRows := map[int64]*superDomoticaCompanyTrafficRow{}
+		companyPolicies := map[int64]dbpkg.EmpresaControlElectricoTunnelPolicy{}
 		var totalRX, totalTX, todayRX, todayTX int64
 		online := 0
 		for _, item := range traffic {
+			policy, found := companyPolicies[item.EmpresaID]
+			if !found {
+				policy, err = dbpkg.GetEmpresaControlElectricoTunnelPolicy(dbEmp, item.EmpresaID)
+				if err != nil {
+					http.Error(w, "No se pudo cargar el limite de la empresa", http.StatusInternalServerError)
+					return
+				}
+				companyPolicies[item.EmpresaID] = policy
+			}
+			monthBytes := item.MonthBytesRx + item.MonthBytesTx
+			bandwidth := dbpkg.BuildEmpresaControlElectricoTunnelBandwidthStatus(policy, monthBytes, time.Now().UTC())
 			isOnline := domoticaTunnelSeenRecently(item.LastSeen, 90*time.Second)
 			if isOnline {
 				online++
@@ -63,15 +126,56 @@ func SuperDomoticaRaspberryTrafficHandler(dbSuper, dbEmp *sql.DB) http.HandlerFu
 				Online:                                  isOnline,
 				TotalHuman:                              domoticaTunnelTrafficHuman(item.BytesRx + item.BytesTx),
 				TodayHuman:                              domoticaTunnelTrafficHuman(item.TodayBytesRx + item.TodayBytesTx),
+				MonthHuman:                              domoticaTunnelTrafficHuman(monthBytes),
+				Policy:                                  policy,
+				Bandwidth:                               bandwidth,
 			})
+			company := companyRows[item.EmpresaID]
+			if company == nil {
+				company = &superDomoticaCompanyTrafficRow{EmpresaID: item.EmpresaID, EmpresaNombre: firstNonEmpty(names[item.EmpresaID], "Empresa "+strconv.FormatInt(item.EmpresaID, 10)), Policy: policy}
+				companyRows[item.EmpresaID] = company
+			}
+			company.Devices++
+			if isOnline {
+				company.Online++
+			}
+			company.TodayBytes += item.TodayBytesRx + item.TodayBytesTx
+			company.MonthBytes += monthBytes
+			company.TotalBytes += item.BytesRx + item.BytesTx
+		}
+		companies := make([]superDomoticaCompanyTrafficRow, 0, len(companyRows))
+		alerts := 0
+		for _, company := range companyRows {
+			company.TodayHuman = domoticaTunnelTrafficHuman(company.TodayBytes)
+			company.MonthHuman = domoticaTunnelTrafficHuman(company.MonthBytes)
+			company.TotalHuman = domoticaTunnelTrafficHuman(company.TotalBytes)
+			company.Bandwidth = dbpkg.BuildEmpresaControlElectricoTunnelBandwidthStatus(company.Policy, company.MonthBytes, time.Now().UTC())
+			if company.Bandwidth.Nivel != "normal" {
+				alerts++
+			}
+			companies = append(companies, *company)
+		}
+		sort.Slice(companies, func(i, j int) bool {
+			if companies[i].Bandwidth.Porcentaje == companies[j].Bandwidth.Porcentaje {
+				return companies[i].EmpresaNombre < companies[j].EmpresaNombre
+			}
+			return companies[i].Bandwidth.Porcentaje > companies[j].Bandwidth.Porcentaje
+		})
+		for i := range rows {
+			if company := companyRows[rows[i].EmpresaID]; company != nil {
+				rows[i].Bandwidth = company.Bandwidth
+			}
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":           true,
 			"generated_at": time.Now().UTC().Format(time.RFC3339),
 			"raspberries":  rows,
+			"companies":    companies,
 			"summary": map[string]interface{}{
 				"devices":     len(rows),
 				"online":      online,
+				"companies":   len(companies),
+				"alerts":      alerts,
 				"bytes_rx":    totalRX,
 				"bytes_tx":    totalTX,
 				"today_rx":    todayRX,

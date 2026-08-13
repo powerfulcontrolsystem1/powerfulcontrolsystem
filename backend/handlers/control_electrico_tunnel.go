@@ -146,6 +146,16 @@ func PublicDomoticaRaspberryTunnelHandler(dbEmp *sql.DB) http.HandlerFunc {
 			writeDomoticaTunnelJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "error": "dispositivo no autorizado"})
 			return
 		}
+		if status, limitErr := dbpkg.CheckEmpresaControlElectricoTunnelBandwidth(dbEmp, device.EmpresaID, time.Now()); limitErr != nil {
+			if errors.Is(limitErr, dbpkg.ErrControlElectricoTunnelBandwidthExceeded) {
+				w.Header().Set("Retry-After", "3600")
+				writeDomoticaTunnelJSON(w, http.StatusTooManyRequests, map[string]interface{}{"ok": false, "error": "limite mensual de transferencia alcanzado", "month": status.Mes})
+				return
+			}
+			log.Printf("[domotica_tunnel] bandwidth check empresa_id=%d raspberry_id=%d error: %v", device.EmpresaID, device.RaspberryID, limitErr)
+			writeDomoticaTunnelJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "error": "control de transferencia no disponible"})
+			return
+		}
 		switch action {
 		case "poll":
 			handleDomoticaTunnelPoll(w, r, dbEmp, device, requestBytes)

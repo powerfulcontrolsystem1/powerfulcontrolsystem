@@ -2127,3 +2127,10 @@ Para declarar un modulo listo en produccion se debe validar por rol: acceso a la
   configuracion de nomina. No aplica cambios en bloque ni sin confirmacion.
 - Los envios de WhatsApp tambien requieren que el evento global
   `cobranza_cliente` este habilitado por super administrador.
+
+2026-08-13: Domótica y Energía Solar.
+- `linkControlElectrico`: módulo `control_electrico`, acción actualizar; `linkEquiposDomotica` y `linkTutorialDomotica`: acción leer.
+- `linkEnergiaSolar`: módulo `energia_solar`, acción crear. Los cuatro accesos se presentan en el nuevo grupo principal sin ampliar permisos efectivos.
+- `/api/empresa/control_electrico` exige el wrapper empresarial y sobrescribe cualquier identificador del payload con el `empresa_id` autorizado.
+- `/api/public/domotica/tunnel` no acepta alcance empresarial del cliente: lo deriva del dispositivo autenticado.
+- `/super/api/domotica_raspberry_trafico` exige sesión super y auditoría para consultar o cambiar límites.

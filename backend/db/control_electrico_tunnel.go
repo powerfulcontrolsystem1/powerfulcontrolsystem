@@ -45,17 +45,18 @@ type EmpresaControlElectricoTunnelCommand struct {
 }
 
 type EmpresaControlElectricoInputConfig struct {
-	ReglaID          int64  `json:"rule_id"`
-	GPIOPin          int    `json:"gpio_pin"`
-	Pull             string `json:"pull"`
-	DebounceMS       int    `json:"debounce_ms"`
-	ValorActivo      string `json:"active_value"`
-	SensorCodigo     string `json:"sensor_code"`
-	Accion           string `json:"action"`
-	ReleID           int64  `json:"target_relay_id,omitempty"`
-	EstacionID       int64  `json:"station_id,omitempty"`
-	Nombre           string `json:"name,omitempty"`
-	AlarmaHabilitada bool   `json:"alarm_enabled"`
+	ReglaID              int64  `json:"rule_id"`
+	GPIOPin              int    `json:"gpio_pin"`
+	Pull                 string `json:"pull"`
+	DebounceMS           int    `json:"debounce_ms"`
+	ValorActivo          string `json:"active_value"`
+	SensorCodigo         string `json:"sensor_code"`
+	Accion               string `json:"action"`
+	ReleID               int64  `json:"target_relay_id,omitempty"`
+	EstacionID           int64  `json:"station_id,omitempty"`
+	Nombre               string `json:"name,omitempty"`
+	AlarmaHabilitada     bool   `json:"alarm_enabled"`
+	TemporizadorSegundos int    `json:"timer_seconds,omitempty"`
 }
 
 type EmpresaControlElectricoTraficoRaspberry struct {
@@ -74,6 +75,8 @@ type EmpresaControlElectricoTraficoRaspberry struct {
 	TodayBytesRx    int64  `json:"today_bytes_rx"`
 	TodayBytesTx    int64  `json:"today_bytes_tx"`
 	TodayRequests   int64  `json:"today_requests"`
+	MonthBytesRx    int64  `json:"month_bytes_rx"`
+	MonthBytesTx    int64  `json:"month_bytes_tx"`
 	LastTunnelError string `json:"last_tunnel_error,omitempty"`
 }
 
@@ -86,6 +89,7 @@ func EmpresaControlElectricoTunnelSchemaReady(dbConn *sql.DB) error {
 		`SELECT raspberry_id FROM empresa_control_electrico_reglas WHERE 1=0`,
 		`SELECT id FROM empresa_control_electrico_comandos WHERE 1=0`,
 		`SELECT id FROM empresa_control_electrico_trafico_diario WHERE 1=0`,
+		`SELECT empresa_id FROM empresa_control_electrico_limites_tunel WHERE 1=0`,
 	}
 	for _, query := range checks {
 		var marker interface{}
@@ -535,7 +539,7 @@ func WaitEmpresaControlElectricoTunnelCommand(dbConn *sql.DB, empresaID, raspber
 }
 
 func ListEmpresaControlElectricoInputConfigs(dbConn *sql.DB, empresaID, raspberryID int64) ([]EmpresaControlElectricoInputConfig, error) {
-	rows, err := querySQLCompat(dbConn, `SELECT id, COALESCE(entrada_gpio_pin,-1), COALESCE(entrada_pull,'none'), COALESCE(debounce_ms,250), COALESCE(valor,'1'), COALESCE(sensor_codigo,''), COALESCE(accion,'alarma'), COALESCE(rele_id,0), COALESCE(estacion_id,0), COALESCE(nombre,''), COALESCE(alarma_habilitada,1) FROM empresa_control_electrico_reglas WHERE empresa_id=? AND raspberry_id=? AND entrada_gpio_pin>=0 AND LOWER(COALESCE(estado,'activo'))='activo' ORDER BY entrada_gpio_pin,id`, empresaID, raspberryID)
+	rows, err := querySQLCompat(dbConn, `SELECT id, COALESCE(entrada_gpio_pin,-1), COALESCE(entrada_pull,'none'), COALESCE(debounce_ms,250), COALESCE(valor,'1'), COALESCE(sensor_codigo,''), COALESCE(accion,'alarma'), COALESCE(rele_id,0), COALESCE(estacion_id,0), COALESCE(nombre,''), COALESCE(alarma_habilitada,1), COALESCE(temporizador_segundos,0) FROM empresa_control_electrico_reglas WHERE empresa_id=? AND raspberry_id=? AND entrada_gpio_pin>=0 AND LOWER(COALESCE(estado,'activo'))='activo' ORDER BY entrada_gpio_pin,id`, empresaID, raspberryID)
 	if err != nil {
 		return nil, err
 	}
@@ -544,7 +548,7 @@ func ListEmpresaControlElectricoInputConfigs(dbConn *sql.DB, empresaID, raspberr
 	for rows.Next() {
 		var item EmpresaControlElectricoInputConfig
 		var alarm int
-		if err := rows.Scan(&item.ReglaID, &item.GPIOPin, &item.Pull, &item.DebounceMS, &item.ValorActivo, &item.SensorCodigo, &item.Accion, &item.ReleID, &item.EstacionID, &item.Nombre, &alarm); err != nil {
+		if err := rows.Scan(&item.ReglaID, &item.GPIOPin, &item.Pull, &item.DebounceMS, &item.ValorActivo, &item.SensorCodigo, &item.Accion, &item.ReleID, &item.EstacionID, &item.Nombre, &alarm, &item.TemporizadorSegundos); err != nil {
 			return nil, err
 		}
 		item.AlarmaHabilitada = alarm == 1
@@ -555,7 +559,8 @@ func ListEmpresaControlElectricoInputConfigs(dbConn *sql.DB, empresaID, raspberr
 
 func ListEmpresaControlElectricoTraficoRaspberry(dbConn *sql.DB) ([]EmpresaControlElectricoTraficoRaspberry, error) {
 	today := time.Now().UTC().Format("2006-01-02")
-	rows, err := querySQLCompat(dbConn, `SELECT r.empresa_id, r.id, COALESCE(r.codigo,''), COALESCE(r.nombre,''), COALESCE(r.device_uid,''), COALESCE(r.tunnel_enabled,0), COALESCE(r.tunnel_status,'sin_configurar'), COALESCE(r.last_seen,''), COALESCE(r.last_ip,''), COALESCE(r.agent_version,''), COALESCE(r.bytes_rx,0), COALESCE(r.bytes_tx,0), COALESCE(t.bytes_rx,0), COALESCE(t.bytes_tx,0), COALESCE(t.solicitudes,0), COALESCE(r.last_tunnel_error,'') FROM empresa_control_electrico_raspberry_pis r LEFT JOIN empresa_control_electrico_trafico_diario t ON t.empresa_id=r.empresa_id AND t.raspberry_id=r.id AND t.fecha=? WHERE LOWER(COALESCE(r.estado,'activo'))='activo' ORDER BY r.empresa_id,r.nombre,r.id`, today)
+	monthStart := time.Now().UTC().Format("2006-01") + "-01"
+	rows, err := querySQLCompat(dbConn, `SELECT r.empresa_id, r.id, COALESCE(r.codigo,''), COALESCE(r.nombre,''), COALESCE(r.device_uid,''), COALESCE(r.tunnel_enabled,0), COALESCE(r.tunnel_status,'sin_configurar'), COALESCE(r.last_seen,''), COALESCE(r.last_ip,''), COALESCE(r.agent_version,''), COALESCE(r.bytes_rx,0), COALESCE(r.bytes_tx,0), COALESCE(t.bytes_rx,0), COALESCE(t.bytes_tx,0), COALESCE(t.solicitudes,0), COALESCE(m.bytes_rx,0), COALESCE(m.bytes_tx,0), COALESCE(r.last_tunnel_error,'') FROM empresa_control_electrico_raspberry_pis r LEFT JOIN empresa_control_electrico_trafico_diario t ON t.empresa_id=r.empresa_id AND t.raspberry_id=r.id AND t.fecha=? LEFT JOIN (SELECT empresa_id,raspberry_id,SUM(bytes_rx) bytes_rx,SUM(bytes_tx) bytes_tx FROM empresa_control_electrico_trafico_diario WHERE fecha>=? GROUP BY empresa_id,raspberry_id) m ON m.empresa_id=r.empresa_id AND m.raspberry_id=r.id WHERE LOWER(COALESCE(r.estado,'activo'))='activo' ORDER BY r.empresa_id,r.nombre,r.id`, today, monthStart)
 	if err != nil {
 		return nil, err
 	}
@@ -564,7 +569,7 @@ func ListEmpresaControlElectricoTraficoRaspberry(dbConn *sql.DB) ([]EmpresaContr
 	for rows.Next() {
 		var item EmpresaControlElectricoTraficoRaspberry
 		var enabled int
-		if err := rows.Scan(&item.EmpresaID, &item.RaspberryID, &item.Codigo, &item.Nombre, &item.DeviceUID, &enabled, &item.TunnelStatus, &item.LastSeen, &item.LastIP, &item.AgentVersion, &item.BytesRx, &item.BytesTx, &item.TodayBytesRx, &item.TodayBytesTx, &item.TodayRequests, &item.LastTunnelError); err != nil {
+		if err := rows.Scan(&item.EmpresaID, &item.RaspberryID, &item.Codigo, &item.Nombre, &item.DeviceUID, &enabled, &item.TunnelStatus, &item.LastSeen, &item.LastIP, &item.AgentVersion, &item.BytesRx, &item.BytesTx, &item.TodayBytesRx, &item.TodayBytesTx, &item.TodayRequests, &item.MonthBytesRx, &item.MonthBytesTx, &item.LastTunnelError); err != nil {
 			return nil, err
 		}
 		item.TunnelEnabled = enabled == 1

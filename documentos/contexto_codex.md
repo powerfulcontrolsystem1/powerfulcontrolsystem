@@ -1193,3 +1193,10 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
 - GPT-5.6 Terra medio debe comenzar por `P108-000`, conservar secretos fuera de
   la documentación y no sumar certificación productiva antes de fijar SHA y
   digest.
+
+## Domótica y Energía Solar 2026-08-13
+
+- El menú de empresa agrupa configuración de Domótica, equipos, Energía Solar y tutorial bajo `Domótica y Energía Solar`.
+- Las desconexiones se notifican por worker después de la gracia empresarial; Super Administrador controla cuota mensual RX+TX, advertencia y bloqueo del túnel por empresa.
+- La primera instalación no requiere IP local: la Raspberry descarga un instalador de un uso, recibe ID global aleatorio y abre HTTPS hacia el VPS.
+- En sensores, `encender_temporizado` usa la duración de la regla y `encender_programado` solo enciende si la agenda del aparato está activa.

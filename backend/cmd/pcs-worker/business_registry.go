@@ -17,19 +17,20 @@ import (
 )
 
 const (
-	jobSuperAlerts        = "maintenance.super-alerts"
-	jobAuditRetention     = "maintenance.audit-retention"
-	jobLicenseState       = "licenses.state-sync"
-	jobLicenseAlerts      = "licenses.expiry-alerts"
-	jobVPSSnapshot        = "maintenance.vps-snapshot"
-	jobDIANNewsAgent      = "integrations.dian-news-agent"
-	jobLegalParameters    = "compliance.legal-parameters"
-	jobCollections        = "notifications.collections"
-	jobAccounting         = "accounting.pending-events"
-	jobElectricalSchedule = "integrations.electrical-schedule"
-	jobCommerceSalePaid   = "commerce.sale-paid"
-	jobSystemMetrics      = "maintenance.system-metrics"
-	jobCxPPayment         = dbpkg.EmpresaCxPPaymentOutboxTopic
+	jobSuperAlerts          = "maintenance.super-alerts"
+	jobAuditRetention       = "maintenance.audit-retention"
+	jobLicenseState         = "licenses.state-sync"
+	jobLicenseAlerts        = "licenses.expiry-alerts"
+	jobVPSSnapshot          = "maintenance.vps-snapshot"
+	jobDIANNewsAgent        = "integrations.dian-news-agent"
+	jobLegalParameters      = "compliance.legal-parameters"
+	jobCollections          = "notifications.collections"
+	jobAccounting           = "accounting.pending-events"
+	jobElectricalSchedule   = "integrations.electrical-schedule"
+	jobDomoticaConnectivity = "notifications.domotica-connectivity"
+	jobCommerceSalePaid     = "commerce.sale-paid"
+	jobSystemMetrics        = "maintenance.system-metrics"
+	jobCxPPayment           = dbpkg.EmpresaCxPPaymentOutboxTopic
 )
 
 func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerSpec {
@@ -60,6 +61,9 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 		_, err := handlers.EjecutarControlElectricoProgramacionPendiente(dbEmp, time.Now())
 		return err
 	})
+	add(jobDomoticaConnectivity, 2*time.Minute, 5, func(context.Context) error {
+		return handlers.RunEmpresaControlElectricoConnectivityScheduled(dbEmp, dbSuper)
+	})
 	add(jobSystemMetrics, 2*time.Minute, 5, func(context.Context) error {
 		return metrics.CollectOnce(dbSuper)
 	})
@@ -89,6 +93,7 @@ func businessSchedules() []platformworker.ScheduleSpec {
 		{Kind: jobCollections, Version: 1, Interval: time.Hour, MaxAttempts: 8, Priority: 90},
 		{Kind: jobAccounting, Version: 1, Interval: time.Duration(envInt("ASIENTOS_WORKER_INTERVAL_MINUTES", 15)) * time.Minute, MaxAttempts: 10, Priority: 50},
 		{Kind: jobElectricalSchedule, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 40},
+		{Kind: jobDomoticaConnectivity, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 45},
 		{Kind: jobSystemMetrics, Version: 1, Interval: time.Duration(metrics.DefaultIntervalSeconds()) * time.Second, MaxAttempts: 5, Priority: 160},
 	}
 }

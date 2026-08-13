@@ -12732,3 +12732,11 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   tecnica compacta de arquitectura, componentes, persistencia y controles.
 - `backend/handlers/control_electrico_station_ui_test.go`: contrato visible del
   boton unico por estacion, su check, equipos, sensores y multiples Raspberry.
+
+2026-08-13 - Gobierno, alertas y tutorial visual de Domotica
+- `backend/db/control_electrico_governance.go`: políticas mensuales del túnel, clasificación de abuso y candidatos de desconexión por empresa.
+- `backend/db/control_electrico_governance_migration.go`: migración PostgreSQL `20260813-001-domotica-governance-v1`.
+- `backend/handlers/control_electrico_monitoring.go`: notificación al buzón/campanita y correo mediante el worker durable.
+- `backend/db/control_electrico_governance_test.go` y `backend/handlers/control_electrico_governance_ui_test.go`: contratos de identidad, cuotas, acciones de sensor, menú y tutorial.
+- `web/img/raspberry-pi-40-pin-bcm.svg`: pinout determinista físico/BCM de 40 pines.
+- `web/img/raspberry-pi-40-pin-tutorial.png`: ilustración orientativa generada para el tutorial.

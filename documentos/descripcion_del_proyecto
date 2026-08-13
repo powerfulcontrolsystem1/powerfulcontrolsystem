@@ -754,3 +754,10 @@ se normalizan en JSON, las consultas se paginan y las mutaciones usan una clave
 de idempotencia hash por empresa para que un reintento de red no duplique una
 venta, pago, documento fiscal o mensaje. Las rutas web heredadas permanecen
 compatibles mientras se completa su migracion versionada.
+
+Actualización Domótica 2026-08-13: Administrar empresa presenta un grupo
+principal `Domótica y Energía Solar`; el túnel Raspberry conserva identidad
+global opaca y aislamiento por empresa, añade alertas de desconexión con gracia
+y cuota mensual RX/TX por empresa administrada desde Super Administrador. El
+tutorial documenta el alta sin IP local, los 40 pines físico/BCM, relés y
+sensores con salida normal, temporizada o programada.
