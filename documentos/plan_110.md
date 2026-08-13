@@ -1428,21 +1428,24 @@ autoriza ni ejecuta despliegue productivo.
 - El fallo remoto inicial de `gosec` en el nuevo auditor se corrigió reduciendo
   permisos del reporte a `0600`, del directorio a `0750` y documentando la ruta
   del baseline como argumento local confiable de CI.
-- P110-001A sigue **parcial** porque restan 72 llamadas de arranque,
-  además de las otras deudas medidas. Avance formal **38,5 %**, certificación
+- P110-001A sigue **parcial** porque restan 69 llamadas del bootstrap legado
+  exclusivo de migración y 3 del migrador dedicado, además de las otras deudas
+  medidas. Avance formal **38,5 %**, certificación
   **0 %**, **NO-GO**. No se usó PCS, no se desplegó y no se ejecutó `rs`.
 
 ## Actualización 2026-08-13, cero bootstrap Ensure en HTTP
 
-- El inventario reproducible confirma **0** llamadas `Ensure*` en handlers y 72
-  llamadas de arranque protegidas. La compuerta evita reintroducir DDL en los
-  flujos ya extraídos.
+- El inventario reproducible confirma **0** llamadas `Ensure*` en handlers, 69
+  llamadas del bootstrap legado que producción permite solo al rol `migrate`
+  mediante decisión explícita y 3 del migrador dedicado. La compuerta ahora
+  falla si reaparece una llamada `Ensure*` en tráfico HTTP.
 - Los aprovisionamientos idempotentes conservan su intención y aislamiento:
   alta/sincronización de correo, asignación Nextcloud, catálogo comercial y
   token de voz. Consultar correo con GET es estrictamente lectura y una prueba
   estructural protege ese contrato.
-- La fase no se marca terminada: falta trasladar las 72 inicializaciones de
-  arranque a migraciones verificadas con base vacía y upgrade. Avance formal
+- La fase no se marca terminada: falta trasladar las 69 inicializaciones del
+  puente legado al catálogo inmutable y repetir base vacía/upgrade; las 3 del
+  migrador son autoridad permitida. Avance formal
   **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
 - La compuerta `govulncheck` encontró vulnerabilidades alcanzables de la
   biblioteca estándar en Go 1.25.12. Módulo, CI y Docker quedan alineados en

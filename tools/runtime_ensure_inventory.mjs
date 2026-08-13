@@ -30,8 +30,9 @@ function walk(relativeDir) {
 }
 
 function riskFor(relativePath) {
-  if (relativePath === "backend/main.go") return "arranque; protegido por rol, requiere extraccion";
+  if (relativePath === "backend/main.go") return "bootstrap legado; solo autoridad migrate en produccion";
   if (relativePath.startsWith("backend/handlers/")) return "trafico HTTP; priorizar reemplazo por verificacion";
+  if (relativePath.startsWith("backend/cmd/pcs-migrate/")) return "migrador dedicado; autoridad de esquema permitida";
   if (relativePath.startsWith("backend/cmd/")) return "proceso de plataforma; revisar rol";
   return "servicio interno; revisar rol y transaccion";
 }
@@ -57,11 +58,11 @@ const byRisk = new Map();
 for (const entry of entries) byRisk.set(entry.risk, (byRisk.get(entry.risk) ?? 0) + 1);
 
 const lines = [
-  "# Inventario de llamadas Ensure fuera del migrador",
+  "# Inventario de llamadas Ensure en procesos ejecutables",
   "",
   "Estado: generado. Actualizar con `node tools/runtime_ensure_inventory.mjs`.",
   "",
-  "Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben llegar a verificar esquema versionado, no crear o alterar tablas. El guard de runtime es una defensa adicional, no una sustitucion de esta migracion de codigo.",
+  "Las llamadas listadas permiten vigilar la autoridad de esquema. En produccion, API y worker deben llegar a verificar esquema versionado, no crear o alterar tablas. Las llamadas de `backend/main.go` estan dentro de `LegacySchemaBootstrap`: `runtimeconfig` solo permite activarlas con rol `migrate` y una decision explicita. El binario `pcs-migrate` es la autoridad dedicada.",
   "",
   "## Resumen",
   "",
@@ -77,10 +78,16 @@ const lines = [
   "## Gate de retiro",
   "",
   "1. No agregar nuevas filas: el preflight exige que este inventario coincida con el codigo.",
-  "2. Reemplazar primero llamadas en handlers de pagos, facturacion, inventario, archivos y autenticacion por verificadores de esquema o migraciones catalogadas.",
+  "2. El conteo aceptable de trafico HTTP es cero; cualquier nueva fila HTTP bloquea el preflight.",
   "3. Cada extraccion debe incluir prueba de base actualizada y de esquema faltante que falle cerrado, sin DDL desde la solicitud.",
-  "4. Solo `pcs-migrate` conserva el bootstrap del ledger y las migraciones inmutables.",
+  "4. Retirar gradualmente el bootstrap legado de `backend/main.go` cuando el catalogo inmutable cubra cada esquema; `pcs-migrate` conserva la autoridad de esquema.",
 ];
+
+const httpEnsureCount = entries.filter((entry) => entry.path.startsWith("backend/handlers/")).length;
+if (httpEnsureCount !== 0) {
+  console.error(`bootstrap Ensure detectado en trafico HTTP: ${httpEnsureCount}`);
+  process.exitCode = 3;
+}
 const rendered = `${lines.join("\n")}\n`;
 
 if (checkOnly) {

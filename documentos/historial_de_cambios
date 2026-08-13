@@ -12,6 +12,10 @@
 - El toolchain, CI y Docker suben de Go 1.25.12 a 1.25.13 por vulnerabilidades
   alcanzables de biblioteca estandar reportadas por govulncheck. La repeticion
   local con cache/temporales en D: informa cero vulnerabilidades alcanzables.
+- El inventario runtime distingue el migrador dedicado del bootstrap legado
+  protegido y falla si reaparece cualquier llamada `Ensure*` en handlers HTTP.
+  Las pruebas de configuracion mantienen DDL prohibido para API/worker en
+  produccion y exigen decision explicita para el rol `migrate`.
 
 2026-08-13: Plan 110 / compuerta estructural y cancelacion IA.
 - Preflight y CI bloquean aumentos de funciones extensas, duplicacion exacta,
