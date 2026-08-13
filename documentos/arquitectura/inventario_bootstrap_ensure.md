@@ -111,8 +111,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaModulosColombiaSchema` | [backend/db/modulos_empresariales_colombia.go:477](../../backend/db/modulos_empresariales_colombia.go#L477) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaModulosFaltantesSchema` | [backend/db/modulos_faltantes.go:103](../../backend/db/modulos_faltantes.go#L103) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNextcloudSchema` | [backend/db/nextcloud.go:14](../../backend/db/nextcloud.go#L14) | DDL catalogado de plataforma | empresas |
-| `EnsureEmpresaNextcloudAssignment` | [backend/db/nextcloud.go:105](../../backend/db/nextcloud.go#L105) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/db/nextcloud.go:122](../../backend/db/nextcloud.go#L122) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEmpresaNextcloudAssignment` | [backend/db/nextcloud.go:114](../../backend/db/nextcloud.go#L114) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/db/nextcloud.go:131](../../backend/db/nextcloud.go#L131) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaNominaColombiaAvanzadaSchema` | [backend/db/nomina_colombia_avanzada.go:100](../../backend/db/nomina_colombia_avanzada.go#L100) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNominaSchema` | [backend/db/nomina_sueldos.go:387](../../backend/db/nomina_sueldos.go#L387) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaOdontologiaSchema` | [backend/db/odontologia.go:209](../../backend/db/odontologia.go#L209) | DDL / indice / funcion | empresas o por confirmar |
