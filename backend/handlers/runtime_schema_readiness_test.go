@@ -17,6 +17,8 @@ func TestSelectedHTTPFlowsDoNotBootstrapSchema(t *testing.T) {
 		{"creditos.go", "dbpkg.EnsureEmpresaEventosContablesSchema(", "dbpkg.EmpresaEventosContablesSchemaReady("},
 		{"modulos_faltantes.go", "dbpkg.EnsureEmpresaEventosContablesSchema(", "dbpkg.EmpresaEventosContablesSchemaReady("},
 		{"empresa_permisos.go", "dbpkg.EnsureEmpresaPermisosFinosSchema(", "dbpkg.EmpresaPermisosFinosSchemaReady("},
+		{"rappi.go", "dbpkg.EnsureEmpresaRappiSchema(", "dbpkg.EmpresaRappiSchemaReady("},
+		{"roles_tipos_usuario.go", "dbpkg.EnsureRolesPermisosSchema(", "dbpkg.RolesPermisosSchemaReady("},
 	}
 	for _, test := range tests {
 		t.Run(test.file, func(t *testing.T) {

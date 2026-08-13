@@ -97,3 +97,21 @@ func EmpresaPermisosFinosSchemaReady(dbConn *sql.DB) error {
 	}
 	return requireSchemaReadiness(dbConn, "permisos finos empresariales", checks)
 }
+
+// EmpresaRappiSchemaReady valida integración y bitácora ya migradas.
+func EmpresaRappiSchemaReady(dbConn *sql.DB) error {
+	checks := []schemaReadinessCheck{
+		{"configuracion", `SELECT id, empresa_id FROM empresa_rappi_configuracion WHERE 1=0`},
+		{"ordenes", `SELECT id, empresa_id, rappi_order_id FROM empresa_rappi_ordenes WHERE 1=0`},
+	}
+	return requireSchemaReadiness(dbConn, "integracion Rappi", checks)
+}
+
+// RolesPermisosSchemaReady valida permisos por rol sin DDL desde el panel.
+func RolesPermisosSchemaReady(dbConn *sql.DB) error {
+	checks := []schemaReadinessCheck{
+		{"modulos", `SELECT id, rol_id, modulo, accion, permitido FROM roles_de_usuario_permisos WHERE 1=0`},
+		{"paginas", `SELECT id, rol_id, pagina_clave, permitido FROM roles_de_usuario_paginas_permisos WHERE 1=0`},
+	}
+	return requireSchemaReadiness(dbConn, "permisos por rol", checks)
+}

@@ -130,6 +130,8 @@ func TestEmpresaPreconfigSchemaReadyRejectsNilDatabase(t *testing.T) {
 		{"nextcloud", EmpresaNextcloudSchemaReady},
 		{"eventos_contables", EmpresaEventosContablesSchemaReady},
 		{"permisos_finos", EmpresaPermisosFinosSchemaReady},
+		{"rappi", EmpresaRappiSchemaReady},
+		{"roles_permisos", RolesPermisosSchemaReady},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
