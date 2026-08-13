@@ -537,8 +537,11 @@ func GetEmpresaControlElectricoConfig(dbConn *sql.DB, empresaID int64, includeTo
 	return cfg, nil
 }
 
-// EnsureEmpresaControlElectricoPrimaryRaspberry crea el nodo principal desde la configuracion legacy.
-func EnsureEmpresaControlElectricoPrimaryRaspberry(dbConn *sql.DB, cfg *EmpresaControlElectricoConfig) (*EmpresaControlElectricoRaspberry, error) {
+// SyncEmpresaControlElectricoPrimaryRaspberry sincroniza explicitamente el
+// nodo principal cuando se guarda la configuracion legacy. No debe ejecutarse
+// desde lecturas GET: es una mutacion de datos de negocio, no una verificacion
+// de esquema.
+func SyncEmpresaControlElectricoPrimaryRaspberry(dbConn *sql.DB, cfg *EmpresaControlElectricoConfig) (*EmpresaControlElectricoRaspberry, error) {
 	if cfg == nil || cfg.EmpresaID <= 0 || strings.TrimSpace(cfg.RaspberryIP) == "" {
 		return nil, nil
 	}

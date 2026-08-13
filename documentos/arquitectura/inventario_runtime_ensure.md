@@ -6,10 +6,10 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 106.
+- Llamadas inventariadas: 104.
 - arranque; protegido por rol, requiere extraccion: 72.
 - proceso de plataforma; revisar rol: 3.
-- trafico HTTP; priorizar reemplazo por verificacion: 31.
+- trafico HTTP; priorizar reemplazo por verificacion: 29.
 
 ## Registro
 
@@ -18,8 +18,6 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsurePostgresRuntimeCompat` | [backend/cmd/pcs-migrate/main.go:69](../../backend/cmd/pcs-migrate/main.go#L69) | proceso de plataforma; revisar rol |
 | `EnsureRuntimeDatabaseRole` | [backend/cmd/pcs-migrate/main.go:83](../../backend/cmd/pcs-migrate/main.go#L83) | proceso de plataforma; revisar rol |
 | `EnsureRuntimeDatabaseRole` | [backend/cmd/pcs-migrate/main.go:86](../../backend/cmd/pcs-migrate/main.go#L86) | proceso de plataforma; revisar rol |
-| `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:259](../../backend/handlers/control_electrico.go#L259) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/handlers/control_electrico.go:450](../../backend/handlers/control_electrico.go#L450) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEventosContablesSchema` | [backend/handlers/creditos.go:981](../../backend/handlers/creditos.go#L981) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/handlers/email_corporativo_handlers.go:752](../../backend/handlers/email_corporativo_handlers.go#L752) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/handlers/email_corporativo_handlers.go:1411](../../backend/handlers/email_corporativo_handlers.go#L1411) | trafico HTTP; priorizar reemplazo por verificacion |

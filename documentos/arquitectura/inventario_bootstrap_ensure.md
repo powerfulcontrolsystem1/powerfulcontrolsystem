@@ -6,13 +6,13 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 
 ## Resumen
 
-- Funciones inventariadas: 155.
+- Funciones inventariadas: 154.
 - Huella del catalogo legado: `d05a291d2345456d0fc8e4148c244f46bf077c0f52d99a061edd104a7ae11c99` (122 pasos).
 - DDL / indice / funcion: 118.
 - DDL catalogado de plataforma: 4.
 - compatibilidad PostgreSQL: 2.
 - provisionamiento de integracion: 5.
-- regla auxiliar o verificacion: 7.
+- regla auxiliar o verificacion: 6.
 - seed o provisionamiento idempotente: 19.
 - Fuente: `backend/db`, `backend/handlers` y `backend/main.go`; excluye pruebas.
 
@@ -56,7 +56,6 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureSuperContractSchema` | [backend/db/contrato_super.go:133](../../backend/db/contrato_super.go#L133) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureDefaultSuperContract` | [backend/db/contrato_super.go:231](../../backend/db/contrato_super.go#L231) | seed o provisionamiento idempotente | superadministrador o por confirmar |
 | `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:216](../../backend/db/control_electrico.go#L216) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaControlElectricoPrimaryRaspberry` | [backend/db/control_electrico.go:541](../../backend/db/control_electrico.go#L541) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureSuperCorreoNotificacionesPruebaSchema` | [backend/db/correo_notificaciones_prueba.go:44](../../backend/db/correo_notificaciones_prueba.go#L44) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaCorteCajaConfiguracionSchema` | [backend/db/corte_caja_configuracion.go:102](../../backend/db/corte_caja_configuracion.go#L102) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:662](../../backend/db/creditos.go#L662) | DDL / indice / funcion | empresas o por confirmar |

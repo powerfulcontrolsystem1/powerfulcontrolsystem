@@ -5,6 +5,9 @@
 - Los handlers IA propagan `r.Context()` hasta OpenAI Responses, OpenAI Chat
   Completions y Gemini; las pruebas confirman cancelacion real del request del
   proveedor. No se alteraron permisos, `empresa_id`, datos ni cuotas.
+- La lectura resumen de Domotica deja de crear/sincronizar la Raspberry
+  principal; esa compatibilidad se ejecuta solo tras guardar configuracion y
+  registra cualquier fallo. El inventario runtime baja de 106 a 104 llamadas.
 - No se uso PCS, no se desplego y no se ejecuto `rs`.
 
 2026-08-13: Plan 110 / auditoria integral de duplicacion y calidad.

@@ -1403,6 +1403,9 @@ autoriza ni ejecuta despliegue productivo.
 - Doce flujos HTTP IA propagan `r.Context()` y los adjuntos/documentos también
   conservan cancelación hasta OpenAI Responses, Chat Completions y Gemini. Tres
   pruebas con servidor real de prueba confirmaron que cancelar corta el request.
+- Domótica ya no sincroniza la Raspberry principal desde la lectura resumen;
+  la compatibilidad se ejecuta al guardar configuración y el inventario de
+  llamadas `Ensure*` fuera del migrador baja de 106 a 104.
 - P110-001A continúa parcial: la compuerta evita regresión, pero la deuda base
   todavía debe reducirse y clasificarse. Avance formal **38,5 %**,
   certificación **0 %**, **NO-GO**. No se ejecutó `rs`.

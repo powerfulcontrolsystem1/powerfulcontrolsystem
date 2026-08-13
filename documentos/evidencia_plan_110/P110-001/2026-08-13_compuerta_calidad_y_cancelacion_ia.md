@@ -46,6 +46,9 @@ declaren explícitamente su contexto.
 ## Límite
 
 Este bloque evita nueva deuda y corrige cancelación IA, pero no reduce aún las
-106 llamadas `Ensure*`, 52 grupos duplicados ni los grandes handlers. P110-001A
+104 llamadas `Ensure*`, 52 grupos duplicados ni los grandes handlers. Dos
+mutaciones GET de Domótica fueron retiradas: el nodo Raspberry principal ahora
+se sincroniza explícitamente solo al guardar configuración, con error observable
+en vez de descartado. P110-001A
 continúa parcial. El avance formal del Plan 110 se mantiene en 38,5 %, la
 certificación en 0 % y el veredicto en NO-GO.
