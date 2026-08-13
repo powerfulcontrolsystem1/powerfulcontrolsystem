@@ -45,10 +45,21 @@ declaren explícitamente su contexto.
 
 ## Límite
 
-Este bloque evita nueva deuda y corrige cancelación IA, pero no reduce aún las
-104 llamadas `Ensure*`, 52 grupos duplicados ni los grandes handlers. Dos
+Este bloque evita nueva deuda y corrige cancelación IA. La preconfiguración por
+tipo de empresa dejó de ejecutar diez llamadas DDL desde tráfico HTTP: productos,
+usuarios, configuración operativa, comisiones, tres clases de tarifas y
+Domótica verifican ahora el contrato migrado y fallan cerrados. La limpieza de
+esa preconfiguración tampoco descarta errores de sus dos escrituras. El
+inventario queda en 94 llamadas `Ensure*`, 19 de ellas HTTP, frente a 104/29 al
+inicio de este bloque. Persisten 52 grupos duplicados y grandes handlers. Dos
 mutaciones GET de Domótica fueron retiradas: el nodo Raspberry principal ahora
 se sincroniza explícitamente solo al guardar configuración, con error observable
 en vez de descartado. P110-001A
 continúa parcial. El avance formal del Plan 110 se mantiene en 38,5 %, la
 certificación en 0 % y el veredicto en NO-GO.
+
+El primer CI de esta compuerta reveló tres alertas `gosec` dentro del propio
+auditor: lectura de baseline suministrada por CLI y permisos demasiado amplios
+del directorio/reporte. La ruta se normalizó y se documentó como entrada local
+de operador confiable; los permisos bajaron a `0750` y `0600`. Esta corrección
+forma parte del candidato y debe pasar nuevamente el CI obligatorio.

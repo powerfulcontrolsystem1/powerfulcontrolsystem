@@ -1,3 +1,11 @@
+2026-08-13: Plan 110 / preconfiguracion empresarial sin DDL HTTP.
+- Productos, usuarios, configuracion operativa, comisiones, tarifas y Domotica
+  validan esquema ya migrado antes de aplicar plantillas; la solicitud no crea
+  ni altera tablas y la limpieza ya no descarta errores de escritura.
+- El inventario runtime baja de 104 a 94 llamadas y de 29 a 19 en trafico HTTP.
+  El auditor corrige las tres alertas gosec del primer CI con ruta normalizada y
+  permisos privados para directorio/reporte. No se uso PCS ni se ejecuto `rs`.
+
 2026-08-13: Plan 110 / compuerta estructural y cancelacion IA.
 - Preflight y CI bloquean aumentos de funciones extensas, duplicacion exacta,
   llamadas DB sin contexto y resultados descartados mediante una herramienta

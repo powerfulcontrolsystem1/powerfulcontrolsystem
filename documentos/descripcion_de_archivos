@@ -1,4 +1,9 @@
 2026-08-13
+- `backend/db/preconfig_schema_readiness.go`: verificadores de solo lectura para
+  los contratos de productos, usuarios, configuración operativa, comisiones y
+  tarifas diarias usados por la preconfiguración empresarial.
+- `backend/handlers/empresa_preconfiguracion_schema_test.go`: impide que el
+  flujo HTTP reintroduzca inicializaciones DDL y exige verificadores fail-closed.
 - `backend/tools/code_quality_audit/main.go`: compuerta Go estándar de no
   regresión para tamaño de funciones, duplicación exacta, contexto DB y
   resultados descartados; genera evidencia JSON sin analizarse a sí misma.

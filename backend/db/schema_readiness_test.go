@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"database/sql"
+	"testing"
+)
 
 func TestEmpresaModulosFaltantesSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaModulosFaltantesSchemaReady(nil); err == nil {
@@ -111,6 +114,26 @@ func TestEmpresaTarifasMotelSchemaReadyRejectsNilDatabase(t *testing.T) {
 func TestEmpresaTarifasPorMinutosSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaTarifasPorMinutosSchemaReady(nil); err == nil {
 		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestEmpresaPreconfigSchemaReadyRejectsNilDatabase(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func(*sql.DB) error
+	}{
+		{"productos", EmpresaProductosSchemaReady},
+		{"usuarios", EmpresaUsuariosAuthSchemaReady},
+		{"configuracion_operativa", EmpresaConfiguracionOperativaSchemaReady},
+		{"comisiones", EmpresaComisionesServicioSchemaReady},
+		{"tarifas_por_dia", EmpresaTarifasPorDiaSchemaReady},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := test.fn(nil); err == nil {
+				t.Fatal("expected nil database to be rejected")
+			}
+		})
 	}
 }
 

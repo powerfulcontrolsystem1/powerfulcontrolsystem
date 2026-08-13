@@ -248,7 +248,9 @@ func readBaseline(path string) (*baseline, error) {
 	if strings.TrimSpace(path) == "" {
 		return nil, nil
 	}
-	data, err := os.ReadFile(path)
+	// #nosec G304 -- path is an explicit local CLI argument used only by the
+	// repository's trusted CI/preflight operator, never untrusted HTTP input.
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -290,11 +292,11 @@ func main() {
 	}
 	encoded = append(encoded, '\n')
 	if strings.TrimSpace(*outputPath) != "" {
-		if err := os.MkdirAll(filepath.Dir(*outputPath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(*outputPath), 0o750); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		if err := os.WriteFile(*outputPath, encoded, 0o644); err != nil {
+		if err := os.WriteFile(*outputPath, encoded, 0o600); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
