@@ -13134,3 +13134,11 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_csp_report_only_estricta_por_defecto.md`:
   comparacion de cabeceras observadas y cambio local de CSP Report-Only estricta
   por defecto, con la CSP aplicada aun sin modificar.
+- `tools/qa_csp_inline_inventory.mjs`: inventario reproducible de bloqueos CSP
+  inline por pagina y area; falla ante cualquier aumento frente a la linea base.
+- `documentos/seguridad/csp_inline_baseline.json`: maximos temporales decrecientes
+  de scripts, estilos, eventos y paginas incompatibles con CSP estricta aplicada.
+- `web/grafologia.css`: estilos externos responsive y por tema de GRAFOLOGIX;
+  elimina el bloque y los atributos inline de su pagina empresarial.
+- `documentos/evidencia_plan_110/P110-007/2026-08-12_linea_base_csp_y_grafologia_sin_inline.md`:
+  medicion inicial/final, compuerta CI y limite productivo de la deuda CSP.

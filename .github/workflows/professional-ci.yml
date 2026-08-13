@@ -133,6 +133,9 @@ jobs:
       - name: UX consistency audit
         run: node tools/ux_consistency_audit.mjs --out documentos/reportes_profesionales
 
+      - name: CSP inline regression gate
+        run: node tools/qa_csp_inline_inventory.mjs web documentos/reportes_profesionales/csp-inline documentos/seguridad/csp_inline_baseline.json
+
       - name: Documentation normalization audit
         run: node tools/docs_normalization_audit.mjs --out documentos/reportes_profesionales
 
