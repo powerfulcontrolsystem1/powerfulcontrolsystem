@@ -337,8 +337,8 @@
               <span class="ac-chip">Periodicidad: ${safe(a.periodicidad_pago || "mensual")} dia ${safe(a.dia_pago || 30)}</span>
             </div>
             <div class="form-actions">
-              <button class="btn secondary" type="button" onclick="editAdvisor(${Number(a.id)})">Editar configuración</button>
-              <button class="btn danger" type="button" onclick="deleteAdvisor(${Number(a.id)})">Desactivar</button>
+              <button class="btn secondary" type="button" data-advisor-action="edit" data-advisor-id="${Number(a.id)}">Editar configuración</button>
+              <button class="btn danger" type="button" data-advisor-action="delete" data-advisor-id="${Number(a.id)}">Desactivar</button>
             </div>
           </article>`).join("");
       };
@@ -372,7 +372,7 @@
             <td>${Number(c.porcentaje_comision || 0).toFixed(2)}%<br><strong>${money.format(Number(c.monto_comision || 0))}</strong></td>
             <td>${statusHtml}<br><span class="muted">${safe(c.metodo_pago_comision || "-")} ${safe(c.fecha_programada_pago || "")}</span></td>
             <td>${safe(c.referencia_pago_comision || "-")}<br><span class="muted">${safe(c.soporte_pago_url || "")}</span></td>
-            <td><button class="btn btn-sm" type="button" onclick="managePayment(${Number(c.id)})">Gestionar pago</button></td>
+            <td><button class="btn btn-sm" type="button" data-commission-id="${Number(c.id)}">Gestionar pago</button></td>
           </tr>`;
         }).join("")}</tbody></table>`;
       };
@@ -464,6 +464,17 @@
       });
       document.getElementById("reloadBtn").addEventListener("click", window.loadAll);
       document.getElementById("reloadCommissionsBtn").addEventListener("click", window.loadAll);
+      document.getElementById("advisorsList").addEventListener("click", function(event){
+        const button = event.target && event.target.closest ? event.target.closest("[data-advisor-action]") : null;
+        if (!button) return;
+        const id = Number(button.dataset.advisorId || 0);
+        if (button.dataset.advisorAction === "edit") window.editAdvisor(id);
+        if (button.dataset.advisorAction === "delete") window.deleteAdvisor(id);
+      });
+      document.getElementById("commissionsBox").addEventListener("click", function(event){
+        const button = event.target && event.target.closest ? event.target.closest("[data-commission-id]") : null;
+        if (button) window.managePayment(Number(button.dataset.commissionId || 0));
+      });
       resetAdvisorEditor();
       setTimeout(() => window.loadAll().catch(err => message(err.message, true)), 100);
     })();

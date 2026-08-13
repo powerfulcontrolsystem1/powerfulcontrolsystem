@@ -13140,5 +13140,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   de scripts, estilos, eventos y paginas incompatibles con CSP estricta aplicada.
 - `web/grafologia.css`: estilos externos responsive y por tema de GRAFOLOGIX;
   elimina el bloque y los atributos inline de su pagina empresarial.
+- `web/js/ui_event_controls.js`: controlador CSP-compatible para impresion y
+  cierre de ventanas, autoimpresion acotada y respaldo de imagenes rotas; evita
+  atributos de evento inline en paginas empresariales, super y publicas.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_linea_base_csp_y_grafologia_sin_inline.md`:
-  medicion inicial/final, compuerta CI y limite productivo de la deuda CSP.
+  medicion inicial/final, segundo lote sin eventos, compuerta CI y limite
+  productivo de la deuda CSP.

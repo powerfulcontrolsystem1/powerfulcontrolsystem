@@ -521,6 +521,7 @@
     }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/ui_event_controls.js" defer></script>
 </head>
 <body class="empresa-subpage electric-page">
   <main class="electric-shell">
@@ -1084,7 +1085,7 @@
 
       function relayPhotoMarkup(data) {
         if (data.imagen_url) {
-          return '<img class="relay-device-photo relay-photo-preview" src="' + sanitize(data.imagen_url) + '" alt="Foto dispositivo" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'relay-device-photo relay-photo-preview empty\',textContent:\'Sin foto\'}));">';
+          return '<img class="relay-device-photo relay-photo-preview" src="' + sanitize(data.imagen_url) + '" alt="Foto dispositivo" data-image-error-mode="empty-photo">';
         }
         return '<div class="relay-device-photo relay-photo-preview empty">Sin foto</div>';
       }
