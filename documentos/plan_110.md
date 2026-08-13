@@ -1242,3 +1242,17 @@ autoriza ni ejecuta despliegue productivo.
 - La repetición Linux sigue siendo obligatoria porque el Go local de Windows no
   dispone de CGO para `-race`. No cambia el avance formal: **38,5 %**,
   certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, cuatro módulos empresariales sin inline
+
+- Tesorería, Proveedores de Firma Digital, Soporte remoto y Tutorial de
+  Domótica externalizaron sus bloques visuales completos y quedan con cero
+  bloqueos del inventario CSP por página.
+- La deuda baja de 1.310 a 1.306 bloqueos y de 236 a 232 páginas; el área
+  empresarial queda en 938 bloqueos sobre 136 páginas.
+- Las cuatro rutas aprobaron contrato de recursos y revisión local de escritorio
+  y móvil: CSS cargado, grid conservado, cero overflow y consola limpia. No se
+  ejecutaron acciones mutantes. También aprobaron `go test ./...`, `go vet ./...`
+  y el preflight estricto completo.
+- P110-007 continúa **parcial**, avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.

@@ -13146,6 +13146,14 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `web/administrar_empresa/configuracion/seccion_configuracion.css`: estilos
   externos compartidos por seis accesos ligeros de configuracion empresarial;
   conserva encabezado, acciones, iframe y breakpoint movil sin CSS inline.
+- `web/administrar_empresa/tesoreria_presupuesto.css`: estilos externos de
+  Tesoreria y presupuesto para escritorio, tableta y movil.
+- `web/administrar_empresa/proveedores_firma_digital.css`: grilla, tarjetas,
+  etiquetas y acciones de proveedores de firma sin CSS inline.
+- `web/administrar_empresa/soporte_remoto.css`: estructura responsive de
+  descargas y guia operativa de soporte remoto.
+- `web/administrar_empresa/tutorial_domotica.css`: tema, pasos, tarjetas y
+  breakpoint movil del tutorial de Domotica.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_linea_base_csp_y_grafologia_sin_inline.md`:
   medicion inicial/final, segundo lote sin eventos, compuerta CI y limite
   productivo de la deuda CSP.

@@ -5,15 +5,15 @@
   "policy": "Los conteos son maximos temporales y solo pueden disminuir. Cero es la condicion para retirar unsafe-inline de la CSP aplicada.",
   "totals": {
     "unprotected_inline_scripts": 223,
-    "unprotected_inline_style_blocks": 181,
+    "unprotected_inline_style_blocks": 177,
     "style_attributes": 906,
     "event_attributes": 0,
     "javascript_urls": 0,
-    "blockers": 1310,
-    "files": 236
+    "blockers": 1306,
+    "files": 232
   },
   "areas": {
-    "administrar_empresa": { "blockers": 942, "files": 140 },
+    "administrar_empresa": { "blockers": 938, "files": 136 },
     "super": { "blockers": 216, "files": 57 },
     "publico": { "blockers": 138, "files": 31 },
     "ayuda": { "blockers": 11, "files": 5 },

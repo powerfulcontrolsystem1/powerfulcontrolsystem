@@ -89,8 +89,23 @@ diez, y la construccion de imagenes a veinte minutos. Windows local no puede
 ejecutar `-race` porque el runtime disponible no tiene CGO; la evidencia valida
 de ese control debe provenir del runner Linux obligatorio.
 
+## Cuarto lote: modulos empresariales sin bloqueos inline
+
+Tesoreria y presupuesto, Proveedores de Firma Digital, Soporte remoto y el
+Tutorial de Domotica externalizaron sus bloques `style` completos en hojas CSS
+propias. Las cuatro paginas quedan en cero bloqueos del inventario CSP.
+
+La linea base baja a 1.306 bloqueos en 232 paginas: 177 bloques `style`, 938
+bloqueos empresariales y 136 paginas empresariales afectadas. Las cuatro rutas
+aprobaron el contrato de recursos estaticos y la revision visual local en
+escritorio/movil: hoja externa cargada, estructura grid conservada, encabezados
+visibles, cero desborde horizontal y cero errores de consola. No se ejecutaron
+acciones ni llamadas mutantes.
+Despues del lote aprobaron `go test ./...`, `go vet ./...`, preflight estricto,
+auditorias profesionales, permisos, seguridad, UX, migraciones y Docker Compose.
+
 ## Limite y veredicto
 
-La CSP aplicada todavia necesita `unsafe-inline` debido a los 1.310 bloqueos
+La CSP aplicada todavia necesita `unsafe-inline` debido a los 1.306 bloqueos
 restantes. La politica Report-Only estricta continua siendo la observacion
 segura. P110-007 permanece parcial y el veredicto es NO-GO. No se ejecuto `rs`.
