@@ -59,8 +59,9 @@ jobs:
           go vet ./...
 
       - name: Go race detector
+        timeout-minutes: 12
         working-directory: backend
-        run: go test -race ./...
+        run: go test -race -timeout 10m ./...
 
       - name: Go vulnerability scan
         working-directory: backend
@@ -189,6 +190,7 @@ jobs:
         run: jq -e '[.runs[].results[]?] | length == 0' security-artifacts/trivy-filesystem.sarif
 
       - name: Build modified runtime images
+        timeout-minutes: 20
         run: |
           docker build -f deploy/docker/backend.Dockerfile -t pcs-backend:ci .
           docker build -f deploy/docker/frontend.Dockerfile -t pcs-frontend:ci .

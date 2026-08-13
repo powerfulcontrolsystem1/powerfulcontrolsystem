@@ -1230,3 +1230,15 @@ autoriza ni ejecuta despliegue productivo.
   la línea base decreciente fue actualizada.
 - P110-007 continúa **parcial**, avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-12, límites de tiempo en CI profesional
+
+- Una corrida de la PR quedó congelada después de aprobar preflight, tests
+  normales y secretos, específicamente en `go test -race` y build de imágenes;
+  se canceló y relanzó sin interpretar el bloqueo como fallo funcional.
+- El detector de carreras tiene ahora límite de doce minutos y timeout Go de
+  diez; la construcción de imágenes queda limitada a veinte minutos. El job
+  conserva además su límite global de 45 minutos.
+- La repetición Linux sigue siendo obligatoria porque el Go local de Windows no
+  dispone de CGO para `-race`. No cambia el avance formal: **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.

@@ -1,3 +1,9 @@
+2026-08-12: Plan 110 / timeouts acotados del CI profesional.
+- El detector de carreras y la construccion de imagenes reciben limites por
+  paso despues de una ejecucion remota congelada durante horas. El race usa
+  tambien timeout interno de Go y sigue siendo obligatorio en Linux con CGO.
+- No se convirtio el timeout anterior en evidencia aprobada ni se ejecuto `rs`.
+
 2026-08-12: Plan 110 / CSS compartido de secciones de configuracion.
 - Cobro operativo, Formato monetario, Pasarelas, Perfil tributario Colombia,
   Productos y pedidos y Respaldo externalizan su bloque visual identico.

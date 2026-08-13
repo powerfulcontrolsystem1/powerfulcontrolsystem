@@ -78,6 +78,17 @@ navegador (`url` vacia/Electron), no a un recurso PCS.
 Despues del lote aprobaron `go test ./...`, `go vet ./...`, preflight estricto,
 auditorias profesionales, permisos, seguridad, UX, migraciones y Docker Compose.
 
+## Guardia contra CI congelado
+
+La primera ejecucion remota de la PR completo preflight, pruebas normales y
+escaneo de secretos, pero permanecio sin finalizar durante horas en el detector
+de carreras y la construccion de imagenes. Se cancelo esa corrida inconclusa y
+se relanzo. Para evitar que un paso congelado consuma toda la ventana del job,
+el detector de carreras queda limitado a doce minutos con timeout interno de
+diez, y la construccion de imagenes a veinte minutos. Windows local no puede
+ejecutar `-race` porque el runtime disponible no tiene CGO; la evidencia valida
+de ese control debe provenir del runner Linux obligatorio.
+
 ## Limite y veredicto
 
 La CSP aplicada todavia necesita `unsafe-inline` debido a los 1.310 bloqueos
