@@ -242,19 +242,6 @@ func soporteRemotoNormalizePlanLimit(raw int) int {
 	return raw
 }
 
-func soporteRemotoNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 500 {
-		limit = 500
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
 func soporteRemotoLikePattern(raw string) string {
 	value := strings.TrimSpace(raw)
 	value = strings.ReplaceAll(value, "!", "!!")
@@ -1566,7 +1553,7 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 		return nil, 0, errors.New("empresa_id invalido")
 	}
 
-	limit, offset := soporteRemotoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := "WHERE empresa_id = ?"
 	args := make([]interface{}, 0)
 	args = append(args, empresaID)
@@ -2112,7 +2099,7 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 		return nil, 0, errors.New("empresa_id invalido")
 	}
 
-	limit, offset := soporteRemotoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := "WHERE s.empresa_id = ?"
 	args := make([]interface{}, 0)
 	args = append(args, empresaID)

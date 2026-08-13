@@ -5,6 +5,27 @@ import (
 	"testing"
 )
 
+func TestNormalizeListLimitOffset(t *testing.T) {
+	tests := []struct {
+		name               string
+		limit, offset      int
+		defaultLimit, max  int
+		wantLimit, wantOff int
+	}{
+		{name: "defaults and clamps offset", limit: 0, offset: -4, defaultLimit: 100, max: 500, wantLimit: 100, wantOff: 0},
+		{name: "caps limit", limit: 900, offset: 12, defaultLimit: 100, max: 500, wantLimit: 500, wantOff: 12},
+		{name: "preserves valid values", limit: 25, offset: 7, defaultLimit: 100, max: 500, wantLimit: 25, wantOff: 7},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gotLimit, gotOffset := normalizeListLimitOffset(test.limit, test.offset, test.defaultLimit, test.max)
+			if gotLimit != test.wantLimit || gotOffset != test.wantOff {
+				t.Fatalf("normalizeListLimitOffset()=(%d,%d), want (%d,%d)", gotLimit, gotOffset, test.wantLimit, test.wantOff)
+			}
+		})
+	}
+}
+
 func TestEmpresaModulosFaltantesSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaModulosFaltantesSchemaReady(nil); err == nil {
 		t.Fatal("expected nil database to be rejected")

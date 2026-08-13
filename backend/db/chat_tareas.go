@@ -580,28 +580,12 @@ func empresaChatTareasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		"ix_chat_citas_empresa_conv",
 	}
 	for _, indexName := range requiredIndexes {
-		ok, err := empresaChatTareasIndexExists(dbConn, indexName)
+		ok, err := currentSchemaIndexExists(dbConn, indexName)
 		if err != nil || !ok {
 			return false, err
 		}
 	}
 	return true, nil
-}
-
-func empresaChatTareasIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
-	var exists bool
-	err := queryRowSQLCompat(dbConn, `
-		SELECT EXISTS (
-			SELECT 1
-			FROM pg_indexes
-			WHERE schemaname = ANY (current_schemas(false))
-			  AND indexname = ?
-		)
-	`, indexName).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
 
 func normalizeChatEstado(v string) string {

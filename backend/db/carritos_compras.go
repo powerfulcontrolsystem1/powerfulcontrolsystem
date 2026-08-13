@@ -917,45 +917,11 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		},
 	}
 	for tableName, columns := range requiredColumns {
-		ok, err := empresaCarritosColumnsExist(dbConn, tableName, columns)
+		ok, err := requiredTableColumnsExist(dbConn, tableName, columns)
 		if err != nil {
 			return false, err
 		}
 		if !ok {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func empresaCarritosColumnsExist(dbConn *sql.DB, tableName string, columns []string) (bool, error) {
-	if len(columns) == 0 {
-		return true, nil
-	}
-	found := make(map[string]bool, len(columns))
-	rows, err := querySQLCompat(dbConn, `
-		SELECT column_name
-		FROM information_schema.columns
-		WHERE table_schema = ANY (current_schemas(false))
-		  AND table_name = ?
-	`, strings.TrimSpace(tableName))
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var columnName string
-		if err := rows.Scan(&columnName); err != nil {
-			return false, err
-		}
-		found[strings.ToLower(strings.TrimSpace(columnName))] = true
-	}
-	if err := rows.Err(); err != nil {
-		return false, err
-	}
-	for _, columnName := range columns {
-		if !found[strings.ToLower(strings.TrimSpace(columnName))] {
 			return false, nil
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type schemaReadinessCheck struct {
@@ -26,6 +27,74 @@ func requireSchemaReadiness(dbConn *sql.DB, scope string, checks []schemaReadine
 		}
 	}
 	return nil
+}
+
+// requiredTableColumnsExist centraliza la inspeccion PostgreSQL usada por los
+// verificadores de esquema. Solo consulta metadata; nunca crea ni altera DDL.
+func requiredTableColumnsExist(dbConn *sql.DB, tableName string, columns []string) (bool, error) {
+	if len(columns) == 0 {
+		return true, nil
+	}
+	found := make(map[string]bool, len(columns))
+	rows, err := querySQLCompat(dbConn, `
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_schema = ANY (current_schemas(false))
+		  AND table_name = ?
+	`, strings.TrimSpace(tableName))
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var columnName string
+		if err := rows.Scan(&columnName); err != nil {
+			return false, err
+		}
+		found[strings.ToLower(strings.TrimSpace(columnName))] = true
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	for _, columnName := range columns {
+		if !found[strings.ToLower(strings.TrimSpace(columnName))] {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func normalizeListLimitOffset(limit, offset, defaultLimit, maxLimit int) (int, int) {
+	if limit <= 0 {
+		limit = defaultLimit
+	}
+	if maxLimit > 0 && limit > maxLimit {
+		limit = maxLimit
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
+func currentSchemaIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
+	if dbConn == nil {
+		return false, errors.New("conexion de base de datos no disponible")
+	}
+	var exists bool
+	err := queryRowSQLCompat(dbConn, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_indexes
+			WHERE schemaname = ANY (current_schemas(false))
+			  AND indexname = ?
+		)
+	`, strings.TrimSpace(indexName)).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 // EmpresaProductosSchemaReady valida el contrato minimo usado al aplicar una
