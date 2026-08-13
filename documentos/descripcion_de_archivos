@@ -13143,6 +13143,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `web/js/ui_event_controls.js`: controlador CSP-compatible para impresion y
   cierre de ventanas, autoimpresion acotada y respaldo de imagenes rotas; evita
   atributos de evento inline en paginas empresariales, super y publicas.
+- `web/administrar_empresa/configuracion/seccion_configuracion.css`: estilos
+  externos compartidos por seis accesos ligeros de configuracion empresarial;
+  conserva encabezado, acciones, iframe y breakpoint movil sin CSS inline.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_linea_base_csp_y_grafologia_sin_inline.md`:
   medicion inicial/final, segundo lote sin eventos, compuerta CI y limite
   productivo de la deuda CSP.

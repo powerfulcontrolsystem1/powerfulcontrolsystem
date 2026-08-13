@@ -1216,3 +1216,17 @@ autoriza ni ejecuta despliegue productivo.
 - Todavia restan scripts, bloques `style` y atributos `style`; por eso no se
   aplica una CSP sin `unsafe-inline`. P110-007 sigue **parcial**, avance formal
   **38,5 %**, certificacion **0 %**, **NO-GO**. No se ejecuto `rs`.
+
+## Actualización 2026-08-12, CSS compartido en configuración empresarial
+
+- Seis accesos de configuración que duplicaban el mismo bloque `style` usan
+  ahora una hoja externa compartida: Cobro operativo, Formato monetario,
+  Pasarelas de pago, Perfil tributario Colombia, Productos y pedidos y Respaldo.
+- La deuda CSP baja de 1.316 a 1.310 bloqueos y de 242 a 236 páginas afectadas;
+  el área empresarial queda en 942 bloqueos sobre 140 páginas.
+- La revisión visual local comprobó las seis rutas, CSS cargado, iframe presente,
+  encabezado responsive y cero desborde horizontal. El contrato de recursos
+  estáticos, `go test ./...`, `go vet ./...` y el preflight estricto aprobaron;
+  la línea base decreciente fue actualizada.
+- P110-007 continúa **parcial**, avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.

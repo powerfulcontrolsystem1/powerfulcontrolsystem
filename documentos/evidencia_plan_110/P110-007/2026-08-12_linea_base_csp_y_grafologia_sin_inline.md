@@ -61,8 +61,25 @@ Docker Compose. Se corrigieron dos contratos de prueba: el inventario estatico
 ya reconoce solo atributos HTML completos y el carrito exige listener explicito
 sin restaurar `onclick`.
 
+## Tercer lote: secciones de configuracion compartidas
+
+Las seis paginas ligeras de Cobro operativo, Formato monetario, Pasarelas de
+pago, Perfil tributario Colombia, Productos y pedidos y Respaldo dejaron de
+duplicar el mismo bloque `style`. Todas cargan ahora
+`web/administrar_empresa/configuracion/seccion_configuracion.css`.
+
+El inventario baja a 1.310 bloqueos en 236 paginas: 181 bloques `style` y 942
+bloqueos empresariales. La revision visual local comprobo las seis rutas, la
+hoja cargada, encabezado responsive, iframe presente y cero desborde horizontal.
+La vista de escritorio conservo el encabezado flexible; el breakpoint movil
+paso a grilla y boton ancho. La consola de la pagina directa quedo limpia. Un
+error observado solo al instrumentar iframes fue aislado al script interno del
+navegador (`url` vacia/Electron), no a un recurso PCS.
+Despues del lote aprobaron `go test ./...`, `go vet ./...`, preflight estricto,
+auditorias profesionales, permisos, seguridad, UX, migraciones y Docker Compose.
+
 ## Limite y veredicto
 
-La CSP aplicada todavia necesita `unsafe-inline` debido a los 1.316 bloqueos
+La CSP aplicada todavia necesita `unsafe-inline` debido a los 1.310 bloqueos
 restantes. La politica Report-Only estricta continua siendo la observacion
 segura. P110-007 permanece parcial y el veredicto es NO-GO. No se ejecuto `rs`.

@@ -1,3 +1,10 @@
+2026-08-12: Plan 110 / CSS compartido de secciones de configuracion.
+- Cobro operativo, Formato monetario, Pasarelas, Perfil tributario Colombia,
+  Productos y pedidos y Respaldo externalizan su bloque visual identico.
+- El inventario CSP baja a 1.310 bloqueos en 236 paginas. Las seis rutas
+  aprobaron revision local responsive y contrato de recursos; no se ejecuto
+  `rs` y P110-007 permanece parcial.
+
 2026-08-12: Plan 110 / cero eventos inline y compuerta CSP reducida.
 - Se eliminaron los 19 atributos de evento restantes en nueve superficies web;
   impresion, cierre, autoimpresion y respaldo de imagenes usan ahora el helper
