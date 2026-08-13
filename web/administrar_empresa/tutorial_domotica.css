@@ -157,6 +157,40 @@ code {
   text-decoration: none;
 }
 
+.guide-figure {
+  margin: 20px 0;
+}
+
+.guide-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--guide-line);
+  border-radius: 12px;
+  background: #f5f8fb;
+}
+
+.guide-figure figcaption {
+  margin-top: 8px;
+  color: var(--guide-muted);
+  line-height: 1.45;
+  font-size: .92rem;
+}
+
+.guide-pin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, .9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.guide-example {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--guide-muted);
+  line-height: 1.55;
+}
+
 @media (max-width: 720px) {
   .guide-head {
     display: block;
@@ -166,7 +200,8 @@ code {
     margin-top: 14px;
   }
 
-  .guide-grid {
+  .guide-grid,
+  .guide-pin-grid {
     grid-template-columns: 1fr;
   }
 

@@ -651,3 +651,11 @@ y salvo usa `action=paz_y_salvo`. La cobranza profesional vive en
 - `integraciones empresariales`: `health_check`, `sync_manual` y monitoreo usan
   la misma politica de salida publica. Un endpoint bloqueado queda no alcanzable
   y no recibe conexión.
+
+## Actualización 2026-08-13 - Domótica y Energía Solar
+
+- Menú empresa: grupo principal `Domótica y Energía Solar` en `web/administrar_empresa.html`; contiene `linkControlElectrico`, `linkEquiposDomotica`, `linkEnergiaSolar` y `linkTutorialDomotica`.
+- API empresa: `/api/empresa/control_electrico`, protegida por permisos efectivos y alcance empresarial.
+- Túnel público: `/api/public/domotica/tunnel`; autentica `device_uid`/token y deriva la empresa sin aceptar `empresa_id` del agente.
+- Super: `/super/domotica_raspberry_trafico.html` y `/super/api/domotica_raspberry_trafico` muestran consumo/alarma y administran la cuota mensual por empresa.
+- Worker: `notifications.domotica-connectivity` evalúa cada minuto las desconexiones que superan la gracia configurada.

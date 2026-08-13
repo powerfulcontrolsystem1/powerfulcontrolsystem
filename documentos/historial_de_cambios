@@ -42459,3 +42459,10 @@ acumulativa.
 - Auditoría, permisos y compras delegan valores no vacíos y números positivos a
   helpers canónicos con wrappers de compatibilidad; pruebas completas de
   handlers y vet aprobadas, sin cambios de contrato ni datos.
+2026-08-13: Gobierno operativo de Domotica y Energia Solar.
+- Administrar empresa incorpora el grupo principal `Domótica y Energía Solar` con configuración, equipos, paneles solares y tutorial, sujeto a permisos efectivos.
+- Cada empresa puede activar la alerta de desconexión, definir correo y tiempo de gracia; el worker publica buzón/campanita y correo una sola vez por heartbeat desconectado.
+- Super Administrador agrupa RX/TX por empresa y Raspberry, clasifica consumo mensual, permite límite/umbral por empresa y puede bloquear el túnel al excederlo.
+- El alta de Raspberry GPIO ya no exige IP local: el instalador de un solo uso conserva ID aleatorio global `RPI-<128 bits>`, token con huella SHA-256 y túnel saliente que deriva la empresa desde la identidad autenticada.
+- Las reglas de entrada GPIO admiten encendido normal, temporizador y activación condicionada a la agenda del aparato; todo encendido conserva la cola empresarial.
+- El tutorial incorpora imagen orientativa y diagrama exacto de los 40 pines con numeración física/BCM y advertencias eléctricas.
