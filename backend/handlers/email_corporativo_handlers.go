@@ -634,7 +634,7 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 	return nil
 }
 
-func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, empresaNombre, usuario string) (*dbpkg.EmpresaEmailCorporativo, error) {
+func ProvisionEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, empresaNombre, usuario string) (*dbpkg.EmpresaEmailCorporativo, error) {
 	if dbSuper == nil || empresaID <= 0 {
 		return nil, nil
 	}
@@ -741,7 +741,7 @@ func DeleteEmpresaCorporateEmailAccounts(ctx context.Context, dbSuper *sql.DB, e
 	return nil
 }
 
-func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuario string) (int, error) {
+func SyncCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuario string) (int, error) {
 	if dbSuper == nil || dbEmp == nil {
 		return 0, nil
 	}
@@ -749,14 +749,14 @@ func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuari
 	if !cfg.AutoCreate {
 		return 0, nil
 	}
-	return dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario, normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
+	return dbpkg.SyncEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario, normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
 }
 
-// EnsureCorporateEmailProvisioningForExistingCompanies finishes the idempotent
+// ProvisionCorporateEmailForExistingCompanies finishes the idempotent
 // Mailu setup for rows created before the corporate-email service was enabled.
 // Passwords are generated only when absent and are persisted encrypted by the
 // existing provision helper; neither the password nor command output is logged.
-func EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper *sql.DB) (int, error) {
+func ProvisionCorporateEmailForExistingCompanies(dbSuper *sql.DB) (int, error) {
 	if dbSuper == nil {
 		return 0, nil
 	}
@@ -1408,7 +1408,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if action == "sync" {
 				cfg := getCorporateEmailConfig(dbSuper)
-				count, err := dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, adminEmailFromRequest(r), normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
+				count, err := dbpkg.SyncEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, adminEmailFromRequest(r), normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
 				if err != nil {
 					http.Error(w, "No se pudo sincronizar empresas: "+err.Error(), http.StatusInternalServerError)
 					return
@@ -1677,24 +1677,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 		account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				if cfg.AutoCreate && dbEmp != nil {
-					if empresa, empresaErr := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); empresaErr == nil && empresa != nil {
-						if created, createErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, empresa.EmpresaID, empresa.Nombre, adminEmailFromRequest(r)); createErr == nil {
-							account = created
-						} else {
-							writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "No se pudo generar el email corporativo", checkWebmail, checkUnread, theme, prefs))
-							return
-						}
-					}
-				}
-				if account != nil {
-					if account.WebmailURL == "" {
-						account.WebmailURL = cfg.WebmailURL
-					}
-					writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Email corporativo generado", checkWebmail, checkUnread, theme, prefs))
-					return
-				}
-				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo generado", checkWebmail, checkUnread, theme, prefs))
+				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo asignado; un administrador debe crearlo o sincronizarlo", checkWebmail, checkUnread, theme, prefs))
 				return
 			}
 			http.Error(w, "No se pudo consultar email corporativo: "+err.Error(), http.StatusInternalServerError)

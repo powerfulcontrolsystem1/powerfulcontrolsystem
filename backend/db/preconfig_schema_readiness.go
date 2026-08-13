@@ -133,3 +133,14 @@ func SuperMantenimientoAgentesSchemaReady(dbConn *sql.DB) error {
 	}
 	return requireSchemaReadiness(dbConn, "agentes de mantenimiento", checks)
 }
+
+// PlantillasLicenciasSchemaReady valida el contrato comercial necesario para
+// sincronizar plantillas y planes sin ejecutar DDL desde el panel.
+func PlantillasLicenciasSchemaReady(dbConn *sql.DB) error {
+	checks := []schemaReadinessCheck{
+		{"licencias", `SELECT id, tipo_id, nombre, modulos_habilitados FROM licencias WHERE 1=0`},
+		{"tipos_de_empresas", `SELECT id, nombre, estado FROM tipos_de_empresas WHERE 1=0`},
+		{"preconfiguraciones", `SELECT id, tipo_empresa_id, config_json FROM tipo_empresa_preconfiguraciones WHERE 1=0`},
+	}
+	return requireSchemaReadiness(dbConn, "plantillas y licencias", checks)
+}

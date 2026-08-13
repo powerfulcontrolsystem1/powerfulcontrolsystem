@@ -6,10 +6,9 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 
 ## Resumen
 
-- Llamadas inventariadas: 85.
-- arranque; protegido por rol, requiere extraccion: 72.
+- Llamadas inventariadas: 72.
+- arranque; protegido por rol, requiere extraccion: 69.
 - proceso de plataforma; revisar rol: 3.
-- trafico HTTP; priorizar reemplazo por verificacion: 10.
 
 ## Registro
 
@@ -18,16 +17,6 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsurePostgresRuntimeCompat` | [backend/cmd/pcs-migrate/main.go:69](../../backend/cmd/pcs-migrate/main.go#L69) | proceso de plataforma; revisar rol |
 | `EnsureRuntimeDatabaseRole` | [backend/cmd/pcs-migrate/main.go:83](../../backend/cmd/pcs-migrate/main.go#L83) | proceso de plataforma; revisar rol |
 | `EnsureRuntimeDatabaseRole` | [backend/cmd/pcs-migrate/main.go:86](../../backend/cmd/pcs-migrate/main.go#L86) | proceso de plataforma; revisar rol |
-| `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/handlers/email_corporativo_handlers.go:752](../../backend/handlers/email_corporativo_handlers.go#L752) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaEmailRowsForExistingEmpresas` | [backend/handlers/email_corporativo_handlers.go:1411](../../backend/handlers/email_corporativo_handlers.go#L1411) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaCorporateEmailAfterCreate` | [backend/handlers/email_corporativo_handlers.go:1682](../../backend/handlers/email_corporativo_handlers.go#L1682) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureNuevasPlantillasProduccionMasivaLicencias` | [backend/handlers/empresa_plantillas_nuevas.go:82](../../backend/handlers/empresa_plantillas_nuevas.go#L82) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:229](../../backend/handlers/nextcloud.go#L229) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureNextcloudAssignmentsForAll` | [backend/handlers/nextcloud.go:633](../../backend/handlers/nextcloud.go#L633) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaNextcloudAssignment` | [backend/handlers/system_empresas_handlers.go:580](../../backend/handlers/system_empresas_handlers.go#L580) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureEmpresaCorporateEmailAfterCreate` | [backend/handlers/system_empresas_handlers.go:584](../../backend/handlers/system_empresas_handlers.go#L584) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureAuthToken` | [backend/handlers/voice_stream_config.go:239](../../backend/handlers/voice_stream_config.go#L239) | trafico HTTP; priorizar reemplazo por verificacion |
-| `EnsureAuthToken` | [backend/handlers/voice_stream_config.go:349](../../backend/handlers/voice_stream_config.go#L349) | trafico HTTP; priorizar reemplazo por verificacion |
 | `EnsurePostgresRuntimeCompat` | [backend/main.go:1171](../../backend/main.go#L1171) | arranque; protegido por rol, requiere extraccion |
 | `EnsurePostgresRuntimeCompat` | [backend/main.go:1176](../../backend/main.go#L1176) | arranque; protegido por rol, requiere extraccion |
 | `EnsureAdministradoresAuthSchema` | [backend/main.go:1180](../../backend/main.go#L1180) | arranque; protegido por rol, requiere extraccion |
@@ -42,11 +31,8 @@ Las llamadas listadas son deuda de extraccion. En produccion, API y worker deben
 | `EnsureUsuarioConfiguracionSchema` | [backend/main.go:1255](../../backend/main.go#L1255) | arranque; protegido por rol, requiere extraccion |
 | `EnsureEmpresaEmailCorporativoSchema` | [backend/main.go:1259](../../backend/main.go#L1259) | arranque; protegido por rol, requiere extraccion |
 | `EnsureCorporateEmailConfigFromEnv` | [backend/main.go:1263](../../backend/main.go#L1263) | arranque; protegido por rol, requiere extraccion |
-| `EnsureCorporateEmailRowsForExistingCompanies` | [backend/main.go:1269](../../backend/main.go#L1269) | arranque; protegido por rol, requiere extraccion |
-| `EnsureCorporateEmailProvisioningForExistingCompanies` | [backend/main.go:1277](../../backend/main.go#L1277) | arranque; protegido por rol, requiere extraccion |
 | `EnsureNextcloudConfigFromEnv` | [backend/main.go:1283](../../backend/main.go#L1283) | arranque; protegido por rol, requiere extraccion |
 | `EnsureEmpresaNextcloudSchema` | [backend/main.go:1287](../../backend/main.go#L1287) | arranque; protegido por rol, requiere extraccion |
-| `EnsureNextcloudAssignmentsForAll` | [backend/main.go:1291](../../backend/main.go#L1291) | arranque; protegido por rol, requiere extraccion |
 | `EnsureAsesorComercialSchema` | [backend/main.go:1301](../../backend/main.go#L1301) | arranque; protegido por rol, requiere extraccion |
 | `EnsureConstructoraTipoEmpresaYLicencias` | [backend/main.go:1311](../../backend/main.go#L1311) | arranque; protegido por rol, requiere extraccion |
 | `EnsureDrogueriaFarmaciaTipoEmpresaYLicencias` | [backend/main.go:1317](../../backend/main.go#L1317) | arranque; protegido por rol, requiere extraccion |

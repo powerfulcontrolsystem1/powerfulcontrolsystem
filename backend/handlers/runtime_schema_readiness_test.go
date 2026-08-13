@@ -21,6 +21,7 @@ func TestSelectedHTTPFlowsDoNotBootstrapSchema(t *testing.T) {
 		{"roles_tipos_usuario.go", "dbpkg.EnsureRolesPermisosSchema(", "dbpkg.RolesPermisosSchemaReady("},
 		{"super_alertas.go", "dbpkg.EnsureSuperAlertasSchema(", "dbpkg.SuperAlertasSchemaReady("},
 		{"super_mantenimiento_agentes.go", "dbpkg.EnsureSuperMantenimientoAgentesSchema(", "dbpkg.SuperMantenimientoAgentesSchemaReady("},
+		{"empresa_plantillas_nuevas.go", "dbpkg.EnsureNuevasPlantillasProduccionMasivaLicencias(", "dbpkg.ProvisionNuevasPlantillasProduccionMasivaLicencias("},
 	}
 	for _, test := range tests {
 		t.Run(test.file, func(t *testing.T) {
@@ -36,5 +37,28 @@ func TestSelectedHTTPFlowsDoNotBootstrapSchema(t *testing.T) {
 				t.Fatalf("HTTP flow must fail closed through %s", test.required)
 			}
 		})
+	}
+}
+
+func TestEmpresaCorporateEmailGETDoesNotProvisionAccount(t *testing.T) {
+	body, err := os.ReadFile("email_corporativo_handlers.go")
+	if err != nil {
+		t.Fatalf("read corporate email handler: %v", err)
+	}
+	source := string(body)
+	start := strings.Index(source, "account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)")
+	end := strings.Index(source, "func EmpresaEmailCorporativoAutologinHandler")
+	if start < 0 || end <= start {
+		t.Fatal("corporate email GET section not found")
+	}
+	section := source[start:end]
+	for _, forbidden := range []string{
+		"ProvisionEmpresaCorporateEmailAfterCreate(",
+		"SyncEmpresaEmailRowsForExistingEmpresas(",
+		"UpsertEmpresaEmailCorporativo(",
+	} {
+		if strings.Contains(section, forbidden) {
+			t.Fatalf("corporate email GET must remain read-only; found %s", forbidden)
+		}
 	}
 }

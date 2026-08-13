@@ -50,11 +50,15 @@ tipo de empresa dejó de ejecutar diez llamadas DDL desde tráfico HTTP: product
 usuarios, configuración operativa, comisiones, tres clases de tarifas y
 Domótica verifican ahora el contrato migrado y fallan cerrados. La limpieza de
 esa preconfiguración tampoco descarta errores de sus dos escrituras. El
-inventario queda en 85 llamadas `Ensure*`, 10 de ellas HTTP, frente a 104/29 al
+inventario queda en 72 llamadas `Ensure*`, ninguna en tráfico HTTP, frente a
+104/29 al
 inicio de este bloque. La segunda extracción cubre además eventos contables de
 Créditos/Devoluciones, permisos finos, Nextcloud y destinatarios empresariales
 de correo masivo; Rappi, permisos por rol, alertas y agentes de mantenimiento
-completan este lote. Persisten 52
+completan este lote. El correo empresarial ya no se aprovisiona durante GET:
+el alta de empresa y la sincronización administrativa son sus únicas acciones
+explícitas. Nextcloud, plantillas/licencias y el token de voz se clasifican como
+provisionamiento o sincronización, no como migraciones. Persisten 52
 grupos duplicados y grandes handlers. Dos
 mutaciones GET de Domótica fueron retiradas: el nodo Raspberry principal ahora
 se sincroniza explícitamente solo al guardar configuración, con error observable
@@ -67,3 +71,19 @@ auditor: lectura de baseline suministrada por CLI y permisos demasiado amplios
 del directorio/reporte. La ruta se normalizó y se documentó como entrada local
 de operador confiable; los permisos bajaron a `0750` y `0600`. Esta corrección
 forma parte del candidato y debe pasar nuevamente el CI obligatorio.
+
+Las 72 llamadas restantes corresponden al arranque protegido de API. Su retiro
+requiere completar la autoridad del migrador y ensayar base vacía/upgrade; no se
+deben borrar mecánicamente ni confundir con el cierre ya conseguido de HTTP.
+
+El CI posterior detectó seis vulnerabilidades alcanzables de la biblioteca
+estándar corregidas en Go 1.25.13. Se elevó consistentemente el toolchain del
+módulo, las dos matrices de GitHub Actions y la imagen de compilación Docker de
+1.25.12 a 1.25.13. La versión está publicada en el catálogo oficial de Go; el
+nuevo `govulncheck` remoto debe confirmar el cierre.
+
+La validación local con Go 1.25.13 se ejecutó con `GOTMPDIR` y `GOCACHE` en D:
+porque C: tenía menos de 5 MB libres. Aprobaron DB, handlers, aplicación, auditor,
+`go vet` y `govulncheck ./...`; este último informó cero vulnerabilidades
+alcanzables. No se borraron temporales ni datos del usuario porque la operación
+de limpieza fue bloqueada por la política del entorno.

@@ -1422,11 +1422,31 @@ autoriza ni ejecuta despliegue productivo.
   Una segunda extracción aplica readiness a eventos contables, permisos finos,
   Nextcloud, usuarios del correo masivo, Rappi y permisos por rol. El inventario
   Alertas y agentes de mantenimiento también validan el contrato migrado sin
-  DDL en worker/handler. El total baja de 104 a **85** y el subconjunto HTTP de
-  29 a **10**.
+  DDL en worker/handler. Correo empresarial deja de aprovisionar cuentas desde
+  GET; Nextcloud, plantillas/licencias y voz distinguen sincronización de
+  migración. El total baja de 104 a **72** y el subconjunto HTTP de 29 a **0**.
 - El fallo remoto inicial de `gosec` en el nuevo auditor se corrigió reduciendo
   permisos del reporte a `0600`, del directorio a `0750` y documentando la ruta
   del baseline como argumento local confiable de CI.
-- P110-001A sigue **parcial** porque restan 10 llamadas HTTP y 72 de arranque,
+- P110-001A sigue **parcial** porque restan 72 llamadas de arranque,
   además de las otras deudas medidas. Avance formal **38,5 %**, certificación
   **0 %**, **NO-GO**. No se usó PCS, no se desplegó y no se ejecutó `rs`.
+
+## Actualización 2026-08-13, cero bootstrap Ensure en HTTP
+
+- El inventario reproducible confirma **0** llamadas `Ensure*` en handlers y 72
+  llamadas de arranque protegidas. La compuerta evita reintroducir DDL en los
+  flujos ya extraídos.
+- Los aprovisionamientos idempotentes conservan su intención y aislamiento:
+  alta/sincronización de correo, asignación Nextcloud, catálogo comercial y
+  token de voz. Consultar correo con GET es estrictamente lectura y una prueba
+  estructural protege ese contrato.
+- La fase no se marca terminada: falta trasladar las 72 inicializaciones de
+  arranque a migraciones verificadas con base vacía y upgrade. Avance formal
+  **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+- La compuerta `govulncheck` encontró vulnerabilidades alcanzables de la
+  biblioteca estándar en Go 1.25.12. Módulo, CI y Docker quedan alineados en
+  Go **1.25.13**, versión correctiva oficial; falta confirmación del CI remoto.
+- Validación local con temporales/caché en D: aprobó pruebas, vet y
+  `govulncheck ./...` con **0 vulnerabilidades alcanzables**. C: continúa
+  prácticamente lleno; no se eliminó contenido al bloquearse la limpieza.

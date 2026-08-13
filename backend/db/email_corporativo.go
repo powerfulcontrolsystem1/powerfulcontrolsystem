@@ -83,6 +83,13 @@ func EnsureEmpresaEmailCorporativoSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EmpresaEmailCorporativoSchemaReady valida el contrato ya migrado sin DDL.
+func EmpresaEmailCorporativoSchemaReady(dbConn *sql.DB) error {
+	return requireSchemaReadiness(dbConn, "email corporativo", []schemaReadinessCheck{
+		{"empresa_email_corporativo", `SELECT id, empresa_id, email, estado_provision, provision_attempts, initial_password_enc FROM empresa_email_corporativo WHERE 1=0`},
+	})
+}
+
 func NormalizeCorporateEmailLocalPart(nombre string) string {
 	value := strings.ToLower(strings.TrimSpace(nombre))
 	replacements := map[string]string{
@@ -110,7 +117,7 @@ func NormalizeCorporateEmailLocalPart(nombre string) string {
 }
 
 func ResolveUniqueCorporateEmail(dbConn *sql.DB, empresaID int64, empresaNombre, domain string) (string, string, error) {
-	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+	if err := EmpresaEmailCorporativoSchemaReady(dbConn); err != nil {
 		return "", "", err
 	}
 	domain = strings.ToLower(strings.TrimSpace(domain))
@@ -140,7 +147,7 @@ func ResolveUniqueCorporateEmail(dbConn *sql.DB, empresaID int64, empresaNombre,
 }
 
 func GetEmpresaEmailCorporativoByEmpresa(dbConn *sql.DB, empresaID int64) (*EmpresaEmailCorporativo, error) {
-	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+	if err := EmpresaEmailCorporativoSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(empresa_nombre, ''), COALESCE(email, ''), COALESCE(local_part, ''), COALESCE(domain, ''), COALESCE(webmail_url, ''),
@@ -160,7 +167,7 @@ func GetEmpresaEmailCorporativoByEmpresa(dbConn *sql.DB, empresaID int64) (*Empr
 }
 
 func CountEmpresaEmailCorporativoByEmpresa(dbConn *sql.DB, empresaID int64) (int, error) {
-	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+	if err := EmpresaEmailCorporativoSchemaReady(dbConn); err != nil {
 		return 0, err
 	}
 	if empresaID <= 0 {
@@ -174,7 +181,7 @@ func CountEmpresaEmailCorporativoByEmpresa(dbConn *sql.DB, empresaID int64) (int
 }
 
 func GetEmpresaEmailCorporativoInitialPasswordEncrypted(dbConn *sql.DB, empresaID int64) (string, error) {
-	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+	if err := EmpresaEmailCorporativoSchemaReady(dbConn); err != nil {
 		return "", err
 	}
 	var encrypted string
@@ -186,7 +193,7 @@ func GetEmpresaEmailCorporativoInitialPasswordEncrypted(dbConn *sql.DB, empresaI
 }
 
 func UpdateEmpresaEmailCorporativoInitialPassword(dbConn *sql.DB, empresaID int64, encryptedPassword, usuario string) error {
-	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+	if err := EmpresaEmailCorporativoSchemaReady(dbConn); err != nil {
 		return err
 	}
 	if empresaID <= 0 {
@@ -217,7 +224,7 @@ func UpdateEmpresaEmailCorporativoInitialPassword(dbConn *sql.DB, empresaID int6
 }
 
 func ListEmpresaEmailCorporativo(dbConn *sql.DB) ([]EmpresaEmailCorporativo, error) {
-	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+	if err := EmpresaEmailCorporativoSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	rows, err := querySQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(empresa_nombre, ''), COALESCE(email, ''), COALESCE(local_part, ''), COALESCE(domain, ''), COALESCE(webmail_url, ''),
@@ -248,7 +255,7 @@ func UpsertEmpresaEmailCorporativo(dbConn *sql.DB, item EmpresaEmailCorporativo,
 	if item.EmpresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
 	}
-	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+	if err := EmpresaEmailCorporativoSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	item.Email = strings.ToLower(strings.TrimSpace(item.Email))
@@ -290,7 +297,7 @@ func UpsertEmpresaEmailCorporativo(dbConn *sql.DB, item EmpresaEmailCorporativo,
 }
 
 func MarkEmpresaEmailProvisionResult(dbConn *sql.DB, empresaID int64, status, msg string, success bool) error {
-	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+	if err := EmpresaEmailCorporativoSchemaReady(dbConn); err != nil {
 		return err
 	}
 	status = strings.TrimSpace(status)
@@ -314,8 +321,8 @@ func MarkEmpresaEmailProvisionResult(dbConn *sql.DB, empresaID int64, status, ms
 	return err
 }
 
-func EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp *sql.DB, domain, webmailURL, usuario string, maxAccountsPerEmpresa int) (int, error) {
-	if err := EnsureEmpresaEmailCorporativoSchema(dbSuper); err != nil {
+func SyncEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp *sql.DB, domain, webmailURL, usuario string, maxAccountsPerEmpresa int) (int, error) {
+	if err := EmpresaEmailCorporativoSchemaReady(dbSuper); err != nil {
 		return 0, err
 	}
 	if maxAccountsPerEmpresa <= 0 {

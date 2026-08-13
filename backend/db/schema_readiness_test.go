@@ -134,6 +134,8 @@ func TestEmpresaPreconfigSchemaReadyRejectsNilDatabase(t *testing.T) {
 		{"roles_permisos", RolesPermisosSchemaReady},
 		{"super_alertas", SuperAlertasSchemaReady},
 		{"super_mantenimiento", SuperMantenimientoAgentesSchemaReady},
+		{"email_corporativo", EmpresaEmailCorporativoSchemaReady},
+		{"plantillas_licencias", PlantillasLicenciasSchemaReady},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

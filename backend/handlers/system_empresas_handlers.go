@@ -577,11 +577,11 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if _, folderErr := ensureEmpresaUploadFolders(dbEmp, id); folderErr != nil {
 					log.Printf("POST /super/api/empresas id=%d carpeta empresa warning: %v", id, folderErr)
 				}
-				if assignmentErr := dbpkg.EnsureEmpresaNextcloudAssignment(dbEmp, id, 1024); assignmentErr != nil {
+				if assignmentErr := dbpkg.ProvisionEmpresaNextcloudAssignment(dbEmp, id, 1024); assignmentErr != nil {
 					log.Printf("POST /super/api/empresas id=%d asignacion Nextcloud warning: %v", id, assignmentErr)
 				}
 			}
-			emailCorporativo, emailCorporativoErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, id, payload.Nombre, payload.UsuarioCreador)
+			emailCorporativo, emailCorporativoErr := ProvisionEmpresaCorporateEmailAfterCreate(dbSuper, id, payload.Nombre, payload.UsuarioCreador)
 			emailCorporativoErrText := ""
 			if emailCorporativoErr != nil {
 				emailCorporativoErrText = emailCorporativoErr.Error()

@@ -109,16 +109,16 @@ func legacySchemaBootstrapDisabled() bool {
 	}
 }
 
-// EnsureEmpresaNextcloudAssignment creates the technical account assignment
+// ProvisionEmpresaNextcloudAssignment creates the technical account assignment
 // immediately when a company is created. It does not contact Nextcloud.
-func EnsureEmpresaNextcloudAssignment(dbEmpresas *sql.DB, empresaID, quotaMB int64) error {
+func ProvisionEmpresaNextcloudAssignment(dbEmpresas *sql.DB, empresaID, quotaMB int64) error {
 	if dbEmpresas == nil || empresaID <= 0 {
 		return nil
 	}
 	if quotaMB <= 0 {
 		quotaMB = 1024
 	}
-	if err := EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+	if err := EmpresaNextcloudSchemaReady(dbEmpresas); err != nil {
 		return err
 	}
 	_, err := dbEmpresas.Exec(`INSERT INTO empresa_nextcloud_accounts (empresa_id, nextcloud_user, quota_mb, activo)
@@ -126,16 +126,16 @@ func EnsureEmpresaNextcloudAssignment(dbEmpresas *sql.DB, empresaID, quotaMB int
 	return err
 }
 
-// EnsureEmpresaNextcloudAssignmentsForAll applies the global default to every
+// SyncEmpresaNextcloudAssignmentsForAll applies the global default to every
 // existing company, preserving the empresa_id boundary.
-func EnsureEmpresaNextcloudAssignmentsForAll(dbEmpresas *sql.DB, quotaMB int64) (int64, error) {
+func SyncEmpresaNextcloudAssignmentsForAll(dbEmpresas *sql.DB, quotaMB int64) (int64, error) {
 	if dbEmpresas == nil {
 		return 0, nil
 	}
 	if quotaMB <= 0 {
 		quotaMB = 1024
 	}
-	if err := EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
+	if err := EmpresaNextcloudSchemaReady(dbEmpresas); err != nil {
 		return 0, err
 	}
 	res, err := dbEmpresas.Exec(`INSERT INTO empresa_nextcloud_accounts (empresa_id, nextcloud_user, quota_mb)
