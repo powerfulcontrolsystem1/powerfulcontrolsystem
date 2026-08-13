@@ -1271,3 +1271,14 @@ autoriza ni ejecuta despliegue productivo.
   unsafe-inline.
 - P110-007 continúa **parcial**; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó rs.
+
+## Actualización 2026-08-13, scripts externos en 14 páginas
+
+- Catorce páginas cuyo único bloqueo era un script inline usan ahora un
+  controlador externo en el mismo punto de ejecución; no se cambiaron contratos
+  de API, permisos ni datos.
+- La comparación con HEAD y node --check aprobaron 14/14. La deuda baja de
+  1.283 a 1.269 bloqueos y de 209 a 195 páginas; quedan 209 scripts inline.
+- La repetición visual y autenticada del candidato desplegado sigue pendiente.
+  P110-007 continúa **parcial**; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó rs.

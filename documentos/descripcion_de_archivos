@@ -13169,6 +13169,20 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   configuración global de Nextcloud.
 - `documentos/evidencia_plan_110/P110-007/2026-08-13_lote_css_23_paginas.md`:
   alcance, medición, pruebas y límite visual del lote CSP de 23 páginas.
+- `web/administrar_empresa/administrar_productos_menu.js`,
+  `chat_con_inteligencia_artificial.js`, `egresos_ingresos_menu.js`,
+  `frecuencia_fe.js`, `gimnasio_menu.js`, `historial_productos.js`,
+  `plantillas_nuevas_menu.js`, `reportes_menu.js` y
+  `soporte_remoto_view.js`: controladores externos de sus páginas
+  empresariales homónimas, sin cambiar el punto de ejecución.
+- `web/administrar_empresa/productos/bodegas.js`: controlador externo de la
+  vista empresarial de bodegas.
+- `web/epayco/respuesta.js` y `web/soporte_remoto_acceso.js`: controladores
+  externos de la respuesta ePayco y del acceso público de soporte remoto.
+- `web/super/chat_con_ia_global.js` y `web/super/domotica_storage.js`:
+  controladores externos de chat IA y almacenamiento de Domótica en super.
+- `documentos/evidencia_plan_110/P110-007/2026-08-13_lote_scripts_14_paginas.md`:
+  comparación exacta, sintaxis, medición CSP y límites del lote JavaScript.
 - `documentos/evidencia_plan_110/P110-007/2026-08-12_linea_base_csp_y_grafologia_sin_inline.md`:
   medicion inicial/final, segundo lote sin eventos, compuerta CI y limite
   productivo de la deuda CSP.
