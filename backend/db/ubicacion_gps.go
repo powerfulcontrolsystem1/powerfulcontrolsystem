@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -312,6 +313,12 @@ func CreateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) (int64
 
 // GetEmpresaGPSDispositivos lista dispositivos GPS por empresa.
 func GetEmpresaGPSDispositivos(dbConn *sql.DB, empresaID int64, includeInactive bool, q string) ([]EmpresaGPSDispositivo, error) {
+	return GetEmpresaGPSDispositivosContext(context.Background(), dbConn, empresaID, includeInactive, q)
+}
+
+// GetEmpresaGPSDispositivosContext lista dispositivos GPS conservando la
+// cancelacion del llamador hasta PostgreSQL.
+func GetEmpresaGPSDispositivosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, includeInactive bool, q string) ([]EmpresaGPSDispositivo, error) {
 	query := `SELECT
 		id, empresa_id, COALESCE(codigo, ''), COALESCE(nombre, ''), COALESCE(descripcion, ''),
 		COALESCE(marca, ''), COALESCE(modelo, ''), COALESCE(tipo_dispositivo, 'gps_tracker'),
@@ -344,7 +351,7 @@ func GetEmpresaGPSDispositivos(dbConn *sql.DB, empresaID int64, includeInactive 
 	}
 	query += ` ORDER BY nombre ASC, id ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -391,8 +398,14 @@ func GetEmpresaGPSDispositivos(dbConn *sql.DB, empresaID int64, includeInactive 
 
 // CountEmpresaGPSDispositivos cuenta todos los dispositivos GPS registrados para la empresa (cualquier estado).
 func CountEmpresaGPSDispositivos(dbConn *sql.DB, empresaID int64) (int64, error) {
+	return CountEmpresaGPSDispositivosContext(context.Background(), dbConn, empresaID)
+}
+
+// CountEmpresaGPSDispositivosContext cuenta dispositivos GPS conservando la
+// cancelacion del llamador hasta PostgreSQL.
+func CountEmpresaGPSDispositivosContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (int64, error) {
 	var n int64
-	err := dbConn.QueryRow(`SELECT COUNT(*) FROM empresa_gps_dispositivos WHERE empresa_id = ?`, empresaID).Scan(&n)
+	err := queryRowSQLCompatContext(ctx, dbConn, `SELECT COUNT(*) FROM empresa_gps_dispositivos WHERE empresa_id = ?`, empresaID).Scan(&n)
 	if err != nil {
 		return 0, err
 	}

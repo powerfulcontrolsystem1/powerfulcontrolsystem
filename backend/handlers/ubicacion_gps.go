@@ -28,7 +28,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 			}
 			includeInactive := queryBool(r, "include_inactive")
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
-			rows, err := dbpkg.GetEmpresaGPSDispositivos(dbEmp, empresaID, includeInactive, q)
+			rows, err := dbpkg.GetEmpresaGPSDispositivosContext(r.Context(), dbEmp, empresaID, includeInactive, q)
 			if err != nil {
 				http.Error(w, "No se pudieron listar los dispositivos GPS", http.StatusInternalServerError)
 				return
@@ -64,7 +64,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 				http.Error(w, "No se pudo validar limite de dispositivos GPS: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			existing, err := dbpkg.CountEmpresaGPSDispositivos(dbEmp, payload.EmpresaID)
+			existing, err := dbpkg.CountEmpresaGPSDispositivosContext(r.Context(), dbEmp, payload.EmpresaID)
 			if err != nil {
 				http.Error(w, "No se pudo contar dispositivos GPS", http.StatusInternalServerError)
 				return

@@ -42716,3 +42716,9 @@ acumulativa.
   inserción y actualización bajo el mismo `empresa_id`.
 - Pruebas focalizadas, `go vet` y auditoría aprueban. La deuda DB sin contexto
   baja de 519 a 516; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: lectura GPS cancelable
+
+- El listado y conteo de dispositivos GPS conservan `r.Context()` hasta
+  PostgreSQL, manteniendo filtros y conteo por `empresa_id`.
+- Pruebas GPS de DB/handlers, `go vet` y auditoría aprueban. La deuda DB sin
+  contexto baja de 516 a 514; no se ejecutó `rs`.
