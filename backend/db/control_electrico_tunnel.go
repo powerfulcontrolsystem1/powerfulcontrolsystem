@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -345,6 +346,30 @@ func QueueEmpresaControlElectricoTunnelRestoreOnBoot(dbConn *sql.DB, device *Emp
 	if bootID == "" {
 		return 0, nil
 	}
+
+	// La Raspberry repite su boot_id en cada long-poll. Si el pool conserva una
+	// conexion descartada por PostgreSQL durante un redeploy, reintentamos la
+	// transaccion completa sobre una conexion nueva. El UPDATE condicional de
+	// last_boot_id conserva la operacion idempotente incluso si el error ocurrio
+	// justo despues de un COMMIT confirmado por PostgreSQL.
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		count, err := queueEmpresaControlElectricoTunnelRestoreOnBootOnce(dbConn, device, bootID)
+		if err == nil {
+			return count, nil
+		}
+		lastErr = err
+		if !errors.Is(err, driver.ErrBadConn) {
+			return 0, err
+		}
+		if attempt < 2 {
+			time.Sleep(time.Duration(attempt+1) * 150 * time.Millisecond)
+		}
+	}
+	return 0, lastErr
+}
+
+func queueEmpresaControlElectricoTunnelRestoreOnBootOnce(dbConn *sql.DB, device *EmpresaControlElectricoTunnelDevice, bootID string) (int, error) {
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return 0, err
@@ -365,15 +390,31 @@ func QueueEmpresaControlElectricoTunnelRestoreOnBoot(dbConn *sql.DB, device *Emp
 	if err != nil {
 		return 0, err
 	}
-	defer rows.Close()
-	count := 0
+	type recoveryRelay struct {
+		releID, estacionID             int64
+		gpioPin, activeHigh, pulsoMS   int
+		salidaCodigo, relayName, carga string
+	}
+	activeRelays := make([]recoveryRelay, 0)
 	for rows.Next() {
-		var releID, estacionID int64
-		var gpioPin, activeHigh, pulsoMS int
-		var salidaCodigo, relayName, tipoCarga string
-		if err := rows.Scan(&releID, &estacionID, &gpioPin, &activeHigh, &pulsoMS, &salidaCodigo, &relayName, &tipoCarga); err != nil {
+		var relay recoveryRelay
+		if err := rows.Scan(&relay.releID, &relay.estacionID, &relay.gpioPin, &relay.activeHigh, &relay.pulsoMS, &relay.salidaCodigo, &relay.relayName, &relay.carga); err != nil {
 			return 0, err
 		}
+		activeRelays = append(activeRelays, relay)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	// lib/pq/pgx no permite reservar el siguiente turno ni insertar comandos
+	// mientras el cursor de la consulta anterior aun esta abierto en la misma
+	// transaccion. Cerramos la lectura antes de tocar la cola.
+	if err := rows.Close(); err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, relay := range activeRelays {
 		commandUID, err := generateControlElectricoTunnelSecret(24)
 		if err != nil {
 			return 0, err
@@ -383,22 +424,19 @@ func QueueEmpresaControlElectricoTunnelRestoreOnBoot(dbConn *sql.DB, device *Emp
 			return 0, err
 		}
 		payload, err := json.Marshal(map[string]interface{}{
-			"relay_id": releID, "station_id": estacionID, "gpio_pin": gpioPin, "estado": "on",
-			"active_high": activeHigh == 1, "pulso_ms": pulsoMS, "salida_codigo": salidaCodigo,
-			"relay_name": relayName, "tipo_carga": tipoCarga, "origen": "raspberry_recovery",
+			"relay_id": relay.releID, "station_id": relay.estacionID, "gpio_pin": relay.gpioPin, "estado": "on",
+			"active_high": relay.activeHigh == 1, "pulso_ms": relay.pulsoMS, "salida_codigo": relay.salidaCodigo,
+			"relay_name": relay.relayName, "tipo_carga": relay.carga, "origen": "raspberry_recovery",
 			"restore_delay_ms": delay * 1000,
 		})
 		if err != nil {
 			return 0, err
 		}
 		expires := availableAt.Add(controlElectricoRestoreCommandTTL).Format(time.RFC3339Nano)
-		if _, err := execTxSQLCompat(tx, `INSERT INTO empresa_control_electrico_comandos (empresa_id, raspberry_id, command_uid, rele_id, estacion_id, gpio_pin, estado_objetivo, payload_json, estado, intentos, solicitado_en, disponible_desde, expira_en, usuario_creador, origen) VALUES (?, ?, ?, ?, ?, ?, 'on', ?, 'pendiente', 0, CURRENT_TIMESTAMP, ?, ?, ?, 'raspberry_recovery')`, device.EmpresaID, device.RaspberryID, commandUID, releID, estacionID, gpioPin, string(payload), availableAt.Format(time.RFC3339Nano), expires, device.DeviceUID); err != nil {
+		if _, err := execTxSQLCompat(tx, `INSERT INTO empresa_control_electrico_comandos (empresa_id, raspberry_id, command_uid, rele_id, estacion_id, gpio_pin, estado_objetivo, payload_json, estado, intentos, solicitado_en, disponible_desde, expira_en, usuario_creador, origen) VALUES (?, ?, ?, ?, ?, ?, 'on', ?, 'pendiente', 0, CURRENT_TIMESTAMP, ?, ?, ?, 'raspberry_recovery')`, device.EmpresaID, device.RaspberryID, commandUID, relay.releID, relay.estacionID, relay.gpioPin, string(payload), availableAt.Format(time.RFC3339Nano), expires, device.DeviceUID); err != nil {
 			return 0, err
 		}
 		count++
-	}
-	if err := rows.Err(); err != nil {
-		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
 		return 0, err

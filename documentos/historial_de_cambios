@@ -42610,3 +42610,7 @@ acumulativa.
 - Configuracion, catalogo, ordenes, conciliacion Wompi y entrega de licencias conservan el contexto HTTP hasta PostgreSQL; las llamadas HTTP a Wompi tambien se cancelan al terminar la solicitud.
 - Los fallos al asociar imagen/instrucciones, guardar un rechazo, sincronizar estado o registrar una entrega fallida dejan de descartarse. Las consultas y mutaciones siguen siendo globales del super administrador, sin introducir datos empresariales ni dependencias.
 - Regresion estatica, pruebas DB/handlers, `vet` y auditor aprueban; deuda DB 548 a 533, descartes 766 a 762, duplicacion exacta 0. No se ejecuto `rs` ni se creo PR.
+2026-08-13 - Domótica: recuperación confiable después de reinicio Raspberry
+- La cola materializa y cierra la lectura de relés antes de reservar turnos e insertar comandos; evita invalidar la conexión PostgreSQL dentro de la misma transacción.
+- La cola de restauración del túnel reintenta de manera idempotente hasta tres veces cuando PostgreSQL descarta una conexión durante un redeploy.
+- El `boot_id` no se confirma hasta que la transacción que vuelve a encolar los relés activos termina correctamente; se conserva la separación configurada entre encendidos.
