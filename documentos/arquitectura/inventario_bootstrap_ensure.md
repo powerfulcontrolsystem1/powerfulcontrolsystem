@@ -82,12 +82,12 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaPOS80Defaults` | [backend/db/empresa_impresoras.go:902](../../backend/db/empresa_impresoras.go#L902) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureAllEmpresasPOS80Defaults` | [backend/db/empresa_impresoras.go:977](../../backend/db/empresa_impresoras.go#L977) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaPermisosFinosSchema` | [backend/db/empresa_permisos_finos.go:24](../../backend/db/empresa_permisos_finos.go#L24) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresasScopeReferences` | [backend/db/empresa_scope.go:9](../../backend/db/empresa_scope.go#L9) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureEmpresasScopeReferences` | [backend/db/empresa_scope.go:10](../../backend/db/empresa_scope.go#L10) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaEnergiaSolarSchema` | [backend/db/energia_solar.go:108](../../backend/db/energia_solar.go#L108) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaEstacionColumnPreferencesSchema` | [backend/db/estacion_columnas_pref.go:24](../../backend/db/estacion_columnas_pref.go#L24) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEstacionVIPCodigosSchema` | [backend/db/estacion_vip_codigos.go:26](../../backend/db/estacion_vip_codigos.go#L26) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaEventosContablesSchema` | [backend/db/eventos_contables.go:261](../../backend/db/eventos_contables.go#L261) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaFacturacionElectronicaSchema` | [backend/db/facturacion_electronica.go:337](../../backend/db/facturacion_electronica.go#L337) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaFacturacionElectronicaSchema` | [backend/db/facturacion_electronica.go:338](../../backend/db/facturacion_electronica.go#L338) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaFinanzasSchema` | [backend/db/finanzas.go:186](../../backend/db/finanzas.go#L186) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaGimnasioSchema` | [backend/db/gimnasio.go:271](../../backend/db/gimnasio.go#L271) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaGrafologiaSchema` | [backend/db/grafologia.go:39](../../backend/db/grafologia.go#L39) | DDL / indice / funcion | empresas o por confirmar |

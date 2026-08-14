@@ -47,7 +47,7 @@ func EmpresaImpuestosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			pais, _, err := dbpkg.DetectFacturacionPais(dbEmp, empresaID, "", "")
+			pais, _, err := dbpkg.DetectFacturacionPaisContext(r.Context(), dbEmp, empresaID, "", "")
 			if err != nil {
 				pais = dbpkg.PaisFacturacion{Codigo: "CO", Nombre: "Colombia", Bandera: "CO", Moneda: "COP"}
 			}

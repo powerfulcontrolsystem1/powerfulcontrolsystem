@@ -42582,3 +42582,7 @@ acumulativa.
 2026-08-13 - Plan 110: contextos SQL RRHH e inventario
 - Vacaciones y lotes/series propagan el contexto HTTP; el movimiento transaccional obtiene su ID mediante `RETURNING id`.
 - La línea base baja de 672 a 662 y las recargas dejan de ignorar errores; no se ejecutó `rs`.
+2026-08-13 - Plan 110: facturacion electronica cancelable y deuda accionable
+- Configuracion fiscal multiempresa, deteccion de pais, reserva de consecutivo y cola de reintentos ofrecen variantes con `context.Context`; las rutas HTTP principales conservan cancelacion hasta PostgreSQL.
+- Los listados fiscales comprueban el error final de filas y los perfiles Panama/Ecuador dejan de intentar escrituras muertas durante GET.
+- El auditor estructural incluye los 30 archivos con mayor deuda combinada para priorizar correcciones reproducibles. Pruebas DB, handlers y auditor aprueban; llamadas DB sin contexto: 610 a 597. No se ejecuto `rs` ni se creo PR.

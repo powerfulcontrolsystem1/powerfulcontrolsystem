@@ -33,6 +33,12 @@ type duplicateGroup struct {
 	Functions []functionMetric `json:"functions"`
 }
 
+type fileDebtMetric struct {
+	File                  string `json:"file"`
+	DBCallsWithoutContext int    `json:"db_calls_without_context"`
+	ExplicitIgnoredResult int    `json:"explicit_ignored_results"`
+}
+
 type metrics struct {
 	ProductionFiles          int              `json:"production_files"`
 	ProductionFunctions      int              `json:"production_functions"`
@@ -44,6 +50,7 @@ type metrics struct {
 	ExplicitIgnoredResults   int              `json:"explicit_ignored_results"`
 	LargestFunctions         []functionMetric `json:"largest_functions"`
 	DuplicateGroups          []duplicateGroup `json:"duplicate_groups"`
+	TopDebtFiles             []fileDebtMetric `json:"top_debt_files,omitempty"`
 }
 
 type baseline struct {
@@ -97,6 +104,7 @@ func measure(root string) (metrics, error) {
 	fset := token.NewFileSet()
 	result := metrics{}
 	byHash := map[string][]functionMetric{}
+	debtByFile := map[string]*fileDebtMetric{}
 	allFunctions := make([]functionMetric, 0, 4096)
 
 	err = filepath.WalkDir(absRoot, func(path string, entry os.DirEntry, walkErr error) error {
@@ -127,6 +135,8 @@ func measure(root string) (metrics, error) {
 			return fmt.Errorf("parse %s: %w", relative, err)
 		}
 		result.ProductionFiles++
+		fileDebt := &fileDebtMetric{File: relative}
+		debtByFile[relative] = fileDebt
 
 		for _, declaration := range file.Decls {
 			function, ok := declaration.(*ast.FuncDecl)
@@ -172,11 +182,13 @@ func measure(root string) (metrics, error) {
 				if len(current.Lhs) == 1 {
 					if identifier, ok := current.Lhs[0].(*ast.Ident); ok && identifier.Name == "_" {
 						result.ExplicitIgnoredResults++
+						fileDebt.ExplicitIgnoredResult++
 					}
 				}
 			case *ast.CallExpr:
 				if isDBCallWithoutContext(selectorName(current)) {
 					result.DBCallsWithoutContext++
+					fileDebt.DBCallsWithoutContext++
 				}
 			}
 			return true
@@ -185,6 +197,24 @@ func measure(root string) (metrics, error) {
 	})
 	if err != nil {
 		return metrics{}, err
+	}
+
+	for _, item := range debtByFile {
+		if item.DBCallsWithoutContext == 0 && item.ExplicitIgnoredResult == 0 {
+			continue
+		}
+		result.TopDebtFiles = append(result.TopDebtFiles, *item)
+	}
+	sort.Slice(result.TopDebtFiles, func(i, j int) bool {
+		left := result.TopDebtFiles[i].DBCallsWithoutContext + result.TopDebtFiles[i].ExplicitIgnoredResult
+		right := result.TopDebtFiles[j].DBCallsWithoutContext + result.TopDebtFiles[j].ExplicitIgnoredResult
+		if left != right {
+			return left > right
+		}
+		return result.TopDebtFiles[i].File < result.TopDebtFiles[j].File
+	})
+	if len(result.TopDebtFiles) > 30 {
+		result.TopDebtFiles = result.TopDebtFiles[:30]
 	}
 
 	sort.Slice(allFunctions, func(i, j int) bool {

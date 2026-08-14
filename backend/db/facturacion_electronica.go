@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -746,7 +747,7 @@ func applyFacturacionPaisDefaults(cfg *FacturacionElectronicaPaisConfig) {
 	}
 }
 
-func hydrateFacturacionFromEmpresaConfig(dbConn *sql.DB, cfg *FacturacionElectronicaPaisConfig) error {
+func hydrateFacturacionFromEmpresaConfig(ctx context.Context, dbConn *sql.DB, cfg *FacturacionElectronicaPaisConfig) error {
 	if cfg == nil || cfg.EmpresaID <= 0 {
 		return nil
 	}
@@ -761,7 +762,7 @@ func hydrateFacturacionFromEmpresaConfig(dbConn *sql.DB, cfg *FacturacionElectro
 	var resolucionNumero string
 	var ambienteFE string
 
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		COALESCE(tipo_documento_emisor, ''),
 		COALESCE(nit, ''),
 		COALESCE(razon_social, ''),
@@ -875,6 +876,11 @@ func normalizeFacturacionConfig(payload *FacturacionElectronicaPaisConfig) {
 
 // UpsertFacturacionElectronicaPaisConfig crea o actualiza configuración por empresa/pais.
 func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionElectronicaPaisConfig) (int64, error) {
+	return UpsertFacturacionElectronicaPaisConfigContext(context.Background(), dbConn, payload)
+}
+
+// UpsertFacturacionElectronicaPaisConfigContext conserva cancelacion y plazo del flujo solicitante.
+func UpsertFacturacionElectronicaPaisConfigContext(ctx context.Context, dbConn *sql.DB, payload FacturacionElectronicaPaisConfig) (int64, error) {
 	if payload.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -928,7 +934,7 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`
 
-	if _, err := dbConn.Exec(stmt,
+	if _, err := dbConn.ExecContext(ctx, stmt,
 		payload.EmpresaID,
 		payload.PaisCodigo,
 		payload.PaisNombre,
@@ -953,12 +959,16 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		return 0, err
 	}
 
-	return getFacturacionElectronicaPaisID(dbConn, payload.EmpresaID, payload.PaisCodigo)
+	return getFacturacionElectronicaPaisIDContext(ctx, dbConn, payload.EmpresaID, payload.PaisCodigo)
 }
 
 func getFacturacionElectronicaPaisID(dbConn *sql.DB, empresaID int64, paisCodigo string) (int64, error) {
+	return getFacturacionElectronicaPaisIDContext(context.Background(), dbConn, empresaID, paisCodigo)
+}
+
+func getFacturacionElectronicaPaisIDContext(ctx context.Context, dbConn *sql.DB, empresaID int64, paisCodigo string) (int64, error) {
 	var id int64
-	err := dbConn.QueryRow(`SELECT id FROM facturacion_electronica_pais WHERE empresa_id = ? AND pais_codigo = ? LIMIT 1`, empresaID, normalizePaisCodigo(paisCodigo)).Scan(&id)
+	err := dbConn.QueryRowContext(ctx, `SELECT id FROM facturacion_electronica_pais WHERE empresa_id = ? AND pais_codigo = ? LIMIT 1`, empresaID, normalizePaisCodigo(paisCodigo)).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -967,13 +977,18 @@ func getFacturacionElectronicaPaisID(dbConn *sql.DB, empresaID int64, paisCodigo
 
 // GetFacturacionElectronicaPaisConfig obtiene configuración por empresa y país.
 func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCodigo string) (*FacturacionElectronicaPaisConfig, error) {
+	return GetFacturacionElectronicaPaisConfigContext(context.Background(), dbConn, empresaID, paisCodigo)
+}
+
+// GetFacturacionElectronicaPaisConfigContext obtiene configuracion respetando el contexto del request.
+func GetFacturacionElectronicaPaisConfigContext(ctx context.Context, dbConn *sql.DB, empresaID int64, paisCodigo string) (*FacturacionElectronicaPaisConfig, error) {
 	paisCodigo = normalizePaisCodigo(paisCodigo)
 	if empresaID <= 0 || paisCodigo == "" {
 		return nil, fmt.Errorf("empresa_id y pais_codigo son obligatorios")
 	}
 
 	cfg := defaultFacturacionConfig(empresaID, paisCodigo)
-	row := dbConn.QueryRow(`SELECT
+	row := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(pais_codigo, ''),
@@ -1028,7 +1043,7 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 		&cfg.Observaciones,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			if hErr := hydrateFacturacionFromEmpresaConfig(dbConn, &cfg); hErr != nil {
+			if hErr := hydrateFacturacionFromEmpresaConfig(ctx, dbConn, &cfg); hErr != nil {
 				return nil, hErr
 			}
 			normalizeFacturacionConfig(&cfg)
@@ -1044,6 +1059,11 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 
 // ListFacturacionElectronicaPaisConfigs lista configuraciones FE por empresa.
 func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incluirInactivas bool) ([]FacturacionElectronicaPaisConfig, error) {
+	return ListFacturacionElectronicaPaisConfigsContext(context.Background(), dbConn, empresaID, incluirInactivas)
+}
+
+// ListFacturacionElectronicaPaisConfigsContext lista configuraciones respetando cancelacion.
+func ListFacturacionElectronicaPaisConfigsContext(ctx context.Context, dbConn *sql.DB, empresaID int64, incluirInactivas bool) ([]FacturacionElectronicaPaisConfig, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1079,7 +1099,7 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 	}
 	query += " ORDER BY pais_codigo ASC"
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1120,15 +1140,19 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 		cfg.EnviarFacturaEmailClienteAuto = enviarFacturaEmailClienteAutoInt == 1
 		out = append(out, cfg)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // getPaisFacturacionDesdeLicenciaActiva toma pais_codigo de la licencia activa vinculada a la empresa (señal fuerte de jurisdicción comercial).
 func getPaisFacturacionDesdeLicenciaActiva(dbConn *sql.DB, empresaID int64) (string, error) {
+	return getPaisFacturacionDesdeLicenciaActivaContext(context.Background(), dbConn, empresaID)
+}
+
+func getPaisFacturacionDesdeLicenciaActivaContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (string, error) {
 	if dbConn == nil || empresaID <= 0 {
 		return "", nil
 	}
-	ok, err := tableExists(dbConn, "licencias")
+	ok, err := tableExistsContext(ctx, dbConn, "licencias")
 	if err != nil {
 		return "", err
 	}
@@ -1136,7 +1160,7 @@ func getPaisFacturacionDesdeLicenciaActiva(dbConn *sql.DB, empresaID int64) (str
 		return "", nil
 	}
 	var pais sql.NullString
-	err = queryRowSQLCompat(dbConn, `SELECT COALESCE(pais_codigo, '') FROM licencias
+	err = queryRowSQLCompatContext(ctx, dbConn, `SELECT COALESCE(pais_codigo, '') FROM licencias
 		WHERE empresa_id = ? AND COALESCE(activo, 0) = 1
 		ORDER BY id DESC
 		LIMIT 1`, empresaID).Scan(&pais)
@@ -1194,9 +1218,14 @@ func detectPaisByLanguage(lang string) string {
 
 // DetectFacturacionPais determina país FE para una empresa usando configuración y señales del cliente.
 func DetectFacturacionPais(dbConn *sql.DB, empresaID int64, timezone, language string) (PaisFacturacion, string, error) {
+	return DetectFacturacionPaisContext(context.Background(), dbConn, empresaID, timezone, language)
+}
+
+// DetectFacturacionPaisContext determina la jurisdiccion conservando el contexto del flujo.
+func DetectFacturacionPaisContext(ctx context.Context, dbConn *sql.DB, empresaID int64, timezone, language string) (PaisFacturacion, string, error) {
 	if empresaID > 0 {
 		var paisCfg sql.NullString
-		err := dbConn.QueryRow(`SELECT COALESCE(pais_codigo, '') FROM empresa_configuracion_avanzada WHERE empresa_id = ? LIMIT 1`, empresaID).Scan(&paisCfg)
+		err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(pais_codigo, '') FROM empresa_configuracion_avanzada WHERE empresa_id = ? LIMIT 1`, empresaID).Scan(&paisCfg)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return PaisFacturacion{}, "", err
 		}
@@ -1205,7 +1234,7 @@ func DetectFacturacionPais(dbConn *sql.DB, empresaID int64, timezone, language s
 		}
 
 		var paisFE sql.NullString
-		err = dbConn.QueryRow(`SELECT COALESCE(pais_codigo, '') FROM facturacion_electronica_pais WHERE empresa_id = ? ORDER BY fecha_actualizacion DESC, id DESC LIMIT 1`, empresaID).Scan(&paisFE)
+		err = dbConn.QueryRowContext(ctx, `SELECT COALESCE(pais_codigo, '') FROM facturacion_electronica_pais WHERE empresa_id = ? ORDER BY fecha_actualizacion DESC, id DESC LIMIT 1`, empresaID).Scan(&paisFE)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return PaisFacturacion{}, "", err
 		}
@@ -1213,7 +1242,7 @@ func DetectFacturacionPais(dbConn *sql.DB, empresaID int64, timezone, language s
 			return paisFacturacionByCodigo(paisFE.String), "facturacion_electronica", nil
 		}
 
-		pc, errLic := getPaisFacturacionDesdeLicenciaActiva(dbConn, empresaID)
+		pc, errLic := getPaisFacturacionDesdeLicenciaActivaContext(ctx, dbConn, empresaID)
 		if errLic != nil {
 			return PaisFacturacion{}, "", errLic
 		}
@@ -1265,6 +1294,11 @@ func buildFacturaCodigoValidacion(empresaID int64, paisCodigo, documentoCodigo, 
 
 // PrepareFacturacionDocumentoLegal valida cumplimiento y reserva consecutivo para emisión legal.
 func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodigo, documentoCodigo string, montoTotal float64, moneda string) (*FacturacionDocumentoLegal, error) {
+	return PrepareFacturacionDocumentoLegalContext(context.Background(), dbConn, empresaID, paisCodigo, documentoCodigo, montoTotal, moneda)
+}
+
+// PrepareFacturacionDocumentoLegalContext reserva el consecutivo dentro del contexto solicitante.
+func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB, empresaID int64, paisCodigo, documentoCodigo string, montoTotal float64, moneda string) (*FacturacionDocumentoLegal, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1279,14 +1313,14 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 
 	paisCodigo = normalizePaisCodigo(paisCodigo)
 	if paisCodigo == "" {
-		paisDetectado, _, err := DetectFacturacionPais(dbConn, empresaID, "", "")
+		paisDetectado, _, err := DetectFacturacionPaisContext(ctx, dbConn, empresaID, "", "")
 		if err != nil {
 			return nil, err
 		}
 		paisCodigo = paisDetectado.Codigo
 	}
 
-	cfg, err := GetFacturacionElectronicaPaisConfig(dbConn, empresaID, paisCodigo)
+	cfg, err := GetFacturacionElectronicaPaisConfigContext(ctx, dbConn, empresaID, paisCodigo)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
@@ -1297,7 +1331,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 		return nil, fmt.Errorf("la configuracion de facturacion electronica esta inactiva para %s", cfg.PaisCodigo)
 	}
 
-	tx, err := dbConn.Begin()
+	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1315,7 +1349,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 	var consecutivoHasta int64
 	var proximoConsecutivo int64
 
-	err = tx.QueryRow(`SELECT
+	err = tx.QueryRowContext(ctx, `SELECT
 		COALESCE(tipo_documento_emisor, ''),
 		COALESCE(nit, ''),
 		COALESCE(razon_social, ''),
@@ -1421,7 +1455,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 		return nil, fmt.Errorf("rango de consecutivos agotado para facturacion")
 	}
 
-	if _, err := tx.Exec(`UPDATE empresa_configuracion_avanzada
+	if _, err := tx.ExecContext(ctx, `UPDATE empresa_configuracion_avanzada
 		SET proximo_consecutivo = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`, proximoConsecutivo+1, empresaID); err != nil {
@@ -1555,6 +1589,11 @@ func facturacionColombiaLocation() *time.Location {
 
 // GetFacturacionElectronicaRetryByDocumento consulta el estado de integracion fiscal por documento FE.
 func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*FacturacionElectronicaRetryItem, error) {
+	return GetFacturacionElectronicaRetryByDocumentoContext(context.Background(), dbConn, empresaID, tipoDocumento, documentoCodigo)
+}
+
+// GetFacturacionElectronicaRetryByDocumentoContext consulta el reintento respetando cancelacion.
+func GetFacturacionElectronicaRetryByDocumentoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*FacturacionElectronicaRetryItem, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1566,7 +1605,7 @@ func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, 
 
 	item := FacturacionElectronicaRetryItem{}
 	var contingenciaActivaRaw int64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(tipo_documento, ''),
@@ -1631,6 +1670,11 @@ func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, 
 
 // UpsertFacturacionElectronicaRetry crea/actualiza un registro de cola de reintentos FE por documento.
 func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectronicaRetryItem) (*FacturacionElectronicaRetryItem, error) {
+	return UpsertFacturacionElectronicaRetryContext(context.Background(), dbConn, payload)
+}
+
+// UpsertFacturacionElectronicaRetryContext persiste el estado fiscal dentro del contexto solicitante.
+func UpsertFacturacionElectronicaRetryContext(ctx context.Context, dbConn *sql.DB, payload FacturacionElectronicaRetryItem) (*FacturacionElectronicaRetryItem, error) {
 	if payload.EmpresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1690,7 +1734,7 @@ func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectr
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`
 
-	if _, err := dbConn.Exec(stmt,
+	if _, err := dbConn.ExecContext(ctx, stmt,
 		payload.EmpresaID,
 		payload.TipoDocumento,
 		payload.DocumentoCodigo,
@@ -1717,7 +1761,7 @@ func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectr
 		return nil, err
 	}
 
-	return GetFacturacionElectronicaRetryByDocumento(dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+	return GetFacturacionElectronicaRetryByDocumentoContext(ctx, dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
 }
 
 func buildFacturacionRetryQueryPattern(raw string) string {
@@ -1732,6 +1776,11 @@ func buildFacturacionRetryQueryPattern(raw string) string {
 
 // ListFacturacionElectronicaRetriesByEmpresa lista la cola de reintentos FE por empresa.
 func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64, filter FacturacionElectronicaRetryFilter) ([]FacturacionElectronicaRetryItem, error) {
+	return ListFacturacionElectronicaRetriesByEmpresaContext(context.Background(), dbConn, empresaID, filter)
+}
+
+// ListFacturacionElectronicaRetriesByEmpresaContext lista la cola fiscal con contexto cancelable.
+func ListFacturacionElectronicaRetriesByEmpresaContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter FacturacionElectronicaRetryFilter) ([]FacturacionElectronicaRetryItem, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1809,7 +1858,7 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 	query += " ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 WHEN 'contingencia' THEN 2 WHEN 'enviado' THEN 3 WHEN 'aceptado' THEN 4 ELSE 5 END, COALESCE(proximo_intento, ''), id DESC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1853,7 +1902,7 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 		items = append(items, it)
 	}
 
-	return items, nil
+	return items, rows.Err()
 }
 
 func facturacionPanamaJSONMap(raw string) map[string]interface{} {

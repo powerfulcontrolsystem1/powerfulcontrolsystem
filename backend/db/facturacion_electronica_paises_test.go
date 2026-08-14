@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 )
@@ -26,6 +27,16 @@ func TestListPaisesFacturacionDisponiblesIncluyePerfilesMultiPais(t *testing.T) 
 	}
 	if len(want) != 0 {
 		t.Fatalf("missing countries: %#v", want)
+	}
+}
+
+func TestDetectFacturacionPaisContextSinEmpresa(t *testing.T) {
+	pais, source, err := DetectFacturacionPaisContext(context.Background(), nil, 0, "America/Panama", "es-PA")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pais.Codigo != "PA" || source != "timezone" {
+		t.Fatalf("expected PA/timezone, got %s/%s", pais.Codigo, source)
 	}
 }
 

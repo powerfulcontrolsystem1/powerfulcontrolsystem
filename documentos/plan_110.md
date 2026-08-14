@@ -1695,3 +1695,18 @@ autoriza ni ejecuta despliegue productivo.
   contexto, **771** descartes
   explícitos y 0 duplicaciones. P110-001A continúa parcial; avance formal
   **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs` ni se creó PR.
+
+## Actualizacion 2026-08-13, facturacion electronica cancelable y deuda accionable
+
+- Configuracion fiscal por empresa, deteccion de jurisdiccion, reserva
+  transaccional de consecutivos y cola de reintentos propagan
+  `context.Context` hasta PostgreSQL; se mantienen wrappers compatibles para
+  jobs sin request.
+- Las rutas principales de Facturacion electronica, Bolsa e Impuestos usan el
+  contexto HTTP real. Los listados comprueban `rows.Err()` y los GET de Panama
+  y Ecuador dejan de conservar ramas de escritura inalcanzables.
+- El auditor estructural ahora ordena los 30 archivos con mayor deuda DB y de
+  resultados descartados. Pruebas de DB, handlers y auditor aprueban; la deuda
+  DB sin contexto baja de **610 a 597**, descartes **768** y duplicacion 0.
+- P110-001A continua parcial; avance formal **38,5 %**, certificacion **0 %**,
+  **NO-GO**. No se ejecuto `rs` ni se creo PR.

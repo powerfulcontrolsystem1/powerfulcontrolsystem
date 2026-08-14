@@ -259,7 +259,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					return
 				}
 
-				items, err := dbpkg.ListFacturacionElectronicaRetriesByEmpresa(dbEmp, empresaID, dbpkg.FacturacionElectronicaRetryFilter{
+				items, err := dbpkg.ListFacturacionElectronicaRetriesByEmpresaContext(r.Context(), dbEmp, empresaID, dbpkg.FacturacionElectronicaRetryFilter{
 					TipoDocumento:   strings.TrimSpace(r.URL.Query().Get("tipo_documento")),
 					EstadoEnvio:     strings.TrimSpace(r.URL.Query().Get("estado_envio")),
 					DocumentoQuery:  strings.TrimSpace(comprasFirstNonBlank(r.URL.Query().Get("q"), r.URL.Query().Get("documento"))),
@@ -295,7 +295,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if paisCodigo == "" {
 					paisCodigo = "CO"
 				}
-				cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, paisCodigo)
+				cfg, err := dbpkg.GetFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, empresaID, paisCodigo)
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "No se pudo consultar conectividad DIAN", http.StatusInternalServerError)
 					return
@@ -319,7 +319,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			}
 
 			if action == "catalogo_dian_colombia" || action == "documentos_dian_colombia" {
-				cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "CO")
+				cfg, err := dbpkg.GetFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, empresaID, "CO")
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "No se pudo consultar catalogo DIAN Colombia", http.StatusInternalServerError)
 					return
@@ -354,7 +354,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			incluirInactivas := parseTruthy(r.URL.Query().Get("incluir_inactivas"))
 
 			if paisCodigo != "" {
-				cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, paisCodigo)
+				cfg, err := dbpkg.GetFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, empresaID, paisCodigo)
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "No se pudo consultar la configuración de facturación electrónica", http.StatusInternalServerError)
 					return
@@ -364,7 +364,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					return
 				}
 				if errors.Is(err, sql.ErrNoRows) {
-					pais, source, derr := dbpkg.DetectFacturacionPais(dbEmp, empresaID, r.URL.Query().Get("tz"), r.URL.Query().Get("lang"))
+					pais, source, derr := dbpkg.DetectFacturacionPaisContext(r.Context(), dbEmp, empresaID, r.URL.Query().Get("tz"), r.URL.Query().Get("lang"))
 					if derr == nil {
 						cfg.PaisCodigo = pais.Codigo
 						cfg.PaisNombre = pais.Nombre
@@ -379,7 +379,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				return
 			}
 
-			items, err := dbpkg.ListFacturacionElectronicaPaisConfigs(dbEmp, empresaID, incluirInactivas)
+			items, err := dbpkg.ListFacturacionElectronicaPaisConfigsContext(r.Context(), dbEmp, empresaID, incluirInactivas)
 			if err != nil {
 				http.Error(w, "No se pudo listar la configuración de facturación electrónica", http.StatusInternalServerError)
 				return
@@ -1019,7 +1019,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					if paisCodigo == "" {
 						paisCodigo = strings.TrimSpace(r.URL.Query().Get("pais_codigo"))
 					}
-					legalDoc, err = dbpkg.PrepareFacturacionDocumentoLegal(dbEmp, payload.EmpresaID, paisCodigo, payload.DocumentoCodigo, payload.MontoTotal, payload.Moneda)
+					legalDoc, err = dbpkg.PrepareFacturacionDocumentoLegalContext(r.Context(), dbEmp, payload.EmpresaID, paisCodigo, payload.DocumentoCodigo, payload.MontoTotal, payload.Moneda)
 					if err != nil {
 						http.Error(w, "cumplimiento normativo: "+err.Error(), http.StatusUnprocessableEntity)
 						return
@@ -1236,12 +1236,12 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 
-			id, err := dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, payload)
+			id, err := dbpkg.UpsertFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo guardar la configuración de facturación electrónica", http.StatusBadRequest)
 				return
 			}
-			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, payload.EmpresaID, payload.PaisCodigo)
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, payload.EmpresaID, payload.PaisCodigo)
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "No se pudo recuperar la configuración guardada", http.StatusInternalServerError)
 				return
@@ -1304,15 +1304,10 @@ func EmpresaFacturacionElectronicaPanamaHandler(dbEmp *sql.DB) http.HandlerFunc 
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		switch r.Method {
 		case http.MethodGet:
-			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "PA")
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, empresaID, "PA")
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "No se pudo cargar facturacion electronica Panama", http.StatusInternalServerError)
 				return
-			}
-			if cfg == nil {
-				tmp := dbpkg.FacturacionElectronicaPaisConfig{EmpresaID: empresaID, PaisCodigo: "PA"}
-				_, _ = dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, tmp)
-				cfg, _ = dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "PA")
 			}
 			checklist := dbpkg.BuildFacturacionPanamaChecklist(cfg)
 			if action == "checklist" || action == "validar" {
@@ -1363,12 +1358,12 @@ func EmpresaFacturacionElectronicaPanamaHandler(dbEmp *sql.DB) http.HandlerFunc 
 			if strings.TrimSpace(payload.MonedaCodigo) == "" {
 				payload.MonedaCodigo = "PAB"
 			}
-			id, err := dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, payload)
+			id, err := dbpkg.UpsertFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo guardar facturacion electronica Panama", http.StatusBadRequest)
 				return
 			}
-			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "PA")
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, empresaID, "PA")
 			if err != nil {
 				http.Error(w, "No se pudo recuperar facturacion electronica Panama", http.StatusInternalServerError)
 				return
@@ -1400,15 +1395,10 @@ func EmpresaFacturacionElectronicaEcuadorHandler(dbEmp *sql.DB) http.HandlerFunc
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		switch r.Method {
 		case http.MethodGet:
-			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "EC")
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, empresaID, "EC")
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "No se pudo cargar facturacion electronica Ecuador", http.StatusInternalServerError)
 				return
-			}
-			if cfg == nil {
-				tmp := dbpkg.FacturacionElectronicaPaisConfig{EmpresaID: empresaID, PaisCodigo: "EC"}
-				_, _ = dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, tmp)
-				cfg, _ = dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "EC")
 			}
 			checklist := dbpkg.BuildFacturacionEcuadorChecklist(cfg)
 			if action == "checklist" || action == "validar" {
@@ -1459,12 +1449,12 @@ func EmpresaFacturacionElectronicaEcuadorHandler(dbEmp *sql.DB) http.HandlerFunc
 			if strings.TrimSpace(payload.MonedaCodigo) == "" {
 				payload.MonedaCodigo = "USD"
 			}
-			id, err := dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, payload)
+			id, err := dbpkg.UpsertFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo guardar facturacion electronica Ecuador", http.StatusBadRequest)
 				return
 			}
-			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "EC")
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfigContext(r.Context(), dbEmp, empresaID, "EC")
 			if err != nil {
 				http.Error(w, "No se pudo recuperar facturacion electronica Ecuador", http.StatusInternalServerError)
 				return
@@ -1769,7 +1759,7 @@ func EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmp *sql.DB) http.Handl
 			}
 		}
 
-		pais, source, err := dbpkg.DetectFacturacionPais(dbEmp, empresaID, tz, lang)
+		pais, source, err := dbpkg.DetectFacturacionPaisContext(r.Context(), dbEmp, empresaID, tz, lang)
 		if err != nil {
 			http.Error(w, "No se pudo detectar el país", http.StatusInternalServerError)
 			return
