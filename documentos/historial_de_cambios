@@ -42621,3 +42621,9 @@ acumulativa.
 - La cola materializa y cierra la lectura de relés antes de reservar turnos e insertar comandos; evita invalidar la conexión PostgreSQL dentro de la misma transacción.
 - La cola de restauración del túnel reintenta de manera idempotente hasta tres veces cuando PostgreSQL descarta una conexión durante un redeploy.
 - El `boot_id` no se confirma hasta que la transacción que vuelve a encolar los relés activos termina correctamente; se conserva la separación configurada entre encendidos.
+## 2026-08-14 - Domótica: lista neutral de controladores Raspberry
+
+- La configuración de Domótica presenta únicamente los controladores Raspberry registrados por la empresa, sin etiquetas de jerarquía principal/secundaria.
+- El selector de relés usa un estado explícito de Raspberry no asignada y las tarjetas permiten desactivar cualquier controlador registrado por el flujo autorizado.
+- El diagnóstico de GPIO cubre GPIO 0 a GPIO 27, coherente con la validación de backend y el orden solicitado para módulos de relay.
+- Se añadió regresión de interfaz para evitar el retorno de textos heredados de controlador principal.
