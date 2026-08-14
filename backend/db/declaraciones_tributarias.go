@@ -516,11 +516,7 @@ func normalizeDeclaracionPeriodicidad(v string) string {
 }
 
 func normalizeDeclaracionPeriodo(v string) string {
-	v = strings.TrimSpace(v)
-	if len(v) >= 7 {
-		return v[:7]
-	}
-	return time.Now().Format("2006-01")
+	return normalizeCurrentRepositoryPeriod(v)
 }
 
 func periodoRangeDeclaracion(periodo string) (string, string) {

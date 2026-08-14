@@ -800,11 +800,7 @@ func normalizeOneOfCentroCosto(v, fallback string, allowed ...string) string {
 }
 
 func normalizeCentroCostoPeriodo(v string) string {
-	v = strings.TrimSpace(v)
-	if len(v) >= 7 {
-		return v[:7]
-	}
-	return v
+	return normalizeRepositoryPeriod(v, "")
 }
 
 func normalizeCentroCostoPeriodoFromFecha(v string) string {

@@ -4928,3 +4928,5 @@
   regresión de formato y fallback.
 - Actualiza Go a 1.26.6 en módulo, Docker y CI para corregir CVE-2026-46600
   reportada por Trivy en la imagen backend.
+- Consolida helpers de texto y períodos fiscales/contables; la compuerta de
+  duplicación exacta baja de 46 a 43 grupos con pruebas DB/handlers en verde.

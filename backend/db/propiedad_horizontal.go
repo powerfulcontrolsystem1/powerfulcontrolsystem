@@ -1082,11 +1082,7 @@ func normalizePropiedadHorizontalCargo(x EmpresaPropiedadHorizontalCargo) Empres
 }
 
 func normalizePropHPeriodo(v string) string {
-	v = strings.TrimSpace(v)
-	if len(v) >= 7 {
-		return v[:7]
-	}
-	return v
+	return normalizeRepositoryPeriod(v, "")
 }
 
 func normalizeOneOfPropH(v, fallback string, allowed ...string) string {

@@ -282,12 +282,7 @@ func listSuperEmailTemplates(dbSuper *sql.DB) ([]superEmailTemplateItem, error) 
 }
 
 func latestNonEmptyString(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func applySuperEmailTemplate(dbSuper *sql.DB, key string, values map[string]string) (string, string, string, error) {

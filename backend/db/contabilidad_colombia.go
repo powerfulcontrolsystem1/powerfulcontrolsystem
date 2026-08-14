@@ -1106,10 +1106,6 @@ func firstContabilidadValue(v, fallback string) string {
 	return v
 }
 func periodFromDate(v string) string {
-	v = strings.TrimSpace(v)
-	if len(v) >= 7 {
-		return v[:7]
-	}
-	return time.Now().Format("2006-01")
+	return normalizeCurrentRepositoryPeriod(v)
 }
 func roundContabilidad(v float64) float64 { return math.Round(v*100) / 100 }

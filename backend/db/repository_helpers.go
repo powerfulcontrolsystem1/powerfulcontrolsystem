@@ -34,3 +34,18 @@ func repositoryCoreCode(prefix string, parts ...string) string {
 	}
 	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + strings.Trim(code, "-")
 }
+
+func normalizeRepositoryPeriod(value, fallback string) string {
+	value = strings.TrimSpace(value)
+	if len(value) >= 7 {
+		return value[:7]
+	}
+	if fallback != "" {
+		return fallback
+	}
+	return value
+}
+
+func normalizeCurrentRepositoryPeriod(value string) string {
+	return normalizeRepositoryPeriod(value, time.Now().Format("2006-01"))
+}

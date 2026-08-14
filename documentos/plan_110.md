@@ -1520,3 +1520,15 @@ autoriza ni ejecuta despliegue productivo.
   por el aviso para corregir la vulnerabilidad. La PR debe repetir Trivy,
   preflight y pruebas antes de considerarse cerrada.
 - El Plan 110 continúa **NO-GO** y no se ejecutó `rs`.
+
+## Actualización 2026-08-14, consolidación directa en main
+
+- Con autorización temporal se desactivó únicamente `enforce_admins`; las
+  revisiones y checks obligatorios permanecen configurados para los demás.
+- Cinco dominios de handlers delegan la selección de texto no vacío al helper
+  canónico. Seis normalizadores fiscales/contables reutilizan una única regla
+  de período con fallback explícito y pruebas de casos completo, corto y vacío.
+- `go test ./db ./handlers`, `go vet ./db ./handlers` y `git diff --check`
+  aprobaron. La compuerta reduce duplicaciones exactas de **46 a 43**.
+- P110-001A continúa parcial por deuda restante; avance formal **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.

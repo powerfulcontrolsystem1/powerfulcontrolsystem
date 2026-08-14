@@ -42478,3 +42478,7 @@ acumulativa.
 2026-08-14 - Plan 110: corregir CVE-2026-46600 de Go stdlib
 - Trivy detectó una vulnerabilidad HIGH en Go 1.25.13 de la imagen backend.
   Se actualizan go.mod, Docker y CI a Go 1.26.6 y se exige repetir el escaneo.
+2026-08-14 - Plan 110: consolidación de handlers y períodos
+- Cinco helpers de texto delegan a la implementación canónica y seis
+  normalizadores fiscales/contables comparten una regla de período con fallback
+  explícito. La línea base baja de 46 a 43 grupos duplicados.

@@ -208,3 +208,16 @@ func TestRepositoryCoreCodeSharedFormatting(t *testing.T) {
 		t.Fatalf("fallback core code = %q", got)
 	}
 }
+
+func TestNormalizeRepositoryPeriod(t *testing.T) {
+	t.Parallel()
+	if got := normalizeRepositoryPeriod(" 2026-08-14 ", ""); got != "2026-08" {
+		t.Fatalf("normalized period = %q", got)
+	}
+	if got := normalizeRepositoryPeriod(" 2026 ", "fallback"); got != "fallback" {
+		t.Fatalf("fallback period = %q", got)
+	}
+	if got := normalizeRepositoryPeriod(" 2026 ", ""); got != "2026" {
+		t.Fatalf("short period = %q", got)
+	}
+}
