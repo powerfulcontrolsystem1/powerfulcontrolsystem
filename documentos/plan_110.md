@@ -1628,3 +1628,15 @@ autoriza ni ejecuta despliegue productivo.
 - `go test ./handlers`, `go vet ./handlers` y el auditor aprueban. La deuda baja
   de **672 a 662**, duplicación 0. Plan formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, contexto SQL transversal y embudo de ventas
+
+- Plan de cuentas, cartera, gestión documental, producción y logística pasan el
+  contexto real de la solicitud a sus consultas, transacciones y mutaciones.
+- La cadena cotización-pedido-documento final y el embudo de conversión propagan
+  cancelación hasta PostgreSQL, también cuando el dataset se construye desde
+  reportes empresariales, globales, programados o solicitados mediante IA.
+- `go test ./handlers`, `go vet ./handlers` y el auditor estructural aprueban; la
+  deuda DB sin contexto baja de **662 a 653** y la duplicación exacta sigue en 0.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs` ni se creó PR.

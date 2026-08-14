@@ -1329,6 +1329,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 	}
 
 	scheduleBuilder := &reportesBuilder{
+		ctx:              r.Context(),
 		db:               baseBuilder.db,
 		empresaID:        baseBuilder.empresaID,
 		desde:            baseBuilder.desde,
