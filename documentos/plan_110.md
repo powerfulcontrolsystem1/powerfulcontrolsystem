@@ -1594,3 +1594,13 @@ autoriza ni ejecuta despliegue productivo.
   `context.Background()` para maquillar la métrica.
 - P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, cierre gosec del instalador SSH Domótica
+
+- El instalador SSH atiende errores de `SetDeadline`, cierre del socket y
+  liberación/cierre del advisory lock PostgreSQL sin exponer credenciales.
+- Ante error de deadline o handshake se devuelve la causa original y se agrega
+  la falla de cierre cuando existe; la liberación tardía queda trazada solo con
+  `empresa_id` y `raspberry_id`.
+- Pruebas SSH/Victron enfocadas y `gosec -include=G104 ./handlers` aprueban con
+  **0 hallazgos**. No se ejecutó `rs`.

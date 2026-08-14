@@ -42519,3 +42519,6 @@ acumulativa.
 2026-08-13 - Plan 110: auditor SQL sin falsos positivos HTTP
 - La compuerta deja de clasificar `r.URL.Query()` como consulta PostgreSQL y añade regresión específica.
 - La deuda medible de llamadas DB sin contexto se corrige de 1.841 a 689; no se usó `context.Background()` como sustituto de cancelación real.
+2026-08-13 - Plan 110: gosec limpio en instalador SSH Domótica
+- Se manejan los errores de deadline, cierre de socket, liberación y cierre del advisory lock sin registrar secretos.
+- Pruebas enfocadas y G104 sobre handlers aprueban con cero hallazgos; no se ejecutó `rs`.
