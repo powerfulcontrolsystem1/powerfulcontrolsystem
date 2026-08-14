@@ -42522,3 +42522,6 @@ acumulativa.
 2026-08-13 - Plan 110: gosec limpio en instalador SSH Domótica
 - Se manejan los errores de deadline, cierre de socket, liberación y cierre del advisory lock sin registrar secretos.
 - Pruebas enfocadas y G104 sobre handlers aprueban con cero hallazgos; no se ejecutó `rs`.
+2026-08-13 - Plan 110: cancelación SQL de reportes programados
+- Plantillas, programaciones, ejecuciones y consistencia propagan `r.Context()` a 17 operaciones PostgreSQL.
+- La línea base sin contexto baja de 689 a 672; pruebas de handlers y vet aprueban sin ejecutar `rs`.
