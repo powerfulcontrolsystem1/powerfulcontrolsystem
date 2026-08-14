@@ -526,7 +526,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "cierre_caja_id invalido", http.StatusBadRequest)
 				return
 			}
-			rows, err := dbpkg.ListEmpresaFinanzasMovimientos(dbEmp, empresaID, dbpkg.EmpresaFinanzasMovimientoFilter{
+			rows, err := dbpkg.ListEmpresaFinanzasMovimientosContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaFinanzasMovimientoFilter{
 				Tipo:            tipo,
 				Desde:           desde,
 				Hasta:           hasta,
@@ -666,7 +666,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			id, err := dbpkg.CreateEmpresaFinanzasMovimiento(dbEmp, payload)
+			id, err := dbpkg.CreateEmpresaFinanzasMovimientoContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
 					http.Error(w, "el periodo contable del movimiento esta cerrado", http.StatusConflict)
@@ -799,7 +799,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if action == "anular" {
 					estado = "anulado"
 				}
-				tipoMovimiento, err := dbpkg.GetEmpresaFinanzasMovimientoTipo(dbEmp, empresaID, id)
+				tipoMovimiento, err := dbpkg.GetEmpresaFinanzasMovimientoTipoContext(r.Context(), dbEmp, empresaID, id)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "movimiento no encontrado", http.StatusNotFound)
@@ -812,7 +812,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusForbidden)
 					return
 				}
-				if err := dbpkg.SetEmpresaFinanzasMovimientoEstado(dbEmp, empresaID, id, estado); err != nil {
+				if err := dbpkg.SetEmpresaFinanzasMovimientoEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "movimiento no encontrado", http.StatusNotFound)
 						return
@@ -848,7 +848,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateEmpresaFinanzasMovimiento(dbEmp, payload); err != nil {
+			if err := dbpkg.UpdateEmpresaFinanzasMovimientoContext(r.Context(), dbEmp, payload); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "movimiento no encontrado", http.StatusNotFound)
 					return
@@ -874,7 +874,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "id es obligatorio", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.DeleteEmpresaFinanzasMovimiento(dbEmp, empresaID, id); err != nil {
+			if err := dbpkg.DeleteEmpresaFinanzasMovimientoContext(r.Context(), dbEmp, empresaID, id); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "movimiento no encontrado", http.StatusNotFound)
 					return
@@ -933,7 +933,7 @@ func EmpresaFinanzasMovimientoComprobanteUploadHandler(dbEmp *sql.DB) http.Handl
 			return
 		}
 
-		if err := dbpkg.UpdateEmpresaFinanzasMovimientoComprobante(dbEmp, empresaID, movimientoID, fileURL); err != nil {
+		if err := dbpkg.UpdateEmpresaFinanzasMovimientoComprobanteContext(r.Context(), dbEmp, empresaID, movimientoID, fileURL); err != nil {
 			_ = os.Remove(absPath)
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "movimiento no encontrado", http.StatusNotFound)
@@ -963,7 +963,7 @@ func EmpresaFinanzasConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			cfg, err := dbpkg.GetEmpresaFinanzasConfiguracion(dbEmp, empresaID)
+			cfg, err := dbpkg.GetEmpresaFinanzasConfiguracionContext(r.Context(), dbEmp, empresaID)
 			if err != nil {
 				http.Error(w, "No se pudo consultar la configuracion financiera", http.StatusInternalServerError)
 				return
@@ -987,7 +987,7 @@ func EmpresaFinanzasConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-			id, err := dbpkg.UpsertEmpresaFinanzasConfiguracion(dbEmp, payload)
+			id, err := dbpkg.UpsertEmpresaFinanzasConfiguracionContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo guardar la configuracion financiera", http.StatusBadRequest)
 				return
@@ -1011,7 +1011,7 @@ func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			includeInactive := queryBool(r, "include_inactive")
-			rows, err := dbpkg.ListEmpresaFinanzasPeriodos(dbEmp, empresaID, includeInactive)
+			rows, err := dbpkg.ListEmpresaFinanzasPeriodosContext(r.Context(), dbEmp, empresaID, includeInactive)
 			if err != nil {
 				http.Error(w, "No se pudieron listar los periodos", http.StatusInternalServerError)
 				return
@@ -1035,7 +1035,7 @@ func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-			id, err := dbpkg.UpsertEmpresaFinanzasPeriodo(dbEmp, payload)
+			id, err := dbpkg.UpsertEmpresaFinanzasPeriodoContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -1071,7 +1071,7 @@ func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				observaciones := buildEmpresaFinanzasPeriodoAutorizacionObservaciones(action, autorizacion, ejecutadoPor)
 
-				if err := dbpkg.SetEmpresaFinanzasPeriodoEstado(dbEmp, empresaID, periodo, estado, ejecutadoPor, observaciones); err != nil {
+				if err := dbpkg.SetEmpresaFinanzasPeriodoEstadoContext(r.Context(), dbEmp, empresaID, periodo, estado, ejecutadoPor, observaciones); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
@@ -1130,7 +1130,7 @@ func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-			id, err := dbpkg.UpsertEmpresaFinanzasPeriodo(dbEmp, payload)
+			id, err := dbpkg.UpsertEmpresaFinanzasPeriodoContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return

@@ -1710,3 +1710,17 @@ autoriza ni ejecuta despliegue productivo.
   DB sin contexto baja de **610 a 597**, descartes **768** y duplicacion 0.
 - P110-001A continua parcial; avance formal **38,5 %**, certificacion **0 %**,
   **NO-GO**. No se ejecuto `rs` ni se creo PR.
+
+## Actualizacion 2026-08-13, movimientos financieros cancelables
+
+- Configuracion financiera, CRUD de ingresos/egresos, comprobantes y periodos
+  contables propagan `r.Context()` hasta PostgreSQL y conservan aislamiento por
+  `empresa_id`.
+- Las mutaciones verifican el error de `RowsAffected`; la carga de comprobante
+  usa readiness fail-closed en vez de ejecutar `EnsureEmpresaFinanzasSchema`
+  durante trafico HTTP.
+- Una regresion de contrato protege el uso de variantes `Context` en el handler.
+  Pruebas DB/handlers y `vet` aprueban; la deuda DB sin contexto baja de **597 a
+  587**, descartes **768** y duplicacion 0.
+- P110-001A y P110-002 continuan parciales; avance formal **38,5 %**,
+  certificacion **0 %**, **NO-GO**. No se ejecuto `rs` ni se creo PR.

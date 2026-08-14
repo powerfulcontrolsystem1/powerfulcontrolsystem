@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -849,8 +850,12 @@ func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 
 // GetEmpresaFinanzasConfiguracion obtiene configuracion financiera por empresa con defaults seguros.
 func GetEmpresaFinanzasConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaFinanzasConfiguracion, error) {
+	return GetEmpresaFinanzasConfiguracionContext(context.Background(), dbConn, empresaID)
+}
+
+func GetEmpresaFinanzasConfiguracionContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (*EmpresaFinanzasConfiguracion, error) {
 	cfg := defaultEmpresaFinanzasConfiguracion(empresaID)
-	row := dbConn.QueryRow(`SELECT
+	row := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(habilitar_ingresos, 1),
@@ -926,9 +931,13 @@ func GetEmpresaFinanzasConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaF
 
 // UpsertEmpresaFinanzasConfiguracion crea o actualiza la configuracion financiera por empresa.
 func UpsertEmpresaFinanzasConfiguracion(dbConn *sql.DB, cfg EmpresaFinanzasConfiguracion) (int64, error) {
+	return UpsertEmpresaFinanzasConfiguracionContext(context.Background(), dbConn, cfg)
+}
+
+func UpsertEmpresaFinanzasConfiguracionContext(ctx context.Context, dbConn *sql.DB, cfg EmpresaFinanzasConfiguracion) (int64, error) {
 	cfg = normalizeEmpresaFinanzasConfiguracion(cfg)
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_finanzas_configuracion (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_finanzas_configuracion (
 		empresa_id, habilitar_ingresos, habilitar_egresos, moneda,
 		categorias_ingreso, categorias_egreso,
 		prefijo_ingreso, prefijo_egreso,
@@ -997,11 +1006,15 @@ func UpsertEmpresaFinanzasConfiguracion(dbConn *sql.DB, cfg EmpresaFinanzasConfi
 
 // CreateEmpresaFinanzasMovimiento crea un movimiento financiero por empresa.
 func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento) (int64, error) {
-	m, err := normalizeEmpresaFinanzasMovimiento(dbConn, m, true)
+	return CreateEmpresaFinanzasMovimientoContext(context.Background(), dbConn, m)
+}
+
+func CreateEmpresaFinanzasMovimientoContext(ctx context.Context, dbConn *sql.DB, m EmpresaFinanzasMovimiento) (int64, error) {
+	m, err := normalizeEmpresaFinanzasMovimientoContext(ctx, dbConn, m, true)
 	if err != nil {
 		return 0, err
 	}
-	cerrado, err := IsEmpresaFinanzasPeriodoCerrado(dbConn, m.EmpresaID, m.PeriodoContable)
+	cerrado, err := IsEmpresaFinanzasPeriodoCerradoContext(ctx, dbConn, m.EmpresaID, m.PeriodoContable)
 	if err != nil {
 		return 0, err
 	}
@@ -1009,7 +1022,7 @@ func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		return 0, ErrPeriodoFinancieroCerrado
 	}
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_finanzas_movimientos (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_finanzas_movimientos (
 		empresa_id, tipo_movimiento, codigo, fecha_movimiento,
 		periodo_contable,
 		categoria, subcategoria, concepto, descripcion,
@@ -1053,6 +1066,10 @@ func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 
 // ListEmpresaFinanzasMovimientos lista movimientos financieros por empresa con filtros.
 func ListEmpresaFinanzasMovimientos(dbConn *sql.DB, empresaID int64, f EmpresaFinanzasMovimientoFilter) ([]EmpresaFinanzasMovimiento, error) {
+	return ListEmpresaFinanzasMovimientosContext(context.Background(), dbConn, empresaID, f)
+}
+
+func ListEmpresaFinanzasMovimientosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, f EmpresaFinanzasMovimientoFilter) ([]EmpresaFinanzasMovimiento, error) {
 	query := `SELECT
 		id, empresa_id, COALESCE(tipo_movimiento, 'egreso'), COALESCE(codigo, ''),
 		COALESCE(fecha_movimiento, ''), COALESCE(periodo_contable, ''), COALESCE(categoria, ''), COALESCE(subcategoria, ''),
@@ -1118,7 +1135,7 @@ func ListEmpresaFinanzasMovimientos(dbConn *sql.DB, empresaID int64, f EmpresaFi
 	query += ` LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1174,14 +1191,18 @@ func ListEmpresaFinanzasMovimientos(dbConn *sql.DB, empresaID int64, f EmpresaFi
 
 // UpdateEmpresaFinanzasMovimiento actualiza un movimiento financiero por empresa.
 func UpdateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento) error {
-	m, err := normalizeEmpresaFinanzasMovimiento(dbConn, m, false)
+	return UpdateEmpresaFinanzasMovimientoContext(context.Background(), dbConn, m)
+}
+
+func UpdateEmpresaFinanzasMovimientoContext(ctx context.Context, dbConn *sql.DB, m EmpresaFinanzasMovimiento) error {
+	m, err := normalizeEmpresaFinanzasMovimientoContext(ctx, dbConn, m, false)
 	if err != nil {
 		return err
 	}
-	if err := ensurePeriodoAbiertoParaActualizarMovimiento(dbConn, m.EmpresaID, m.ID, m.PeriodoContable); err != nil {
+	if err := ensurePeriodoAbiertoParaActualizarMovimientoContext(ctx, dbConn, m.EmpresaID, m.ID, m.PeriodoContable); err != nil {
 		return err
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_finanzas_movimientos SET
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_finanzas_movimientos SET
 		tipo_movimiento = ?,
 		codigo = ?,
 		fecha_movimiento = ?,
@@ -1252,7 +1273,10 @@ func UpdateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1261,7 +1285,11 @@ func UpdateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 
 // UpdateEmpresaFinanzasMovimientoComprobante actualiza la URL del comprobante adjunto de un movimiento.
 func UpdateEmpresaFinanzasMovimientoComprobante(dbConn *sql.DB, empresaID, id int64, comprobanteURL string) error {
-	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+	return UpdateEmpresaFinanzasMovimientoComprobanteContext(context.Background(), dbConn, empresaID, id, comprobanteURL)
+}
+
+func UpdateEmpresaFinanzasMovimientoComprobanteContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64, comprobanteURL string) error {
+	if err := EmpresaFinanzasSchemaReady(dbConn); err != nil {
 		return err
 	}
 	if empresaID <= 0 {
@@ -1275,14 +1303,17 @@ func UpdateEmpresaFinanzasMovimientoComprobante(dbConn *sql.DB, empresaID, id in
 		return fmt.Errorf("comprobante_url es obligatorio")
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_finanzas_movimientos
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_finanzas_movimientos
 		SET comprobante_url = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?`, comprobanteURL, empresaID, id)
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1291,25 +1322,32 @@ func UpdateEmpresaFinanzasMovimientoComprobante(dbConn *sql.DB, empresaID, id in
 
 // SetEmpresaFinanzasMovimientoEstado activa/desactiva/anula un movimiento financiero.
 func SetEmpresaFinanzasMovimientoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
+	return SetEmpresaFinanzasMovimientoEstadoContext(context.Background(), dbConn, empresaID, id, estado)
+}
+
+func SetEmpresaFinanzasMovimientoEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64, estado string) error {
 	estado = normalizeEstadoMovimiento(estado)
-	periodo, err := getPeriodoContableMovimiento(dbConn, empresaID, id)
+	periodo, err := getPeriodoContableMovimientoContext(ctx, dbConn, empresaID, id)
 	if err != nil {
 		return err
 	}
-	cerrado, err := IsEmpresaFinanzasPeriodoCerrado(dbConn, empresaID, periodo)
+	cerrado, err := IsEmpresaFinanzasPeriodoCerradoContext(ctx, dbConn, empresaID, periodo)
 	if err != nil {
 		return err
 	}
 	if cerrado {
 		return ErrPeriodoFinancieroCerrado
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_finanzas_movimientos
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_finanzas_movimientos
 	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1318,6 +1356,10 @@ func SetEmpresaFinanzasMovimientoEstado(dbConn *sql.DB, empresaID, id int64, est
 
 // GetEmpresaFinanzasMovimientoTipo obtiene el tipo normalizado de un movimiento por empresa.
 func GetEmpresaFinanzasMovimientoTipo(dbConn *sql.DB, empresaID, id int64) (string, error) {
+	return GetEmpresaFinanzasMovimientoTipoContext(context.Background(), dbConn, empresaID, id)
+}
+
+func GetEmpresaFinanzasMovimientoTipoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64) (string, error) {
 	if empresaID <= 0 {
 		return "", fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1325,7 +1367,7 @@ func GetEmpresaFinanzasMovimientoTipo(dbConn *sql.DB, empresaID, id int64) (stri
 		return "", fmt.Errorf("id es obligatorio")
 	}
 	var tipo string
-	err := dbConn.QueryRow(`SELECT COALESCE(tipo_movimiento, '') FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, id).Scan(&tipo)
+	err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(tipo_movimiento, '') FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, id).Scan(&tipo)
 	if err != nil {
 		return "", err
 	}
@@ -1338,22 +1380,29 @@ func GetEmpresaFinanzasMovimientoTipo(dbConn *sql.DB, empresaID, id int64) (stri
 
 // DeleteEmpresaFinanzasMovimiento elimina un movimiento financiero por empresa.
 func DeleteEmpresaFinanzasMovimiento(dbConn *sql.DB, empresaID, id int64) error {
-	periodo, err := getPeriodoContableMovimiento(dbConn, empresaID, id)
+	return DeleteEmpresaFinanzasMovimientoContext(context.Background(), dbConn, empresaID, id)
+}
+
+func DeleteEmpresaFinanzasMovimientoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64) error {
+	periodo, err := getPeriodoContableMovimientoContext(ctx, dbConn, empresaID, id)
 	if err != nil {
 		return err
 	}
-	cerrado, err := IsEmpresaFinanzasPeriodoCerrado(dbConn, empresaID, periodo)
+	cerrado, err := IsEmpresaFinanzasPeriodoCerradoContext(ctx, dbConn, empresaID, periodo)
 	if err != nil {
 		return err
 	}
 	if cerrado {
 		return ErrPeriodoFinancieroCerrado
 	}
-	res, err := dbConn.Exec(`DELETE FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	res, err := dbConn.ExecContext(ctx, `DELETE FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1361,6 +1410,10 @@ func DeleteEmpresaFinanzasMovimiento(dbConn *sql.DB, empresaID, id int64) error 
 }
 
 func ListEmpresaFinanzasPeriodos(dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaFinanzasPeriodo, error) {
+	return ListEmpresaFinanzasPeriodosContext(context.Background(), dbConn, empresaID, includeInactive)
+}
+
+func ListEmpresaFinanzasPeriodosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaFinanzasPeriodo, error) {
 	query := `SELECT
 		id,
 		empresa_id,
@@ -1382,7 +1435,7 @@ func ListEmpresaFinanzasPeriodos(dbConn *sql.DB, empresaID int64, includeInactiv
 	}
 	query += ` ORDER BY periodo DESC, id DESC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1413,6 +1466,10 @@ func ListEmpresaFinanzasPeriodos(dbConn *sql.DB, empresaID int64, includeInactiv
 }
 
 func UpsertEmpresaFinanzasPeriodo(dbConn *sql.DB, p EmpresaFinanzasPeriodo) (int64, error) {
+	return UpsertEmpresaFinanzasPeriodoContext(context.Background(), dbConn, p)
+}
+
+func UpsertEmpresaFinanzasPeriodoContext(ctx context.Context, dbConn *sql.DB, p EmpresaFinanzasPeriodo) (int64, error) {
 	if p.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1445,7 +1502,7 @@ func UpsertEmpresaFinanzasPeriodo(dbConn *sql.DB, p EmpresaFinanzasPeriodo) (int
 		p.CerradoPor = ""
 	}
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_finanzas_periodos (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_finanzas_periodos (
 		empresa_id,
 		periodo,
 		fecha_inicio,
@@ -1484,6 +1541,10 @@ func UpsertEmpresaFinanzasPeriodo(dbConn *sql.DB, p EmpresaFinanzasPeriodo) (int
 }
 
 func SetEmpresaFinanzasPeriodoEstado(dbConn *sql.DB, empresaID int64, periodo, estado, usuario, observaciones string) error {
+	return SetEmpresaFinanzasPeriodoEstadoContext(context.Background(), dbConn, empresaID, periodo, estado, usuario, observaciones)
+}
+
+func SetEmpresaFinanzasPeriodoEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, periodo, estado, usuario, observaciones string) error {
 	periodo = normalizePeriodoContable(periodo)
 	if periodo == "" {
 		return fmt.Errorf("periodo es obligatorio")
@@ -1492,7 +1553,7 @@ func SetEmpresaFinanzasPeriodoEstado(dbConn *sql.DB, empresaID int64, periodo, e
 	if usuario == "" {
 		usuario = "sistema"
 	}
-	_, err := UpsertEmpresaFinanzasPeriodo(dbConn, EmpresaFinanzasPeriodo{
+	_, err := UpsertEmpresaFinanzasPeriodoContext(ctx, dbConn, EmpresaFinanzasPeriodo{
 		EmpresaID:      empresaID,
 		Periodo:        periodo,
 		Estado:         estado,
@@ -1504,12 +1565,16 @@ func SetEmpresaFinanzasPeriodoEstado(dbConn *sql.DB, empresaID int64, periodo, e
 }
 
 func IsEmpresaFinanzasPeriodoCerrado(dbConn *sql.DB, empresaID int64, periodo string) (bool, error) {
+	return IsEmpresaFinanzasPeriodoCerradoContext(context.Background(), dbConn, empresaID, periodo)
+}
+
+func IsEmpresaFinanzasPeriodoCerradoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, periodo string) (bool, error) {
 	periodo = normalizePeriodoContable(periodo)
 	if periodo == "" {
 		return false, nil
 	}
 	var estado string
-	err := dbConn.QueryRow(`SELECT COALESCE(estado, 'abierto') FROM empresa_finanzas_periodos WHERE empresa_id = ? AND periodo = ? LIMIT 1`, empresaID, periodo).Scan(&estado)
+	err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(estado, 'abierto') FROM empresa_finanzas_periodos WHERE empresa_id = ? AND periodo = ? LIMIT 1`, empresaID, periodo).Scan(&estado)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
@@ -2262,9 +2327,13 @@ func isValidCierreCajaTransition(fromEstado, toEstado string) bool {
 }
 
 func getPeriodoContableMovimiento(dbConn *sql.DB, empresaID, id int64) (string, error) {
+	return getPeriodoContableMovimientoContext(context.Background(), dbConn, empresaID, id)
+}
+
+func getPeriodoContableMovimientoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64) (string, error) {
 	var periodo string
 	var fechaMovimiento string
-	err := dbConn.QueryRow(`SELECT COALESCE(periodo_contable, ''), COALESCE(fecha_movimiento, '') FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, id).Scan(&periodo, &fechaMovimiento)
+	err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(periodo_contable, ''), COALESCE(fecha_movimiento, '') FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, id).Scan(&periodo, &fechaMovimiento)
 	if err != nil {
 		return "", err
 	}
@@ -2276,11 +2345,15 @@ func getPeriodoContableMovimiento(dbConn *sql.DB, empresaID, id int64) (string, 
 }
 
 func ensurePeriodoAbiertoParaActualizarMovimiento(dbConn *sql.DB, empresaID, id int64, nuevoPeriodo string) error {
-	periodoActual, err := getPeriodoContableMovimiento(dbConn, empresaID, id)
+	return ensurePeriodoAbiertoParaActualizarMovimientoContext(context.Background(), dbConn, empresaID, id, nuevoPeriodo)
+}
+
+func ensurePeriodoAbiertoParaActualizarMovimientoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64, nuevoPeriodo string) error {
+	periodoActual, err := getPeriodoContableMovimientoContext(ctx, dbConn, empresaID, id)
 	if err != nil {
 		return err
 	}
-	cerradoActual, err := IsEmpresaFinanzasPeriodoCerrado(dbConn, empresaID, periodoActual)
+	cerradoActual, err := IsEmpresaFinanzasPeriodoCerradoContext(ctx, dbConn, empresaID, periodoActual)
 	if err != nil {
 		return err
 	}
@@ -2291,7 +2364,7 @@ func ensurePeriodoAbiertoParaActualizarMovimiento(dbConn *sql.DB, empresaID, id 
 	if nuevoPeriodo == "" || nuevoPeriodo == periodoActual {
 		return nil
 	}
-	cerradoNuevo, err := IsEmpresaFinanzasPeriodoCerrado(dbConn, empresaID, nuevoPeriodo)
+	cerradoNuevo, err := IsEmpresaFinanzasPeriodoCerradoContext(ctx, dbConn, empresaID, nuevoPeriodo)
 	if err != nil {
 		return err
 	}
@@ -2312,6 +2385,10 @@ func periodRangeFromPeriodo(periodo string) (string, string) {
 }
 
 func normalizeEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento, isCreate bool) (EmpresaFinanzasMovimiento, error) {
+	return normalizeEmpresaFinanzasMovimientoContext(context.Background(), dbConn, m, isCreate)
+}
+
+func normalizeEmpresaFinanzasMovimientoContext(ctx context.Context, dbConn *sql.DB, m EmpresaFinanzasMovimiento, isCreate bool) (EmpresaFinanzasMovimiento, error) {
 	if m.EmpresaID <= 0 {
 		return m, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -2341,7 +2418,7 @@ func normalizeEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimie
 	}
 	m.Codigo = sanitizeFinancialCode(m.Codigo)
 	if m.Codigo == "" {
-		cfg, err := GetEmpresaFinanzasConfiguracion(dbConn, m.EmpresaID)
+		cfg, err := GetEmpresaFinanzasConfiguracionContext(ctx, dbConn, m.EmpresaID)
 		if err != nil {
 			return m, err
 		}
