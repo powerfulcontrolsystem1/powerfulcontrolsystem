@@ -25,6 +25,19 @@ func TestSoporteRemotoHTTPPropagaContextoEnConfiguracionYAlta(t *testing.T) {
 		"dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp",
 		"dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp",
 		"dbpkg.CreateEmpresaSoporteRemotoDispositivo(dbEmp",
+		"dbpkg.GetEmpresaSoporteRemotoUso(dbEmp",
+		"dbpkg.ListEmpresaSoporteRemotoDispositivos(dbEmp",
+		"dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp",
+		"dbpkg.UpdateEmpresaSoporteRemotoDispositivo(dbEmp",
+		"dbpkg.SetEmpresaSoporteRemotoDispositivoEstadoByID(dbEmp",
+		"dbpkg.RegisterEmpresaSoporteRemotoDispositivoHeartbeat(dbEmp",
+		"dbpkg.ValidateEmpresaSoporteRemotoDispositivoAccess(dbEmp",
+		"dbpkg.CreateEmpresaSoporteRemotoSession(\n",
+		"dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp",
+		"dbpkg.ListEmpresaSoporteRemotoSesiones(dbEmp",
+		"dbpkg.ResolveEmpresaSoporteRemotoViewerSession(dbEmp",
+		"dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbEmp",
+		"dbpkg.CreateEmpresaSoporteRemotoSignalingCredential(\n",
 	} {
 		if strings.Contains(source, forbidden) {
 			t.Fatalf("support handler bypasses request context with %q", forbidden)
@@ -34,9 +47,48 @@ func TestSoporteRemotoHTTPPropagaContextoEnConfiguracionYAlta(t *testing.T) {
 		"GetEmpresaSoporteRemotoConfigContext(r.Context()",
 		"UpsertEmpresaSoporteRemotoConfigContext(r.Context()",
 		"CreateEmpresaSoporteRemotoDispositivoContext(r.Context()",
+		"GetEmpresaSoporteRemotoUsoContext(r.Context()",
+		"ListEmpresaSoporteRemotoDispositivosContext(r.Context()",
+		"GetEmpresaSoporteRemotoDispositivoByIDContext(r.Context()",
+		"UpdateEmpresaSoporteRemotoDispositivoContext(r.Context()",
+		"SetEmpresaSoporteRemotoDispositivoEstadoByIDContext(r.Context()",
+		"RegisterEmpresaSoporteRemotoDispositivoHeartbeatContext(\n\t\tr.Context()",
+		"ValidateEmpresaSoporteRemotoDispositivoAccessContext(r.Context()",
+		"CreateEmpresaSoporteRemotoSessionContext(\n\t\tr.Context()",
+		"GetEmpresaSoporteRemotoSessionByCodigoContext(r.Context()",
+		"ListEmpresaSoporteRemotoSesionesContext(r.Context()",
+		"ResolveEmpresaSoporteRemotoViewerSessionContext(r.Context()",
+		"SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(r.Context()",
+		"CreateEmpresaSoporteRemotoSignalingCredentialContext(\n\t\tr.Context()",
 	} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("missing cancellable support operation %q", expected)
+		}
+	}
+}
+
+func TestSoporteRemotoHTTPPropagaContextoEnSuperYWebRTC(t *testing.T) {
+	for _, file := range []string{"super_soporte_remoto.go", "soporte_remoto_webrtc.go"} {
+		raw, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		source := string(raw)
+		for _, forbidden := range []string{
+			"dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp",
+			"dbpkg.GetEmpresaSoporteRemotoUso(dbEmp",
+			"dbpkg.ListEmpresaSoporteRemotoDispositivos(dbEmp",
+			"dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp",
+			"dbpkg.CreateEmpresaSoporteRemotoSession(dbEmp",
+			"dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp",
+			"dbpkg.ListEmpresaSoporteRemotoSesiones(dbEmp",
+			"dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbEmp",
+			"dbpkg.ConsumeEmpresaSoporteRemotoSignalingCredential(dbEmp",
+			"dbpkg.IsEmpresaSoporteRemotoSessionActive(dbEmp",
+		} {
+			if strings.Contains(source, forbidden) {
+				t.Fatalf("%s bypasses request context with %q", file, forbidden)
+			}
 		}
 	}
 }

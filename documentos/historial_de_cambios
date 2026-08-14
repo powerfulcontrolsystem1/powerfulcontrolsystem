@@ -42602,3 +42602,7 @@ acumulativa.
 - Configuracion y alta de dispositivo propagan `r.Context()` hasta PostgreSQL; la verificacion del maximo de dispositivos queda dentro del mismo flujo cancelable por empresa.
 - Un error al cargar el plan/configuracion ahora bloquea la alta en vez de omitir silenciosamente el limite empresarial.
 - Una regresion protege el contrato del handler. Pruebas DB/handlers, vet y auditor aprueban; deuda DB 575 a 571. No se ejecuto `rs` ni se creo PR.
+2026-08-14 - Plan 110: soporte remoto completamente cancelable
+- Consumo del plan, listados, detalle, actualizacion, estado y heartbeat de dispositivos, sesiones, aprobacion/finalizacion, token de visualizacion y credenciales WebRTC conservan `r.Context()` hasta PostgreSQL.
+- El aislamiento por `empresa_id` permanece en todas las consultas y mutaciones. Heartbeat comprueba filas afectadas y un fallo al registrar un intento bloqueado deja de descartarse silenciosamente.
+- Las regresiones cubren handlers empresarial, publico, super y WebRTC. `go test ./db ./handlers`, `go vet ./db ./handlers` y el auditor aprueban; deuda DB 571 a 548, descartes 767 a 766, duplicacion exacta 0. No se ejecuto `rs` ni se creo PR.

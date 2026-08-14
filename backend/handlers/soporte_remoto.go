@@ -481,7 +481,8 @@ func empresaSoporteRemotoSignalingCredentialCreate(w http.ResponseWriter, r *htt
 		http.Error(w, "codigo_sesion es obligatorio", http.StatusBadRequest)
 		return
 	}
-	credential, err := dbpkg.CreateEmpresaSoporteRemotoSignalingCredential(
+	credential, err := dbpkg.CreateEmpresaSoporteRemotoSignalingCredentialContext(
+		r.Context(),
 		dbEmp,
 		empresaID,
 		payload.CodigoSesion,
@@ -541,7 +542,7 @@ func empresaSoporteRemotoConfigGet(w http.ResponseWriter, r *http.Request, dbEmp
 		return
 	}
 	applyRustDeskDownloadDefaults(&cfg)
-	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	uso, err := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar consumo de soporte remoto", http.StatusInternalServerError)
 		return
@@ -576,7 +577,7 @@ func empresaSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, db
 		return
 	}
 	applyRustDeskDownloadDefaults(&cfg)
-	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	uso, err := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar el consumo", http.StatusInternalServerError)
 		return
@@ -600,7 +601,7 @@ func empresaSoporteRemotoDispositivosGet(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "offset invalido", http.StatusBadRequest)
 		return
 	}
-	rows, total, err := dbpkg.ListEmpresaSoporteRemotoDispositivos(dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoDispositivoFilter{
+	rows, total, err := dbpkg.ListEmpresaSoporteRemotoDispositivosContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoDispositivoFilter{
 		IncludeInactive: queryBool(r, "include_inactive"),
 		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
 		Limit:           limit,
@@ -624,7 +625,7 @@ func empresaSoporteRemotoDispositivoDetailGet(w http.ResponseWriter, r *http.Req
 		http.Error(w, "id es obligatorio", http.StatusBadRequest)
 		return
 	}
-	item, err := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, deviceID)
+	item, err := dbpkg.GetEmpresaSoporteRemotoDispositivoByIDContext(r.Context(), dbEmp, empresaID, deviceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "dispositivo no encontrado", http.StatusNotFound)
@@ -667,14 +668,14 @@ func empresaSoporteRemotoDispositivoCreate(w http.ResponseWriter, r *http.Reques
 	}, payload.AccesoPIN)
 	if err != nil {
 		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
-			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
 			return
 		}
 		http.Error(w, "No se pudo crear dispositivo: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	item, err := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, id)
+	item, err := dbpkg.GetEmpresaSoporteRemotoDispositivoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		http.Error(w, "Dispositivo creado, pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -702,7 +703,7 @@ func empresaSoporteRemotoDispositivoUpdate(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "id es obligatorio", http.StatusBadRequest)
 		return
 	}
-	err = dbpkg.UpdateEmpresaSoporteRemotoDispositivo(dbEmp, dbpkg.EmpresaSoporteRemotoDispositivo{
+	err = dbpkg.UpdateEmpresaSoporteRemotoDispositivoContext(r.Context(), dbEmp, dbpkg.EmpresaSoporteRemotoDispositivo{
 		ID:                      payload.ID,
 		EmpresaID:               empresaID,
 		CodigoDispositivo:       payload.CodigoDispositivo,
@@ -729,7 +730,7 @@ func empresaSoporteRemotoDispositivoUpdate(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "No se pudo actualizar dispositivo: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	item, err := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, payload.ID)
+	item, err := dbpkg.GetEmpresaSoporteRemotoDispositivoByIDContext(r.Context(), dbEmp, empresaID, payload.ID)
 	if err != nil {
 		http.Error(w, "Dispositivo actualizado, pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -748,7 +749,7 @@ func empresaSoporteRemotoDispositivoToggle(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "id es obligatorio", http.StatusBadRequest)
 		return
 	}
-	if err := dbpkg.SetEmpresaSoporteRemotoDispositivoEstadoByID(dbEmp, empresaID, deviceID, estado); err != nil {
+	if err := dbpkg.SetEmpresaSoporteRemotoDispositivoEstadoByIDContext(r.Context(), dbEmp, empresaID, deviceID, estado); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "dispositivo no encontrado", http.StatusNotFound)
 			return
@@ -756,7 +757,7 @@ func empresaSoporteRemotoDispositivoToggle(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "No se pudo cambiar estado de dispositivo", http.StatusInternalServerError)
 		return
 	}
-	item, _ := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, deviceID)
+	item, _ := dbpkg.GetEmpresaSoporteRemotoDispositivoByIDContext(r.Context(), dbEmp, empresaID, deviceID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "dispositivo": item})
 }
 
@@ -776,7 +777,7 @@ func empresaSoporteRemotoSesionesGet(w http.ResponseWriter, r *http.Request, dbE
 		http.Error(w, "offset invalido", http.StatusBadRequest)
 		return
 	}
-	rows, total, err := dbpkg.ListEmpresaSoporteRemotoSesiones(dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoSessionFilter{
+	rows, total, err := dbpkg.ListEmpresaSoporteRemotoSesionesContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoSessionFilter{
 		IncludeInactive: queryBool(r, "include_inactive"),
 		EstadoSesion:    strings.TrimSpace(r.URL.Query().Get("estado_sesion")),
 		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
@@ -787,7 +788,7 @@ func empresaSoporteRemotoSesionesGet(w http.ResponseWriter, r *http.Request, dbE
 		http.Error(w, "No se pudo consultar sesiones de soporte remoto", http.StatusInternalServerError)
 		return
 	}
-	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "total": total, "rows": rows, "uso": uso})
 }
 
@@ -823,7 +824,8 @@ func empresaSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, db
 		}
 	}
 
-	session, err := dbpkg.CreateEmpresaSoporteRemotoSession(
+	session, err := dbpkg.CreateEmpresaSoporteRemotoSessionContext(
+		r.Context(),
 		dbEmp,
 		empresaID,
 		payload.DispositivoID,
@@ -836,7 +838,7 @@ func empresaSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, db
 	)
 	if err != nil {
 		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
-			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
 			return
 		}
@@ -845,7 +847,7 @@ func empresaSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, db
 	}
 
 	viewerURL := empresaSoporteRemotoBuildViewerURL(r, empresaID, session.CodigoSesion, session.TokenVisualizacionRaw)
-	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
 		"ok":                 true,
 		"session":            session,
@@ -878,21 +880,21 @@ func empresaSoporteRemotoSesionAprobar(w http.ResponseWriter, r *http.Request, d
 	if estado == "" {
 		estado = "aprobada"
 	}
-	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbEmp, empresaID, payload.CodigoSesion, estado, payload.Observaciones); err != nil {
+	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(r.Context(), dbEmp, empresaID, payload.CodigoSesion, estado, payload.Observaciones); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "sesion no encontrada", http.StatusNotFound)
 			return
 		}
 		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
-			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
 			return
 		}
 		http.Error(w, "No se pudo actualizar sesion", http.StatusInternalServerError)
 		return
 	}
-	session, _ := dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp, empresaID, payload.CodigoSesion)
-	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	session, _ := dbpkg.GetEmpresaSoporteRemotoSessionByCodigoContext(r.Context(), dbEmp, empresaID, payload.CodigoSesion)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "session": session, "uso": uso})
 }
 
@@ -915,7 +917,7 @@ func empresaSoporteRemotoSesionFinalizar(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "codigo_sesion es obligatorio", http.StatusBadRequest)
 		return
 	}
-	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbEmp, empresaID, payload.CodigoSesion, "finalizada", payload.Observaciones); err != nil {
+	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(r.Context(), dbEmp, empresaID, payload.CodigoSesion, "finalizada", payload.Observaciones); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "sesion no encontrada", http.StatusNotFound)
 			return
@@ -923,7 +925,7 @@ func empresaSoporteRemotoSesionFinalizar(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "No se pudo finalizar sesion", http.StatusInternalServerError)
 		return
 	}
-	session, _ := dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp, empresaID, payload.CodigoSesion)
+	session, _ := dbpkg.GetEmpresaSoporteRemotoSessionByCodigoContext(r.Context(), dbEmp, empresaID, payload.CodigoSesion)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "session": session})
 }
 
@@ -941,7 +943,7 @@ func empresaSoporteRemotoResolverVisualizacion(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	session, err := dbpkg.ResolveEmpresaSoporteRemotoViewerSession(dbEmp, empresaID, codigoSesion, token)
+	session, err := dbpkg.ResolveEmpresaSoporteRemotoViewerSessionContext(r.Context(), dbEmp, empresaID, codigoSesion, token)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "sesion/token invalido", http.StatusUnauthorized)
@@ -958,7 +960,7 @@ func empresaSoporteRemotoResolverVisualizacion(w http.ResponseWriter, r *http.Re
 	}
 	access := empresaSoporteRemotoAccessBundle{EmbedURL: session.URLVisualizacion}
 	if cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID); cfgErr == nil {
-		if device, deviceErr := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, session.DispositivoID); deviceErr == nil {
+		if device, deviceErr := dbpkg.GetEmpresaSoporteRemotoDispositivoByIDContext(r.Context(), dbEmp, empresaID, session.DispositivoID); deviceErr == nil {
 			access = empresaSoporteRemotoBuildAccessBundle(r, cfg, device, empresaID, session.CodigoSesion, token)
 		}
 	}
@@ -987,7 +989,7 @@ func empresaSoporteRemotoResolverAccesoPublico(w http.ResponseWriter, r *http.Re
 		http.Error(w, "codigo_sesion y token son obligatorios", http.StatusBadRequest)
 		return
 	}
-	session, err := dbpkg.ResolveEmpresaSoporteRemotoViewerSession(dbEmp, empresaID, codigoSesion, token)
+	session, err := dbpkg.ResolveEmpresaSoporteRemotoViewerSessionContext(r.Context(), dbEmp, empresaID, codigoSesion, token)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "sesion/token invalido", http.StatusUnauthorized)
@@ -1005,7 +1007,7 @@ func empresaSoporteRemotoResolverAccesoPublico(w http.ResponseWriter, r *http.Re
 		http.Error(w, "portal publico deshabilitado", http.StatusForbidden)
 		return
 	}
-	device, deviceErr := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, session.DispositivoID)
+	device, deviceErr := dbpkg.GetEmpresaSoporteRemotoDispositivoByIDContext(r.Context(), dbEmp, empresaID, session.DispositivoID)
 	if deviceErr != nil {
 		http.Error(w, "No se pudo cargar el dispositivo remoto", http.StatusInternalServerError)
 		return
@@ -1039,7 +1041,7 @@ func empresaSoporteRemotoSesionesExport(w http.ResponseWriter, r *http.Request, 
 	if format == "" {
 		format = "json"
 	}
-	rows, total, err := dbpkg.ListEmpresaSoporteRemotoSesiones(dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoSessionFilter{
+	rows, total, err := dbpkg.ListEmpresaSoporteRemotoSesionesContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoSessionFilter{
 		IncludeInactive: queryBool(r, "include_inactive"),
 		EstadoSesion:    strings.TrimSpace(r.URL.Query().Get("estado_sesion")),
 		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
@@ -1076,7 +1078,8 @@ func empresaSoporteRemotoHeartbeat(w http.ResponseWriter, r *http.Request, dbEmp
 		http.Error(w, "codigo_dispositivo es obligatorio", http.StatusBadRequest)
 		return
 	}
-	item, err := dbpkg.RegisterEmpresaSoporteRemotoDispositivoHeartbeat(
+	item, err := dbpkg.RegisterEmpresaSoporteRemotoDispositivoHeartbeatContext(
+		r.Context(),
 		dbEmp,
 		payload.EmpresaID,
 		payload.CodigoDispositivo,
@@ -1106,7 +1109,7 @@ func empresaSoporteRemotoSesionAgentUpdate(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "empresa_id y codigo_dispositivo son obligatorios", http.StatusBadRequest)
 		return
 	}
-	device, err := dbpkg.ValidateEmpresaSoporteRemotoDispositivoAccess(dbEmp, hb.EmpresaID, hb.CodigoDispositivo, hb.AccesoPIN)
+	device, err := dbpkg.ValidateEmpresaSoporteRemotoDispositivoAccessContext(r.Context(), dbEmp, hb.EmpresaID, hb.CodigoDispositivo, hb.AccesoPIN)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "dispositivo no autorizado", http.StatusUnauthorized)
@@ -1121,7 +1124,7 @@ func empresaSoporteRemotoSesionAgentUpdate(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "codigo_sesion es obligatorio", http.StatusBadRequest)
 		return
 	}
-	session, err := dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp, hb.EmpresaID, codigoSesion)
+	session, err := dbpkg.GetEmpresaSoporteRemotoSessionByCodigoContext(r.Context(), dbEmp, hb.EmpresaID, codigoSesion)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "sesion no encontrada", http.StatusNotFound)
@@ -1139,16 +1142,16 @@ func empresaSoporteRemotoSesionAgentUpdate(w http.ResponseWriter, r *http.Reques
 	if action == "finalizar_sesion" {
 		estadoDestino = "finalizada"
 	}
-	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbEmp, hb.EmpresaID, codigoSesion, estadoDestino, "actualizado por agente remoto"); err != nil {
+	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(r.Context(), dbEmp, hb.EmpresaID, codigoSesion, estadoDestino, "actualizado por agente remoto"); err != nil {
 		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
-			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, hb.EmpresaID)
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, hb.EmpresaID)
 			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
 			return
 		}
 		http.Error(w, "No se pudo actualizar estado de sesion", http.StatusInternalServerError)
 		return
 	}
-	session, _ = dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp, hb.EmpresaID, codigoSesion)
-	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, hb.EmpresaID)
+	session, _ = dbpkg.GetEmpresaSoporteRemotoSessionByCodigoContext(r.Context(), dbEmp, hb.EmpresaID, codigoSesion)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, hb.EmpresaID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "session": session, "uso": uso})
 }

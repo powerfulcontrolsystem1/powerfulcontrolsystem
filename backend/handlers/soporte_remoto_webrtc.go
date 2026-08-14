@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -174,7 +175,7 @@ func SoporteRemotoSignalingHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 		}()
 
-		session, err := dbpkg.ConsumeEmpresaSoporteRemotoSignalingCredential(dbEmp, empresaID, codigoSesion, role, tokenRaw, nonceRaw)
+		session, err := dbpkg.ConsumeEmpresaSoporteRemotoSignalingCredentialContext(r.Context(), dbEmp, empresaID, codigoSesion, role, tokenRaw, nonceRaw)
 		if err != nil {
 			registrarAuditoriaSignalingNoBloqueante(dbEmp, r, empresaID, 0, "signaling_rechazado", http.StatusUnauthorized)
 			http.Error(w, "credencial de senalizacion invalida", http.StatusUnauthorized)
@@ -252,7 +253,10 @@ func soporteRemotoMonitorSignalingPeer(dbEmp *sql.DB, peer *soporteRemotoSignali
 				peer.closeWithReason(websocket.CloseNormalClosure, "inactividad")
 				return
 			}
-			if !dbpkg.IsEmpresaSoporteRemotoSessionActive(dbEmp, peer.empresaID, peer.sessionID) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			active := dbpkg.IsEmpresaSoporteRemotoSessionActiveContext(ctx, dbEmp, peer.empresaID, peer.sessionID)
+			cancel()
+			if !active {
 				peer.closeWithReason(websocket.ClosePolicyViolation, "sesion revocada")
 				return
 			}

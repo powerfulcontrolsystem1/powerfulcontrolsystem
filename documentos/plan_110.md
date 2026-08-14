@@ -1764,3 +1764,18 @@ autoriza ni ejecuta despliegue productivo.
   descartes **767**, duplicacion 0. P110-001A/P110-007 continuan parciales;
   avance formal **38,5 %**, certificacion **0 %**, **NO-GO**. No se ejecuto
   `rs` ni se creo PR.
+
+## Actualizacion 2026-08-14, soporte remoto completamente cancelable
+
+- Uso del plan, dispositivos, sesiones, limites, tokens de visualizacion y
+  credenciales WebRTC propagan el contexto de las solicitudes empresarial,
+  publica y super hasta PostgreSQL, siempre filtradas por `empresa_id`.
+- Heartbeat verifica que la mutacion afecte exactamente al dispositivo esperado.
+  Si el plan bloquea una sesion y no puede persistirse su auditoria, el fallo es
+  observable y conserva `ErrSoporteRemotoPlanLimit` para respuesta fail-closed.
+- Regresiones estaticas impiden que los handlers vuelvan a los wrappers sin
+  contexto. Pruebas DB/handlers, `vet` y auditor aprueban; deuda DB **571 a
+  548**, descartes **767 a 766** y duplicacion exacta 0.
+- P110-001A/P110-007 continuan parciales; el avance formal permanece en **38,5
+  %**, certificacion **0 %**, **NO-GO**, porque no existe candidato desplegado ni
+  evidencia operativa equivalente. No se ejecuto `rs` ni se creo PR.
