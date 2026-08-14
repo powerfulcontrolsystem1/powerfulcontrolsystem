@@ -1362,10 +1362,7 @@ func dispatchControlElectricoTunnelCommand(dbEmp *sql.DB, cfg *dbpkg.EmpresaCont
 // persistente; sirve exclusivamente para identificar el canal de un relay.
 func controlElectricoTestRaspberryGPIO(dbEmp *sql.DB, empresaID, raspberryID int64, gpioPin int, actor string) controlElectricoDispatchResult {
 	if !controlElectricoTestableGPIO(gpioPin) {
-		if gpioPin == 0 || gpioPin == 1 {
-			return controlElectricoDispatchResult{OK: false, Error: "GPIO 0 y GPIO 1 estan reservados para identificacion HAT (ID_SDA/ID_SCL) y no se prueban como rele"}
-		}
-		return controlElectricoDispatchResult{OK: false, Error: "GPIO fuera del rango seguro de prueba (GPIO 2 a GPIO 27)"}
+		return controlElectricoDispatchResult{OK: false, Error: "GPIO fuera del rango BCM disponible (GPIO 0 a GPIO 27)"}
 	}
 	pi, err := dbpkg.GetEmpresaControlElectricoRaspberryByID(dbEmp, empresaID, raspberryID, false)
 	if err != nil || pi == nil || strings.ToLower(strings.TrimSpace(pi.Estado)) != "activo" {
@@ -1456,12 +1453,7 @@ func controlElectricoRaspberryOperation(dbEmp *sql.DB, empresaID, raspberryID in
 }
 
 func controlElectricoTestableGPIO(pin int) bool {
-	for _, allowed := range []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27} {
-		if pin == allowed {
-			return true
-		}
-	}
-	return false
+	return pin >= 0 && pin <= 27
 }
 
 func resolveControlElectricoDispatchConfig(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele) (*dbpkg.EmpresaControlElectricoConfig, int64, error) {

@@ -42682,15 +42682,16 @@ acumulativa.
 - Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
   La deuda DB sin contexto baja de 526 a 524; no se ejecutó `rs`.
 
-## 2026-08-14 - Domótica: diagnóstico GPIO coherente con Raspberry Pi 3
+## 2026-08-14 - Domótica: diagnóstico GPIO 0-27 con cableado verificado
 
-- La página `Domótica y Energía Solar > Controladores > Probar GPIO` ya no
-  presenta GPIO 0 ni GPIO 1 como salidas accionables: en Raspberry Pi 3 son
-  `ID_SDA`/`ID_SCL`, reservados normalmente para identificación HAT.
+- La página `Domótica y Energía Solar > Controladores > Probar GPIO` permite
+  accionar GPIO 0 a GPIO 27. Advierte que GPIO 0/1 son `ID_SDA`/`ID_SCL` y
+  deben usarse únicamente con cableado confirmado y sin una placa HAT.
 - El panel muestra la razón de la reserva y enumera los GPIO realmente
-  asignados al controlador; para PCS confirma 16 aparatos en GPIO 2 a GPIO 17.
-- La API devuelve `400 Bad Request` con un mensaje específico ante GPIO 0/1 o
-  valores fuera de GPIO 2 a GPIO 27, en lugar de tratarlos como un fallo del
-  túnel o del servidor.
-- Se amplió la regresión visual/estructural para impedir que GPIO 0/1 vuelvan a
-  renderizarse como botones de prueba de relé.
+  asignados al controlador; el cableado confirmado de PCS usa Relé 1 en GPIO 0,
+  Relé 2 en GPIO 1 y continúa consecutivamente hasta Relé 16 en GPIO 15.
+- Los valores predeterminados de nuevos aparatos comienzan en GPIO 0 y el
+  frontend conserva correctamente un `gpio_pin=0` existente, sin sustituirlo
+  por GPIO 2 por tratarlo erróneamente como valor vacío.
+- La API devuelve `400 Bad Request` únicamente para valores fuera del rango
+  BCM GPIO 0 a GPIO 27.

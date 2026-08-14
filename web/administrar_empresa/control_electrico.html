@@ -1159,7 +1159,8 @@
 
       function relayDefaults(estacion, index, rele) {
         rele = rele || estacion.rele || {};
-        var gpioDefault = rele.gpio_pin || (index < 26 ? index + 2 : 0);
+        var hasConfiguredGPIO = rele.gpio_pin !== undefined && rele.gpio_pin !== null && rele.gpio_pin !== '';
+        var gpioDefault = hasConfiguredGPIO ? Number(rele.gpio_pin) : (index < 28 ? index : 0);
         return {
           id: rele.id || 0,
           estacion_id: estacion.estacion_id,
@@ -1368,11 +1369,11 @@
           var assignedRelays = state.reles.filter(function (rele) {
             return Number(rele.raspberry_id || 0) === Number(pi.id || 0) && String(rele.estado || 'activo').toLowerCase() === 'activo';
           });
-          var assignedPins = assignedRelays.map(function (rele) { return Number(rele.gpio_pin); }).filter(function (pin) { return pin >= 2 && pin <= 27; }).sort(function (a, b) { return a - b; });
+          var assignedPins = assignedRelays.map(function (rele) { return Number(rele.gpio_pin); }).filter(function (pin) { return pin >= 0 && pin <= 27; }).sort(function (a, b) { return a - b; });
           var assignedSummary = assignedPins.length
             ? assignedPins.length + ' aparato' + (assignedPins.length === 1 ? '' : 's') + ' asignado' + (assignedPins.length === 1 ? '' : 's') + ': GPIO ' + assignedPins.join(', GPIO ')
             : 'No hay aparatos asignados todavía a este controlador.';
-          var testButtons = Array.from({ length: 26 }, function(_, index) { return index + 2; }).map(function(pin) {
+          var testButtons = Array.from({ length: 28 }, function(_, pin) { return pin; }).map(function(pin) {
             var relay = assignedRelays.find(function (item) { return Number(item.gpio_pin) === pin; });
             var relayLabel = relay ? ' · ' + sanitize(relay.relay_name || relay.salida_codigo || 'Aparato asignado') : '';
             return '<button class="btn secondary small raspberry-gpio-test" type="button" data-gpio-pin="' + pin + '" title="GPIO ' + pin + relayLabel + '"' + (!online ? ' disabled' : '') + '>GPIO ' + pin + '</button>';
@@ -1403,8 +1404,8 @@
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-gpio-toggle" type="button">Probar GPIO</button>' : '') +
               '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>' +
             '</div>' +
-            '<p class="gpio-test-note"><strong>GPIO 0 y GPIO 1 no se prueban como relé.</strong> En Raspberry Pi 3 corresponden a ID_SDA/ID_SCL y están reservados para identificación HAT. ' + sanitize(assignedSummary) + '</p>' +
-            '<div class="gpio-test-panel" aria-label="Prueba segura de GPIO 2 a GPIO 27: cada boton envia un pulso de un segundo">' + testButtons + '</div>' +
+            '<p class="gpio-test-note"><strong>GPIO 0 y GPIO 1 corresponden a ID_SDA/ID_SCL.</strong> PCS permite probarlos cuando el instalador confirma que están cableados al relé y no se usa una placa HAT. ' + sanitize(assignedSummary) + '</p>' +
+            '<div class="gpio-test-panel" aria-label="Prueba de GPIO 0 a GPIO 27: cada boton envia un pulso de un segundo">' + testButtons + '</div>' +
           '</article>';
         }).join('');
       }
@@ -2110,7 +2111,7 @@
             showMessage(shutdownResult.message || 'Apagado enviado por el tunel seguro.', 'success');
           } else if (raspberryCard && ev.target.classList.contains('raspberry-gpio-toggle')) {
             raspberryCard.classList.toggle('gpio-test-open');
-            showMessage('Cada GPIO seguro enviara un pulso de prueba de un segundo. GPIO 0 y GPIO 1 se reservan para ID HAT.', '');
+            showMessage('Cada GPIO enviara un pulso de prueba de un segundo. Usa GPIO 0/1 solo con cableado verificado y sin HAT.', '');
           } else if (raspberryCard && ev.target.classList.contains('raspberry-gpio-test')) {
             var testPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             var testPin = Number(ev.target.getAttribute('data-gpio-pin') || -1);
