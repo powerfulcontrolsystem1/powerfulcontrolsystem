@@ -9,7 +9,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -284,10 +286,18 @@ func dialDomoticaSSH(target, username, password, expectedFingerprint string) (*s
 	if err != nil {
 		return nil, observed, err
 	}
-	conn.SetDeadline(time.Now().Add(domoticaSSHInstallTimeout))
+	if deadlineErr := conn.SetDeadline(time.Now().Add(domoticaSSHInstallTimeout)); deadlineErr != nil {
+		closeErr := conn.Close()
+		if closeErr != nil {
+			return nil, observed, fmt.Errorf("configurar limite SSH: %w; cerrar socket: %v", deadlineErr, closeErr)
+		}
+		return nil, observed, deadlineErr
+	}
 	clientConn, channels, requests, err := ssh.NewClientConn(conn, target, config)
 	if err != nil {
-		conn.Close()
+		if closeErr := conn.Close(); closeErr != nil {
+			return nil, observed, fmt.Errorf("abrir SSH: %w; cerrar socket: %v", err, closeErr)
+		}
 		return nil, observed, err
 	}
 	return ssh.NewClient(clientConn, channels, requests), observed, nil
@@ -325,7 +335,11 @@ func acquireDomoticaSSHInstallLock(ctx context.Context, dbConn *sql.DB, empresaI
 	var locked bool
 	err = conn.QueryRowContext(ctx, `SELECT pg_try_advisory_lock($1::integer,$2::integer)`, empresaID, raspberryID).Scan(&locked)
 	if err != nil || !locked {
-		conn.Close()
+		if closeErr := conn.Close(); closeErr != nil && err == nil {
+			return nil, false, closeErr
+		} else if closeErr != nil {
+			return nil, false, fmt.Errorf("reservar instalacion: %w; cerrar conexion: %v", err, closeErr)
+		}
 		return nil, locked, err
 	}
 	return conn, true, nil
@@ -337,8 +351,12 @@ func releaseDomoticaSSHInstallLock(conn *sql.Conn, empresaID, raspberryID int64)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	_, _ = conn.ExecContext(ctx, `SELECT pg_advisory_unlock($1::integer,$2::integer)`, empresaID, raspberryID)
-	conn.Close()
+	if _, err := conn.ExecContext(ctx, `SELECT pg_advisory_unlock($1::integer,$2::integer)`, empresaID, raspberryID); err != nil {
+		log.Printf("[domotica_ssh] liberar lock empresa_id=%d raspberry_id=%d error: %v", empresaID, raspberryID, err)
+	}
+	if err := conn.Close(); err != nil {
+		log.Printf("[domotica_ssh] cierre de lock empresa_id=%d raspberry_id=%d error: %v", empresaID, raspberryID, err)
+	}
 }
 
 func waitForDomoticaAgentVersion(dbConn *sql.DB, empresaID, raspberryID int64, version string, timeout time.Duration) bool {
