@@ -1594,3 +1594,15 @@ autoriza ni ejecuta despliegue productivo.
   `context.Background()` para maquillar la métrica.
 - P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, cancelación SQL en reportes programados
+
+- Las 17 operaciones SQL de plantillas, programaciones, ejecuciones y
+  consistencia usan ahora `QueryContext`, `QueryRowContext` o `ExecContext` con
+  el contexto real de la solicitud HTTP.
+- Los helpers de búsqueda reciben `context.Context` explícito, por lo que una
+  desconexión o timeout puede cancelar PostgreSQL durante todo el flujo.
+- `go test ./handlers`, `go vet ./handlers` y el auditor aprueban; la deuda real
+  baja de **689 a 672** llamadas sin contexto y la duplicación permanece en 0.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.
