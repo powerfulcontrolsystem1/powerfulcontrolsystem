@@ -1724,3 +1724,17 @@ autoriza ni ejecuta despliegue productivo.
   587**, descartes **768** y duplicacion 0.
 - P110-001A y P110-002 continuan parciales; avance formal **38,5 %**,
   certificacion **0 %**, **NO-GO**. No se ejecuto `rs` ni se creo PR.
+
+## Actualizacion 2026-08-13, cajas simultaneas cancelables
+
+- Apertura, cupo segun licencia, seleccion de caja abierta por usuario,
+  ingresos/egresos atomicos, cierre, reapertura, aprobacion, anulacion y borrado
+  conservan contexto hasta PostgreSQL.
+- Finanzas, Corte de caja, carrito, venta offline y datafono llaman las variantes
+  cancelables sin perder `empresa_id`, usuario, caja, turno ni sucursal.
+- El rollback inesperado queda observable y siete mutaciones comprueban
+  `RowsAffected`. Pruebas DB/handlers, `vet` y auditor aprueban; la deuda baja de
+  **587 a 576** llamadas DB sin contexto y de **768 a 767** descartes explicitos.
+- P110-001A, P110-002 y la matriz de cajas de P110-005 continuan parciales hasta
+  la prueba autenticada concurrente del candidato. Avance formal **38,5 %**,
+  certificacion **0 %**, **NO-GO**. No se ejecuto `rs` ni se creo PR.

@@ -491,7 +491,7 @@ func aplicarDatafonoAlPOS(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID, tx
 		return true, "el carrito ya estaba cerrado"
 	}
 	usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
-	cierreCaja, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
+	cierreCaja, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(r.Context(), dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 	if err != nil {
 		return false, "pago aprobado, pero no hay caja abierta para aplicar el cierre en POS"
 	}

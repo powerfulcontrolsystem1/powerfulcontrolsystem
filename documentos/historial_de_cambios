@@ -42590,3 +42590,7 @@ acumulativa.
 - Configuracion, altas, listados, cambios, anulaciones, comprobantes y periodos contables conservan `r.Context()` desde Finanzas hasta PostgreSQL.
 - Cuatro mutaciones dejan de ignorar errores de `RowsAffected`; la carga de comprobantes verifica readiness y ya no intenta DDL durante la solicitud HTTP.
 - Una regresion de contrato impide volver a usar los wrappers sin contexto en el handler. Pruebas DB/handlers y vet aprueban; deuda DB sin contexto: 597 a 587. No se ejecuto `rs` ni se creo PR.
+2026-08-13 - Plan 110: cajas simultaneas cancelables
+- Apertura, limite por licencia, resolucion de caja por usuario, efectivo atomico, cierre, reapertura, aprobacion, anulacion y borrado conservan contexto hasta PostgreSQL.
+- Carrito, ventas offline, datafono, Finanzas y Corte de caja usan las variantes cancelables; `empresa_id`, usuario, caja, turno y sucursal se mantienen en cada operacion.
+- El rollback transaccional registra fallos inesperados y siete mutaciones comprueban `RowsAffected`. Pruebas DB/handlers, vet y auditor aprueban: deuda DB 587 a 576; descartes 768 a 767. No se ejecuto `rs` ni se creo PR.

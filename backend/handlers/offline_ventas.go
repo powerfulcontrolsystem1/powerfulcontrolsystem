@@ -288,7 +288,7 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 	}
 	totalPagado = roundMoneyCarritoForMoneda(totalPagado, carrito.Moneda)
 
-	caja, _, err := openCajaCobroForCarrito(dbEmp, dbSuper, empresaID, pago.CajaCodigo, pago.CajaTurno, pago.CajaSucursalID, 0, carrito.Moneda, usuario)
+	caja, _, err := openCajaCobroForCarrito(r.Context(), dbEmp, dbSuper, empresaID, pago.CajaCodigo, pago.CajaTurno, pago.CajaSucursalID, 0, carrito.Moneda, usuario)
 	if err != nil {
 		_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "error", carrito.ID, "", "", err.Error())
 		return nil, err
@@ -350,7 +350,7 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 		log.Printf("[offline_ventas] metrica omitida empresa_id=%d carrito_id=%d error=%v", empresaID, carritoPagado.ID, errMetric)
 	}
 	if efectivo := offlineMontoEfectivoCaja(metodoPago, totalPagado, pago.PagosMixtos); efectivo > 0 {
-		if err := dbpkg.RegistrarIngresoEfectivoCierreCaja(dbEmp, empresaID, caja.ID, efectivo); err != nil {
+		if err := dbpkg.RegistrarIngresoEfectivoCierreCajaContext(r.Context(), dbEmp, empresaID, caja.ID, efectivo); err != nil {
 			log.Printf("[offline_ventas] efectivo caja omitido empresa_id=%d cierre_id=%d error=%v", empresaID, caja.ID, err)
 		}
 	}

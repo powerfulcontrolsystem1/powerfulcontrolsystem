@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
@@ -326,7 +327,7 @@ func buildTableroResumenCSVContent(resumen *dbpkg.EmpresaReportesTableroResumen)
 	return builder.String(), nil
 }
 
-func normalizarCajaMovimientoFinanzas(dbEmp *sql.DB, payload *dbpkg.EmpresaFinanzasMovimiento, usuario string) error {
+func normalizarCajaMovimientoFinanzas(ctx context.Context, dbEmp *sql.DB, payload *dbpkg.EmpresaFinanzasMovimiento, usuario string) error {
 	if payload == nil || payload.EmpresaID <= 0 {
 		return nil
 	}
@@ -335,7 +336,7 @@ func normalizarCajaMovimientoFinanzas(dbEmp *sql.DB, payload *dbpkg.EmpresaFinan
 	if cierreID <= 0 && cajaCodigo == "" {
 		return nil
 	}
-	cierre, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, payload.EmpresaID, cierreID, cajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuario)
+	cierre, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(ctx, dbEmp, payload.EmpresaID, cierreID, cajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuario)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("la caja seleccionada no esta abierta o activa")
@@ -364,7 +365,7 @@ func validarPermisoRolMovimientoFinanzasManual(dbEmp *sql.DB, r *http.Request, e
 	return nil
 }
 
-func validarCupoCajasLicencia(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, excludeCierreID int64) (int, int, error) {
+func validarCupoCajasLicencia(ctx context.Context, dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, excludeCierreID int64) (int, int, error) {
 	if empresaID <= 0 {
 		return 0, 0, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -381,7 +382,7 @@ func validarCupoCajasLicencia(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, e
 	} else if err != nil {
 		return 0, 0, err
 	}
-	abiertas, err := dbpkg.CountEmpresaCierresCajaAbiertosExcepto(dbEmp, empresaID, excludeCierreID)
+	abiertas, err := dbpkg.CountEmpresaCierresCajaAbiertosExceptoContext(ctx, dbEmp, empresaID, excludeCierreID)
 	if err != nil {
 		return maxCajas, abiertas, err
 	}
@@ -662,7 +663,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-			if err := normalizarCajaMovimientoFinanzas(dbEmp, &payload, payload.UsuarioCreador); err != nil {
+			if err := normalizarCajaMovimientoFinanzas(r.Context(), dbEmp, &payload, payload.UsuarioCreador); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -730,7 +731,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if montoCaja <= 0 {
 					montoCaja = payload.Monto
 				}
-				if err := dbpkg.RegistrarMovimientoEfectivoCierreCaja(dbEmp, payload.EmpresaID, payload.CierreCajaID, payload.TipoMovimiento, montoCaja); err != nil {
+				if err := dbpkg.RegistrarMovimientoEfectivoCierreCajaContext(r.Context(), dbEmp, payload.EmpresaID, payload.CierreCajaID, payload.TipoMovimiento, montoCaja); err != nil {
 					http.Error(w, "movimiento registrado, pero no se pudo actualizar la caja abierta", http.StatusInternalServerError)
 					return
 				}
@@ -844,7 +845,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if payload.UsuarioCreador == "" {
 				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			}
-			if err := normalizarCajaMovimientoFinanzas(dbEmp, &payload, payload.UsuarioCreador); err != nil {
+			if err := normalizarCajaMovimientoFinanzas(r.Context(), dbEmp, &payload, payload.UsuarioCreador); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -1163,7 +1164,7 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 				http.Error(w, "limit invalido", http.StatusBadRequest)
 				return
 			}
-			rows, err := dbpkg.ListEmpresaCierresCaja(dbEmp, empresaID, dbpkg.EmpresaCierreCajaFilter{
+			rows, err := dbpkg.ListEmpresaCierresCajaContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaCierreCajaFilter{
 				SucursalID:      sucursalID,
 				CajaCodigo:      strings.TrimSpace(r.URL.Query().Get("caja_codigo")),
 				EstadoCierre:    strings.TrimSpace(r.URL.Query().Get("estado_cierre")),
@@ -1196,7 +1197,7 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 			}
 			if strings.TrimSpace(payload.EstadoCierre) == "" || strings.EqualFold(strings.TrimSpace(payload.EstadoCierre), "abierto") {
 				if strings.TrimSpace(payload.CajaCodigo) != "" {
-					if existing, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, payload.EmpresaID, 0, payload.CajaCodigo, payload.Turno, payload.SucursalID, payload.UsuarioCreador); err == nil && existing != nil {
+					if existing, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(r.Context(), dbEmp, payload.EmpresaID, 0, payload.CajaCodigo, payload.Turno, payload.SucursalID, payload.UsuarioCreador); err == nil && existing != nil {
 						writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": existing.ID, "existente": true})
 						return
 					} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -1204,12 +1205,12 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 						return
 					}
 				}
-				if _, _, err := validarCupoCajasLicencia(dbEmp, dbSuper, payload.EmpresaID, 0); err != nil {
+				if _, _, err := validarCupoCajasLicencia(r.Context(), dbEmp, dbSuper, payload.EmpresaID, 0); err != nil {
 					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
 			}
-			id, err := dbpkg.CreateEmpresaCierreCaja(dbEmp, payload)
+			id, err := dbpkg.CreateEmpresaCierreCajaContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -1236,7 +1237,7 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 					if action == "desactivar" {
 						estado = "inactivo"
 					}
-					if err := dbpkg.SetEmpresaCierreCajaRegistroEstado(dbEmp, empresaID, id, estado); err != nil {
+					if err := dbpkg.SetEmpresaCierreCajaRegistroEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 						if errors.Is(err, sql.ErrNoRows) {
 							http.Error(w, "cierre de caja no encontrado", http.StatusNotFound)
 							return
@@ -1258,7 +1259,7 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 					estadoCierre = "anulado"
 				}
 				if estadoCierre == "abierto" {
-					if _, _, err := validarCupoCajasLicencia(dbEmp, dbSuper, empresaID, id); err != nil {
+					if _, _, err := validarCupoCajasLicencia(r.Context(), dbEmp, dbSuper, empresaID, id); err != nil {
 						http.Error(w, err.Error(), http.StatusConflict)
 						return
 					}
@@ -1279,8 +1280,8 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 
 				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
 
-				if err := dbpkg.SetEmpresaCierreCajaEstado(
-					dbEmp,
+				if err := dbpkg.SetEmpresaCierreCajaEstadoContext(
+					r.Context(), dbEmp,
 					empresaID,
 					id,
 					estadoCierre,
@@ -1323,7 +1324,7 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 				return
 			}
 			if strings.EqualFold(strings.TrimSpace(payload.EstadoCierre), "abierto") {
-				if _, _, err := validarCupoCajasLicencia(dbEmp, dbSuper, payload.EmpresaID, payload.ID); err != nil {
+				if _, _, err := validarCupoCajasLicencia(r.Context(), dbEmp, dbSuper, payload.EmpresaID, payload.ID); err != nil {
 					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
@@ -1331,7 +1332,7 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 			if payload.UsuarioCreador == "" {
 				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			}
-			if err := dbpkg.UpdateEmpresaCierreCaja(dbEmp, payload); err != nil {
+			if err := dbpkg.UpdateEmpresaCierreCajaContext(r.Context(), dbEmp, payload); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "cierre de caja no encontrado", http.StatusNotFound)
 					return
@@ -1357,7 +1358,7 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 				http.Error(w, "id es obligatorio", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.DeleteEmpresaCierreCaja(dbEmp, empresaID, id); err != nil {
+			if err := dbpkg.DeleteEmpresaCierreCajaContext(r.Context(), dbEmp, empresaID, id); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "cierre de caja no encontrado", http.StatusNotFound)
 					return

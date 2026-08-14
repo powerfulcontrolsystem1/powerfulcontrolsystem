@@ -901,12 +901,12 @@ func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario strin
 	egresosEfectivo := resp.Resumen.EgresosEfectivo
 	if payload.CierreCajaID > 0 {
 		cajaFisica := payload.CajaFisica
-		if err := dbpkg.SetEmpresaCierreCajaEstado(dbEmp, empresaID, payload.CierreCajaID, "cerrado", &cajaFisica, usuarioOperacion, string(meta)); err != nil {
+		if err := dbpkg.SetEmpresaCierreCajaEstadoContext(r.Context(), dbEmp, empresaID, payload.CierreCajaID, "cerrado", &cajaFisica, usuarioOperacion, string(meta)); err != nil {
 			return nil, 0, err
 		}
 		return resp, payload.CierreCajaID, nil
 	}
-	cierreID, err := dbpkg.CreateEmpresaCierreCaja(dbEmp, dbpkg.EmpresaCierreCaja{
+	cierreID, err := dbpkg.CreateEmpresaCierreCajaContext(r.Context(), dbEmp, dbpkg.EmpresaCierreCaja{
 		EmpresaID:        empresaID,
 		CajaCodigo:       cajaCodigo,
 		Turno:            turno,

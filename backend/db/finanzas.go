@@ -1585,6 +1585,10 @@ func IsEmpresaFinanzasPeriodoCerradoContext(ctx context.Context, dbConn *sql.DB,
 }
 
 func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, error) {
+	return CreateEmpresaCierreCajaContext(context.Background(), dbConn, cierre)
+}
+
+func CreateEmpresaCierreCajaContext(ctx context.Context, dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, error) {
 	cierre, err := normalizeEmpresaCierreCaja(cierre, true)
 	if err != nil {
 		return 0, err
@@ -1611,7 +1615,7 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 		}
 	}
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_cierres_caja (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_cierres_caja (
 		empresa_id, sucursal_id, caja_codigo, turno,
 		fecha_operacion, fecha_apertura, fecha_cierre, estado_cierre,
 		apertura_monto, ingresos_efectivo, egresos_efectivo, retiros_efectivo,
@@ -1651,10 +1655,14 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 }
 
 func CountEmpresaCierresCajaAbiertos(dbConn *sql.DB, empresaID int64) (int, error) {
-	return CountEmpresaCierresCajaAbiertosExcepto(dbConn, empresaID, 0)
+	return CountEmpresaCierresCajaAbiertosExceptoContext(context.Background(), dbConn, empresaID, 0)
 }
 
 func CountEmpresaCierresCajaAbiertosExcepto(dbConn *sql.DB, empresaID int64, excludeID int64) (int, error) {
+	return CountEmpresaCierresCajaAbiertosExceptoContext(context.Background(), dbConn, empresaID, excludeID)
+}
+
+func CountEmpresaCierresCajaAbiertosExceptoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, excludeID int64) (int, error) {
 	if dbConn == nil || empresaID <= 0 {
 		return 0, nil
 	}
@@ -1669,7 +1677,7 @@ func CountEmpresaCierresCajaAbiertosExcepto(dbConn *sql.DB, empresaID int64, exc
 		query += ` AND id <> ?`
 		args = append(args, excludeID)
 	}
-	err := dbConn.QueryRow(query, args...).Scan(&total)
+	err := dbConn.QueryRowContext(ctx, query, args...).Scan(&total)
 	if err != nil {
 		return 0, err
 	}
@@ -1680,6 +1688,10 @@ func CountEmpresaCierresCajaAbiertosExcepto(dbConn *sql.DB, empresaID int64, exc
 }
 
 func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCajaFilter) ([]EmpresaCierreCaja, error) {
+	return ListEmpresaCierresCajaContext(context.Background(), dbConn, empresaID, f)
+}
+
+func ListEmpresaCierresCajaContext(ctx context.Context, dbConn *sql.DB, empresaID int64, f EmpresaCierreCajaFilter) ([]EmpresaCierreCaja, error) {
 	query := `SELECT
 		id,
 		empresa_id,
@@ -1755,7 +1767,7 @@ func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCaja
 	query += ` LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1811,12 +1823,16 @@ func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCaja
 
 // GetEmpresaCierreCajaAbierta resuelve una caja abierta activa para registrar operaciones simultaneas.
 func GetEmpresaCierreCajaAbierta(dbConn *sql.DB, empresaID, cierreCajaID int64, cajaCodigo, turno string, sucursalID int64) (*EmpresaCierreCaja, error) {
-	return GetEmpresaCierreCajaAbiertaUsuario(dbConn, empresaID, cierreCajaID, cajaCodigo, turno, sucursalID, "")
+	return GetEmpresaCierreCajaAbiertaUsuarioContext(context.Background(), dbConn, empresaID, cierreCajaID, cajaCodigo, turno, sucursalID, "")
 }
 
 // GetEmpresaCierreCajaAbiertaUsuario resuelve una caja abierta activa del usuario indicado.
 // Si usuario esta vacio conserva el comportamiento administrativo historico.
 func GetEmpresaCierreCajaAbiertaUsuario(dbConn *sql.DB, empresaID, cierreCajaID int64, cajaCodigo, turno string, sucursalID int64, usuario string) (*EmpresaCierreCaja, error) {
+	return GetEmpresaCierreCajaAbiertaUsuarioContext(context.Background(), dbConn, empresaID, cierreCajaID, cajaCodigo, turno, sucursalID, usuario)
+}
+
+func GetEmpresaCierreCajaAbiertaUsuarioContext(ctx context.Context, dbConn *sql.DB, empresaID, cierreCajaID int64, cajaCodigo, turno string, sucursalID int64, usuario string) (*EmpresaCierreCaja, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1887,7 +1903,7 @@ func GetEmpresaCierreCajaAbiertaUsuario(dbConn *sql.DB, empresaID, cierreCajaID 
 
 	var item EmpresaCierreCaja
 	var incidencia int
-	err := dbConn.QueryRow(query, args...).Scan(
+	err := dbConn.QueryRowContext(ctx, query, args...).Scan(
 		&item.ID,
 		&item.EmpresaID,
 		&item.SucursalID,
@@ -1932,10 +1948,14 @@ func GetEmpresaCierreCajaAbiertaUsuario(dbConn *sql.DB, empresaID, cierreCajaID 
 
 // RegistrarIngresoEfectivoCierreCaja suma efectivo esperado en la caja abierta de forma atomica.
 func RegistrarIngresoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCajaID int64, montoEfectivo float64) error {
+	return RegistrarIngresoEfectivoCierreCajaContext(context.Background(), dbConn, empresaID, cierreCajaID, montoEfectivo)
+}
+
+func RegistrarIngresoEfectivoCierreCajaContext(ctx context.Context, dbConn *sql.DB, empresaID, cierreCajaID int64, montoEfectivo float64) error {
 	if empresaID <= 0 || cierreCajaID <= 0 || montoEfectivo <= 0 {
 		return nil
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_cierres_caja
 	SET ingresos_efectivo = COALESCE(ingresos_efectivo, 0) + ?,
 		caja_teorica = COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) + ? - COALESCE(egresos_efectivo, 0) - COALESCE(retiros_efectivo, 0),
 		diferencia_caja = (COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) + ? - COALESCE(egresos_efectivo, 0) - COALESCE(retiros_efectivo, 0)) - COALESCE(caja_fisica, 0),
@@ -1953,7 +1973,10 @@ func RegistrarIngresoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCajaID 
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1962,18 +1985,22 @@ func RegistrarIngresoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCajaID 
 
 // RegistrarMovimientoEfectivoCierreCaja suma ingresos o egresos manuales a una caja abierta.
 func RegistrarMovimientoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCajaID int64, tipoMovimiento string, montoEfectivo float64) error {
+	return RegistrarMovimientoEfectivoCierreCajaContext(context.Background(), dbConn, empresaID, cierreCajaID, tipoMovimiento, montoEfectivo)
+}
+
+func RegistrarMovimientoEfectivoCierreCajaContext(ctx context.Context, dbConn *sql.DB, empresaID, cierreCajaID int64, tipoMovimiento string, montoEfectivo float64) error {
 	if empresaID <= 0 || cierreCajaID <= 0 || montoEfectivo <= 0 {
 		return nil
 	}
 	tipoMovimiento = normalizeTipoMovimiento(tipoMovimiento)
 	if tipoMovimiento == "ingreso" {
-		return RegistrarIngresoEfectivoCierreCaja(dbConn, empresaID, cierreCajaID, montoEfectivo)
+		return RegistrarIngresoEfectivoCierreCajaContext(ctx, dbConn, empresaID, cierreCajaID, montoEfectivo)
 	}
 	if tipoMovimiento != "egreso" {
 		return nil
 	}
 	monto := roundReportesMoney(montoEfectivo)
-	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_cierres_caja
 	SET egresos_efectivo = COALESCE(egresos_efectivo, 0) + ?,
 		caja_teorica = COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) - (COALESCE(egresos_efectivo, 0) + ?) - COALESCE(retiros_efectivo, 0),
 		diferencia_caja = (COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) - (COALESCE(egresos_efectivo, 0) + ?) - COALESCE(retiros_efectivo, 0)) - COALESCE(caja_fisica, 0),
@@ -1991,7 +2018,10 @@ func RegistrarMovimientoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCaja
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1999,8 +2029,12 @@ func RegistrarMovimientoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCaja
 }
 
 func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
+	return UpdateEmpresaCierreCajaContext(context.Background(), dbConn, cierre)
+}
+
+func UpdateEmpresaCierreCajaContext(ctx context.Context, dbConn *sql.DB, cierre EmpresaCierreCaja) error {
 	var estadoActual string
-	err := dbConn.QueryRow(`SELECT COALESCE(estado_cierre, 'abierto')
+	err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(estado_cierre, 'abierto')
 	FROM empresa_cierres_caja
 	WHERE empresa_id = ? AND id = ?
 	LIMIT 1`, cierre.EmpresaID, cierre.ID).Scan(&estadoActual)
@@ -2036,7 +2070,7 @@ func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
 		}
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja SET
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_cierres_caja SET
 		sucursal_id = ?,
 		caja_codigo = ?,
 		turno = ?,
@@ -2103,7 +2137,10 @@ func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -2111,6 +2148,10 @@ func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
 }
 
 func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado string, cajaFisica *float64, usuario, observaciones string) error {
+	return SetEmpresaCierreCajaEstadoContext(context.Background(), dbConn, empresaID, id, estado, cajaFisica, usuario, observaciones)
+}
+
+func SetEmpresaCierreCajaEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64, estado string, cajaFisica *float64, usuario, observaciones string) error {
 	estado = normalizeEstadoCierre(estado)
 	if estado == "" {
 		return fmt.Errorf("estado_cierre invalido")
@@ -2119,11 +2160,15 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 	if usuario == "" {
 		usuario = "sistema"
 	}
-	tx, err := dbConn.Begin()
+	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) {
+			PerfLogf("[finanzas][cierre_caja] rollback empresa_id=%d cierre_id=%d err=%v", empresaID, id, rollbackErr)
+		}
+	}()
 
 	var actualEstado string
 	var fechaCierreActual string
@@ -2137,7 +2182,7 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 	var aprobadoPorActual string
 	var aprobadoEnActual string
 	var observacionesActual string
-	err = queryRowTxSQLCompat(tx, `SELECT
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT
 		COALESCE(estado_cierre, 'abierto'),
 		COALESCE(fecha_cierre, ''),
 		COALESCE(apertura_monto, 0),
@@ -2228,7 +2273,7 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 		obs = observacionesActual
 	}
 
-	res, err := execTxSQLCompat(tx, `UPDATE empresa_cierres_caja SET
+	res, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_cierres_caja SET
 		estado_cierre = ?,
 		fecha_cierre = ?,
 		cerrado_por = ?,
@@ -2257,7 +2302,10 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -2265,14 +2313,21 @@ func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado stri
 }
 
 func SetEmpresaCierreCajaRegistroEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
+	return SetEmpresaCierreCajaRegistroEstadoContext(context.Background(), dbConn, empresaID, id, estado)
+}
+
+func SetEmpresaCierreCajaRegistroEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64, estado string) error {
 	estado = normalizeEstadoMovimiento(estado)
-	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_cierres_caja
 	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -2280,8 +2335,12 @@ func SetEmpresaCierreCajaRegistroEstado(dbConn *sql.DB, empresaID, id int64, est
 }
 
 func DeleteEmpresaCierreCaja(dbConn *sql.DB, empresaID, id int64) error {
+	return DeleteEmpresaCierreCajaContext(context.Background(), dbConn, empresaID, id)
+}
+
+func DeleteEmpresaCierreCajaContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64) error {
 	var estadoCierre string
-	err := dbConn.QueryRow(`SELECT COALESCE(estado_cierre, 'abierto')
+	err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(estado_cierre, 'abierto')
 	FROM empresa_cierres_caja
 	WHERE empresa_id = ? AND id = ?
 	LIMIT 1`, empresaID, id).Scan(&estadoCierre)
@@ -2292,11 +2351,14 @@ func DeleteEmpresaCierreCaja(dbConn *sql.DB, empresaID, id int64) error {
 		return ErrCierreCajaAprobadoBloqueado
 	}
 
-	res, err := dbConn.Exec(`DELETE FROM empresa_cierres_caja WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	res, err := dbConn.ExecContext(ctx, `DELETE FROM empresa_cierres_caja WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}

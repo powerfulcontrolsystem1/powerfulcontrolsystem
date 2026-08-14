@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -514,7 +515,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
-				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
+				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(r.Context(), dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 				if errCierreCaja != nil {
 					if errors.Is(errCierreCaja, sql.ErrNoRows) {
 						http.Error(w, "debes seleccionar una caja abierta y activa antes de registrar un abono", http.StatusConflict)
@@ -543,7 +544,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				if metodoPago == "efectivo" {
-					if errCaja := dbpkg.RegistrarIngresoEfectivoCierreCaja(dbEmp, empresaID, cierreCaja.ID, monto); errCaja != nil {
+					if errCaja := dbpkg.RegistrarIngresoEfectivoCierreCajaContext(r.Context(), dbEmp, empresaID, cierreCaja.ID, monto); errCaja != nil {
 						log.Printf("[carritos] sumar efectivo abono empresa_id=%d cierre_id=%d carrito_id=%d error: %v", empresaID, cierreCaja.ID, carritoID, errCaja)
 					}
 				}
@@ -641,7 +642,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						return
 					}
 				}
-				cierre, created, errCaja := openCajaCobroForCarrito(dbEmp, dbSuper, empresaID, payload.CajaCodigo, payload.Turno, payload.SucursalID, payload.AperturaEfectivo, payload.Moneda, strings.TrimSpace(adminEmailFromRequest(r)))
+				cierre, created, errCaja := openCajaCobroForCarrito(r.Context(), dbEmp, dbSuper, empresaID, payload.CajaCodigo, payload.Turno, payload.SucursalID, payload.AperturaEfectivo, payload.Moneda, strings.TrimSpace(adminEmailFromRequest(r)))
 				if errCaja != nil {
 					log.Printf("[carritos] abrir caja cobro empresa_id=%d error: %v", empresaID, errCaja)
 					http.Error(w, errCaja.Error(), http.StatusBadRequest)
@@ -1266,7 +1267,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if usuarioOperacionItem, errUsuario := dbpkg.ResolveEmpresaUsuarioByReference(dbEmp, empresaID, usuarioOperacion); errUsuario == nil && usuarioOperacionItem != nil {
 					usuarioOperacionID = usuarioOperacionItem.ID
 				}
-				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
+				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(r.Context(), dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 				if errCierreCaja != nil {
 					if errors.Is(errCierreCaja, sql.ErrNoRows) {
 						http.Error(w, "debes seleccionar una caja abierta y activa antes de pagar", http.StatusConflict)
@@ -1517,7 +1518,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					log.Printf("[carritos] metrica venta_pagada empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
 				}
 				if montoEfectivoCaja > 0 {
-					if errCaja := dbpkg.RegistrarIngresoEfectivoCierreCaja(dbEmp, empresaID, cierreCaja.ID, montoEfectivoCaja); errCaja != nil {
+					if errCaja := dbpkg.RegistrarIngresoEfectivoCierreCajaContext(r.Context(), dbEmp, empresaID, cierreCaja.ID, montoEfectivoCaja); errCaja != nil {
 						log.Printf("[carritos] actualizar efectivo cierre_caja empresa_id=%d cierre_id=%d carrito_id=%d error: %v", empresaID, cierreCaja.ID, id, errCaja)
 					}
 				}
@@ -2930,7 +2931,7 @@ func normalizeCarritoCajaCode(value string) string {
 	return code
 }
 
-func openCajaCobroForCarrito(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, cajaCodigo, turno string, sucursalID int64, apertura float64, moneda, usuario string) (*dbpkg.EmpresaCierreCaja, bool, error) {
+func openCajaCobroForCarrito(ctx context.Context, dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, cajaCodigo, turno string, sucursalID int64, apertura float64, moneda, usuario string) (*dbpkg.EmpresaCierreCaja, bool, error) {
 	if empresaID <= 0 {
 		return nil, false, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -2953,16 +2954,16 @@ func openCajaCobroForCarrito(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, ca
 	if usuario == "" {
 		usuario = "sistema"
 	}
-	if existing, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, 0, code, turno, sucursalID, usuario); err == nil && existing != nil {
+	if existing, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(ctx, dbEmp, empresaID, 0, code, turno, sucursalID, usuario); err == nil && existing != nil {
 		return existing, false, nil
 	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, false, err
 	}
-	if _, _, err := validarCupoCajasLicencia(dbEmp, dbSuper, empresaID, 0); err != nil {
+	if _, _, err := validarCupoCajasLicencia(ctx, dbEmp, dbSuper, empresaID, 0); err != nil {
 		return nil, false, err
 	}
 	now := time.Now()
-	cierreID, err := dbpkg.CreateEmpresaCierreCaja(dbEmp, dbpkg.EmpresaCierreCaja{
+	cierreID, err := dbpkg.CreateEmpresaCierreCajaContext(ctx, dbEmp, dbpkg.EmpresaCierreCaja{
 		EmpresaID:        empresaID,
 		SucursalID:       sucursalID,
 		CajaCodigo:       code,
@@ -2982,7 +2983,7 @@ func openCajaCobroForCarrito(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, ca
 	if err != nil {
 		return nil, false, err
 	}
-	created, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, cierreID, "", "", 0, usuario)
+	created, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(ctx, dbEmp, empresaID, cierreID, "", "", 0, usuario)
 	if err != nil {
 		return nil, false, err
 	}
