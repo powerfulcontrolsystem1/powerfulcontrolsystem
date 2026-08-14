@@ -495,14 +495,14 @@ func handleEmpresaCreditosUpsertLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	_, prevErr := dbpkg.GetEmpresaCreditoClienteLimite(dbEmp, empresaID, payload.ClienteID, true)
+	_, prevErr := dbpkg.GetEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, empresaID, payload.ClienteID, true)
 	if prevErr != nil && prevErr != sql.ErrNoRows {
 		http.Error(w, "No se pudo validar limite actual del cliente", http.StatusInternalServerError)
 		return
 	}
 	created := prevErr == sql.ErrNoRows
 
-	id, err := dbpkg.UpsertEmpresaCreditoClienteLimite(dbEmp, dbpkg.EmpresaCreditoClienteLimite{
+	id, err := dbpkg.UpsertEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, dbpkg.EmpresaCreditoClienteLimite{
 		EmpresaID:                empresaID,
 		ClienteID:                payload.ClienteID,
 		LimiteSaldoTotal:         payload.LimiteSaldoTotal,
@@ -517,7 +517,7 @@ func handleEmpresaCreditosUpsertLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	row, err := dbpkg.GetEmpresaCreditoClienteLimite(dbEmp, empresaID, payload.ClienteID, true)
+	row, err := dbpkg.GetEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, empresaID, payload.ClienteID, true)
 	if err != nil {
 		http.Error(w, "limite guardado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -572,7 +572,7 @@ func handleEmpresaCreditosDeleteLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := dbpkg.SetEmpresaCreditoClienteLimiteRowEstado(dbEmp, empresaID, clienteID, "inactivo"); err != nil {
+	if err := dbpkg.SetEmpresaCreditoClienteLimiteRowEstadoContext(r.Context(), dbEmp, empresaID, clienteID, "inactivo"); err != nil {
 		http.Error(w, "No se pudo eliminar limite de cliente", http.StatusInternalServerError)
 		return
 	}
