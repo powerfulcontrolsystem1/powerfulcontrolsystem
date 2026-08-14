@@ -1129,7 +1129,7 @@ func handleEmpresaCreditosEstado(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, "estado_credito es obligatorio", http.StatusBadRequest)
 		return
 	}
-	if err := dbpkg.SetEmpresaCreditoEstado(dbEmp, empresaID, id, estado); err != nil {
+	if err := dbpkg.SetEmpresaCreditoEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -1160,7 +1160,7 @@ func handleEmpresaCreditosActivacion(w http.ResponseWriter, r *http.Request, dbE
 	if action == "desactivar" {
 		estado = "inactivo"
 	}
-	if err := dbpkg.SetEmpresaCreditoRowEstado(dbEmp, empresaID, id, estado); err != nil {
+	if err := dbpkg.SetEmpresaCreditoRowEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 		http.Error(w, "No se pudo actualizar estado", http.StatusInternalServerError)
 		return
 	}
@@ -1268,7 +1268,7 @@ func handleEmpresaCreditosUpdate(w http.ResponseWriter, r *http.Request, dbEmp *
 	}
 	current.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 
-	if err := dbpkg.UpdateEmpresaCredito(dbEmp, *current); err != nil {
+	if err := dbpkg.UpdateEmpresaCreditoContext(r.Context(), dbEmp, *current); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

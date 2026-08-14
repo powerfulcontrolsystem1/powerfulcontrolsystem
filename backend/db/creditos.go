@@ -2051,6 +2051,12 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 
 // SetEmpresaCreditoEstado ajusta estado operativo del credito.
 func SetEmpresaCreditoEstado(dbConn *sql.DB, empresaID, creditoID int64, estadoCredito string) error {
+	return SetEmpresaCreditoEstadoContext(context.Background(), dbConn, empresaID, creditoID, estadoCredito)
+}
+
+// SetEmpresaCreditoEstadoContext actualiza el estado de negocio y conserva la
+// cancelacion del llamador hasta PostgreSQL.
+func SetEmpresaCreditoEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, estadoCredito string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -2058,24 +2064,36 @@ func SetEmpresaCreditoEstado(dbConn *sql.DB, empresaID, creditoID int64, estadoC
 		return errors.New("empresa_id o credito_id invalido")
 	}
 	estado := creditoNormalizeEstado(estadoCredito)
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado_credito = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, creditoID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET estado_credito = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, creditoID)
 	return err
 }
 
 // SetEmpresaCreditoRowEstado activa o desactiva el registro del credito.
 func SetEmpresaCreditoRowEstado(dbConn *sql.DB, empresaID, creditoID int64, estado string) error {
+	return SetEmpresaCreditoRowEstadoContext(context.Background(), dbConn, empresaID, creditoID, estado)
+}
+
+// SetEmpresaCreditoRowEstadoContext activa o desactiva un crédito y conserva
+// la cancelacion del llamador hasta PostgreSQL.
+func SetEmpresaCreditoRowEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	if empresaID <= 0 || creditoID <= 0 {
 		return errors.New("empresa_id o credito_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, creditoNormalizeRowEstado(estado), empresaID, creditoID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, creditoNormalizeRowEstado(estado), empresaID, creditoID)
 	return err
 }
 
 // UpdateEmpresaCredito actualiza metadata operativa del credito sin afectar historico de movimientos.
 func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
+	return UpdateEmpresaCreditoContext(context.Background(), dbConn, payload)
+}
+
+// UpdateEmpresaCreditoContext actualiza un crédito conservando la cancelación
+// de la ruta HTTP hasta PostgreSQL.
+func UpdateEmpresaCreditoContext(ctx context.Context, dbConn *sql.DB, payload EmpresaCredito) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -2110,7 +2128,7 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 		return err
 	}
 
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET
 		codigo = ?,
 		cliente_id = ?,
 		cliente_nombre = ?,
