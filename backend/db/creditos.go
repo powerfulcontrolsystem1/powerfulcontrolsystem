@@ -1283,6 +1283,10 @@ func creditoHydrateCuotaStatusRowsContext(ctx context.Context, dbConn *sql.DB, e
 }
 
 func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, orderSQL string, args []interface{}, limit int) ([]EmpresaCredito, error) {
+	return listEmpresaCreditosByWhereContext(context.Background(), dbConn, empresaID, whereSQL, orderSQL, args, limit)
+}
+
+func listEmpresaCreditosByWhereContext(ctx context.Context, dbConn *sql.DB, empresaID int64, whereSQL, orderSQL string, args []interface{}, limit int) ([]EmpresaCredito, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1342,7 +1346,7 @@ func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, order
 	queryArgs = append(queryArgs, args...)
 	queryArgs = append(queryArgs, limit)
 
-	rows, err := dbConn.Query(query, queryArgs...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, queryArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -1360,7 +1364,7 @@ func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, order
 		return nil, err
 	}
 
-	creditoHydrateCuotaStatusRows(dbConn, empresaID, out)
+	creditoHydrateCuotaStatusRowsContext(ctx, dbConn, empresaID, out)
 	return out, nil
 }
 
@@ -2559,6 +2563,12 @@ func GetEmpresaCreditosCarteraResumenContext(ctx context.Context, dbConn *sql.DB
 
 // GetEmpresaCreditosMoraDashboard retorna alertas proactivas y ranking de morosidad.
 func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProximos, top int, includeInactive bool) (*EmpresaCreditosMoraDashboard, error) {
+	return GetEmpresaCreditosMoraDashboardContext(context.Background(), dbConn, empresaID, diasProximos, top, includeInactive)
+}
+
+// GetEmpresaCreditosMoraDashboardContext conserva la cancelacion durante las
+// consultas de ranking y agregados de mora.
+func GetEmpresaCreditosMoraDashboardContext(ctx context.Context, dbConn *sql.DB, empresaID int64, diasProximos, top int, includeInactive bool) (*EmpresaCreditosMoraDashboard, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -2587,7 +2597,7 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	maxDate := time.Now().In(time.Local).AddDate(0, 0, diasProximos).Format("2006-01-02")
 
 	proximosWhere := baseWhere + " AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) >= ? AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) <= ?"
-	proximosRows, err := listEmpresaCreditosByWhere(
+	proximosRows, err := listEmpresaCreditosByWhereContext(ctx,
 		dbConn,
 		empresaID,
 		proximosWhere,
@@ -2610,7 +2620,7 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 		  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 	)`
 	vencidosWhere := baseWhere + " AND (COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? OR " + cuotaVencidaSQL + ")"
-	vencidosRows, err := listEmpresaCreditosByWhere(
+	vencidosRows, err := listEmpresaCreditosByWhereContext(ctx,
 		dbConn,
 		empresaID,
 		vencidosWhere,
@@ -2623,7 +2633,7 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	}
 
 	rankingWhere := baseWhere + " AND (COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? OR " + cuotaVencidaSQL + ")"
-	rankingRows, err := listEmpresaCreditosByWhere(
+	rankingRows, err := listEmpresaCreditosByWhereContext(ctx,
 		dbConn,
 		empresaID,
 		rankingWhere,
@@ -2677,7 +2687,7 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	var totalVenc int64
 	var montoProx float64
 	var montoVenc float64
-	if err := dbConn.QueryRow(countQuery, countArgs...).Scan(&totalProx, &totalVenc, &montoProx, &montoVenc); err != nil {
+	if err := queryRowSQLCompatContext(ctx, dbConn, countQuery, countArgs...).Scan(&totalProx, &totalVenc, &montoProx, &montoVenc); err != nil {
 		return nil, err
 	}
 

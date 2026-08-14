@@ -42674,3 +42674,10 @@ acumulativa.
   por `empresa_id` sin cambiar contratos internos.
 - Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
   La deuda DB sin contexto baja de 528 a 526; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: tablero de mora cancelable
+
+- Próximos vencimientos, vencidos, ranking y agregados del tablero de mora
+  conservan `r.Context()` hasta PostgreSQL, incluidos los listados e
+  hidrataciones auxiliares por empresa.
+- Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 526 a 524; no se ejecutó `rs`.

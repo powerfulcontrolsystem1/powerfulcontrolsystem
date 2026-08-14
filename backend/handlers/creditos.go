@@ -857,7 +857,7 @@ func handleEmpresaCreditosAlertasMora(w http.ResponseWriter, r *http.Request, db
 		return
 	}
 
-	alertas, err := dbpkg.GetEmpresaCreditosMoraDashboard(dbEmp, empresaID, diasProximos, top, queryBool(r, "include_inactive"))
+	alertas, err := dbpkg.GetEmpresaCreditosMoraDashboardContext(r.Context(), dbEmp, empresaID, diasProximos, top, queryBool(r, "include_inactive"))
 	if err != nil {
 		http.Error(w, "No se pudo consultar alertas de morosidad", http.StatusInternalServerError)
 		return
@@ -1311,7 +1311,7 @@ func handleEmpresaCreditosReporte(w http.ResponseWriter, r *http.Request, dbEmp 
 			http.Error(w, paramsErr.Error(), http.StatusBadRequest)
 			return
 		}
-		alertas, alertErr := dbpkg.GetEmpresaCreditosMoraDashboard(dbEmp, empresaID, diasProximos, top, filter.IncludeInactive)
+		alertas, alertErr := dbpkg.GetEmpresaCreditosMoraDashboardContext(r.Context(), dbEmp, empresaID, diasProximos, top, filter.IncludeInactive)
 		if alertErr != nil {
 			http.Error(w, "No se pudo calcular reporte de morosidad", http.StatusInternalServerError)
 			return

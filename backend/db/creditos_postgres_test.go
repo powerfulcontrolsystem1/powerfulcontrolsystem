@@ -168,6 +168,24 @@ func TestCreditoListadoPreservesRequestContextDuringHydration(t *testing.T) {
 	}
 }
 
+func TestCreditoMoraDashboardPreservesRequestContext(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"func listEmpresaCreditosByWhereContext(ctx context.Context",
+		"func GetEmpresaCreditosMoraDashboardContext(ctx context.Context",
+		"listEmpresaCreditosByWhereContext(ctx,",
+		"queryRowSQLCompatContext(ctx, dbConn, countQuery",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("el tablero de mora debe conservar contexto en %q", required)
+		}
+	}
+}
+
 func TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays(t *testing.T) {
 	if got := creditoMaxCuotas("diaria"); got < 730 {
 		t.Fatalf("los creditos diarios deben permitir contratos de al menos dos años, got=%d", got)
