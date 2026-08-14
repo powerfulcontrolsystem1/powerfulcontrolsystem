@@ -198,3 +198,13 @@ func TestSharedRepositoryValueHelpers(t *testing.T) {
 		t.Fatalf("escaped LIKE pattern = %q", got)
 	}
 }
+
+func TestRepositoryCoreCodeSharedFormatting(t *testing.T) {
+	t.Parallel()
+	if got := repositoryCoreCode("dom", "Room 1", "Relay_2"); got != "DOM-ROOM-1-RELAY-2" {
+		t.Fatalf("core code = %q", got)
+	}
+	if got := repositoryCoreCode("dom", "   "); len(got) < len("DOM-") {
+		t.Fatalf("fallback core code = %q", got)
+	}
+}

@@ -4923,3 +4923,5 @@
 
 - Unifica wrappers equivalentes de auditoría, permisos y compras sobre helpers
   de handlers ya existentes, con pruebas del paquete y vet aprobados.
+- Centraliza la generación de códigos repetida en cuatro repositorios con
+  regresión de formato y fallback.

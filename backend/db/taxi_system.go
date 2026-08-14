@@ -672,29 +672,7 @@ func ResolveTaxiCustomerByToken(dbConn *sql.DB, empresaID int64, token string) (
 }
 
 func taxiCoreCode(prefix string, parts ...string) string {
-	var b strings.Builder
-	for _, part := range parts {
-		for _, r := range strings.ToUpper(strings.TrimSpace(part)) {
-			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
-				b.WriteRune(r)
-				continue
-			}
-			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
-				b.WriteRune('-')
-			}
-		}
-		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
-			b.WriteRune('-')
-		}
-	}
-	code := strings.Trim(b.String(), "-")
-	if code == "" {
-		code = fmt.Sprintf("%d", time.Now().UnixNano())
-	}
-	if len(code) > 42 {
-		code = code[:42]
-	}
-	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + strings.Trim(code, "-")
+	return repositoryCoreCode(prefix, parts...)
 }
 
 func syncTaxiRequestCliente(dbConn *sql.DB, req EmpresaTaxiRequest, usuario string) (int64, error) {

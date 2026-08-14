@@ -1499,3 +1499,14 @@ autoriza ni ejecuta despliegue productivo.
   maquillarla.
 - P110-001A continúa parcial; el avance formal permanece en **38,5 %**,
   certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, códigos compartidos de repositorios
+
+- Apartamentos turísticos, domicilios, parqueadero y taxi delegan la misma
+  generación de códigos al helper `repositoryCoreCode`; se conserva el nombre
+  de cada wrapper de dominio y su formato, incluyendo el fallback temporal.
+- Las pruebas DB y `go vet ./db` aprobaron. La compuerta estructural reduce los
+  grupos duplicados exactos de **47 a 46** sin tocar SQL, tenant, permisos ni
+  contratos.
+- P110-001A continúa parcial; el avance formal sigue en **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
