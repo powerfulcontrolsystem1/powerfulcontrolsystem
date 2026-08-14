@@ -33,7 +33,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaAuditoriaSchema` | [backend/db/auditoria_empresa.go:69](../../backend/db/auditoria_empresa.go#L69) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperAuditoriaSchema` | [backend/db/auditoria_super.go:62](../../backend/db/auditoria_super.go#L62) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaBackupsSchema` | [backend/db/backups_empresariales.go:560](../../backend/db/backups_empresariales.go#L560) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaCalculadoraSchema` | [backend/db/calculadora_operativa.go:117](../../backend/db/calculadora_operativa.go#L117) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaCalculadoraSchema` | [backend/db/calculadora_operativa.go:118](../../backend/db/calculadora_operativa.go#L118) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCamarasSchema` | [backend/db/camaras.go:47](../../backend/db/camaras.go#L47) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCarnetsSchema` | [backend/db/carnets_empresa.go:99](../../backend/db/carnets_empresa.go#L99) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCarnetDefaultTemplate` | [backend/db/carnets_empresa.go:271](../../backend/db/carnets_empresa.go#L271) | seed o provisionamiento idempotente | empresas o por confirmar |

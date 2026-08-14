@@ -1,4 +1,10 @@
 2026-08-13
+- `backend/db/calculadora_operativa_postgres_test.go`: regresión del uso de
+  `RETURNING id`, propagación de contexto y lectura de configuración sin
+  escritura implícita en Calculadora.
+- `backend/handlers/postgres_runtime_contract_test.go`: impide reintroducir
+  `LastInsertId` en reportes programados o el fallback SQLite retirado de la
+  conciliación de facturación electrónica.
 - `backend/db/preconfig_schema_readiness.go`: verificadores de solo lectura para
   los contratos de productos, usuarios, configuración operativa, comisiones y
   tarifas diarias usados por la preconfiguración empresarial.

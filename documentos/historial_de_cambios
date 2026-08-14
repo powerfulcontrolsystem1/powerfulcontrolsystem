@@ -1,3 +1,16 @@
+2026-08-13: Plan 110 / contratos PostgreSQL y lectura pura de Calculadora.
+- Plantillas, programaciones y ejecuciones de reportes, configuración e
+  historial de Calculadora y creación de proveedores recuperan identificadores
+  con `INSERT ... RETURNING id`; se elimina dependencia de `LastInsertId`.
+- Calculadora propaga `r.Context()` en toda su persistencia y consultar la
+  configuración ausente devuelve el valor predeterminado sin escribir durante
+  GET. Créditos deja de ocultar fallos al conciliar el paz y salvo.
+- Facturación elimina el fallback muerto `no such table` específico de SQLite
+  y usa exclusivamente el repositorio PostgreSQL canónico. Las regresiones,
+  pruebas DB/handlers, `vet`, inventarios y preflight completo estricto
+  aprueban; deuda DB sin contexto 640, descartes explícitos 771 y duplicación
+  0. No se ejecutó `rs` ni se creó PR.
+
 2026-08-13: Plan 110 / contextos SQL transversales y reportes de ventas.
 - Plan de cuentas, cartera, gestión documental, producción y logística propagan
   el contexto HTTP a sus consultas y transacciones PostgreSQL.

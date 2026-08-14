@@ -587,20 +587,18 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 			}
 		}
 
-		res, err := dbEmp.ExecContext(r.Context(), `
+		var insertID int64
+		insertErr := dbEmp.QueryRowContext(r.Context(), `
 			INSERT INTO empresa_reportes_plantillas (
 				empresa_id, codigo, nombre, dataset_key, version, formato,
 				columnas_json, config_json, vigente, hash_contenido,
 				fecha_actualizacion, usuario_creador, estado, observaciones
 			)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
-		`, empresaID, codigo, nombre, datasetKey, version, formato, columnasJSON, configJSON, reportesBoolToInt(vigente), hashContenido, ahora, usuario, strings.TrimSpace(payload.Observaciones))
-		if err != nil {
-			return err
-		}
-		insertID, err := res.LastInsertId()
-		if err != nil {
-			return err
+			RETURNING id
+		`, empresaID, codigo, nombre, datasetKey, version, formato, columnasJSON, configJSON, reportesBoolToInt(vigente), hashContenido, ahora, usuario, strings.TrimSpace(payload.Observaciones)).Scan(&insertID)
+		if insertErr != nil {
+			return insertErr
 		}
 		item, err := getReportePlantillaByID(r.Context(), dbEmp, empresaID, insertID)
 		if err != nil {
@@ -1068,7 +1066,8 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 			return nil
 		}
 
-		res, err := dbEmp.ExecContext(r.Context(), `
+		var insertID int64
+		insertErr := dbEmp.QueryRowContext(r.Context(), `
 			INSERT INTO empresa_reportes_programaciones (
 				empresa_id, nombre, dataset_key, nivel, formatos, parametros_json,
 				template_codigo, template_version, frecuencia, hora_envio, timezone,
@@ -1076,6 +1075,7 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 				fecha_actualizacion, usuario_creador, estado, observaciones
 			)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
+			RETURNING id
 		`,
 			empresaID,
 			nombre,
@@ -1095,13 +1095,9 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 			ahora,
 			usuario,
 			strings.TrimSpace(payload.Observaciones),
-		)
-		if err != nil {
-			return err
-		}
-		insertID, err := res.LastInsertId()
-		if err != nil {
-			return err
+		).Scan(&insertID)
+		if insertErr != nil {
+			return insertErr
 		}
 		item, err := getReporteProgramacionByID(r.Context(), dbEmp, empresaID, insertID)
 		if err != nil {
@@ -1450,7 +1446,8 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 	salidaResumenJSON := reportesMarshalJSON(salidaResumen, "{}")
 	formatosPersist := reportesMarshalJSON(formats, "[\"json\"]")
 
-	res, err := dbEmp.ExecContext(r.Context(), `
+	var ejecucionID int64
+	err = dbEmp.QueryRowContext(r.Context(), `
 		INSERT INTO empresa_reportes_ejecuciones (
 			empresa_id, programacion_id, dataset_key, referencia,
 			formato_principal, formatos_json, estado_ejecucion, ejecutado_en,
@@ -1458,6 +1455,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 			fecha_actualizacion, usuario_creador, estado, observaciones
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
+		RETURNING id
 	`,
 		baseBuilder.empresaID,
 		programacionID,
@@ -1473,11 +1471,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 		now,
 		usuario,
 		"Ejecucion programada de reportes",
-	)
-	if err != nil {
-		return err
-	}
-	ejecucionID, err := res.LastInsertId()
+	).Scan(&ejecucionID)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -229,10 +230,17 @@ func handleEmpresaCreditosPazYSalvo(w http.ResponseWriter, r *http.Request, dbEm
 	}
 	var documentoCliente string
 	if credito.ClienteID > 0 {
-		_ = dbEmp.QueryRow(`SELECT COALESCE(numero_documento,'') FROM clientes WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, credito.ClienteID).Scan(&documentoCliente)
+		err = dbEmp.QueryRowContext(r.Context(), `SELECT COALESCE(numero_documento,'') FROM clientes WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, credito.ClienteID).Scan(&documentoCliente)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "No se pudo consultar el documento del cliente", http.StatusInternalServerError)
+			return
+		}
 	}
 	var totalPagado float64
-	_ = dbEmp.QueryRow(`SELECT COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado,'activo'))='activo' AND LOWER(COALESCE(tipo_movimiento,'')) IN ('abono','pago') THEN monto ELSE 0 END),0) FROM empresa_creditos_movimientos WHERE empresa_id=? AND credito_id=?`, empresaID, creditoID).Scan(&totalPagado)
+	if err := dbEmp.QueryRowContext(r.Context(), `SELECT COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado,'activo'))='activo' AND LOWER(COALESCE(tipo_movimiento,'')) IN ('abono','pago') THEN monto ELSE 0 END),0) FROM empresa_creditos_movimientos WHERE empresa_id=? AND credito_id=?`, empresaID, creditoID).Scan(&totalPagado); err != nil {
+		http.Error(w, "No se pudo conciliar el total pagado", http.StatusInternalServerError)
+		return
+	}
 
 	now := time.Now().In(time.Local)
 	digest := sha256.Sum256([]byte(fmt.Sprintf("%d|%d|%s|%s", empresaID, creditoID, credito.Codigo, now.Format(time.RFC3339Nano))))

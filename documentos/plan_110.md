@@ -1640,3 +1640,18 @@ autoriza ni ejecuta despliegue productivo.
   deuda DB sin contexto baja de **662 a 653** y la duplicación exacta sigue en 0.
 - P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs` ni se creó PR.
+
+## Actualización 2026-08-13, PostgreSQL nativo y GET sin mutación
+
+- Las altas de plantillas, programaciones y ejecuciones de reportes,
+  configuración/historial de Calculadora y proveedores usan `RETURNING id` y
+  ya no dependen de `LastInsertId`, incompatible con el contrato PostgreSQL.
+- Calculadora ofrece variantes `Context`, los handlers propagan `r.Context()` y
+  una lectura de configuración ausente devuelve defaults sin crear filas.
+- El paz y salvo de Créditos falla de forma explícita si no puede conciliar el
+  documento o los pagos; Facturación retira su fallback runtime para SQLite.
+- Pruebas de regresión y preflight completo estricto protegen PostgreSQL y la
+  ausencia de mutación GET. La auditoría queda en **640** llamadas DB sin
+  contexto, **771** descartes
+  explícitos y 0 duplicaciones. P110-001A continúa parcial; avance formal
+  **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs` ni se creó PR.

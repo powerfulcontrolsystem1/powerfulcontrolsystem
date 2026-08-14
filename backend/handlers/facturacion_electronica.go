@@ -3264,84 +3264,12 @@ func buildFacturacionReconciliacion(dbEmp *sql.DB, empresaID int64) (map[string]
 }
 
 func listFacturacionDocumentosForReconciliacion(dbEmp *sql.DB, empresaID int64) ([]dbpkg.EmpresaDocumentoFacturacionListado, error) {
-	documentos, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
+	return dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
 		EmpresaID:       empresaID,
 		IncludeInactive: false,
 		Limit:           1000,
 		Offset:          0,
 	})
-	if err == nil {
-		return documentos, nil
-	}
-
-	errMsg := strings.ToLower(strings.TrimSpace(err.Error()))
-	if !strings.Contains(errMsg, "no such table: clientes") {
-		return nil, err
-	}
-
-	rows, qErr := dbEmp.Query(`SELECT
-		id,
-		empresa_id,
-		COALESCE(tipo_documento, 'factura_electronica'),
-		COALESCE(documento_codigo, ''),
-		COALESCE(numero_legal, ''),
-		COALESCE(codigo_validacion, ''),
-		COALESCE(pais_codigo, ''),
-		COALESCE(ambiente_fe, ''),
-		COALESCE(estado_documento, 'borrador'),
-		COALESCE(estado_anterior, ''),
-		COALESCE(evento_ultimo, ''),
-		COALESCE(periodo_contable, ''),
-		COALESCE(monto_total, 0),
-		COALESCE(moneda, 'COP'),
-		COALESCE(fecha_documento, ''),
-		COALESCE(entidad_relacionada_id, 0),
-		COALESCE(fecha_creacion, ''),
-		COALESCE(fecha_actualizacion, ''),
-		COALESCE(usuario_creador, ''),
-		COALESCE(estado, 'activo'),
-		COALESCE(observaciones, '')
-	FROM empresa_facturacion_documentos
-	WHERE empresa_id = ? AND COALESCE(estado, 'activo') = 'activo'
-	ORDER BY pcs_ts(COALESCE(NULLIF(fecha_documento, ''), fecha_creacion)) DESC, id DESC
-	LIMIT 1000`, empresaID)
-	if qErr != nil {
-		return nil, qErr
-	}
-	defer rows.Close()
-
-	out := make([]dbpkg.EmpresaDocumentoFacturacionListado, 0)
-	for rows.Next() {
-		var item dbpkg.EmpresaDocumentoFacturacionListado
-		if scanErr := rows.Scan(
-			&item.ID,
-			&item.EmpresaID,
-			&item.TipoDocumento,
-			&item.DocumentoCodigo,
-			&item.NumeroLegal,
-			&item.CodigoValidacion,
-			&item.PaisCodigo,
-			&item.AmbienteFE,
-			&item.EstadoDocumento,
-			&item.EstadoAnterior,
-			&item.EventoUltimo,
-			&item.PeriodoContable,
-			&item.MontoTotal,
-			&item.Moneda,
-			&item.FechaDocumento,
-			&item.EntidadRelacionadaID,
-			&item.FechaCreacion,
-			&item.FechaActualizacion,
-			&item.UsuarioCreador,
-			&item.Estado,
-			&item.Observaciones,
-		); scanErr != nil {
-			return nil, scanErr
-		}
-		out = append(out, item)
-	}
-
-	return out, rows.Err()
 }
 
 func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar bool, usuario string) (map[string]interface{}, error) {
