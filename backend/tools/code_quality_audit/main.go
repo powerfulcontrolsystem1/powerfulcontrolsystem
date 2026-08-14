@@ -76,6 +76,11 @@ func selectorName(call *ast.CallExpr) string {
 }
 
 func isDBCallWithoutContext(name string) bool {
+	// net/http URL.Query() is a parameter parser, not a database operation.
+	// Keeping it out prevents request-heavy handlers from inflating SQL debt.
+	if strings.HasSuffix(name, ".URL.Query") {
+		return false
+	}
 	for _, suffix := range []string{".Query", ".QueryRow", ".Exec", ".Prepare", ".Begin"} {
 		if strings.HasSuffix(name, suffix) {
 			return true

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 var (
@@ -703,13 +705,7 @@ func normalizeReminderMinutes(v int) int {
 }
 
 func clampPercent(v int) int {
-	if v < 0 {
-		return 0
-	}
-	if v > 100 {
-		return 100
-	}
-	return v
+	return valueutil.Clamp(v, 0, 100)
 }
 
 // CreateChatConversacion crea una conversacion de chat por empresa.

@@ -619,9 +619,5 @@ func normalizePortalContadorCanal(v string) string {
 }
 
 func normalizePortalContadorEstado(v string) string {
-	v = strings.ToLower(strings.TrimSpace(v))
-	if v == "inactivo" || v == "archivado" {
-		return v
-	}
-	return "activo"
+	return normalizeActiveArchiveState(v)
 }

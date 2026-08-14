@@ -585,13 +585,7 @@ func normalizeOneOfTesoreria(v, fallback string, allowed ...string) string {
 }
 
 func normalizeSlugTesoreria(v, fallback string) string {
-	s := strings.ToLower(strings.TrimSpace(v))
-	s = strings.ReplaceAll(s, " ", "_")
-	s = strings.ReplaceAll(s, "-", "_")
-	if s == "" {
-		return fallback
-	}
-	return s
+	return normalizeRepositorySlug(v, fallback)
 }
 
 func currentPeriodTesoreria() string {

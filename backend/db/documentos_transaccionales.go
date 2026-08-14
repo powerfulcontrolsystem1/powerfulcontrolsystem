@@ -1265,9 +1265,5 @@ func normalizeDocumentoTransaccionalEstado(v, fallback string) string {
 }
 
 func normalizeDocumentoTransaccionalMoneda(v string) string {
-	v = strings.TrimSpace(strings.ToUpper(v))
-	if v == "" {
-		return "COP"
-	}
-	return v
+	return normalizeRepositoryCurrency(v, "COP", 0)
 }

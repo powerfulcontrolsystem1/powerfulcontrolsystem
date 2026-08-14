@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/you/pos-backend/internal/platform/httpguard"
+
 	dbpkg "github.com/you/pos-backend/db"
 )
 
@@ -93,12 +95,7 @@ func runtimePrivateStorageReady() error {
 }
 
 func runtimeProbeMethodAllowed(w http.ResponseWriter, r *http.Request) bool {
-	if r.Method == http.MethodGet || r.Method == http.MethodHead {
-		return true
-	}
-	w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-	http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	return false
+	return httpguard.AllowGetOrHead(w, r)
 }
 
 func runtimeProbeJSON(w http.ResponseWriter, r *http.Request, status int, body string) {

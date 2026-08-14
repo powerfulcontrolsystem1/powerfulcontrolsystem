@@ -763,19 +763,11 @@ func normalizeOneOfCierreFiscal(v, fallback string, allowed ...string) string {
 }
 
 func normalizeCierreFiscalPeriodo(v string) string {
-	v = strings.TrimSpace(v)
-	if len(v) >= 7 {
-		return v[:7]
-	}
-	return v
+	return normalizeRepositoryPeriod(v, "")
 }
 
 func normalizeCierreFiscalPeriodoFromFecha(v string) string {
-	v = strings.TrimSpace(v)
-	if len(v) >= 7 {
-		return v[:7]
-	}
-	return time.Now().Format("2006-01")
+	return normalizeCurrentRepositoryPeriod(v)
 }
 
 func olderThanCierreFiscalDays(fecha string, days int) bool {

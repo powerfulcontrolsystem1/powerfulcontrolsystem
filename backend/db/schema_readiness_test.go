@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"testing"
+	"time"
 )
 
 func TestNormalizeListLimitOffset(t *testing.T) {
@@ -196,5 +197,79 @@ func TestSharedRepositoryValueHelpers(t *testing.T) {
 	}
 	if got := escapedContainsPattern(" 50%!_off "); got != "%50!%!!!_off%" {
 		t.Fatalf("escaped LIKE pattern = %q", got)
+	}
+}
+
+func TestRepositoryCoreCodeSharedFormatting(t *testing.T) {
+	t.Parallel()
+	if got := repositoryCoreCode("dom", "Room 1", "Relay_2"); got != "DOM-ROOM-1-RELAY-2" {
+		t.Fatalf("core code = %q", got)
+	}
+	if got := repositoryCoreCode("dom", "   "); len(got) < len("DOM-") {
+		t.Fatalf("fallback core code = %q", got)
+	}
+}
+
+func TestNormalizeRepositoryPeriod(t *testing.T) {
+	t.Parallel()
+	if got := normalizeRepositoryPeriod(" 2026-08-14 ", ""); got != "2026-08" {
+		t.Fatalf("normalized period = %q", got)
+	}
+	if got := normalizeRepositoryPeriod(" 2026 ", "fallback"); got != "fallback" {
+		t.Fatalf("fallback period = %q", got)
+	}
+	if got := normalizeRepositoryPeriod(" 2026 ", ""); got != "2026" {
+		t.Fatalf("short period = %q", got)
+	}
+}
+
+func TestRepositorySharedScalarHelpers(t *testing.T) {
+	t.Parallel()
+	if got := boundedPositiveInt(0, 1, 999); got != 1 {
+		t.Fatalf("bounded fallback = %d", got)
+	}
+	if got := boundedPositiveInt(1000, 1, 999); got != 999 {
+		t.Fatalf("bounded maximum = %d", got)
+	}
+	if got := normalizeRepositoryCurrency(" usd-dollar ", "COP", 8); got != "USD-DOLL" {
+		t.Fatalf("currency = %q", got)
+	}
+	if got := repositoryISOWeekday(time.Date(2026, time.August, 16, 0, 0, 0, 0, time.UTC)); got != 7 {
+		t.Fatalf("ISO weekday = %d", got)
+	}
+	if hashRepositoryKey(" key ") != hashRepositoryKey("key") || hashRepositoryKey(" ") != "" {
+		t.Fatal("repository hash normalization mismatch")
+	}
+}
+
+func TestRepositoryDomainNormalizationHelpers(t *testing.T) {
+	t.Parallel()
+	if got := normalizeActiveArchiveState(" Archivado "); got != "archivado" {
+		t.Fatalf("active archive state = %q", got)
+	}
+	if got := normalizeRoundedPercentage(120.456); got != 100 {
+		t.Fatalf("rounded percentage = %v", got)
+	}
+	if got := parseRepositoryStationID(" ESTACION_18 ", "", 12); got != 18 {
+		t.Fatalf("station reference ID = %d", got)
+	}
+	if got := parseRepositoryStationID("", "EST-12-19", 12); got != 19 {
+		t.Fatalf("station code ID = %d", got)
+	}
+	if got := normalizeRepositorySlug(" Cuenta-Cobro ", "fallback"); got != "cuenta_cobro" {
+		t.Fatalf("slug = %q", got)
+	}
+}
+
+func TestRepositoryJSONAndUnitHelpers(t *testing.T) {
+	t.Parallel()
+	if got := decodeRepositoryJSONMap(`{"ok":true}`); got["ok"] != true {
+		t.Fatalf("decoded JSON = %#v", got)
+	}
+	if got := decodeRepositoryJSONMap("invalid"); len(got) != 0 {
+		t.Fatalf("invalid JSON = %#v", got)
+	}
+	if got := normalizeRepositoryUnit(" KG "); got != "kg" {
+		t.Fatalf("unit = %q", got)
 	}
 }

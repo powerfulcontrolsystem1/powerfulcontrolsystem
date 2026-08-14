@@ -11,6 +11,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type reservasHotelCacheEntry struct {
@@ -463,11 +464,5 @@ func writeReservaHotelError(w http.ResponseWriter, err error) {
 }
 
 func firstNonEmptyStr(values ...string) string {
-	for _, v := range values {
-		trim := strings.TrimSpace(v)
-		if trim != "" {
-			return trim
-		}
-	}
-	return ""
+	return valueutil.FirstNonBlank(values...)
 }

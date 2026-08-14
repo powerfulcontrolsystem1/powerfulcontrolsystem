@@ -1910,13 +1910,7 @@ func resolveEmpresaCuentaPorCategoria(rawMap, categoria, fallback, fallbackDefau
 }
 
 func parseEventoPayload(raw string) map[string]interface{} {
-	out := map[string]interface{}{}
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return out
-	}
-	_ = json.Unmarshal([]byte(raw), &out)
-	return out
+	return decodeRepositoryJSONMap(raw)
 }
 
 func payloadString(payload map[string]interface{}, keys ...string) string {

@@ -101,14 +101,7 @@ func ventaDigitalNormalizeEstado(raw string) string {
 }
 
 func ventaDigitalNormalizeMoneda(raw string) string {
-	moneda := strings.ToUpper(strings.TrimSpace(raw))
-	if moneda == "" {
-		return "COP"
-	}
-	if len(moneda) > 8 {
-		moneda = moneda[:8]
-	}
-	return moneda
+	return normalizeRepositoryCurrency(raw, "COP", 8)
 }
 
 func ventaDigitalBoolToInt(v bool) int {

@@ -336,13 +336,7 @@ func normalizeTarifaMoneda(moneda string) string {
 }
 
 func normalizeTarifaPrioridad(v int) int {
-	if v <= 0 {
-		return 1
-	}
-	if v > 999 {
-		return 999
-	}
-	return v
+	return boundedPositiveInt(v, 1, 999)
 }
 
 func normalizeTarifaPorMinutosRedondeoModo(v string) string {
@@ -490,11 +484,7 @@ func diaSemanaInRange(dia, desde, hasta int) bool {
 
 // DayOfWeekISO devuelve dia de la semana en formato ISO: lunes=1 ... domingo=7.
 func DayOfWeekISO(t time.Time) int {
-	wd := int(t.Weekday())
-	if wd == 0 {
-		return 7
-	}
-	return wd
+	return repositoryISOWeekday(t)
 }
 
 // CreateEmpresaTarifaPorMinutos crea una tarifa por minutos para una estacion.

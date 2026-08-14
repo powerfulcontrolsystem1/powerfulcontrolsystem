@@ -593,12 +593,7 @@ func scrubDatafonoRaw(raw map[string]interface{}) map[string]interface{} {
 }
 
 func firstNonEmptyDatafono(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func roundMoneyDatafono(v float64) float64 {

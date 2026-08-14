@@ -3518,13 +3518,7 @@ func finanzasCarteraDiasMora(fechaVencimiento string, saldo float64) int64 {
 }
 
 func finanzasFirstNonBlank(values ...string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func boolToInt(v bool) int64 {
@@ -8494,11 +8488,7 @@ func dianFirstNonBlank(values ...string) string {
 }
 
 func dianTruncate(raw string, max int) string {
-	raw = strings.TrimSpace(raw)
-	if max <= 0 || len(raw) <= max {
-		return raw
-	}
-	return strings.TrimSpace(raw[:max])
+	return facturacionTruncate(raw, max)
 }
 
 func resolveDIANSecretValue(raw string) (string, error) {
@@ -14733,15 +14723,7 @@ func getEmpresaDIANConfig(dbEmp *sql.DB, empresaID int64) (map[string]interface{
 }
 
 func dianResolveOptionalReference(raw string) (string, error) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return "", nil
-	}
-	resolved, err := resolveDIANSecretValue(raw)
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(resolved), nil
+	return resolveOptionalSecretReference(raw)
 }
 
 func resolveDIANSoftwareCredentials(cfg map[string]interface{}, payload map[string]interface{}) (string, string, bool, error) {

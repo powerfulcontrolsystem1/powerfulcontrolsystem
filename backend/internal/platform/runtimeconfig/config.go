@@ -5,6 +5,8 @@ package runtimeconfig
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
 )
 
@@ -73,10 +75,54 @@ func isEnabled(value string) bool {
 }
 
 func isDisabled(value string) bool {
+	return IsDisabled(value)
+}
+
+// IsDisabled reconoce los valores explicitos que desactivan un interruptor.
+func IsDisabled(value string) bool {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "0", "false", "no", "off":
 		return true
 	default:
 		return false
 	}
+}
+
+// FirstNonEmptyEnv resuelve la primera variable no vacia mediante un accessor
+// inyectable para mantener las herramientas y procesos faciles de probar.
+func FirstNonEmptyEnv(getenv func(string) string, keys ...string) string {
+	if getenv == nil {
+		return ""
+	}
+	for _, key := range keys {
+		if value := strings.TrimSpace(getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+// RewritePostgresDSNForTunnel redirige solo DSN locales al puerto del tunel.
+func RewritePostgresDSNForTunnel(raw string, getenv func(string) string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || getenv == nil || strings.TrimSpace(getenv("DB_VPS_TUNNEL_ENABLED")) != "1" {
+		return raw
+	}
+	localPort := strings.TrimSpace(getenv("DB_VPS_LOCAL_PORT"))
+	if localPort == "" {
+		return raw
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	hostname := parsed.Hostname()
+	if hostname == "" {
+		hostname = "127.0.0.1"
+	}
+	if hostname != "127.0.0.1" && hostname != "localhost" {
+		return raw
+	}
+	parsed.Host = net.JoinHostPort("127.0.0.1", localPort)
+	return parsed.String()
 }

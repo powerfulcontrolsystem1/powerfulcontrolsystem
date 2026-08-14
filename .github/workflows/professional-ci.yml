@@ -35,8 +35,8 @@ jobs:
         with:
           # El proyecto conserva compatibilidad de lenguaje con Go 1.20, pero
           # el analisis de vulnerabilidades debe ejecutarse con una biblioteca
-          # estandar corregida (Go 1.25 o posterior).
-          go-version: "1.25.13"
+          # estandar corregida por CVE-2026-46600.
+          go-version: "1.26.6"
           cache-dependency-path: backend/go.sum
 
       - name: Setup Node
@@ -169,7 +169,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
-          go-version: "1.25.13"
+          go-version: "1.26.6"
           cache-dependency-path: backend/go.sum
 
       - name: Secret scan

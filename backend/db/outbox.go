@@ -1,9 +1,7 @@
 package db
 
 import (
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -307,10 +305,5 @@ func RecoverExpiredOutboxEvents(dbConn *sql.DB) (int64, error) {
 }
 
 func hashOutboxKey(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return ""
-	}
-	sum := sha256.Sum256([]byte(value))
-	return hex.EncodeToString(sum[:])
+	return hashRepositoryKey(value)
 }

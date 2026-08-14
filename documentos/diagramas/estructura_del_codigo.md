@@ -6739,3 +6739,18 @@ Super -> API auditada -> consumo agrupado -> umbral/límite/bloqueo por empresa
   viajan de `control_electrico.html` al handler y vuelven al dispatcher canónico
   de la cola. El agente Raspberry valida VE.Direct y publica telemetría al túnel,
   que deriva empresa/dispositivo antes de escribir en Energía Solar.
+
+## Actualización 2026-08-13 - utilidades internas canónicas
+
+```text
+db / handlers / utils / cmd / tools
+        |-> internal/platform/valueutil   (texto, JSON, fechas, host, límites)
+        |-> internal/platform/runtimeconfig (entorno, flags y DSN de túnel)
+API health + worker health
+        |-> internal/platform/httpguard   (GET/HEAD o HTTP 405)
+```
+
+Los paquetes son puros, usan únicamente la biblioteca estándar y no conocen
+`empresa_id`, sesiones ni persistencia. Los wrappers de dominio conservan sus
+nombres para evitar cambios de contrato mientras eliminan implementaciones
+duplicadas.

@@ -465,11 +465,7 @@ func parseCodigoDescuentoDiasSemanaSet(raw string) map[int]struct{} {
 }
 
 func isoWeekday(t time.Time) int {
-	wd := int(t.Weekday())
-	if wd == 0 {
-		return 7
-	}
-	return wd
+	return repositoryISOWeekday(t)
 }
 
 func nowOrDefault(t time.Time) time.Time {

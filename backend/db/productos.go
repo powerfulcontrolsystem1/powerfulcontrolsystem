@@ -4139,11 +4139,7 @@ type recetaCostoMetrics struct {
 }
 
 func normalizeRecetaUnidadDetalle(v string) string {
-	v = strings.TrimSpace(strings.ToLower(v))
-	if v == "" {
-		return "unidad"
-	}
-	return v
+	return normalizeRepositoryUnit(v)
 }
 
 func recetaIngredientesEquivalent(a, b []RecetaProductoDetalle) bool {

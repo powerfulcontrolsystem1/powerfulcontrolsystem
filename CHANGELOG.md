@@ -1,7 +1,10 @@
 - 2026-08-13: `Plan 110: helpers DB canónicos` consolida verificadores de columnas/índices y paginación repetidos en once repositorios, reduce la duplicación exacta de 52 a 49 grupos y baja su línea base sin alterar SQL empresarial ni ejecutar `rs`.
+- 2026-08-13: `Plan 110: cero duplicaciones exactas` centraliza utilidades de valores, entorno, DSN PostgreSQL por túnel y métodos de health en paquetes internos con biblioteca estándar; el auditor baja de 18 a 0 grupos y las suites Go/vet aprueban. No se ejecutó `rs`.
+- 2026-08-13: `Plan 110: auditor SQL preciso` excluye `r.URL.Query()` de la métrica de base de datos, conserva las operaciones reales sin contexto y corrige la deuda de 1.841 a 689 con prueba de regresión. No se ejecutó `rs`.
 - 2026-08-13: `KPI reales en Productos` hace que la vista principal cargue el resumen de inventario existente; evita mostrar cero alertas cuando PCS tiene existencias negativas y añade una regresión del bootstrap.
 - 2026-08-13: `Plan 110: cero Ensure en tráfico HTTP` reemplaza inicializaciones por readiness fail-closed y clasifica correo, Nextcloud, plantillas y voz como aprovisionamientos explícitos. GET de correo deja de crear cuentas; el inventario baja de 104 a 72 llamadas y de 29 a 0 HTTP. También corrige las alertas gosec del auditor. No se ejecutó `rs`.
 - 2026-08-13: `Go 1.25.13 de seguridad` alinea toolchain, GitHub Actions e imagen Docker para corregir vulnerabilidades alcanzables de la biblioteca estándar detectadas por govulncheck en Go 1.25.12.
+- 2026-08-14: Go, CI y la imagen backend se actualizan a **1.26.6** después de que Trivy reportara CVE-2026-46600 HIGH en Go 1.25.13.
 - 2026-08-13: `Autoridad de esquema verificable` clasifica las 72 llamadas runtime como 69 de bootstrap legado exclusivo de migración y 3 del migrador dedicado; la compuerta falla ante cualquier `Ensure*` nuevo en handlers HTTP.
 - 2026-08-13: `Plan 110: compuerta estructural y cancelación IA` añade un auditor Go sin dependencias que impide aumentar funciones extensas, duplicación, llamadas DB sin contexto y resultados ignorados; preflight/CI publican su reporte. Los flujos HTTP IA propagan cancelación hasta OpenAI Responses, Chat Completions y Gemini. Domótica deja de mutar la Raspberry principal desde GET y baja el inventario runtime Ensure de 106 a 104. No se ejecutó `rs`.
 - 2026-08-13: `Plan 110: auditoría integral de duplicación y calidad` revisa 638 archivos Go y 421 recursos web, descarta falsos duplicados de rutas/DOM y agrega P110-001A para cerrar DDL runtime, fuentes canónicas, handlers extensos, contextos DB, errores ignorados, utilidades y repetición visual antes del candidato final. Los contextos señalan Plan 110 como única ruta activa; no se ejecutó `rs`.
@@ -4923,3 +4926,17 @@
 
 - Unifica wrappers equivalentes de auditoría, permisos y compras sobre helpers
   de handlers ya existentes, con pruebas del paquete y vet aprobados.
+- Centraliza la generación de códigos repetida en cuatro repositorios con
+  regresión de formato y fallback.
+- Actualiza Go a 1.26.6 en módulo, Docker y CI para corregir CVE-2026-46600
+  reportada por Trivy en la imagen backend.
+- Consolida helpers de texto y períodos fiscales/contables; la compuerta de
+  duplicación exacta baja de 46 a 43 grupos con pruebas DB/handlers en verde.
+- Reutiliza helpers canónicos en carnets, contabilidad, domicilios,
+  configuración guiada y alertas; duplicaciones exactas pasan de 43 a 41.
+- Centraliza límites, moneda, día ISO, hash de claves, estado Wompi y truncado
+  fiscal; duplicaciones exactas pasan de 41 a 35 con regresión verde.
+- Consolida normalizadores de soporte, configuración, estados, porcentajes,
+  monedas, estaciones y slugs; duplicaciones exactas bajan de 35 a 27.
+- Consolida JSON, credenciales, IP pública, códigos operativos, unidades y
+  contexto IA; duplicaciones bajan de 27 a 18 y descartes de 776 a 773.

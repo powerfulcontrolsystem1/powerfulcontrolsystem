@@ -1447,9 +1447,10 @@ autoriza ni ejecuta despliegue productivo.
   puente legado al catálogo inmutable y repetir base vacía/upgrade; las 3 del
   migrador son autoridad permitida. Avance formal
   **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
-- La compuerta `govulncheck` encontró vulnerabilidades alcanzables de la
-  biblioteca estándar en Go 1.25.12. Módulo, CI y Docker quedan alineados en
-  Go **1.25.13**, versión correctiva oficial; falta confirmación del CI remoto.
+- La compuerta `govulncheck` había encontrado vulnerabilidades alcanzables de la
+  biblioteca estándar en Go 1.25.12. Ese baseline quedó superado por la
+  actualización a Go **1.26.6** registrada en la actualización P110-001A del
+  2026-08-14.
 - Validación local con temporales/caché en D: aprobó pruebas, vet y
   `govulncheck ./...` con **0 vulnerabilidades alcanzables**. C: continúa
   prácticamente lleno; no se eliminó contenido al bloquearse la limpieza.
@@ -1499,3 +1500,97 @@ autoriza ni ejecuta despliegue productivo.
   maquillarla.
 - P110-001A continúa parcial; el avance formal permanece en **38,5 %**,
   certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, códigos compartidos de repositorios
+
+- Apartamentos turísticos, domicilios, parqueadero y taxi delegan la misma
+  generación de códigos al helper `repositoryCoreCode`; se conserva el nombre
+  de cada wrapper de dominio y su formato, incluyendo el fallback temporal.
+- Las pruebas DB y `go vet ./db` aprobaron. La compuerta estructural reduce los
+  grupos duplicados exactos de **47 a 46** sin tocar SQL, tenant, permisos ni
+  contratos.
+- P110-001A continúa parcial; el avance formal sigue en **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-14, bloqueo Trivy por Go stdlib
+
+- La PR #170 expuso `CVE-2026-46600` HIGH en la imagen backend por Go
+  1.25.13. El escaneo de filesystem y frontend permaneció limpio.
+- Se actualizan módulo, Docker y CI a Go **1.26.6**, versión mínima indicada
+  por el aviso para corregir la vulnerabilidad. La PR debe repetir Trivy,
+  preflight y pruebas antes de considerarse cerrada.
+- El Plan 110 continúa **NO-GO** y no se ejecutó `rs`.
+
+## Actualización 2026-08-14, consolidación directa en main
+
+- Con autorización temporal se desactivó únicamente `enforce_admins`; las
+  revisiones y checks obligatorios permanecen configurados para los demás.
+- Cinco dominios de handlers delegan la selección de texto no vacío al helper
+  canónico. Seis normalizadores fiscales/contables reutilizan una única regla
+  de período con fallback explícito y pruebas de casos completo, corto y vacío.
+- `go test ./db ./handlers`, `go vet ./db ./handlers` y `git diff --check`
+  aprobaron. La compuerta reduce duplicaciones exactas de **46 a 43**.
+- P110-001A continúa parcial por deuda restante; avance formal **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+- Segundo lote directo: carnets, contabilidad y domicilios reutilizan el helper
+  DB de valor con fallback; configuración guiada y alertas reutilizan el helper
+  canónico de handlers. Las pruebas DB/handlers y vet aprobaron, reduciendo la
+  compuerta de **43 a 41** grupos duplicados.
+
+## Actualización 2026-08-14, utilidades escalares y pasarelas
+
+- Tarifas reutiliza límites enteros; venta pública/digital comparte moneda;
+  descuentos y tarifas comparten día ISO; outbox/jobs comparte hash SHA-256;
+  Wompi comparte el mapeo de estado y DIAN reutiliza truncado fiscal.
+- Los wrappers de dominio conservan nombres y contratos. Pruebas completas de
+  DB/handlers y vet aprobaron; la duplicación exacta baja de **41 a 35**.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-14, normalizadores de dominios operativos
+
+- Soporte remoto comparte su lectura, configuración IA comparte enteros no
+  negativos y DB centraliza estado activo/archivado, porcentajes, moneda,
+  identidad de estación y slugs de producción/tesorería.
+- Los wrappers conservan contratos, permisos y aislamiento empresarial. Las
+  pruebas DB/handlers y vet aprobaron; la duplicación baja de **35 a 27**.
+- P110-001A sigue parcial por contextos DB, errores ignorados y handlers
+  extensos. Avance formal **38,5 %**, certificación **0 %**, **NO-GO**. No se
+  ejecutó `rs`.
+
+## Actualización 2026-08-14, JSON, credenciales y contexto IA
+
+- Finanzas/reportes comparte texto, portales públicos comparten IP, Docker/VPS
+  comparte JSON y credenciales opcionales usan un único resolvedor. DB comparte
+  JSON map, códigos de gimnasio/odontología, unidades y secciones de contexto IA.
+- Las pruebas DB/handlers y vet aprobaron. Duplicación exacta baja de **27 a
+  18** y descartes explícitos de **776 a 773** al centralizar decodificación.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, cero duplicaciones exactas
+
+- Se introduce `internal/platform/valueutil` para texto, JSON, fechas, hosts,
+  identificadores SQL y límites numéricos; `runtimeconfig` queda como autoridad
+  de entorno/DSN y `httpguard` comparte el contrato de salud API/worker.
+- Los wrappers existentes preservan contratos de dominio. No cambian endpoints,
+  SQL, permisos, secretos ni aislamiento por `empresa_id`.
+- `go test ./...`, `go vet ./...` y el auditor estructural aprobaron. La deuda
+  de cuerpos exactamente duplicados baja de **18 a 0** (y de **52 a 0** desde
+  la línea inicial de P110-001A).
+- P110-001A continúa parcial por **1.841** llamadas DB sin contexto, **773**
+  resultados descartados explícitamente y handlers extensos. Avance formal
+  **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, medición SQL sin falsos positivos HTTP
+
+- El auditor confundía `r.URL.Query()` con `database/sql.Query()`: 1.104 usos
+  visibles de parámetros HTTP inflaban la métrica y desviaban la priorización.
+- La clasificación excluye únicamente receptores terminados en `.URL.Query` y
+  conserva `db.Query`, `tx.Exec`, `QueryRow`, `Prepare` y `Begin` como deuda.
+- La prueba del auditor y la medición completa aprueban. La deuda SQL real sin
+  contexto queda en **689** llamadas; no se declara cerrada ni se reemplaza por
+  `context.Background()` para maquillar la métrica.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.

@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 const EngineVersion = "grafologix-go-1.0"
@@ -1052,13 +1054,7 @@ func avg(values ...float64) float64 {
 }
 
 func clamp(v, min, max float64) float64 {
-	if v < min {
-		return min
-	}
-	if v > max {
-		return max
-	}
-	return v
+	return valueutil.Clamp(v, min, max)
 }
 
 func round2(v float64) float64 {

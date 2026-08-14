@@ -15,6 +15,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -1795,15 +1796,7 @@ func toPositiveInt64(v interface{}) int64 {
 }
 
 func parsePositiveInt64(raw string) int64 {
-	v := strings.TrimSpace(raw)
-	if v == "" {
-		return 0
-	}
-	n, err := strconv.ParseInt(v, 10, 64)
-	if err != nil || n <= 0 {
-		return 0
-	}
-	return n
+	return valueutil.ParsePositiveInt64(raw)
 }
 
 func firstNonEmpty(values ...string) string {

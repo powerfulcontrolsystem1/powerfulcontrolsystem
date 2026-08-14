@@ -205,10 +205,5 @@ func findLicensePaymentAmount(value any, keyHint string) float64 {
 }
 
 func firstNonEmptyLicensePayment(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }

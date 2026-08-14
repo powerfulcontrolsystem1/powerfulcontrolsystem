@@ -128,23 +128,7 @@ func superSoporteRemotoEmpresasGet(w http.ResponseWriter, r *http.Request, dbEmp
 }
 
 func superSoporteRemotoConfigGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
-	empresaID, err := parseEmpresaIDQuery(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
-	if err != nil {
-		http.Error(w, "No se pudo consultar configuracion de soporte remoto", http.StatusInternalServerError)
-		return
-	}
-	applyRustDeskDownloadDefaults(&cfg)
-	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
-	if err != nil {
-		http.Error(w, "No se pudo consultar consumo de soporte remoto", http.StatusInternalServerError)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg, "uso": uso})
+	empresaSoporteRemotoConfigGet(w, r, dbEmp)
 }
 
 func superSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {

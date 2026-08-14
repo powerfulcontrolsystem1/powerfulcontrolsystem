@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 var (
@@ -344,22 +346,7 @@ func normalizeReservaHotelDateRange(fechaEntrada, fechaSalida string) (string, s
 }
 
 func parseReservaHotelEstacionID(referenciaExterna, codigo string, empresaID int64) int64 {
-	ref := strings.ToUpper(strings.TrimSpace(referenciaExterna))
-	if strings.HasPrefix(ref, "ESTACION_") {
-		n, err := strconv.ParseInt(strings.TrimPrefix(ref, "ESTACION_"), 10, 64)
-		if err == nil && n > 0 {
-			return n
-		}
-	}
-	prefix := strings.ToUpper(fmt.Sprintf("EST-%d-", empresaID))
-	code := strings.ToUpper(strings.TrimSpace(codigo))
-	if strings.HasPrefix(code, prefix) {
-		n, err := strconv.ParseInt(strings.TrimPrefix(code, prefix), 10, 64)
-		if err == nil && n > 0 {
-			return n
-		}
-	}
-	return 0
+	return parseRepositoryStationID(referenciaExterna, codigo, empresaID)
 }
 
 func resolveReservaHotelStation(dbConn *sql.DB, empresaID, estacionID int64) (int64, string, string, string, error) {
@@ -1453,11 +1440,5 @@ func ListReservasHotelEstacionesDisponibles(dbConn *sql.DB, empresaID int64, fec
 }
 
 func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		trim := strings.TrimSpace(v)
-		if trim != "" {
-			return trim
-		}
-	}
-	return ""
+	return valueutil.FirstNonBlank(values...)
 }

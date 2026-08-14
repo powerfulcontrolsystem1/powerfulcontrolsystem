@@ -13223,7 +13223,6 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `backend/db/control_electrico_governance_test.go` y `backend/handlers/control_electrico_governance_ui_test.go`: contratos de identidad, cuotas, acciones de sensor, menú y tutorial.
 - `web/img/raspberry-pi-40-pin-bcm.svg`: pinout determinista físico/BCM de 40 pines.
 - `web/img/raspberry-pi-40-pin-tutorial.png`: ilustración orientativa generada para el tutorial.
-
 2026-08-13 - Domotica 1.4, SSH cifrado, escenas y Victron
 - `backend/db/control_electrico_ssh_credentials.go`: perfil SSH no secreto,
   cifrado/descifrado AES-GCM con propósito por empresa/Raspberry y eliminación.
@@ -13239,3 +13238,11 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
   `backend/handlers/control_electrico_scenes_ui_test.go` y
   `backend/handlers/energia_solar_realtime_test.go`: regresiones de aislamiento,
   secreto, red privada, cola, frescura y marcadores visuales.
+
+backend/db/repository_helpers.go | Helper interno para generación compartida de códigos alfanuméricos de repositorios; no expone endpoints ni cambia persistencia.
+
+2026-08-13 - Utilidades transversales de plataforma
+- `backend/internal/platform/valueutil/valueutil.go`: normalización estándar de texto, hosts, fechas, JSON, identificadores SQL y valores numéricos usada por API, DB, worker y herramientas.
+- `backend/internal/platform/valueutil/valueutil_test.go`: contratos Unicode, host IPv6, identificador SQL, JSON de respaldo y límites genéricos.
+- `backend/internal/platform/httpguard/methods.go`: contrato HTTP compartido para endpoints de salud GET/HEAD.
+- `backend/internal/platform/httpguard/methods_test.go`: regresión de métodos permitidos, HTTP 405 y encabezado `Allow`.

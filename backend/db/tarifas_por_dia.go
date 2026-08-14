@@ -259,23 +259,11 @@ func normalizeTarifaPorDiaServicio(servicio string) string {
 }
 
 func normalizeTarifaPorDiaPrioridad(v int) int {
-	if v <= 0 {
-		return 1
-	}
-	if v > 999 {
-		return 999
-	}
-	return v
+	return boundedPositiveInt(v, 1, 999)
 }
 
 func normalizeTarifaPorDiaPersonasDesde(v int) int {
-	if v <= 0 {
-		return 1
-	}
-	if v > 999 {
-		return 999
-	}
-	return v
+	return boundedPositiveInt(v, 1, 999)
 }
 
 func normalizeTarifaPorDiaPersonasHasta(desde, hasta int) int {

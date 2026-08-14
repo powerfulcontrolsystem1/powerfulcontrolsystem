@@ -890,9 +890,5 @@ func normalizeCobranzaEstadoPromesa(v string) string {
 }
 
 func normalizeCobranzaEstado(v string) string {
-	v = strings.ToLower(strings.TrimSpace(v))
-	if v == "inactivo" || v == "archivado" {
-		return v
-	}
-	return "activo"
+	return normalizeActiveArchiveState(v)
 }
