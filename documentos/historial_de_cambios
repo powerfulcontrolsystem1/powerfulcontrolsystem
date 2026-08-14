@@ -1,3 +1,9 @@
+2026-08-13: Domotica / estado en linea con zona horaria PostgreSQL.
+- El panel Super Administrador acepta timestamps PostgreSQL cuyo offset llega
+  como `-05`, ademas de `-05:00`; una Raspberry con heartbeat reciente ya no se
+  muestra desconectada por una diferencia de formato.
+- Se agrega regresion enfocada para el formato real observado en PCS.
+
 2026-08-13: Plan 110 / consolidacion de helpers DB repetidos.
 - Carritos y Finanzas comparten un unico verificador de columnas PostgreSQL;
   Chat/Tareas, Propinas, Reservas, Venta publica y Finanzas comparten la

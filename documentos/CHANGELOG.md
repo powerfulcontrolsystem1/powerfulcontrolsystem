@@ -3477,3 +3477,9 @@
 - [Seguridad] El dispositivo conserva ID aleatorio global y la empresa se deriva del token autenticado; ninguna petición del agente decide `empresa_id`.
 - [Automatización] Un GPIO de entrada puede encender otro GPIO de forma normal, temporizada o dentro de la programación del aparato.
 - [Tutorial] Diagrama exacto del cabezal de 40 pines, diferencia entre posición física/BCM y guía de relación canal de relé → GPIO cableado.
+
+## 2026-08-13 - Estado Raspberry compatible con offset PostgreSQL
+
+- El consumo de tunel en Super Administrador reconoce timestamps con zona
+  `-05` y refleja correctamente Raspberry conectadas durante los ultimos 90
+  segundos.
