@@ -1,23 +1,12 @@
 :root {
-  --guide-bg: var(--surface-page, #f4f7fb);
-  --guide-card: var(--surface-card, #fff);
-  --guide-text: var(--text-primary, #152033);
-  --guide-muted: var(--text-secondary, #5f6b7c);
-  --guide-line: var(--border-color, #dce3ed);
-  --guide-accent: var(--primary, #1769e0);
+  --guide-bg: var(--bg, #f4f7fb);
+  --guide-card: var(--card, #fff);
+  --guide-text: var(--text, #152033);
+  --guide-muted: var(--muted, #5f6b7c);
+  --guide-line: var(--border, #dce3ed);
+  --guide-accent: var(--accent, #1769e0);
   --guide-good: #16834b;
   --guide-warn: #a85d00;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --guide-bg: #101722;
-    --guide-card: #182231;
-    --guide-text: #edf3fb;
-    --guide-muted: #b5c0d0;
-    --guide-line: #334257;
-    --guide-accent: #75adff;
-  }
 }
 
 body {
