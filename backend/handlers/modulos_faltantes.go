@@ -2749,7 +2749,7 @@ func handlePlanCuentasAplicarPlantillaAction(dbEmp *sql.DB, w http.ResponseWrite
 		actor = "sistema"
 	}
 
-	result, err := applyPlanCuentasTemplate(dbEmp, empresaID, tipoEmpresa, sobrescribir, actor)
+	result, err := applyPlanCuentasTemplate(r.Context(), dbEmp, empresaID, tipoEmpresa, sobrescribir, actor)
 	if err != nil {
 		http.Error(w, "No se pudo aplicar plantilla de plan de cuentas", http.StatusInternalServerError)
 		return
@@ -2758,7 +2758,7 @@ func handlePlanCuentasAplicarPlantillaAction(dbEmp *sql.DB, w http.ResponseWrite
 	writeJSON(w, http.StatusOK, result)
 }
 
-func applyPlanCuentasTemplate(dbEmp *sql.DB, empresaID int64, tipoEmpresa string, sobrescribir bool, actor string) (map[string]interface{}, error) {
+func applyPlanCuentasTemplate(ctx context.Context, dbEmp *sql.DB, empresaID int64, tipoEmpresa string, sobrescribir bool, actor string) (map[string]interface{}, error) {
 	if err := dbpkg.EmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
@@ -2798,7 +2798,7 @@ func applyPlanCuentasTemplate(dbEmp *sql.DB, empresaID int64, tipoEmpresa string
 		}
 
 		var existingID int64
-		err := dbEmp.QueryRow(`SELECT id FROM empresa_plan_cuentas WHERE empresa_id = ? AND codigo = ? LIMIT 1`, empresaID, item.Codigo).Scan(&existingID)
+		err := dbEmp.QueryRowContext(ctx, `SELECT id FROM empresa_plan_cuentas WHERE empresa_id = ? AND codigo = ? LIMIT 1`, empresaID, item.Codigo).Scan(&existingID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
@@ -3014,7 +3014,7 @@ func handleConciliarCarteraPagosAction(dbEmp *sql.DB, cfg empresaModuloGenericCo
 
 		documentoCodigo := genericStringValue(row["documento_codigo"])
 		terceroNombre := genericStringValue(row[terceroField])
-		pagosRelacionados, montoPagado, fechaUltimoPago, err := loadPagosCarteraRelacionados(dbEmp, empresaID, tipoMovimiento, periodoRow, documentoCodigo, terceroNombre)
+		pagosRelacionados, montoPagado, fechaUltimoPago, err := loadPagosCarteraRelacionados(r.Context(), dbEmp, empresaID, tipoMovimiento, periodoRow, documentoCodigo, terceroNombre)
 		if err != nil {
 			errores++
 			detalles = append(detalles, map[string]interface{}{
@@ -3310,7 +3310,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 	if saldoNuevo < 0 {
 		saldoNuevo = 0
 	}
-	pagosRelacionados, _, _, _ := loadPagosCarteraRelacionados(dbEmp, empresaID, tipoMovimiento, periodo, documentoCodigo, terceroNombre)
+	pagosRelacionados, _, _, _ := loadPagosCarteraRelacionados(r.Context(), dbEmp, empresaID, tipoMovimiento, periodo, documentoCodigo, terceroNombre)
 	pagosRelacionados = dedupePagosCarteraRelacionados(pagosRelacionados)
 	referenciaPagosJSON := "[]"
 	if len(pagosRelacionados) > 0 {
@@ -3354,7 +3354,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 	})
 }
 
-func loadPagosCarteraRelacionados(dbEmp *sql.DB, empresaID int64, tipoMovimiento, periodo, documentoCodigo, terceroNombre string) ([]carteraPagoRelacionado, float64, string, error) {
+func loadPagosCarteraRelacionados(ctx context.Context, dbEmp *sql.DB, empresaID int64, tipoMovimiento, periodo, documentoCodigo, terceroNombre string) ([]carteraPagoRelacionado, float64, string, error) {
 	documentoCodigo = strings.ToUpper(strings.TrimSpace(documentoCodigo))
 	terceroNombre = strings.ToUpper(strings.TrimSpace(terceroNombre))
 	if documentoCodigo == "" && terceroNombre == "" {
@@ -3401,7 +3401,7 @@ func loadPagosCarteraRelacionados(dbEmp *sql.DB, empresaID int64, tipoMovimiento
 
 	query += ` ORDER BY pcs_ts(COALESCE(NULLIF(fecha_movimiento, ''), fecha_creacion)) DESC, id DESC LIMIT 500`
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -3886,7 +3886,7 @@ func handleDocumentosGestionVersionesAction(dbEmp *sql.DB, w http.ResponseWriter
 	includeDenied := parseBoolQuery(r, "include_denegados")
 	requestedAction := resolveDocumentoPermissionActionFromRequest(r)
 
-	rows, err := loadDocumentoGestionVersionRows(dbEmp, empresaID, documentoCodigo, includeInactive, limit)
+	rows, err := loadDocumentoGestionVersionRows(r.Context(), dbEmp, empresaID, documentoCodigo, includeInactive, limit)
 	if err != nil {
 		http.Error(w, "No se pudo consultar historial de versiones", http.StatusInternalServerError)
 		return
@@ -3974,7 +3974,7 @@ func handleDocumentosGestionVersionarAction(dbEmp *sql.DB, w http.ResponseWriter
 		return
 	}
 
-	maxVersion, err := queryDocumentoGestionMaxVersion(dbEmp, empresaID, documentoCodigo)
+	maxVersion, err := queryDocumentoGestionMaxVersion(r.Context(), dbEmp, empresaID, documentoCodigo)
 	if err != nil {
 		http.Error(w, "No se pudo calcular version documental", http.StatusInternalServerError)
 		return
@@ -4072,7 +4072,7 @@ func handleDocumentosGestionVersionarAction(dbEmp *sql.DB, w http.ResponseWriter
 	writeJSON(w, http.StatusCreated, response)
 }
 
-func loadDocumentoGestionVersionRows(dbEmp *sql.DB, empresaID int64, documentoCodigo string, includeInactive bool, limit int) ([]map[string]interface{}, error) {
+func loadDocumentoGestionVersionRows(ctx context.Context, dbEmp *sql.DB, empresaID int64, documentoCodigo string, includeInactive bool, limit int) ([]map[string]interface{}, error) {
 	documentoCodigo = strings.TrimSpace(documentoCodigo)
 	if documentoCodigo == "" {
 		return []map[string]interface{}{}, nil
@@ -4097,7 +4097,7 @@ func loadDocumentoGestionVersionRows(dbEmp *sql.DB, empresaID int64, documentoCo
 	query += ` ORDER BY CAST(COALESCE(NULLIF(version, ''), '0') AS INTEGER) DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -4130,9 +4130,9 @@ func loadDocumentoGestionVersionRows(dbEmp *sql.DB, empresaID int64, documentoCo
 	return items, nil
 }
 
-func queryDocumentoGestionMaxVersion(dbEmp *sql.DB, empresaID int64, documentoCodigo string) (int64, error) {
+func queryDocumentoGestionMaxVersion(ctx context.Context, dbEmp *sql.DB, empresaID int64, documentoCodigo string) (int64, error) {
 	var maxVersion sql.NullInt64
-	err := dbEmp.QueryRow(`SELECT MAX(CAST(COALESCE(NULLIF(version, ''), '0') AS INTEGER))
+	err := dbEmp.QueryRowContext(ctx, `SELECT MAX(CAST(COALESCE(NULLIF(version, ''), '0') AS INTEGER))
 	FROM empresa_documentos_gestion
 	WHERE empresa_id = ?
 	  AND UPPER(COALESCE(documento_codigo, '')) = UPPER(?)`, empresaID, strings.TrimSpace(documentoCodigo)).Scan(&maxVersion)
@@ -4327,7 +4327,7 @@ func handleProduccionOrdenesPlanCapacidadAction(dbEmp *sql.DB, w http.ResponseWr
 	query += ` ORDER BY ` + dateExpr + ` ASC, id ASC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		http.Error(w, "no se pudo consultar plan de capacidad", http.StatusInternalServerError)
 		return
@@ -4620,7 +4620,7 @@ func handleLogisticaEnviosSeguimientoHitosAction(dbEmp *sql.DB, w http.ResponseW
 	query += ` ORDER BY ` + dateExpr + ` ASC, id ASC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		http.Error(w, "no se pudo consultar seguimiento logistico", http.StatusInternalServerError)
 		return
@@ -4899,7 +4899,7 @@ func handleVentasCotizacionConvertirPedidoAction(dbEmp *sql.DB, w http.ResponseW
 
 	actor := strings.TrimSpace(adminEmailFromRequest(r))
 	pedidoCodigo := genericStringValue(payload["pedido_codigo"])
-	cotizacion, pedido, pedidoCreado, autoAprobada, err := convertCotizacionToPedido(dbEmp, empresaID, cotizacionID, actor, pedidoCodigo)
+	cotizacion, pedido, pedidoCreado, autoAprobada, err := convertCotizacionToPedido(r.Context(), dbEmp, empresaID, cotizacionID, actor, pedidoCodigo)
 	if err != nil {
 		http.Error(w, err.Error(), ventasErrorStatus(err, http.StatusBadRequest))
 		return
@@ -4937,7 +4937,7 @@ func handleVentasCotizacionConvertirDocumentoFinalAction(dbEmp *sql.DB, w http.R
 
 	actor := strings.TrimSpace(adminEmailFromRequest(r))
 	pedidoCodigo := genericStringValue(payload["pedido_codigo"])
-	cotizacion, pedido, pedidoCreado, autoAprobada, err := convertCotizacionToPedido(dbEmp, empresaID, cotizacionID, actor, pedidoCodigo)
+	cotizacion, pedido, pedidoCreado, autoAprobada, err := convertCotizacionToPedido(r.Context(), dbEmp, empresaID, cotizacionID, actor, pedidoCodigo)
 	if err != nil {
 		http.Error(w, err.Error(), ventasErrorStatus(err, http.StatusBadRequest))
 		return
@@ -4949,7 +4949,7 @@ func handleVentasCotizacionConvertirDocumentoFinalAction(dbEmp *sql.DB, w http.R
 		return
 	}
 
-	pedidoUpdated, documentoFinal, documentoCreado, err := convertPedidoToDocumentoFinal(dbEmp, empresaID, pedidoID, payload, actor)
+	pedidoUpdated, documentoFinal, documentoCreado, err := convertPedidoToDocumentoFinal(r.Context(), dbEmp, empresaID, pedidoID, payload, actor)
 	if err != nil {
 		http.Error(w, err.Error(), ventasErrorStatus(err, http.StatusBadRequest))
 		return
@@ -4988,7 +4988,7 @@ func handleVentasPedidoConvertirDocumentoFinalAction(dbEmp *sql.DB, w http.Respo
 	}
 
 	actor := strings.TrimSpace(adminEmailFromRequest(r))
-	pedidoUpdated, documentoFinal, documentoCreado, err := convertPedidoToDocumentoFinal(dbEmp, empresaID, pedidoID, payload, actor)
+	pedidoUpdated, documentoFinal, documentoCreado, err := convertPedidoToDocumentoFinal(r.Context(), dbEmp, empresaID, pedidoID, payload, actor)
 	if err != nil {
 		http.Error(w, err.Error(), ventasErrorStatus(err, http.StatusBadRequest))
 		return
@@ -5044,6 +5044,7 @@ func handleVentasEmbudoConversionAction(dbEmp *sql.DB, w http.ResponseWriter, r 
 	hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
 
 	snapshot, err := buildVentasEmbudoConversionSnapshot(
+		r.Context(),
 		dbEmp,
 		empresaID,
 		desde,
@@ -5071,7 +5072,7 @@ func handleVentasEmbudoConversionAction(dbEmp *sql.DB, w http.ResponseWriter, r 
 	})
 }
 
-func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, actor, pedidoCodigo string) (map[string]interface{}, map[string]interface{}, bool, bool, error) {
+func convertCotizacionToPedido(ctx context.Context, dbEmp *sql.DB, empresaID, cotizacionID int64, actor, pedidoCodigo string) (map[string]interface{}, map[string]interface{}, bool, bool, error) {
 	if empresaID <= 0 {
 		return nil, nil, false, false, newVentasConversionError(http.StatusBadRequest, "empresa_id required")
 	}
@@ -5111,7 +5112,7 @@ func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, act
 		return nil, nil, false, autoAprobada, newVentasConversionError(http.StatusConflict, "la cotizacion debe estar aprobada o emitida para convertir")
 	}
 
-	pedido, err := resolvePedidoForCotizacion(dbEmp, empresaID, cotizacionID, anyToInt64(cotizacion["convertido_pedido_id"]))
+	pedido, err := resolvePedidoForCotizacion(ctx, dbEmp, empresaID, cotizacionID, anyToInt64(cotizacion["convertido_pedido_id"]))
 	if err != nil {
 		return nil, nil, false, autoAprobada, err
 	}
@@ -5203,7 +5204,7 @@ func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, act
 	return cotizacion, pedido, pedidoCreado, autoAprobada, nil
 }
 
-func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, payload map[string]interface{}, actor string) (map[string]interface{}, *dbpkg.EmpresaDocumentoFacturacion, bool, error) {
+func convertPedidoToDocumentoFinal(ctx context.Context, dbEmp *sql.DB, empresaID, pedidoID int64, payload map[string]interface{}, actor string) (map[string]interface{}, *dbpkg.EmpresaDocumentoFacturacion, bool, error) {
 	if empresaID <= 0 {
 		return nil, nil, false, newVentasConversionError(http.StatusBadRequest, "empresa_id required")
 	}
@@ -5241,7 +5242,7 @@ func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, pay
 		return nil, nil, false, newVentasConversionError(http.StatusConflict, "no se puede generar documento final desde un pedido cancelado")
 	}
 
-	docExistente, err := findDocumentoFacturacionByPedidoID(dbEmp, empresaID, pedidoID)
+	docExistente, err := findDocumentoFacturacionByPedidoID(ctx, dbEmp, empresaID, pedidoID)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -5327,7 +5328,7 @@ func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, pay
 	return pedido, documentoFinal, documentoCreado, nil
 }
 
-func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, hasta string, slaCotizacionHoras, slaPedidoHoras int, includeInactive bool, maxRows int) (ventasEmbudoSnapshot, error) {
+func buildVentasEmbudoConversionSnapshot(ctx context.Context, dbEmp *sql.DB, empresaID int64, desde, hasta string, slaCotizacionHoras, slaPedidoHoras int, includeInactive bool, maxRows int) (ventasEmbudoSnapshot, error) {
 	if empresaID <= 0 {
 		return ventasEmbudoSnapshot{}, fmt.Errorf("empresa_id required")
 	}
@@ -5377,7 +5378,7 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 	query += ` ORDER BY id DESC LIMIT ?`
 	args = append(args, maxRows)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(ctx, query, args...)
 	if err != nil {
 		return ventasEmbudoSnapshot{}, err
 	}
@@ -5445,7 +5446,7 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 		estadoCotizacion = normalizeStateMachineValue(estadoCotizacion)
 
 		horasCotizacion := ventasElapsedHoursSince(fechaCotizacion, now)
-		pedidoRow, err := resolvePedidoForCotizacion(dbEmp, empresaID, cotizacionID, pedidoRefID)
+		pedidoRow, err := resolvePedidoForCotizacion(ctx, dbEmp, empresaID, cotizacionID, pedidoRefID)
 		if err != nil {
 			return ventasEmbudoSnapshot{}, err
 		}
@@ -5469,7 +5470,7 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 			}
 		}
 
-		docFinal, err := findDocumentoFacturacionByPedidoID(dbEmp, empresaID, pedidoID)
+		docFinal, err := findDocumentoFacturacionByPedidoID(ctx, dbEmp, empresaID, pedidoID)
 		if err != nil {
 			return ventasEmbudoSnapshot{}, err
 		}
@@ -5604,7 +5605,7 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 	return snapshot, nil
 }
 
-func resolvePedidoForCotizacion(dbEmp *sql.DB, empresaID, cotizacionID, pedidoRefID int64) (map[string]interface{}, error) {
+func resolvePedidoForCotizacion(ctx context.Context, dbEmp *sql.DB, empresaID, cotizacionID, pedidoRefID int64) (map[string]interface{}, error) {
 	if pedidoRefID > 0 {
 		item, err := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfgPedidosVenta.Table, empresaID, pedidoRefID)
 		if err == nil {
@@ -5614,16 +5615,16 @@ func resolvePedidoForCotizacion(dbEmp *sql.DB, empresaID, cotizacionID, pedidoRe
 			return nil, err
 		}
 	}
-	return findPedidoByCotizacionID(dbEmp, empresaID, cotizacionID)
+	return findPedidoByCotizacionID(ctx, dbEmp, empresaID, cotizacionID)
 }
 
-func findPedidoByCotizacionID(dbEmp *sql.DB, empresaID, cotizacionID int64) (map[string]interface{}, error) {
+func findPedidoByCotizacionID(ctx context.Context, dbEmp *sql.DB, empresaID, cotizacionID int64) (map[string]interface{}, error) {
 	if empresaID <= 0 || cotizacionID <= 0 {
 		return nil, nil
 	}
 
 	var pedidoID int64
-	err := dbEmp.QueryRow(`SELECT id
+	err := dbEmp.QueryRowContext(ctx, `SELECT id
 	FROM empresa_pedidos_venta
 	WHERE empresa_id = ?
 	  AND COALESCE(cotizacion_id, 0) = ?
@@ -5650,14 +5651,14 @@ func findPedidoByCotizacionID(dbEmp *sql.DB, empresaID, cotizacionID int64) (map
 	return item, nil
 }
 
-func findDocumentoFacturacionByPedidoID(dbEmp *sql.DB, empresaID, pedidoID int64) (*dbpkg.EmpresaDocumentoFacturacion, error) {
+func findDocumentoFacturacionByPedidoID(ctx context.Context, dbEmp *sql.DB, empresaID, pedidoID int64) (*dbpkg.EmpresaDocumentoFacturacion, error) {
 	if empresaID <= 0 || pedidoID <= 0 {
 		return nil, nil
 	}
 
 	var tipoDocumento string
 	var documentoCodigo string
-	err := dbEmp.QueryRow(`SELECT
+	err := dbEmp.QueryRowContext(ctx, `SELECT
 		COALESCE(tipo_documento, 'factura_electronica'),
 		COALESCE(documento_codigo, '')
 	FROM empresa_facturacion_documentos

@@ -1,3 +1,13 @@
+2026-08-13: Plan 110 / contextos SQL transversales y reportes de ventas.
+- Plan de cuentas, cartera, gestión documental, producción y logística propagan
+  el contexto HTTP a sus consultas y transacciones PostgreSQL.
+- La conversión cotización-pedido-documento y el embudo de ventas conservan el
+  mismo contexto hasta sus búsquedas SQL; los builders empresariales, globales,
+  programados e IA lo heredan de la solicitud que originó el reporte.
+- `go test ./handlers`, `go vet ./handlers` y la auditoría estructural aprueban;
+  la deuda DB sin contexto baja de 662 a 653 y la duplicación exacta permanece
+  en cero. No se ejecutó `rs` ni se creó PR.
+
 2026-08-13: Domotica / estado en linea con zona horaria PostgreSQL.
 - El panel Super Administrador acepta timestamps PostgreSQL cuyo offset llega
   como `-05`, ademas de `-05:00`; una Raspberry con heartbeat reciente ya no se

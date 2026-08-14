@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
@@ -52,6 +53,7 @@ type empresaReportesSuiteResponse struct {
 }
 
 type reportesBuilder struct {
+	ctx              context.Context
 	db               *sql.DB
 	empresaID        int64
 	desde            string
@@ -69,6 +71,13 @@ type reportesBuilder struct {
 	tableroCache *dbpkg.EmpresaReportesTableroResumen
 	ventasCache  []dbpkg.CarritoCompra
 	itemsCache   map[int64][]dbpkg.CarritoCompraItem
+}
+
+func (b *reportesBuilder) requestContext() context.Context {
+	if b != nil && b.ctx != nil {
+		return b.ctx
+	}
+	return context.Background()
 }
 
 // empresaReportePersonalizadoSpec es una definicion declarativa y de solo
@@ -533,6 +542,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 		includeInactive := queryBool(r, "include_inactive")
 
 		builder := &reportesBuilder{
+			ctx:              r.Context(),
 			db:               dbEmp,
 			empresaID:        empresaID,
 			desde:            desde,
@@ -3610,6 +3620,7 @@ func (b *reportesBuilder) buildOperativoVentasEmbudoConversionDataset() (empresa
 	})
 
 	snapshot, err := buildVentasEmbudoConversionSnapshot(
+		b.requestContext(),
 		b.db,
 		b.empresaID,
 		b.desde,
