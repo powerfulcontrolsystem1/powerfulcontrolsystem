@@ -17,7 +17,7 @@ fi
 install -d -m 0750 /opt/pcs-domotica /etc/pcs-domotica
 
 cat > /etc/pcs-domotica/agent.json <<'PCS_CONFIG'
-{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.2.0"}
+{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.4.0"}
 PCS_CONFIG
 chmod 0600 /etc/pcs-domotica/agent.json
 
@@ -69,6 +69,20 @@ def local_ip():
         return ""
     finally:
         sock.close()
+
+
+def read_boot_id():
+    """Devuelve un ID estable durante el arranque real del sistema."""
+    try:
+        with open("/proc/sys/kernel/random/boot_id", "r", encoding="ascii") as handle:
+            value = handle.read(96).strip().lower()
+        if re.fullmatch(r"[0-9a-f-]{16,64}", value):
+            return value
+    except OSError:
+        pass
+    # Respaldo para plataformas sin boot_id; mantiene compatibilidad sin
+    # impedir la reconexion del agente.
+    return os.urandom(16).hex()
 
 
 def request_json(config, action, payload, authenticated=True, timeout=35):
@@ -241,33 +255,103 @@ def monitor_inputs(config):
         stop_event.wait(0.2)
 
 
-def read_vedirect(path="/dev/ttyUSB0"):
+VEDIRECT_PRODUCTS = {
+    "0xA042": "Victron BlueSolar MPPT 75/15",
+    "0xA07A": "Victron BlueSolar MPPT 75/15 rev2",
+    "0xA07D": "Victron BlueSolar MPPT 75/15 rev3",
+}
+
+
+def vedirect_candidates():
+    import glob
+    preferred = []
+    configured = os.environ.get("PCS_VEDIRECT_PORT", "").strip()
+    if configured:
+        preferred.append(configured)
+    preferred.extend(glob.glob("/dev/serial/by-id/*Victron*"))
+    preferred.extend(glob.glob("/dev/serial/by-id/*VE_Direct*"))
+    preferred.extend(glob.glob("/dev/serial/by-id/*Prolific*"))
+    preferred.extend(glob.glob("/dev/serial/by-id/*FTDI*"))
+    preferred.extend(glob.glob("/dev/ttyUSB*"))
+    preferred.extend(glob.glob("/dev/ttyACM*"))
+    out = []
+    seen = set()
+    for path in preferred:
+        try:
+            real = os.path.realpath(path)
+        except OSError:
+            continue
+        if real in seen or not os.path.exists(real):
+            continue
+        seen.add(real)
+        out.append(path)
+    return out
+
+
+def parse_vedirect_block(data):
+    marker = b"\r\nChecksum\t"
+    cursor = 0
+    while True:
+        checksum_at = data.find(marker, cursor)
+        if checksum_at < 0 or checksum_at + len(marker) >= len(data):
+            return None
+        end = checksum_at + len(marker) + 1
+        start = data.rfind(b"\r\nPID\t", cursor, checksum_at)
+        cursor = end
+        if start < 0:
+            continue
+        block = data[start:end]
+        if sum(block) % 256 != 0:
+            continue
+        values = {}
+        for line in block[:checksum_at - start].split(b"\r\n"):
+            if b"\t" not in line:
+                continue
+            key, value = line.split(b"\t", 1)
+            values[key.decode("ascii", "ignore").strip()] = value.decode("ascii", "ignore").strip()
+        if values.get("PID") and values.get("V") is not None and values.get("VPV") is not None:
+            return values
+
+
+def read_vedirect():
     import termios
-    if not os.path.exists(path):
-        return None
-    fd = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-    try:
-        attrs = termios.tcgetattr(fd)
-        attrs[0] = attrs[1] = attrs[3] = 0
-        attrs[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
-        attrs[4] = attrs[5] = termios.B19200
-        attrs[6][termios.VMIN] = 0
-        attrs[6][termios.VTIME] = 0
-        termios.tcsetattr(fd, termios.TCSANOW, attrs)
-        end = time.monotonic() + 1.5
-        data = b""
-        while time.monotonic() < end:
-            try: data += os.read(fd, 4096)
-            except BlockingIOError: pass
-            time.sleep(0.05)
-    finally:
-        os.close(fd)
-    values = {}
-    for line in data.decode("ascii", "ignore").splitlines():
-        if "\t" in line:
-            key, value = line.split("\t", 1)
-            values[key.strip()] = value.strip()
-    if "V" not in values or "VPV" not in values:
+    values = None
+    selected_path = ""
+    for path in vedirect_candidates():
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOCTTY | os.O_NONBLOCK)
+        except OSError:
+            continue
+        try:
+            attrs = termios.tcgetattr(fd)
+            attrs[0] = attrs[1] = attrs[3] = 0
+            attrs[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
+            attrs[4] = attrs[5] = termios.B19200
+            attrs[6][termios.VMIN] = 0
+            attrs[6][termios.VTIME] = 0
+            termios.tcsetattr(fd, termios.TCSANOW, attrs)
+            termios.tcflush(fd, termios.TCIFLUSH)
+            end = time.monotonic() + 2.6
+            data = b""
+            while time.monotonic() < end and len(data) < 65536:
+                try:
+                    chunk = os.read(fd, 4096)
+                    if chunk:
+                        data += chunk
+                        values = parse_vedirect_block(data)
+                        if values:
+                            selected_path = os.path.realpath(path)
+                            break
+                except BlockingIOError:
+                    pass
+                time.sleep(0.05)
+        except (OSError, termios.error):
+            values = None
+        finally:
+            os.close(fd)
+        if values:
+            break
+    if not values:
         return None
     def number(key, scale=1.0):
         try: return float(values.get(key, 0)) * scale
@@ -275,27 +359,35 @@ def read_vedirect(path="/dev/ttyUSB0"):
     current = number("I", 0.001)
     voltage = number("V", 0.001)
     solar_w = number("PPV")
+    pid = values.get("PID", "")
+    charge_states = {"0":"apagado", "1":"baja_potencia", "2":"falla", "3":"bulk", "4":"absorcion", "5":"flotacion", "6":"almacenamiento", "7":"ecualizacion", "245":"iniciando"}
+    charger_state = charge_states.get(values.get("CS", ""), "desconocido")
     return {
-        "modelo": "Victron BlueSolar MPPT 75/15 VE.Direct",
+        "modelo": VEDIRECT_PRODUCTS.get(pid, "Victron MPPT VE.Direct " + pid),
         "lectura": {
             "potencia_solar_w": solar_w, "produccion_dia_kwh": number("H20", 0.01),
             "bateria_voltaje_v": voltage, "bateria_corriente_a": current,
             "bateria_carga_w": max(0.0, voltage * current), "bateria_descarga_w": max(0.0, -voltage * current),
             "estado_paneles": "produciendo" if solar_w > 0 else "sin_produccion",
             "estado_bateria": "cargando" if current > 0 else ("descargando" if current < 0 else "reposo"),
-            "estado_inversor": "no_reportado",
-            "raw": {"protocolo":"VE.Direct", "vpv_v":number("VPV", 0.001), "cs":values.get("CS", ""), "err":values.get("ERR", ""), "h19_kwh":number("H19", 0.01), "h21_w":number("H21")}
+            "estado_inversor": charger_state,
+            "raw": {"protocolo":"VE.Direct", "puerto":selected_path, "checksum_valido":True,
+                    "pid":pid, "serial":values.get("SER#", ""), "firmware":values.get("FW", ""),
+                    "vpv_v":number("VPV", 0.001), "cs":values.get("CS", ""), "estado_cargador":charger_state,
+                    "err":values.get("ERR", ""), "load":values.get("LOAD", ""), "load_current_a":number("IL", 0.001),
+                    "h19_kwh":number("H19", 0.01), "h21_w":number("H21"), "soc_disponible":False}
         }
     }
 
 
 def main():
     config = ensure_enrolled(load_config())
-    boot_id = os.urandom(16).hex()
+    boot_id = read_boot_id()
     watcher = threading.Thread(target=monitor_inputs, args=(config,), daemon=True)
     watcher.start()
     backoff = 1
     next_solar = 0
+    solar_connected = False
     while not stop_event.is_set():
         try:
             response = request_json(config, "poll", {
@@ -329,7 +421,14 @@ def main():
                 sample = read_vedirect()
                 if sample:
                     request_json(config, "solar_telemetry", sample, timeout=20)
-                next_solar = time.monotonic() + 60
+                    if not solar_connected:
+                        log("Victron VE.Direct conectado")
+                    solar_connected = True
+                else:
+                    if solar_connected:
+                        log("Victron VE.Direct desconectado o sin bloque valido")
+                    solar_connected = False
+                next_solar = time.monotonic() + 15
             backoff = 1
         except urllib.error.HTTPError as exc:
             log("VPS respondio HTTP {}".format(exc.code))
@@ -379,5 +478,6 @@ WantedBy=multi-user.target
 PCS_SERVICE
 
 systemctl daemon-reload
-systemctl enable --now pcs-domotica-agent.service
+systemctl enable pcs-domotica-agent.service
+systemctl restart pcs-domotica-agent.service
 echo "PCS Domotica instalado. Estado: systemctl status pcs-domotica-agent --no-pager"

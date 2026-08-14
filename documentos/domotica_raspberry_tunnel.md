@@ -19,8 +19,8 @@ esa estacion, sus estados y la Raspberry asignada, sin activar el carrito.
 ## Flujo de instalacion desde la Raspberry
 
 1. Abrir PCS en el navegador de la Raspberry e iniciar sesion en la empresa.
-2. Entrar en `Administrar empresa > Analisis y control > Domotica > Raspberry`.
-3. Registrar la Raspberry con su IP local y presionar `Generar instalador`.
+2. Entrar en `Administrar empresa > Domotica y Energia Solar > Configuracion de domotica > Controladores`.
+3. Registrar la Raspberry; la IP local es opcional para el túnel saliente. Presionar `Generar instalador`.
 4. Ejecutar una sola vez el archivo descargado:
 
    ```sh
@@ -51,7 +51,9 @@ y detecta `pinctrl`, `raspi-gpio` o GPIO sysfs.
   `/etc/pcs-domotica/agent.json` con modo `0600`.
 - El endpoint publico deriva `empresa_id` y `raspberry_id` de la identidad
   autenticada; nunca acepta que el dispositivo elija empresa.
-- Regenerar el instalador rota el token operativo anterior.
+- Regenerar el instalador crea un enrolamiento nuevo sin desconectar el agente
+  vigente. El token operativo anterior solo se sustituye cuando el nuevo agente
+  completa correctamente el enrolamiento.
 - El servicio usa `NoNewPrivileges`, `ProtectHome` y `ProtectSystem=strict`.
 
 ## Canal y comandos
@@ -65,6 +67,8 @@ La Raspberry hace long polling mediante `POST /api/public/domotica/tunnel`:
 - `action=input`: cambio estable de GPIO despues del debounce y evaluacion de
   reglas de la misma empresa y Raspberry.
 - `action=telemetry`: lecturas asociadas a aparatos que pertenecen al dispositivo.
+- `action=solar_telemetry`: bloques VE.Direct validados y asociados a la empresa
+  y Raspberry derivadas del token del túnel.
 
 La cola `empresa_control_electrico_comandos` reintenta entregas no confirmadas,
 expira comandos antiguos y procesa ACK repetidos/concurrentes sin duplicar el
@@ -100,12 +104,21 @@ cargas críticas conectadas.
 - `empresa_control_electrico_eventos` y `empresa_control_electrico_lecturas`:
   auditoria e historial por empresa.
 - `empresa_control_electrico_trafico_diario`: RX, TX y solicitudes por dia.
+- `empresa_control_electrico_escenas` y
+  `empresa_control_electrico_escena_items`: estados agrupados de varios aparatos.
+- Las columnas `ssh_*_enc` de la Raspberry conservan opcionalmente password y
+  sudo cifrados; no forman parte de las respuestas JSON.
 
 ## Variables y operacion
 
 `PCS_DOMOTICA_PUBLIC_BASE_URL` puede fijar el origen publico incluido en el
 instalador. Debe ser HTTPS, excepto loopback para pruebas locales. Si no existe,
 se usa `https://powerfulcontrolsystem.com`.
+
+`PCS_DOMOTICA_SSH_ALLOWED_CIDRS` contiene una lista separada por comas de redes
+privadas que el VPS puede alcanzar realmente por VPN o ruta dedicada. Si una IP
+privada no pertenece a esa allowlist, la instalación SSH se rechaza para evitar
+acceso lateral a la infraestructura del VPS.
 
 Comandos utiles en la Raspberry:
 
@@ -126,10 +139,37 @@ usa reinicio permanente y limite de arranque desactivado para recuperar tambien
 un cierre inesperado o el reinicio de la Raspberry. No requiere intervencion
 manual ni una IP publica en la empresa.
 
-En cada arranque el agente genera un identificador efimero de inicio. El VPS
+En cada arranque el agente lee `/proc/sys/kernel/random/boot_id`. El VPS
 solo una vez por ese identificador reconstruye las salidas que quedaron
-confirmadas en estado `on`, ordenadas por estación/GPIO. El agente espera un
-segundo entre confirmaciones, evitando energizar todos los relés a la vez.
+confirmadas en estado `on`, ordenadas por estación/GPIO. La cola usa el retardo
+configurado por empresa, un segundo de forma predeterminada, evitando energizar
+todos los relés a la vez.
+
+## Instalación alternativa por SSH
+
+- `Instalar por SSH` está reservado a usuarios con aprobación efectiva de
+  Domótica y siempre filtra `empresa_id + raspberry_id`.
+- El primer contacto devuelve la huella SHA-256 del host; no envía contraseña ni
+  instalador hasta que el usuario la confirma.
+- Password y sudo pueden guardarse con AES-GCM usando `CONFIG_ENC_KEY`. El
+  propósito criptográfico contiene empresa, Raspberry y tipo de secreto, por lo
+  que un ciphertext de otro tenant o dispositivo no puede reutilizarse.
+- El instalador viaja a un nombre aleatorio en `/tmp`, modo `umask 077`, se
+  ejecuta mediante sudo por stdin y se elimina al finalizar. Los secretos no se
+  incluyen en argumentos, logs, auditoría o respuestas.
+
+## Victron VE.Direct
+
+El agente 1.4 autodetecta adaptadores VE.Direct entre rutas estables
+`/dev/serial/by-id` y puertos `ttyUSB`/`ttyACM`. Configura 19200 baudios, 8 bits,
+sin paridad, un stop bit y sin control de flujo. Solo acepta un bloque con PID,
+voltaje de batería, voltaje de panel y checksum módulo 256 válido.
+
+Cada 15 segundos publica potencia/voltaje del panel, corriente/voltaje de
+batería, producción diaria, etapa del cargador, error, firmware, serial y puerto.
+El dashboard considera desconectado un sistema sin lecturas recientes. Una
+BlueSolar MPPT no mide SOC: PCS conserva `No disponible` hasta recibir esa
+métrica desde un BMV, SmartShunt o BMS compatible.
 
 ## Gobierno de transferencia y alertas (2026-08-13)
 

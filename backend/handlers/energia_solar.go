@@ -10,6 +10,7 @@ import (
 	"net/mail"
 	"strconv"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -223,6 +224,7 @@ func buildEmpresaEnergiaSolarDashboard(dbEmp *sql.DB, empresaID int64) (map[stri
 		return nil, err
 	}
 	latestBySystem := map[int64]dbpkg.EmpresaEnergiaSolarLectura{}
+	connections := map[string]interface{}{}
 	var totalSolar, totalInversor, socSum, sohSum float64
 	var socCount, sohCount int
 	for _, lectura := range lecturas {
@@ -230,15 +232,31 @@ func buildEmpresaEnergiaSolarDashboard(dbEmp *sql.DB, empresaID int64) (map[stri
 			continue
 		}
 		latestBySystem[lectura.SistemaID] = lectura
-		totalSolar += lectura.PotenciaSolarW
-		totalInversor += lectura.InversorPotenciaW
-		if lectura.BateriaSOC > 0 {
-			socSum += lectura.BateriaSOC
-			socCount++
+	}
+	for _, sistema := range sistemas {
+		lectura, hasReading := latestBySystem[sistema.ID]
+		fresh := hasReading && energiaSolarReadingFresh(lectura.FechaLectura, sistema.IntervaloSegundos, time.Now())
+		if fresh {
+			totalSolar += lectura.PotenciaSolarW
+			totalInversor += lectura.InversorPotenciaW
+			if lectura.BateriaSOC > 0 {
+				socSum += lectura.BateriaSOC
+				socCount++
+			}
+			if lectura.BateriaSOH > 0 {
+				sohSum += lectura.BateriaSOH
+				sohCount++
+			}
 		}
-		if lectura.BateriaSOH > 0 {
-			sohSum += lectura.BateriaSOH
-			sohCount++
+		status := "desconectado"
+		if fresh {
+			status = "conectado"
+		}
+		connections[strconv.FormatInt(sistema.ID, 10)] = map[string]interface{}{
+			"conectado":      fresh,
+			"estado":         status,
+			"ultima_lectura": lectura.FechaLectura,
+			"lectura":        lectura,
 		}
 	}
 	activeEvents := 0
@@ -261,13 +279,47 @@ func buildEmpresaEnergiaSolarDashboard(dbEmp *sql.DB, empresaID int64) (map[stri
 			"potencia_solar_w":         totalSolar,
 			"potencia_inversor_w":      totalInversor,
 			"bateria_soc_promedio":     socAvg,
+			"bateria_soc_disponible":   socCount > 0,
 			"bateria_soh_promedio":     sohAvg,
 			"alertas_activas_reciente": activeEvents,
 		},
-		"sistemas": sistemas,
-		"lecturas": lecturas,
-		"eventos":  eventos,
+		"sistemas":   sistemas,
+		"lecturas":   lecturas,
+		"eventos":    eventos,
+		"conexiones": connections,
 	}, nil
+}
+
+func energiaSolarReadingFresh(raw string, intervalSeconds int, now time.Time) bool {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return false
+	}
+	if intervalSeconds < 30 {
+		intervalSeconds = 30
+	}
+	maxAge := time.Duration(intervalSeconds*3) * time.Second
+	if maxAge < 90*time.Second {
+		maxAge = 90 * time.Second
+	}
+	layoutsWithZone := []string{time.RFC3339Nano, "2006-01-02 15:04:05.999999999Z07:00", "2006-01-02 15:04:05.999999999-07", "2006-01-02 15:04:05-07"}
+	for _, layout := range layoutsWithZone {
+		if parsed, err := time.Parse(layout, raw); err == nil {
+			age := now.Sub(parsed)
+			return age >= -15*time.Second && age <= maxAge
+		}
+	}
+	location, err := time.LoadLocation("America/Bogota")
+	if err != nil {
+		location = time.Local
+	}
+	for _, layout := range []string{"2006-01-02 15:04:05.999999999", "2006-01-02 15:04:05"} {
+		if parsed, err := time.ParseInLocation(layout, raw, location); err == nil {
+			age := now.In(location).Sub(parsed)
+			return age >= -15*time.Second && age <= maxAge
+		}
+	}
+	return false
 }
 
 func ensureEmpresaEnergiaSolarDefaultAlerts(dbEmp *sql.DB, empresaID, sistemaID int64, usuario string) error {

@@ -280,6 +280,44 @@
     .raspberry-item.gpio-test-open .gpio-test-panel { display: grid; }
     .gpio-test-panel .btn { min-height: 34px; padding: 6px 8px; }
 
+    .ssh-dialog {
+      width: min(720px, calc(100vw - 28px));
+      max-height: calc(100vh - 28px);
+      overflow: auto;
+      border: 1px solid var(--electric-line);
+      border-radius: 10px;
+      background: var(--electric-panel);
+      color: var(--electric-ink);
+      box-shadow: 0 24px 70px color-mix(in srgb, #020617 45%, transparent);
+      padding: 0;
+    }
+
+    .ssh-dialog::backdrop { background: color-mix(in srgb, #020617 68%, transparent); }
+    .ssh-dialog-body { display: grid; gap: 14px; padding: 20px; }
+    .ssh-dialog-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+    .ssh-dialog-head h2 { margin: 0 0 5px; font-size: 1.2rem; }
+    .ssh-dialog-head p { margin: 0; color: var(--electric-muted); line-height: 1.45; }
+    .ssh-security-note {
+      border: 1px solid color-mix(in srgb, var(--electric-warning) 55%, var(--electric-line));
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--electric-warning) 10%, var(--electric-panel-soft));
+      padding: 10px 12px;
+      color: var(--electric-muted);
+      line-height: 1.45;
+      font-size: .88rem;
+    }
+    .ssh-security-note strong { color: var(--electric-ink); }
+    .ssh-fingerprint {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--electric-line);
+      border-radius: 8px;
+      background: var(--electric-panel-soft);
+      padding: 10px;
+    }
+    .ssh-fingerprint code { overflow-wrap: anywhere; color: var(--electric-accent); }
+    .ssh-credential-state { font-weight: 800; color: var(--electric-muted); }
+
     .relay-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
@@ -802,6 +840,26 @@
         <button id="saveRuleBtn" class="btn add" type="button">Guardar regla</button>
       </div>
       <div id="rulesList" class="raspberry-list"></div>
+
+      <div class="electric-subsection">
+        <div class="empresa-section-header compact">
+          <div>
+            <h2>Escenas</h2>
+            <p>Agrupa varios aparatos en un estado definido y ejecútalos con un solo botón. Los encendidos respetan la cola eléctrica y el retardo configurado por empresa.</p>
+          </div>
+        </div>
+        <input id="sceneId" type="hidden" value="0">
+        <div class="electric-form-grid">
+          <div class="form-col"><label class="form-label" for="sceneName">Nombre</label><input id="sceneName" class="form-input" maxlength="120" placeholder="Cierre del local"></div>
+          <div class="form-col"><label class="form-label" for="sceneDescription">Descripción</label><input id="sceneDescription" class="form-input" maxlength="500" placeholder="Apaga cargas y conserva la nevera"></div>
+          <div class="form-col span-2"><label class="form-label">Aparatos incluidos</label><div id="sceneDeviceList" class="raspberry-list"></div></div>
+        </div>
+        <div class="form-actions">
+          <button id="newSceneBtn" class="btn secondary" type="button">Nueva escena</button>
+          <button id="saveSceneBtn" class="btn add" type="button">Guardar escena</button>
+        </div>
+        <div id="scenesList" class="raspberry-list"></div>
+      </div>
     </section>
 
     <section id="electricReportes" class="electric-panel" data-electric-section="reportes" style="margin-top:14px;">
@@ -832,13 +890,49 @@
     </section>
   </main>
 
+  <dialog id="sshInstallDialog" class="ssh-dialog" aria-labelledby="sshInstallTitle">
+    <div class="ssh-dialog-body">
+      <div class="ssh-dialog-head">
+        <div>
+          <h2 id="sshInstallTitle">Instalar o actualizar por SSH</h2>
+          <p id="sshRaspberryName">Raspberry Pi</p>
+        </div>
+        <button id="sshCloseBtn" class="btn secondary small" type="button" aria-label="Cerrar">Cerrar</button>
+      </div>
+      <input id="sshRaspberryId" type="hidden" value="0">
+      <div class="ssh-security-note">
+        <strong>Conexion iniciada por el VPS.</strong> La IP debe ser alcanzable desde el servidor mediante IP publica, VPN o ruta privada autorizada. Para una IP LAN sin ruta usa el instalador descargable; el funcionamiento normal siempre usa el tunel HTTPS saliente de la Raspberry.
+      </div>
+      <div id="sshCredentialState" class="ssh-credential-state">Sin credencial guardada</div>
+      <label id="sshUseSavedRow" class="electric-switch" hidden><span>Usar credencial cifrada guardada</span><input id="sshUseSaved" type="checkbox"></label>
+      <div class="electric-form-grid">
+        <div class="form-col span-2"><label class="form-label" for="sshHost">IP de la Raspberry</label><input id="sshHost" class="form-input" inputmode="decimal" placeholder="10.10.0.16" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="sshPort">Puerto SSH</label><input id="sshPort" class="form-input" type="number" min="1" max="65535" value="22"></div>
+        <div class="form-col"><label class="form-label" for="sshUsername">Usuario SSH</label><input id="sshUsername" class="form-input" maxlength="64" autocomplete="username"></div>
+        <div class="form-col"><label class="form-label" for="sshPassword">Clave SSH</label><input id="sshPassword" class="form-input" type="password" maxlength="512" autocomplete="new-password"></div>
+        <div class="form-col"><label class="form-label" for="sshSudoPassword">Clave sudo</label><input id="sshSudoPassword" class="form-input" type="password" maxlength="512" autocomplete="new-password" placeholder="Vacía: usa la clave SSH"></div>
+      </div>
+      <label id="sshSaveRow" class="electric-switch"><span>Guardar credencial cifrada para futuras actualizaciones</span><input id="sshSaveCredentials" type="checkbox" checked></label>
+      <div id="sshFingerprintPanel" class="ssh-fingerprint" hidden>
+        <strong>Confirma la identidad de la Raspberry</strong>
+        <code id="sshFingerprintValue"></code>
+        <label class="electric-switch"><span>Verifiqué que esta huella pertenece a la Raspberry</span><input id="sshFingerprintConfirmed" type="checkbox"></label>
+      </div>
+      <div id="sshDialogMessage" class="form-message" aria-live="polite"></div>
+      <div class="form-actions">
+        <button id="sshDeleteCredentialsBtn" class="btn danger" type="button" hidden>Eliminar credencial guardada</button>
+        <button id="sshInstallBtn" class="btn add" type="button">Verificar e instalar</button>
+      </div>
+    </div>
+  </dialog>
+
   <script>
     (function () {
       'use strict';
 
       var params = new URLSearchParams(window.location.search || '');
       var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
-      var state = { config: null, raspberryPis: [], estaciones: [], reles: [], eventos: [], lecturas: [], reglas: [], reporte: null };
+      var state = { config: null, raspberryPis: [], estaciones: [], reles: [], eventos: [], lecturas: [], reglas: [], escenas: [], reporte: null };
 
       function $(id) { return document.getElementById(id); }
 
@@ -1284,6 +1378,7 @@
             '<div class="raspberry-item-actions">' +
               '<button class="btn secondary small raspberry-edit" type="button">Editar</button>' +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn add small raspberry-provision" type="button">Generar instalador</button>' : '') +
+              (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-ssh-install" type="button">Instalar por SSH</button>' : '') +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-connection-test" type="button">Probar conexión</button><button class="btn secondary small raspberry-restart" type="button">Reiniciar</button><button class="btn danger small raspberry-shutdown" type="button">Apagar</button>' : '') +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-gpio-toggle" type="button">Probar GPIO</button>' : '') +
               (primary ? '<button class="btn secondary small" type="button" disabled>Principal</button>' : '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>') +
@@ -1419,6 +1514,74 @@
         }).join('');
       }
 
+      function renderSceneDeviceList(items) {
+        var selected = {};
+        (items || []).forEach(function (item) { selected[String(item.rele_id)] = String(item.estado_objetivo || 'off'); });
+        var box = $('sceneDeviceList');
+        if (!state.reles.length) {
+          box.innerHTML = '<p class="form-help">Primero configura aparatos electrónicos.</p>';
+          return;
+        }
+        box.innerHTML = state.reles.filter(function (relay) { return String(relay.estado || 'activo').toLowerCase() === 'activo'; }).map(function (relay) {
+          var value = selected[String(relay.id)];
+          return '<label class="raspberry-item scene-device" data-rele-id="' + sanitize(relay.id) + '">' +
+            '<span class="electric-switch"><span>' + sanitize(relay.relay_name || relay.salida_codigo || ('Aparato #' + relay.id)) + '<small>' + sanitize(relay.estacion_nombre || ('Estación ' + relay.estacion_id)) + '</small></span><input class="scene-device-enabled" type="checkbox"' + (value ? ' checked' : '') + '></span>' +
+            '<select class="form-input scene-device-target"><option value="on"' + (value === 'on' ? ' selected' : '') + '>Encendido</option><option value="off"' + (value !== 'on' ? ' selected' : '') + '>Apagado</option></select>' +
+          '</label>';
+        }).join('');
+      }
+
+      function clearSceneForm() {
+        $('sceneId').value = '0';
+        $('sceneName').value = '';
+        $('sceneDescription').value = '';
+        renderSceneDeviceList([]);
+      }
+
+      function renderScenes() {
+        var box = $('scenesList');
+        if (!state.escenas.length) {
+          box.innerHTML = '<p class="form-help">Sin escenas configuradas.</p>';
+          return;
+        }
+        box.innerHTML = state.escenas.map(function (scene) {
+          return '<article class="raspberry-item" data-scene-id="' + sanitize(scene.id) + '">' +
+            '<div class="raspberry-item-head"><div class="raspberry-item-title"><strong>' + sanitize(scene.nombre) + '</strong><small>' + sanitize(scene.descripcion || ((scene.items || []).length + ' aparatos')) + '</small></div><span class="status-chip">' + sanitize((scene.items || []).length + ' aparatos') + '</span></div>' +
+            '<div class="raspberry-item-actions"><button class="btn add small scene-run" type="button">Ejecutar</button><button class="btn secondary small scene-edit" type="button">Editar</button><button class="btn danger small scene-delete" type="button">Desactivar</button></div>' +
+          '</article>';
+        }).join('');
+      }
+
+      function editScene(scene) {
+        if (!scene) return;
+        $('sceneId').value = String(scene.id || 0);
+        $('sceneName').value = scene.nombre || '';
+        $('sceneDescription').value = scene.descripcion || '';
+        renderSceneDeviceList(scene.items || []);
+      }
+
+      async function saveScene() {
+        var items = Array.prototype.map.call(document.querySelectorAll('.scene-device'), function (row, index) {
+          if (!row.querySelector('.scene-device-enabled').checked) return null;
+          return { rele_id: Number(row.getAttribute('data-rele-id') || 0), estado_objetivo: row.querySelector('.scene-device-target').value, orden: index };
+        }).filter(Boolean);
+        if (!$('sceneName').value.trim()) throw new Error('Escribe el nombre de la escena.');
+        if (!items.length) throw new Error('Selecciona al menos un aparato para la escena.');
+        await requestJSON(api('escena'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number($('sceneId').value || 0), nombre: $('sceneName').value.trim(), descripcion: $('sceneDescription').value.trim(), items: items }) });
+        await loadAll();
+      }
+
+      async function runScene(sceneID) {
+        var result = await requestJSON(api('ejecutar_escena'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ escena_id: Number(sceneID) }) });
+        showMessage('Escena ejecutada: ' + String(result.nombre || ''), 'success');
+        await loadAll();
+      }
+
+      async function deleteScene(sceneID) {
+        await requestJSON(api('escena') + '&id=' + encodeURIComponent(sceneID), { method: 'DELETE' });
+        await loadAll();
+      }
+
       async function saveRule() {
         var payload = readRulePayload();
         if (payload.raspberry_id > 0 && payload.entrada_gpio_pin < 0) throw new Error('Selecciona el GPIO de entrada de la Raspberry Pi.');
@@ -1515,12 +1678,15 @@
           state.lecturas = Array.isArray(data.lecturas) ? data.lecturas : [];
 		  populateReportFilters();
           state.reglas = Array.isArray(data.reglas) ? data.reglas : [];
+          state.escenas = await requestJSON(api('escenas')).catch(function () { return []; });
           applyConfig(state.config);
           renderRaspberryList();
           renderKpis();
           renderRelays();
           renderRuleOptions();
           renderRules();
+          renderSceneDeviceList([]);
+          renderScenes();
           renderEvents();
           loadReport();
           showMessage('', '');
@@ -1590,6 +1756,121 @@
         link.remove();
         window.setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
         await loadAll();
+      }
+
+      function setSSHDialogMessage(text, type) {
+        var box = $('sshDialogMessage');
+        box.textContent = text || '';
+        box.className = 'form-message' + (type ? ' ' + type : '');
+      }
+
+      function applySSHCredentialMode() {
+        var useSaved = $('sshUseSaved').checked;
+        ['sshHost', 'sshPort', 'sshUsername', 'sshPassword', 'sshSudoPassword'].forEach(function (id) { $(id).disabled = useSaved; });
+        $('sshSaveCredentials').disabled = useSaved;
+        $('sshSaveRow').hidden = useSaved;
+        if (useSaved) {
+          $('sshFingerprintPanel').hidden = true;
+          $('sshFingerprintConfirmed').checked = false;
+        }
+      }
+
+      function closeSSHDialog() {
+        $('sshPassword').value = '';
+        $('sshSudoPassword').value = '';
+        $('sshFingerprintValue').textContent = '';
+        $('sshFingerprintConfirmed').checked = false;
+        $('sshFingerprintPanel').hidden = true;
+        setSSHDialogMessage('', '');
+        if ($('sshInstallDialog').open) $('sshInstallDialog').close();
+      }
+
+      async function openSSHDialog(pi) {
+        var raspberryID = Number(pi && pi.id || 0);
+        $('sshRaspberryId').value = String(raspberryID);
+        $('sshRaspberryName').textContent = pi && (pi.nombre || pi.codigo) || ('Raspberry #' + raspberryID);
+        $('sshHost').value = pi && (pi.last_ip || pi.raspberry_ip) || '';
+        $('sshPort').value = '22';
+        $('sshUsername').value = '';
+        $('sshPassword').value = '';
+        $('sshSudoPassword').value = '';
+        $('sshSaveCredentials').checked = true;
+        $('sshUseSaved').checked = false;
+        $('sshUseSavedRow').hidden = true;
+        $('sshDeleteCredentialsBtn').hidden = true;
+        $('sshCredentialState').textContent = 'Sin credencial guardada';
+        $('sshFingerprintPanel').hidden = true;
+        setSSHDialogMessage('Consultando configuracion segura...', '');
+        $('sshInstallDialog').showModal();
+        try {
+          var data = await requestJSON(api('ssh_config') + '&raspberry_id=' + encodeURIComponent(raspberryID));
+          var cfg = data.ssh_config || {};
+          if (cfg.host) $('sshHost').value = cfg.host;
+          $('sshPort').value = String(cfg.port || 22);
+          if (cfg.username) $('sshUsername').value = cfg.username;
+          if (cfg.credentials_configured) {
+            $('sshCredentialState').textContent = 'Credencial cifrada guardada' + (cfg.updated_at ? ' · Actualizada ' + cfg.updated_at : '');
+            $('sshUseSavedRow').hidden = false;
+            $('sshUseSaved').checked = true;
+            $('sshDeleteCredentialsBtn').hidden = false;
+          }
+          setSSHDialogMessage('', '');
+          applySSHCredentialMode();
+        } catch (err) {
+          setSSHDialogMessage(err.message || 'No se pudo consultar la configuracion SSH.', 'error');
+        }
+      }
+
+      async function submitSSHInstall() {
+        var useSaved = $('sshUseSaved').checked;
+        var fingerprint = $('sshFingerprintConfirmed').checked ? $('sshFingerprintValue').textContent.trim() : '';
+        if (!useSaved && !$('sshFingerprintPanel').hidden && !fingerprint) {
+          throw new Error('Confirma la huella SSH antes de continuar.');
+        }
+        var payload = {
+          raspberry_id: Number($('sshRaspberryId').value || 0),
+          host: $('sshHost').value.trim(),
+          port: Number($('sshPort').value || 22),
+          username: $('sshUsername').value.trim(),
+          password: $('sshPassword').value,
+          sudo_password: $('sshSudoPassword').value,
+          host_key_fingerprint: fingerprint,
+          save_credentials: $('sshSaveCredentials').checked,
+          use_saved_credentials: useSaved
+        };
+        $('sshInstallBtn').disabled = true;
+        setSSHDialogMessage('Verificando SSH e instalando el agente...', '');
+        try {
+          var response = await fetch(api('instalar_ssh'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          var data = await response.json().catch(function () { return {}; });
+          if (response.status === 409 && data.requires_host_key_confirmation && data.host_key_fingerprint) {
+            $('sshFingerprintValue').textContent = data.host_key_fingerprint;
+            $('sshFingerprintConfirmed').checked = false;
+            $('sshFingerprintPanel').hidden = false;
+            setSSHDialogMessage(data.error || 'Confirma la huella SSH y vuelve a instalar.', 'error');
+            return;
+          }
+          if (!response.ok) throw new Error(data.error || ('HTTP ' + response.status));
+          var successMessage = data.message || 'Agente instalado por SSH.';
+          if (data.warning) successMessage += ' ' + data.warning;
+          closeSSHDialog();
+          showMessage(successMessage, data.warning ? '' : 'success');
+          await loadAll();
+        } finally {
+          $('sshInstallBtn').disabled = false;
+        }
+      }
+
+      async function deleteSavedSSHCredentials() {
+        var raspberryID = Number($('sshRaspberryId').value || 0);
+        if (!window.confirm('Se eliminara la clave SSH cifrada de esta Raspberry. Continuar?')) return;
+        await requestJSON(api('ssh_config') + '&raspberry_id=' + encodeURIComponent(raspberryID), { method: 'DELETE' });
+        $('sshUseSaved').checked = false;
+        $('sshUseSavedRow').hidden = true;
+        $('sshDeleteCredentialsBtn').hidden = true;
+        $('sshCredentialState').textContent = 'Sin credencial guardada';
+        applySSHCredentialMode();
+        setSSHDialogMessage('Credencial SSH eliminada.', 'success');
       }
 
       function readRelayCard(card) {
@@ -1709,6 +1990,10 @@
       }
 
       document.addEventListener('change', function (ev) {
+        if (ev.target && ev.target.id === 'sshUseSaved') {
+          applySSHCredentialMode();
+          return;
+        }
         if (ev.target && ev.target.id === 'ruleAccion') {
           updateRuleActionFields();
           return;
@@ -1742,6 +2027,7 @@
         var card = ev.target.closest('.relay-card');
         var raspberryCard = ev.target.closest('.raspberry-item');
         var ruleCard = ev.target.closest('[data-rule-id]');
+        var sceneCard = ev.target.closest('[data-scene-id]');
         try {
           if (ev.target.id === 'saveConfigBtn') {
             await saveConfig();
@@ -1763,6 +2049,12 @@
           } else if (ev.target.id === 'newRuleBtn') {
             clearRuleForm();
             showMessage('', '');
+          } else if (ev.target.id === 'saveSceneBtn') {
+            await saveScene();
+            showMessage('Escena guardada.', 'success');
+          } else if (ev.target.id === 'newSceneBtn') {
+            clearSceneForm();
+            showMessage('', '');
           } else if (ev.target.id === 'reportRefreshBtn') {
             await loadReport();
             showMessage('Reporte actualizado.', 'success');
@@ -1777,6 +2069,10 @@
             var provisionID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             await provisionRaspberryTunnel(provisionID);
             showMessage('Instalador seguro descargado. Ejecutalo una sola vez en la Raspberry Pi con sudo sh.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-ssh-install')) {
+            var sshPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
+            var sshPi = state.raspberryPis.find(function (item) { return Number(item.id) === sshPiID; });
+            await openSSHDialog(sshPi);
           } else if (raspberryCard && ev.target.classList.contains('raspberry-connection-test')) {
             var connectionPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             var connectionResult = await requestJSON(api('raspberry_operacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: connectionPiID, operacion: 'probar_conexion' }) });
@@ -1817,6 +2113,15 @@
             var deleteRuleID = Number(ruleCard.getAttribute('data-rule-id') || 0);
             await deleteRule(deleteRuleID);
             showMessage('Regla desactivada.', 'success');
+          } else if (sceneCard && ev.target.classList.contains('scene-run')) {
+            await runScene(Number(sceneCard.getAttribute('data-scene-id') || 0));
+          } else if (sceneCard && ev.target.classList.contains('scene-edit')) {
+            var editSceneID = Number(sceneCard.getAttribute('data-scene-id') || 0);
+            editScene(state.escenas.find(function (item) { return Number(item.id) === editSceneID; }));
+            showMessage('Editando escena.', '');
+          } else if (sceneCard && ev.target.classList.contains('scene-delete')) {
+            await deleteScene(Number(sceneCard.getAttribute('data-scene-id') || 0));
+            showMessage('Escena desactivada.', 'success');
           } else if (card && ev.target.classList.contains('relay-save')) {
             await saveRelay(card);
             showMessage('Relé guardado.', 'success');
@@ -1833,6 +2138,12 @@
             await testRelay(card, 'off');
             showMessage('Comando de apagado enviado.', 'success');
             await loadAll();
+          } else if (ev.target.id === 'sshCloseBtn') {
+            closeSSHDialog();
+          } else if (ev.target.id === 'sshInstallBtn') {
+            await submitSSHInstall();
+          } else if (ev.target.id === 'sshDeleteCredentialsBtn') {
+            await deleteSavedSSHCredentials();
           }
         } catch (err) {
           showMessage(err.message || 'Operacion no completada.', 'error');

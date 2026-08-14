@@ -301,6 +301,9 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 		switch r.Method {
 		case http.MethodGet:
 			switch action {
+			case "ssh_config":
+				handleDomoticaRaspberrySSHProfile(w, r, dbEmp, empresaID)
+				return
 			case "", "resumen":
 				cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, true)
 				if err != nil {
@@ -463,6 +466,15 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				}
 				writeJSON(w, http.StatusOK, reglas)
 				return
+			case "escenas":
+				escenas, err := dbpkg.ListEmpresaControlElectricoEscenas(dbEmp, empresaID, controlElectricoIncludeInactive(r))
+				if err != nil {
+					log.Printf("[control_electrico] list escenas empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudieron cargar escenas", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, escenas)
+				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
 				return
@@ -470,6 +482,13 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 
 		case http.MethodPost, http.MethodPut:
 			switch action {
+			case "instalar_ssh":
+				if r.Method != http.MethodPost {
+					http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+					return
+				}
+				handleDomoticaRaspberrySSHInstall(w, r, dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)))
+				return
 			case "provisionar_tunel":
 				if r.Method != http.MethodPost {
 					http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -521,6 +540,32 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				}
 				rows, _ := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, true)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "raspberry_pis": rows})
+				return
+			case "escena":
+				var payload dbpkg.EmpresaControlElectricoEscena
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.UpsertEmpresaControlElectricoEscena(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+				return
+			case "ejecutar_escena":
+				var payload struct {
+					EscenaID int64 `json:"escena_id"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || payload.EscenaID <= 0 {
+					http.Error(w, "escena_id requerido", http.StatusBadRequest)
+					return
+				}
+				result, status := executeEmpresaControlElectricoScene(dbEmp, empresaID, payload.EscenaID, strings.TrimSpace(adminEmailFromRequest(r)))
+				writeJSON(w, status, result)
 				return
 
 			case "rele":
@@ -718,6 +763,10 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 			}
 
 		case http.MethodDelete:
+			if action == "ssh_config" {
+				handleDomoticaRaspberrySSHProfileDelete(w, r, dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)))
+				return
+			}
 			if action == "raspberry_pi" {
 				raspberryID, err := parseInt64QueryOptional(r, "id")
 				if err != nil || raspberryID <= 0 {
@@ -727,6 +776,19 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				if err := dbpkg.SetEmpresaControlElectricoRaspberryEstado(dbEmp, empresaID, raspberryID, "inactivo"); err != nil {
 					log.Printf("[control_electrico] delete raspberry empresa_id=%d id=%d error: %v", empresaID, raspberryID, err)
 					http.Error(w, "No se pudo desactivar Raspberry Pi", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+			}
+			if action == "escena" {
+				escenaID, err := parseInt64QueryOptional(r, "id")
+				if err != nil || escenaID <= 0 {
+					http.Error(w, "id requerido", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetEmpresaControlElectricoEscenaEstado(dbEmp, empresaID, escenaID, "inactivo"); err != nil {
+					http.Error(w, "No se pudo desactivar la escena", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
@@ -761,6 +823,44 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func executeEmpresaControlElectricoScene(dbEmp *sql.DB, empresaID, sceneID int64, actor string) (map[string]interface{}, int) {
+	scenes, err := dbpkg.ListEmpresaControlElectricoEscenas(dbEmp, empresaID, false)
+	if err != nil {
+		return map[string]interface{}{"ok": false, "error": "No se pudo cargar la escena"}, http.StatusInternalServerError
+	}
+	var selected *dbpkg.EmpresaControlElectricoEscena
+	for index := range scenes {
+		if scenes[index].ID == sceneID {
+			selected = &scenes[index]
+			break
+		}
+	}
+	if selected == nil {
+		return map[string]interface{}{"ok": false, "error": "Escena no encontrada para esta empresa"}, http.StatusNotFound
+	}
+	results := make([]map[string]interface{}, 0, len(selected.Items))
+	overallOK := true
+	for _, item := range selected.Items {
+		relay, relayErr := dbpkg.GetEmpresaControlElectricoReleByID(dbEmp, empresaID, item.ReleID)
+		if relayErr != nil {
+			overallOK = false
+			results = append(results, map[string]interface{}{"rele_id": item.ReleID, "ok": false, "error": "Aparato no disponible"})
+			continue
+		}
+		targetOn := strings.EqualFold(item.EstadoObjetivo, "on")
+		result := controlElectricoDispatchManual(dbEmp, empresaID, relay.EstacionID, relay.ID, targetOn, actor, fmt.Sprintf("escena:%d", sceneID))
+		if !result.OK && !result.Pending && !result.Skipped {
+			overallOK = false
+		}
+		results = append(results, map[string]interface{}{"rele_id": item.ReleID, "estado": item.EstadoObjetivo, "resultado": result})
+	}
+	status := http.StatusOK
+	if !overallOK {
+		status = http.StatusBadGateway
+	}
+	return map[string]interface{}{"ok": overallOK, "escena_id": sceneID, "nombre": selected.Nombre, "resultados": results}, status
 }
 
 func controlElectricoStartTimer(dbEmp *sql.DB, empresaID, estacionID, releID int64, seconds int, actor, origen string) controlElectricoDispatchResult {

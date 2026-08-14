@@ -172,8 +172,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				},
 			},
 			{Version: "20260811-003-domotica-timer-v1", Description: "timer duration for electronic equipment and sensor rules", Body: empresaControlElectricoTimerSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoTimerSchemaTx(tx) }},
-			{Version: "20260812-001-domotica-activation-queue-v1", Description: "company-wide serialized relay activation delay", Body: empresaControlElectricoActivationQueueSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoActivationQueueSchemaTx(tx) }},
+			{Version: "20260812-001-domotica-activation-queue-v1", Description: "company-wide serialized relay activation delay", Body: empresaControlElectricoActivationQueueSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error {
+				return applyEmpresaControlElectricoActivationQueueSchemaTx(tx)
+			}},
 			{Version: "20260813-001-domotica-governance-v1", Description: "Raspberry disconnect alerts and per-company monthly tunnel limits", Body: empresaControlElectricoGovernanceSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoGovernanceSchemaTx(tx) }},
+			{Version: "20260813-002-domotica-ssh-credentials-v1", Description: "tenant-scoped encrypted SSH credentials with pinned host key", Body: empresaControlElectricoSSHCredentialsSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error {
+				return applyEmpresaControlElectricoSSHCredentialsSchemaTx(tx)
+			}},
+			{Version: "20260813-003-domotica-scenes-v1", Description: "tenant-scoped scenes with ordered relay targets", Body: empresaControlElectricoScenesSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoScenesSchemaTx(tx) }},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

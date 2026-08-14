@@ -110,6 +110,9 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"function scheduleState(rele)",
 		"Programado · Funcionando ahora",
 		"Programado · En espera",
+		"function waitForRelayConfirmation(releID, estado)",
+		"Comando enviado; esperando confirmación de la Raspberry",
+		"El comando sigue en cola. Revisa la conexión de la Raspberry.",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)

@@ -6734,6 +6734,11 @@ Super -> API auditada -> consumo agrupado -> umbral/límite/bloqueo por empresa
 ```
 
 `control_electrico_governance.go` concentra política y estado; `control_electrico_monitoring.go` ejecuta alertas desde `pcs-worker`. La API empresarial conserva su wrapper de permisos y todas las consultas/mutaciones usan el `empresa_id` efectivo.
+- Domotica 1.4: `handlers/control_electrico_ssh_install.go` coordina instalación
+  SSH y delega secretos a `db/control_electrico_ssh_credentials.go`; las escenas
+  viajan de `control_electrico.html` al handler y vuelven al dispatcher canónico
+  de la cola. El agente Raspberry valida VE.Direct y publica telemetría al túnel,
+  que deriva empresa/dispositivo antes de escribir en Energía Solar.
 
 ## Actualización 2026-08-13 - utilidades internas canónicas
 

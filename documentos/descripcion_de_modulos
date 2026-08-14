@@ -4812,6 +4812,19 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - Cuota mensual del túnel por empresa, advertencia y bloqueo administrados exclusivamente por Super Administrador.
 - Entradas GPIO con salida normal, temporizada o condicionada a la agenda del aparato, siempre aisladas por empresa/Raspberry y dentro de la cola de encendidos.
 
+2026-08-13: Domotica 1.4 / recuperación, escenas y conexión solar local
+- Los comandos GPIO durables usan instantes con zona horaria, ACK visible y
+  recuperación por arranque real; el estado lógico no se declara aplicado hasta
+  que la Raspberry lo confirma.
+- Controladores ofrece descarga saliente y una alternativa SSH administrada. El
+  perfil visible contiene IP, puerto, usuario y huella; las claves permanecen
+  cifradas en servidor y solo se resuelven dentro del tenant autorizado.
+- Automatizaciones incorpora escenas con varios aparatos y estado objetivo. La
+  activación usa la cola empresarial existente.
+- Energía solar recibe telemetría VE.Direct autenticada desde la Raspberry y
+  presenta disponibilidad, batería, panel, producción y estado del cargador. El
+  SOC queda explícitamente no disponible cuando el hardware no lo mide.
+
 2026-08-13: Plataforma interna - normalización y guardas HTTP
 - `internal/platform/valueutil` concentra utilidades puras reutilizadas por DB, handlers, worker y herramientas sin dependencias externas ni estado empresarial.
 - `internal/platform/httpguard` unifica el contrato GET/HEAD de health checks de API y worker.

@@ -2409,3 +2409,17 @@ reconciliación operativa explícita.
 - `empresa_control_electrico_raspberry_pis`: `disconnect_alerted_for_last_seen` y `disconnect_alerted_at` para deduplicar alertas de desconexión entre réplicas.
 - `empresa_control_electrico_limites_tunel`: una fila por `empresa_id`, cuota mensual MB, porcentaje de advertencia, bloqueo, auditoría y observaciones.
 - `empresa_control_electrico_trafico_diario` conserva RX/TX/solicitudes por `(empresa_id, raspberry_id, fecha)` y añade índice por empresa/fecha para agregación mensual.
+
+## 2026-08-13 - SSH cifrado y escenas de Domotica
+
+- `empresa_control_electrico_raspberry_pis` agrega `ssh_host`, `ssh_port`,
+  `ssh_username`, `ssh_host_key_fingerprint`, auditoría y las columnas
+  `ssh_password_enc`/`ssh_sudo_password_enc`. No existe almacenamiento de claves
+  SSH en texto plano; el cifrado usa un propósito distinto por `empresa_id` y
+  `raspberry_id`.
+- `empresa_control_electrico_escenas` conserva nombre, descripción, estado y
+  auditoría por empresa.
+- `empresa_control_electrico_escena_items` relaciona cada escena con aparatos de
+  la misma empresa, estado objetivo `on/off` y orden determinista.
+- Migraciones: `20260813-002-domotica-ssh-credentials-v1` y
+  `20260813-003-domotica-scenes-v1`.

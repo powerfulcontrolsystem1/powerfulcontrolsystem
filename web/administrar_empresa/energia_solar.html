@@ -41,6 +41,16 @@
       </article>
     </section>
 
+    <section class="panel-card solar-panel solar-realtime-panel" aria-labelledby="solarRealtimeTitle">
+      <div class="panel-card-header">
+        <div>
+          <h2 id="solarRealtimeTitle">Estado en tiempo real</h2>
+          <p>Lecturas autenticadas desde la Raspberry. El BlueSolar informa voltaje, corriente, potencia, producción y etapa de carga; el porcentaje SOC requiere un monitor de batería BMV o SmartShunt.</p>
+        </div>
+      </div>
+      <div id="solarRealtimeGrid" class="solar-realtime-grid" aria-live="polite"></div>
+    </section>
+
     <section class="solar-layout">
       <article class="panel-card solar-panel">
         <div class="panel-card-header">
