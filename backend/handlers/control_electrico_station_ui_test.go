@@ -154,4 +154,14 @@ func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 			t.Fatalf("la configuracion no contiene %q", marker)
 		}
 	}
+	for _, marker := range []string{"Array.from({ length: 28 }", "Selecciona una Raspberry", "Sin Raspberry asignada"} {
+		if !strings.Contains(source, marker) {
+			t.Fatalf("la configuracion no permite una lista neutral de Raspberry ni GPIO 0: falta %q", marker)
+		}
+	}
+	for _, legacy := range []string{"Raspberry principal/global", "disabled>Principal</button>"} {
+		if strings.Contains(source, legacy) {
+			t.Fatalf("la configuracion no debe clasificar controladores como principal/secundario: encontro %q", legacy)
+		}
+	}
 }
