@@ -328,7 +328,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					log.Printf("[control_electrico] list reles resumen empresa_id=%d error: %v", empresaID, err)
 					reles = []dbpkg.EmpresaControlElectricoRele{}
 				}
-				raspberries, err := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, true)
+				raspberries, err := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)
 				if err != nil {
 					log.Printf("[control_electrico] list raspberry resumen empresa_id=%d error: %v", empresaID, err)
 					raspberries = []dbpkg.EmpresaControlElectricoRaspberry{}
@@ -538,7 +538,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
-				rows, _ := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, true)
+				rows, _ := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "raspberry_pis": rows})
 				return
 			case "escena":
