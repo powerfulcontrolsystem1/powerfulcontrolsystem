@@ -1,3 +1,10 @@
+2026-08-14: Plan 110 / puerto explícito en el orquestador `rs`.
+- `rs.ps1` incorpora `-VpsPort` y lo entrega al hijo `sync_to_vps.ps1`.
+  Esto conserva el aislamiento de procesos y permite desplegar desde un
+  worktree limpio sin duplicar archivos locales privados ni secretos.
+- El parámetro acepta cero como valor de compatibilidad (usa el valor por
+  defecto/configuración local) y restringe valores fuera del rango de puertos.
+
 2026-08-13: Plan 110 / cero LastInsertId en repositorios de producción.
 - Las altas de correo capturado, preferencias de estaciones, hoja de vida,
   venta digital, soporte remoto, GPS, sensores, finanzas, inventario y empresa

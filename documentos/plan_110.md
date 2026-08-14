@@ -1793,3 +1793,13 @@ autoriza ni ejecuta despliegue productivo.
 - P110-001A/P110-006/P110-007 continuan parciales hasta validar el candidato
   desplegado, proveedor y correo reales. Avance formal **38,5 %**, certificacion
   **0 %**, **NO-GO**. No se ejecuto `rs` ni se creo PR.
+
+## Actualizacion 2026-08-14, `rs` reproducible desde worktree limpio
+
+- El orquestador recibe `-VpsPort` y lo propaga al proceso aislado de
+  sincronización. Así, la ejecución desde un candidato limpio no depende de
+  copiar la configuración privada de despliegue para alcanzar el puerto SSH
+  operativo.
+- La corrección no cambia imágenes, datos empresariales ni el alcance de las
+  pruebas. P110-008 conserva estado parcial; avance formal **38,5 %**,
+  certificación **0 %**, **NO-GO** hasta completar las compuertas restantes.
