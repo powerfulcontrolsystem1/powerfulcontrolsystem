@@ -180,6 +180,9 @@ func evaluarControlElectricoReglasOrigen(dbEmp *sql.DB, empresaID int64, sensorC
 		if regla.Accion == "encender_temporizado" {
 			item["resultado"] = controlElectricoStartTimer(dbEmp, empresaID, regla.EstacionID, regla.ReleID, regla.TemporizadorSegundos, actor, "regla_sensor_temporizador")
 		}
+		if regla.Accion == "encender_programado" {
+			item["resultado"] = controlElectricoApplyScheduledSensorRule(dbEmp, empresaID, regla, actor)
+		}
 		if regla.AlarmaHabilitada || regla.Accion == "alarma" {
 			_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
 				EmpresaID:      empresaID,
@@ -202,6 +205,55 @@ func evaluarControlElectricoReglasOrigen(dbEmp *sql.DB, empresaID int64, sensorC
 		results = append(results, map[string]interface{}{"skipped": true, "message": "sin reglas aplicables"})
 	}
 	return results, nil
+}
+
+func controlElectricoApplyScheduledSensorRule(dbEmp *sql.DB, empresaID int64, regla dbpkg.EmpresaControlElectricoRegla, actor string) controlElectricoDispatchResult {
+	rele, err := dbpkg.GetEmpresaControlElectricoReleByID(dbEmp, empresaID, regla.ReleID)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: "aparato programado no disponible"}
+	}
+	if !rele.ProgramacionHabilitada {
+		return controlElectricoDispatchResult{Skipped: true, Message: "el aparato no tiene programacion activa"}
+	}
+	if !controlElectricoProgramacionActivaAhora(*rele, time.Now()) {
+		return controlElectricoDispatchResult{Skipped: true, Message: "programacion activa; esperando su franja de encendido"}
+	}
+	return controlElectricoDispatchManual(dbEmp, empresaID, rele.EstacionID, rele.ID, true, actor, "regla_sensor_programacion")
+}
+
+func controlElectricoProgramacionActivaAhora(rele dbpkg.EmpresaControlElectricoRele, now time.Time) bool {
+	if !rele.ProgramacionHabilitada {
+		return false
+	}
+	loc, err := time.LoadLocation(strings.TrimSpace(rele.ProgramacionTimezone))
+	if err != nil {
+		loc, _ = time.LoadLocation("America/Bogota")
+	}
+	local := now.In(loc)
+	if strings.TrimSpace(rele.ProgramacionInicio) != "" || strings.TrimSpace(rele.ProgramacionFin) != "" {
+		start, startOK := parseControlElectricoScheduleDateTime(rele.ProgramacionInicio, loc)
+		end, endOK := parseControlElectricoScheduleDateTime(rele.ProgramacionFin, loc)
+		return startOK && endOK && !local.Before(start) && local.Before(end)
+	}
+	on, errOn := time.Parse("15:04", strings.TrimSpace(rele.HoraEncendido))
+	off, errOff := time.Parse("15:04", strings.TrimSpace(rele.HoraApagado))
+	if errOn != nil || errOff != nil {
+		return false
+	}
+	minutes := local.Hour()*60 + local.Minute()
+	onMinutes := on.Hour()*60 + on.Minute()
+	offMinutes := off.Hour()*60 + off.Minute()
+	if onMinutes == offMinutes {
+		return controlElectricoProgramacionDiaActivo(rele.ProgramacionDias, local.Weekday())
+	}
+	if onMinutes < offMinutes {
+		return controlElectricoProgramacionDiaActivo(rele.ProgramacionDias, local.Weekday()) && minutes >= onMinutes && minutes < offMinutes
+	}
+	if minutes >= onMinutes {
+		return controlElectricoProgramacionDiaActivo(rele.ProgramacionDias, local.Weekday())
+	}
+	previous := local.AddDate(0, 0, -1)
+	return minutes < offMinutes && controlElectricoProgramacionDiaActivo(rele.ProgramacionDias, previous.Weekday())
 }
 
 func controlElectricoReglaCumple(regla dbpkg.EmpresaControlElectricoRegla, valor string) bool {

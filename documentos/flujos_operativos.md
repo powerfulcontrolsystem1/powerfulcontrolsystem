@@ -1500,3 +1500,12 @@ afecte dinero, documentos, licencias o seguridad.
 8. Cada Raspberry usa un instalador exclusivo. Si pierde LAN, Internet, DNS o
    el VPS, el agente reintenta con backoff y systemd lo reinicia sin limite; al
    reconectar consume los comandos durables pendientes del dispositivo.
+9. La empresa puede activar la alerta de desconexión, registrar un correo y una
+   gracia. El worker compara `last_seen`, deduplica por heartbeat y publica
+   buzón/campanita, correo y evento si la placa no regresa dentro del plazo.
+10. Super Administrador consolida RX+TX mensual por empresa. Al llegar al umbral
+    muestra advertencia y, si la política lo ordena, bloquea las operaciones del
+    túnel al alcanzar la cuota sin impedir un nuevo enrolamiento de recuperación.
+11. Una entrada GPIO autenticada puede encender/apagar el aparato destino,
+    iniciar su temporizador o respetar su agenda; todo ON reserva la cola única
+    de la empresa.

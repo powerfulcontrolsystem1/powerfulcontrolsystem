@@ -24,8 +24,37 @@
       <article class="guide-card"><div class="guide-num">3</div><h2>Salida física identificada</h2><p>Verifica el GPIO cableado al canal del relé antes de controlar una carga real.</p></article>
     </section>
 
+    <section class="guide-card" aria-labelledby="gpioTitle">
+      <h2 id="gpioTitle">Los 40 pines: número físico y número GPIO BCM</h2>
+      <p>PCS usa la numeración <strong>BCM</strong>, no la posición física del conector. Por ejemplo, GPIO2 está en el pin físico 3. Nunca configure como salida los pines de 3,3 V, 5 V o GND.</p>
+      <div class="guide-pin-grid">
+        <figure class="guide-figure">
+          <img src="/img/raspberry-pi-40-pin-bcm.svg" alt="Diagrama exacto de los 40 pines de Raspberry Pi con número físico y GPIO BCM" loading="lazy">
+          <figcaption>Referencia exacta del conector de 40 pines. Los GPIO0 y GPIO1 se reservan normalmente para identificación HAT; evítelos para relés salvo diseño técnico verificado.</figcaption>
+        </figure>
+        <div>
+          <figure class="guide-figure">
+            <img src="/img/raspberry-pi-40-pin-tutorial.png" alt="Vista superior ilustrativa de una Raspberry Pi y su conector GPIO de 40 pines" loading="lazy">
+            <figcaption>Vista orientativa de la placa. Para cablear, use siempre el diagrama BCM numerado.</figcaption>
+          </figure>
+          <h2>Relé por canal</h2>
+          <ol class="guide-example">
+            <li>Anote el cable real: por ejemplo, canal 1 del relé conectado a GPIO2.</li>
+            <li>En PCS asigne <strong>Relé 1 → GPIO2</strong>; canal 2 puede ser GPIO3, y así sucesivamente según su cableado.</li>
+            <li>No suponga que GPIO0 equivale siempre a relé 1: el orden lo determina el cable instalado.</li>
+            <li>Use <strong>Probar GPIO</strong> sin carga crítica para confirmar cada canal y su polaridad.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="guide-card" aria-labelledby="sensorTitle">
+      <h2 id="sensorTitle">GPIO como sensor de entrada</h2>
+      <p>En <strong>Automatizaciones y alarmas</strong> seleccione la Raspberry, el GPIO de entrada, la resistencia pull-up/pull-down y el aparato de salida. La señal puede encender, apagar, encender por un temporizador o activar el aparato solamente durante su programación guardada. Todas las órdenes de encendido pasan por la cola de la empresa.</p>
+    </section>
+
     <section class="guide-card" aria-label="Pasos para instalar y configurar Domótica">
-	  <article class="guide-step"><div class="guide-num">1</div><div><h2>Registre la Raspberry</h2><p>En <strong>Domótica &gt; Controladores locales</strong>, agregue la Raspberry de esta empresa. Cada placa debe tener su propio registro y su propio instalador.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">1</div><div><h2>Registre la Raspberry</h2><p>En <strong>Domótica y Energía Solar &gt; Configuración de domótica &gt; Controladores</strong>, agregue la Raspberry de esta empresa. La IP local es opcional cuando se usa el túnel saliente. Cada placa debe tener su propio registro e instalador.</p></div></article>
 	  <article class="guide-step"><div class="guide-num">2</div><div><h2>Descargue y ejecute el programa inicial</h2><p>Desde el navegador de esa Raspberry pulse <strong>Generar instalador</strong>. Ejecute una única vez <code>sudo sh ~/Downloads/instalar-pcs-domotica-*.sh</code>. El servicio <code>pcs-domotica-agent</code> queda habilitado para iniciar automáticamente después de cada encendido.</p></div></article>
 	  <article class="guide-step"><div class="guide-num">3</div><div><h2>Confirme conexión y recuperación</h2><p>El túnel HTTPS sale desde la Raspberry al VPS y se reconecta solo ante pérdida de red, Internet o reinicio. Tras reiniciar, PCS recupera únicamente los relés que estaban confirmados encendidos, de uno en uno y con un segundo entre cada activación.</p></div></article>
 	  <article class="guide-step"><div class="guide-num">4</div><div><h2>Identifique cada salida GPIO</h2><p>En la tarjeta de la Raspberry pulse <strong>Probar GPIO</strong>. Cada botón envía un pulso de un segundo y vuelve a apagar la salida; úselo primero sin carga crítica. El pulso usa polaridad <strong>activa-baja</strong>, apropiada para el módulo PCS de 16 relés.</p></div></article>

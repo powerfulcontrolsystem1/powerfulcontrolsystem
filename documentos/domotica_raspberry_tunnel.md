@@ -130,3 +130,12 @@ En cada arranque el agente genera un identificador efimero de inicio. El VPS
 solo una vez por ese identificador reconstruye las salidas que quedaron
 confirmadas en estado `on`, ordenadas por estación/GPIO. El agente espera un
 segundo entre confirmaciones, evitando energizar todos los relés a la vez.
+
+## Gobierno de transferencia y alertas (2026-08-13)
+
+- `empresa_control_electrico_limites_tunel` conserva por `empresa_id` la cuota mensual en MB, el porcentaje de advertencia y si el túnel debe bloquearse al alcanzar el límite.
+- Super Administrador muestra RX/TX diario, mensual y acumulado por Raspberry y consolidado por empresa. La cuota predeterminada es 2048 MB, la advertencia 80% y el bloqueo está activo.
+- El túnel comprueba la cuota después de autenticar el dispositivo; el enrolamiento inicial queda disponible para recuperar una instalación. El exceso devuelve HTTP 429 sin ejecutar comandos ni aceptar entradas.
+- La empresa puede activar `disconnect_alert_enabled`, registrar correo y definir `disconnect_grace_minutes`. El worker espera ese período y publica una alerta de buzón/campanita y correo una sola vez por valor de `last_seen`.
+- La identidad `RPI-` contiene 128 bits aleatorios, tiene índice único global y el secreto plano solo aparece en el instalador de un uso. El agente no envía ni elige `empresa_id`; PostgreSQL lo deriva del `device_uid` y token autenticados.
+- Para la primera instalación no es necesaria una IP local: se crea el controlador, se genera el instalador desde la página abierta en la Raspberry y el agente inicia el túnel HTTPS saliente.

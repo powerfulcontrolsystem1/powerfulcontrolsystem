@@ -3468,3 +3468,12 @@
 - [Operación] La configuración permite probar cada GPIO BCM de una Raspberry conectada con un pulso activo-bajo de un segundo que no queda diferido si el túnel está caído.
 - [Datos] Los aparatos admiten categoría y los reportes filtran consumo y estado por categoría o equipo; cada comando queda en bitácora empresarial.
 - [Guía] El tutorial de Domótica explica el instalador inicial, túnel, identificación de GPIO, polaridad y seguridad eléctrica.
+
+## [2026-08-13] Domótica, energía solar y gobierno del túnel
+
+- [Navegación] Nuevo grupo principal `Domótica y Energía Solar` con configuración, equipos, paneles solares y tutorial.
+- [Alertas] Correo y campanita configurables por empresa ante desconexión persistente de una Raspberry, con espera de 2 a 1440 minutos.
+- [Super] Consumo diario, mensual y acumulado por dispositivo/empresa, alarma por umbral y cuota mensual bloqueante configurable.
+- [Seguridad] El dispositivo conserva ID aleatorio global y la empresa se deriva del token autenticado; ninguna petición del agente decide `empresa_id`.
+- [Automatización] Un GPIO de entrada puede encender otro GPIO de forma normal, temporizada o dentro de la programación del aparato.
+- [Tutorial] Diagrama exacto del cabezal de 40 pines, diferencia entre posición física/BCM y guía de relación canal de relé → GPIO cableado.

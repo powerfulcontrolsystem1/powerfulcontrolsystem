@@ -1209,3 +1209,10 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
   visuales/impresas, concurrencia de cajas, proveedores, recuperación y piloto.
 - Esta orden se conserva solo como historia; el ejecutor actual comienza por la
   fase abierta correspondiente de Plan 110.
+
+## Domótica y Energía Solar 2026-08-13
+
+- El menú de empresa agrupa configuración de Domótica, equipos, Energía Solar y tutorial bajo `Domótica y Energía Solar`.
+- Las desconexiones se notifican por worker después de la gracia empresarial; Super Administrador controla cuota mensual RX+TX, advertencia y bloqueo del túnel por empresa.
+- La primera instalación no requiere IP local: la Raspberry descarga un instalador de un uso, recibe ID global aleatorio y abre HTTPS hacia el VPS.
+- En sensores, `encender_temporizado` usa la duración de la regla y `encender_programado` solo enciende si la agenda del aparato está activa.

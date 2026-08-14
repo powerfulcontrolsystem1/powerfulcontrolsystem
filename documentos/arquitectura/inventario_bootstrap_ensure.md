@@ -7,7 +7,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 ## Resumen
 
 - Funciones inventariadas: 147.
-- Huella del catalogo legado: `de7bbea2b775339756a0b0127bf15821ac3860b6625e0760100f7814489cd93f` (122 pasos).
+- Huella del catalogo legado: `e95231c39068e3fff2016ee86d921141673b00c55505e67a375146a530c8942d` (122 pasos).
 - DDL / indice / funcion: 118.
 - DDL catalogado de plataforma: 4.
 - compatibilidad PostgreSQL: 2.
@@ -55,7 +55,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaContabilidadColombiaAvanzadaSchema` | [backend/db/contabilidad_colombia_avanzada.go:303](../../backend/db/contabilidad_colombia_avanzada.go#L303) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperContractSchema` | [backend/db/contrato_super.go:133](../../backend/db/contrato_super.go#L133) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureDefaultSuperContract` | [backend/db/contrato_super.go:231](../../backend/db/contrato_super.go#L231) | seed o provisionamiento idempotente | superadministrador o por confirmar |
-| `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:216](../../backend/db/control_electrico.go#L216) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:220](../../backend/db/control_electrico.go#L220) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperCorreoNotificacionesPruebaSchema` | [backend/db/correo_notificaciones_prueba.go:44](../../backend/db/correo_notificaciones_prueba.go#L44) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaCorteCajaConfiguracionSchema` | [backend/db/corte_caja_configuracion.go:102](../../backend/db/corte_caja_configuracion.go#L102) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:628](../../backend/db/creditos.go#L628) | DDL / indice / funcion | empresas o por confirmar |

@@ -4806,3 +4806,8 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - La preferencia se persiste en
   `empresa_estacion_prefs.estaciones_config.carrito_ui_global`, se aplica por
   `empresa_id` y reutiliza las rutas y permisos existentes de `control_electrico`.
+2026-08-13: Domotica y Energia Solar - gobierno operativo
+- Navegación empresarial independiente con configuración, equipos, panel solar y tutorial.
+- Alerta empresarial de Raspberry desconectada con gracia, correo y buzón/campanita.
+- Cuota mensual del túnel por empresa, advertencia y bloqueo administrados exclusivamente por Super Administrador.
+- Entradas GPIO con salida normal, temporizada o condicionada a la agenda del aparato, siempre aisladas por empresa/Raspberry y dentro de la cola de encendidos.

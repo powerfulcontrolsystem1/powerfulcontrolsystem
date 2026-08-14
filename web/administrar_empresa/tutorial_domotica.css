@@ -1,23 +1,12 @@
 :root {
-  --guide-bg: var(--surface-page, #f4f7fb);
-  --guide-card: var(--surface-card, #fff);
-  --guide-text: var(--text-primary, #152033);
-  --guide-muted: var(--text-secondary, #5f6b7c);
-  --guide-line: var(--border-color, #dce3ed);
-  --guide-accent: var(--primary, #1769e0);
+  --guide-bg: var(--bg, #f4f7fb);
+  --guide-card: var(--card, #fff);
+  --guide-text: var(--text, #152033);
+  --guide-muted: var(--muted, #5f6b7c);
+  --guide-line: var(--border, #dce3ed);
+  --guide-accent: var(--accent, #1769e0);
   --guide-good: #16834b;
   --guide-warn: #a85d00;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --guide-bg: #101722;
-    --guide-card: #182231;
-    --guide-text: #edf3fb;
-    --guide-muted: #b5c0d0;
-    --guide-line: #334257;
-    --guide-accent: #75adff;
-  }
 }
 
 body {
@@ -157,6 +146,40 @@ code {
   text-decoration: none;
 }
 
+.guide-figure {
+  margin: 20px 0;
+}
+
+.guide-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--guide-line);
+  border-radius: 12px;
+  background: #f5f8fb;
+}
+
+.guide-figure figcaption {
+  margin-top: 8px;
+  color: var(--guide-muted);
+  line-height: 1.45;
+  font-size: .92rem;
+}
+
+.guide-pin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, .9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.guide-example {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--guide-muted);
+  line-height: 1.55;
+}
+
 @media (max-width: 720px) {
   .guide-head {
     display: block;
@@ -166,7 +189,8 @@ code {
     margin-top: 14px;
   }
 
-  .guide-grid {
+  .guide-grid,
+  .guide-pin-grid {
     grid-template-columns: 1fr;
   }
 
