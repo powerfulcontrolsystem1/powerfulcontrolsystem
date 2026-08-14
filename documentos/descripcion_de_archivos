@@ -1,3 +1,8 @@
+2026-08-14
+- `scripts/rs.ps1`: acepta `-VpsPort` y lo reenvía al proceso aislado de
+  `sync_to_vps.ps1`, para que un worktree limpio pueda usar el puerto SSH
+  operativo sin copiar configuración privada local.
+
 2026-08-13
 - `backend/db/calculadora_operativa_postgres_test.go`: regresión del uso de
   `RETURNING id`, propagación de contexto y lectura de configuración sin

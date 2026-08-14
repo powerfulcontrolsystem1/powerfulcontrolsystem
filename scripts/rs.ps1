@@ -23,6 +23,8 @@ param(
   [switch]$NoAutoMergeProtectedPR,
   [int]$RestartHealthTimeoutSeconds = 900,
   [int]$DockerHealthTimeoutSeconds = 900,
+  [ValidateRange(0, 65535)]
+  [int]$VpsPort = 0,
   [int]$StepTimeoutSeconds = 3600,
   [bool]$CleanupRemoteUnusedFiles = $true,
   [int]$RemoteCleanupTempMinAgeMinutes = 60,
@@ -147,6 +149,7 @@ if ($DryRun) { $syncArgs.DryRun = $true }
 if ($PreviewOnly) { $syncArgs.PreviewOnly = $true }
 $syncArgs.RestartHealthTimeoutSeconds = $RestartHealthTimeoutSeconds
 $syncArgs.DockerHealthTimeoutSeconds = $DockerHealthTimeoutSeconds
+$syncArgs.Port = $VpsPort
 $syncArgs.CleanupRemoteUnusedFiles = $CleanupRemoteUnusedFiles
 $syncArgs.RemoteCleanupTempMinAgeMinutes = $RemoteCleanupTempMinAgeMinutes
 $syncArgs.RemoteCleanupDockerBuilderCacheMaxAgeHours = $RemoteCleanupDockerBuilderCacheMaxAgeHours

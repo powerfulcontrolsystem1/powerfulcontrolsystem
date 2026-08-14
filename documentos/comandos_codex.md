@@ -550,6 +550,14 @@ Set-Location D:\powerfulcontrolsystem
 .\scripts\rs.ps1
 ```
 
+Cuando se trabaja desde un worktree limpio que no contiene la configuración
+privada local de despliegue, indicar el puerto SSH de forma explícita. No copiar
+archivos privados ni secretos al worktree:
+
+```powershell
+.\scripts\rs.ps1 -VpsPort 49222
+```
+
 `scripts\rs.ps1` es el orquestador preferido porque encadena las validaciones del proyecto,
 sincroniza al VPS, reconstruye/recarga servicios y verifica salud publica segun
 la configuracion vigente.
