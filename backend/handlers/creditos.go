@@ -415,7 +415,7 @@ func handleEmpresaCreditosLimitesCliente(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	rows, total, err := dbpkg.ListEmpresaCreditoClienteLimites(dbEmp, empresaID, dbpkg.EmpresaCreditoClienteLimiteFilter{
+	rows, total, err := dbpkg.ListEmpresaCreditoClienteLimitesContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaCreditoClienteLimiteFilter{
 		ClienteID:       clienteID,
 		IncludeInactive: includeInactive,
 		Limit:           limit,

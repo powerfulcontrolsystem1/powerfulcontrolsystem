@@ -2356,6 +2356,12 @@ func GetEmpresaCreditoByVentaOrigenID(dbConn *sql.DB, empresaID, ventaOrigenID i
 
 // ListEmpresaCreditoClienteLimites lista limites por cliente con filtros.
 func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoClienteLimiteFilter) ([]EmpresaCreditoClienteLimite, int64, error) {
+	return ListEmpresaCreditoClienteLimitesContext(context.Background(), dbConn, empresaID, filter)
+}
+
+// ListEmpresaCreditoClienteLimitesContext conserva cancelación del llamador en
+// conteo y listado de límites por cliente.
+func ListEmpresaCreditoClienteLimitesContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaCreditoClienteLimiteFilter) ([]EmpresaCreditoClienteLimite, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -2381,7 +2387,7 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 	countQuery := "SELECT COUNT(1) FROM empresa_creditos_clientes_limites WHERE empresa_id = ?" + whereSQL
 	countArgs := append([]interface{}{empresaID}, args...)
 	var total int64
-	if err := dbConn.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
+	if err := queryRowSQLCompatContext(ctx, dbConn, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -2407,7 +2413,7 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 	queryArgs := append([]interface{}{empresaID}, args...)
 	queryArgs = append(queryArgs, limit, offset)
 
-	rows, err := dbConn.Query(query, queryArgs...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, queryArgs...)
 	if err != nil {
 		return nil, 0, err
 	}

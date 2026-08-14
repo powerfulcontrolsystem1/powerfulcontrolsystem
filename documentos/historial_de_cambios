@@ -42702,3 +42702,10 @@ acumulativa.
   `empresa_id`.
 - Regresión de contexto, pruebas focalizadas, `go vet` y auditoría aprueban.
   La deuda DB sin contexto baja de 524 a 521; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: límites de crédito cancelables
+
+- El conteo y listado administrativo de límites de crédito por cliente
+  conservan `r.Context()` hasta PostgreSQL y mantienen el filtro obligatorio
+  por `empresa_id`.
+- Pruebas focalizadas, `go vet` y auditoría aprueban. La deuda DB sin contexto
+  baja de 521 a 519; no se ejecutó `rs`.
