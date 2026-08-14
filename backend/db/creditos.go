@@ -1273,8 +1273,12 @@ func creditoHydrateCuotaStatusContext(ctx context.Context, dbConn *sql.DB, empre
 }
 
 func creditoHydrateCuotaStatusRows(dbConn *sql.DB, empresaID int64, rows []EmpresaCredito) {
+	creditoHydrateCuotaStatusRowsContext(context.Background(), dbConn, empresaID, rows)
+}
+
+func creditoHydrateCuotaStatusRowsContext(ctx context.Context, dbConn *sql.DB, empresaID int64, rows []EmpresaCredito) {
 	for idx := range rows {
-		creditoHydrateCuotaStatus(dbConn, empresaID, &rows[idx])
+		creditoHydrateCuotaStatusContext(ctx, dbConn, empresaID, &rows[idx])
 	}
 }
 
@@ -1478,6 +1482,12 @@ func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
 
 // ListEmpresaCreditos lista creditos por empresa con filtros y total.
 func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoFilter) ([]EmpresaCredito, int64, error) {
+	return ListEmpresaCreditosContext(context.Background(), dbConn, empresaID, filter)
+}
+
+// ListEmpresaCreditosContext lista creditos y conserva la cancelacion del
+// llamador durante conteo, listado e hidratacion de cuotas.
+func ListEmpresaCreditosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaCreditoFilter) ([]EmpresaCredito, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -1490,7 +1500,7 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 	countArgs := append([]interface{}{empresaID}, whereArgs...)
 
 	var total int64
-	if err := dbConn.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
+	if err := queryRowSQLCompatContext(ctx, dbConn, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -1535,7 +1545,7 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 	args := append([]interface{}{empresaID}, whereArgs...)
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1553,7 +1563,7 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 		return nil, 0, err
 	}
 
-	creditoHydrateCuotaStatusRows(dbConn, empresaID, out)
+	creditoHydrateCuotaStatusRowsContext(ctx, dbConn, empresaID, out)
 	return out, total, nil
 }
 

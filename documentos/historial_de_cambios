@@ -42667,3 +42667,10 @@ acumulativa.
   exportación de Créditos, sin cambiar las reglas de saldo ni `empresa_id`.
 - Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
   La deuda DB sin contexto baja de 529 a 528; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: listado de créditos cancelable
+
+- El listado, conteo, exportación e hidratación por cuotas de Créditos
+  conservan `r.Context()` hasta PostgreSQL, manteniendo filtros y aislamiento
+  por `empresa_id` sin cambiar contratos internos.
+- Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 528 a 526; no se ejecutó `rs`.

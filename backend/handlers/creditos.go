@@ -640,7 +640,7 @@ func handleEmpresaCreditosList(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		return
 	}
 
-	rows, total, err := dbpkg.ListEmpresaCreditos(dbEmp, empresaID, filter)
+	rows, total, err := dbpkg.ListEmpresaCreditosContext(r.Context(), dbEmp, empresaID, filter)
 	if err != nil {
 		http.Error(w, "No se pudo consultar creditos", http.StatusInternalServerError)
 		return
@@ -1336,7 +1336,7 @@ func handleEmpresaCreditosReporte(w http.ResponseWriter, r *http.Request, dbEmp 
 		return
 	}
 
-	rows, total, err := dbpkg.ListEmpresaCreditos(dbEmp, empresaID, filter)
+	rows, total, err := dbpkg.ListEmpresaCreditosContext(r.Context(), dbEmp, empresaID, filter)
 	if err != nil {
 		http.Error(w, "No se pudo consultar creditos para reporte", http.StatusInternalServerError)
 		return
