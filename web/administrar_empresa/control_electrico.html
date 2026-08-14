@@ -608,7 +608,7 @@
       <aside id="electricConexion" class="electric-panel">
         <div id="electricConexionForm" data-electric-section="conexion">
           <h2>Domotica global y controladores</h2>
-          <p>Servidor GPIO principal y nodos adicionales para ampliar salidas por estacion.</p>
+          <p>Controladores Raspberry registrados para ampliar salidas por estacion.</p>
           <div class="electric-form-grid">
             <label class="electric-switch span-2" for="habilitado">
               <span>Domotica activa</span>
@@ -1079,7 +1079,7 @@
       }
 
       function raspberryLabel(pi) {
-        if (!pi) return 'Raspberry principal/global';
+        if (!pi) return 'Sin Raspberry asignada';
         var name = pi.nombre || pi.codigo || ('Raspberry #' + pi.id);
         var ip = pi.raspberry_ip ? ' - ' + pi.raspberry_ip : '';
         return name + ip;
@@ -1087,7 +1087,7 @@
 
       function raspberryOptions(selectedID) {
         var selected = Number(selectedID || 0);
-        var html = '<option value="">Raspberry principal/global</option>';
+        var html = '<option value="">Selecciona una Raspberry</option>';
         state.raspberryPis
           .filter(function (pi) { return String(pi.estado || 'activo').toLowerCase() === 'activo'; })
           .forEach(function (pi) {
@@ -1352,9 +1352,8 @@
         }
         box.innerHTML = state.raspberryPis.map(function (pi) {
           var inactive = String(pi.estado || 'activo').toLowerCase() !== 'activo';
-          var primary = String(pi.codigo || '').toLowerCase() === 'principal';
           var online = tunnelOnline(pi);
-          var testButtons = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27].map(function(pin) {
+          var testButtons = Array.from({ length: 28 }, function(_, pin) { return pin; }).map(function(pin) {
             return '<button class="btn secondary small raspberry-gpio-test" type="button" data-gpio-pin="' + pin + '"' + (!online ? ' disabled' : '') + '>GPIO ' + pin + '</button>';
           }).join('');
           return '<article class="raspberry-item" data-raspberry-id="' + sanitize(pi.id || 0) + '">' +
@@ -1381,7 +1380,7 @@
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-ssh-install" type="button">Instalar por SSH</button>' : '') +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-connection-test" type="button">Probar conexión</button><button class="btn secondary small raspberry-restart" type="button">Reiniciar</button><button class="btn danger small raspberry-shutdown" type="button">Apagar</button>' : '') +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-gpio-toggle" type="button">Probar GPIO</button>' : '') +
-              (primary ? '<button class="btn secondary small" type="button" disabled>Principal</button>' : '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>') +
+              '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>' +
             '</div>' +
             '<div class="gpio-test-panel" aria-label="Prueba de GPIO: cada boton envia un pulso de un segundo">' + testButtons + '</div>' +
           '</article>';
