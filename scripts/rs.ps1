@@ -149,7 +149,9 @@ if ($DryRun) { $syncArgs.DryRun = $true }
 if ($PreviewOnly) { $syncArgs.PreviewOnly = $true }
 $syncArgs.RestartHealthTimeoutSeconds = $RestartHealthTimeoutSeconds
 $syncArgs.DockerHealthTimeoutSeconds = $DockerHealthTimeoutSeconds
-$syncArgs.Port = $VpsPort
+if ($VpsPort -gt 0) {
+  $syncArgs.Port = $VpsPort
+}
 $syncArgs.CleanupRemoteUnusedFiles = $CleanupRemoteUnusedFiles
 $syncArgs.RemoteCleanupTempMinAgeMinutes = $RemoteCleanupTempMinAgeMinutes
 $syncArgs.RemoteCleanupDockerBuilderCacheMaxAgeHours = $RemoteCleanupDockerBuilderCacheMaxAgeHours
