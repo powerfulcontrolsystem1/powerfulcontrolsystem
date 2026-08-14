@@ -13223,3 +13223,4 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `backend/db/control_electrico_governance_test.go` y `backend/handlers/control_electrico_governance_ui_test.go`: contratos de identidad, cuotas, acciones de sensor, menú y tutorial.
 - `web/img/raspberry-pi-40-pin-bcm.svg`: pinout determinista físico/BCM de 40 pines.
 - `web/img/raspberry-pi-40-pin-tutorial.png`: ilustración orientativa generada para el tutorial.
+backend/db/repository_helpers.go | Helper interno para generación compartida de códigos alfanuméricos de repositorios; no expone endpoints ni cambia persistencia.
