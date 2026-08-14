@@ -1447,9 +1447,10 @@ autoriza ni ejecuta despliegue productivo.
   puente legado al catálogo inmutable y repetir base vacía/upgrade; las 3 del
   migrador son autoridad permitida. Avance formal
   **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
-- La compuerta `govulncheck` encontró vulnerabilidades alcanzables de la
-  biblioteca estándar en Go 1.25.12. Módulo, CI y Docker quedan alineados en
-  Go **1.25.13**, versión correctiva oficial; falta confirmación del CI remoto.
+- La compuerta `govulncheck` había encontrado vulnerabilidades alcanzables de la
+  biblioteca estándar en Go 1.25.12. Ese baseline quedó superado por la
+  actualización a Go **1.26.6** registrada en la actualización P110-001A del
+  2026-08-14.
 - Validación local con temporales/caché en D: aprobó pruebas, vet y
   `govulncheck ./...` con **0 vulnerabilidades alcanzables**. C: continúa
   prácticamente lleno; no se eliminó contenido al bloquearse la limpieza.
@@ -1510,3 +1511,12 @@ autoriza ni ejecuta despliegue productivo.
   contratos.
 - P110-001A continúa parcial; el avance formal sigue en **38,5 %**,
   certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-14, bloqueo Trivy por Go stdlib
+
+- La PR #170 expuso `CVE-2026-46600` HIGH en la imagen backend por Go
+  1.25.13. El escaneo de filesystem y frontend permaneció limpio.
+- Se actualizan módulo, Docker y CI a Go **1.26.6**, versión mínima indicada
+  por el aviso para corregir la vulnerabilidad. La PR debe repetir Trivy,
+  preflight y pruebas antes de considerarse cerrada.
+- El Plan 110 continúa **NO-GO** y no se ejecutó `rs`.

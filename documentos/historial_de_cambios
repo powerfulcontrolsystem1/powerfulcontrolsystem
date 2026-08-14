@@ -42475,3 +42475,6 @@ acumulativa.
 2026-08-13 - Plan 110: helper de códigos de repositorios
 - Se centraliza la generación de códigos alfanuméricos de cuatro dominios con
   prueba de formato y fallback; la compuerta pasa de 47 a 46 duplicaciones.
+2026-08-14 - Plan 110: corregir CVE-2026-46600 de Go stdlib
+- Trivy detectó una vulnerabilidad HIGH en Go 1.25.13 de la imagen backend.
+  Se actualizan go.mod, Docker y CI a Go 1.26.6 y se exige repetir el escaneo.
