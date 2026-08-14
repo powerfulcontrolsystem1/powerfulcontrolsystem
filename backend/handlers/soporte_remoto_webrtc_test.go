@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -52,17 +53,24 @@ func TestSoporteRemotoHTTPPropagaContextoEnConfiguracionYAlta(t *testing.T) {
 		"GetEmpresaSoporteRemotoDispositivoByIDContext(r.Context()",
 		"UpdateEmpresaSoporteRemotoDispositivoContext(r.Context()",
 		"SetEmpresaSoporteRemotoDispositivoEstadoByIDContext(r.Context()",
-		"RegisterEmpresaSoporteRemotoDispositivoHeartbeatContext(\n\t\tr.Context()",
 		"ValidateEmpresaSoporteRemotoDispositivoAccessContext(r.Context()",
-		"CreateEmpresaSoporteRemotoSessionContext(\n\t\tr.Context()",
 		"GetEmpresaSoporteRemotoSessionByCodigoContext(r.Context()",
 		"ListEmpresaSoporteRemotoSesionesContext(r.Context()",
 		"ResolveEmpresaSoporteRemotoViewerSessionContext(r.Context()",
 		"SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(r.Context()",
-		"CreateEmpresaSoporteRemotoSignalingCredentialContext(\n\t\tr.Context()",
 	} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("missing cancellable support operation %q", expected)
+		}
+	}
+	for _, operation := range []string{
+		"RegisterEmpresaSoporteRemotoDispositivoHeartbeatContext",
+		"CreateEmpresaSoporteRemotoSessionContext",
+		"CreateEmpresaSoporteRemotoSignalingCredentialContext",
+	} {
+		pattern := regexp.MustCompile(regexp.QuoteMeta(operation) + `\(\s*r\.Context\(\)`)
+		if !pattern.MatchString(source) {
+			t.Fatalf("missing cancellable support operation %q with request context", operation)
 		}
 	}
 }
