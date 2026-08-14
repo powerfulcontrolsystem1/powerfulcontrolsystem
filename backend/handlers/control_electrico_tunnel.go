@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -23,6 +24,8 @@ import (
 
 //go:embed templates/instalar_domotica_raspberry.sh.tmpl
 var domoticaRaspberryInstallerTemplate string
+
+const domoticaAgentVersion = "1.4.0"
 
 var (
 	domoticaTunnelSchemaOnce sync.Once
@@ -42,14 +45,37 @@ func ensureDomoticaTunnelSchemaReady(dbEmp *sql.DB) error {
 	return domoticaTunnelSchemaErr
 }
 
-func handleDomoticaRaspberryInstallerDownload(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64, actor string) error {
+func generateDomoticaRaspberryInstaller(dbEmp *sql.DB, empresaID, raspberryID int64, actor, origin string) (*dbpkg.EmpresaControlElectricoRaspberry, []byte, error) {
 	if err := ensureDomoticaTunnelSchemaReady(dbEmp); err != nil {
-		return err
+		return nil, nil, err
 	}
 	baseURL, err := domoticaTunnelPublicBaseURL()
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
+	pi, enrollmentToken, err := dbpkg.ProvisionEmpresaControlElectricoRaspberryTunnel(dbEmp, empresaID, raspberryID, actor)
+	if err != nil {
+		return nil, nil, err
+	}
+	baseJSON, _ := json.Marshal(baseURL)
+	deviceJSON, _ := json.Marshal(pi.DeviceUID)
+	tokenJSON, _ := json.Marshal(enrollmentToken)
+	tmpl, err := template.New("installer").Parse(domoticaRaspberryInstallerTemplate)
+	if err != nil {
+		return nil, nil, err
+	}
+	var body bytes.Buffer
+	if err := tmpl.Execute(&body, domoticaInstallerTemplateData{BaseURLJSON: string(baseJSON), DeviceUIDJSON: string(deviceJSON), EnrollmentTokenJSON: string(tokenJSON)}); err != nil {
+		return nil, nil, err
+	}
+	_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
+		EmpresaID: empresaID, RaspberryID: pi.ID, Comando: "provisionar_tunel",
+		Resultado: "instalador_generado", Actor: actor, Origen: firstNonEmpty(strings.TrimSpace(origin), "panel_domotica"),
+	})
+	return pi, body.Bytes(), nil
+}
+
+func handleDomoticaRaspberryInstallerDownload(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64, actor string) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 32*1024)
 	var payload struct {
 		RaspberryID int64 `json:"raspberry_id"`
@@ -57,29 +83,10 @@ func handleDomoticaRaspberryInstallerDownload(w http.ResponseWriter, r *http.Req
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || payload.RaspberryID <= 0 {
 		return errors.New("raspberry_id requerido")
 	}
-	pi, enrollmentToken, err := dbpkg.ProvisionEmpresaControlElectricoRaspberryTunnel(dbEmp, empresaID, payload.RaspberryID, actor)
+	pi, body, err := generateDomoticaRaspberryInstaller(dbEmp, empresaID, payload.RaspberryID, actor, "panel_domotica")
 	if err != nil {
 		return err
 	}
-	baseJSON, _ := json.Marshal(baseURL)
-	deviceJSON, _ := json.Marshal(pi.DeviceUID)
-	tokenJSON, _ := json.Marshal(enrollmentToken)
-	tmpl, err := template.New("installer").Parse(domoticaRaspberryInstallerTemplate)
-	if err != nil {
-		return err
-	}
-	var body bytes.Buffer
-	if err := tmpl.Execute(&body, domoticaInstallerTemplateData{BaseURLJSON: string(baseJSON), DeviceUIDJSON: string(deviceJSON), EnrollmentTokenJSON: string(tokenJSON)}); err != nil {
-		return err
-	}
-	_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
-		EmpresaID:   empresaID,
-		RaspberryID: pi.ID,
-		Comando:     "provisionar_tunel",
-		Resultado:   "instalador_generado",
-		Actor:       actor,
-		Origen:      "panel_domotica",
-	})
 	filenameCode := sanitizeDomoticaASCII(firstNonEmpty(pi.Codigo, pi.Nombre, "raspberry"))
 	if filenameCode == "" {
 		filenameCode = "raspberry"
@@ -90,7 +97,7 @@ func handleDomoticaRaspberryInstallerDownload(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(body.Bytes())
+	_, err = w.Write(body)
 	return err
 }
 
@@ -237,6 +244,11 @@ func handleDomoticaTunnelSolarTelemetry(w http.ResponseWriter, r *http.Request, 
 		writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "telemetria solar invalida"})
 		return
 	}
+	payload.Modelo = strings.TrimSpace(payload.Modelo)
+	if err := validateDomoticaSolarTelemetry(payload.Modelo, payload.Lectura); err != nil {
+		writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "telemetria solar fuera de rango"})
+		return
+	}
 	if err := dbpkg.EmpresaEnergiaSolarSchemaReady(dbEmp); err != nil {
 		recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": false, "error": "modulo solar no disponible"}, err.Error())
 		return
@@ -260,7 +272,7 @@ func handleDomoticaTunnelSolarTelemetry(w http.ResponseWriter, r *http.Request, 
 			Modelo: firstNonEmpty(strings.TrimSpace(payload.Modelo), "BlueSolar MPPT VE.Direct"),
 			Nombre: "Victron solar - Raspberry Pi", Ubicacion: "Gateway VE.Direct por tunel PCS",
 			InstalacionRef: ref, LocalGatewayURL: "tunnel://raspberry/" + strconv.FormatInt(device.RaspberryID, 10) + "/vedirect",
-			IntervaloSegundos: 60, Activo: true, Estado: "activo", UsuarioCreador: device.DeviceUID,
+			IntervaloSegundos: 30, Activo: true, Estado: "activo", UsuarioCreador: device.DeviceUID,
 			Observaciones: "Telemetria VE.Direct autenticada desde Raspberry Pi; sin acceso entrante al VPS.",
 		})
 		if err != nil {
@@ -282,6 +294,41 @@ func handleDomoticaTunnelSolarTelemetry(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": true, "sistema_id": sistemaID, "lectura_id": lecturaID}, "")
+}
+
+func validateDomoticaSolarTelemetry(modelo string, lectura dbpkg.EmpresaEnergiaSolarLectura) error {
+	if len(modelo) > 160 {
+		return errors.New("modelo demasiado largo")
+	}
+	values := []struct {
+		name     string
+		value    float64
+		min, max float64
+	}{
+		{"potencia_solar_w", lectura.PotenciaSolarW, 0, 10_000_000},
+		{"produccion_dia_kwh", lectura.ProduccionDiaKwh, 0, 10_000_000},
+		{"bateria_voltaje_v", lectura.BateriaVoltaje, 0, 2_000},
+		{"bateria_corriente_a", lectura.BateriaCorrienteA, -100_000, 100_000},
+		{"bateria_carga_w", lectura.BateriaCargaW, 0, 100_000_000},
+		{"bateria_descarga_w", lectura.BateriaDescargaW, 0, 100_000_000},
+	}
+	for _, item := range values {
+		if math.IsNaN(item.value) || math.IsInf(item.value, 0) || item.value < item.min || item.value > item.max {
+			return fmt.Errorf("%s fuera de rango", item.name)
+		}
+	}
+	for _, state := range []string{lectura.EstadoPaneles, lectura.EstadoBateria, lectura.EstadoInversor} {
+		if len(strings.TrimSpace(state)) > 120 {
+			return errors.New("estado demasiado largo")
+		}
+	}
+	if lectura.Raw != nil {
+		raw, err := json.Marshal(lectura.Raw)
+		if err != nil || len(raw) > 32*1024 {
+			return errors.New("metadatos raw invalidos")
+		}
+	}
+	return nil
 }
 
 func handleDomoticaTunnelEnroll(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, requestBytes int64) {

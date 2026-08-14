@@ -42472,3 +42472,21 @@ acumulativa.
 - El alta de Raspberry GPIO ya no exige IP local: el instalador de un solo uso conserva ID aleatorio global `RPI-<128 bits>`, token con huella SHA-256 y túnel saliente que deriva la empresa desde la identidad autenticada.
 - Las reglas de entrada GPIO admiten encendido normal, temporizador y activación condicionada a la agenda del aparato; todo encendido conserva la cola empresarial.
 - El tutorial incorpora imagen orientativa y diagrama exacto de los 40 pines con numeración física/BCM y advertencias eléctricas.
+2026-08-13: Recuperación real, SSH cifrado, escenas y Victron VE.Direct.
+- Se corrigió la cola del túnel para comparar `disponible_desde`, `expira_en` y
+  `entregado_en` como `TIMESTAMPTZ`; antes una fecha RFC3339 UTC se interpretaba
+  como hora local y dejaba comandos manuales/reinicio pendientes varias horas.
+- El agente 1.4 usa el `boot_id` del kernel, reinicia el servicio al actualizarse
+  y restaura las salidas confirmadas `on` mediante la cola y el retardo de la
+  empresa. Las tarjetas esperan el ACK real antes de informar éxito.
+- La instalación alternativa por SSH fija la huella del host, exige una ruta
+  pública/VPN autorizada, cifra password y sudo con AES-GCM por empresa y
+  Raspberry, y nunca devuelve secretos al navegador. La credencial se puede
+  reutilizar, reemplazar o eliminar con permiso de aprobación de Domótica.
+- Se incorporan escenas multiaparato, aisladas por `empresa_id`, cuya ejecución
+  reutiliza la misma cola eléctrica para evitar encendidos simultáneos.
+- La Raspberry PCS identificó físicamente una Victron BlueSolar MPPT 75/15 rev3
+  por VE.Direct (PID `0xA07D`). El agente autodetecta el puerto, valida checksum
+  y transmite cada 15 segundos batería, panel, producción, etapa y errores. El
+  panel solar muestra Conectado/Desconectado y no inventa SOC cuando el MPPT no
+  dispone de un BMV/SmartShunt.

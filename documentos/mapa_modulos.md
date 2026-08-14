@@ -659,3 +659,16 @@ y salvo usa `action=paz_y_salvo`. La cobranza profesional vive en
 - Túnel público: `/api/public/domotica/tunnel`; autentica `device_uid`/token y deriva la empresa sin aceptar `empresa_id` del agente.
 - Super: `/super/domotica_raspberry_trafico.html` y `/super/api/domotica_raspberry_trafico` muestran consumo/alarma y administran la cuota mensual por empresa.
 - Worker: `notifications.domotica-connectivity` evalúa cada minuto las desconexiones que superan la gracia configurada.
+## Domotica y Energia Solar - ampliación 2026-08-13
+
+- Configuración/controladores: `web/administrar_empresa/control_electrico.html`,
+  `/api/empresa/control_electrico?action=ssh_config|instalar_ssh` y credenciales
+  cifradas en `empresa_control_electrico_raspberry_pis`.
+- Automatizaciones/escenas: la misma página y acciones
+  `escenas`, `escena`, `ejecutar_escena`; tablas
+  `empresa_control_electrico_escenas` y `empresa_control_electrico_escena_items`.
+- Agente Raspberry: plantilla
+  `backend/handlers/templates/instalar_domotica_raspberry.sh.tmpl`, túnel público
+  `/api/public/domotica/tunnel`, recuperación GPIO y VE.Direct.
+- Panel solar: `web/administrar_empresa/energia_solar.html`,
+  `web/js/energia_solar.js` y `/api/empresa/energia_solar?action=dashboard`.

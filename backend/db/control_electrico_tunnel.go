@@ -151,7 +151,11 @@ func ProvisionEmpresaControlElectricoRaspberryTunnel(dbConn *sql.DB, empresaID, 
 		return nil, "", err
 	}
 	expires := time.Now().UTC().Add(controlElectricoTunnelEnrollmentTTL).Format(time.RFC3339)
-	result, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET device_uid=?, enrollment_token_hash=?, enrollment_expires_at=?, device_token_hash=NULL, tunnel_enabled=1, tunnel_status='pendiente_instalacion', last_tunnel_error='', fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`,
+	// Un instalador nuevo no invalida el agente activo antes de tiempo. El token
+	// operativo se reemplaza atomica y definitivamente cuando el nuevo agente
+	// completa el enrolamiento; así una descarga o un SSH fallido no deja la
+	// Raspberry desconectada.
+	result, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET device_uid=?, enrollment_token_hash=?, enrollment_expires_at=?, tunnel_enabled=1, tunnel_status=CASE WHEN device_token_hash IS NULL THEN 'pendiente_instalacion' ELSE tunnel_status END, last_tunnel_error='', fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`,
 		deviceUID, controlElectricoTunnelTokenHash(enrollmentToken), expires, truncateControlElectricoText(actor, 180), empresaID, raspberryID)
 	if err != nil {
 		return nil, "", err
@@ -411,10 +415,14 @@ func ClaimEmpresaControlElectricoTunnelCommand(dbConn *sql.DB, empresaID, raspbe
 		return nil, err
 	}
 	defer tx.Rollback()
-	_, _ = execTxSQLCompat(tx, `UPDATE empresa_control_electrico_comandos SET estado='pendiente', entregado_en=NULL WHERE empresa_id=? AND raspberry_id=? AND estado='entregado' AND intentos<3 AND CAST(NULLIF(entregado_en,'') AS TIMESTAMP)<CURRENT_TIMESTAMP-INTERVAL '30 seconds'`, empresaID, raspberryID)
-	_, _ = execTxSQLCompat(tx, `UPDATE empresa_control_electrico_comandos SET estado='expirado', completado_en=CURRENT_TIMESTAMP WHERE empresa_id=? AND raspberry_id=? AND estado IN ('pendiente','entregado') AND CAST(NULLIF(expira_en,'') AS TIMESTAMP)<CURRENT_TIMESTAMP`, empresaID, raspberryID)
+	// Las fechas de la cola se conservan como texto RFC3339 por compatibilidad
+	// histórica. Deben compararse como TIMESTAMPTZ: un CAST a TIMESTAMP elimina
+	// la Z/offset y retrasa los comandos UTC varias horas cuando PostgreSQL usa
+	// America/Bogota u otra zona distinta de UTC.
+	_, _ = execTxSQLCompat(tx, `UPDATE empresa_control_electrico_comandos SET estado='pendiente', entregado_en=NULL WHERE empresa_id=? AND raspberry_id=? AND estado='entregado' AND intentos<3 AND CAST(NULLIF(entregado_en,'') AS TIMESTAMPTZ)<CURRENT_TIMESTAMP-INTERVAL '30 seconds'`, empresaID, raspberryID)
+	_, _ = execTxSQLCompat(tx, `UPDATE empresa_control_electrico_comandos SET estado='expirado', completado_en=CURRENT_TIMESTAMP WHERE empresa_id=? AND raspberry_id=? AND estado IN ('pendiente','entregado') AND CAST(NULLIF(expira_en,'') AS TIMESTAMPTZ)<CURRENT_TIMESTAMP`, empresaID, raspberryID)
 	var command EmpresaControlElectricoTunnelCommand
-	err = queryRowTxSQLCompat(tx, `SELECT id, empresa_id, raspberry_id, command_uid, COALESCE(rele_id,0), COALESCE(estacion_id,0), COALESCE(gpio_pin,0), COALESCE(estado_objetivo,''), COALESCE(payload_json,''), COALESCE(estado,''), COALESCE(intentos,0), COALESCE(resultado,''), COALESCE(error,'') FROM empresa_control_electrico_comandos WHERE empresa_id=? AND raspberry_id=? AND estado='pendiente' AND (COALESCE(disponible_desde,'')='' OR CAST(NULLIF(disponible_desde,'') AS TIMESTAMP)<=CURRENT_TIMESTAMP) ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1`, empresaID, raspberryID).
+	err = queryRowTxSQLCompat(tx, `SELECT id, empresa_id, raspberry_id, command_uid, COALESCE(rele_id,0), COALESCE(estacion_id,0), COALESCE(gpio_pin,0), COALESCE(estado_objetivo,''), COALESCE(payload_json,''), COALESCE(estado,''), COALESCE(intentos,0), COALESCE(resultado,''), COALESCE(error,'') FROM empresa_control_electrico_comandos WHERE empresa_id=? AND raspberry_id=? AND estado='pendiente' AND (COALESCE(disponible_desde,'')='' OR CAST(NULLIF(disponible_desde,'') AS TIMESTAMPTZ)<=CURRENT_TIMESTAMP) ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1`, empresaID, raspberryID).
 		Scan(&command.ID, &command.EmpresaID, &command.RaspberryID, &command.CommandUID, &command.ReleID, &command.EstacionID, &command.GPIOPin, &command.EstadoObjetivo, &command.PayloadJSON, &command.Estado, &command.Intentos, &command.Resultado, &command.Error)
 	if err != nil {
 		return nil, err

@@ -13223,3 +13223,19 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `backend/db/control_electrico_governance_test.go` y `backend/handlers/control_electrico_governance_ui_test.go`: contratos de identidad, cuotas, acciones de sensor, menú y tutorial.
 - `web/img/raspberry-pi-40-pin-bcm.svg`: pinout determinista físico/BCM de 40 pines.
 - `web/img/raspberry-pi-40-pin-tutorial.png`: ilustración orientativa generada para el tutorial.
+
+2026-08-13 - Domotica 1.4, SSH cifrado, escenas y Victron
+- `backend/db/control_electrico_ssh_credentials.go`: perfil SSH no secreto,
+  cifrado/descifrado AES-GCM con propósito por empresa/Raspberry y eliminación.
+- `backend/db/control_electrico_ssh_credentials_migration.go`: migración
+  `20260813-002-domotica-ssh-credentials-v1` sin columnas de texto plano.
+- `backend/handlers/control_electrico_ssh_install.go`: instalación SSH con huella
+  fijada, allowlist CIDR, lock por dispositivo y subida temporal protegida.
+- `backend/db/control_electrico_scenes.go` y
+  `backend/db/control_electrico_scenes_migration.go`: persistencia y migración
+  `20260813-003-domotica-scenes-v1` para escenas multiaparato.
+- `backend/db/control_electrico_ssh_credentials_test.go`,
+  `backend/handlers/control_electrico_ssh_install_test.go`,
+  `backend/handlers/control_electrico_scenes_ui_test.go` y
+  `backend/handlers/energia_solar_realtime_test.go`: regresiones de aislamiento,
+  secreto, red privada, cola, frescura y marcadores visuales.

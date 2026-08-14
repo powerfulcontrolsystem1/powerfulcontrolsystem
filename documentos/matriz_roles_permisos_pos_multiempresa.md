@@ -2134,3 +2134,10 @@ Para declarar un modulo listo en produccion se debe validar por rol: acceso a la
 - `/api/empresa/control_electrico` exige el wrapper empresarial y sobrescribe cualquier identificador del payload con el `empresa_id` autorizado.
 - `/api/public/domotica/tunnel` no acepta alcance empresarial del cliente: lo deriva del dispositivo autenticado.
 - `/super/api/domotica_raspberry_trafico` exige sesión super y auditoría para consultar o cambiar límites.
+- Domotica SSH: consultar/eliminar la credencial guardada e instalar por SSH
+  exigen la acción efectiva de aprobación de `control_electrico`; el secreto no
+  se muestra a ningún rol. Todas las consultas y mutaciones filtran
+  `empresa_id + raspberry_id`.
+- Escenas: listar usa lectura, crear/editar/desactivar usa las acciones CRUD del
+  módulo y ejecutar exige aprobación. Los aparatos se revalidan contra la misma
+  empresa tanto al guardar como al ejecutar.

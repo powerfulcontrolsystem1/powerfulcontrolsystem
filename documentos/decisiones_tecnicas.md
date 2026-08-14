@@ -176,3 +176,18 @@ trazabilidad en `documentos/historial_de_cambios`.
   funciones existentes, además de privilegios por defecto para objetos futuros.
 - La contraseña runtime debe tener al menos 32 caracteres URL-safe y nunca se
   versiona.
+## 2026-08-13 - Domotica: SSH, escenas y VE.Direct
+
+- La conexión operativa sigue siendo HTTPS saliente desde la Raspberry. SSH es
+  solo un canal alternativo de instalación/actualización y nunca sustituye el
+  túnel durable.
+- Las redes privadas SSH se rechazan salvo pertenecer a
+  `PCS_DOMOTICA_SSH_ALLOWED_CIDRS`; la huella del host debe confirmarse antes de
+  autenticar o transferir el instalador.
+- Password y sudo se cifran con `CONFIG_ENC_KEY` mediante AES-GCM y un propósito
+  ligado a empresa/Raspberry. El navegador solo recibe `credentials_configured`.
+- Las escenas no crean una vía paralela de GPIO: llaman el dispatcher canónico y
+  comparten la reserva transaccional de encendidos.
+- VE.Direct se implementa en Python estándar a 19200 8N1, autodetección por
+  datos y checksum módulo 256. No se infiere SOC desde voltaje; se requiere un
+  monitor de batería que publique esa métrica.

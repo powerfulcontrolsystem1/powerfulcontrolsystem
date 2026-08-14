@@ -5,6 +5,7 @@
     empresaId: "",
     catalogo: { proveedores: [], baterias: [], alertas: [] },
     sistemas: [],
+    conexiones: {},
     selectedSistemaId: 0
   };
 
@@ -119,15 +120,57 @@
       return;
     }
     list.innerHTML = state.sistemas.map(function (s) {
+      var connection = state.conexiones[String(s.id)] || {};
+      var connectionClass = connection.conectado ? "is-connected" : "is-disconnected";
+      var connectionLabel = connection.conectado ? "Conectado" : "Desconectado";
       return '<article class="solar-system-row" data-id="' + esc(s.id) + '">' +
         '<div><strong>' + esc(s.nombre) + '</strong><span>' + esc(s.proveedor + " · " + (s.modelo || "sin modelo")) + '</span>' +
         '<small>' + esc((s.bateria_marca || "Batería") + " " + (s.bateria_modelo || "") + " · " + (s.capacidad_bateria_kwh || 0) + " kWh") + '</small></div>' +
+        '<span class="solar-connection ' + connectionClass + '"><i aria-hidden="true"></i>' + connectionLabel + '</span>' +
         '<button type="button" class="btn small secondary" data-edit="' + esc(s.id) + '">Editar</button>' +
         '</article>';
     }).join("");
     Array.prototype.forEach.call(list.querySelectorAll("[data-edit]"), function (btn) {
       btn.addEventListener("click", function () { editSystem(Number(btn.getAttribute("data-edit") || 0)); });
     });
+  }
+  function rawValue(reading, key, fallback) {
+    var raw = reading && reading.raw && typeof reading.raw === "object" ? reading.raw : {};
+    return raw[key] == null || raw[key] === "" ? fallback : raw[key];
+  }
+  function fmtVolts(value) { return moneyNum(value).toFixed(2) + " V"; }
+  function fmtAmps(value) { return moneyNum(value).toFixed(2) + " A"; }
+  function renderRealtime() {
+    var grid = byId("solarRealtimeGrid");
+    if (!grid) return;
+    if (!state.sistemas.length) {
+      grid.innerHTML = '<p class="empty-state">Aún no hay una controladora solar detectada.</p>';
+      return;
+    }
+    grid.innerHTML = state.sistemas.map(function (system) {
+      var connection = state.conexiones[String(system.id)] || {};
+      var reading = connection.lectura || {};
+      var connected = !!connection.conectado;
+      var raw = reading.raw || {};
+      var socAvailable = raw.soc_disponible === true && moneyNum(reading.bateria_soc_pct) > 0;
+      var errorCode = String(rawValue(reading, "err", "0"));
+      return '<article class="solar-live-card ' + (connected ? "is-connected" : "is-disconnected") + '">' +
+        '<div class="solar-live-head"><div><strong>' + esc(system.modelo || system.nombre) + '</strong><small>' + esc(rawValue(reading, "serial", system.nombre || "")) + '</small></div>' +
+        '<span class="solar-connection ' + (connected ? "is-connected" : "is-disconnected") + '"><i aria-hidden="true"></i>' + (connected ? "Conectado" : "Desconectado") + '</span></div>' +
+        '<div class="solar-live-metrics">' +
+          '<span><small>Panel</small><strong>' + fmtW(reading.potencia_solar_w) + '</strong></span>' +
+          '<span><small>Voltaje panel</small><strong>' + fmtVolts(rawValue(reading, "vpv_v", 0)) + '</strong></span>' +
+          '<span><small>Batería</small><strong>' + fmtVolts(reading.bateria_voltaje_v) + '</strong></span>' +
+          '<span><small>Corriente batería</small><strong>' + fmtAmps(reading.bateria_corriente_a) + '</strong></span>' +
+          '<span><small>Producción hoy</small><strong>' + moneyNum(reading.produccion_dia_kwh).toFixed(2) + ' kWh</strong></span>' +
+          '<span><small>Etapa de carga</small><strong>' + esc(rawValue(reading, "estado_cargador", reading.estado_inversor || "--")) + '</strong></span>' +
+          '<span><small>Carga estimada SOC</small><strong>' + (socAvailable ? fmtPct(reading.bateria_soc_pct) : 'No disponible') + '</strong></span>' +
+          '<span><small>Controladora</small><strong>' + (errorCode === "0" ? 'Sin errores' : 'Error ' + esc(errorCode)) + '</strong></span>' +
+        '</div>' +
+        '<small class="solar-live-footer">' + (connection.ultima_lectura ? 'Última lectura: ' + esc(connection.ultima_lectura) : 'Sin lecturas recibidas') +
+          (raw.puerto ? ' · ' + esc(raw.puerto) : '') + (raw.pid ? ' · PID ' + esc(raw.pid) : '') + '</small>' +
+      '</article>';
+    }).join("");
   }
   function editSystem(id) {
     var s = state.sistemas.find(function (item) { return Number(item.id) === Number(id); });
@@ -159,11 +202,13 @@
     var k = payload.kpis || {};
     byId("solarKpiSistemas").textContent = String(k.sistemas_activos || 0);
     byId("solarKpiProduccion").textContent = fmtW(k.potencia_solar_w || 0);
-    byId("solarKpiBateria").textContent = fmtPct(k.bateria_soc_promedio || 0);
+    byId("solarKpiBateria").textContent = k.bateria_soc_disponible ? fmtPct(k.bateria_soc_promedio || 0) : "No disponible";
     byId("solarKpiAlertas").textContent = String(k.alertas_activas_reciente || 0);
     state.sistemas = payload.sistemas || [];
+    state.conexiones = payload.conexiones || {};
     if (!state.selectedSistemaId && state.sistemas.length) state.selectedSistemaId = Number(state.sistemas[0].id || 0);
     renderSystems();
+    renderRealtime();
     updateSystemSelects();
     renderEventos(payload.eventos || []);
     renderLecturas(payload.lecturas || []);
@@ -317,10 +362,14 @@
     setStatus("Módulo listo.", false);
   }
   var eventsBound = false;
+  var realtimeTimer = 0;
   function bindOnce() {
     if (eventsBound) return;
     eventsBound = true;
     bindEvents();
+    realtimeTimer = window.setInterval(function () {
+      loadDashboard().catch(showError);
+    }, 15000);
   }
 
   document.addEventListener("DOMContentLoaded", function () {

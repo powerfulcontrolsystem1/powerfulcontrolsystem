@@ -1,3 +1,10 @@
+## [2026-08-13] Domótica 1.4, SSH cifrado, escenas y Victron VE.Direct
+- [Corrección] La cola interpreta fechas RFC3339 como `TIMESTAMPTZ`; botones, temporizadores, escenas y recuperación ya no quedan pendientes por desfase UTC/local.
+- [Raspberry] El agente usa el `boot_id` del kernel, se reemplaza y reinicia al actualizar y recupera las salidas previamente confirmadas mediante la cola empresarial.
+- [Seguridad] La actualización SSH valida la huella del host, limita redes privadas a CIDR VPN autorizados y guarda password/sudo solo cifrados por empresa y dispositivo.
+- [Automatización] Las escenas agrupan estados de múltiples aparatos y ejecutan los encendidos con el retardo eléctrico configurado.
+- [Solar] VE.Direct autodetecta la BlueSolar 75/15, valida checksum y alimenta una vista en tiempo real con estado verde/rojo, voltajes, corriente, potencia, producción, etapa y errores.
+
 ## [2026-08-11] Tarjetas operativas compactas de Domotica
 - [UX] Las tarjetas de equipos de estacion son mas compactas, resaltan de forma leve cuando la salida esta encendida y organizan sus tres acciones en una columna uniforme.
 - [Privacidad operativa] GPIO, Raspberry y programacion se consultan solo en Configuracion de Domotica, donde cada tarjeta conserva un resumen tecnico completo.

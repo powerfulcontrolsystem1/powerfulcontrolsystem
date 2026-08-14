@@ -21149,6 +21149,85 @@ body.carrito-flat-page #carritosList{
   gap: 14px;
 }
 
+.solar-realtime-panel { margin-bottom: 14px; }
+
+.solar-realtime-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 10px;
+}
+
+.solar-live-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border-color, var(--border, #d8e0ea));
+  border-left: 4px solid var(--status-danger, #dc2626);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card-bg, var(--surface, #fff)) 94%, var(--status-danger, #dc2626) 6%);
+  padding: 12px;
+}
+
+.solar-live-card.is-connected {
+  border-left-color: var(--status-success, #16a34a);
+  background: color-mix(in srgb, var(--card-bg, var(--surface, #fff)) 94%, var(--status-success, #16a34a) 6%);
+}
+
+.solar-live-head,
+.solar-live-head > div {
+  display: flex;
+  gap: 6px;
+}
+
+.solar-live-head { align-items: flex-start; justify-content: space-between; }
+.solar-live-head > div { min-width: 0; flex-direction: column; }
+.solar-live-head strong { overflow-wrap: anywhere; }
+.solar-live-head small,
+.solar-live-footer { color: var(--muted-text, var(--muted, #617083)); }
+
+.solar-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: color-mix(in srgb, var(--status-danger, #dc2626) 12%, var(--card-bg, var(--surface, #fff)));
+  color: var(--status-danger, #b91c1c) !important;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.solar-connection.is-connected {
+  background: color-mix(in srgb, var(--status-success, #16a34a) 12%, var(--card-bg, var(--surface, #fff)));
+  color: var(--status-success, #15803d) !important;
+}
+
+.solar-connection i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.solar-live-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.solar-live-metrics span {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--border-color, var(--border, #d8e0ea));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--card-bg, var(--surface, #fff)) 88%, transparent);
+  padding: 8px;
+}
+
+.solar-live-metrics small { color: var(--muted-text, var(--muted, #617083)); }
+.solar-live-metrics strong { font-size: .95rem; overflow-wrap: anywhere; }
+
 .empty-state {
   margin: 0;
   padding: 12px;
@@ -21174,6 +21253,7 @@ body.carrito-flat-page #carritosList{
   .solar-form-readings {
     grid-template-columns: 1fr;
   }
+  .solar-live-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 560px) {
@@ -21187,6 +21267,7 @@ body.carrito-flat-page #carritosList{
     align-items: stretch;
     flex-direction: column;
   }
+  .solar-realtime-grid { grid-template-columns: 1fr; }
 }
 
 /* POS touch mode: enabled per company from estaciones_config.carrito_ui_global. */

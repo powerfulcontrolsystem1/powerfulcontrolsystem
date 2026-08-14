@@ -631,7 +631,7 @@
         // ultimo heartbeat: el equipo fue ordenado a encenderse y el control
         // principal debe ofrecer apagarlo de inmediato.
         const isOn = info.cls === 'is-on' || timer.active;
-        const disabled = state.sendingID > 0 || !cfg.habilitado;
+        const disabled = state.sendingID === Number(rele.id) || !cfg.habilitado;
         const hasPhoto = !!normalize(rele.imagen_url);
         return '<article class="device-card' + (isOn ? ' is-on' : '') + '">' +
           '<div class="device-body">' +
@@ -665,13 +665,13 @@
       throw new Error(text || 'No se pudo completar la solicitud.');
     }
 
-    async function fetchControls() {
+    async function fetchControls(silent) {
       if (!state.empresaID || (!state.allStations && !state.estacionID)) {
         setMessage('No se pudo identificar la empresa o la estación.', 'error');
         render();
         return;
       }
-      setMessage('Cargando aparatos...', '');
+      if (!silent) setMessage('Cargando aparatos...', '');
       if (state.allStations) {
         const base = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=';
         const responses = await Promise.all(['config', 'reles', 'reglas', 'eventos', 'raspberry_pis'].map(function(action) {
@@ -683,7 +683,7 @@
         state.eventos = Array.isArray(responses[3]) ? responses[3] : [];
         state.raspberryPIs = Array.isArray(responses[4]) ? responses[4] : [];
         populateStationFilter();
-        setMessage('', '');
+        if (!silent) setMessage('', '');
         render();
         return;
       }
@@ -699,8 +699,25 @@
       state.sensores = Array.isArray(payload.sensores) ? payload.sensores : [];
       state.eventos = Array.isArray(payload.eventos) ? payload.eventos : [];
       state.raspberryPIs = Array.isArray(payload.raspberry_pis) ? payload.raspberry_pis : [];
-      setMessage('', '');
+      if (!silent) setMessage('', '');
       render();
+    }
+
+    function relayStateMatches(releID, estado) {
+      const rele = state.reles.find(function(item) { return Number(item.id) === Number(releID); });
+      if (!rele) return false;
+      const current = normalize(rele.ultimo_estado).toLowerCase();
+      if (estado === 'on') return current === 'on' || current === 'encendido';
+      return current === 'off' || current === 'apagado';
+    }
+
+    async function waitForRelayConfirmation(releID, estado) {
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        await new Promise(function(resolve) { window.setTimeout(resolve, 1500); });
+        await fetchControls(true);
+        if (relayStateMatches(releID, estado)) return true;
+      }
+      return false;
     }
 
     async function sendCommand(releID, estado) {
@@ -724,8 +741,20 @@
         });
         await ensureOk(res);
         const result = await res.json();
-        await fetchControls();
-        setMessage(result && result.skipped ? (result.message || 'Comando omitido.') : (estado === 'on' ? 'Aparato encendido.' : 'Aparato apagado.'), result && result.skipped ? 'error' : 'success');
+        if (result && result.skipped) {
+          await fetchControls(true);
+          setMessage(result.message || 'Comando omitido.', 'error');
+          return;
+        }
+        if (result && result.pending) {
+          setMessage('Comando enviado; esperando confirmación de la Raspberry...', '');
+          const confirmed = await waitForRelayConfirmation(id, estado);
+          setMessage(confirmed ? (estado === 'on' ? 'Aparato encendido.' : 'Aparato apagado.') : 'El comando sigue en cola. Revisa la conexión de la Raspberry.', confirmed ? 'success' : 'error');
+          return;
+        }
+        await fetchControls(true);
+        const confirmed = relayStateMatches(id, estado);
+        setMessage(confirmed ? (estado === 'on' ? 'Aparato encendido.' : 'Aparato apagado.') : 'La Raspberry respondió, pero el estado todavía no se actualizó.', confirmed ? 'success' : 'error');
       } catch (err) {
         setMessage(err.message || 'No se pudo enviar el comando electrico.', 'error');
       } finally {
