@@ -209,7 +209,7 @@ func handleEmpresaCreditosPazYSalvo(w http.ResponseWriter, r *http.Request, dbEm
 		http.Error(w, "credito_id invalido", http.StatusBadRequest)
 		return
 	}
-	credito, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, creditoID)
+	credito, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, creditoID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "credito no encontrado", http.StatusNotFound)
@@ -360,7 +360,7 @@ func handleEmpresaCreditosCreate(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 
-	row, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	row, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		http.Error(w, "credito creado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -689,7 +689,7 @@ func handleEmpresaCreditosDetail(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 
-	row, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	row, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "credito no encontrado", http.StatusNotFound)
@@ -772,7 +772,7 @@ func handleEmpresaCreditosEstadoCuenta(w http.ResponseWriter, r *http.Request, d
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	credito, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	credito, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "credito no encontrado", http.StatusNotFound)
@@ -1133,7 +1133,7 @@ func handleEmpresaCreditosEstado(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	row, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	row, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		http.Error(w, "estado actualizado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -1184,7 +1184,7 @@ func handleEmpresaCreditosUpdate(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 
-	current, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	current, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "credito no encontrado", http.StatusNotFound)
@@ -1273,7 +1273,7 @@ func handleEmpresaCreditosUpdate(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 
-	updated, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	updated, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		http.Error(w, "actualizado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -1462,7 +1462,7 @@ func handleEmpresaCreditosWorkflows(w http.ResponseWriter, r *http.Request, dbEm
 			http.Error(w, "No se pudo consultar workflow", http.StatusInternalServerError)
 			return
 		}
-		credito, _ := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, row.CreditoID)
+		credito, _ := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, row.CreditoID)
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":         true,
 			"empresa_id": empresaID,
@@ -1750,7 +1750,7 @@ func handleEmpresaCreditosAprobarWorkflow(w http.ResponseWriter, r *http.Request
 		"aprobado_por":            aprobadoPor,
 	}, payload.Observaciones)
 
-	credito, _ := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, workflow.CreditoID)
+	credito, _ := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, workflow.CreditoID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":         true,
 		"empresa_id": empresaID,

@@ -42660,3 +42660,10 @@ acumulativa.
   `empresa_id`; los consumidores internos mantienen wrappers compatibles.
 - Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
   La deuda DB sin contexto baja de 531 a 529; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: detalle de crédito cancelable
+
+- La lectura por ID y su hidratación de cuotas conservan `r.Context()` hasta
+  PostgreSQL en las rutas de detalle, alta, actualización, estado, workflow y
+  exportación de Créditos, sin cambiar las reglas de saldo ni `empresa_id`.
+- Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 529 a 528; no se ejecutó `rs`.

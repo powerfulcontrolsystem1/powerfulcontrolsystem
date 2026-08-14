@@ -1233,6 +1233,10 @@ func scanEmpresaCredito(scanner interface {
 }
 
 func creditoHydrateCuotaStatus(dbConn *sql.DB, empresaID int64, row *EmpresaCredito) {
+	creditoHydrateCuotaStatusContext(context.Background(), dbConn, empresaID, row)
+}
+
+func creditoHydrateCuotaStatusContext(ctx context.Context, dbConn *sql.DB, empresaID int64, row *EmpresaCredito) {
 	if dbConn == nil || row == nil || empresaID <= 0 || row.ID <= 0 {
 		return
 	}
@@ -1241,7 +1245,7 @@ func creditoHydrateCuotaStatus(dbConn *sql.DB, empresaID int64, row *EmpresaCred
 	var fechaMasAntigua string
 	var fechaProxima string
 	today := time.Now().In(time.Local).Format("2006-01-02")
-	err := queryRowSQLCompat(dbConn, `SELECT
+	err := queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 THEN 1 ELSE 0 END), 0),
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? THEN 1 ELSE 0 END), 0),
 		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? THEN fecha_vencimiento ELSE NULL END), ''),
@@ -1358,6 +1362,12 @@ func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, order
 
 // GetEmpresaCreditoByID obtiene un credito puntual por empresa.
 func GetEmpresaCreditoByID(dbConn *sql.DB, empresaID, creditoID int64) (*EmpresaCredito, error) {
+	return GetEmpresaCreditoByIDContext(context.Background(), dbConn, empresaID, creditoID)
+}
+
+// GetEmpresaCreditoByIDContext obtiene un credito puntual y conserva la
+// cancelacion del llamador hasta PostgreSQL, incluida la hidratacion de cuotas.
+func GetEmpresaCreditoByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64) (*EmpresaCredito, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1365,7 +1375,7 @@ func GetEmpresaCreditoByID(dbConn *sql.DB, empresaID, creditoID int64) (*Empresa
 		return nil, errors.New("empresa_id o credito_id invalido")
 	}
 
-	row := dbConn.QueryRow(`SELECT
+	row := queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo, ''),
@@ -1406,7 +1416,7 @@ func GetEmpresaCreditoByID(dbConn *sql.DB, empresaID, creditoID int64) (*Empresa
 	if err != nil {
 		return nil, err
 	}
-	creditoHydrateCuotaStatus(dbConn, empresaID, credito)
+	creditoHydrateCuotaStatusContext(ctx, dbConn, empresaID, credito)
 	return credito, nil
 }
 
