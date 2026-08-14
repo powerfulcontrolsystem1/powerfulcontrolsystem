@@ -415,7 +415,7 @@ func handleEmpresaCreditosLimitesCliente(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	rows, total, err := dbpkg.ListEmpresaCreditoClienteLimites(dbEmp, empresaID, dbpkg.EmpresaCreditoClienteLimiteFilter{
+	rows, total, err := dbpkg.ListEmpresaCreditoClienteLimitesContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaCreditoClienteLimiteFilter{
 		ClienteID:       clienteID,
 		IncludeInactive: includeInactive,
 		Limit:           limit,
@@ -495,14 +495,14 @@ func handleEmpresaCreditosUpsertLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	_, prevErr := dbpkg.GetEmpresaCreditoClienteLimite(dbEmp, empresaID, payload.ClienteID, true)
+	_, prevErr := dbpkg.GetEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, empresaID, payload.ClienteID, true)
 	if prevErr != nil && prevErr != sql.ErrNoRows {
 		http.Error(w, "No se pudo validar limite actual del cliente", http.StatusInternalServerError)
 		return
 	}
 	created := prevErr == sql.ErrNoRows
 
-	id, err := dbpkg.UpsertEmpresaCreditoClienteLimite(dbEmp, dbpkg.EmpresaCreditoClienteLimite{
+	id, err := dbpkg.UpsertEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, dbpkg.EmpresaCreditoClienteLimite{
 		EmpresaID:                empresaID,
 		ClienteID:                payload.ClienteID,
 		LimiteSaldoTotal:         payload.LimiteSaldoTotal,
@@ -517,7 +517,7 @@ func handleEmpresaCreditosUpsertLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	row, err := dbpkg.GetEmpresaCreditoClienteLimite(dbEmp, empresaID, payload.ClienteID, true)
+	row, err := dbpkg.GetEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, empresaID, payload.ClienteID, true)
 	if err != nil {
 		http.Error(w, "limite guardado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -572,7 +572,7 @@ func handleEmpresaCreditosDeleteLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := dbpkg.SetEmpresaCreditoClienteLimiteRowEstado(dbEmp, empresaID, clienteID, "inactivo"); err != nil {
+	if err := dbpkg.SetEmpresaCreditoClienteLimiteRowEstadoContext(r.Context(), dbEmp, empresaID, clienteID, "inactivo"); err != nil {
 		http.Error(w, "No se pudo eliminar limite de cliente", http.StatusInternalServerError)
 		return
 	}
@@ -1129,7 +1129,7 @@ func handleEmpresaCreditosEstado(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, "estado_credito es obligatorio", http.StatusBadRequest)
 		return
 	}
-	if err := dbpkg.SetEmpresaCreditoEstado(dbEmp, empresaID, id, estado); err != nil {
+	if err := dbpkg.SetEmpresaCreditoEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -1160,7 +1160,7 @@ func handleEmpresaCreditosActivacion(w http.ResponseWriter, r *http.Request, dbE
 	if action == "desactivar" {
 		estado = "inactivo"
 	}
-	if err := dbpkg.SetEmpresaCreditoRowEstado(dbEmp, empresaID, id, estado); err != nil {
+	if err := dbpkg.SetEmpresaCreditoRowEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 		http.Error(w, "No se pudo actualizar estado", http.StatusInternalServerError)
 		return
 	}
@@ -1268,7 +1268,7 @@ func handleEmpresaCreditosUpdate(w http.ResponseWriter, r *http.Request, dbEmp *
 	}
 	current.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 
-	if err := dbpkg.UpdateEmpresaCredito(dbEmp, *current); err != nil {
+	if err := dbpkg.UpdateEmpresaCreditoContext(r.Context(), dbEmp, *current); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

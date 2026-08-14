@@ -2051,6 +2051,12 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 
 // SetEmpresaCreditoEstado ajusta estado operativo del credito.
 func SetEmpresaCreditoEstado(dbConn *sql.DB, empresaID, creditoID int64, estadoCredito string) error {
+	return SetEmpresaCreditoEstadoContext(context.Background(), dbConn, empresaID, creditoID, estadoCredito)
+}
+
+// SetEmpresaCreditoEstadoContext actualiza el estado de negocio y conserva la
+// cancelacion del llamador hasta PostgreSQL.
+func SetEmpresaCreditoEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, estadoCredito string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -2058,24 +2064,36 @@ func SetEmpresaCreditoEstado(dbConn *sql.DB, empresaID, creditoID int64, estadoC
 		return errors.New("empresa_id o credito_id invalido")
 	}
 	estado := creditoNormalizeEstado(estadoCredito)
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado_credito = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, creditoID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET estado_credito = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, creditoID)
 	return err
 }
 
 // SetEmpresaCreditoRowEstado activa o desactiva el registro del credito.
 func SetEmpresaCreditoRowEstado(dbConn *sql.DB, empresaID, creditoID int64, estado string) error {
+	return SetEmpresaCreditoRowEstadoContext(context.Background(), dbConn, empresaID, creditoID, estado)
+}
+
+// SetEmpresaCreditoRowEstadoContext activa o desactiva un crédito y conserva
+// la cancelacion del llamador hasta PostgreSQL.
+func SetEmpresaCreditoRowEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	if empresaID <= 0 || creditoID <= 0 {
 		return errors.New("empresa_id o credito_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, creditoNormalizeRowEstado(estado), empresaID, creditoID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, creditoNormalizeRowEstado(estado), empresaID, creditoID)
 	return err
 }
 
 // UpdateEmpresaCredito actualiza metadata operativa del credito sin afectar historico de movimientos.
 func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
+	return UpdateEmpresaCreditoContext(context.Background(), dbConn, payload)
+}
+
+// UpdateEmpresaCreditoContext actualiza un crédito conservando la cancelación
+// de la ruta HTTP hasta PostgreSQL.
+func UpdateEmpresaCreditoContext(ctx context.Context, dbConn *sql.DB, payload EmpresaCredito) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -2110,7 +2128,7 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 		return err
 	}
 
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET
 		codigo = ?,
 		cliente_id = ?,
 		cliente_nombre = ?,
@@ -2338,6 +2356,12 @@ func GetEmpresaCreditoByVentaOrigenID(dbConn *sql.DB, empresaID, ventaOrigenID i
 
 // ListEmpresaCreditoClienteLimites lista limites por cliente con filtros.
 func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoClienteLimiteFilter) ([]EmpresaCreditoClienteLimite, int64, error) {
+	return ListEmpresaCreditoClienteLimitesContext(context.Background(), dbConn, empresaID, filter)
+}
+
+// ListEmpresaCreditoClienteLimitesContext conserva cancelación del llamador en
+// conteo y listado de límites por cliente.
+func ListEmpresaCreditoClienteLimitesContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaCreditoClienteLimiteFilter) ([]EmpresaCreditoClienteLimite, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -2363,7 +2387,7 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 	countQuery := "SELECT COUNT(1) FROM empresa_creditos_clientes_limites WHERE empresa_id = ?" + whereSQL
 	countArgs := append([]interface{}{empresaID}, args...)
 	var total int64
-	if err := dbConn.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
+	if err := queryRowSQLCompatContext(ctx, dbConn, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -2389,7 +2413,7 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 	queryArgs := append([]interface{}{empresaID}, args...)
 	queryArgs = append(queryArgs, limit, offset)
 
-	rows, err := dbConn.Query(query, queryArgs...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, queryArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -2412,6 +2436,12 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 
 // UpsertEmpresaCreditoClienteLimite crea/actualiza limites de credito por cliente.
 func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoClienteLimite) (int64, error) {
+	return UpsertEmpresaCreditoClienteLimiteContext(context.Background(), dbConn, payload)
+}
+
+// UpsertEmpresaCreditoClienteLimiteContext conserva la cancelacion del
+// llamador durante el alta o actualización del límite por cliente.
+func UpsertEmpresaCreditoClienteLimiteContext(ctx context.Context, dbConn *sql.DB, payload EmpresaCreditoClienteLimite) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -2421,13 +2451,13 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 	creditoClienteLimiteNormalize(&payload)
 
 	var existingID int64
-	err := dbConn.QueryRow(`SELECT id FROM empresa_creditos_clientes_limites WHERE empresa_id = ? AND cliente_id = ? LIMIT 1`, payload.EmpresaID, payload.ClienteID).Scan(&existingID)
+	err := queryRowSQLCompatContext(ctx, dbConn, `SELECT id FROM empresa_creditos_clientes_limites WHERE empresa_id = ? AND cliente_id = ? LIMIT 1`, payload.EmpresaID, payload.ClienteID).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 
 	if err == sql.ErrNoRows {
-		id, insertErr := insertSQLCompat(dbConn, `INSERT INTO empresa_creditos_clientes_limites (
+		id, insertErr := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_creditos_clientes_limites (
 			empresa_id,
 			cliente_id,
 			limite_saldo_total,
@@ -2454,7 +2484,7 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 		return id, nil
 	}
 
-	_, err = dbConn.Exec(`UPDATE empresa_creditos_clientes_limites SET
+	_, err = execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos_clientes_limites SET
 		limite_saldo_total = ?,
 		max_creditos_activos = ?,
 		requiere_aprobacion_exceso = ?,
@@ -2481,13 +2511,19 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 
 // SetEmpresaCreditoClienteLimiteRowEstado activa o desactiva una regla de limite por cliente.
 func SetEmpresaCreditoClienteLimiteRowEstado(dbConn *sql.DB, empresaID, clienteID int64, estado string) error {
+	return SetEmpresaCreditoClienteLimiteRowEstadoContext(context.Background(), dbConn, empresaID, clienteID, estado)
+}
+
+// SetEmpresaCreditoClienteLimiteRowEstadoContext conserva la cancelacion del
+// llamador durante la activación o desactivación del límite.
+func SetEmpresaCreditoClienteLimiteRowEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, clienteID int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	if empresaID <= 0 || clienteID <= 0 {
 		return errors.New("empresa_id o cliente_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_creditos_clientes_limites SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND cliente_id = ?`, creditoNormalizeRowEstado(estado), empresaID, clienteID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos_clientes_limites SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND cliente_id = ?`, creditoNormalizeRowEstado(estado), empresaID, clienteID)
 	return err
 }
 

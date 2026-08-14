@@ -42681,7 +42681,6 @@ acumulativa.
   hidrataciones auxiliares por empresa.
 - Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
   La deuda DB sin contexto baja de 526 a 524; no se ejecutó `rs`.
-
 ## 2026-08-14 - Domótica: diagnóstico GPIO 0-27 con cableado verificado
 
 - La página `Domótica y Energía Solar > Controladores > Probar GPIO` permite
@@ -42695,3 +42694,25 @@ acumulativa.
   por GPIO 2 por tratarlo erróneamente como valor vacío.
 - La API devuelve `400 Bad Request` únicamente para valores fuera del rango
   BCM GPIO 0 a GPIO 27.
+
+## 2026-08-14 - Plan 110: mutaciones de créditos cancelables
+
+- Actualización de datos y cambios de estado de Créditos conservan `r.Context()`
+  hasta PostgreSQL, sin modificar montos, controles de saldo ni alcance por
+  `empresa_id`.
+- Regresión de contexto, pruebas focalizadas, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 524 a 521; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: límites de crédito cancelables
+
+- El conteo y listado administrativo de límites de crédito por cliente
+  conservan `r.Context()` hasta PostgreSQL y mantienen el filtro obligatorio
+  por `empresa_id`.
+- Pruebas focalizadas, `go vet` y auditoría aprueban. La deuda DB sin contexto
+  baja de 521 a 519; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: administración de límites cancelable
+
+- Alta, actualización y desactivación de límites de crédito por cliente
+  conservan `r.Context()` hasta PostgreSQL, incluidos los pasos de consulta,
+  inserción y actualización bajo el mismo `empresa_id`.
+- Pruebas focalizadas, `go vet` y auditoría aprueban. La deuda DB sin contexto
+  baja de 519 a 516; no se ejecutó `rs`.
