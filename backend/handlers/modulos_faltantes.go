@@ -972,7 +972,7 @@ func handleRRHHVacacionesSaldoAction(dbEmp *sql.DB, w http.ResponseWriter, r *ht
 		return
 	}
 
-	saldo, err := buildRRHHVacacionesSaldoByFilter(dbEmp, empresaID, filtro)
+	saldo, err := buildRRHHVacacionesSaldoByFilter(r.Context(), dbEmp, empresaID, filtro)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "empleado de nomina no encontrado para calcular saldo", http.StatusNotFound)
@@ -1141,7 +1141,7 @@ func handleRRHHVacacionesAprobacionAction(dbEmp *sql.DB, action string, w http.R
 				fechaCorte = parsed.In(time.Local)
 			}
 
-			saldoAntes, saldoErr := buildRRHHVacacionesSaldoByFilter(dbEmp, empresaID, rrhhVacacionesSaldoFilter{
+			saldoAntes, saldoErr := buildRRHHVacacionesSaldoByFilter(r.Context(), dbEmp, empresaID, rrhhVacacionesSaldoFilter{
 				EmpleadoNominaID: anyToInt64(item["empleado_nomina_id"]),
 				EmpleadoID:       anyToInt64(item["empleado_id"]),
 				EmpleadoNombre:   genericStringValue(item["empleado_nombre"]),
@@ -1307,7 +1307,7 @@ func handleRRHHVacacionesVincularNominaAction(dbEmp *sql.DB, w http.ResponseWrit
 	empleadoID := anyToInt64(item["empleado_id"])
 	empleadoNombre := genericStringValue(item["empleado_nombre"])
 
-	ref, err := loadRRHHNominaEmpleadoRef(dbEmp, empresaID, empleadoNominaID, empleadoID, empleadoNombre)
+	ref, err := loadRRHHNominaEmpleadoRef(r.Context(), dbEmp, empresaID, empleadoNominaID, empleadoID, empleadoNombre)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "empleado de nomina no encontrado para vincular", http.StatusNotFound)
@@ -1330,7 +1330,7 @@ func handleRRHHVacacionesVincularNominaAction(dbEmp *sql.DB, w http.ResponseWrit
 		var liqEmpleadoNominaID int64
 		var liqDesde string
 		var liqHasta string
-		err := dbEmp.QueryRow(`SELECT
+		err := dbEmp.QueryRowContext(r.Context(), `SELECT
 			COALESCE(empleado_nomina_id, 0),
 			COALESCE(periodo_desde, ''),
 			COALESCE(periodo_hasta, '')
@@ -1362,7 +1362,7 @@ func handleRRHHVacacionesVincularNominaAction(dbEmp *sql.DB, w http.ResponseWrit
 			var foundID int64
 			var foundDesde string
 			var foundHasta string
-			err := dbEmp.QueryRow(`SELECT
+			err := dbEmp.QueryRowContext(r.Context(), `SELECT
 				id,
 				COALESCE(periodo_desde, ''),
 				COALESCE(periodo_hasta, '')
@@ -1450,12 +1450,12 @@ func handleRRHHVacacionesVincularNominaAction(dbEmp *sql.DB, w http.ResponseWrit
 	})
 }
 
-func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrhhVacacionesSaldoFilter) (map[string]interface{}, error) {
+func buildRRHHVacacionesSaldoByFilter(ctx context.Context, dbEmp *sql.DB, empresaID int64, filter rrhhVacacionesSaldoFilter) (map[string]interface{}, error) {
 	if filter.FechaCorte.IsZero() {
 		filter.FechaCorte = time.Now().In(time.Local)
 	}
 
-	ref, err := loadRRHHNominaEmpleadoRef(dbEmp, empresaID, filter.EmpleadoNominaID, filter.EmpleadoID, filter.EmpleadoNombre)
+	ref, err := loadRRHHNominaEmpleadoRef(ctx, dbEmp, empresaID, filter.EmpleadoNominaID, filter.EmpleadoID, filter.EmpleadoNombre)
 	if err != nil {
 		return nil, err
 	}
@@ -1506,7 +1506,7 @@ func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrh
 
 	var diasTomados float64
 	var solicitudesAprobadas int64
-	if err := dbEmp.QueryRow(queryTomados, argsTomados...).Scan(&diasTomados, &solicitudesAprobadas); err != nil {
+	if err := dbEmp.QueryRowContext(ctx, queryTomados, argsTomados...).Scan(&diasTomados, &solicitudesAprobadas); err != nil {
 		return nil, err
 	}
 
@@ -1532,7 +1532,7 @@ func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrh
 	}
 
 	solicitudesPendientes := int64(0)
-	if err := dbEmp.QueryRow(queryPendientes, argsPendientes...).Scan(&solicitudesPendientes); err != nil {
+	if err := dbEmp.QueryRowContext(ctx, queryPendientes, argsPendientes...).Scan(&solicitudesPendientes); err != nil {
 		return nil, err
 	}
 
@@ -1556,7 +1556,7 @@ func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrh
 	}, nil
 }
 
-func loadRRHHNominaEmpleadoRef(dbEmp *sql.DB, empresaID, empleadoNominaID, empleadoID int64, empleadoNombre string) (*rrhhNominaEmpleadoRef, error) {
+func loadRRHHNominaEmpleadoRef(ctx context.Context, dbEmp *sql.DB, empresaID, empleadoNominaID, empleadoID int64, empleadoNombre string) (*rrhhNominaEmpleadoRef, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
 	}
@@ -1588,7 +1588,7 @@ func loadRRHHNominaEmpleadoRef(dbEmp *sql.DB, empresaID, empleadoNominaID, emple
 	query += ` ORDER BY CASE WHEN LOWER(COALESCE(estado, 'activo')) = 'activo' THEN 0 ELSE 1 END, id DESC LIMIT 1`
 
 	out := &rrhhNominaEmpleadoRef{}
-	err := dbEmp.QueryRow(query, args...).Scan(&out.NominaID, &out.EmpleadoID, &out.Nombre, &out.FechaIngreso)
+	err := dbEmp.QueryRowContext(ctx, query, args...).Scan(&out.NominaID, &out.EmpleadoID, &out.Nombre, &out.FechaIngreso)
 	if err != nil {
 		return nil, err
 	}
@@ -1725,7 +1725,7 @@ func handleInventarioLotesSeriesValidarDisponibilidadAction(dbEmp *sql.DB, w htt
 		return
 	}
 
-	row, err := loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, id, codigo)
+	row, err := loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, id, codigo)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "lote/serie no encontrado", http.StatusNotFound)
@@ -1736,8 +1736,14 @@ func handleInventarioLotesSeriesValidarDisponibilidadAction(dbEmp *sql.DB, w htt
 	}
 
 	now := time.Now().In(time.Local)
-	if updateErr := ensureLoteSerieVencimientoBloqueo(dbEmp, empresaID, row, now, strings.TrimSpace(adminEmailFromRequest(r))); updateErr == nil {
-		row, _ = loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, anyToInt64(row["id"]), "")
+	if updateErr := ensureLoteSerieVencimientoBloqueo(dbEmp, empresaID, row, now, strings.TrimSpace(adminEmailFromRequest(r))); updateErr != nil {
+		http.Error(w, "no se pudo actualizar vigencia de lote/serie", http.StatusInternalServerError)
+		return
+	}
+	row, err = loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, anyToInt64(row["id"]), "")
+	if err != nil {
+		http.Error(w, "no se pudo recargar lote/serie", http.StatusInternalServerError)
+		return
 	}
 
 	cantidadSolicitada := 0.0
@@ -1816,7 +1822,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		actor = "sistema"
 	}
 
-	row, err := loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, id, codigo)
+	row, err := loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, id, codigo)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "lote/serie no encontrado", http.StatusNotFound)
@@ -1829,8 +1835,14 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 	now := time.Now().In(time.Local)
 	nowText := now.Format("2006-01-02 15:04:05")
 
-	if err := ensureLoteSerieVencimientoBloqueo(dbEmp, empresaID, row, now, actor); err == nil {
-		row, _ = loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, anyToInt64(row["id"]), "")
+	if err := ensureLoteSerieVencimientoBloqueo(dbEmp, empresaID, row, now, actor); err != nil {
+		http.Error(w, "no se pudo actualizar vigencia de lote/serie", http.StatusInternalServerError)
+		return
+	}
+	row, err = loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, anyToInt64(row["id"]), "")
+	if err != nil {
+		http.Error(w, "no se pudo recargar lote/serie", http.StatusInternalServerError)
+		return
 	}
 
 	estadoLote := strings.ToLower(strings.TrimSpace(genericStringValue(row["estado_lote"])))
@@ -1934,7 +1946,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 	clienteID := anyToInt64(payload["cliente_id"])
 	clienteNombre := genericStringValue(payload["cliente_nombre"])
 
-	detalleJSON, _ := json.Marshal(map[string]interface{}{
+	detalleJSON := marshalToJSONString(map[string]interface{}{
 		"antes": map[string]interface{}{
 			"cantidad_disponible": reportesRound(disponibleAntes),
 			"reservado_cantidad":  reportesRound(reservadoAntes),
@@ -1950,7 +1962,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 
 	observaciones := appendGenericObservation(genericStringValue(row["observaciones"]), fmt.Sprintf("operacion_lote tipo=%s cantidad=%.6f referencia=%s", operacion, cantidad, referenciaCodigo))
 
-	tx, err := dbEmp.Begin()
+	tx, err := dbEmp.BeginTx(r.Context(), nil)
 	if err != nil {
 		http.Error(w, "no se pudo iniciar transaccion de lote/serie", http.StatusInternalServerError)
 		return
@@ -1963,7 +1975,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		}
 	}()
 
-	_, err = tx.Exec(`UPDATE inventario_lotes_series
+	_, err = tx.ExecContext(r.Context(), `UPDATE inventario_lotes_series
 	SET cantidad_disponible = ?,
 		reservado_cantidad = ?,
 		vendido_cantidad = ?,
@@ -1994,7 +2006,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		return
 	}
 
-	resMov, err := tx.Exec(`INSERT INTO inventario_lotes_series_movimientos (
+	err = tx.QueryRowContext(r.Context(), `INSERT INTO inventario_lotes_series_movimientos (
 		empresa_id,
 		lote_serie_id,
 		producto_id,
@@ -2012,7 +2024,8 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
+	RETURNING id`,
 		empresaID,
 		anyToInt64(row["id"]),
 		anyToInt64(row["producto_id"]),
@@ -2025,17 +2038,15 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		referenciaCodigo,
 		clienteID,
 		clienteNombre,
-		string(detalleJSON),
+		detalleJSON,
 		nowText,
 		actor,
 		fmt.Sprintf("operacion=%s", operacion),
-	)
+	).Scan(&movimientoID)
 	if err != nil {
 		http.Error(w, "no se pudo registrar trazabilidad de lote/serie", http.StatusInternalServerError)
 		return
 	}
-	movimientoID, _ = resMov.LastInsertId()
-
 	if err := tx.Commit(); err != nil {
 		movimientoID = 0
 		http.Error(w, "no se pudo confirmar transaccion de lote/serie", http.StatusInternalServerError)
@@ -2114,7 +2125,7 @@ func handleInventarioLotesSeriesTrazabilidadAction(dbEmp *sql.DB, w http.Respons
 	query += ` ORDER BY pcs_ts(COALESCE(NULLIF(fecha_operacion, ''), fecha_creacion)) DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		http.Error(w, "no se pudo consultar trazabilidad de lotes/series", http.StatusInternalServerError)
 		return
@@ -2201,7 +2212,11 @@ func handleInventarioLotesSeriesTrazabilidadAction(dbEmp *sql.DB, w http.Respons
 
 	var lote map[string]interface{}
 	if id > 0 || codigo != "" {
-		lote, _ = loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, id, codigo)
+		lote, err = loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, id, codigo)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "no se pudo consultar lote/serie", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -2409,7 +2424,7 @@ func handleComprasDevolucionProveedorContabilizarAction(dbEmp *sql.DB, w http.Re
 	})
 }
 
-func loadInventarioLoteSerieByIDOrCode(dbEmp *sql.DB, empresaID, id int64, codigo string) (map[string]interface{}, error) {
+func loadInventarioLoteSerieByIDOrCode(ctx context.Context, dbEmp *sql.DB, empresaID, id int64, codigo string) (map[string]interface{}, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
 	}
@@ -2471,7 +2486,7 @@ func loadInventarioLoteSerieByIDOrCode(dbEmp *sql.DB, empresaID, id int64, codig
 	var ultimaOperacionEn string
 	var estado string
 	var observaciones string
-	err := dbEmp.QueryRow(query, args...).Scan(
+	err := dbEmp.QueryRowContext(ctx, query, args...).Scan(
 		&outID,
 		&productoID,
 		&bodegaID,
