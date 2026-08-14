@@ -94,6 +94,27 @@ func TestCreditoCarteraResumenCoalescesEmptyAggregateCounts(t *testing.T) {
 	}
 }
 
+func TestCreditoDisponibilidadClientePreservesRequestContext(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	source := string(raw)
+	body := extractCreditoFunctionForTest(t, source, "func GetEmpresaCreditoClienteDisponibilidad(", "func GetEmpresaCreditoByVentaOrigenID(")
+	if !strings.Contains(source, "func GetEmpresaCreditoClienteLimiteContext(ctx context.Context") {
+		t.Fatalf("el limite de credito debe ofrecer variante cancelable: %s", source)
+	}
+	for _, required := range []string{
+		"func GetEmpresaCreditoClienteDisponibilidadContext(ctx context.Context",
+		"GetEmpresaCreditoClienteLimiteContext(ctx",
+		"queryRowSQLCompatContext(ctx",
+	} {
+		if !strings.Contains(body, required) {
+			t.Fatalf("la disponibilidad de credito debe preservar contexto en %q: %s", required, body)
+		}
+	}
+}
+
 func TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays(t *testing.T) {
 	if got := creditoMaxCuotas("diaria"); got < 730 {
 		t.Fatalf("los creditos diarios deben permitir contratos de al menos dos años, got=%d", got)

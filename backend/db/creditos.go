@@ -2138,6 +2138,12 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 
 // GetEmpresaCreditoClienteLimite obtiene limite puntual por cliente.
 func GetEmpresaCreditoClienteLimite(dbConn *sql.DB, empresaID, clienteID int64, includeInactive bool) (*EmpresaCreditoClienteLimite, error) {
+	return GetEmpresaCreditoClienteLimiteContext(context.Background(), dbConn, empresaID, clienteID, includeInactive)
+}
+
+// GetEmpresaCreditoClienteLimiteContext obtiene el limite puntual y conserva
+// la cancelacion del llamador hasta PostgreSQL.
+func GetEmpresaCreditoClienteLimiteContext(ctx context.Context, dbConn *sql.DB, empresaID, clienteID int64, includeInactive bool) (*EmpresaCreditoClienteLimite, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -2165,11 +2171,17 @@ func GetEmpresaCreditoClienteLimite(dbConn *sql.DB, empresaID, clienteID int64, 
 	}
 	query += ` LIMIT 1`
 
-	return scanEmpresaCreditoClienteLimite(dbConn.QueryRow(query, args...))
+	return scanEmpresaCreditoClienteLimite(queryRowSQLCompatContext(ctx, dbConn, query, args...))
 }
 
 // GetEmpresaCreditoClienteDisponibilidad calcula cupo disponible filtrado por empresa y cliente.
 func GetEmpresaCreditoClienteDisponibilidad(dbConn *sql.DB, empresaID, clienteID int64) (*EmpresaCreditoClienteDisponibilidad, error) {
+	return GetEmpresaCreditoClienteDisponibilidadContext(context.Background(), dbConn, empresaID, clienteID)
+}
+
+// GetEmpresaCreditoClienteDisponibilidadContext calcula cupo disponible y
+// conserva la cancelacion del llamador hasta PostgreSQL.
+func GetEmpresaCreditoClienteDisponibilidadContext(ctx context.Context, dbConn *sql.DB, empresaID, clienteID int64) (*EmpresaCreditoClienteDisponibilidad, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -2177,7 +2189,7 @@ func GetEmpresaCreditoClienteDisponibilidad(dbConn *sql.DB, empresaID, clienteID
 		return nil, errors.New("empresa_id o cliente_id invalido")
 	}
 
-	limite, err := GetEmpresaCreditoClienteLimite(dbConn, empresaID, clienteID, false)
+	limite, err := GetEmpresaCreditoClienteLimiteContext(ctx, dbConn, empresaID, clienteID, false)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &EmpresaCreditoClienteDisponibilidad{
@@ -2192,7 +2204,7 @@ func GetEmpresaCreditoClienteDisponibilidad(dbConn *sql.DB, empresaID, clienteID
 
 	var creditosActivos int
 	var saldoActual float64
-	err = dbConn.QueryRow(`SELECT
+	err = queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		COUNT(1),
 		COALESCE(SUM(COALESCE(saldo_actual, 0)), 0)
 	FROM empresa_creditos

@@ -453,7 +453,7 @@ func handleEmpresaCreditosDisponibilidadCliente(w http.ResponseWriter, r *http.R
 		http.Error(w, "No se pudo validar cliente", http.StatusInternalServerError)
 		return
 	}
-	disponibilidad, err := dbpkg.GetEmpresaCreditoClienteDisponibilidad(dbEmp, empresaID, clienteID)
+	disponibilidad, err := dbpkg.GetEmpresaCreditoClienteDisponibilidadContext(r.Context(), dbEmp, empresaID, clienteID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar cupo de credito del cliente", http.StatusInternalServerError)
 		return
