@@ -4930,3 +4930,5 @@
   reportada por Trivy en la imagen backend.
 - Consolida helpers de texto y períodos fiscales/contables; la compuerta de
   duplicación exacta baja de 46 a 43 grupos con pruebas DB/handlers en verde.
+- Reutiliza helpers canónicos en carnets, contabilidad, domicilios,
+  configuración guiada y alertas; duplicaciones exactas pasan de 43 a 41.

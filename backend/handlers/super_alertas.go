@@ -505,13 +505,7 @@ func boolLabel(v bool) string {
 }
 
 func firstNonEmptySuperAlertField(values ...string) string {
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-		if value != "" {
-			return value
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func sendSuperSystemAlertEmail(dbSuper *sql.DB, toEmail, subject, body, tipo, usuario string) (bool, error) {

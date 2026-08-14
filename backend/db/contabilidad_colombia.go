@@ -1099,11 +1099,7 @@ func defaultContabilidadImpuestos(empresaID int64, usuario string) []EmpresaCont
 
 func cleanCode(v string) string { return strings.ReplaceAll(strings.TrimSpace(v), " ", "") }
 func firstContabilidadValue(v, fallback string) string {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return fallback
-	}
-	return v
+	return firstNonBlankValue(v, fallback)
 }
 func periodFromDate(v string) string {
 	return normalizeCurrentRepositoryPeriod(v)

@@ -1536,11 +1536,7 @@ func domicilioBoolToInt(v bool) int {
 }
 func defaultTrueDomicilio(v bool) bool { return v }
 func firstDomicilioState(v, fallback string) string {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return fallback
-	}
-	return v
+	return firstNonBlankValue(v, fallback)
 }
 func roundDomicilio(v float64) float64 { return math.Round(v*100) / 100 }
 func haversineDomicilio(lat1, lon1, lat2, lon2 float64) float64 {

@@ -1532,3 +1532,8 @@ autoriza ni ejecuta despliegue productivo.
   aprobaron. La compuerta reduce duplicaciones exactas de **46 a 43**.
 - P110-001A continúa parcial por deuda restante; avance formal **38,5 %**,
   certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+- Segundo lote directo: carnets, contabilidad y domicilios reutilizan el helper
+  DB de valor con fallback; configuración guiada y alertas reutilizan el helper
+  canónico de handlers. Las pruebas DB/handlers y vet aprobaron, reduciendo la
+  compuerta de **43 a 41** grupos duplicados.

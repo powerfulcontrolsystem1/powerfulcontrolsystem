@@ -42482,3 +42482,6 @@ acumulativa.
 - Cinco helpers de texto delegan a la implementación canónica y seis
   normalizadores fiscales/contables comparten una regla de período con fallback
   explícito. La línea base baja de 46 a 43 grupos duplicados.
+2026-08-14 - Plan 110: segundo lote directo de helpers
+- Carnets, contabilidad, domicilios, configuración guiada y alertas reutilizan
+  helpers canónicos. La duplicación exacta baja de 43 a 41 grupos.
