@@ -1606,3 +1606,15 @@ autoriza ni ejecuta despliegue productivo.
   baja de **689 a 672** llamadas sin contexto y la duplicación permanece en 0.
 - P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, contextos RRHH e inventario trazable
+
+- Vacaciones RRHH y lotes/series propagan el contexto HTTP a consultas,
+  transacción, actualización, inserción y trazabilidad PostgreSQL.
+- La inserción del movimiento usa `RETURNING id` en la misma transacción y deja
+  de depender de `LastInsertId`, no soportado de forma portable por PostgreSQL.
+- La actualización de vigencia y recarga del lote falla de forma explícita; la
+  consulta opcional distingue `sql.ErrNoRows` de un error real de base de datos.
+- `go test ./handlers`, `go vet ./handlers` y el auditor aprueban. La deuda baja
+  de **672 a 662**, duplicación 0. Plan formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.

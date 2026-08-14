@@ -42503,3 +42503,6 @@ acumulativa.
 2026-08-13 - Plan 110: cancelación SQL de reportes programados
 - Plantillas, programaciones, ejecuciones y consistencia propagan `r.Context()` a 17 operaciones PostgreSQL.
 - La línea base sin contexto baja de 689 a 672; pruebas de handlers y vet aprueban sin ejecutar `rs`.
+2026-08-13 - Plan 110: contextos SQL RRHH e inventario
+- Vacaciones y lotes/series propagan el contexto HTTP; el movimiento transaccional obtiene su ID mediante `RETURNING id`.
+- La línea base baja de 672 a 662 y las recargas dejan de ignorar errores; no se ejecutó `rs`.
