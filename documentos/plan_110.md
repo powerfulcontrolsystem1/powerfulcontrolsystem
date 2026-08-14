@@ -1641,6 +1641,20 @@ autoriza ni ejecuta despliegue productivo.
 - P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs` ni se creó PR.
 
+## Actualización 2026-08-13, cancelación transaccional del pago CxP
+
+- El handler de pago canónico a proveedores propaga `r.Context()` al
+  repositorio y a todas las operaciones SQL de la transacción idempotente,
+  incluidos bloqueos `FOR UPDATE`, movimiento financiero, abono y outbox.
+- Los helpers de compatibilidad PostgreSQL ya ofrecen variantes Context; los
+  wrappers legacy se conservan para jobs sin alterar el contrato existente.
+- La serialización del outbox y la recarga posterior al commit fallan de forma
+  visible en vez de descartarse. Las regresiones protegen contexto, tenant e
+  idempotencia.
+- Pruebas DB/handlers, `vet` y auditoría aprueban: **633** llamadas DB sin
+  contexto y duplicación exacta 0. P110-001A continúa parcial; avance formal
+  **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs` ni se creó PR.
+
 ## Actualización 2026-08-13, PostgreSQL nativo y GET sin mutación
 
 - Las altas de plantillas, programaciones y ejecuciones de reportes,

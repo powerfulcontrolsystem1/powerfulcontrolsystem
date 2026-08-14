@@ -3170,7 +3170,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 		if actor == "" {
 			actor = "sistema"
 		}
-		result, err := dbpkg.RegistrarEmpresaCxPAbono(dbEmp, dbpkg.EmpresaCxPAbonoInput{
+		result, err := dbpkg.RegistrarEmpresaCxPAbonoContext(r.Context(), dbEmp, dbpkg.EmpresaCxPAbonoInput{
 			EmpresaID:         empresaID,
 			CuentaPorPagarID:  id,
 			Monto:             monto,
@@ -3186,7 +3186,11 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 			http.Error(w, err.Error(), registrarPagoCxPErrorStatus(err))
 			return
 		}
-		itemActualizado, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+		itemActualizado, err := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+		if err != nil {
+			http.Error(w, "El pago fue confirmado pero no se pudo recargar la cuenta por pagar", http.StatusInternalServerError)
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":                     true,
 			"empresa_id":             empresaID,

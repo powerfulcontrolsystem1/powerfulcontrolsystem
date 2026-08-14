@@ -1,3 +1,14 @@
+2026-08-13: Plan 110 / pago CxP cancelable de extremo a extremo.
+- El pago canónico a proveedores recibe `r.Context()` y lo mantiene en el
+  inicio, bloqueos, consultas, actualización, movimientos e inserciones de su
+  transacción tenant-scoped e idempotente.
+- Los adaptadores SQL PostgreSQL incorporan variantes Context sin romper los
+  procesos legacy; el JSON del outbox y la recarga posterior al pago ya no
+  ocultan errores críticos.
+- Pruebas CxP, DB y handlers, `vet` y auditoría aprueban. La deuda DB sin
+  contexto baja de 640 a 633; duplicación exacta sigue en 0. No se ejecutó
+  `rs` ni se creó PR.
+
 2026-08-13: Plan 110 / contratos PostgreSQL y lectura pura de Calculadora.
 - Plantillas, programaciones y ejecuciones de reportes, configuración e
   historial de Calculadora y creación de proveedores recuperan identificadores

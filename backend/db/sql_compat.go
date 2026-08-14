@@ -530,38 +530,58 @@ func isMissingTableError(err error) bool {
 }
 
 func execSQLCompat(dbConn *sql.DB, query string, args ...interface{}) (sql.Result, error) {
+	return execSQLCompatContext(context.Background(), dbConn, query, args...)
+}
+
+func execSQLCompatContext(ctx context.Context, dbConn *sql.DB, query string, args ...interface{}) (sql.Result, error) {
 	if dbConn == nil {
 		dbConn = GetDB()
 	}
 	if runtimeDDLBlocked(query) {
 		return noOpSQLResult{}, nil
 	}
-	return dbConn.Exec(rebindCompatQuery(query), args...)
+	return dbConn.ExecContext(ctx, rebindCompatQuery(query), args...)
 }
 
 func execTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
+	return execTxSQLCompatContext(context.Background(), tx, query, args...)
+}
+
+func execTxSQLCompatContext(ctx context.Context, tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
 	if runtimeDDLBlocked(query) {
 		return noOpSQLResult{}, nil
 	}
-	return tx.Exec(rebindCompatQuery(query), args...)
+	return tx.ExecContext(ctx, rebindCompatQuery(query), args...)
 }
 
 func querySQLCompat(dbConn *sql.DB, query string, args ...interface{}) (*sql.Rows, error) {
+	return querySQLCompatContext(context.Background(), dbConn, query, args...)
+}
+
+func querySQLCompatContext(ctx context.Context, dbConn *sql.DB, query string, args ...interface{}) (*sql.Rows, error) {
 	if dbConn == nil {
 		dbConn = GetDB()
 	}
-	return dbConn.Query(rebindCompatQuery(query), args...)
+	return dbConn.QueryContext(ctx, rebindCompatQuery(query), args...)
 }
 
 func queryTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) (*sql.Rows, error) {
-	return tx.Query(rebindCompatQuery(query), args...)
+	return queryTxSQLCompatContext(context.Background(), tx, query, args...)
+}
+
+func queryTxSQLCompatContext(ctx context.Context, tx *sql.Tx, query string, args ...interface{}) (*sql.Rows, error) {
+	return tx.QueryContext(ctx, rebindCompatQuery(query), args...)
 }
 
 func queryRowSQLCompat(dbConn *sql.DB, query string, args ...interface{}) *sql.Row {
+	return queryRowSQLCompatContext(context.Background(), dbConn, query, args...)
+}
+
+func queryRowSQLCompatContext(ctx context.Context, dbConn *sql.DB, query string, args ...interface{}) *sql.Row {
 	if dbConn == nil {
 		dbConn = GetDB()
 	}
-	return dbConn.QueryRow(rebindCompatQuery(query), args...)
+	return dbConn.QueryRowContext(ctx, rebindCompatQuery(query), args...)
 }
 
 // QueryRowCompat expone QueryRow con rebind ? -> $n para PostgreSQL.
@@ -570,29 +590,46 @@ func QueryRowCompat(dbConn *sql.DB, query string, args ...interface{}) *sql.Row 
 	return queryRowSQLCompat(dbConn, query, args...)
 }
 
+// QueryRowCompatContext conserva el rebind PostgreSQL y la cancelación de la solicitud.
+func QueryRowCompatContext(ctx context.Context, dbConn *sql.DB, query string, args ...interface{}) *sql.Row {
+	return queryRowSQLCompatContext(ctx, dbConn, query, args...)
+}
+
 func queryRowTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) *sql.Row {
-	return tx.QueryRow(rebindCompatQuery(query), args...)
+	return queryRowTxSQLCompatContext(context.Background(), tx, query, args...)
+}
+
+func queryRowTxSQLCompatContext(ctx context.Context, tx *sql.Tx, query string, args ...interface{}) *sql.Row {
+	return tx.QueryRowContext(ctx, rebindCompatQuery(query), args...)
 }
 
 func insertSQLCompat(dbConn *sql.DB, query string, args ...interface{}) (int64, error) {
+	return insertSQLCompatContext(context.Background(), dbConn, query, args...)
+}
+
+func insertSQLCompatContext(ctx context.Context, dbConn *sql.DB, query string, args ...interface{}) (int64, error) {
 	insertQuery := strings.TrimSpace(query)
 	if !strings.Contains(strings.ToLower(insertQuery), "returning") {
 		insertQuery += " RETURNING id"
 	}
 	var id int64
-	if err := queryRowSQLCompat(dbConn, insertQuery, args...).Scan(&id); err != nil {
+	if err := queryRowSQLCompatContext(ctx, dbConn, insertQuery, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
 func insertTxSQLCompat(tx *sql.Tx, query string, args ...interface{}) (int64, error) {
+	return insertTxSQLCompatContext(context.Background(), tx, query, args...)
+}
+
+func insertTxSQLCompatContext(ctx context.Context, tx *sql.Tx, query string, args ...interface{}) (int64, error) {
 	insertQuery := strings.TrimSpace(query)
 	if !strings.Contains(strings.ToLower(insertQuery), "returning") {
 		insertQuery += " RETURNING id"
 	}
 	var id int64
-	if err := queryRowTxSQLCompat(tx, insertQuery, args...).Scan(&id); err != nil {
+	if err := queryRowTxSQLCompatContext(ctx, tx, insertQuery, args...).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil

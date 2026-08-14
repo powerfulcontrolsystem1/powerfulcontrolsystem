@@ -132,6 +132,11 @@ func TestRegistrarEmpresaCxPAbonoKeepsTenantScopedAtomicInvariants(t *testing.T)
 	}
 	body := string(raw)
 	for _, required := range []string{
+		"func RegistrarEmpresaCxPAbonoContext(ctx context.Context",
+		"BeginTx(ctx, nil)",
+		"queryRowTxSQLCompatContext(ctx, tx",
+		"execTxSQLCompatContext(ctx, tx",
+		"insertTxSQLCompatContext(ctx, tx",
 		"FROM empresa_cuentas_por_pagar WHERE empresa_id = ? AND id = ? FOR UPDATE",
 		"FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?",
 		"INSERT INTO empresa_cxp_pagos",

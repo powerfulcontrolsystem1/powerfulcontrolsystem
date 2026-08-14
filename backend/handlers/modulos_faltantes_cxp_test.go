@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -80,5 +81,21 @@ func TestCxPConcurrentNoBalanceIsReportedAsConflict(t *testing.T) {
 	}
 	if got := registrarPagoCxPErrorStatus(http.ErrBodyNotAllowed); got != http.StatusBadRequest {
 		t.Fatalf("generic error status = %d, want %d", got, http.StatusBadRequest)
+	}
+}
+
+func TestCxPCanonicalPaymentPropagatesRequestContextAndChecksReload(t *testing.T) {
+	raw, err := os.ReadFile("modulos_faltantes.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"RegistrarEmpresaCxPAbonoContext(r.Context(), dbEmp",
+		"El pago fue confirmado pero no se pudo recargar la cuenta por pagar",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("el pago canónico CxP debe conservar %q", required)
+		}
 	}
 }
