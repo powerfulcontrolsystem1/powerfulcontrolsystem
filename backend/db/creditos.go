@@ -1549,6 +1549,12 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 
 // ListEmpresaCreditoCuotas lista cuotas de un credito ordenadas por numero.
 func ListEmpresaCreditoCuotas(dbConn *sql.DB, empresaID, creditoID int64, includeInactive bool) ([]EmpresaCreditoCuota, error) {
+	return ListEmpresaCreditoCuotasContext(context.Background(), dbConn, empresaID, creditoID, includeInactive)
+}
+
+// ListEmpresaCreditoCuotasContext lista cuotas y conserva la cancelacion del
+// llamador hasta PostgreSQL.
+func ListEmpresaCreditoCuotasContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, includeInactive bool) ([]EmpresaCreditoCuota, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1584,7 +1590,7 @@ func ListEmpresaCreditoCuotas(dbConn *sql.DB, empresaID, creditoID int64, includ
 	}
 	query += ` ORDER BY numero_cuota ASC, id ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1642,6 +1648,12 @@ func ListEmpresaCreditoCuotas(dbConn *sql.DB, empresaID, creditoID int64, includ
 
 // ListEmpresaCreditoMovimientos lista movimientos de un credito.
 func ListEmpresaCreditoMovimientos(dbConn *sql.DB, empresaID, creditoID int64, includeInactive bool, limit int) ([]EmpresaCreditoMovimiento, error) {
+	return ListEmpresaCreditoMovimientosContext(context.Background(), dbConn, empresaID, creditoID, includeInactive, limit)
+}
+
+// ListEmpresaCreditoMovimientosContext lista movimientos y conserva la
+// cancelacion del llamador hasta PostgreSQL.
+func ListEmpresaCreditoMovimientosContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, includeInactive bool, limit int) ([]EmpresaCreditoMovimiento, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1685,7 +1697,7 @@ func ListEmpresaCreditoMovimientos(dbConn *sql.DB, empresaID, creditoID int64, i
 	query += ` ORDER BY pcs_ts(COALESCE(fecha_movimiento, fecha_creacion)) DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -42653,3 +42653,10 @@ acumulativa.
 - La regresión protege el aislamiento por `empresa_id`. Pruebas de Créditos y
   `go vet` aprueban; la deuda DB sin contexto baja de 533 a 531. No se ejecutó
   `rs`.
+## 2026-08-14 - Plan 110: listados de crédito cancelables
+
+- Cuotas, movimientos y estado de cuenta usan variantes con `r.Context()` en
+  sus rutas de lectura, sin cambiar filtros, orden, saldo ni alcance por
+  `empresa_id`; los consumidores internos mantienen wrappers compatibles.
+- Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 531 a 529; no se ejecutó `rs`.

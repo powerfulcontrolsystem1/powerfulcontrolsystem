@@ -115,6 +115,23 @@ func TestCreditoDisponibilidadClientePreservesRequestContext(t *testing.T) {
 	}
 }
 
+func TestCreditoListadosPreserveRequestContext(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"func ListEmpresaCreditoCuotasContext(ctx context.Context",
+		"func ListEmpresaCreditoMovimientosContext(ctx context.Context",
+		"querySQLCompatContext(ctx, dbConn, query, args...)",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("los listados de credito deben conservar contexto en %q", required)
+		}
+	}
+}
+
 func TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays(t *testing.T) {
 	if got := creditoMaxCuotas("diaria"); got < 730 {
 		t.Fatalf("los creditos diarios deben permitir contratos de al menos dos años, got=%d", got)
