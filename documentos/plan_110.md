@@ -1582,3 +1582,15 @@ autoriza ni ejecuta despliegue productivo.
 - P110-001A continúa parcial por **1.841** llamadas DB sin contexto, **773**
   resultados descartados explícitamente y handlers extensos. Avance formal
   **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, medición SQL sin falsos positivos HTTP
+
+- El auditor confundía `r.URL.Query()` con `database/sql.Query()`: 1.104 usos
+  visibles de parámetros HTTP inflaban la métrica y desviaban la priorización.
+- La clasificación excluye únicamente receptores terminados en `.URL.Query` y
+  conserva `db.Query`, `tx.Exec`, `QueryRow`, `Prepare` y `Begin` como deuda.
+- La prueba del auditor y la medición completa aprueban. La deuda SQL real sin
+  contexto queda en **689** llamadas; no se declara cerrada ni se reemplaza por
+  `context.Background()` para maquillar la métrica.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.

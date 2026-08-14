@@ -28,7 +28,7 @@ func TestDBCallClassification(t *testing.T) {
 			t.Fatalf("expected %s to require context", name)
 		}
 	}
-	for _, name := range []string{"db.QueryContext", "tx.ExecContext", "db.BeginTx", "rows.Scan"} {
+	for _, name := range []string{"db.QueryContext", "tx.ExecContext", "db.BeginTx", "rows.Scan", "r.URL.Query", "request.URL.Query"} {
 		if isDBCallWithoutContext(name) {
 			t.Fatalf("did not expect %s to be classified", name)
 		}
