@@ -5,7 +5,7 @@
     "functions_over_200_lines": 124,
     "largest_function_lines": 2052,
     "exact_duplicate_body_groups": 0,
-    "db_calls_without_context": 575,
+    "db_calls_without_context": 571,
     "explicit_ignored_results": 767
   }
 }

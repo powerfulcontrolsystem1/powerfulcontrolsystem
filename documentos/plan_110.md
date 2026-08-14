@@ -1752,3 +1752,15 @@ autoriza ni ejecuta despliegue productivo.
 - La deuda DB baja de **576 a 575**, descartes **767** y duplicacion 0.
   P110-001A/P110-002 continuan parciales; avance formal **38,5 %**,
   certificacion **0 %**, **NO-GO**. No se ejecuto `rs` ni se creo PR.
+
+## Actualizacion 2026-08-13, alta de soporte remoto cancelable
+
+- Lectura/guardado de configuracion y alta de dispositivos remotos propagan el
+  contexto HTTP hasta PostgreSQL; el limite de dispositivos conserva
+  `empresa_id` dentro del mismo flujo.
+- Si no puede cargarse el plan empresarial, el alta falla cerrada y ya no omite
+  silenciosamente el control. Una regresion protege el contrato del handler.
+- Pruebas DB/handlers, `vet` y auditor aprueban; deuda DB **575 a 571**,
+  descartes **767**, duplicacion 0. P110-001A/P110-007 continuan parciales;
+  avance formal **38,5 %**, certificacion **0 %**, **NO-GO**. No se ejecuto
+  `rs` ni se creo PR.

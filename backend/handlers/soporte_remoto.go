@@ -535,7 +535,7 @@ func empresaSoporteRemotoConfigGet(w http.ResponseWriter, r *http.Request, dbEmp
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion de soporte remoto", http.StatusInternalServerError)
 		return
@@ -560,17 +560,17 @@ func empresaSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, db
 		http.Error(w, "JSON invalido", http.StatusBadRequest)
 		return
 	}
-	current, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	current, err := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion actual", http.StatusInternalServerError)
 		return
 	}
 	empresaSoporteRemotoApplyConfigPayload(&current, payload, adminEmailFromRequest(r))
-	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp, current); err != nil {
+	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, current); err != nil {
 		http.Error(w, "No se pudo guardar configuracion de soporte remoto: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -647,7 +647,7 @@ func empresaSoporteRemotoDispositivoCreate(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "JSON invalido", http.StatusBadRequest)
 		return
 	}
-	id, err := dbpkg.CreateEmpresaSoporteRemotoDispositivo(dbEmp, dbpkg.EmpresaSoporteRemotoDispositivo{
+	id, err := dbpkg.CreateEmpresaSoporteRemotoDispositivoContext(r.Context(), dbEmp, dbpkg.EmpresaSoporteRemotoDispositivo{
 		EmpresaID:               empresaID,
 		CodigoDispositivo:       payload.CodigoDispositivo,
 		NombreEquipo:            payload.NombreEquipo,
@@ -797,7 +797,7 @@ func empresaSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, db
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo cargar configuracion de soporte remoto", http.StatusInternalServerError)
 		return
@@ -957,7 +957,7 @@ func empresaSoporteRemotoResolverVisualizacion(w http.ResponseWriter, r *http.Re
 		motivoBloqueo = "sesion no activa: " + session.EstadoSesion
 	}
 	access := empresaSoporteRemotoAccessBundle{EmbedURL: session.URLVisualizacion}
-	if cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID); cfgErr == nil {
+	if cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID); cfgErr == nil {
 		if device, deviceErr := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, session.DispositivoID); deviceErr == nil {
 			access = empresaSoporteRemotoBuildAccessBundle(r, cfg, device, empresaID, session.CodigoSesion, token)
 		}
@@ -996,7 +996,7 @@ func empresaSoporteRemotoResolverAccesoPublico(w http.ResponseWriter, r *http.Re
 		http.Error(w, "No se pudo resolver acceso remoto", http.StatusInternalServerError)
 		return
 	}
-	cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID)
 	if cfgErr != nil {
 		http.Error(w, "No se pudo cargar configuracion de soporte remoto", http.StatusInternalServerError)
 		return

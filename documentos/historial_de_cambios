@@ -42598,3 +42598,7 @@ acumulativa.
 - El tablero empresarial deja de ejecutar seis `Ensure*` durante solicitudes y verifica readiness de carritos, clientes, productos, finanzas, eventos y documentos.
 - KPI operativos, financieros y estados desde asientos conservan contexto desde Finanzas y Reportes; una regresion impide reintroducir DDL en este flujo.
 - El primer intento de compilacion fallo por C: lleno. Se limpiaron solo caches Go reconstruibles, se liberaron aproximadamente 21 GB y se repitieron pruebas/vet con cache temporal en D:, ambas aprobadas. Deuda DB: 576 a 575. No se ejecuto `rs` ni se creo PR.
+2026-08-13 - Plan 110: alta de soporte remoto cancelable
+- Configuracion y alta de dispositivo propagan `r.Context()` hasta PostgreSQL; la verificacion del maximo de dispositivos queda dentro del mismo flujo cancelable por empresa.
+- Un error al cargar el plan/configuracion ahora bloquea la alta en vez de omitir silenciosamente el limite empresarial.
+- Una regresion protege el contrato del handler. Pruebas DB/handlers, vet y auditor aprueban; deuda DB 575 a 571. No se ejecuto `rs` ni se creo PR.

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -665,6 +666,10 @@ func SeedEmpresaSoporteRemotoDefaults(dbEmp, dbSuper *sql.DB) (created, updated 
 
 // GetEmpresaSoporteRemotoConfig consulta configuracion de soporte remoto por empresa.
 func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSoporteRemotoConfig, error) {
+	return GetEmpresaSoporteRemotoConfigContext(context.Background(), dbConn, empresaID)
+}
+
+func GetEmpresaSoporteRemotoConfigContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (EmpresaSoporteRemotoConfig, error) {
 	if dbConn == nil {
 		return EmpresaSoporteRemotoConfig{}, errors.New("db connection is nil")
 	}
@@ -676,7 +681,7 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 	var habilitado sql.NullInt64
 	var requiereAprobacion sql.NullInt64
 	var portalPublico sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(habilitado, 1),
@@ -781,6 +786,10 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 
 // UpsertEmpresaSoporteRemotoConfig crea o actualiza la configuracion de soporte remoto por empresa.
 func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoConfig) (int64, error) {
+	return UpsertEmpresaSoporteRemotoConfigContext(context.Background(), dbConn, cfg)
+}
+
+func UpsertEmpresaSoporteRemotoConfigContext(ctx context.Context, dbConn *sql.DB, cfg EmpresaSoporteRemotoConfig) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -811,13 +820,13 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 	}
 
 	var existingID int64
-	err := dbConn.QueryRow(`SELECT id FROM empresa_soporte_remoto_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
+	err := dbConn.QueryRowContext(ctx, `SELECT id FROM empresa_soporte_remoto_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
 	}
 
 	if existingID > 0 {
-		_, err = dbConn.Exec(`UPDATE empresa_soporte_remoto_configuracion
+		_, err = dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_configuracion
 			SET habilitado = ?,
 				proveedor_preferido = ?,
 				modo_operacion = ?,
@@ -874,7 +883,7 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 		return existingID, nil
 	}
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_soporte_remoto_configuracion (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_soporte_remoto_configuracion (
 		empresa_id,
 		habilitado,
 		proveedor_preferido,
@@ -933,6 +942,10 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 
 // CreateEmpresaSoporteRemotoDispositivo registra un dispositivo remoto por empresa.
 func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRemotoDispositivo, accesoPINPlano string) (int64, error) {
+	return CreateEmpresaSoporteRemotoDispositivoContext(context.Background(), dbConn, item, accesoPINPlano)
+}
+
+func CreateEmpresaSoporteRemotoDispositivoContext(ctx context.Context, dbConn *sql.DB, item EmpresaSoporteRemotoDispositivo, accesoPINPlano string) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -959,8 +972,12 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		item.Estado = "activo"
 	}
 
-	if cfg, err := GetEmpresaSoporteRemotoConfig(dbConn, item.EmpresaID); err == nil && cfg.MaxDispositivos > 0 {
-		activeDevices, countErr := soporteRemotoCountActiveDevices(dbConn, item.EmpresaID)
+	cfg, err := GetEmpresaSoporteRemotoConfigContext(ctx, dbConn, item.EmpresaID)
+	if err != nil {
+		return 0, err
+	}
+	if cfg.MaxDispositivos > 0 {
+		activeDevices, countErr := soporteRemotoCountActiveDevicesContext(ctx, dbConn, item.EmpresaID)
 		if countErr != nil {
 			return 0, countErr
 		}
@@ -982,7 +999,7 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		}
 	}
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_soporte_remoto_dispositivos (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_soporte_remoto_dispositivos (
 		empresa_id,
 		codigo_dispositivo,
 		nombre_equipo,
@@ -1028,8 +1045,12 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 }
 
 func soporteRemotoCountActiveDevices(dbConn *sql.DB, empresaID int64) (int64, error) {
+	return soporteRemotoCountActiveDevicesContext(context.Background(), dbConn, empresaID)
+}
+
+func soporteRemotoCountActiveDevicesContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (int64, error) {
 	var total int64
-	err := dbConn.QueryRow(`SELECT COUNT(1)
+	err := dbConn.QueryRowContext(ctx, `SELECT COUNT(1)
 		FROM empresa_soporte_remoto_dispositivos
 		WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'inactivo'`, empresaID).Scan(&total)
 	return total, err
