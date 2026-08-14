@@ -160,7 +160,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureUsuarioConfiguracionSchema` | [backend/db/usuario_config_schema.go:12](../../backend/db/usuario_config_schema.go#L12) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaUsuariosAuthSchema` | [backend/db/usuarios_empresa.go:56](../../backend/db/usuarios_empresa.go#L56) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaVehiculosRegistroSchema` | [backend/db/vehiculos_registro.go:73](../../backend/db/vehiculos_registro.go#L73) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureSuperVentaDigitalSchema` | [backend/db/venta_digital.go:169](../../backend/db/venta_digital.go#L169) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsureSuperVentaDigitalSchema` | [backend/db/venta_digital.go:170](../../backend/db/venta_digital.go#L170) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureVentaPublicaSchema` | [backend/db/venta_publica.go:21](../../backend/db/venta_publica.go#L21) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaVentaPublicaSchema` | [backend/db/venta_publica.go:564](../../backend/db/venta_publica.go#L564) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureCorporateEmailConfigFromEnv` | [backend/handlers/email_corporativo_handlers.go:279](../../backend/handlers/email_corporativo_handlers.go#L279) | provisionamiento de integracion | empresas o por confirmar |

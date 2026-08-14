@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -282,13 +283,17 @@ func EnsureSuperVentaDigitalSchema(dbConn *sql.DB) error {
 
 // GetSuperVentaDigitalConfig obtiene la configuracion global de venta digital.
 func GetSuperVentaDigitalConfig(dbConn *sql.DB) (SuperVentaDigitalConfig, error) {
+	return GetSuperVentaDigitalConfigContext(context.Background(), dbConn)
+}
+
+func GetSuperVentaDigitalConfigContext(ctx context.Context, dbConn *sql.DB) (SuperVentaDigitalConfig, error) {
 	if dbConn == nil {
 		return SuperVentaDigitalConfig{}, errors.New("db connection is nil")
 	}
 
 	var out SuperVentaDigitalConfig
 	var wompiActivo sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		COALESCE(scope_key, 'global'),
 		COALESCE(nombre_tienda, ''),
@@ -356,6 +361,10 @@ func GetSuperVentaDigitalConfig(dbConn *sql.DB) (SuperVentaDigitalConfig, error)
 
 // UpsertSuperVentaDigitalConfig crea/actualiza la configuracion global de venta digital.
 func UpsertSuperVentaDigitalConfig(dbConn *sql.DB, cfg SuperVentaDigitalConfig) (int64, error) {
+	return UpsertSuperVentaDigitalConfigContext(context.Background(), dbConn, cfg)
+}
+
+func UpsertSuperVentaDigitalConfigContext(ctx context.Context, dbConn *sql.DB, cfg SuperVentaDigitalConfig) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -376,13 +385,13 @@ func UpsertSuperVentaDigitalConfig(dbConn *sql.DB, cfg SuperVentaDigitalConfig) 
 	cfg.Estado = ventaDigitalNormalizeEstado(cfg.Estado)
 
 	var existingID int64
-	err := dbConn.QueryRow(`SELECT id FROM super_venta_digital_configuracion WHERE scope_key = 'global' LIMIT 1`).Scan(&existingID)
+	err := dbConn.QueryRowContext(ctx, `SELECT id FROM super_venta_digital_configuracion WHERE scope_key = 'global' LIMIT 1`).Scan(&existingID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
 	}
 
 	if existingID > 0 {
-		_, err = dbConn.Exec(`UPDATE super_venta_digital_configuracion
+		_, err = dbConn.ExecContext(ctx, `UPDATE super_venta_digital_configuracion
 			SET nombre_tienda = ?,
 				descripcion_tienda = ?,
 				logo_url = ?,
@@ -413,7 +422,7 @@ func UpsertSuperVentaDigitalConfig(dbConn *sql.DB, cfg SuperVentaDigitalConfig) 
 		return existingID, nil
 	}
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO super_venta_digital_configuracion (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO super_venta_digital_configuracion (
 		scope_key,
 		nombre_tienda,
 		descripcion_tienda,
@@ -445,6 +454,10 @@ func UpsertSuperVentaDigitalConfig(dbConn *sql.DB, cfg SuperVentaDigitalConfig) 
 
 // CreateSuperVentaDigitalItem crea un item de catalogo digital.
 func CreateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) (int64, error) {
+	return CreateSuperVentaDigitalItemContext(context.Background(), dbConn, item)
+}
+
+func CreateSuperVentaDigitalItemContext(ctx context.Context, dbConn *sql.DB, item SuperVentaDigitalItem) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -470,7 +483,7 @@ func CreateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) (in
 	item.Moneda = ventaDigitalNormalizeMoneda(item.Moneda)
 	item.Estado = ventaDigitalNormalizeEstado(item.Estado)
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO super_venta_digital_items (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO super_venta_digital_items (
 		codigo_publico,
 		nombre,
 		descripcion,
@@ -507,6 +520,10 @@ func CreateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) (in
 
 // UpdateSuperVentaDigitalItem actualiza un item del catalogo digital.
 func UpdateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) error {
+	return UpdateSuperVentaDigitalItemContext(context.Background(), dbConn, item)
+}
+
+func UpdateSuperVentaDigitalItemContext(ctx context.Context, dbConn *sql.DB, item SuperVentaDigitalItem) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -535,7 +552,7 @@ func UpdateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) err
 	item.Moneda = ventaDigitalNormalizeMoneda(item.Moneda)
 	item.Estado = ventaDigitalNormalizeEstado(item.Estado)
 
-	res, err := dbConn.Exec(`UPDATE super_venta_digital_items
+	res, err := dbConn.ExecContext(ctx, `UPDATE super_venta_digital_items
 		SET codigo_publico = ?,
 			nombre = ?,
 			descripcion = ?,
@@ -581,13 +598,17 @@ func UpdateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) err
 
 // SetSuperVentaDigitalItemEstadoByID activa/desactiva un item de venta digital.
 func SetSuperVentaDigitalItemEstadoByID(dbConn *sql.DB, itemID int64, estado string) error {
+	return SetSuperVentaDigitalItemEstadoByIDContext(context.Background(), dbConn, itemID, estado)
+}
+
+func SetSuperVentaDigitalItemEstadoByIDContext(ctx context.Context, dbConn *sql.DB, itemID int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	if itemID <= 0 {
 		return fmt.Errorf("id invalido")
 	}
-	res, err := dbConn.Exec(`UPDATE super_venta_digital_items
+	res, err := dbConn.ExecContext(ctx, `UPDATE super_venta_digital_items
 		SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ?`, ventaDigitalNormalizeEstado(estado), itemID)
 	if err != nil {
@@ -605,6 +626,10 @@ func SetSuperVentaDigitalItemEstadoByID(dbConn *sql.DB, itemID int64, estado str
 
 // GetSuperVentaDigitalItemByID obtiene un item por su id.
 func GetSuperVentaDigitalItemByID(dbConn *sql.DB, itemID int64) (SuperVentaDigitalItem, error) {
+	return GetSuperVentaDigitalItemByIDContext(context.Background(), dbConn, itemID)
+}
+
+func GetSuperVentaDigitalItemByIDContext(ctx context.Context, dbConn *sql.DB, itemID int64) (SuperVentaDigitalItem, error) {
 	if dbConn == nil {
 		return SuperVentaDigitalItem{}, errors.New("db connection is nil")
 	}
@@ -614,7 +639,7 @@ func GetSuperVentaDigitalItemByID(dbConn *sql.DB, itemID int64) (SuperVentaDigit
 
 	var out SuperVentaDigitalItem
 	var destacado sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		COALESCE(codigo_publico, ''),
 		COALESCE(nombre, ''),
@@ -662,6 +687,10 @@ func GetSuperVentaDigitalItemByID(dbConn *sql.DB, itemID int64) (SuperVentaDigit
 
 // ListSuperVentaDigitalItems lista catalogo de venta digital con filtros.
 func ListSuperVentaDigitalItems(dbConn *sql.DB, filter SuperVentaDigitalItemsFilter) ([]SuperVentaDigitalItem, int64, error) {
+	return ListSuperVentaDigitalItemsContext(context.Background(), dbConn, filter)
+}
+
+func ListSuperVentaDigitalItemsContext(ctx context.Context, dbConn *sql.DB, filter SuperVentaDigitalItemsFilter) ([]SuperVentaDigitalItem, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -684,7 +713,7 @@ func ListSuperVentaDigitalItems(dbConn *sql.DB, filter SuperVentaDigitalItemsFil
 	}
 
 	var total int64
-	if err := dbConn.QueryRow("SELECT COUNT(1) FROM super_venta_digital_items "+where, args...).Scan(&total); err != nil {
+	if err := dbConn.QueryRowContext(ctx, "SELECT COUNT(1) FROM super_venta_digital_items "+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -710,7 +739,7 @@ func ListSuperVentaDigitalItems(dbConn *sql.DB, filter SuperVentaDigitalItemsFil
 	ORDER BY COALESCE(orden_visual, 0) ASC, id DESC
 	LIMIT ? OFFSET ?`
 
-	rows, err := dbConn.Query(query, append(args, limit, offset)...)
+	rows, err := dbConn.QueryContext(ctx, query, append(args, limit, offset)...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -753,7 +782,11 @@ func ListSuperVentaDigitalItems(dbConn *sql.DB, filter SuperVentaDigitalItemsFil
 
 // ListSuperVentaDigitalItemsPublic lista solo items activos para vista publica.
 func ListSuperVentaDigitalItemsPublic(dbConn *sql.DB) ([]SuperVentaDigitalItem, error) {
-	rows, _, err := ListSuperVentaDigitalItems(dbConn, SuperVentaDigitalItemsFilter{
+	return ListSuperVentaDigitalItemsPublicContext(context.Background(), dbConn)
+}
+
+func ListSuperVentaDigitalItemsPublicContext(ctx context.Context, dbConn *sql.DB) ([]SuperVentaDigitalItem, error) {
+	rows, _, err := ListSuperVentaDigitalItemsContext(ctx, dbConn, SuperVentaDigitalItemsFilter{
 		IncludeInactive: false,
 		Limit:           500,
 		Offset:          0,
@@ -766,6 +799,10 @@ func ListSuperVentaDigitalItemsPublic(dbConn *sql.DB) ([]SuperVentaDigitalItem, 
 
 // CreateSuperVentaDigitalOrder crea una orden publica para compra de producto digital.
 func CreateSuperVentaDigitalOrder(dbConn *sql.DB, order SuperVentaDigitalOrder) (int64, error) {
+	return CreateSuperVentaDigitalOrderContext(context.Background(), dbConn, order)
+}
+
+func CreateSuperVentaDigitalOrderContext(ctx context.Context, dbConn *sql.DB, order SuperVentaDigitalOrder) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -788,7 +825,7 @@ func CreateSuperVentaDigitalOrder(dbConn *sql.DB, order SuperVentaDigitalOrder) 
 	order.ItemMoneda = ventaDigitalNormalizeMoneda(order.ItemMoneda)
 	order.Estado = ventaDigitalNormalizeEstado(order.Estado)
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO super_venta_digital_ordenes (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO super_venta_digital_ordenes (
 		codigo_orden,
 		item_id,
 		item_nombre,
@@ -843,6 +880,10 @@ func CreateSuperVentaDigitalOrder(dbConn *sql.DB, order SuperVentaDigitalOrder) 
 
 // UpdateSuperVentaDigitalOrderPayment actualiza estado de pago y datos de transaccion.
 func UpdateSuperVentaDigitalOrderPayment(dbConn *sql.DB, codigoOrden, estadoPago, transactionID, referenciaExterna, payloadJSON, pagadoEn, observaciones string) error {
+	return UpdateSuperVentaDigitalOrderPaymentContext(context.Background(), dbConn, codigoOrden, estadoPago, transactionID, referenciaExterna, payloadJSON, pagadoEn, observaciones)
+}
+
+func UpdateSuperVentaDigitalOrderPaymentContext(ctx context.Context, dbConn *sql.DB, codigoOrden, estadoPago, transactionID, referenciaExterna, payloadJSON, pagadoEn, observaciones string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -855,7 +896,7 @@ func UpdateSuperVentaDigitalOrderPayment(dbConn *sql.DB, codigoOrden, estadoPago
 		estado = "pendiente"
 	}
 
-	res, err := dbConn.Exec(`UPDATE super_venta_digital_ordenes
+	res, err := dbConn.ExecContext(ctx, `UPDATE super_venta_digital_ordenes
 		SET estado_pago = ?,
 			transaction_id = CASE WHEN ? = '' THEN transaction_id ELSE ? END,
 			referencia_externa = CASE WHEN ? = '' THEN referencia_externa ELSE ? END,
@@ -887,6 +928,10 @@ func UpdateSuperVentaDigitalOrderPayment(dbConn *sql.DB, codigoOrden, estadoPago
 
 // SetSuperVentaDigitalOrderDelivery marca estado de entrega por correo de una orden.
 func SetSuperVentaDigitalOrderDelivery(dbConn *sql.DB, codigoOrden string, delivered bool, deliveredAt, deliveryError, licenciaCodigoEnviado, instruccionesArchivoURL string) error {
+	return SetSuperVentaDigitalOrderDeliveryContext(context.Background(), dbConn, codigoOrden, delivered, deliveredAt, deliveryError, licenciaCodigoEnviado, instruccionesArchivoURL)
+}
+
+func SetSuperVentaDigitalOrderDeliveryContext(ctx context.Context, dbConn *sql.DB, codigoOrden string, delivered bool, deliveredAt, deliveryError, licenciaCodigoEnviado, instruccionesArchivoURL string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -895,7 +940,7 @@ func SetSuperVentaDigitalOrderDelivery(dbConn *sql.DB, codigoOrden string, deliv
 		return fmt.Errorf("codigo_orden invalido")
 	}
 
-	res, err := dbConn.Exec(`UPDATE super_venta_digital_ordenes
+	res, err := dbConn.ExecContext(ctx, `UPDATE super_venta_digital_ordenes
 		SET correo_entregado = ?,
 			correo_entregado_en = CASE WHEN ? = '' THEN correo_entregado_en ELSE ? END,
 			correo_entrega_error = CASE WHEN ? = '' THEN correo_entrega_error ELSE ? END,
@@ -925,6 +970,10 @@ func SetSuperVentaDigitalOrderDelivery(dbConn *sql.DB, codigoOrden string, deliv
 
 // GetSuperVentaDigitalOrderByCodigo obtiene una orden por codigo.
 func GetSuperVentaDigitalOrderByCodigo(dbConn *sql.DB, codigoOrden string) (SuperVentaDigitalOrder, error) {
+	return GetSuperVentaDigitalOrderByCodigoContext(context.Background(), dbConn, codigoOrden)
+}
+
+func GetSuperVentaDigitalOrderByCodigoContext(ctx context.Context, dbConn *sql.DB, codigoOrden string) (SuperVentaDigitalOrder, error) {
 	if dbConn == nil {
 		return SuperVentaDigitalOrder{}, errors.New("db connection is nil")
 	}
@@ -935,7 +984,7 @@ func GetSuperVentaDigitalOrderByCodigo(dbConn *sql.DB, codigoOrden string) (Supe
 
 	var out SuperVentaDigitalOrder
 	var correoEntregado sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		COALESCE(codigo_orden, ''),
 		COALESCE(item_id, 0),
@@ -1004,6 +1053,10 @@ func GetSuperVentaDigitalOrderByCodigo(dbConn *sql.DB, codigoOrden string) (Supe
 
 // FindSuperVentaDigitalOrderByPaymentContext busca una orden por transaction_id o referencia externa.
 func FindSuperVentaDigitalOrderByPaymentContext(dbConn *sql.DB, transactionID, reference string) (SuperVentaDigitalOrder, bool, error) {
+	return FindSuperVentaDigitalOrderByPaymentWithContext(context.Background(), dbConn, transactionID, reference)
+}
+
+func FindSuperVentaDigitalOrderByPaymentWithContext(ctx context.Context, dbConn *sql.DB, transactionID, reference string) (SuperVentaDigitalOrder, bool, error) {
 	if dbConn == nil {
 		return SuperVentaDigitalOrder{}, false, errors.New("db connection is nil")
 	}
@@ -1013,13 +1066,13 @@ func FindSuperVentaDigitalOrderByPaymentContext(dbConn *sql.DB, transactionID, r
 
 	if transactionID != "" {
 		var codigo string
-		err := dbConn.QueryRow(`SELECT COALESCE(codigo_orden, '')
+		err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(codigo_orden, '')
 			FROM super_venta_digital_ordenes
 			WHERE transaction_id = ?
 			ORDER BY id DESC
 			LIMIT 1`, transactionID).Scan(&codigo)
 		if err == nil && strings.TrimSpace(codigo) != "" {
-			order, getErr := GetSuperVentaDigitalOrderByCodigo(dbConn, codigo)
+			order, getErr := GetSuperVentaDigitalOrderByCodigoContext(ctx, dbConn, codigo)
 			if getErr != nil {
 				return SuperVentaDigitalOrder{}, false, getErr
 			}
@@ -1032,13 +1085,13 @@ func FindSuperVentaDigitalOrderByPaymentContext(dbConn *sql.DB, transactionID, r
 
 	if reference != "" {
 		var codigo string
-		err := dbConn.QueryRow(`SELECT COALESCE(codigo_orden, '')
+		err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(codigo_orden, '')
 			FROM super_venta_digital_ordenes
 			WHERE referencia_externa = ?
 			ORDER BY id DESC
 			LIMIT 1`, reference).Scan(&codigo)
 		if err == nil && strings.TrimSpace(codigo) != "" {
-			order, getErr := GetSuperVentaDigitalOrderByCodigo(dbConn, codigo)
+			order, getErr := GetSuperVentaDigitalOrderByCodigoContext(ctx, dbConn, codigo)
 			if getErr != nil {
 				return SuperVentaDigitalOrder{}, false, getErr
 			}
@@ -1049,7 +1102,7 @@ func FindSuperVentaDigitalOrderByPaymentContext(dbConn *sql.DB, transactionID, r
 		}
 
 		if codeFromRef := TryParseSuperVentaDigitalOrderCodeFromReference(reference); codeFromRef != "" {
-			order, getErr := GetSuperVentaDigitalOrderByCodigo(dbConn, codeFromRef)
+			order, getErr := GetSuperVentaDigitalOrderByCodigoContext(ctx, dbConn, codeFromRef)
 			if getErr == nil {
 				return order, true, nil
 			}
@@ -1064,6 +1117,10 @@ func FindSuperVentaDigitalOrderByPaymentContext(dbConn *sql.DB, transactionID, r
 
 // ListSuperVentaDigitalOrders lista ordenes de venta digital con filtros.
 func ListSuperVentaDigitalOrders(dbConn *sql.DB, filter SuperVentaDigitalOrdersFilter) ([]SuperVentaDigitalOrder, int64, error) {
+	return ListSuperVentaDigitalOrdersContext(context.Background(), dbConn, filter)
+}
+
+func ListSuperVentaDigitalOrdersContext(ctx context.Context, dbConn *sql.DB, filter SuperVentaDigitalOrdersFilter) ([]SuperVentaDigitalOrder, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -1091,7 +1148,7 @@ func ListSuperVentaDigitalOrders(dbConn *sql.DB, filter SuperVentaDigitalOrdersF
 	}
 
 	var total int64
-	if err := dbConn.QueryRow("SELECT COUNT(1) FROM super_venta_digital_ordenes "+where, args...).Scan(&total); err != nil {
+	if err := dbConn.QueryRowContext(ctx, "SELECT COUNT(1) FROM super_venta_digital_ordenes "+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -1126,7 +1183,7 @@ func ListSuperVentaDigitalOrders(dbConn *sql.DB, filter SuperVentaDigitalOrdersF
 	ORDER BY id DESC
 	LIMIT ? OFFSET ?`
 
-	rows, err := dbConn.Query(query, append(args, limit, offset)...)
+	rows, err := dbConn.QueryContext(ctx, query, append(args, limit, offset)...)
 	if err != nil {
 		return nil, 0, err
 	}

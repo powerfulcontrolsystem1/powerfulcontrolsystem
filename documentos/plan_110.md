@@ -1779,3 +1779,17 @@ autoriza ni ejecuta despliegue productivo.
 - P110-001A/P110-007 continuan parciales; el avance formal permanece en **38,5
   %**, certificacion **0 %**, **NO-GO**, porque no existe candidato desplegado ni
   evidencia operativa equivalente. No se ejecuto `rs` ni se creo PR.
+
+## Actualizacion 2026-08-14, venta digital cancelable y fallos observables
+
+- Configuracion, catalogo, ordenes, conciliacion Wompi y entrega de licencias
+  conservan `r.Context()` hasta PostgreSQL. La creacion y consulta de
+  transacciones Wompi usan tambien el contexto real de la solicitud.
+- Asociacion de imagenes/instrucciones, registro de rechazos Wompi,
+  sincronizacion y entrega dejan de descartar errores; el cliente recibe un
+  fallo observable en vez de una confirmacion falsa.
+- La regresion protege el contrato HTTP. Pruebas DB/handlers, `vet` y auditor
+  aprueban; deuda DB **548 a 533**, descartes **766 a 762** y duplicacion 0.
+- P110-001A/P110-006/P110-007 continuan parciales hasta validar el candidato
+  desplegado, proveedor y correo reales. Avance formal **38,5 %**, certificacion
+  **0 %**, **NO-GO**. No se ejecuto `rs` ni se creo PR.
