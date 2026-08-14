@@ -42628,3 +42628,56 @@ acumulativa.
 - El diagnóstico de GPIO cubre GPIO 0 a GPIO 27, coherente con la validación de backend y el orden solicitado para módulos de relay.
 - Se añadió regresión de interfaz para evitar el retorno de textos heredados de controlador principal.
 - La respuesta operativa de Domótica omite controladores desactivados; se conserva su trazabilidad en base de datos y solo se exponen cuando una consulta administrativa solicita incluir inactivos.
+
+## 2026-08-14 - Plan 110: regresión estable de contexto en soporte remoto
+
+- La prueba de cancelación de heartbeat, sesiones y credenciales WebRTC deja de
+  depender de una tabulación concreta y comprueba que cada operación recibe
+  `r.Context()` aunque el código sea formateado.
+- Se mantiene la prohibición de usar wrappers PostgreSQL sin contexto en el
+  handler; `go test ./...` aprueba completo sin ejecutar `rs`.
+
+## 2026-08-14 - Plan 110: resumen de créditos cancelable
+
+- El resumen de cartera conserva `r.Context()` desde las rutas de panel y
+  exportación hasta el helper PostgreSQL compatible, sin alterar el wrapper
+  histórico usado por otros módulos.
+- Una regresión evita perder el contexto en el agregado multiempresa. Pruebas
+  de Créditos, `go vet` y auditoría estructural aprueban; no se ejecutó `rs`.
+
+## 2026-08-14 - Plan 110: cupo de crédito cancelable
+
+- La consulta de límite y disponibilidad de cupo del cliente ofrece variantes
+  con contexto; la ruta HTTP de Créditos propaga `r.Context()` hasta PostgreSQL
+  y el carrito mantiene su contrato histórico mediante wrapper seguro.
+- La regresión protege el aislamiento por `empresa_id`. Pruebas de Créditos y
+  `go vet` aprueban; la deuda DB sin contexto baja de 533 a 531. No se ejecutó
+  `rs`.
+## 2026-08-14 - Plan 110: listados de crédito cancelables
+
+- Cuotas, movimientos y estado de cuenta usan variantes con `r.Context()` en
+  sus rutas de lectura, sin cambiar filtros, orden, saldo ni alcance por
+  `empresa_id`; los consumidores internos mantienen wrappers compatibles.
+- Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 531 a 529; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: detalle de crédito cancelable
+
+- La lectura por ID y su hidratación de cuotas conservan `r.Context()` hasta
+  PostgreSQL en las rutas de detalle, alta, actualización, estado, workflow y
+  exportación de Créditos, sin cambiar las reglas de saldo ni `empresa_id`.
+- Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 529 a 528; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: listado de créditos cancelable
+
+- El listado, conteo, exportación e hidratación por cuotas de Créditos
+  conservan `r.Context()` hasta PostgreSQL, manteniendo filtros y aislamiento
+  por `empresa_id` sin cambiar contratos internos.
+- Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 528 a 526; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: tablero de mora cancelable
+
+- Próximos vencimientos, vencidos, ranking y agregados del tablero de mora
+  conservan `r.Context()` hasta PostgreSQL, incluidos los listados e
+  hidrataciones auxiliares por empresa.
+- Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
+  La deuda DB sin contexto baja de 526 a 524; no se ejecutó `rs`.

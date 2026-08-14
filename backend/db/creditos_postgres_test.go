@@ -89,6 +89,101 @@ func TestCreditoCarteraResumenCoalescesEmptyAggregateCounts(t *testing.T) {
 	if got := strings.Count(body, "COALESCE(SUM(CASE"); got != 4 {
 		t.Fatalf("el resumen debe convertir a cero sus cuatro conteos SUM(CASE) cuando no hay creditos, got=%d: %s", got, body)
 	}
+	if !strings.Contains(body, "func GetEmpresaCreditosCarteraResumenContext(ctx context.Context") || !strings.Contains(body, "queryRowSQLCompatContext(ctx") {
+		t.Fatalf("el resumen debe conservar el contexto del handler hasta PostgreSQL: %s", body)
+	}
+}
+
+func TestCreditoDisponibilidadClientePreservesRequestContext(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	source := string(raw)
+	body := extractCreditoFunctionForTest(t, source, "func GetEmpresaCreditoClienteDisponibilidad(", "func GetEmpresaCreditoByVentaOrigenID(")
+	if !strings.Contains(source, "func GetEmpresaCreditoClienteLimiteContext(ctx context.Context") {
+		t.Fatalf("el limite de credito debe ofrecer variante cancelable: %s", source)
+	}
+	for _, required := range []string{
+		"func GetEmpresaCreditoClienteDisponibilidadContext(ctx context.Context",
+		"GetEmpresaCreditoClienteLimiteContext(ctx",
+		"queryRowSQLCompatContext(ctx",
+	} {
+		if !strings.Contains(body, required) {
+			t.Fatalf("la disponibilidad de credito debe preservar contexto en %q: %s", required, body)
+		}
+	}
+}
+
+func TestCreditoListadosPreserveRequestContext(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"func ListEmpresaCreditoCuotasContext(ctx context.Context",
+		"func ListEmpresaCreditoMovimientosContext(ctx context.Context",
+		"querySQLCompatContext(ctx, dbConn, query, args...)",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("los listados de credito deben conservar contexto en %q", required)
+		}
+	}
+}
+
+func TestCreditoDetallePreservesRequestContextDuringHydration(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"func creditoHydrateCuotaStatusContext(ctx context.Context",
+		"func GetEmpresaCreditoByIDContext(ctx context.Context",
+		"queryRowSQLCompatContext(ctx, dbConn",
+		"creditoHydrateCuotaStatusContext(ctx, dbConn, empresaID, credito)",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("el detalle de credito debe conservar contexto en %q", required)
+		}
+	}
+}
+
+func TestCreditoListadoPreservesRequestContextDuringHydration(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"func ListEmpresaCreditosContext(ctx context.Context",
+		"queryRowSQLCompatContext(ctx, dbConn, countQuery",
+		"querySQLCompatContext(ctx, dbConn, query, args...)",
+		"creditoHydrateCuotaStatusRowsContext(ctx, dbConn, empresaID, out)",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("el listado de credito debe conservar contexto en %q", required)
+		}
+	}
+}
+
+func TestCreditoMoraDashboardPreservesRequestContext(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"func listEmpresaCreditosByWhereContext(ctx context.Context",
+		"func GetEmpresaCreditosMoraDashboardContext(ctx context.Context",
+		"listEmpresaCreditosByWhereContext(ctx,",
+		"queryRowSQLCompatContext(ctx, dbConn, countQuery",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("el tablero de mora debe conservar contexto en %q", required)
+		}
+	}
 }
 
 func TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays(t *testing.T) {
