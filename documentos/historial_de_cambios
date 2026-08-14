@@ -42519,3 +42519,6 @@ acumulativa.
 2026-08-13 - Plan 110: auditor SQL sin falsos positivos HTTP
 - La compuerta deja de clasificar `r.URL.Query()` como consulta PostgreSQL y añade regresión específica.
 - La deuda medible de llamadas DB sin contexto se corrige de 1.841 a 689; no se usó `context.Background()` como sustituto de cancelación real.
+2026-08-13 - Plan 110: cancelación SQL de reportes programados
+- Plantillas, programaciones, ejecuciones y consistencia propagan `r.Context()` a 17 operaciones PostgreSQL.
+- La línea base sin contexto baja de 689 a 672; pruebas de handlers y vet aprueban sin ejecutar `rs`.
