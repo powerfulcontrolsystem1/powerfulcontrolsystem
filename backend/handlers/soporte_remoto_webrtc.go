@@ -14,6 +14,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -57,14 +58,7 @@ var soporteRemotoSignalingHub = struct {
 }{peers: make(map[string]*soporteRemotoSignalingPeer)}
 
 func soporteRemotoSignalingRole(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "host":
-		return "host"
-	case "viewer":
-		return "viewer"
-	default:
-		return ""
-	}
+	return valueutil.NormalizeAllowed(raw, "host", "viewer")
 }
 
 func soporteRemotoSignalingPeerKey(empresaID int64, codigoSesion, role string) string {

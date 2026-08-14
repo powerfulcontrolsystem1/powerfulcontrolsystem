@@ -5,13 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/runtimeconfig"
 )
 
 func importDotEnvValues(path string) map[string]string {
@@ -57,27 +56,7 @@ func ensureEnvFromLocalFile() {
 }
 
 func rewriteRuntimePostgresDSNForTunnel(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" || strings.TrimSpace(os.Getenv("DB_VPS_TUNNEL_ENABLED")) != "1" {
-		return raw
-	}
-	localPort := strings.TrimSpace(os.Getenv("DB_VPS_LOCAL_PORT"))
-	if localPort == "" {
-		return raw
-	}
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return raw
-	}
-	hostname := parsed.Hostname()
-	if hostname == "" {
-		hostname = "127.0.0.1"
-	}
-	if hostname != "127.0.0.1" && hostname != "localhost" {
-		return raw
-	}
-	parsed.Host = net.JoinHostPort("127.0.0.1", localPort)
-	return parsed.String()
+	return runtimeconfig.RewritePostgresDSNForTunnel(raw, os.Getenv)
 }
 
 func main() {

@@ -7,6 +7,8 @@ import (
 	"math"
 	"strings"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type EmpresaAIUContrato struct {
@@ -1222,13 +1224,7 @@ func aiuClampPercent(v, fallback float64) float64 {
 }
 
 func aiuClampPercentAllowZero(v float64) float64 {
-	if v < 0 {
-		return 0
-	}
-	if v > 100 {
-		return 100
-	}
-	return v
+	return valueutil.Clamp(v, 0, 100)
 }
 
 func aiuRoundMoney(v float64) float64 {

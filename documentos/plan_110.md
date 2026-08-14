@@ -1568,3 +1568,17 @@ autoriza ni ejecuta despliegue productivo.
   18** y descartes explícitos de **776 a 773** al centralizar decodificación.
 - P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-13, cero duplicaciones exactas
+
+- Se introduce `internal/platform/valueutil` para texto, JSON, fechas, hosts,
+  identificadores SQL y límites numéricos; `runtimeconfig` queda como autoridad
+  de entorno/DSN y `httpguard` comparte el contrato de salud API/worker.
+- Los wrappers existentes preservan contratos de dominio. No cambian endpoints,
+  SQL, permisos, secretos ni aislamiento por `empresa_id`.
+- `go test ./...`, `go vet ./...` y el auditor estructural aprobaron. La deuda
+  de cuerpos exactamente duplicados baja de **18 a 0** (y de **52 a 0** desde
+  la línea inicial de P110-001A).
+- P110-001A continúa parcial por **1.841** llamadas DB sin contexto, **773**
+  resultados descartados explícitamente y handlers extensos. Avance formal
+  **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs`.

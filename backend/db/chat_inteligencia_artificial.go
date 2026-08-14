@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 var (
@@ -2895,14 +2897,7 @@ func buildEmpresaAISafeIntentContext(dbConn *sql.DB, empresaID int64, pregunta s
 var aiFirstNumberRE = regexp.MustCompile(`(?i)(?:\\$\\s*)?(\\d+(?:[\\.,]\\d+)?)`)
 
 func truncateText(v string, max int) string {
-	if max <= 0 {
-		return ""
-	}
-	r := []rune(strings.TrimSpace(v))
-	if len(r) <= max {
-		return string(r)
-	}
-	return string(r[:max])
+	return valueutil.Truncate(v, max)
 }
 
 func empresaAISafeUpdateProductoPrecio(dbConn *sql.DB, empresaID int64, pregunta string, terms []string, usuarioCreador string) []string {

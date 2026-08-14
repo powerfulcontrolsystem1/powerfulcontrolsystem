@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/you/pos-backend/internal/platform/valueutil"
+
 	"github.com/you/pos-backend/secure"
 )
 
@@ -1871,14 +1873,7 @@ func ResolveEmpresaSoporteRemotoViewerSession(dbConn *sql.DB, empresaID int64, c
 }
 
 func soporteRemotoNormalizeSignalingRole(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "host":
-		return "host"
-	case "viewer":
-		return "viewer"
-	default:
-		return ""
-	}
+	return valueutil.NormalizeAllowed(raw, "host", "viewer")
 }
 
 // CreateEmpresaSoporteRemotoSignalingCredential crea una credencial corta y

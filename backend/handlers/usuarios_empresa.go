@@ -28,6 +28,7 @@ import (
 	"unicode"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -2906,19 +2907,5 @@ func warmEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, item *dbpkg.EmpresaUs
 }
 
 func parseEmpresaUsuarioDateTime(raw string) (time.Time, bool) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return time.Time{}, false
-	}
-	layouts := []string{
-		"2006-01-02 15:04:05",
-		time.RFC3339,
-		"2006-01-02T15:04:05",
-	}
-	for _, layout := range layouts {
-		if parsed, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
-			return parsed, true
-		}
-	}
-	return time.Time{}, false
+	return valueutil.ParseDateTimeLocal(raw)
 }

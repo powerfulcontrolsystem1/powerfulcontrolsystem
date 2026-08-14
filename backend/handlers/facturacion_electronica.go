@@ -18,6 +18,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 func parseTruthy(v string) bool {
@@ -30,12 +31,7 @@ func parseTruthy(v string) bool {
 }
 
 func firstPositiveFloat64(values ...float64) float64 {
-	for _, value := range values {
-		if value > 0 {
-			return value
-		}
-	}
-	return 0
+	return valueutil.FirstPositive(values...)
 }
 
 func completarClientePayloadFacturacion(dbEmp *sql.DB, empresaID int64, payload *facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion) {

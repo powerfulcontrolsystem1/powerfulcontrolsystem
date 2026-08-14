@@ -6734,3 +6734,18 @@ Super -> API auditada -> consumo agrupado -> umbral/límite/bloqueo por empresa
 ```
 
 `control_electrico_governance.go` concentra política y estado; `control_electrico_monitoring.go` ejecuta alertas desde `pcs-worker`. La API empresarial conserva su wrapper de permisos y todas las consultas/mutaciones usan el `empresa_id` efectivo.
+
+## Actualización 2026-08-13 - utilidades internas canónicas
+
+```text
+db / handlers / utils / cmd / tools
+        |-> internal/platform/valueutil   (texto, JSON, fechas, host, límites)
+        |-> internal/platform/runtimeconfig (entorno, flags y DSN de túnel)
+API health + worker health
+        |-> internal/platform/httpguard   (GET/HEAD o HTTP 405)
+```
+
+Los paquetes son puros, usan únicamente la biblioteca estándar y no conocen
+`empresa_id`, sesiones ni persistencia. Los wrappers de dominio conservan sus
+nombres para evitar cambios de contrato mientras eliminan implementaciones
+duplicadas.

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type schemaReadinessCheck struct {
@@ -81,12 +83,7 @@ func normalizeListLimitOffset(limit, offset, defaultLimit, maxLimit int) (int, i
 // firstNonBlankValue returns the first non-empty value after trimming it. It is
 // shared by repositories so defaults are applied consistently.
 func firstNonBlankValue(values ...string) string {
-	for _, value := range values {
-		if trimmed := strings.TrimSpace(value); trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return valueutil.FirstNonBlank(values...)
 }
 
 // escapedContainsPattern builds a PostgreSQL LIKE pattern for clauses that use

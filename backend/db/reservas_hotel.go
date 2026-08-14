@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 var (
@@ -1438,11 +1440,5 @@ func ListReservasHotelEstacionesDisponibles(dbConn *sql.DB, empresaID int64, fec
 }
 
 func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		trim := strings.TrimSpace(v)
-		if trim != "" {
-			return trim
-		}
-	}
-	return ""
+	return valueutil.FirstNonBlank(values...)
 }

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 // EmpresaCredito representa una linea de credito empresarial por cliente.
@@ -412,11 +414,7 @@ func creditoParseJSONMap(raw string) map[string]interface{} {
 }
 
 func creditoMarshalJSON(v interface{}, fallback string) string {
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return fallback
-	}
-	return string(raw)
+	return valueutil.MarshalJSONOr(v, fallback)
 }
 
 func creditoAppendObservacion(actual, extra string) string {

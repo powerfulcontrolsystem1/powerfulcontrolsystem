@@ -4811,3 +4811,8 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - Alerta empresarial de Raspberry desconectada con gracia, correo y buzón/campanita.
 - Cuota mensual del túnel por empresa, advertencia y bloqueo administrados exclusivamente por Super Administrador.
 - Entradas GPIO con salida normal, temporizada o condicionada a la agenda del aparato, siempre aisladas por empresa/Raspberry y dentro de la cola de encendidos.
+
+2026-08-13: Plataforma interna - normalización y guardas HTTP
+- `internal/platform/valueutil` concentra utilidades puras reutilizadas por DB, handlers, worker y herramientas sin dependencias externas ni estado empresarial.
+- `internal/platform/httpguard` unifica el contrato GET/HEAD de health checks de API y worker.
+- `internal/platform/runtimeconfig` pasa a ser la fuente canónica para variables de entorno, flags desactivados y reescritura de DSN PostgreSQL por túnel.

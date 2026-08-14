@@ -23,6 +23,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	secure "github.com/you/pos-backend/secure"
 )
 
@@ -207,15 +208,7 @@ func makeRequestID() string {
 }
 
 func parsePositiveInt64(raw string) int64 {
-	v := strings.TrimSpace(raw)
-	if v == "" {
-		return 0
-	}
-	n, err := strconv.ParseInt(v, 10, 64)
-	if err != nil || n <= 0 {
-		return 0
-	}
-	return n
+	return valueutil.ParsePositiveInt64(raw)
 }
 
 func extractEmpresaIDFromBody(raw []byte) int64 {
@@ -327,26 +320,11 @@ func RequestFromTrustedProxy(r *http.Request) bool {
 }
 
 func firstForwardedHeaderValue(raw string) string {
-	parts := strings.Split(strings.TrimSpace(raw), ",")
-	if len(parts) == 0 {
-		return ""
-	}
-	return strings.TrimSpace(parts[0])
+	return valueutil.FirstForwardedValue(raw)
 }
 
 func requestHostWithoutPort(rawHost string) string {
-	trimmed := strings.TrimSpace(rawHost)
-	if trimmed == "" {
-		return ""
-	}
-	hostOnly, _, err := net.SplitHostPort(trimmed)
-	if err == nil {
-		return strings.TrimSpace(hostOnly)
-	}
-	if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
-		return strings.Trim(strings.TrimSpace(trimmed), "[]")
-	}
-	return trimmed
+	return valueutil.HostWithoutPort(rawHost)
 }
 
 func resolveRequestHost(r *http.Request) string {
@@ -1056,28 +1034,28 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/red_social_comercial.html":        {},
 			"/perfil_red_social.html":           {},
 			"/venta_publica.html":               {},
-			"/visualizar_productos_y_precios_publico.html":          {},
-			"/pagar_productos_de_venta_publica.html":                {},
-			"/pagar_licencia.html":                                  {},
-			"/venta_digital.html":                                   {},
-			"/elegir_licencia.html":                                 {},
-			"/login.html":                                           {},
-			"/registrar_nuevo_usuario_administrador.html":           {},
-			"/login_usuario.html":                                   {},
-			"/contrato.html":                                        {},
-			"/super/api/administradores/register":                   {},
-			"/super/api/administradores/login":                      {},
-			"/super/api/administradores/solicitar_recuperacion":     {},
-			"/super/api/administradores/restablecer_password":       {},
-			"/super/api/empresas/compartidos/aceptar":               {},
-			"/api/asesor_comercial/aceptar":                         {},
-			"/auth/google/login":                                    {},
-			"/auth/google/usuario/login":                            {},
-			"/auth/google/callback":                                 {},
-			"/auth/confirmar_correo":                                {},
-			"/auth/confirmar_admin":                                 {},
-			"/auth/logout":                                          {},
-			"/api/public/venta_publica":                             {},
+			"/visualizar_productos_y_precios_publico.html":      {},
+			"/pagar_productos_de_venta_publica.html":            {},
+			"/pagar_licencia.html":                              {},
+			"/venta_digital.html":                               {},
+			"/elegir_licencia.html":                             {},
+			"/login.html":                                       {},
+			"/registrar_nuevo_usuario_administrador.html":       {},
+			"/login_usuario.html":                               {},
+			"/contrato.html":                                    {},
+			"/super/api/administradores/register":               {},
+			"/super/api/administradores/login":                  {},
+			"/super/api/administradores/solicitar_recuperacion": {},
+			"/super/api/administradores/restablecer_password":   {},
+			"/super/api/empresas/compartidos/aceptar":           {},
+			"/api/asesor_comercial/aceptar":                     {},
+			"/auth/google/login":                                {},
+			"/auth/google/usuario/login":                        {},
+			"/auth/google/callback":                             {},
+			"/auth/confirmar_correo":                            {},
+			"/auth/confirmar_admin":                             {},
+			"/auth/logout":                                      {},
+			"/api/public/venta_publica":                         {},
 			// El agente instalado en la Raspberry inicia el tunel saliente sin
 			// sesion web. La autenticacion propia del dispositivo se valida en el
 			// handler mediante su token de enrolamiento o token de dispositivo.

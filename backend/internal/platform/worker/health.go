@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/httpguard"
 )
 
 const workerHealthProbeTimeout = 3 * time.Second
@@ -116,12 +118,7 @@ func StartHealthServer(ctx context.Context, addr string, dbConn *sql.DB, state *
 }
 
 func workerHealthMethodAllowed(w http.ResponseWriter, r *http.Request) bool {
-	if r.Method == http.MethodGet || r.Method == http.MethodHead {
-		return true
-	}
-	w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
-	http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	return false
+	return httpguard.AllowGetOrHead(w, r)
 }
 
 func validateLoopbackHealthAddr(addr string) error {

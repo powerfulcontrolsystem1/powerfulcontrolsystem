@@ -19,6 +19,7 @@ import (
 
 	"github.com/you/pos-backend/auth"
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -813,11 +814,7 @@ func SetBrowserSessionStateCookie(w http.ResponseWriter, r *http.Request, active
 }
 
 func firstForwardedValue(raw string) string {
-	parts := strings.Split(strings.TrimSpace(raw), ",")
-	if len(parts) == 0 {
-		return ""
-	}
-	return strings.TrimSpace(parts[0])
+	return valueutil.FirstForwardedValue(raw)
 }
 
 func resolveOAuthScheme(r *http.Request) string {
@@ -859,18 +856,7 @@ func resolveOAuthHost(r *http.Request) string {
 }
 
 func splitHostPortSafe(rawHost string) string {
-	trimmed := strings.TrimSpace(rawHost)
-	if trimmed == "" {
-		return ""
-	}
-	hostOnly, _, err := net.SplitHostPort(trimmed)
-	if err == nil {
-		return strings.TrimSpace(hostOnly)
-	}
-	if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
-		return strings.Trim(strings.TrimSpace(trimmed), "[]")
-	}
-	return trimmed
+	return valueutil.HostWithoutPort(rawHost)
 }
 
 func isLoopbackHost(rawHost string) bool {

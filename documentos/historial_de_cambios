@@ -42494,3 +42494,6 @@ acumulativa.
 2026-08-14 - Plan 110: JSON, credenciales y contexto IA
 - Se consolidan texto, IP pública, JSON, credenciales opcionales, códigos,
   unidades y secciones IA. Duplicaciones: 27 a 18; descartes: 776 a 773.
+2026-08-13 - Plan 110: cero duplicaciones exactas
+- Se centralizan normalización de valores, variables de entorno, DSN de túnel y guardas HTTP en paquetes internos sin dependencias externas.
+- La línea base estructural baja de 18 a 0 grupos duplicados; `go test ./...` y `go vet ./...` aprueban sin ejecutar `rs`.

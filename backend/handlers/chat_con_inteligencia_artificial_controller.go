@@ -23,6 +23,7 @@ import (
 
 	aipkg "github.com/you/pos-backend/ai"
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type openAIStreamEvent struct {
@@ -2469,14 +2470,7 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 }
 
 func truncateText(v string, max int) string {
-	if max <= 0 {
-		return ""
-	}
-	r := []rune(strings.TrimSpace(v))
-	if len(r) <= max {
-		return string(r)
-	}
-	return string(r[:max])
+	return valueutil.Truncate(v, max)
 }
 
 func isProviderLimitError(err error) bool {

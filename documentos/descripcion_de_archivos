@@ -13224,3 +13224,9 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `web/img/raspberry-pi-40-pin-bcm.svg`: pinout determinista físico/BCM de 40 pines.
 - `web/img/raspberry-pi-40-pin-tutorial.png`: ilustración orientativa generada para el tutorial.
 backend/db/repository_helpers.go | Helper interno para generación compartida de códigos alfanuméricos de repositorios; no expone endpoints ni cambia persistencia.
+
+2026-08-13 - Utilidades transversales de plataforma
+- `backend/internal/platform/valueutil/valueutil.go`: normalización estándar de texto, hosts, fechas, JSON, identificadores SQL y valores numéricos usada por API, DB, worker y herramientas.
+- `backend/internal/platform/valueutil/valueutil_test.go`: contratos Unicode, host IPv6, identificador SQL, JSON de respaldo y límites genéricos.
+- `backend/internal/platform/httpguard/methods.go`: contrato HTTP compartido para endpoints de salud GET/HEAD.
+- `backend/internal/platform/httpguard/methods_test.go`: regresión de métodos permitidos, HTTP 405 y encabezado `Allow`.

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type reportesHTTPError struct {
@@ -138,11 +139,7 @@ func reportesDecodeJSONMap(raw string) map[string]interface{} {
 }
 
 func reportesMarshalJSON(v interface{}, fallback string) string {
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return fallback
-	}
-	return string(raw)
+	return valueutil.MarshalJSONOr(v, fallback)
 }
 
 func reportesHashBytes(raw []byte) string {

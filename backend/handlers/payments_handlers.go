@@ -26,6 +26,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -3272,21 +3273,11 @@ func parseBoolConfigValue(raw string) bool {
 }
 
 func firstNonEmptyString(values ...string) string {
-	for _, value := range values {
-		if trimmed := strings.TrimSpace(value); trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return valueutil.FirstNonBlank(values...)
 }
 
 func firstPositiveInt64(values ...int64) int64 {
-	for _, value := range values {
-		if value > 0 {
-			return value
-		}
-	}
-	return 0
+	return valueutil.FirstPositive(values...)
 }
 
 func uniqueNonEmptyStrings(values ...string) []string {
@@ -3740,18 +3731,7 @@ var (
 )
 
 func splitHostPortLoose(rawHost string) string {
-	trimmed := strings.TrimSpace(rawHost)
-	if trimmed == "" {
-		return ""
-	}
-	hostOnly, _, err := net.SplitHostPort(trimmed)
-	if err == nil {
-		return strings.TrimSpace(hostOnly)
-	}
-	if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
-		return strings.Trim(strings.TrimSpace(trimmed), "[]")
-	}
-	return trimmed
+	return valueutil.HostWithoutPort(rawHost)
 }
 
 func isLoopbackOrLocalHost(rawHost string) bool {

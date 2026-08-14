@@ -121,3 +121,25 @@ func TestLoadRejectsUnknownRole(t *testing.T) {
 		t.Fatal("expected invalid role error")
 	}
 }
+
+func TestRuntimeEnvironmentHelpers(t *testing.T) {
+	t.Parallel()
+	env := map[string]string{
+		"SECOND":                " value ",
+		"DB_VPS_TUNNEL_ENABLED": "1",
+		"DB_VPS_LOCAL_PORT":     "55432",
+	}
+	getenv := func(key string) string { return env[key] }
+	if got := FirstNonEmptyEnv(getenv, "FIRST", "SECOND"); got != "value" {
+		t.Fatalf("FirstNonEmptyEnv() = %q", got)
+	}
+	got := RewritePostgresDSNForTunnel("postgres://user:pass@localhost:5432/pcs", getenv)
+	want := "postgres://user:pass@127.0.0.1:55432/pcs"
+	if got != want {
+		t.Fatalf("RewritePostgresDSNForTunnel() = %q, want %q", got, want)
+	}
+	remote := "postgres://user:pass@db.example.com:5432/pcs"
+	if got := RewritePostgresDSNForTunnel(remote, getenv); got != remote {
+		t.Fatalf("remote DSN must remain unchanged: %q", got)
+	}
+}

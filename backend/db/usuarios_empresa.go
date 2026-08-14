@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 var (
@@ -1091,21 +1093,7 @@ func IsEmpresaUsuarioLocked(item *EmpresaUsuario, now time.Time) (bool, string) 
 }
 
 func parseDateTimeLocal(raw string) (time.Time, bool) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return time.Time{}, false
-	}
-	layouts := []string{
-		"2006-01-02 15:04:05",
-		time.RFC3339,
-		"2006-01-02T15:04:05",
-	}
-	for _, layout := range layouts {
-		if parsed, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
-			return parsed, true
-		}
-	}
-	return time.Time{}, false
+	return valueutil.ParseDateTimeLocal(raw)
 }
 
 // UpdateEmpresaUsuario actualiza los datos de un usuario de empresa.

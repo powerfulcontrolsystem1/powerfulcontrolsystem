@@ -15,6 +15,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type empresaReporteCatalogoItem struct {
@@ -2148,17 +2149,7 @@ func reportesBuildStateFilterClause(stateColumn string, states []string) (string
 }
 
 func reportesSafeSQLIdentifier(v string) bool {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return false
-	}
-	for _, ch := range v {
-		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
-			continue
-		}
-		return false
-	}
-	return true
+	return valueutil.IsSafeSQLIdentifier(v)
 }
 
 func (b *reportesBuilder) getVentasCerradasFiltradas() ([]dbpkg.CarritoCompra, error) {

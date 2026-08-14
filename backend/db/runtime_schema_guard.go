@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"os"
 	"strings"
+
+	"github.com/you/pos-backend/internal/platform/runtimeconfig"
 )
 
 // runtimeDDLBlocked is the final safety boundary between schema ownership and
@@ -45,12 +47,7 @@ func isRuntimeDDL(query string) bool {
 }
 
 func isDisabledRuntimeFlag(value string) bool {
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "0", "false", "no", "off":
-		return true
-	default:
-		return false
-	}
+	return runtimeconfig.IsDisabled(value)
 }
 
 type noOpSQLResult struct{}

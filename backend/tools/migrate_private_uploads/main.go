@@ -14,6 +14,7 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/handlers"
+	"github.com/you/pos-backend/internal/platform/runtimeconfig"
 )
 
 func main() {
@@ -65,12 +66,7 @@ func main() {
 }
 
 func firstNonEmptyEnv(keys ...string) string {
-	for _, key := range keys {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-			return value
-		}
-	}
-	return ""
+	return runtimeconfig.FirstNonEmptyEnv(os.Getenv, keys...)
 }
 
 func exitError(err error) {
