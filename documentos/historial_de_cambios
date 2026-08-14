@@ -42636,3 +42636,11 @@ acumulativa.
   `r.Context()` aunque el código sea formateado.
 - Se mantiene la prohibición de usar wrappers PostgreSQL sin contexto en el
   handler; `go test ./...` aprueba completo sin ejecutar `rs`.
+
+## 2026-08-14 - Plan 110: resumen de créditos cancelable
+
+- El resumen de cartera conserva `r.Context()` desde las rutas de panel y
+  exportación hasta el helper PostgreSQL compatible, sin alterar el wrapper
+  histórico usado por otros módulos.
+- Una regresión evita perder el contexto en el agregado multiempresa. Pruebas
+  de Créditos, `go vet` y auditoría estructural aprueban; no se ejecutó `rs`.

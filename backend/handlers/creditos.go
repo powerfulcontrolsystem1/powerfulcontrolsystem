@@ -807,7 +807,7 @@ func handleEmpresaCreditosResumen(w http.ResponseWriter, r *http.Request, dbEmp 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	resumen, err := dbpkg.GetEmpresaCreditosCarteraResumen(dbEmp, empresaID, queryBool(r, "include_inactive"))
+	resumen, err := dbpkg.GetEmpresaCreditosCarteraResumenContext(r.Context(), dbEmp, empresaID, queryBool(r, "include_inactive"))
 	if err != nil {
 		http.Error(w, "No se pudo calcular resumen de cartera", http.StatusInternalServerError)
 		return
@@ -1341,7 +1341,7 @@ func handleEmpresaCreditosReporte(w http.ResponseWriter, r *http.Request, dbEmp 
 		http.Error(w, "No se pudo consultar creditos para reporte", http.StatusInternalServerError)
 		return
 	}
-	resumen, err := dbpkg.GetEmpresaCreditosCarteraResumen(dbEmp, empresaID, filter.IncludeInactive)
+	resumen, err := dbpkg.GetEmpresaCreditosCarteraResumenContext(r.Context(), dbEmp, empresaID, filter.IncludeInactive)
 	if err != nil {
 		http.Error(w, "No se pudo calcular resumen de cartera", http.StatusInternalServerError)
 		return

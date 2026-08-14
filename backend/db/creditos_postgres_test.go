@@ -89,6 +89,9 @@ func TestCreditoCarteraResumenCoalescesEmptyAggregateCounts(t *testing.T) {
 	if got := strings.Count(body, "COALESCE(SUM(CASE"); got != 4 {
 		t.Fatalf("el resumen debe convertir a cero sus cuatro conteos SUM(CASE) cuando no hay creditos, got=%d: %s", got, body)
 	}
+	if !strings.Contains(body, "func GetEmpresaCreditosCarteraResumenContext(ctx context.Context") || !strings.Contains(body, "queryRowSQLCompatContext(ctx") {
+		t.Fatalf("el resumen debe conservar el contexto del handler hasta PostgreSQL: %s", body)
+	}
 }
 
 func TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays(t *testing.T) {

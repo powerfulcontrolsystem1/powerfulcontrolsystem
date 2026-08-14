@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -2444,6 +2445,12 @@ func SetEmpresaCreditoClienteLimiteRowEstado(dbConn *sql.DB, empresaID, clienteI
 
 // GetEmpresaCreditosCarteraResumen retorna agregados ejecutivos de cartera.
 func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeInactive bool) (*EmpresaCreditoCarteraResumen, error) {
+	return GetEmpresaCreditosCarteraResumenContext(context.Background(), dbConn, empresaID, includeInactive)
+}
+
+// GetEmpresaCreditosCarteraResumenContext retorna agregados ejecutivos de cartera
+// y conserva la cancelacion del llamador hasta PostgreSQL.
+func GetEmpresaCreditosCarteraResumenContext(ctx context.Context, dbConn *sql.DB, empresaID int64, includeInactive bool) (*EmpresaCreditoCarteraResumen, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -2488,7 +2495,7 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 	}
 
 	var out EmpresaCreditoCarteraResumen
-	if err := queryRowSQLCompat(dbConn, query, args...).Scan(
+	if err := queryRowSQLCompatContext(ctx, dbConn, query, args...).Scan(
 		&out.TotalCreditos,
 		&out.CreditosActivos,
 		&out.CreditosVencidos,
