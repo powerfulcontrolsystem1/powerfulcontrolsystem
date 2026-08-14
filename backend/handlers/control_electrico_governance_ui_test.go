@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDomoticaAndSolarHaveIndependentMainMenu(t *testing.T) {
@@ -63,5 +64,13 @@ func TestSuperDomoticaTrafficHasCompanyLimitsAndAbuseAlarm(t *testing.T) {
 		if !strings.Contains(body, marker) {
 			t.Fatalf("panel super sin %q", marker)
 		}
+	}
+}
+
+func TestDomoticaTunnelSeenRecentlyAcceptsPostgresOffsetWithoutColon(t *testing.T) {
+	bogota := time.FixedZone("COT", -5*60*60)
+	recent := time.Now().In(bogota).Add(-time.Second).Format("2006-01-02 15:04:05.999999-07")
+	if !domoticaTunnelSeenRecently(recent, 90*time.Second) {
+		t.Fatalf("heartbeat PostgreSQL reciente con offset -05 marcado desconectado: %s", recent)
 	}
 }
