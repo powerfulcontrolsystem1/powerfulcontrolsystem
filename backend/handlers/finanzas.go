@@ -467,7 +467,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if action == "tablero_export" || action == "tablero_exportar" || action == "export_tablero" {
 				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
 				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
-				resumen, err := dbpkg.GetEmpresaReportesTableroResumen(dbEmp, empresaID, desde, hasta)
+				resumen, err := dbpkg.GetEmpresaReportesTableroResumenContext(r.Context(), dbEmp, empresaID, desde, hasta)
 				if err != nil {
 					http.Error(w, "No se pudo construir el tablero de reportes", http.StatusInternalServerError)
 					return
@@ -503,7 +503,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if action == "tablero" || action == "dashboard" || action == "resumen_kpi" {
 				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
 				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
-				resumen, err := dbpkg.GetEmpresaReportesTableroResumen(dbEmp, empresaID, desde, hasta)
+				resumen, err := dbpkg.GetEmpresaReportesTableroResumenContext(r.Context(), dbEmp, empresaID, desde, hasta)
 				if err != nil {
 					http.Error(w, "No se pudo construir el tablero de reportes", http.StatusInternalServerError)
 					return

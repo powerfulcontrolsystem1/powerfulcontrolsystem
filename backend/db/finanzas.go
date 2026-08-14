@@ -3012,25 +3012,29 @@ type EmpresaReportesTableroResumen struct {
 
 // GetEmpresaReportesTableroResumen devuelve el tablero minimo financiero-operativo para una empresa.
 func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, hasta string) (*EmpresaReportesTableroResumen, error) {
+	return GetEmpresaReportesTableroResumenContext(context.Background(), dbConn, empresaID, desde, hasta)
+}
+
+func GetEmpresaReportesTableroResumenContext(ctx context.Context, dbConn *sql.DB, empresaID int64, desde, hasta string) (*EmpresaReportesTableroResumen, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
-	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+	if err := EmpresaCarritosSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
-	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+	if err := EmpresaClientesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
-	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+	if err := EmpresaProductosSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
-	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+	if err := EmpresaFinanzasSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
-	if err := EnsureEmpresaEventosContablesSchema(dbConn); err != nil {
+	if err := EmpresaEventosContablesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
-	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 
@@ -3051,7 +3055,7 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 		AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
 		AND LOWER(COALESCE(c.estado, 'activo')) = 'activo'` + ventasCond
 	ventasParams := append([]interface{}{empresaID}, ventasArgs...)
-	if err := queryRowSQLCompat(dbConn, ventasQuery, ventasParams...).Scan(
+	if err := queryRowSQLCompatContext(ctx, dbConn, ventasQuery, ventasParams...).Scan(
 		&resumen.Operativo.VentasCerradas,
 		&resumen.Operativo.IngresosVentas,
 		&resumen.Operativo.VentasHoy,
@@ -3062,13 +3066,13 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 		resumen.Operativo.TicketPromedio = resumen.Operativo.IngresosVentas / float64(resumen.Operativo.VentasCerradas)
 	}
 
-	if err := queryRowSQLCompat(dbConn, `SELECT COALESCE(COUNT(1), 0)
+	if err := queryRowSQLCompatContext(ctx, dbConn, `SELECT COALESCE(COUNT(1), 0)
 		FROM clientes
 		WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&resumen.Operativo.ClientesActivos); err != nil {
 		return nil, err
 	}
 
-	if err := queryRowSQLCompat(dbConn, `SELECT
+	if err := queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		COALESCE(COUNT(1), 0),
 		COALESCE(SUM(CASE WHEN COALESCE(p.stock_minimo, 0) > 0 AND COALESCE(inv.stock_total, 0) <= COALESCE(p.stock_minimo, 0) THEN 1 ELSE 0 END), 0)
 	FROM productos p
@@ -3091,7 +3095,7 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 		AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
 		AND LOWER(COALESCE(m.tipo, '')) IN ('entrada', 'ajuste_entrada', 'ajuste_positivo', 'compra')` + comprasCond
 	comprasParams := append([]interface{}{empresaID}, comprasArgs...)
-	if err := dbConn.QueryRow(comprasQuery, comprasParams...).Scan(&resumen.Operativo.ComprasMovimientos, &resumen.Operativo.ComprasCosto); err != nil {
+	if err := dbConn.QueryRowContext(ctx, comprasQuery, comprasParams...).Scan(&resumen.Operativo.ComprasMovimientos, &resumen.Operativo.ComprasCosto); err != nil {
 		return nil, err
 	}
 
@@ -3106,7 +3110,7 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 		AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
 		AND LOWER(COALESCE(m.tipo_movimiento, '')) IN ('ingreso', 'egreso')` + finanzasCond
 	finanzasParams := append([]interface{}{empresaID}, finanzasArgs...)
-	if err := queryRowSQLCompat(dbConn, finanzasQuery, finanzasParams...).Scan(
+	if err := queryRowSQLCompatContext(ctx, dbConn, finanzasQuery, finanzasParams...).Scan(
 		&resumen.Financiero.MovimientosIngresos,
 		&resumen.Financiero.MovimientosEgresos,
 		&resumen.Financiero.Ingresos,
@@ -3116,7 +3120,7 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 	}
 	resumen.Financiero.Balance = resumen.Financiero.Ingresos - resumen.Financiero.Egresos
 
-	if err := queryRowSQLCompat(dbConn, `SELECT
+	if err := queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado, 'abierto')) = 'abierto' THEN 1 ELSE 0 END), 0),
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado, 'abierto')) = 'cerrado' THEN 1 ELSE 0 END), 0)
 	FROM empresa_finanzas_periodos
@@ -3137,7 +3141,7 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 	WHERE e.empresa_id = ?
 		AND LOWER(COALESCE(e.estado, 'activo')) = 'activo'` + eventosCond
 	eventosParams := append([]interface{}{empresaID}, eventosArgs...)
-	if err := queryRowSQLCompat(dbConn, eventosQuery, eventosParams...).Scan(
+	if err := queryRowSQLCompatContext(ctx, dbConn, eventosQuery, eventosParams...).Scan(
 		&resumen.Contable.EventosPendientes,
 		&resumen.Contable.EventosProcesados,
 		&resumen.Contable.EventosTotal,
@@ -3146,18 +3150,18 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 		return nil, err
 	}
 
-	if err := queryRowSQLCompat(dbConn, `SELECT COALESCE(COUNT(1), 0)
+	if err := queryRowSQLCompatContext(ctx, dbConn, `SELECT COALESCE(COUNT(1), 0)
 		FROM empresa_facturacion_documentos
 		WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&resumen.Contable.DocumentosFacturacionActivos); err != nil {
 		return nil, err
 	}
-	if err := queryRowSQLCompat(dbConn, `SELECT COALESCE(COUNT(1), 0)
+	if err := queryRowSQLCompatContext(ctx, dbConn, `SELECT COALESCE(COUNT(1), 0)
 		FROM empresa_compras_documentos
 		WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&resumen.Contable.DocumentosComprasActivos); err != nil {
 		return nil, err
 	}
 
-	estadoResultados, balanceGeneral, asientosGenerados, asientosMontoTotal, err := getEmpresaEstadosFinancierosDesdeAsientos(dbConn, empresaID, resumen.Desde, resumen.Hasta)
+	estadoResultados, balanceGeneral, asientosGenerados, asientosMontoTotal, err := getEmpresaEstadosFinancierosDesdeAsientosContext(ctx, dbConn, empresaID, resumen.Desde, resumen.Hasta)
 	if err != nil {
 		return nil, err
 	}
@@ -3201,6 +3205,10 @@ func buildDateRangeCondition(dateExpr, desde, hasta string) (string, []interface
 }
 
 func getEmpresaEstadosFinancierosDesdeAsientos(dbConn *sql.DB, empresaID int64, desde, hasta string) (EmpresaReportesEstadoResultados, EmpresaReportesBalanceGeneral, int64, float64, error) {
+	return getEmpresaEstadosFinancierosDesdeAsientosContext(context.Background(), dbConn, empresaID, desde, hasta)
+}
+
+func getEmpresaEstadosFinancierosDesdeAsientosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, desde, hasta string) (EmpresaReportesEstadoResultados, EmpresaReportesBalanceGeneral, int64, float64, error) {
 	estadoResultados := EmpresaReportesEstadoResultados{}
 	balanceGeneral := EmpresaReportesBalanceGeneral{}
 
@@ -3215,7 +3223,7 @@ func getEmpresaEstadosFinancierosDesdeAsientos(dbConn *sql.DB, empresaID int64, 
 	query += ` ORDER BY COALESCE(a.fecha_asiento, '') ASC, a.id ASC`
 	params := append([]interface{}{empresaID}, args...)
 
-	rows, err := querySQLCompat(dbConn, query, params...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, params...)
 	if err != nil {
 		return estadoResultados, balanceGeneral, 0, 0, err
 	}

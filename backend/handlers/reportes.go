@@ -1475,7 +1475,7 @@ func (b *reportesBuilder) getTableroResumen() (*dbpkg.EmpresaReportesTableroResu
 	if b.tableroCache != nil {
 		return b.tableroCache, nil
 	}
-	tablero, err := dbpkg.GetEmpresaReportesTableroResumen(b.db, b.empresaID, b.desde, b.hasta)
+	tablero, err := dbpkg.GetEmpresaReportesTableroResumenContext(b.requestContext(), b.db, b.empresaID, b.desde, b.hasta)
 	if err != nil {
 		return nil, err
 	}

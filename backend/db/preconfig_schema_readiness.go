@@ -130,6 +130,13 @@ func EmpresaProductosSchemaReady(dbConn *sql.DB) error {
 	return requireSchemaReadiness(dbConn, "productos e inventario", checks)
 }
 
+// EmpresaClientesSchemaReady valida el contrato minimo de clientes sin DDL.
+func EmpresaClientesSchemaReady(dbConn *sql.DB) error {
+	return requireSchemaReadiness(dbConn, "clientes", []schemaReadinessCheck{
+		{"clientes", `SELECT id, empresa_id, nombre, estado FROM clientes WHERE 1=0`},
+	})
+}
+
 // EmpresaUsuariosAuthSchemaReady valida las columnas de autenticacion que usa
 // la preconfiguracion sin ejecutar DDL ni limpiar usuarios reservados.
 func EmpresaUsuariosAuthSchemaReady(dbConn *sql.DB) error {

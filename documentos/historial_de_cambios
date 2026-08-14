@@ -42594,3 +42594,7 @@ acumulativa.
 - Apertura, limite por licencia, resolucion de caja por usuario, efectivo atomico, cierre, reapertura, aprobacion, anulacion y borrado conservan contexto hasta PostgreSQL.
 - Carrito, ventas offline, datafono, Finanzas y Corte de caja usan las variantes cancelables; `empresa_id`, usuario, caja, turno y sucursal se mantienen en cada operacion.
 - El rollback transaccional registra fallos inesperados y siete mutaciones comprueban `RowsAffected`. Pruebas DB/handlers, vet y auditor aprueban: deuda DB 587 a 576; descartes 768 a 767. No se ejecuto `rs` ni se creo PR.
+2026-08-13 - Plan 110: tablero financiero sin DDL runtime
+- El tablero empresarial deja de ejecutar seis `Ensure*` durante solicitudes y verifica readiness de carritos, clientes, productos, finanzas, eventos y documentos.
+- KPI operativos, financieros y estados desde asientos conservan contexto desde Finanzas y Reportes; una regresion impide reintroducir DDL en este flujo.
+- El primer intento de compilacion fallo por C: lleno. Se limpiaron solo caches Go reconstruibles, se liberaron aproximadamente 21 GB y se repitieron pruebas/vet con cache temporal en D:, ambas aprobadas. Deuda DB: 576 a 575. No se ejecuto `rs` ni se creo PR.

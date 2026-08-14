@@ -2,6 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -145,6 +148,7 @@ func TestEmpresaPreconfigSchemaReadyRejectsNilDatabase(t *testing.T) {
 		fn   func(*sql.DB) error
 	}{
 		{"productos", EmpresaProductosSchemaReady},
+		{"clientes", EmpresaClientesSchemaReady},
 		{"usuarios", EmpresaUsuariosAuthSchemaReady},
 		{"configuracion_operativa", EmpresaConfiguracionOperativaSchemaReady},
 		{"comisiones", EmpresaComisionesServicioSchemaReady},
@@ -165,6 +169,38 @@ func TestEmpresaPreconfigSchemaReadyRejectsNilDatabase(t *testing.T) {
 				t.Fatal("expected nil database to be rejected")
 			}
 		})
+	}
+}
+
+func TestTableroFinancieroNoEjecutaEnsureEnRuntime(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("finanzas.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func GetEmpresaReportesTableroResumenContext(")
+	if start < 0 {
+		t.Fatal("could not find financial dashboard repository")
+	}
+	end := strings.Index(source[start:], "\nfunc buildDateRangeCondition(")
+	if end < 0 {
+		t.Fatal("could not isolate financial dashboard repository")
+	}
+	body := source[start : start+end]
+	if strings.Contains(body, "EnsureEmpresa") {
+		t.Fatal("financial dashboard must fail closed on readiness instead of executing DDL")
+	}
+	for _, expected := range []string{
+		"EmpresaCarritosSchemaReady",
+		"EmpresaClientesSchemaReady",
+		"EmpresaProductosSchemaReady",
+		"EmpresaFinanzasSchemaReady",
+		"EmpresaEventosContablesSchemaReady",
+		"EmpresaDocumentosTransaccionalesSchemaReady",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("missing readiness guard %q", expected)
+		}
 	}
 }
 

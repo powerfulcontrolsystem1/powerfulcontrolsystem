@@ -1738,3 +1738,17 @@ autoriza ni ejecuta despliegue productivo.
 - P110-001A, P110-002 y la matriz de cajas de P110-005 continuan parciales hasta
   la prueba autenticada concurrente del candidato. Avance formal **38,5 %**,
   certificacion **0 %**, **NO-GO**. No se ejecuto `rs` ni se creo PR.
+
+## Actualizacion 2026-08-13, tablero financiero sin DDL runtime
+
+- El tablero empresarial reemplaza seis inicializaciones `Ensure*` por readiness
+  fail-closed de carritos, clientes, productos, finanzas, eventos y documentos.
+- KPI operativos/financieros y estados construidos desde asientos propagan el
+  contexto de Finanzas o Reportes hasta PostgreSQL. Una regresion impide
+  reintroducir DDL en ese flujo.
+- La primera compilacion no se contabilizo porque C: quedo sin espacio. Se
+  limpiaron unicamente caches Go reconstruibles, se liberaron aproximadamente
+  21 GB y la repeticion con cache temporal en D: aprobo pruebas y `vet`.
+- La deuda DB baja de **576 a 575**, descartes **767** y duplicacion 0.
+  P110-001A/P110-002 continuan parciales; avance formal **38,5 %**,
+  certificacion **0 %**, **NO-GO**. No se ejecuto `rs` ni se creo PR.
