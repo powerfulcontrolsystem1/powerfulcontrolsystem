@@ -42722,3 +42722,9 @@ acumulativa.
   PostgreSQL, manteniendo filtros y conteo por `empresa_id`.
 - Pruebas GPS de DB/handlers, `go vet` y auditoría aprueban. La deuda DB sin
   contexto baja de 516 a 514; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: CRUD GPS cancelable
+
+- Alta, actualización y cambio de estado de dispositivos GPS conservan
+  `r.Context()` hasta PostgreSQL y mantienen sus filtros por `empresa_id`.
+- Pruebas GPS de DB/handlers, `go vet` y auditoría aprueban. La deuda DB sin
+  contexto baja de 514 a 512; no se ejecutó `rs`.

@@ -74,7 +74,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-			id, err := dbpkg.CreateEmpresaGPSDispositivo(dbEmp, payload)
+			id, err := dbpkg.CreateEmpresaGPSDispositivoContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo crear el dispositivo GPS", http.StatusBadRequest)
 				return
@@ -99,7 +99,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 				if action == "desactivar" {
 					estado = "inactivo"
 				}
-				if err := dbpkg.SetEmpresaGPSDispositivoEstado(dbEmp, empresaID, id, estado); err != nil {
+				if err := dbpkg.SetEmpresaGPSDispositivoEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "dispositivo gps no encontrado", http.StatusNotFound)
 						return
@@ -128,7 +128,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 			if strings.TrimSpace(payload.Codigo) == "" {
 				payload.Codigo = fmt.Sprintf("GPS-%d-%d", payload.EmpresaID, payload.ID)
 			}
-			if err := dbpkg.UpdateEmpresaGPSDispositivo(dbEmp, payload); err != nil {
+			if err := dbpkg.UpdateEmpresaGPSDispositivoContext(r.Context(), dbEmp, payload); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "dispositivo gps no encontrado", http.StatusNotFound)
 					return

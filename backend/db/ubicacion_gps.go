@@ -274,13 +274,19 @@ func EmpresaUbicacionGPSSchemaReady(dbConn *sql.DB) error {
 
 // CreateEmpresaGPSDispositivo crea un dispositivo GPS para una empresa.
 func CreateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) (int64, error) {
+	return CreateEmpresaGPSDispositivoContext(context.Background(), dbConn, d)
+}
+
+// CreateEmpresaGPSDispositivoContext crea un dispositivo GPS conservando la
+// cancelacion del llamador hasta PostgreSQL.
+func CreateEmpresaGPSDispositivoContext(ctx context.Context, dbConn *sql.DB, d EmpresaGPSDispositivo) (int64, error) {
 	d = normalizeEmpresaGPSDispositivo(d)
 	codigo := sanitizeGPSCode(d.Codigo)
 	if codigo == "" {
 		codigo = defaultGPSCode(d.EmpresaID, d.Nombre)
 	}
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_gps_dispositivos (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_gps_dispositivos (
 		empresa_id, codigo, nombre, descripcion,
 		marca, modelo, tipo_dispositivo, proveedor, identificador_hardware,
 		telefono_sim, placa_activo, activo_referencia, intervalo_reporte_segundos, protocolo,
@@ -414,12 +420,18 @@ func CountEmpresaGPSDispositivosContext(ctx context.Context, dbConn *sql.DB, emp
 
 // UpdateEmpresaGPSDispositivo actualiza datos base de un dispositivo GPS.
 func UpdateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) error {
+	return UpdateEmpresaGPSDispositivoContext(context.Background(), dbConn, d)
+}
+
+// UpdateEmpresaGPSDispositivoContext actualiza un dispositivo GPS conservando
+// la cancelacion del llamador hasta PostgreSQL.
+func UpdateEmpresaGPSDispositivoContext(ctx context.Context, dbConn *sql.DB, d EmpresaGPSDispositivo) error {
 	d = normalizeEmpresaGPSDispositivo(d)
 	codigo := sanitizeGPSCode(d.Codigo)
 	if codigo == "" {
 		codigo = defaultGPSCode(d.EmpresaID, d.Nombre)
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_gps_dispositivos
+	res, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_gps_dispositivos
 	SET
 		codigo = ?,
 		nombre = ?,
@@ -466,11 +478,17 @@ func UpdateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) error 
 
 // SetEmpresaGPSDispositivoEstado activa o desactiva un dispositivo GPS.
 func SetEmpresaGPSDispositivoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
+	return SetEmpresaGPSDispositivoEstadoContext(context.Background(), dbConn, empresaID, id, estado)
+}
+
+// SetEmpresaGPSDispositivoEstadoContext cambia el estado conservando la
+// cancelacion del llamador hasta PostgreSQL.
+func SetEmpresaGPSDispositivoEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64, estado string) error {
 	estado = strings.TrimSpace(strings.ToLower(estado))
 	if estado != "activo" && estado != "inactivo" {
 		estado = "activo"
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_gps_dispositivos
+	res, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_gps_dispositivos
 	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
