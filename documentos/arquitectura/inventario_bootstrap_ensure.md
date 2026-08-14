@@ -64,7 +64,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureAdministradoresAuthSchema` | [backend/db/db.go:144](../../backend/db/db.go#L144) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsurePaymentGatewaySchema` | [backend/db/db.go:195](../../backend/db/db.go#L195) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureLicenciasSchema` | [backend/db/db.go:267](../../backend/db/db.go#L267) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsureUserEmpresa` | [backend/db/db.go:419](../../backend/db/db.go#L419) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureUserEmpresa` | [backend/db/db.go:408](../../backend/db/db.go#L408) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaDeclaracionesTributariasSchema` | [backend/db/declaraciones_tributarias.go:104](../../backend/db/declaraciones_tributarias.go#L104) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDocumentosTransaccionalesSchema` | [backend/db/documentos_transaccionales.go:112](../../backend/db/documentos_transaccionales.go#L112) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDomiciliosSchema` | [backend/db/domicilios.go:209](../../backend/db/domicilios.go#L209) | DDL / indice / funcion | empresas o por confirmar |

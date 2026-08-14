@@ -279,7 +279,7 @@ func CreateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) (int64
 		codigo = defaultGPSCode(d.EmpresaID, d.Nombre)
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_gps_dispositivos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_gps_dispositivos (
 		empresa_id, codigo, nombre, descripcion,
 		marca, modelo, tipo_dispositivo, proveedor, identificador_hardware,
 		telefono_sim, placa_activo, activo_referencia, intervalo_reporte_segundos, protocolo,
@@ -307,7 +307,7 @@ func CreateEmpresaGPSDispositivo(dbConn *sql.DB, d EmpresaGPSDispositivo) (int64
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // GetEmpresaGPSDispositivos lista dispositivos GPS por empresa.
@@ -525,7 +525,7 @@ func CreateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) (int64, er
 		return 0, fmt.Errorf("el dispositivo gps esta inactivo")
 	}
 
-	res, err := tx.Exec(`INSERT INTO empresa_gps_recorridos (
+	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_gps_recorridos (
 		empresa_id, dispositivo_id, latitud, longitud,
 		precision_metros, velocidad_kmh, rumbo_grados, altitud_metros,
 		bateria_porcentaje, senal_porcentaje, evento,
@@ -553,12 +553,6 @@ func CreateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) (int64, er
 		_ = tx.Rollback()
 		return 0, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		_ = tx.Rollback()
-		return 0, err
-	}
-
 	upd, err := tx.Exec(`UPDATE empresa_gps_dispositivos
 	SET
 		ultima_latitud = ?,

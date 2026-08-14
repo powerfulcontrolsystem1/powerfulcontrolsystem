@@ -392,19 +392,8 @@ func ProvisionDefaultEmpresaForUser(dbConn *sql.DB, email, empresaNombre string)
 	}
 
 	var newEmpresaID int64
-	if isPostgresDialect() {
-		if err := queryRowTxSQLCompat(tx, "INSERT INTO empresas (nombre, usuario_creador) VALUES (?, ?) RETURNING id", empresaNombre, email).Scan(&newEmpresaID); err != nil {
-			return err
-		}
-	} else {
-		res, err := execTxSQLCompat(tx, "INSERT INTO empresas (nombre, usuario_creador) VALUES (?, ?)", empresaNombre, email)
-		if err != nil {
-			return err
-		}
-		newEmpresaID, err = res.LastInsertId()
-		if err != nil {
-			return err
-		}
+	if err := queryRowTxSQLCompat(tx, "INSERT INTO empresas (nombre, usuario_creador) VALUES (?, ?) RETURNING id", empresaNombre, email).Scan(&newEmpresaID); err != nil {
+		return err
 	}
 
 	if _, err := execTxSQLCompat(tx, "UPDATE users SET empresa_id = ? WHERE id = ?", newEmpresaID, userID); err != nil {

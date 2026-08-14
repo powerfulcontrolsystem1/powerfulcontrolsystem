@@ -928,7 +928,7 @@ func GetEmpresaFinanzasConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaF
 func UpsertEmpresaFinanzasConfiguracion(dbConn *sql.DB, cfg EmpresaFinanzasConfiguracion) (int64, error) {
 	cfg = normalizeEmpresaFinanzasConfiguracion(cfg)
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_finanzas_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_finanzas_configuracion (
 		empresa_id, habilitar_ingresos, habilitar_egresos, moneda,
 		categorias_ingreso, categorias_egreso,
 		prefijo_ingreso, prefijo_egreso,
@@ -992,14 +992,7 @@ func UpsertEmpresaFinanzasConfiguracion(dbConn *sql.DB, cfg EmpresaFinanzasConfi
 	if err != nil {
 		return 0, err
 	}
-	if id, errID := res.LastInsertId(); errID == nil && id > 0 {
-		return id, nil
-	}
-	current, err := GetEmpresaFinanzasConfiguracion(dbConn, cfg.EmpresaID)
-	if err != nil {
-		return 0, err
-	}
-	return current.ID, nil
+	return id, nil
 }
 
 // CreateEmpresaFinanzasMovimiento crea un movimiento financiero por empresa.
@@ -1452,7 +1445,7 @@ func UpsertEmpresaFinanzasPeriodo(dbConn *sql.DB, p EmpresaFinanzasPeriodo) (int
 		p.CerradoPor = ""
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_finanzas_periodos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_finanzas_periodos (
 		empresa_id,
 		periodo,
 		fecha_inicio,
@@ -1487,14 +1480,7 @@ func UpsertEmpresaFinanzasPeriodo(dbConn *sql.DB, p EmpresaFinanzasPeriodo) (int
 	if err != nil {
 		return 0, err
 	}
-	if id, errID := res.LastInsertId(); errID == nil && id > 0 {
-		return id, nil
-	}
-	var currentID int64
-	if err := dbConn.QueryRow(`SELECT id FROM empresa_finanzas_periodos WHERE empresa_id = ? AND periodo = ? LIMIT 1`, p.EmpresaID, p.Periodo).Scan(&currentID); err != nil {
-		return 0, err
-	}
-	return currentID, nil
+	return id, nil
 }
 
 func SetEmpresaFinanzasPeriodoEstado(dbConn *sql.DB, empresaID int64, periodo, estado, usuario, observaciones string) error {

@@ -5322,16 +5322,18 @@ func RegistrarConteoCiclicoInventario(dbConn *sql.DB, conteo InventarioConteoCic
 		); err != nil {
 			return InventarioConteoCiclico{}, err
 		}
-		_ = dbConn.QueryRow(`SELECT id
+		if err := dbConn.QueryRow(`SELECT id
 			FROM inventario_movimientos
 			WHERE empresa_id = ?
 				AND producto_id = ?
 				AND referencia = ?
 			ORDER BY id DESC
-			LIMIT 1`, conteo.EmpresaID, conteo.ProductoID, referenciaAjuste).Scan(&movimientoID)
+			LIMIT 1`, conteo.EmpresaID, conteo.ProductoID, referenciaAjuste).Scan(&movimientoID); err != nil {
+			return InventarioConteoCiclico{}, err
+		}
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO inventario_conteos_ciclicos (
+	conteoID, err := insertSQLCompat(dbConn, `INSERT INTO inventario_conteos_ciclicos (
 		empresa_id,
 		producto_id,
 		bodega_id,
@@ -5365,11 +5367,6 @@ func RegistrarConteoCiclicoInventario(dbConn *sql.DB, conteo InventarioConteoCic
 		conteo.Estado,
 		strings.TrimSpace(conteo.Observaciones),
 	)
-	if err != nil {
-		return InventarioConteoCiclico{}, err
-	}
-
-	conteoID, err := res.LastInsertId()
 	if err != nil {
 		return InventarioConteoCiclico{}, err
 	}

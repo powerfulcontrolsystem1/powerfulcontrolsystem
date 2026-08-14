@@ -1666,6 +1666,21 @@ autoriza ni ejecuta despliegue productivo.
   y duplicación exacta 0. P110-001A continúa parcial; avance formal **38,5 %**,
   certificación **0 %**, **NO-GO**. No se ejecutó `rs` ni se creó PR.
 
+## Actualización 2026-08-13, cero LastInsertId en producción
+
+- Todos los repositorios productivos recuperan identificadores PostgreSQL con
+  `RETURNING id`; se retiraron las veinte dependencias restantes de
+  `LastInsertId` en empresa, finanzas, inventario, correo, estaciones, hoja de
+  vida, venta digital, soporte remoto, GPS y sensores.
+- Los UPSERT financieros devuelven su ID en la misma sentencia y ya no hacen
+  una segunda consulta de fallback. Refrescos/trazas posteriores a altas dejan
+  de ignorar errores.
+- Una regresión global impide reintroducir la práctica. Pruebas DB/handlers,
+  `vet` y auditoría aprueban: **610** llamadas DB sin contexto, **768**
+  descartes explícitos y duplicación exacta 0.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs` ni se creó PR.
+
 ## Actualización 2026-08-13, PostgreSQL nativo y GET sin mutación
 
 - Las altas de plantillas, programaciones y ejecuciones de reportes,

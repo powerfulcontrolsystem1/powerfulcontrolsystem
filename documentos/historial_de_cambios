@@ -1,3 +1,14 @@
+2026-08-13: Plan 110 / cero LastInsertId en repositorios de producción.
+- Las altas de correo capturado, preferencias de estaciones, hoja de vida,
+  venta digital, soporte remoto, GPS, sensores, finanzas, inventario y empresa
+  recuperan IDs mediante el contrato PostgreSQL `RETURNING id`.
+- Finanzas elimina consultas de fallback posteriores al UPSERT; hoja de vida e
+  inventario dejan de ocultar errores de refresco y trazabilidad.
+- Una regresión recorre todos los repositorios de producción e impide
+  reintroducir `LastInsertId`. DB/handlers y `vet` aprueban; auditoría: 610
+  llamadas DB sin contexto, 768 descartes y duplicación 0. No se ejecutó `rs`
+  ni se creó PR.
+
 2026-08-13: Plan 110 / cancelación en gobierno de empresas y roles.
 - El análisis previo a desactivar una empresa propaga el contexto HTTP al
   catálogo PostgreSQL y a los conteos tenant-scoped de usuarios, carritos,

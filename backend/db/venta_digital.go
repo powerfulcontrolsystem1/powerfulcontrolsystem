@@ -413,7 +413,7 @@ func UpsertSuperVentaDigitalConfig(dbConn *sql.DB, cfg SuperVentaDigitalConfig) 
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO super_venta_digital_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO super_venta_digital_configuracion (
 		scope_key,
 		nombre_tienda,
 		descripcion_tienda,
@@ -437,10 +437,6 @@ func UpsertSuperVentaDigitalConfig(dbConn *sql.DB, cfg SuperVentaDigitalConfig) 
 		cfg.Estado,
 		strings.TrimSpace(cfg.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -474,7 +470,7 @@ func CreateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) (in
 	item.Moneda = ventaDigitalNormalizeMoneda(item.Moneda)
 	item.Estado = ventaDigitalNormalizeEstado(item.Estado)
 
-	res, err := dbConn.Exec(`INSERT INTO super_venta_digital_items (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO super_venta_digital_items (
 		codigo_publico,
 		nombre,
 		descripcion,
@@ -503,10 +499,6 @@ func CreateSuperVentaDigitalItem(dbConn *sql.DB, item SuperVentaDigitalItem) (in
 		item.Estado,
 		strings.TrimSpace(item.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -796,7 +788,7 @@ func CreateSuperVentaDigitalOrder(dbConn *sql.DB, order SuperVentaDigitalOrder) 
 	order.ItemMoneda = ventaDigitalNormalizeMoneda(order.ItemMoneda)
 	order.Estado = ventaDigitalNormalizeEstado(order.Estado)
 
-	res, err := dbConn.Exec(`INSERT INTO super_venta_digital_ordenes (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO super_venta_digital_ordenes (
 		codigo_orden,
 		item_id,
 		item_nombre,
@@ -843,10 +835,6 @@ func CreateSuperVentaDigitalOrder(dbConn *sql.DB, order SuperVentaDigitalOrder) 
 		order.Estado,
 		strings.TrimSpace(order.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}

@@ -874,7 +874,7 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_soporte_remoto_configuracion (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_soporte_remoto_configuracion (
 		empresa_id,
 		habilitado,
 		proveedor_preferido,
@@ -925,10 +925,6 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 		cfg.Estado,
 		strings.TrimSpace(cfg.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -986,7 +982,7 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		}
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_soporte_remoto_dispositivos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_soporte_remoto_dispositivos (
 		empresa_id,
 		codigo_dispositivo,
 		nombre_equipo,
@@ -1025,10 +1021,6 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		item.Estado,
 		strings.TrimSpace(item.Observaciones),
 	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -1691,7 +1683,7 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 	}
 	tokenHash := soporteRemotoHash(tokenRaw)
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_soporte_remoto_sesiones (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_soporte_remoto_sesiones (
 		empresa_id,
 		dispositivo_id,
 		codigo_sesion,
@@ -1730,11 +1722,6 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 	if err != nil {
 		return EmpresaSoporteRemotoSession{}, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return EmpresaSoporteRemotoSession{}, err
-	}
-
 	session, err := GetEmpresaSoporteRemotoSessionByID(dbConn, empresaID, id)
 	if err != nil {
 		return EmpresaSoporteRemotoSession{}, err
