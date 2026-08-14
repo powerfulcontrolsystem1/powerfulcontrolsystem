@@ -165,3 +165,19 @@ func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 		}
 	}
 }
+
+func TestDomoticaSummaryHidesInactiveRaspberryControllers(t *testing.T) {
+	content, err := os.ReadFile("control_electrico.go")
+	if err != nil {
+		t.Fatalf("read domotica handler: %v", err)
+	}
+	source := string(content)
+	for _, marker := range []string{
+		"raspberries, err := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)",
+		"rows, _ := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)",
+	} {
+		if !strings.Contains(source, marker) {
+			t.Fatalf("la respuesta operativa de Domotica debe ocultar Raspberry inactivas: falta %q", marker)
+		}
+	}
+}

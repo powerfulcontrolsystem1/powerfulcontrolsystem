@@ -42627,3 +42627,4 @@ acumulativa.
 - El selector de relés usa un estado explícito de Raspberry no asignada y las tarjetas permiten desactivar cualquier controlador registrado por el flujo autorizado.
 - El diagnóstico de GPIO cubre GPIO 0 a GPIO 27, coherente con la validación de backend y el orden solicitado para módulos de relay.
 - Se añadió regresión de interfaz para evitar el retorno de textos heredados de controlador principal.
+- La respuesta operativa de Domótica omite controladores desactivados; se conserva su trazabilidad en base de datos y solo se exponen cuando una consulta administrativa solicita incluir inactivos.
