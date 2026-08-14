@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
@@ -32,12 +33,12 @@ type empresaImpactoDesactivacion struct {
 	RequiereConfirmacion bool   `json:"requiere_confirmacion"`
 }
 
-func superTableExists(dbConn *sql.DB, tableName string) bool {
+func superTableExists(ctx context.Context, dbConn *sql.DB, tableName string) bool {
 	if dbConn == nil {
 		return false
 	}
 	var total int
-	err := dbConn.QueryRow(`
+	err := dbConn.QueryRowContext(ctx, `
 		SELECT COUNT(1)
 		FROM information_schema.tables
 		WHERE table_schema = ANY (current_schemas(false))
@@ -46,12 +47,12 @@ func superTableExists(dbConn *sql.DB, tableName string) bool {
 	return err == nil && total > 0
 }
 
-func superCountIfTableExists(dbConn *sql.DB, tableName, query string, args ...interface{}) (int64, error) {
-	if !superTableExists(dbConn, tableName) {
+func superCountIfTableExists(ctx context.Context, dbConn *sql.DB, tableName, query string, args ...interface{}) (int64, error) {
+	if !superTableExists(ctx, dbConn, tableName) {
 		return 0, nil
 	}
 	var total int64
-	if err := dbConn.QueryRow(query, args...).Scan(&total); err != nil {
+	if err := dbConn.QueryRowContext(ctx, query, args...).Scan(&total); err != nil {
 		return 0, err
 	}
 	return total, nil
@@ -170,7 +171,7 @@ func ensureEmpresaInRequesterScope(dbEmp, dbSuper *sql.DB, r *http.Request, empr
 	return principalEmail, ok, nil
 }
 
-func buildEmpresaImpactoDesactivacion(dbEmp, dbSuper *sql.DB, empresaID int64) (*empresaImpactoDesactivacion, error) {
+func buildEmpresaImpactoDesactivacion(ctx context.Context, dbEmp, dbSuper *sql.DB, empresaID int64) (*empresaImpactoDesactivacion, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
 	}
@@ -187,6 +188,7 @@ func buildEmpresaImpactoDesactivacion(dbEmp, dbSuper *sql.DB, empresaID int64) (
 	}
 
 	usuariosActivos, err := superCountIfTableExists(
+		ctx,
 		dbEmp,
 		"users",
 		`SELECT COUNT(1) FROM users WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`,
@@ -198,6 +200,7 @@ func buildEmpresaImpactoDesactivacion(dbEmp, dbSuper *sql.DB, empresaID int64) (
 	impacto.UsuariosActivos = usuariosActivos
 
 	carritosAbiertos, err := superCountIfTableExists(
+		ctx,
 		dbEmp,
 		"carritos_compras",
 		`SELECT COUNT(1)
@@ -213,6 +216,7 @@ func buildEmpresaImpactoDesactivacion(dbEmp, dbSuper *sql.DB, empresaID int64) (
 	impacto.CarritosAbiertos = carritosAbiertos
 
 	reservasVigentes, err := superCountIfTableExists(
+		ctx,
 		dbEmp,
 		"reservas_hotel",
 		`SELECT COUNT(1)
@@ -228,6 +232,7 @@ func buildEmpresaImpactoDesactivacion(dbEmp, dbSuper *sql.DB, empresaID int64) (
 	impacto.ReservasVigentes = reservasVigentes
 
 	licenciasActivas, err := superCountIfTableExists(
+		ctx,
 		dbSuper,
 		"licencias",
 		`SELECT COUNT(1)
@@ -452,7 +457,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 
 				if action == "impacto" || action == "impacto_desactivacion" {
-					impacto, err := buildEmpresaImpactoDesactivacion(dbEmp, dbSuper, id)
+					impacto, err := buildEmpresaImpactoDesactivacion(r.Context(), dbEmp, dbSuper, id)
 					if err != nil {
 						if err == sql.ErrNoRows {
 							http.Error(w, "empresa not found", http.StatusNotFound)
@@ -681,7 +686,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				impacto, err := buildEmpresaImpactoDesactivacion(dbEmp, dbSuper, id)
+				impacto, err := buildEmpresaImpactoDesactivacion(r.Context(), dbEmp, dbSuper, id)
 				if err != nil {
 					if err == sql.ErrNoRows {
 						http.Error(w, "empresa not found", http.StatusNotFound)
@@ -711,7 +716,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 
-				impactoPost, err := buildEmpresaImpactoDesactivacion(dbEmp, dbSuper, id)
+				impactoPost, err := buildEmpresaImpactoDesactivacion(r.Context(), dbEmp, dbSuper, id)
 				if err != nil {
 					log.Printf("PUT /super/api/empresas action=%s id=%d post-impact warning: %v", action, id, err)
 					impactoPost = impacto

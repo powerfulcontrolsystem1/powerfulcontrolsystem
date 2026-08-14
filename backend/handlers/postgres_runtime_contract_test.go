@@ -30,3 +30,28 @@ func TestFacturacionReconciliacionHasNoSQLiteFallback(t *testing.T) {
 		t.Fatal("facturación no debe mantener rutas runtime específicas de SQLite")
 	}
 }
+
+func TestAdminCompanyAndUserFlowsPropagateRequestContext(t *testing.T) {
+	checks := map[string][]string{
+		"system_empresas_handlers.go": {
+			"buildEmpresaImpactoDesactivacion(r.Context(), dbEmp, dbSuper, id)",
+			"QueryRowContext(ctx",
+		},
+		"usuarios_empresa.go": {
+			"resolveRolNombreValidoParaEmpresa(r.Context()",
+			"QueryRowContext(ctx",
+		},
+	}
+	for filename, required := range checks {
+		raw, err := os.ReadFile(filename)
+		if err != nil {
+			t.Fatalf("read %s: %v", filename, err)
+		}
+		src := string(raw)
+		for _, contract := range required {
+			if !strings.Contains(src, contract) {
+				t.Fatalf("%s debe conservar %q", filename, contract)
+			}
+		}
+	}
+}

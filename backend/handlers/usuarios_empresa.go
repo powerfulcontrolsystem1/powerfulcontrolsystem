@@ -512,7 +512,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			rolNombre, err := resolveRolNombreValidoParaEmpresa(dbEmp, dbSuper, payload.EmpresaID, payload.RolUsuarioID)
+			rolNombre, err := resolveRolNombreValidoParaEmpresa(r.Context(), dbEmp, dbSuper, payload.EmpresaID, payload.RolUsuarioID)
 			if err != nil {
 				http.Error(w, "rol no v?lido para la empresa: "+err.Error(), http.StatusBadRequest)
 				return
@@ -722,7 +722,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			rolNombre, err := resolveRolNombreValidoParaEmpresa(dbEmp, dbSuper, payload.EmpresaID, payload.RolUsuarioID)
+			rolNombre, err := resolveRolNombreValidoParaEmpresa(r.Context(), dbEmp, dbSuper, payload.EmpresaID, payload.RolUsuarioID)
 			if err != nil {
 				http.Error(w, "rol no v?lido para la empresa: "+err.Error(), http.StatusBadRequest)
 				return
@@ -1902,7 +1902,7 @@ func validateEmpresaUsuarioPayload(empresaID int64, email, nombre string, rolUsu
 	return nil
 }
 
-func resolveTipoEmpresaIDForEmpresa(dbEmp, dbSuper *sql.DB, empresaID int64) (int64, *dbpkg.Empresa, error) {
+func resolveTipoEmpresaIDForEmpresa(ctx context.Context, dbEmp, dbSuper *sql.DB, empresaID int64) (int64, *dbpkg.Empresa, error) {
 	empresa, err := dbpkg.GetEmpresaByID(dbEmp, empresaID)
 	if err != nil {
 		return 0, nil, err
@@ -1919,7 +1919,7 @@ func resolveTipoEmpresaIDForEmpresa(dbEmp, dbSuper *sql.DB, empresaID int64) (in
 		if name == "" {
 			continue
 		}
-		row := dbSuper.QueryRow(`SELECT id FROM tipos_de_empresas WHERE lower(nombre) = lower(?) LIMIT 1`, name)
+		row := dbSuper.QueryRowContext(ctx, `SELECT id FROM tipos_de_empresas WHERE lower(nombre) = lower(?) LIMIT 1`, name)
 		var tipoID int64
 		if err := row.Scan(&tipoID); err == nil && tipoID > 0 {
 			return tipoID, empresa, nil
@@ -1928,8 +1928,8 @@ func resolveTipoEmpresaIDForEmpresa(dbEmp, dbSuper *sql.DB, empresaID int64) (in
 	return 0, empresa, fmt.Errorf("empresa sin tipo de empresa asociado")
 }
 
-func resolveRolNombreValidoParaEmpresa(dbEmp, dbSuper *sql.DB, empresaID, rolID int64) (string, error) {
-	if _, _, err := resolveTipoEmpresaIDForEmpresa(dbEmp, dbSuper, empresaID); err != nil {
+func resolveRolNombreValidoParaEmpresa(ctx context.Context, dbEmp, dbSuper *sql.DB, empresaID, rolID int64) (string, error) {
+	if _, _, err := resolveTipoEmpresaIDForEmpresa(ctx, dbEmp, dbSuper, empresaID); err != nil {
 		return "", err
 	}
 	{

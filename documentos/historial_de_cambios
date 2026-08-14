@@ -1,3 +1,12 @@
+2026-08-13: Plan 110 / cancelación en gobierno de empresas y roles.
+- El análisis previo a desactivar una empresa propaga el contexto HTTP al
+  catálogo PostgreSQL y a los conteos tenant-scoped de usuarios, carritos,
+  reservas y licencias.
+- La validación del tipo y rol al crear o actualizar usuarios empresariales
+  también conserva cancelación hasta su consulta PostgreSQL.
+- Pruebas handlers, `vet` y auditoría aprueban; deuda DB sin contexto de 633 a
+  630 y duplicación exacta 0. No se ejecutó `rs` ni se creó PR.
+
 2026-08-13: Plan 110 / pago CxP cancelable de extremo a extremo.
 - El pago canónico a proveedores recibe `r.Context()` y lo mantiene en el
   inicio, bloqueos, consultas, actualización, movimientos e inserciones de su

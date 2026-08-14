@@ -1655,6 +1655,17 @@ autoriza ni ejecuta despliegue productivo.
   contexto y duplicación exacta 0. P110-001A continúa parcial; avance formal
   **38,5 %**, certificación **0 %**, **NO-GO**. No se ejecutó `rs` ni se creó PR.
 
+## Actualización 2026-08-13, contexto en gobierno de empresas y usuarios
+
+- La vista de impacto previa a desactivar empresas pasa `r.Context()` a la
+  introspección y a los conteos por empresa de usuarios, carritos, reservas y
+  licencias; una desconexión ya puede cancelar ese análisis administrativo.
+- Crear o actualizar un usuario empresarial conserva el contexto al resolver
+  el tipo de empresa y validar el rol permitido.
+- Pruebas handlers, `vet` y auditoría aprueban: **630** llamadas DB sin contexto
+  y duplicación exacta 0. P110-001A continúa parcial; avance formal **38,5 %**,
+  certificación **0 %**, **NO-GO**. No se ejecutó `rs` ni se creó PR.
+
 ## Actualización 2026-08-13, PostgreSQL nativo y GET sin mutación
 
 - Las altas de plantillas, programaciones y ejecuciones de reportes,
