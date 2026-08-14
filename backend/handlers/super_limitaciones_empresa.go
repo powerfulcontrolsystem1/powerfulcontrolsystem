@@ -30,18 +30,7 @@ const (
 )
 
 func parsePositiveInt64OrDefault(raw string, fallback int64) int64 {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return fallback
-	}
-	v, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil {
-		return fallback
-	}
-	if v < 0 {
-		return 0
-	}
-	return v
+	return parseConfigNonNegativeInt64WithDefault(raw, fallback)
 }
 
 // MaxGPSDispositivosPorEmpresa devuelve el tope configurado de dispositivos GPS por empresa (pcs_superadministrador).

@@ -1547,3 +1547,14 @@ autoriza ni ejecuta despliegue productivo.
   DB/handlers y vet aprobaron; la duplicación exacta baja de **41 a 35**.
 - P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
   **NO-GO**. No se ejecutó `rs`.
+
+## Actualización 2026-08-14, normalizadores de dominios operativos
+
+- Soporte remoto comparte su lectura, configuración IA comparte enteros no
+  negativos y DB centraliza estado activo/archivado, porcentajes, moneda,
+  identidad de estación y slugs de producción/tesorería.
+- Los wrappers conservan contratos, permisos y aislamiento empresarial. Las
+  pruebas DB/handlers y vet aprobaron; la duplicación baja de **35 a 27**.
+- P110-001A sigue parcial por contextos DB, errores ignorados y handlers
+  extensos. Avance formal **38,5 %**, certificación **0 %**, **NO-GO**. No se
+  ejecutó `rs`.

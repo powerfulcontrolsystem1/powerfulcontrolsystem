@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -88,4 +89,49 @@ func hashRepositoryKey(value string) string {
 	}
 	sum := sha256.Sum256([]byte(value))
 	return hex.EncodeToString(sum[:])
+}
+
+func normalizeActiveArchiveState(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "inactivo" || value == "archivado" {
+		return value
+	}
+	return "activo"
+}
+
+func normalizeRoundedPercentage(value float64) float64 {
+	if value < 0 {
+		value = 0
+	}
+	if value > 100 {
+		value = 100
+	}
+	return round2(value)
+}
+
+func parseRepositoryStationID(externalReference, code string, companyID int64) int64 {
+	reference := strings.ToUpper(strings.TrimSpace(externalReference))
+	if strings.HasPrefix(reference, "ESTACION_") {
+		if value, err := strconv.ParseInt(strings.TrimPrefix(reference, "ESTACION_"), 10, 64); err == nil && value > 0 {
+			return value
+		}
+	}
+	prefix := strings.ToUpper(fmt.Sprintf("EST-%d-", companyID))
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if strings.HasPrefix(code, prefix) {
+		if value, err := strconv.ParseInt(strings.TrimPrefix(code, prefix), 10, 64); err == nil && value > 0 {
+			return value
+		}
+	}
+	return 0
+}
+
+func normalizeRepositorySlug(value, fallback string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.ReplaceAll(value, " ", "_")
+	value = strings.ReplaceAll(value, "-", "_")
+	if value == "" {
+		return fallback
+	}
+	return value
 }

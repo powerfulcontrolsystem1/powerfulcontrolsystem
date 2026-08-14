@@ -241,3 +241,22 @@ func TestRepositorySharedScalarHelpers(t *testing.T) {
 		t.Fatal("repository hash normalization mismatch")
 	}
 }
+
+func TestRepositoryDomainNormalizationHelpers(t *testing.T) {
+	t.Parallel()
+	if got := normalizeActiveArchiveState(" Archivado "); got != "archivado" {
+		t.Fatalf("active archive state = %q", got)
+	}
+	if got := normalizeRoundedPercentage(120.456); got != 100 {
+		t.Fatalf("rounded percentage = %v", got)
+	}
+	if got := parseRepositoryStationID(" ESTACION_18 ", "", 12); got != 18 {
+		t.Fatalf("station reference ID = %d", got)
+	}
+	if got := parseRepositoryStationID("", "EST-12-19", 12); got != 19 {
+		t.Fatalf("station code ID = %d", got)
+	}
+	if got := normalizeRepositorySlug(" Cuenta-Cobro ", "fallback"); got != "cuenta_cobro" {
+		t.Fatalf("slug = %q", got)
+	}
+}

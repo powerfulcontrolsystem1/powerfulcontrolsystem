@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -966,11 +965,7 @@ func defaultCanalVenta(v string) string {
 }
 
 func defaultMoneda(v string) string {
-	v = strings.TrimSpace(strings.ToUpper(v))
-	if v == "" {
-		return "COP"
-	}
-	return v
+	return normalizeRepositoryCurrency(v, "COP", 0)
 }
 
 func defaultMonedaEmpresa(dbConn *sql.DB, empresaID int64, payloadMoneda string) string {
@@ -1096,22 +1091,7 @@ func normalizeCarritoStationMetricEvent(v string) string {
 }
 
 func parseCarritoStationID(referenciaExterna, codigo string, empresaID int64) int64 {
-	ref := strings.ToUpper(strings.TrimSpace(referenciaExterna))
-	if strings.HasPrefix(ref, "ESTACION_") {
-		n, err := strconv.ParseInt(strings.TrimPrefix(ref, "ESTACION_"), 10, 64)
-		if err == nil && n > 0 {
-			return n
-		}
-	}
-	prefix := strings.ToUpper(fmt.Sprintf("EST-%d-", empresaID))
-	code := strings.ToUpper(strings.TrimSpace(codigo))
-	if strings.HasPrefix(code, prefix) {
-		n, err := strconv.ParseInt(strings.TrimPrefix(code, prefix), 10, 64)
-		if err == nil && n > 0 {
-			return n
-		}
-	}
-	return 0
+	return parseRepositoryStationID(referenciaExterna, codigo, empresaID)
 }
 
 // ResolveCarritoStationIdentity obtiene metadatos de estacion desde un carrito de ventas.

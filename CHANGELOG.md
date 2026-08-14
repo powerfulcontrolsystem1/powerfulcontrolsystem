@@ -4934,3 +4934,5 @@
   configuración guiada y alertas; duplicaciones exactas pasan de 43 a 41.
 - Centraliza límites, moneda, día ISO, hash de claves, estado Wompi y truncado
   fiscal; duplicaciones exactas pasan de 41 a 35 con regresión verde.
+- Consolida normalizadores de soporte, configuración, estados, porcentajes,
+  monedas, estaciones y slugs; duplicaciones exactas bajan de 35 a 27.

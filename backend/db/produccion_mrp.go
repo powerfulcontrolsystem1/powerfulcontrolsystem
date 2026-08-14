@@ -1215,13 +1215,7 @@ func normalizeOneOfProduccion(v, fallback string, allowed ...string) string {
 }
 
 func normalizeSlugProduccion(v, fallback string) string {
-	s := strings.ToLower(strings.TrimSpace(v))
-	s = strings.ReplaceAll(s, " ", "_")
-	s = strings.ReplaceAll(s, "-", "_")
-	if s == "" {
-		return fallback
-	}
-	return s
+	return normalizeRepositorySlug(v, fallback)
 }
 
 func clampProduccion(v, min, max float64) float64 {
