@@ -207,7 +207,7 @@ func domoticaTunnelSeenRecently(raw string, maxAge time.Duration) bool {
 	if raw == "" {
 		return false
 	}
-	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05.999999-07:00", "2006-01-02 15:04:05-07:00", "2006-01-02 15:04:05.999999", "2006-01-02 15:04:05"} {
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05.999999-07:00", "2006-01-02 15:04:05-07:00", "2006-01-02 15:04:05.999999-07", "2006-01-02 15:04:05-07", "2006-01-02 15:04:05.999999", "2006-01-02 15:04:05"} {
 		if parsed, err := time.Parse(layout, raw); err == nil {
 			return time.Since(parsed) >= 0 && time.Since(parsed) <= maxAge
 		}
