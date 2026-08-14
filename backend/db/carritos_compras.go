@@ -999,11 +999,7 @@ func defaultTipoItem(v string) string {
 }
 
 func defaultUnidadCarrito(v string) string {
-	v = strings.TrimSpace(strings.ToLower(v))
-	if v == "" {
-		return "unidad"
-	}
-	return v
+	return normalizeRepositoryUnit(v)
 }
 
 func defaultImpuestoCodigo(v string) string {

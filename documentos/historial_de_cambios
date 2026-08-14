@@ -42491,3 +42491,6 @@ acumulativa.
 2026-08-14 - Plan 110: normalizadores de dominios operativos
 - Se consolidan lectura de soporte, enteros de configuración, estados,
   porcentajes, monedas, estaciones y slugs. Duplicación exacta: 35 a 27.
+2026-08-14 - Plan 110: JSON, credenciales y contexto IA
+- Se consolidan texto, IP pública, JSON, credenciales opcionales, códigos,
+  unidades y secciones IA. Duplicaciones: 27 a 18; descartes: 776 a 773.

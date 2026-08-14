@@ -1857,13 +1857,7 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 }
 
 func facturacionPanamaJSONMap(raw string) map[string]interface{} {
-	out := map[string]interface{}{}
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return out
-	}
-	_ = json.Unmarshal([]byte(raw), &out)
-	return out
+	return decodeRepositoryJSONMap(raw)
 }
 
 func facturacionPanamaString(extra map[string]interface{}, keys ...string) string {

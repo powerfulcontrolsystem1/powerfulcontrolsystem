@@ -260,3 +260,16 @@ func TestRepositoryDomainNormalizationHelpers(t *testing.T) {
 		t.Fatalf("slug = %q", got)
 	}
 }
+
+func TestRepositoryJSONAndUnitHelpers(t *testing.T) {
+	t.Parallel()
+	if got := decodeRepositoryJSONMap(`{"ok":true}`); got["ok"] != true {
+		t.Fatalf("decoded JSON = %#v", got)
+	}
+	if got := decodeRepositoryJSONMap("invalid"); len(got) != 0 {
+		t.Fatalf("invalid JSON = %#v", got)
+	}
+	if got := normalizeRepositoryUnit(" KG "); got != "kg" {
+		t.Fatalf("unit = %q", got)
+	}
+}

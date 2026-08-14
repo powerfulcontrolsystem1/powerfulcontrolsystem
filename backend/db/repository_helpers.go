@@ -3,6 +3,7 @@ package db
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -132,6 +133,23 @@ func normalizeRepositorySlug(value, fallback string) string {
 	value = strings.ReplaceAll(value, "-", "_")
 	if value == "" {
 		return fallback
+	}
+	return value
+}
+
+func decodeRepositoryJSONMap(raw string) map[string]interface{} {
+	result := map[string]interface{}{}
+	if strings.TrimSpace(raw) == "" {
+		return result
+	}
+	_ = json.Unmarshal([]byte(raw), &result)
+	return result
+}
+
+func normalizeRepositoryUnit(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return "unidad"
 	}
 	return value
 }

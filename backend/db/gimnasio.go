@@ -935,34 +935,7 @@ func normalizeGymPago(payload EmpresaGimnasioPago) (*EmpresaGimnasioPago, error)
 }
 
 func gymCoreCode(prefix string, parts ...string) string {
-	var b strings.Builder
-	for _, part := range parts {
-		clean := strings.ToUpper(strings.TrimSpace(part))
-		for _, r := range clean {
-			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
-				b.WriteRune(r)
-			} else if b.Len() > 0 {
-				last := b.String()[b.Len()-1]
-				if last != '-' {
-					b.WriteRune('-')
-				}
-			}
-		}
-		if b.Len() > 0 {
-			last := b.String()[b.Len()-1]
-			if last != '-' {
-				b.WriteRune('-')
-			}
-		}
-	}
-	code := strings.Trim(b.String(), "-")
-	if code == "" {
-		code = fmt.Sprintf("%d", time.Now().UnixNano())
-	}
-	if len(code) > 42 {
-		code = code[:42]
-	}
-	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + code
+	return repositoryCoreCode(prefix, parts...)
 }
 
 func findEmpresaGimnasioClienteID(dbConn *sql.DB, socio EmpresaGimnasioSocio) (int64, error) {

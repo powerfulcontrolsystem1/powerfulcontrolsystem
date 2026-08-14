@@ -58,7 +58,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:220](../../backend/db/control_electrico.go#L220) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperCorreoNotificacionesPruebaSchema` | [backend/db/correo_notificaciones_prueba.go:44](../../backend/db/correo_notificaciones_prueba.go#L44) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaCorteCajaConfiguracionSchema` | [backend/db/corte_caja_configuracion.go:102](../../backend/db/corte_caja_configuracion.go#L102) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:628](../../backend/db/creditos.go#L628) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:623](../../backend/db/creditos.go#L623) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCRMVentasAvanzadasSchema` | [backend/db/crm_ventas_avanzadas.go:122](../../backend/db/crm_ventas_avanzadas.go#L122) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDatafonosSchema` | [backend/db/datafonos.go:110](../../backend/db/datafonos.go#L110) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureAdministradoresAuthSchema` | [backend/db/db.go:144](../../backend/db/db.go#L144) | DDL / indice / funcion | superadministrador o por confirmar |

@@ -408,12 +408,7 @@ func creditoWorkflowDefaultCodigo(empresaID, id int64, tipo string) string {
 }
 
 func creditoParseJSONMap(raw string) map[string]interface{} {
-	out := map[string]interface{}{}
-	if strings.TrimSpace(raw) == "" {
-		return out
-	}
-	_ = json.Unmarshal([]byte(raw), &out)
-	return out
+	return decodeRepositoryJSONMap(raw)
 }
 
 func creditoMarshalJSON(v interface{}, fallback string) string {

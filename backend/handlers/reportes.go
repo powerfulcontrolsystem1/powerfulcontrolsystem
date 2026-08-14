@@ -7710,13 +7710,7 @@ func reportesNormalizeMetodoPagoFinanzas(v string) string {
 }
 
 func reportesFirstNonBlank(values ...string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func reportesEstadoStock(cantidad, minimo, maximo float64) (string, int) {

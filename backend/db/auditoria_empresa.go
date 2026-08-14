@@ -912,20 +912,7 @@ func superAuditoriaAIRecentEvents(dbConn *sql.DB, cutoff string, limit int) []st
 }
 
 func writeAuditoriaAIContextSection(b *strings.Builder, sectionName string, lines []string) {
-	if len(lines) == 0 {
-		return
-	}
-	b.WriteString(sectionName)
-	b.WriteString("\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		b.WriteString("- ")
-		b.WriteString(line)
-		b.WriteString("\n")
-	}
+	writeAIContextSection(b, sectionName, lines)
 }
 
 func safeAuditoriaAIValue(v string) string {

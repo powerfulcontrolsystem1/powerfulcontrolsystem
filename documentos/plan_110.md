@@ -1558,3 +1558,13 @@ autoriza ni ejecuta despliegue productivo.
 - P110-001A sigue parcial por contextos DB, errores ignorados y handlers
   extensos. Avance formal **38,5 %**, certificación **0 %**, **NO-GO**. No se
   ejecutó `rs`.
+
+## Actualización 2026-08-14, JSON, credenciales y contexto IA
+
+- Finanzas/reportes comparte texto, portales públicos comparten IP, Docker/VPS
+  comparte JSON y credenciales opcionales usan un único resolvedor. DB comparte
+  JSON map, códigos de gimnasio/odontología, unidades y secciones de contexto IA.
+- Las pruebas DB/handlers y vet aprobaron. Duplicación exacta baja de **27 a
+  18** y descartes explícitos de **776 a 773** al centralizar decodificación.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.

@@ -4936,3 +4936,5 @@
   fiscal; duplicaciones exactas pasan de 41 a 35 con regresión verde.
 - Consolida normalizadores de soporte, configuración, estados, porcentajes,
   monedas, estaciones y slugs; duplicaciones exactas bajan de 35 a 27.
+- Consolida JSON, credenciales, IP pública, códigos operativos, unidades y
+  contexto IA; duplicaciones bajan de 27 a 18 y descartes de 776 a 773.
