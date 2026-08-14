@@ -4932,3 +4932,5 @@
   duplicación exacta baja de 46 a 43 grupos con pruebas DB/handlers en verde.
 - Reutiliza helpers canónicos en carnets, contabilidad, domicilios,
   configuración guiada y alertas; duplicaciones exactas pasan de 43 a 41.
+- Centraliza límites, moneda, día ISO, hash de claves, estado Wompi y truncado
+  fiscal; duplicaciones exactas pasan de 41 a 35 con regresión verde.

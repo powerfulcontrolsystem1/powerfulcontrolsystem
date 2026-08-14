@@ -42485,3 +42485,6 @@ acumulativa.
 2026-08-14 - Plan 110: segundo lote directo de helpers
 - Carnets, contabilidad, domicilios, configuración guiada y alertas reutilizan
   helpers canónicos. La duplicación exacta baja de 43 a 41 grupos.
+2026-08-14 - Plan 110: utilidades escalares y pasarelas
+- Se centralizan límites, moneda, día ISO, hash, estado Wompi y truncado DIAN.
+  La línea base de duplicación exacta baja de 41 a 35 grupos.

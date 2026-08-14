@@ -1,6 +1,8 @@
 package db
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -48,4 +50,42 @@ func normalizeRepositoryPeriod(value, fallback string) string {
 
 func normalizeCurrentRepositoryPeriod(value string) string {
 	return normalizeRepositoryPeriod(value, time.Now().Format("2006-01"))
+}
+
+func boundedPositiveInt(value, fallback, maximum int) int {
+	if value <= 0 {
+		return fallback
+	}
+	if maximum > 0 && value > maximum {
+		return maximum
+	}
+	return value
+}
+
+func normalizeRepositoryCurrency(value, fallback string, maximum int) string {
+	value = strings.ToUpper(strings.TrimSpace(value))
+	if value == "" {
+		return fallback
+	}
+	if maximum > 0 && len(value) > maximum {
+		return value[:maximum]
+	}
+	return value
+}
+
+func repositoryISOWeekday(value time.Time) int {
+	weekday := int(value.Weekday())
+	if weekday == 0 {
+		return 7
+	}
+	return weekday
+}
+
+func hashRepositoryKey(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(sum[:])
 }

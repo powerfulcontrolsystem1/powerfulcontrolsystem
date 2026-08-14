@@ -8494,11 +8494,7 @@ func dianFirstNonBlank(values ...string) string {
 }
 
 func dianTruncate(raw string, max int) string {
-	raw = strings.TrimSpace(raw)
-	if max <= 0 || len(raw) <= max {
-		return raw
-	}
-	return strings.TrimSpace(raw[:max])
+	return facturacionTruncate(raw, max)
 }
 
 func resolveDIANSecretValue(raw string) (string, error) {

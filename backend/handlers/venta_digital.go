@@ -98,17 +98,7 @@ func ventaDigitalNormalizeAction(raw string) string {
 }
 
 func ventaDigitalMapWompiStatus(raw string) string {
-	status := strings.ToUpper(strings.TrimSpace(raw))
-	switch status {
-	case "APPROVED":
-		return "aprobado"
-	case "DECLINED", "VOIDED", "ERROR":
-		return "rechazado"
-	case "PENDING":
-		return "pendiente"
-	default:
-		return "pendiente"
-	}
+	return ventaPublicaMapWompiStatus(raw)
 }
 
 func sanitizeVentaDigitalConfigForPublic(cfg dbpkg.SuperVentaDigitalConfig) map[string]interface{} {

@@ -1,9 +1,7 @@
 package db
 
 import (
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -438,12 +436,7 @@ func getAsyncJobByIdempotencyKey(dbConn *sql.DB, empresaID int64, kind, keyHash 
 }
 
 func hashAsyncJobKey(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return ""
-	}
-	sum := sha256.Sum256([]byte(value))
-	return hex.EncodeToString(sum[:])
+	return hashRepositoryKey(value)
 }
 
 func redactAsyncJobError(cause error) string {

@@ -1537,3 +1537,13 @@ autoriza ni ejecuta despliegue productivo.
   DB de valor con fallback; configuración guiada y alertas reutilizan el helper
   canónico de handlers. Las pruebas DB/handlers y vet aprobaron, reduciendo la
   compuerta de **43 a 41** grupos duplicados.
+
+## Actualización 2026-08-14, utilidades escalares y pasarelas
+
+- Tarifas reutiliza límites enteros; venta pública/digital comparte moneda;
+  descuentos y tarifas comparten día ISO; outbox/jobs comparte hash SHA-256;
+  Wompi comparte el mapeo de estado y DIAN reutiliza truncado fiscal.
+- Los wrappers de dominio conservan nombres y contratos. Pruebas completas de
+  DB/handlers y vet aprobaron; la duplicación exacta baja de **41 a 35**.
+- P110-001A continúa parcial; avance formal **38,5 %**, certificación **0 %**,
+  **NO-GO**. No se ejecutó `rs`.

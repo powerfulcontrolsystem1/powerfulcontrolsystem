@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"testing"
+	"time"
 )
 
 func TestNormalizeListLimitOffset(t *testing.T) {
@@ -219,5 +220,24 @@ func TestNormalizeRepositoryPeriod(t *testing.T) {
 	}
 	if got := normalizeRepositoryPeriod(" 2026 ", ""); got != "2026" {
 		t.Fatalf("short period = %q", got)
+	}
+}
+
+func TestRepositorySharedScalarHelpers(t *testing.T) {
+	t.Parallel()
+	if got := boundedPositiveInt(0, 1, 999); got != 1 {
+		t.Fatalf("bounded fallback = %d", got)
+	}
+	if got := boundedPositiveInt(1000, 1, 999); got != 999 {
+		t.Fatalf("bounded maximum = %d", got)
+	}
+	if got := normalizeRepositoryCurrency(" usd-dollar ", "COP", 8); got != "USD-DOLL" {
+		t.Fatalf("currency = %q", got)
+	}
+	if got := repositoryISOWeekday(time.Date(2026, time.August, 16, 0, 0, 0, 0, time.UTC)); got != 7 {
+		t.Fatalf("ISO weekday = %d", got)
+	}
+	if hashRepositoryKey(" key ") != hashRepositoryKey("key") || hashRepositoryKey(" ") != "" {
+		t.Fatal("repository hash normalization mismatch")
 	}
 }
