@@ -647,7 +647,11 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				result := controlElectricoTestRaspberryGPIO(dbEmp, empresaID, payload.RaspberryID, payload.GPIOPin, strings.TrimSpace(adminEmailFromRequest(r)))
 				status := http.StatusOK
 				if !result.OK && !result.Skipped {
-					status = http.StatusBadGateway
+					if !controlElectricoTestableGPIO(payload.GPIOPin) {
+						status = http.StatusBadRequest
+					} else {
+						status = http.StatusBadGateway
+					}
 				}
 				writeJSON(w, status, result)
 				return
@@ -1358,7 +1362,10 @@ func dispatchControlElectricoTunnelCommand(dbEmp *sql.DB, cfg *dbpkg.EmpresaCont
 // persistente; sirve exclusivamente para identificar el canal de un relay.
 func controlElectricoTestRaspberryGPIO(dbEmp *sql.DB, empresaID, raspberryID int64, gpioPin int, actor string) controlElectricoDispatchResult {
 	if !controlElectricoTestableGPIO(gpioPin) {
-		return controlElectricoDispatchResult{OK: false, Error: "GPIO no disponible para prueba segura"}
+		if gpioPin == 0 || gpioPin == 1 {
+			return controlElectricoDispatchResult{OK: false, Error: "GPIO 0 y GPIO 1 estan reservados para identificacion HAT (ID_SDA/ID_SCL) y no se prueban como rele"}
+		}
+		return controlElectricoDispatchResult{OK: false, Error: "GPIO fuera del rango seguro de prueba (GPIO 2 a GPIO 27)"}
 	}
 	pi, err := dbpkg.GetEmpresaControlElectricoRaspberryByID(dbEmp, empresaID, raspberryID, false)
 	if err != nil || pi == nil || strings.ToLower(strings.TrimSpace(pi.Estado)) != "activo" {

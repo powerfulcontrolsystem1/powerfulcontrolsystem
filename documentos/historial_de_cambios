@@ -42681,3 +42681,16 @@ acumulativa.
   hidrataciones auxiliares por empresa.
 - Regresión de contexto, pruebas de Créditos, `go vet` y auditoría aprueban.
   La deuda DB sin contexto baja de 526 a 524; no se ejecutó `rs`.
+
+## 2026-08-14 - Domótica: diagnóstico GPIO coherente con Raspberry Pi 3
+
+- La página `Domótica y Energía Solar > Controladores > Probar GPIO` ya no
+  presenta GPIO 0 ni GPIO 1 como salidas accionables: en Raspberry Pi 3 son
+  `ID_SDA`/`ID_SCL`, reservados normalmente para identificación HAT.
+- El panel muestra la razón de la reserva y enumera los GPIO realmente
+  asignados al controlador; para PCS confirma 16 aparatos en GPIO 2 a GPIO 17.
+- La API devuelve `400 Bad Request` con un mensaje específico ante GPIO 0/1 o
+  valores fuera de GPIO 2 a GPIO 27, en lugar de tratarlos como un fallo del
+  túnel o del servidor.
+- Se amplió la regresión visual/estructural para impedir que GPIO 0/1 vuelvan a
+  renderizarse como botones de prueba de relé.

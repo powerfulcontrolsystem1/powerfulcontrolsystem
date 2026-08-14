@@ -154,10 +154,13 @@ func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 			t.Fatalf("la configuracion no contiene %q", marker)
 		}
 	}
-	for _, marker := range []string{"Array.from({ length: 28 }", "Selecciona una Raspberry", "Sin Raspberry asignada"} {
+	for _, marker := range []string{"Array.from({ length: 26 }", "index + 2", "GPIO 0 y GPIO 1 no se prueban como relé", "ID_SDA/ID_SCL", "assignedPins", "Selecciona una Raspberry", "Sin Raspberry asignada"} {
 		if !strings.Contains(source, marker) {
-			t.Fatalf("la configuracion no permite una lista neutral de Raspberry ni GPIO 0: falta %q", marker)
+			t.Fatalf("la configuracion no explica los GPIO reservados ni la lista neutral de Raspberry: falta %q", marker)
 		}
+	}
+	if strings.Contains(source, "data-gpio-pin=\"0\"") || strings.Contains(source, "data-gpio-pin=\"1\"") {
+		t.Fatal("GPIO 0 y GPIO 1 no deben renderizarse como botones de prueba de relé")
 	}
 	for _, legacy := range []string{"Raspberry principal/global", "disabled>Principal</button>"} {
 		if strings.Contains(source, legacy) {
