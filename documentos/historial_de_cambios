@@ -42728,3 +42728,10 @@ acumulativa.
   `r.Context()` hasta PostgreSQL y mantienen sus filtros por `empresa_id`.
 - Pruebas GPS de DB/handlers, `go vet` y auditoría aprueban. La deuda DB sin
   contexto baja de 514 a 512; no se ejecutó `rs`.
+## 2026-08-15 - Plan 110: recorridos GPS cancelables
+
+- El listado y cambio de estado de puntos de recorrido GPS conservan
+  `r.Context()` hasta PostgreSQL y mantienen el filtro obligatorio por
+  `empresa_id`.
+- Pruebas GPS de DB/handlers y auditoría aprueban. La deuda DB sin contexto
+  baja de 512 a 510; no se ejecutó `rs`.

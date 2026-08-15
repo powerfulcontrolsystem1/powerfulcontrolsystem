@@ -623,6 +623,12 @@ func CreateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) (int64, er
 
 // ListEmpresaGPSRecorridos lista puntos de recorrido por empresa.
 func ListEmpresaGPSRecorridos(dbConn *sql.DB, empresaID, dispositivoID int64, includeInactive bool, desdeMinutos, limit int) ([]EmpresaGPSRecorrido, error) {
+	return ListEmpresaGPSRecorridosContext(context.Background(), dbConn, empresaID, dispositivoID, includeInactive, desdeMinutos, limit)
+}
+
+// ListEmpresaGPSRecorridosContext lista recorridos conservando la cancelacion
+// del llamador hasta PostgreSQL.
+func ListEmpresaGPSRecorridosContext(ctx context.Context, dbConn *sql.DB, empresaID, dispositivoID int64, includeInactive bool, desdeMinutos, limit int) ([]EmpresaGPSRecorrido, error) {
 	if limit <= 0 || limit > 5000 {
 		limit = 600
 	}
@@ -653,7 +659,7 @@ func ListEmpresaGPSRecorridos(dbConn *sql.DB, empresaID, dispositivoID int64, in
 	query += ` ORDER BY pcs_ts(capturado_en) ASC, id ASC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -780,11 +786,17 @@ func UpdateEmpresaGPSRecorrido(dbConn *sql.DB, p EmpresaGPSRecorrido) error {
 
 // SetEmpresaGPSRecorridoEstado activa o desactiva un punto de recorrido.
 func SetEmpresaGPSRecorridoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
+	return SetEmpresaGPSRecorridoEstadoContext(context.Background(), dbConn, empresaID, id, estado)
+}
+
+// SetEmpresaGPSRecorridoEstadoContext cambia el estado de un punto GPS
+// conservando la cancelacion del llamador hasta PostgreSQL.
+func SetEmpresaGPSRecorridoEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64, estado string) error {
 	estado = strings.TrimSpace(strings.ToLower(estado))
 	if estado != "activo" && estado != "inactivo" {
 		estado = "activo"
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_gps_recorridos
+	res, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_gps_recorridos
 	SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {

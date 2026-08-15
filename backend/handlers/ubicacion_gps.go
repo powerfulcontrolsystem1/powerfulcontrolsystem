@@ -203,7 +203,7 @@ func EmpresaUbicacionGPSRecorridosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if limit <= 0 {
 				limit = 600
 			}
-			rows, err := dbpkg.ListEmpresaGPSRecorridos(dbEmp, empresaID, dispositivoID, includeInactive, desdeMinutos, limit)
+			rows, err := dbpkg.ListEmpresaGPSRecorridosContext(r.Context(), dbEmp, empresaID, dispositivoID, includeInactive, desdeMinutos, limit)
 			if err != nil {
 				http.Error(w, "No se pudieron listar los recorridos GPS", http.StatusInternalServerError)
 				return
@@ -263,7 +263,7 @@ func EmpresaUbicacionGPSRecorridosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if action == "desactivar" {
 					estado = "inactivo"
 				}
-				if err := dbpkg.SetEmpresaGPSRecorridoEstado(dbEmp, empresaID, id, estado); err != nil {
+				if err := dbpkg.SetEmpresaGPSRecorridoEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "punto gps no encontrado", http.StatusNotFound)
 						return
