@@ -44,7 +44,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			rows, err := dbpkg.ListEmpresaDocumentosCompraByEmpresa(dbEmp, empresaID, tipoDocumento, proveedorID, estadoDocumento, includeInactive, q, limit, offset)
+			rows, err := dbpkg.ListEmpresaDocumentosCompraByEmpresaContext(r.Context(), dbEmp, empresaID, tipoDocumento, proveedorID, estadoDocumento, includeInactive, q, limit, offset)
 			if err != nil {
 				http.Error(w, "No se pudo listar documentos de compras", http.StatusInternalServerError)
 				return
@@ -364,7 +364,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				if err := dbpkg.SetEmpresaDocumentoCompraEstadoByCodigo(dbEmp, payload.EmpresaID, tipoDocumento, payload.DocumentoCodigo, estado); err != nil {
+				if err := dbpkg.SetEmpresaDocumentoCompraEstadoByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, tipoDocumento, payload.DocumentoCodigo, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "documento no encontrado", http.StatusNotFound)
 						return
@@ -757,7 +757,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			if err := dbpkg.SetEmpresaDocumentoCompraEstadoByCodigo(dbEmp, empresaID, tipoDocumento, documentoCodigo, "inactivo"); err != nil {
+			if err := dbpkg.SetEmpresaDocumentoCompraEstadoByCodigoContext(r.Context(), dbEmp, empresaID, tipoDocumento, documentoCodigo, "inactivo"); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "documento no encontrado", http.StatusNotFound)
 					return
@@ -834,7 +834,7 @@ func EmpresaComprasDocumentoComprobanteUploadHandler(dbEmp *sql.DB) http.Handler
 			return
 		}
 
-		if err := dbpkg.UpdateEmpresaDocumentoCompraComprobante(dbEmp, empresaID, tipoDocumento, documentoCodigo, fileURL, fileName); err != nil {
+		if err := dbpkg.UpdateEmpresaDocumentoCompraComprobanteContext(r.Context(), dbEmp, empresaID, tipoDocumento, documentoCodigo, fileURL, fileName); err != nil {
 			_ = os.Remove(absPath)
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "documento de compras no encontrado", http.StatusNotFound)

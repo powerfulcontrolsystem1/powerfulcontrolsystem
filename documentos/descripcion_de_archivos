@@ -13257,6 +13257,10 @@ backend/db/repository_helpers.go | Helper interno para generación compartida de
   envoltura empresarial, alcance por `empresa_id` y anulación fiscal mediante
   nota crédito aceptada; no emite ni altera documentos reales.
 
+- `backend/handlers/compras_documentos_context_test.go`: regresión de
+  cancelación para listado, eliminación lógica y carga de comprobantes de
+  compras; preserva el contrato multiempresa del handler.
+
 2026-08-13 - Utilidades transversales de plataforma
 - `backend/internal/platform/valueutil/valueutil.go`: normalización estándar de texto, hosts, fechas, JSON, identificadores SQL y valores numéricos usada por API, DB, worker y herramientas.
 - `backend/internal/platform/valueutil/valueutil_test.go`: contratos Unicode, host IPv6, identificador SQL, JSON de respaldo y límites genéricos.

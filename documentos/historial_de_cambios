@@ -42780,3 +42780,11 @@ acumulativa.
   wrappers explícitos y no se cambió ninguna regla DIAN.
 - Regresiones de frontera fiscal y esquema, pruebas DB/Handlers y `go vet`
   aprueban antes de integración; no se ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
+
+- El listado, eliminación lógica y carga de comprobante de compras propagan
+  `r.Context()` hasta PostgreSQL, sin cambiar el filtro por `empresa_id`, la
+  verificación de esquema de solo lectura ni la bitácora contable.
+- Una regresión impide regresar a los wrappers no cancelables. No se ejecutó
+  `rs` ni se alteraron documentos reales.

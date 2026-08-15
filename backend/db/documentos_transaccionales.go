@@ -1017,6 +1017,11 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 
 // ListEmpresaDocumentosCompraByEmpresa lista documentos de compras por filtros operativos.
 func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoDocumento string, proveedorID int64, estadoDocumento string, includeInactive bool, q string, limit int, offset int) ([]EmpresaDocumentoCompra, error) {
+	return ListEmpresaDocumentosCompraByEmpresaContext(context.Background(), dbConn, empresaID, tipoDocumento, proveedorID, estadoDocumento, includeInactive, q, limit, offset)
+}
+
+// ListEmpresaDocumentosCompraByEmpresaContext lista documentos de compra durante la solicitud HTTP.
+func ListEmpresaDocumentosCompraByEmpresaContext(ctx context.Context, dbConn *sql.DB, empresaID int64, tipoDocumento string, proveedorID int64, estadoDocumento string, includeInactive bool, q string, limit int, offset int) ([]EmpresaDocumentoCompra, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1093,7 +1098,7 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 	LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
-	rows, err := querySQLCompat(dbConn, query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1151,6 +1156,11 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 
 // SetEmpresaDocumentoCompraEstadoByCodigo actualiza estado activo/inactivo del documento de compras.
 func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo, estado string) error {
+	return SetEmpresaDocumentoCompraEstadoByCodigoContext(context.Background(), dbConn, empresaID, tipoDocumento, documentoCodigo, estado)
+}
+
+// SetEmpresaDocumentoCompraEstadoByCodigoContext actualiza el estado dentro del ciclo de vida HTTP.
+func SetEmpresaDocumentoCompraEstadoByCodigoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo, estado string) error {
 	if empresaID <= 0 {
 		return fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1164,7 +1174,7 @@ func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, ti
 		estadoNorm = "activo"
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_compras_documentos
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_compras_documentos
 		SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?`, estadoNorm, empresaID, tipo, codigo)
 	if err != nil {
@@ -1179,7 +1189,12 @@ func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, ti
 
 // UpdateEmpresaDocumentoCompraComprobante actualiza la evidencia adjunta de un documento de compras.
 func UpdateEmpresaDocumentoCompraComprobante(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo, comprobanteURL, comprobanteNombre string) error {
-	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
+	return UpdateEmpresaDocumentoCompraComprobanteContext(context.Background(), dbConn, empresaID, tipoDocumento, documentoCodigo, comprobanteURL, comprobanteNombre)
+}
+
+// UpdateEmpresaDocumentoCompraComprobanteContext actualiza la evidencia de compra con cancelación HTTP.
+func UpdateEmpresaDocumentoCompraComprobanteContext(ctx context.Context, dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo, comprobanteURL, comprobanteNombre string) error {
+	if err := EmpresaDocumentosTransaccionalesSchemaReadyContext(ctx, dbConn); err != nil {
 		return err
 	}
 	if empresaID <= 0 {
@@ -1196,7 +1211,7 @@ func UpdateEmpresaDocumentoCompraComprobante(dbConn *sql.DB, empresaID int64, ti
 		return fmt.Errorf("comprobante_url es obligatorio")
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_compras_documentos
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_compras_documentos
 		SET comprobante_url = ?,
 			comprobante_nombre_archivo = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
