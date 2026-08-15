@@ -805,6 +805,12 @@ func listEmpresaSoportesComprasIARegistroContext(ctx context.Context, dbConn *sq
 // recuperable. El archivo y los eventos se conservan; un soporte contabilizado
 // nunca puede ocultarse porque forma parte de la trazabilidad contable.
 func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, soporteID int64, siguiente, usuario, motivo string) (EmpresaSoporteComprasIA, error) {
+	return UpdateEmpresaSoporteComprasIARegistroEstadoContext(context.Background(), dbConn, empresaID, soporteID, siguiente, usuario, motivo)
+}
+
+// UpdateEmpresaSoporteComprasIARegistroEstadoContext conserva el contexto de
+// la solicitud durante la transicion auditable hacia/desde la papelera.
+func UpdateEmpresaSoporteComprasIARegistroEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, soporteID int64, siguiente, usuario, motivo string) (EmpresaSoporteComprasIA, error) {
 	if empresaID <= 0 || soporteID <= 0 {
 		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
 	}
@@ -823,7 +829,7 @@ func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, sopo
 	if usuario == "" {
 		usuario = "sistema"
 	}
-	tx, err := dbConn.Begin()
+	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
@@ -831,7 +837,7 @@ func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, sopo
 
 	var actual, estadoSoporte, archivoHash, documentoNumero string
 	var convertidoID int64
-	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(estado,'activo'), COALESCE(estado_soporte,'radicado'), COALESCE(convertido_id,0), COALESCE(archivo_hash,''), COALESCE(documento_numero,'')
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado,'activo'), COALESCE(estado_soporte,'radicado'), COALESCE(convertido_id,0), COALESCE(archivo_hash,''), COALESCE(documento_numero,'')
 		FROM empresa_soportes_compras_ia WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, soporteID).
 		Scan(&actual, &estadoSoporte, &convertidoID, &archivoHash, &documentoNumero)
 	if err != nil {
@@ -852,11 +858,11 @@ func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, sopo
 		if err := tx.Commit(); err != nil {
 			return EmpresaSoporteComprasIA{}, err
 		}
-		return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+		return GetEmpresaSoporteComprasIAContext(ctx, dbConn, empresaID, soporteID)
 	}
 	if siguiente == "activo" && (strings.TrimSpace(archivoHash) != "" || strings.TrimSpace(documentoNumero) != "") {
 		var duplicateID int64
-		err = queryRowTxSQLCompat(tx, `SELECT id FROM empresa_soportes_compras_ia
+		err = queryRowTxSQLCompatContext(ctx, tx, `SELECT id FROM empresa_soportes_compras_ia
 			WHERE empresa_id=? AND id<>? AND COALESCE(estado,'activo')='activo'
 			AND ((?<>'' AND archivo_hash=?) OR (?<>'' AND documento_numero=?))
 			ORDER BY id LIMIT 1`, empresaID, soporteID, archivoHash, archivoHash, documentoNumero, documentoNumero).Scan(&duplicateID)
@@ -867,7 +873,7 @@ func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, sopo
 			return EmpresaSoporteComprasIA{}, fmt.Errorf("no se puede recuperar: existe el soporte activo #%d con el mismo archivo o documento", duplicateID)
 		}
 	}
-	result, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=? AND COALESCE(estado,'activo')=?`, siguiente, usuario, empresaID, soporteID, actual)
+	result, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_soportes_compras_ia SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=? AND COALESCE(estado,'activo')=?`, siguiente, usuario, empresaID, soporteID, actual)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
@@ -879,7 +885,7 @@ func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, sopo
 		evento = "eliminar"
 	}
 	detalle, _ := json.Marshal(map[string]interface{}{"motivo": motivo, "estado_registro_anterior": actual, "estado_registro_nuevo": siguiente})
-	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
+	if _, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_soportes_compras_ia_eventos
 		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
 		VALUES (?,?,?,?,?,?,?)`, empresaID, soporteID, evento, estadoSoporte, estadoSoporte, string(detalle), usuario); err != nil {
 		return EmpresaSoporteComprasIA{}, err
@@ -887,7 +893,7 @@ func UpdateEmpresaSoporteComprasIARegistroEstado(dbConn *sql.DB, empresaID, sopo
 	if err := tx.Commit(); err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	return GetEmpresaSoporteComprasIAContext(ctx, dbConn, empresaID, soporteID)
 }
 
 // PurgeEmpresaSoporteComprasIA conserva el contrato transaccional para tareas

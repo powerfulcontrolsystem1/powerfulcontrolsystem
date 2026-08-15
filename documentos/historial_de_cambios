@@ -42800,6 +42800,8 @@ acumulativa.
   y ya no invoca el catálogo `Ensure*` durante una consulta HTTP.
 - Se conserva la separación por `empresa_id`, la cuarentena privada y la regla
   de que una extracción IA no contabiliza sin la confirmación humana posterior.
+- El envío a papelera y la restauración ahora mantienen el contexto cancelable
+  en el bloqueo transaccional, transición, evento y recarga posterior.
 
 ## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
 

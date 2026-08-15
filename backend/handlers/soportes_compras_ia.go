@@ -363,7 +363,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		if action == "restaurar" {
 			next = "activo"
 		}
-		row, err := dbpkg.UpdateEmpresaSoporteComprasIARegistroEstado(dbEmp, empresaID, payload.SoporteID, next, usuario, payload.Observaciones)
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIARegistroEstadoContext(r.Context(), dbEmp, empresaID, payload.SoporteID, next, usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
