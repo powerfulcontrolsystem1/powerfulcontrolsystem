@@ -13265,6 +13265,10 @@ backend/db/repository_helpers.go | Helper interno para generación compartida de
   exige propagar `r.Context()` en las lecturas HTTP de configuración, equipos,
   Raspberry, sensores, reglas, eventos y telemetría de Domótica.
 
+- `backend/handlers/soportes_compras_ia_context_test.go`: protege que los
+  listados HTTP de soportes IA usen contexto cancelable y readiness de solo
+  lectura, sin DDL durante tráfico.
+
 2026-08-13 - Utilidades transversales de plataforma
 - `backend/internal/platform/valueutil/valueutil.go`: normalización estándar de texto, hosts, fechas, JSON, identificadores SQL y valores numéricos usada por API, DB, worker y herramientas.
 - `backend/internal/platform/valueutil/valueutil_test.go`: contratos Unicode, host IPv6, identificador SQL, JSON de respaldo y límites genéricos.

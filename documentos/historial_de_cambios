@@ -42793,6 +42793,14 @@ acumulativa.
 - Las desactivaciones lógicas de Raspberry, reglas y equipos también propagan
   la cancelación HTTP sin modificar la restricción de `empresa_id`.
 
+## 2026-08-15 - Plan 110: soportes CxP/IA sin DDL runtime
+
+- Los listados, retención, cuarentena y eventos de soportes de compras IA usan
+  `r.Context()` hasta PostgreSQL. La comprobación de esquema es de solo lectura
+  y ya no invoca el catálogo `Ensure*` durante una consulta HTTP.
+- Se conserva la separación por `empresa_id`, la cuarentena privada y la regla
+  de que una extracción IA no contabiliza sin la confirmación humana posterior.
+
 ## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
 
 - El listado, eliminación lógica y carga de comprobante de compras propagan

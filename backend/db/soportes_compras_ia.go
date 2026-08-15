@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -28,12 +29,18 @@ func empresaSoportesComprasIATablasCriticas() []string {
 // handlers must fail closed when the migration/legacy catalog was not applied
 // instead of issuing DDL while a financial conversion is in progress.
 func EmpresaSoportesComprasIASchemaReady(dbConn *sql.DB) error {
+	return EmpresaSoportesComprasIASchemaReadyContext(context.Background(), dbConn)
+}
+
+// EmpresaSoportesComprasIASchemaReadyContext verifica exclusivamente lectura y
+// respeta la cancelacion de la solicitud que entra a una ruta HTTP.
+func EmpresaSoportesComprasIASchemaReadyContext(ctx context.Context, dbConn *sql.DB) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	for _, table := range empresaSoportesComprasIATablasCriticas() {
 		var registered sql.NullString
-		if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
+		if err := queryRowSQLCompatContext(ctx, dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
 			return fmt.Errorf("verify soportes compras IA table %s: %w", table, err)
 		}
 		if !registered.Valid || strings.TrimSpace(registered.String) == "" {
@@ -659,7 +666,11 @@ func nombreProveedorCxPCanonico(razonSocial, nombreComercial string) string {
 }
 
 func GetEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, id int64) (EmpresaSoporteComprasIA, error) {
-	rows, err := ExecQueryCompat(dbConn, soporteComprasIASelectSQL()+` WHERE empresa_id=? AND id=?`, empresaID, id)
+	return GetEmpresaSoporteComprasIAContext(context.Background(), dbConn, empresaID, id)
+}
+
+func GetEmpresaSoporteComprasIAContext(ctx context.Context, dbConn *sql.DB, empresaID, id int64) (EmpresaSoporteComprasIA, error) {
+	rows, err := querySQLCompatContext(ctx, dbConn, soporteComprasIASelectSQL()+` WHERE empresa_id=? AND id=?`, empresaID, id)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
@@ -684,10 +695,14 @@ func GetEmpresaSoporteComprasIAActivo(dbConn *sql.DB, empresaID, id int64) (Empr
 }
 
 func ListEmpresaSoportesComprasIA(dbConn *sql.DB, empresaID int64, estado string, limit int) ([]EmpresaSoporteComprasIA, error) {
-	if err := EnsureEmpresaSoportesComprasIASchema(dbConn); err != nil {
+	return ListEmpresaSoportesComprasIAContext(context.Background(), dbConn, empresaID, estado, limit)
+}
+
+func ListEmpresaSoportesComprasIAContext(ctx context.Context, dbConn *sql.DB, empresaID int64, estado string, limit int) ([]EmpresaSoporteComprasIA, error) {
+	if err := EmpresaSoportesComprasIASchemaReadyContext(ctx, dbConn); err != nil {
 		return nil, err
 	}
-	return listEmpresaSoportesComprasIARegistro(dbConn, empresaID, estado, "activo", limit)
+	return listEmpresaSoportesComprasIARegistroContext(ctx, dbConn, empresaID, estado, "activo", limit)
 }
 
 func listEmpresaSoportesComprasIA(dbConn *sql.DB, empresaID int64, estado string, limit int) ([]EmpresaSoporteComprasIA, error) {
@@ -697,13 +712,21 @@ func listEmpresaSoportesComprasIA(dbConn *sql.DB, empresaID int64, estado string
 // ListEmpresaSoportesComprasIARegistro permite consultar la bandeja activa o
 // la papelera sin mezclar empresas ni exponer estados arbitrarios.
 func ListEmpresaSoportesComprasIARegistro(dbConn *sql.DB, empresaID int64, estado, registro string, limit int) ([]EmpresaSoporteComprasIA, error) {
-	if err := EnsureEmpresaSoportesComprasIASchema(dbConn); err != nil {
+	return ListEmpresaSoportesComprasIARegistroContext(context.Background(), dbConn, empresaID, estado, registro, limit)
+}
+
+func ListEmpresaSoportesComprasIARegistroContext(ctx context.Context, dbConn *sql.DB, empresaID int64, estado, registro string, limit int) ([]EmpresaSoporteComprasIA, error) {
+	if err := EmpresaSoportesComprasIASchemaReadyContext(ctx, dbConn); err != nil {
 		return nil, err
 	}
-	return listEmpresaSoportesComprasIARegistro(dbConn, empresaID, estado, registro, limit)
+	return listEmpresaSoportesComprasIARegistroContext(ctx, dbConn, empresaID, estado, registro, limit)
 }
 
 func ListEmpresaSoportesComprasIARetencion(dbConn *sql.DB, empresaID int64, retentionDays, limit int) ([]EmpresaSoporteComprasIA, error) {
+	return ListEmpresaSoportesComprasIARetencionContext(context.Background(), dbConn, empresaID, retentionDays, limit)
+}
+
+func ListEmpresaSoportesComprasIARetencionContext(ctx context.Context, dbConn *sql.DB, empresaID int64, retentionDays, limit int) ([]EmpresaSoporteComprasIA, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id es obligatorio")
 	}
@@ -713,11 +736,11 @@ func ListEmpresaSoportesComprasIARetencion(dbConn *sql.DB, empresaID int64, rete
 	if limit <= 0 || limit > 500 {
 		limit = 200
 	}
-	if err := EnsureEmpresaSoportesComprasIASchema(dbConn); err != nil {
+	if err := EmpresaSoportesComprasIASchemaReadyContext(ctx, dbConn); err != nil {
 		return nil, err
 	}
 	cutoff := time.Now().AddDate(0, 0, -retentionDays).Format("2006-01-02 15:04:05")
-	rows, err := ExecQueryCompat(dbConn, soporteComprasIASelectSQL()+` WHERE empresa_id=?
+	rows, err := querySQLCompatContext(ctx, dbConn, soporteComprasIASelectSQL()+` WHERE empresa_id=?
 		AND COALESCE(estado,'activo')='eliminado'
 		AND COALESCE(estado_soporte,'radicado')<>'contabilizado'
 		AND COALESCE(convertido_id,0)=0
@@ -743,6 +766,10 @@ func ListEmpresaSoportesComprasIARetencion(dbConn *sql.DB, empresaID int64, rete
 }
 
 func listEmpresaSoportesComprasIARegistro(dbConn *sql.DB, empresaID int64, estado, registro string, limit int) ([]EmpresaSoporteComprasIA, error) {
+	return listEmpresaSoportesComprasIARegistroContext(context.Background(), dbConn, empresaID, estado, registro, limit)
+}
+
+func listEmpresaSoportesComprasIARegistroContext(ctx context.Context, dbConn *sql.DB, empresaID int64, estado, registro string, limit int) ([]EmpresaSoporteComprasIA, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 200
 	}
@@ -754,7 +781,7 @@ func listEmpresaSoportesComprasIARegistro(dbConn *sql.DB, empresaID int64, estad
 		args = append(args, e)
 	}
 	args = append(args, limit)
-	rows, err := ExecQueryCompat(dbConn, soporteComprasIASelectSQL()+` WHERE `+where+` ORDER BY fecha_creacion DESC, id DESC LIMIT ?`, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, soporteComprasIASelectSQL()+` WHERE `+where+` ORDER BY fecha_creacion DESC, id DESC LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1060,10 +1087,14 @@ func validateSoporteIARegistroTransition(actual, estadoSoporte string, convertid
 }
 
 func ListEmpresaSoportesComprasIAEventos(dbConn *sql.DB, empresaID, soporteID int64, limit int) ([]EmpresaSoporteComprasIAEvento, error) {
+	return ListEmpresaSoportesComprasIAEventosContext(context.Background(), dbConn, empresaID, soporteID, limit)
+}
+
+func ListEmpresaSoportesComprasIAEventosContext(ctx context.Context, dbConn *sql.DB, empresaID, soporteID int64, limit int) ([]EmpresaSoporteComprasIAEvento, error) {
 	if limit <= 0 || limit > 300 {
 		limit = 100
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,soporte_id,COALESCE(evento,''),COALESCE(estado_anterior,''),COALESCE(estado_nuevo,''),COALESCE(detalle_json,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,'') FROM empresa_soportes_compras_ia_eventos WHERE empresa_id=? AND soporte_id=? ORDER BY fecha_creacion DESC, id DESC LIMIT ?`, empresaID, soporteID, limit)
+	rows, err := querySQLCompatContext(ctx, dbConn, `SELECT id,empresa_id,soporte_id,COALESCE(evento,''),COALESCE(estado_anterior,''),COALESCE(estado_nuevo,''),COALESCE(detalle_json,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,'') FROM empresa_soportes_compras_ia_eventos WHERE empresa_id=? AND soporte_id=? ORDER BY fecha_creacion DESC, id DESC LIMIT ?`, empresaID, soporteID, limit)
 	if err != nil {
 		return nil, err
 	}
