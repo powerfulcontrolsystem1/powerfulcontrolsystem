@@ -14,6 +14,7 @@ func TestSoportesComprasIAGetPropagaContextoYNoEjecutaDDL(t *testing.T) {
 	}
 	body := string(source)
 	for _, expected := range []string{
+		"BuildEmpresaSoportesComprasIADashboardContext(r.Context(), dbEmp",
 		"ListEmpresaSoportesComprasIARegistroContext(r.Context(), dbEmp",
 		"ListEmpresaSoportesComprasIARetencionContext(r.Context(), dbEmp",
 		"ListEmpresaSoportesComprasIAEventosContext(r.Context(), dbEmp",

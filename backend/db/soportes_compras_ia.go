@@ -205,10 +205,14 @@ func EnsureEmpresaSoportesComprasIASchema(dbConn *sql.DB) error {
 }
 
 func BuildEmpresaSoportesComprasIADashboard(dbConn *sql.DB, empresaID int64) (EmpresaSoporteComprasIADashboard, error) {
-	if err := EnsureEmpresaSoportesComprasIASchema(dbConn); err != nil {
+	return BuildEmpresaSoportesComprasIADashboardContext(context.Background(), dbConn, empresaID)
+}
+
+func BuildEmpresaSoportesComprasIADashboardContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (EmpresaSoporteComprasIADashboard, error) {
+	if err := EmpresaSoportesComprasIASchemaReadyContext(ctx, dbConn); err != nil {
 		return EmpresaSoporteComprasIADashboard{}, err
 	}
-	rows, err := listEmpresaSoportesComprasIA(dbConn, empresaID, "", 200)
+	rows, err := listEmpresaSoportesComprasIARegistroContext(ctx, dbConn, empresaID, "", "activo", 200)
 	if err != nil {
 		return EmpresaSoporteComprasIADashboard{}, err
 	}
@@ -295,7 +299,7 @@ func BuildEmpresaSoportesComprasIADashboard(dbConn *sql.DB, empresaID int64) (Em
 }
 
 func CreateEmpresaSoporteComprasIA(dbConn *sql.DB, row EmpresaSoporteComprasIA) (EmpresaSoporteComprasIA, error) {
-	if err := EnsureEmpresaSoportesComprasIASchema(dbConn); err != nil {
+	if err := EmpresaSoportesComprasIASchemaReady(dbConn); err != nil {
 		return row, err
 	}
 	row = NormalizeEmpresaSoporteComprasIA(row)
@@ -336,7 +340,7 @@ func CreateEmpresaSoporteComprasIA(dbConn *sql.DB, row EmpresaSoporteComprasIA) 
 }
 
 func UpdateEmpresaSoporteComprasIAExtraccion(dbConn *sql.DB, empresaID, soporteID int64, extracted EmpresaSoporteComprasIA, usuario string) (EmpresaSoporteComprasIA, error) {
-	if err := EnsureEmpresaSoportesComprasIASchema(dbConn); err != nil {
+	if err := EmpresaSoportesComprasIASchemaReady(dbConn); err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
 	current, err := GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)

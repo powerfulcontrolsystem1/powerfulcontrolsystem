@@ -162,7 +162,7 @@ func EmpresaSoportesComprasIAHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64, action string) {
 	switch action {
 	case "dashboard":
-		dashboard, err := dbpkg.BuildEmpresaSoportesComprasIADashboard(dbEmp, empresaID)
+		dashboard, err := dbpkg.BuildEmpresaSoportesComprasIADashboardContext(r.Context(), dbEmp, empresaID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
