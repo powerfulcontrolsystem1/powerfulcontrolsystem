@@ -398,6 +398,12 @@ func UpdateEmpresaSoporteComprasIAExtraccion(dbConn *sql.DB, empresaID, soporteI
 }
 
 func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID int64, estado, usuario, observaciones string) (EmpresaSoporteComprasIA, error) {
+	return UpdateEmpresaSoporteComprasIAEstadoContext(context.Background(), dbConn, empresaID, soporteID, estado, usuario, observaciones)
+}
+
+// UpdateEmpresaSoporteComprasIAEstadoContext preserves cancellation across the
+// human approval/rejection transaction; accounting remains a separate action.
+func UpdateEmpresaSoporteComprasIAEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, soporteID int64, estado, usuario, observaciones string) (EmpresaSoporteComprasIA, error) {
 	if empresaID <= 0 || soporteID <= 0 {
 		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
 	}
@@ -409,7 +415,7 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 	if usuario == "" {
 		usuario = "sistema"
 	}
-	tx, err := dbConn.Begin()
+	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
@@ -418,7 +424,7 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 	var currentState, recordState, documentoNumero string
 	var proveedorID int64
 	var total float64
-	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(estado_soporte,'radicado'), COALESCE(estado,'activo'), COALESCE(proveedor_id,0),
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado_soporte,'radicado'), COALESCE(estado,'activo'), COALESCE(proveedor_id,0),
 		COALESCE(documento_numero,''), COALESCE(total,0)
 		FROM empresa_soportes_compras_ia WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, soporteID).
 		Scan(&currentState, &recordState, &proveedorID, &documentoNumero, &total)
@@ -436,14 +442,14 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 		if err := tx.Commit(); err != nil {
 			return EmpresaSoporteComprasIA{}, err
 		}
-		return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+		return GetEmpresaSoporteComprasIAContext(ctx, dbConn, empresaID, soporteID)
 	}
 	if next == "aprobado" {
 		if proveedorID <= 0 || strings.TrimSpace(documentoNumero) == "" || soporteIARound(total) <= 0 {
 			return EmpresaSoporteComprasIA{}, errors.New("para aprobar selecciona un proveedor registrado, documento y total mayor que cero")
 		}
 		var proveedorEstado string
-		if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado,'activo') FROM proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).Scan(&proveedorEstado); err != nil {
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado,'activo') FROM proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).Scan(&proveedorEstado); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return EmpresaSoporteComprasIA{}, errors.New("el proveedor no pertenece a la empresa activa")
 			}
@@ -459,7 +465,7 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 		aprobadoPor = usuario
 		fechaAprobacion = time.Now().Format("2006-01-02 15:04:05")
 	}
-	result, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia SET estado_soporte=?, aprobado_por=?, fecha_aprobacion=?, requiere_revision_humana=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, observaciones=? WHERE empresa_id=? AND id=? AND estado_soporte=?`,
+	result, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_soportes_compras_ia SET estado_soporte=?, aprobado_por=?, fecha_aprobacion=?, requiere_revision_humana=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, observaciones=? WHERE empresa_id=? AND id=? AND estado_soporte=?`,
 		next, aprobadoPor, fechaAprobacion, boolToIntSoporteIA(next != "aprobado"), usuario, strings.TrimSpace(observaciones), empresaID, soporteID, currentState)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
@@ -468,7 +474,7 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 		return EmpresaSoporteComprasIA{}, errors.New("el soporte cambio de estado antes de confirmar la accion")
 	}
 	detail, _ := json.Marshal(map[string]interface{}{"observaciones": strings.TrimSpace(observaciones)})
-	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
+	if _, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_soportes_compras_ia_eventos
 		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
 		VALUES (?,?,?,?,?,?,?)`, empresaID, soporteID, "estado", currentState, next, string(detail), usuario); err != nil {
 		return EmpresaSoporteComprasIA{}, err
@@ -476,7 +482,7 @@ func UpdateEmpresaSoporteComprasIAEstado(dbConn *sql.DB, empresaID, soporteID in
 	if err := tx.Commit(); err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	return GetEmpresaSoporteComprasIAContext(ctx, dbConn, empresaID, soporteID)
 }
 
 func validateSoporteIAStateTransition(current, next string) (bool, error) {

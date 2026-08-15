@@ -42802,6 +42802,9 @@ acumulativa.
   de que una extracción IA no contabiliza sin la confirmación humana posterior.
 - El envío a papelera y la restauración ahora mantienen el contexto cancelable
   en el bloqueo transaccional, transición, evento y recarga posterior.
+- La aprobación o rechazo humano conserva el mismo contexto en `BEGIN`, lock,
+  validación de proveedor, transición y evento; contabilizar sigue siendo un
+  paso explícito e independiente.
 
 ## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
 
