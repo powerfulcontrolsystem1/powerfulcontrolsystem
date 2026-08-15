@@ -42753,3 +42753,13 @@ acumulativa.
   nota crédito aceptada por DIAN.
 - No se emitieron, anularon ni modificaron documentos reales; la prueba y
   `go vet` de Handlers aprueban.
+
+## 2026-08-15 - Plan 110: documentos transaccionales sin DDL en tráfico
+
+- Las operaciones de lectura y persistencia de documentos fiscales, y la
+  actualización de comprobantes de compra, verifican el esquema en modo
+  lectura y fallan cerradas si falta la migración; el DDL queda exclusivamente
+  bajo el catálogo ejecutado por `pcs-migrate`.
+- La regresión impide reintroducir `EnsureEmpresaDocumentosTransaccionalesSchema`
+  dentro de una operación runtime. Pruebas de DB y `go vet` aprueban; no se
+  ejecutó `rs`.

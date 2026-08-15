@@ -396,7 +396,7 @@ func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) err
 
 // GetEmpresaDocumentoFacturacionByCodigo obtiene un documento de facturacion por llave de negocio.
 func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*EmpresaDocumentoFacturacion, error) {
-	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 
@@ -495,7 +495,7 @@ func UpdateEmpresaDocumentoFacturacionCliente(dbConn *sql.DB, empresaID int64, t
 
 // UpsertEmpresaDocumentoFacturacion registra o actualiza estado transaccional de facturacion.
 func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoFacturacion) (*EmpresaDocumentoFacturacion, error) {
-	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 
@@ -1153,7 +1153,7 @@ func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, ti
 
 // UpdateEmpresaDocumentoCompraComprobante actualiza la evidencia adjunta de un documento de compras.
 func UpdateEmpresaDocumentoCompraComprobante(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo, comprobanteURL, comprobanteNombre string) error {
-	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
 		return err
 	}
 	if empresaID <= 0 {
