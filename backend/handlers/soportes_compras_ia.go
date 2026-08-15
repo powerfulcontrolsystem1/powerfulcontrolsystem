@@ -320,7 +320,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstado(dbEmp, empresaID, payload.SoporteID, "aprobado", usuario, payload.Observaciones)
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstadoContext(r.Context(), dbEmp, empresaID, payload.SoporteID, "aprobado", usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -333,7 +333,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstado(dbEmp, empresaID, payload.SoporteID, "rechazado", usuario, payload.Observaciones)
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstadoContext(r.Context(), dbEmp, empresaID, payload.SoporteID, "rechazado", usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -346,7 +346,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		row, err := dbpkg.ContabilizarEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, usuario)
+		row, err := dbpkg.ContabilizarEmpresaSoporteComprasIAContext(r.Context(), dbEmp, empresaID, payload.SoporteID, usuario)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -363,7 +363,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		if action == "restaurar" {
 			next = "activo"
 		}
-		row, err := dbpkg.UpdateEmpresaSoporteComprasIARegistroEstado(dbEmp, empresaID, payload.SoporteID, next, usuario, payload.Observaciones)
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIARegistroEstadoContext(r.Context(), dbEmp, empresaID, payload.SoporteID, next, usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
