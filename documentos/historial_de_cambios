@@ -42788,3 +42788,10 @@ acumulativa.
   verificación de esquema de solo lectura ni la bitácora contable.
 - Una regresión impide regresar a los wrappers no cancelables. No se ejecutó
   `rs` ni se alteraron documentos reales.
+
+## 2026-08-15 - Plan 110: ordenes de compra cancelables
+
+- La lectura y persistencia de órdenes de compra conservan el contexto HTTP en
+  Compras y Productos, sin alterar transiciones, aprobaciones, recepción,
+  auditoría ni filtro obligatorio por `empresa_id`.
+- Pruebas focalizadas de DB/Handlers y `go vet` aprueban; no se ejecutó `rs`.

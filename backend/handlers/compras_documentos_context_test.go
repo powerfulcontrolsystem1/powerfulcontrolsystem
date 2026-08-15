@@ -16,6 +16,8 @@ func TestComprasDocumentosHTTPPropagaContextoAlRepositorio(t *testing.T) {
 		"ListEmpresaDocumentosCompraByEmpresa(dbEmp",
 		"SetEmpresaDocumentoCompraEstadoByCodigo(dbEmp",
 		"UpdateEmpresaDocumentoCompraComprobante(dbEmp",
+		"GetEmpresaDocumentoCompraByCodigo(dbEmp",
+		"UpsertEmpresaDocumentoCompra(dbEmp",
 	} {
 		if strings.Contains(source, forbidden) {
 			t.Fatalf("compras handler bypasses request context with %q", forbidden)
@@ -25,6 +27,8 @@ func TestComprasDocumentosHTTPPropagaContextoAlRepositorio(t *testing.T) {
 		"ListEmpresaDocumentosCompraByEmpresaContext(r.Context(), dbEmp",
 		"SetEmpresaDocumentoCompraEstadoByCodigoContext(r.Context(), dbEmp",
 		"UpdateEmpresaDocumentoCompraComprobanteContext(r.Context(), dbEmp",
+		"GetEmpresaDocumentoCompraByCodigoContext(r.Context(), dbEmp",
+		"UpsertEmpresaDocumentoCompraContext(r.Context(), dbEmp",
 	} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("missing cancellable purchase operation %q", expected)

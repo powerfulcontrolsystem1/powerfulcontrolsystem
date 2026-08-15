@@ -785,6 +785,11 @@ func ListEmpresaDocumentosFacturacionByEmpresaContext(ctx context.Context, dbCon
 
 // GetEmpresaDocumentoCompraByCodigo obtiene un documento de compras por llave de negocio.
 func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*EmpresaDocumentoCompra, error) {
+	return GetEmpresaDocumentoCompraByCodigoContext(context.Background(), dbConn, empresaID, tipoDocumento, documentoCodigo)
+}
+
+// GetEmpresaDocumentoCompraByCodigoContext obtiene un documento de compra dentro del ciclo de vida HTTP.
+func GetEmpresaDocumentoCompraByCodigoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*EmpresaDocumentoCompra, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -798,7 +803,7 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 	var requiereAprobacionRaw int64
 	var nivelesAprobacionRaw int64
 	var nivelAprobacionRaw int64
-	err := queryRowSQLCompat(dbConn, `SELECT
+	err := queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(proveedor_id, 0),
@@ -875,6 +880,11 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 
 // UpsertEmpresaDocumentoCompra registra o actualiza estado transaccional de compras.
 func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra) (*EmpresaDocumentoCompra, error) {
+	return UpsertEmpresaDocumentoCompraContext(context.Background(), dbConn, payload)
+}
+
+// UpsertEmpresaDocumentoCompraContext persiste el estado de compra dentro del ciclo de vida HTTP.
+func UpsertEmpresaDocumentoCompraContext(ctx context.Context, dbConn *sql.DB, payload EmpresaDocumentoCompra) (*EmpresaDocumentoCompra, error) {
 	if payload.EmpresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -914,7 +924,7 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		payload.MontoTotal = 0
 	}
 
-	_, err := execSQLCompat(dbConn, `INSERT INTO empresa_compras_documentos (
+	_, err := execSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_compras_documentos (
 		empresa_id,
 		proveedor_id,
 		tipo_documento,
@@ -1012,7 +1022,7 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		return nil, err
 	}
 
-	return GetEmpresaDocumentoCompraByCodigo(dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+	return GetEmpresaDocumentoCompraByCodigoContext(ctx, dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
 }
 
 // ListEmpresaDocumentosCompraByEmpresa lista documentos de compras por filtros operativos.

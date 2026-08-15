@@ -205,7 +205,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				accionResp = transition.Accion
 			}
 
-			docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompra(dbEmp, dbpkg.EmpresaDocumentoCompra{
+			docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompraContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoCompra{
 				EmpresaID:            payload.EmpresaID,
 				ProveedorID:          payload.ProveedorID,
 				TipoDocumento:        comprasFirstNonBlank(payload.TipoDocumento, "orden_compra"),
@@ -397,7 +397,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			docActual, err := dbpkg.GetEmpresaDocumentoCompraByCodigo(dbEmp, payload.EmpresaID, tipoDocumento, payload.DocumentoCodigo)
+			docActual, err := dbpkg.GetEmpresaDocumentoCompraByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, tipoDocumento, payload.DocumentoCodigo)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "documento no encontrado", http.StatusNotFound)
@@ -656,7 +656,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				accionResp = transition.Accion
 			}
 
-			docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompra(dbEmp, dbpkg.EmpresaDocumentoCompra{
+			docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompraContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoCompra{
 				EmpresaID:            payload.EmpresaID,
 				ProveedorID:          payload.ProveedorID,
 				TipoDocumento:        docActual.TipoDocumento,
@@ -844,7 +844,7 @@ func EmpresaComprasDocumentoComprobanteUploadHandler(dbEmp *sql.DB) http.Handler
 			return
 		}
 
-		item, err := dbpkg.GetEmpresaDocumentoCompraByCodigo(dbEmp, empresaID, tipoDocumento, documentoCodigo)
+		item, err := dbpkg.GetEmpresaDocumentoCompraByCodigoContext(r.Context(), dbEmp, empresaID, tipoDocumento, documentoCodigo)
 		if err != nil {
 			writeJSON(w, http.StatusCreated, map[string]interface{}{
 				"ok":                         true,
