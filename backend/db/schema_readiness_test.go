@@ -67,7 +67,7 @@ func TestDocumentosTransaccionalesNoEjecutanDDLEnOperacionesRuntime(t *testing.T
 	if got := strings.Count(source, "EnsureEmpresaDocumentosTransaccionalesSchema("); got != 1 {
 		t.Fatalf("runtime repository must not call schema ensure; found %d occurrences", got)
 	}
-	if got := strings.Count(source, "EmpresaDocumentosTransaccionalesSchemaReady(dbConn)"); got < 3 {
+	if got := strings.Count(source, "EmpresaDocumentosTransaccionalesSchemaReadyContext(ctx, dbConn)"); got < 2 {
 		t.Fatalf("runtime document operations must fail closed on missing schema; readiness calls=%d", got)
 	}
 }

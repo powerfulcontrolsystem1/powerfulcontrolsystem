@@ -94,12 +94,17 @@ type EmpresaDocumentoFacturacionListFilter struct {
 // facturacion transaccional que deben existir antes de atender trafico. El DDL
 // se ejecuta unicamente desde pcs-migrate.
 func EmpresaDocumentosTransaccionalesSchemaReady(dbConn *sql.DB) error {
+	return EmpresaDocumentosTransaccionalesSchemaReadyContext(context.Background(), dbConn)
+}
+
+// EmpresaDocumentosTransaccionalesSchemaReadyContext verifica el esquema sin DDL bajo el contexto de la solicitud.
+func EmpresaDocumentosTransaccionalesSchemaReadyContext(ctx context.Context, dbConn *sql.DB) error {
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}
 	for _, table := range []string{"empresa_facturacion_documentos", "empresa_compras_documentos"} {
 		var registered sql.NullString
-		if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
+		if err := queryRowSQLCompatContext(ctx, dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
 			return fmt.Errorf("verify transactional documents table %s: %w", table, err)
 		}
 		if !registered.Valid || strings.TrimSpace(registered.String) == "" {
@@ -397,7 +402,12 @@ func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) err
 
 // GetEmpresaDocumentoFacturacionByCodigo obtiene un documento de facturacion por llave de negocio.
 func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*EmpresaDocumentoFacturacion, error) {
-	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
+	return GetEmpresaDocumentoFacturacionByCodigoContext(context.Background(), dbConn, empresaID, tipoDocumento, documentoCodigo)
+}
+
+// GetEmpresaDocumentoFacturacionByCodigoContext obtiene un documento fiscal dentro del ciclo de vida HTTP.
+func GetEmpresaDocumentoFacturacionByCodigoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*EmpresaDocumentoFacturacion, error) {
+	if err := EmpresaDocumentosTransaccionalesSchemaReadyContext(ctx, dbConn); err != nil {
 		return nil, err
 	}
 
@@ -411,7 +421,7 @@ func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tip
 	}
 
 	var item EmpresaDocumentoFacturacion
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(tipo_documento, 'factura_electronica'),
@@ -466,6 +476,11 @@ func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tip
 
 // UpdateEmpresaDocumentoFacturacionCliente asocia un documento de facturacion a un cliente de la misma empresa.
 func UpdateEmpresaDocumentoFacturacionCliente(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string, clienteID int64) (*EmpresaDocumentoFacturacion, error) {
+	return UpdateEmpresaDocumentoFacturacionClienteContext(context.Background(), dbConn, empresaID, tipoDocumento, documentoCodigo, clienteID)
+}
+
+// UpdateEmpresaDocumentoFacturacionClienteContext asocia un cliente de la misma empresa bajo el contexto HTTP.
+func UpdateEmpresaDocumentoFacturacionClienteContext(ctx context.Context, dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string, clienteID int64) (*EmpresaDocumentoFacturacion, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -477,7 +492,7 @@ func UpdateEmpresaDocumentoFacturacionCliente(dbConn *sql.DB, empresaID int64, t
 	if documentoCodigo == "" {
 		return nil, fmt.Errorf("documento_codigo es obligatorio")
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_facturacion_documentos
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_facturacion_documentos
 		SET entidad_relacionada_id = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?`,
 		clienteID,
@@ -491,12 +506,17 @@ func UpdateEmpresaDocumentoFacturacionCliente(dbConn *sql.DB, empresaID int64, t
 	if affected, affErr := res.RowsAffected(); affErr == nil && affected == 0 {
 		return nil, sql.ErrNoRows
 	}
-	return GetEmpresaDocumentoFacturacionByCodigo(dbConn, empresaID, tipoDocumento, documentoCodigo)
+	return GetEmpresaDocumentoFacturacionByCodigoContext(ctx, dbConn, empresaID, tipoDocumento, documentoCodigo)
 }
 
 // UpsertEmpresaDocumentoFacturacion registra o actualiza estado transaccional de facturacion.
 func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoFacturacion) (*EmpresaDocumentoFacturacion, error) {
-	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
+	return UpsertEmpresaDocumentoFacturacionContext(context.Background(), dbConn, payload)
+}
+
+// UpsertEmpresaDocumentoFacturacionContext persiste el estado fiscal bajo el contexto de la solicitud.
+func UpsertEmpresaDocumentoFacturacionContext(ctx context.Context, dbConn *sql.DB, payload EmpresaDocumentoFacturacion) (*EmpresaDocumentoFacturacion, error) {
+	if err := EmpresaDocumentosTransaccionalesSchemaReadyContext(ctx, dbConn); err != nil {
 		return nil, err
 	}
 
@@ -531,7 +551,7 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		payload.MontoTotal = 0
 	}
 
-	_, err := dbConn.Exec(`INSERT INTO empresa_facturacion_documentos (
+	_, err := dbConn.ExecContext(ctx, `INSERT INTO empresa_facturacion_documentos (
 		empresa_id,
 		tipo_documento,
 		documento_codigo,
@@ -593,7 +613,7 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		return nil, err
 	}
 
-	return GetEmpresaDocumentoFacturacionByCodigo(dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+	return GetEmpresaDocumentoFacturacionByCodigoContext(ctx, dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
 }
 
 // ListEmpresaDocumentosFacturacionByEmpresa lista documentos de facturación por empresa con filtros operativos.
