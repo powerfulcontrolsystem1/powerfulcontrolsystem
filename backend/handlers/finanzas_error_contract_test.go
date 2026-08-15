@@ -76,6 +76,10 @@ func TestFinanzasHTTPPropagaContextoAlRepositorio(t *testing.T) {
 		"dbpkg.SetEmpresaCierreCajaEstado(dbEmp",
 		"dbpkg.UpdateEmpresaCierreCaja(dbEmp",
 		"dbpkg.DeleteEmpresaCierreCaja(dbEmp",
+		"dbpkg.GetEmpresaConciliacionBancariaPorPeriodo(dbEmp",
+		"dbpkg.ListEmpresaFinanzasMovimientosBancarios(dbEmp",
+		"dbpkg.UpsertEmpresaFinanzasMovimientosBancarios(dbEmp",
+		"dbpkg.ConciliarEmpresaMovimientosBancariosAutomatico(dbEmp",
 	} {
 		if strings.Contains(source, forbidden) {
 			t.Fatalf("finance handler bypasses request context with %q", forbidden)
@@ -89,6 +93,10 @@ func TestFinanzasHTTPPropagaContextoAlRepositorio(t *testing.T) {
 		"ListEmpresaCierresCajaContext(r.Context()",
 		"CreateEmpresaCierreCajaContext(r.Context()",
 		"SetEmpresaCierreCajaEstadoContext(",
+		"GetEmpresaConciliacionBancariaPorPeriodoContext(r.Context()",
+		"ListEmpresaFinanzasMovimientosBancariosContext(r.Context()",
+		"UpsertEmpresaFinanzasMovimientosBancariosContext(r.Context()",
+		"ConciliarEmpresaMovimientosBancariosAutomaticoContext(r.Context()",
 	} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("missing cancellable finance operation %q", expected)

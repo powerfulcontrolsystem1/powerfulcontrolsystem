@@ -42735,3 +42735,13 @@ acumulativa.
   `empresa_id`.
 - Pruebas GPS de DB/handlers y auditoría aprueban. La deuda DB sin contexto
   baja de 512 a 510; no se ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: conciliación bancaria cancelable
+
+- El tablero, listado, importación idempotente y conciliación automática de
+  extractos bancarios conservan `r.Context()` hasta PostgreSQL, sin cambiar
+  filtros obligatorios por `empresa_id`, hash de idempotencia ni reglas de
+  conciliación.
+- Una regresión evita que el handler vuelva a usar los wrappers no
+  cancelables. Pruebas focalizadas, `go vet` y auditoría estructural aprueban;
+  no se ejecutó `rs`.
