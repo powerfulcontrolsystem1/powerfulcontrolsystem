@@ -42771,3 +42771,27 @@ acumulativa.
   `empresa_id`, cliente, cajero, fecha y documento.
 - Los consumidores internos conservan el wrapper histórico. Pruebas fiscales,
   DB y `go vet` quedan requeridas antes de integrar; no se ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: operaciones fiscales cancelables
+
+- La consulta, asociación de cliente y persistencia de documento fiscal
+  propagan el contexto HTTP hasta la verificación de readiness y PostgreSQL.
+  Las rutas fiscales conservan `empresa_id`, los jobs internos mantienen
+  wrappers explícitos y no se cambió ninguna regla DIAN.
+- Regresiones de frontera fiscal y esquema, pruebas DB/Handlers y `go vet`
+  aprueban antes de integración; no se ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
+
+- El listado, eliminación lógica y carga de comprobante de compras propagan
+  `r.Context()` hasta PostgreSQL, sin cambiar el filtro por `empresa_id`, la
+  verificación de esquema de solo lectura ni la bitácora contable.
+- Una regresión impide regresar a los wrappers no cancelables. No se ejecutó
+  `rs` ni se alteraron documentos reales.
+
+## 2026-08-15 - Plan 110: ordenes de compra cancelables
+
+- La lectura y persistencia de órdenes de compra conservan el contexto HTTP en
+  Compras y Productos, sin alterar transiciones, aprobaciones, recepción,
+  auditoría ni filtro obligatorio por `empresa_id`.
+- Pruebas focalizadas de DB/Handlers y `go vet` aprueban; no se ejecutó `rs`.

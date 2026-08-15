@@ -66,7 +66,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureLicenciasSchema` | [backend/db/db.go:267](../../backend/db/db.go#L267) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureUserEmpresa` | [backend/db/db.go:408](../../backend/db/db.go#L408) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaDeclaracionesTributariasSchema` | [backend/db/declaraciones_tributarias.go:104](../../backend/db/declaraciones_tributarias.go#L104) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaDocumentosTransaccionalesSchema` | [backend/db/documentos_transaccionales.go:112](../../backend/db/documentos_transaccionales.go#L112) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaDocumentosTransaccionalesSchema` | [backend/db/documentos_transaccionales.go:118](../../backend/db/documentos_transaccionales.go#L118) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDomiciliosSchema` | [backend/db/domicilios.go:209](../../backend/db/domicilios.go#L209) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureDrogueriaFarmaciaTipoEmpresaYLicencias` | [backend/db/drogueria_farmacia_bootstrap.go:67](../../backend/db/drogueria_farmacia_bootstrap.go#L67) | seed o provisionamiento idempotente | superadministrador o por confirmar |
 | `EnsureEmpresaEmailCorporativoSchema` | [backend/db/email_corporativo.go:32](../../backend/db/email_corporativo.go#L32) | DDL / indice / funcion | empresas o por confirmar |

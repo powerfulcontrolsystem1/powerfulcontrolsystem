@@ -2541,7 +2541,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 					payload.EstadoActual = strings.TrimSpace(q.Get("estado_actual"))
 				}
 
-				docExistente, err := dbpkg.GetEmpresaDocumentoCompraByCodigo(dbEmp, payload.EmpresaID, "orden_compra", payload.DocumentoCodigo)
+				docExistente, err := dbpkg.GetEmpresaDocumentoCompraByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, "orden_compra", payload.DocumentoCodigo)
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "No se pudo consultar el estado documental de compras", http.StatusInternalServerError)
 					return
@@ -2557,7 +2557,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 
 				evento := transition.Evento
-				docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompra(dbEmp, dbpkg.EmpresaDocumentoCompra{
+				docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompraContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoCompra{
 					EmpresaID:            payload.EmpresaID,
 					ProveedorID:          payload.ProveedorID,
 					TipoDocumento:        "orden_compra",

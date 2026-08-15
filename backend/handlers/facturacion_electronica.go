@@ -456,7 +456,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					payload.TipoDocumento = "comprobante_pago"
 				}
 
-				ventaDoc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+				ventaDoc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "venta no encontrada", http.StatusNotFound)
@@ -516,7 +516,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 						http.Error(w, "No se pudo validar el cliente", http.StatusInternalServerError)
 						return
 					}
-					updatedVentaDoc, err := dbpkg.UpdateEmpresaDocumentoFacturacionCliente(dbEmp, payload.EmpresaID, ventaDoc.TipoDocumento, ventaDoc.DocumentoCodigo, clienteID)
+					updatedVentaDoc, err := dbpkg.UpdateEmpresaDocumentoFacturacionClienteContext(r.Context(), dbEmp, payload.EmpresaID, ventaDoc.TipoDocumento, ventaDoc.DocumentoCodigo, clienteID)
 					if err != nil {
 						http.Error(w, "No se pudo asociar el cliente a la venta", http.StatusInternalServerError)
 						return
@@ -570,7 +570,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if strings.TrimSpace(payload.TipoDocumento) == "" {
 					payload.TipoDocumento = strings.TrimSpace(r.URL.Query().Get("tipo_documento"))
 				}
-				doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+				doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "documento no encontrado", http.StatusNotFound)
@@ -623,7 +623,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if documentoTipo == "" {
 					documentoTipo = "factura_electronica"
 				}
-				doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo)
+				doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "documento no encontrado", http.StatusNotFound)
@@ -664,7 +664,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 						return
 					}
 				}
-				if refreshed, refreshErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo); refreshErr == nil && refreshed != nil {
+				if refreshed, refreshErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo); refreshErr == nil && refreshed != nil {
 					doc = refreshed
 				}
 				resp := map[string]interface{}{
@@ -716,7 +716,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "motivo de anulacion es obligatorio y debe tener minimo 10 caracteres", http.StatusBadRequest)
 					return
 				}
-				venta, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, "comprobante_pago", payload.DocumentoCodigo)
+				venta, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, "comprobante_pago", payload.DocumentoCodigo)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "venta no encontrada", http.StatusNotFound)
@@ -730,7 +730,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					return
 				}
 				usuario := strings.TrimSpace(adminEmailFromRequest(r))
-				ventaAnulada, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, dbpkg.EmpresaDocumentoFacturacion{
+				ventaAnulada, err := dbpkg.UpsertEmpresaDocumentoFacturacionContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoFacturacion{
 					EmpresaID:            venta.EmpresaID,
 					TipoDocumento:        venta.TipoDocumento,
 					DocumentoCodigo:      venta.DocumentoCodigo,
@@ -808,7 +808,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "motivo de anulacion es obligatorio y debe tener minimo 10 caracteres", http.StatusBadRequest)
 					return
 				}
-				factura, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, "factura_electronica", payload.DocumentoCodigo)
+				factura, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, "factura_electronica", payload.DocumentoCodigo)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "factura no encontrada", http.StatusNotFound)
@@ -867,7 +867,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					UsuarioCreador:       usuario,
 					Observaciones:        observaciones,
 				}
-				nota, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, notaPayload)
+				nota, err := dbpkg.UpsertEmpresaDocumentoFacturacionContext(r.Context(), dbEmp, notaPayload)
 				if err != nil {
 					http.Error(w, "No se pudo crear la nota credito de anulacion", http.StatusInternalServerError)
 					return
@@ -990,7 +990,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					return
 				}
 
-				docExistente, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo)
+				docExistente, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo)
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "No se pudo consultar el estado documental de facturacion", http.StatusInternalServerError)
 					return
@@ -1066,7 +1066,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					}
 				}
 
-				docPersistido, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPayload)
+				docPersistido, err := dbpkg.UpsertEmpresaDocumentoFacturacionContext(r.Context(), dbEmp, docPayload)
 				if err != nil {
 					http.Error(w, "No se pudo persistir el documento transaccional", http.StatusInternalServerError)
 					return
