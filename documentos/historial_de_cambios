@@ -42763,3 +42763,11 @@ acumulativa.
 - La regresión impide reintroducir `EnsureEmpresaDocumentosTransaccionalesSchema`
   dentro de una operación runtime. Pruebas de DB y `go vet` aprueban; no se
   ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: listado fiscal cancelable
+
+- El listado de documentos de facturación usa contexto cancelable en las rutas
+  HTTP de consulta y anulación por nota crédito, conservando sus filtros por
+  `empresa_id`, cliente, cajero, fecha y documento.
+- Los consumidores internos conservan el wrapper histórico. Pruebas fiscales,
+  DB y `go vet` quedan requeridas antes de integrar; no se ejecutó `rs`.

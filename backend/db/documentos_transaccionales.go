@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -597,6 +598,11 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 
 // ListEmpresaDocumentosFacturacionByEmpresa lista documentos de facturación por empresa con filtros operativos.
 func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDocumentoFacturacionListFilter) ([]EmpresaDocumentoFacturacionListado, error) {
+	return ListEmpresaDocumentosFacturacionByEmpresaContext(context.Background(), dbConn, filter)
+}
+
+// ListEmpresaDocumentosFacturacionByEmpresaContext lista documentos dentro del ciclo de vida de la solicitud.
+func ListEmpresaDocumentosFacturacionByEmpresaContext(ctx context.Context, dbConn *sql.DB, filter EmpresaDocumentoFacturacionListFilter) ([]EmpresaDocumentoFacturacionListado, error) {
 	if filter.EmpresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -714,7 +720,7 @@ func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDoc
 	LIMIT ? OFFSET ?`
 	args = append(args, filter.Limit, filter.Offset)
 
-	rows, err := ExecQueryCompat(dbConn, query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}

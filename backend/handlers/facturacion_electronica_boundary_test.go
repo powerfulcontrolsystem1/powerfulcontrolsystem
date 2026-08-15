@@ -19,6 +19,7 @@ func TestFacturacionElectronicaMantieneFronteraDeEmpresaYAnulacionFiscal(t *test
 		"anular_factura_nota_credito",
 		"la factura solo cambia a anulada cuando la nota credito queda aceptada por DIAN",
 		"GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID",
+		"ListEmpresaDocumentosFacturacionByEmpresaContext(r.Context(), dbEmp",
 	} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("missing fiscal tenant boundary %q", expected)
