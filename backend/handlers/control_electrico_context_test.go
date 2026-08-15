@@ -28,4 +28,12 @@ func TestControlElectricoLecturasHTTPPropaganContextoAlRepositorio(t *testing.T)
 			t.Fatalf("falta propagacion cancelable: %s", expected)
 		}
 	}
+	for _, ignored := range []string{
+		"eventos, _ := dbpkg.ListEmpresaControlElectricoEventos",
+		"lecturas, _ := dbpkg.ListEmpresaControlElectricoLecturas",
+	} {
+		if strings.Contains(body, ignored) {
+			t.Fatalf("el reporte no puede ocultar error de lectura: %s", ignored)
+		}
+	}
 }

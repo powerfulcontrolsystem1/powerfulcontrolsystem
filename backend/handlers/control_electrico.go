@@ -453,8 +453,16 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudo generar reporte de aparatos", http.StatusInternalServerError)
 					return
 				}
-				eventos, _ := dbpkg.ListEmpresaControlElectricoEventosContext(r.Context(), dbEmp, empresaID, 200)
-				lecturas, _ := dbpkg.ListEmpresaControlElectricoLecturasContext(r.Context(), dbEmp, empresaID, 0, 200)
+				eventos, eventosErr := dbpkg.ListEmpresaControlElectricoEventosContext(r.Context(), dbEmp, empresaID, 200)
+				if eventosErr != nil {
+					log.Printf("[control_electrico] report eventos empresa_id=%d error: %v", empresaID, eventosErr)
+					eventos = []dbpkg.EmpresaControlElectricoEvento{}
+				}
+				lecturas, lecturasErr := dbpkg.ListEmpresaControlElectricoLecturasContext(r.Context(), dbEmp, empresaID, 0, 200)
+				if lecturasErr != nil {
+					log.Printf("[control_electrico] report lecturas empresa_id=%d error: %v", empresaID, lecturasErr)
+					lecturas = []dbpkg.EmpresaControlElectricoLectura{}
+				}
 				writeJSON(w, http.StatusOK, buildControlElectricoReporte(empresaID, reles, eventos, lecturas))
 				return
 			case "reglas":

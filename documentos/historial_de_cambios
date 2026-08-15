@@ -42788,6 +42788,8 @@ acumulativa.
   mantienen los filtros obligatorios por `empresa_id` y estación.
 - El túnel, los comandos GPIO y los jobs de programación conservan sus
   contratos durables: este corte no activa relés ni modifica equipos reales.
+- El reporte conserva su respuesta parcial, pero registra de forma saneada los
+  fallos de eventos o telemetría en vez de descartarlos silenciosamente.
 
 ## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
 
