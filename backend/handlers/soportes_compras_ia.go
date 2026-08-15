@@ -162,7 +162,7 @@ func EmpresaSoportesComprasIAHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64, action string) {
 	switch action {
 	case "dashboard":
-		dashboard, err := dbpkg.BuildEmpresaSoportesComprasIADashboard(dbEmp, empresaID)
+		dashboard, err := dbpkg.BuildEmpresaSoportesComprasIADashboardContext(r.Context(), dbEmp, empresaID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -171,7 +171,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 	case "soportes":
 		estado := r.URL.Query().Get("estado")
 		registro := r.URL.Query().Get("registro")
-		rows, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, estado, registro, 300)
+		rows, err := dbpkg.ListEmpresaSoportesComprasIARegistroContext(r.Context(), dbEmp, empresaID, estado, registro, 300)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -182,7 +182,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soportes": rows})
 	case "retencion_preview":
 		days := parseSoporteComprasIARetentionDays(r.URL.Query().Get("retencion_dias"))
-		rows, err := dbpkg.ListEmpresaSoportesComprasIARetencion(dbEmp, empresaID, days, 300)
+		rows, err := dbpkg.ListEmpresaSoportesComprasIARetencionContext(r.Context(), dbEmp, empresaID, days, 300)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -196,7 +196,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		})
 	case "cuarentena_preview":
 		thresholdMinutes := parseSoporteComprasIAQuarantineThreshold(r.URL.Query().Get("umbral_minutos"))
-		pending, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, "", "purga_pendiente", 500)
+		pending, err := dbpkg.ListEmpresaSoportesComprasIARegistroContext(r.Context(), dbEmp, empresaID, "", "purga_pendiente", 500)
 		if err != nil {
 			log.Printf("[soportes_compras_ia] diagnostico cuarentena empresa_id=%d: %v", empresaID, err)
 			http.Error(w, "no se pudo consultar el diagnostico de cuarentena", http.StatusInternalServerError)
@@ -218,7 +218,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		downloadSoporteComprasIA(w, r, dbEmp, empresaID)
 	case "eventos":
 		soporteID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("soporte_id")), 10, 64)
-		rows, err := dbpkg.ListEmpresaSoportesComprasIAEventos(dbEmp, empresaID, soporteID, 200)
+		rows, err := dbpkg.ListEmpresaSoportesComprasIAEventosContext(r.Context(), dbEmp, empresaID, soporteID, 200)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

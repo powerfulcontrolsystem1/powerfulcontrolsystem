@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -521,11 +522,17 @@ func EmpresaControlElectricoSchemaReady(dbConn *sql.DB) error {
 
 // GetEmpresaControlElectricoConfig obtiene configuracion o entrega defaults no persistidos.
 func GetEmpresaControlElectricoConfig(dbConn *sql.DB, empresaID int64, includeToken bool) (*EmpresaControlElectricoConfig, error) {
+	return GetEmpresaControlElectricoConfigContext(context.Background(), dbConn, empresaID, includeToken)
+}
+
+// GetEmpresaControlElectricoConfigContext conserva la cancelacion del request
+// al consultar la configuracion aislada de una empresa.
+func GetEmpresaControlElectricoConfigContext(ctx context.Context, dbConn *sql.DB, empresaID int64, includeToken bool) (*EmpresaControlElectricoConfig, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
 	cfg := defaultEmpresaControlElectricoConfig(empresaID)
-	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(habilitado,0), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(auto_sync_estaciones,1), COALESCE(fail_safe_on_error,0), COALESCE(activation_delay_seconds,1), COALESCE(disconnect_alert_enabled,0), COALESCE(disconnect_alert_email,''), COALESCE(disconnect_grace_minutes,5), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_config WHERE empresa_id = ? LIMIT 1`, empresaID)
+	row := queryRowSQLCompatContext(ctx, dbConn, `SELECT id, empresa_id, COALESCE(habilitado,0), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(auto_sync_estaciones,1), COALESCE(fail_safe_on_error,0), COALESCE(activation_delay_seconds,1), COALESCE(disconnect_alert_enabled,0), COALESCE(disconnect_alert_email,''), COALESCE(disconnect_grace_minutes,5), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_config WHERE empresa_id = ? LIMIT 1`, empresaID)
 	var habilitado, autoSync, failSafe, disconnectAlert int
 	var token string
 	if err := row.Scan(&cfg.ID, &cfg.EmpresaID, &habilitado, &cfg.RaspberryIP, &cfg.RaspberryPort, &cfg.APIPath, &token, &cfg.TimeoutMS, &autoSync, &failSafe, &cfg.ActivationDelaySec, &disconnectAlert, &cfg.DisconnectAlertEmail, &cfg.DisconnectGraceMinutes, &cfg.FechaCreacion, &cfg.FechaActualizacion, &cfg.UsuarioCreador, &cfg.Estado, &cfg.Observaciones); err != nil {
@@ -584,6 +591,12 @@ func SyncEmpresaControlElectricoPrimaryRaspberry(dbConn *sql.DB, cfg *EmpresaCon
 
 // ListEmpresaControlElectricoRaspberry lista controladores GPIO configurados.
 func ListEmpresaControlElectricoRaspberry(dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRaspberry, error) {
+	return ListEmpresaControlElectricoRaspberryContext(context.Background(), dbConn, empresaID, includeInactive)
+}
+
+// ListEmpresaControlElectricoRaspberryContext lista nodos del tenant y permite
+// liberar la consulta si el navegador ya cancelo la operacion.
+func ListEmpresaControlElectricoRaspberryContext(ctx context.Context, dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRaspberry, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
@@ -592,7 +605,7 @@ func ListEmpresaControlElectricoRaspberry(dbConn *sql.DB, empresaID int64, inclu
 		q += " AND LOWER(COALESCE(estado,'activo')) = 'activo'"
 	}
 	q += " ORDER BY CASE LOWER(COALESCE(codigo,'')) WHEN 'principal' THEN 0 ELSE 1 END, nombre, id"
-	rows, err := querySQLCompat(dbConn, q, empresaID)
+	rows, err := querySQLCompatContext(ctx, dbConn, q, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -669,10 +682,14 @@ func UpsertEmpresaControlElectricoRaspberry(dbConn *sql.DB, item *EmpresaControl
 
 // SetEmpresaControlElectricoRaspberryEstado activa o desactiva un controlador GPIO.
 func SetEmpresaControlElectricoRaspberryEstado(dbConn *sql.DB, empresaID, raspberryID int64, estado string) error {
+	return SetEmpresaControlElectricoRaspberryEstadoContext(context.Background(), dbConn, empresaID, raspberryID, estado)
+}
+
+func SetEmpresaControlElectricoRaspberryEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, raspberryID int64, estado string) error {
 	if empresaID <= 0 || raspberryID <= 0 {
 		return errors.New("empresa_id y raspberry_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, raspberryID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, raspberryID)
 	return err
 }
 
@@ -728,6 +745,10 @@ func empresaControlElectricoReleScanDest(item *EmpresaControlElectricoRele, acti
 
 // ListEmpresaControlElectricoReles lista relays configurados.
 func ListEmpresaControlElectricoReles(dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRele, error) {
+	return ListEmpresaControlElectricoRelesContext(context.Background(), dbConn, empresaID, includeInactive)
+}
+
+func ListEmpresaControlElectricoRelesContext(ctx context.Context, dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRele, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
@@ -736,7 +757,7 @@ func ListEmpresaControlElectricoReles(dbConn *sql.DB, empresaID int64, includeIn
 		q += " AND LOWER(COALESCE(r.estado,'activo')) = 'activo'"
 	}
 	q += " ORDER BY r.estacion_id, r.salida_codigo"
-	rows, err := querySQLCompat(dbConn, q, empresaID)
+	rows, err := querySQLCompatContext(ctx, dbConn, q, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -777,10 +798,14 @@ func GetEmpresaControlElectricoReleByEstacion(dbConn *sql.DB, empresaID, estacio
 
 // GetEmpresaControlElectricoReleByID obtiene una salida electrica puntual.
 func GetEmpresaControlElectricoReleByID(dbConn *sql.DB, empresaID, releID int64) (*EmpresaControlElectricoRele, error) {
+	return GetEmpresaControlElectricoReleByIDContext(context.Background(), dbConn, empresaID, releID)
+}
+
+func GetEmpresaControlElectricoReleByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, releID int64) (*EmpresaControlElectricoRele, error) {
 	if empresaID <= 0 || releID <= 0 {
 		return nil, errors.New("empresa_id y rele_id son obligatorios")
 	}
-	row := queryRowSQLCompat(dbConn, `SELECT `+empresaControlElectricoReleSelectColumns+` FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE r.empresa_id = ? AND r.id = ? AND LOWER(COALESCE(r.estado,'activo')) = 'activo' LIMIT 1`, empresaID, releID)
+	row := queryRowSQLCompatContext(ctx, dbConn, `SELECT `+empresaControlElectricoReleSelectColumns+` FROM empresa_control_electrico_reles r LEFT JOIN empresa_control_electrico_raspberry_pis rp ON rp.empresa_id = r.empresa_id AND rp.id = r.raspberry_id WHERE r.empresa_id = ? AND r.id = ? AND LOWER(COALESCE(r.estado,'activo')) = 'activo' LIMIT 1`, empresaID, releID)
 	var item EmpresaControlElectricoRele
 	var activeHigh int
 	var encenderAlActivar int
@@ -801,6 +826,10 @@ func GetEmpresaControlElectricoReleByID(dbConn *sql.DB, empresaID, releID int64)
 
 // ListEmpresaControlElectricoRelesByEstacion lista todas las salidas de una estacion.
 func ListEmpresaControlElectricoRelesByEstacion(dbConn *sql.DB, empresaID, estacionID int64, includeInactive bool) ([]EmpresaControlElectricoRele, error) {
+	return ListEmpresaControlElectricoRelesByEstacionContext(context.Background(), dbConn, empresaID, estacionID, includeInactive)
+}
+
+func ListEmpresaControlElectricoRelesByEstacionContext(ctx context.Context, dbConn *sql.DB, empresaID, estacionID int64, includeInactive bool) ([]EmpresaControlElectricoRele, error) {
 	if empresaID <= 0 || estacionID <= 0 {
 		return nil, errors.New("empresa_id y estacion_id son obligatorios")
 	}
@@ -809,7 +838,7 @@ func ListEmpresaControlElectricoRelesByEstacion(dbConn *sql.DB, empresaID, estac
 		q += " AND LOWER(COALESCE(r.estado,'activo')) = 'activo'"
 	}
 	q += " ORDER BY CASE COALESCE(r.salida_codigo,'principal') WHEN 'principal' THEN 0 WHEN 'luces' THEN 1 WHEN 'jacuzzi' THEN 2 ELSE 10 END, r.id"
-	rows, err := querySQLCompat(dbConn, q, empresaID, estacionID)
+	rows, err := querySQLCompatContext(ctx, dbConn, q, empresaID, estacionID)
 	if err != nil {
 		return nil, err
 	}
@@ -909,10 +938,14 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 
 // SetEmpresaControlElectricoReleEstado cambia estado logico del mapeo.
 func SetEmpresaControlElectricoReleEstado(dbConn *sql.DB, empresaID, releID int64, estado string) error {
+	return SetEmpresaControlElectricoReleEstadoContext(context.Background(), dbConn, empresaID, releID, estado)
+}
+
+func SetEmpresaControlElectricoReleEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, releID int64, estado string) error {
 	if empresaID <= 0 || releID <= 0 {
 		return errors.New("empresa_id y rele_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, releID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_control_electrico_reles SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, releID)
 	return err
 }
 
@@ -1004,6 +1037,10 @@ func InsertEmpresaControlElectricoLectura(dbConn *sql.DB, lectura EmpresaControl
 
 // ListEmpresaControlElectricoLecturas lista telemetria reciente por empresa o aparato.
 func ListEmpresaControlElectricoLecturas(dbConn *sql.DB, empresaID, releID int64, limit int) ([]EmpresaControlElectricoLectura, error) {
+	return ListEmpresaControlElectricoLecturasContext(context.Background(), dbConn, empresaID, releID, limit)
+}
+
+func ListEmpresaControlElectricoLecturasContext(ctx context.Context, dbConn *sql.DB, empresaID, releID int64, limit int) ([]EmpresaControlElectricoLectura, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
@@ -1021,7 +1058,7 @@ func ListEmpresaControlElectricoLecturas(dbConn *sql.DB, empresaID, releID int64
 	}
 	q += " ORDER BY id DESC LIMIT ?"
 	args = append(args, limit)
-	rows, err := querySQLCompat(dbConn, q, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1039,20 +1076,32 @@ func ListEmpresaControlElectricoLecturas(dbConn *sql.DB, empresaID, releID int64
 
 // ListEmpresaControlElectricoReglas lista reglas activas o historicas por empresa.
 func ListEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
-	return listEmpresaControlElectricoReglas(dbConn, empresaID, 0, false, includeInactive)
+	return ListEmpresaControlElectricoReglasContext(context.Background(), dbConn, empresaID, includeInactive)
+}
+
+func ListEmpresaControlElectricoReglasContext(ctx context.Context, dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
+	return listEmpresaControlElectricoReglasContext(ctx, dbConn, empresaID, 0, false, includeInactive)
 }
 
 // ListEmpresaControlElectricoReglasByEstacion limita sensores y automatizaciones
 // a una estacion de la misma empresa. La dupla empresa_id/estacion_id evita que
 // una vista operativa mezcle dispositivos de otro tenant o ubicacion.
 func ListEmpresaControlElectricoReglasByEstacion(dbConn *sql.DB, empresaID, estacionID int64, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
+	return ListEmpresaControlElectricoReglasByEstacionContext(context.Background(), dbConn, empresaID, estacionID, includeInactive)
+}
+
+func ListEmpresaControlElectricoReglasByEstacionContext(ctx context.Context, dbConn *sql.DB, empresaID, estacionID int64, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
 	if estacionID <= 0 {
 		return nil, errors.New("estacion_id invalido")
 	}
-	return listEmpresaControlElectricoReglas(dbConn, empresaID, estacionID, true, includeInactive)
+	return listEmpresaControlElectricoReglasContext(ctx, dbConn, empresaID, estacionID, true, includeInactive)
 }
 
 func listEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID, estacionID int64, filterStation, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
+	return listEmpresaControlElectricoReglasContext(context.Background(), dbConn, empresaID, estacionID, filterStation, includeInactive)
+}
+
+func listEmpresaControlElectricoReglasContext(ctx context.Context, dbConn *sql.DB, empresaID, estacionID int64, filterStation, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
@@ -1066,7 +1115,7 @@ func listEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID, estacionID int
 		q += " AND LOWER(COALESCE(estado,'activo')) = 'activo'"
 	}
 	q += " ORDER BY id DESC"
-	rows, err := querySQLCompat(dbConn, q, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1138,10 +1187,14 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 }
 
 func SetEmpresaControlElectricoReglaEstado(dbConn *sql.DB, empresaID, reglaID int64, estado string) error {
+	return SetEmpresaControlElectricoReglaEstadoContext(context.Background(), dbConn, empresaID, reglaID, estado)
+}
+
+func SetEmpresaControlElectricoReglaEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, reglaID int64, estado string) error {
 	if empresaID <= 0 || reglaID <= 0 {
 		return errors.New("empresa_id y regla_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, reglaID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_control_electrico_reglas SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, reglaID)
 	return err
 }
 
@@ -1156,19 +1209,31 @@ func InsertEmpresaControlElectricoEvento(dbConn *sql.DB, ev EmpresaControlElectr
 
 // ListEmpresaControlElectricoEventos lista los eventos recientes.
 func ListEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID int64, limit int) ([]EmpresaControlElectricoEvento, error) {
-	return listEmpresaControlElectricoEventos(dbConn, empresaID, 0, false, limit)
+	return ListEmpresaControlElectricoEventosContext(context.Background(), dbConn, empresaID, limit)
+}
+
+func ListEmpresaControlElectricoEventosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, limit int) ([]EmpresaControlElectricoEvento, error) {
+	return listEmpresaControlElectricoEventosContext(ctx, dbConn, empresaID, 0, false, limit)
 }
 
 // ListEmpresaControlElectricoEventosByEstacion entrega solo la trazabilidad de
 // una estacion dentro de la empresa autenticada.
 func ListEmpresaControlElectricoEventosByEstacion(dbConn *sql.DB, empresaID, estacionID int64, limit int) ([]EmpresaControlElectricoEvento, error) {
+	return ListEmpresaControlElectricoEventosByEstacionContext(context.Background(), dbConn, empresaID, estacionID, limit)
+}
+
+func ListEmpresaControlElectricoEventosByEstacionContext(ctx context.Context, dbConn *sql.DB, empresaID, estacionID int64, limit int) ([]EmpresaControlElectricoEvento, error) {
 	if estacionID <= 0 {
 		return nil, errors.New("estacion_id invalido")
 	}
-	return listEmpresaControlElectricoEventos(dbConn, empresaID, estacionID, true, limit)
+	return listEmpresaControlElectricoEventosContext(ctx, dbConn, empresaID, estacionID, true, limit)
 }
 
 func listEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID, estacionID int64, filterStation bool, limit int) ([]EmpresaControlElectricoEvento, error) {
+	return listEmpresaControlElectricoEventosContext(context.Background(), dbConn, empresaID, estacionID, filterStation, limit)
+}
+
+func listEmpresaControlElectricoEventosContext(ctx context.Context, dbConn *sql.DB, empresaID, estacionID int64, filterStation bool, limit int) ([]EmpresaControlElectricoEvento, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
@@ -1186,7 +1251,7 @@ func listEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID, estacionID in
 	}
 	q += " ORDER BY id DESC LIMIT ?"
 	args = append(args, limit)
-	rows, err := querySQLCompat(dbConn, q, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, q, args...)
 	if err != nil {
 		return nil, err
 	}

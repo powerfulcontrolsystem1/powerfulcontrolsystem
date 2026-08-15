@@ -173,7 +173,7 @@ func TestDomoticaSummaryHidesInactiveRaspberryControllers(t *testing.T) {
 	}
 	source := string(content)
 	for _, marker := range []string{
-		"raspberries, err := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)",
+		"raspberries, err := dbpkg.ListEmpresaControlElectricoRaspberryContext(r.Context(), dbEmp, empresaID, false)",
 		"rows, _ := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)",
 	} {
 		if !strings.Contains(source, marker) {
