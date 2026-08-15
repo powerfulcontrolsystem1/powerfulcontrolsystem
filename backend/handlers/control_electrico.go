@@ -785,7 +785,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "id requerido", http.StatusBadRequest)
 					return
 				}
-				if err := dbpkg.SetEmpresaControlElectricoRaspberryEstado(dbEmp, empresaID, raspberryID, "inactivo"); err != nil {
+				if err := dbpkg.SetEmpresaControlElectricoRaspberryEstadoContext(r.Context(), dbEmp, empresaID, raspberryID, "inactivo"); err != nil {
 					log.Printf("[control_electrico] delete raspberry empresa_id=%d id=%d error: %v", empresaID, raspberryID, err)
 					http.Error(w, "No se pudo desactivar Raspberry Pi", http.StatusInternalServerError)
 					return
@@ -812,7 +812,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "id requerido", http.StatusBadRequest)
 					return
 				}
-				if err := dbpkg.SetEmpresaControlElectricoReglaEstado(dbEmp, empresaID, reglaID, "inactivo"); err != nil {
+				if err := dbpkg.SetEmpresaControlElectricoReglaEstadoContext(r.Context(), dbEmp, empresaID, reglaID, "inactivo"); err != nil {
 					log.Printf("[control_electrico] delete regla empresa_id=%d id=%d error: %v", empresaID, reglaID, err)
 					http.Error(w, "No se pudo desactivar regla", http.StatusInternalServerError)
 					return
@@ -825,7 +825,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				http.Error(w, "id requerido", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.SetEmpresaControlElectricoReleEstado(dbEmp, empresaID, releID, "inactivo"); err != nil {
+			if err := dbpkg.SetEmpresaControlElectricoReleEstadoContext(r.Context(), dbEmp, empresaID, releID, "inactivo"); err != nil {
 				log.Printf("[control_electrico] delete rele empresa_id=%d id=%d error: %v", empresaID, releID, err)
 				http.Error(w, "No se pudo desactivar aparato", http.StatusInternalServerError)
 				return

@@ -42790,6 +42790,8 @@ acumulativa.
   contratos durables: este corte no activa relés ni modifica equipos reales.
 - El reporte conserva su respuesta parcial, pero registra de forma saneada los
   fallos de eventos o telemetría en vez de descartarlos silenciosamente.
+- Las desactivaciones lógicas de Raspberry, reglas y equipos también propagan
+  la cancelación HTTP sin modificar la restricción de `empresa_id`.
 
 ## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
 

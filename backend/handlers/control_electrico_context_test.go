@@ -23,6 +23,9 @@ func TestControlElectricoLecturasHTTPPropaganContextoAlRepositorio(t *testing.T)
 		"ListEmpresaControlElectricoEventosContext(r.Context(), dbEmp",
 		"ListEmpresaControlElectricoEventosByEstacionContext(r.Context(), dbEmp",
 		"ListEmpresaControlElectricoLecturasContext(r.Context(), dbEmp",
+		"SetEmpresaControlElectricoRaspberryEstadoContext(r.Context(), dbEmp",
+		"SetEmpresaControlElectricoReglaEstadoContext(r.Context(), dbEmp",
+		"SetEmpresaControlElectricoReleEstadoContext(r.Context(), dbEmp",
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("falta propagacion cancelable: %s", expected)

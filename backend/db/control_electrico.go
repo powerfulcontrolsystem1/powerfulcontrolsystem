@@ -682,10 +682,14 @@ func UpsertEmpresaControlElectricoRaspberry(dbConn *sql.DB, item *EmpresaControl
 
 // SetEmpresaControlElectricoRaspberryEstado activa o desactiva un controlador GPIO.
 func SetEmpresaControlElectricoRaspberryEstado(dbConn *sql.DB, empresaID, raspberryID int64, estado string) error {
+	return SetEmpresaControlElectricoRaspberryEstadoContext(context.Background(), dbConn, empresaID, raspberryID, estado)
+}
+
+func SetEmpresaControlElectricoRaspberryEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, raspberryID int64, estado string) error {
 	if empresaID <= 0 || raspberryID <= 0 {
 		return errors.New("empresa_id y raspberry_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, raspberryID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, raspberryID)
 	return err
 }
 
@@ -934,10 +938,14 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 
 // SetEmpresaControlElectricoReleEstado cambia estado logico del mapeo.
 func SetEmpresaControlElectricoReleEstado(dbConn *sql.DB, empresaID, releID int64, estado string) error {
+	return SetEmpresaControlElectricoReleEstadoContext(context.Background(), dbConn, empresaID, releID, estado)
+}
+
+func SetEmpresaControlElectricoReleEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, releID int64, estado string) error {
 	if empresaID <= 0 || releID <= 0 {
 		return errors.New("empresa_id y rele_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, releID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_control_electrico_reles SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, releID)
 	return err
 }
 
@@ -1179,10 +1187,14 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 }
 
 func SetEmpresaControlElectricoReglaEstado(dbConn *sql.DB, empresaID, reglaID int64, estado string) error {
+	return SetEmpresaControlElectricoReglaEstadoContext(context.Background(), dbConn, empresaID, reglaID, estado)
+}
+
+func SetEmpresaControlElectricoReglaEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, reglaID int64, estado string) error {
 	if empresaID <= 0 || reglaID <= 0 {
 		return errors.New("empresa_id y regla_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, reglaID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_control_electrico_reglas SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, reglaID)
 	return err
 }
 
