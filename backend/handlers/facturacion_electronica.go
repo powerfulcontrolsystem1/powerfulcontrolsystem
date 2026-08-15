@@ -221,7 +221,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					cajeroQuery = strings.TrimSpace(adminEmailFromRequest(r))
 				}
 
-				items, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
+				items, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresaContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
 					EmpresaID:       empresaID,
 					TipoDocumento:   strings.TrimSpace(r.URL.Query().Get("tipo_documento")),
 					EstadoDocumento: strings.TrimSpace(r.URL.Query().Get("estado_documento")),
@@ -826,7 +826,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "la factura no tiene un CUFE oficial DIAN valido para relacionar la nota credito", http.StatusConflict)
 					return
 				}
-				existentes, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
+				existentes, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresaContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
 					EmpresaID:       payload.EmpresaID,
 					TipoDocumento:   "nota_credito",
 					DocumentoQuery:  factura.DocumentoCodigo,

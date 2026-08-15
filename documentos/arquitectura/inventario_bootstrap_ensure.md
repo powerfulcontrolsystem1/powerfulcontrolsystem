@@ -156,7 +156,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureDefaultRolesForTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1548](../../backend/db/tipo_empresa_preconfiguracion.go#L1548) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1951](../../backend/db/tipo_empresa_preconfiguracion.go#L1951) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaTurnosAtencionSchema` | [backend/db/turnos_atencion.go:109](../../backend/db/turnos_atencion.go#L109) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaUbicacionGPSSchema` | [backend/db/ubicacion_gps.go:66](../../backend/db/ubicacion_gps.go#L66) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaUbicacionGPSSchema` | [backend/db/ubicacion_gps.go:67](../../backend/db/ubicacion_gps.go#L67) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureUsuarioConfiguracionSchema` | [backend/db/usuario_config_schema.go:12](../../backend/db/usuario_config_schema.go#L12) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaUsuariosAuthSchema` | [backend/db/usuarios_empresa.go:56](../../backend/db/usuarios_empresa.go#L56) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaVehiculosRegistroSchema` | [backend/db/vehiculos_registro.go:73](../../backend/db/vehiculos_registro.go#L73) | DDL / indice / funcion | empresas o por confirmar |

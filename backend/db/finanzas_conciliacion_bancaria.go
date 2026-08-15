@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -285,12 +286,16 @@ func maxInt64Bancario(v, min int64) int64 {
 }
 
 func upsertEmpresaFinanzasMovimientoBancario(dbConn *sql.DB, item EmpresaFinanzasMovimientoBancario) (int64, error) {
+	return upsertEmpresaFinanzasMovimientoBancarioContext(context.Background(), dbConn, item)
+}
+
+func upsertEmpresaFinanzasMovimientoBancarioContext(ctx context.Context, dbConn *sql.DB, item EmpresaFinanzasMovimientoBancario) (int64, error) {
 	item, err := normalizeEmpresaFinanzasMovimientoBancario(item)
 	if err != nil {
 		return 0, err
 	}
 
-	_, err = dbConn.Exec(`INSERT INTO empresa_finanzas_bancos_movimientos (
+	_, err = dbConn.ExecContext(ctx, `INSERT INTO empresa_finanzas_bancos_movimientos (
 		empresa_id,
 		periodo_contable,
 		fecha_movimiento,
@@ -378,7 +383,7 @@ func upsertEmpresaFinanzasMovimientoBancario(dbConn *sql.DB, item EmpresaFinanza
 	}
 
 	var id int64
-	if err := dbConn.QueryRow(`SELECT id FROM empresa_finanzas_bancos_movimientos WHERE empresa_id = ? AND hash_movimiento = ? LIMIT 1`, item.EmpresaID, item.HashMovimiento).Scan(&id); err != nil {
+	if err := dbConn.QueryRowContext(ctx, `SELECT id FROM empresa_finanzas_bancos_movimientos WHERE empresa_id = ? AND hash_movimiento = ? LIMIT 1`, item.EmpresaID, item.HashMovimiento).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
@@ -386,6 +391,11 @@ func upsertEmpresaFinanzasMovimientoBancario(dbConn *sql.DB, item EmpresaFinanza
 
 // UpsertEmpresaFinanzasMovimientosBancarios importa o actualiza extractos bancarios por hash idempotente.
 func UpsertEmpresaFinanzasMovimientosBancarios(dbConn *sql.DB, empresaID int64, movimientos []EmpresaFinanzasMovimientoBancario) (EmpresaImportacionMovimientosBancariosResultado, error) {
+	return UpsertEmpresaFinanzasMovimientosBancariosContext(context.Background(), dbConn, empresaID, movimientos)
+}
+
+// UpsertEmpresaFinanzasMovimientosBancariosContext importa extractos con cancelacion de solicitud.
+func UpsertEmpresaFinanzasMovimientosBancariosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, movimientos []EmpresaFinanzasMovimientoBancario) (EmpresaImportacionMovimientosBancariosResultado, error) {
 	result := EmpresaImportacionMovimientosBancariosResultado{
 		EmpresaID: empresaID,
 		IDs:       make([]int64, 0, len(movimientos)),
@@ -406,14 +416,14 @@ func UpsertEmpresaFinanzasMovimientosBancarios(dbConn *sql.DB, empresaID int64, 
 		result.Recibidos++
 
 		var existingID int64
-		err = dbConn.QueryRow(`SELECT id FROM empresa_finanzas_bancos_movimientos WHERE empresa_id = ? AND hash_movimiento = ? LIMIT 1`, normalized.EmpresaID, normalized.HashMovimiento).Scan(&existingID)
+		err = dbConn.QueryRowContext(ctx, `SELECT id FROM empresa_finanzas_bancos_movimientos WHERE empresa_id = ? AND hash_movimiento = ? LIMIT 1`, normalized.EmpresaID, normalized.HashMovimiento).Scan(&existingID)
 		exists := err == nil
 		if err != nil && err != sql.ErrNoRows {
 			result.Errores = append(result.Errores, err.Error())
 			continue
 		}
 
-		id, upsertErr := upsertEmpresaFinanzasMovimientoBancario(dbConn, normalized)
+		id, upsertErr := upsertEmpresaFinanzasMovimientoBancarioContext(ctx, dbConn, normalized)
 		if upsertErr != nil {
 			result.Errores = append(result.Errores, upsertErr.Error())
 			continue
@@ -430,6 +440,11 @@ func UpsertEmpresaFinanzasMovimientosBancarios(dbConn *sql.DB, empresaID int64, 
 
 // ListEmpresaFinanzasMovimientosBancarios lista extractos bancarios por empresa.
 func ListEmpresaFinanzasMovimientosBancarios(dbConn *sql.DB, empresaID int64, f EmpresaFinanzasMovimientoBancarioFilter) ([]EmpresaFinanzasMovimientoBancario, error) {
+	return ListEmpresaFinanzasMovimientosBancariosContext(context.Background(), dbConn, empresaID, f)
+}
+
+// ListEmpresaFinanzasMovimientosBancariosContext lista extractos dentro del ciclo de vida HTTP.
+func ListEmpresaFinanzasMovimientosBancariosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, f EmpresaFinanzasMovimientoBancarioFilter) ([]EmpresaFinanzasMovimientoBancario, error) {
 	query := `SELECT
 		id,
 		empresa_id,
@@ -485,7 +500,7 @@ func ListEmpresaFinanzasMovimientosBancarios(dbConn *sql.DB, empresaID int64, f 
 	query += ` LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -529,6 +544,10 @@ func ListEmpresaFinanzasMovimientosBancarios(dbConn *sql.DB, empresaID int64, f 
 }
 
 func findEmpresaMovimientoFinanzasBancarioMatch(dbConn *sql.DB, empresaID int64, item EmpresaFinanzasMovimientoBancario, cfg EmpresaConciliacionBancariaAutoConfig) (int64, error) {
+	return findEmpresaMovimientoFinanzasBancarioMatchContext(context.Background(), dbConn, empresaID, item, cfg)
+}
+
+func findEmpresaMovimientoFinanzasBancarioMatchContext(ctx context.Context, dbConn *sql.DB, empresaID int64, item EmpresaFinanzasMovimientoBancario, cfg EmpresaConciliacionBancariaAutoConfig) (int64, error) {
 	montoObjetivo := item.Total
 	if montoObjetivo <= 0 {
 		montoObjetivo = item.Monto
@@ -584,7 +603,7 @@ func findEmpresaMovimientoFinanzasBancarioMatch(dbConn *sql.DB, empresaID int64,
 	args = append(args, referencia, referencia, referencia, referencia, fechaObjetivo, montoObjetivo)
 
 	var movimientoID int64
-	err := dbConn.QueryRow(query, args...).Scan(&movimientoID)
+	err := dbConn.QueryRowContext(ctx, query, args...).Scan(&movimientoID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
@@ -595,7 +614,11 @@ func findEmpresaMovimientoFinanzasBancarioMatch(dbConn *sql.DB, empresaID int64,
 }
 
 func setEmpresaMovimientoBancarioConciliado(dbConn *sql.DB, itemID, movimientoID int64, usuario string) error {
-	_, err := dbConn.Exec(`UPDATE empresa_finanzas_bancos_movimientos
+	return setEmpresaMovimientoBancarioConciliadoContext(context.Background(), dbConn, itemID, movimientoID, usuario)
+}
+
+func setEmpresaMovimientoBancarioConciliadoContext(ctx context.Context, dbConn *sql.DB, itemID, movimientoID int64, usuario string) error {
+	_, err := dbConn.ExecContext(ctx, `UPDATE empresa_finanzas_bancos_movimientos
 	SET movimiento_finanzas_id = ?,
 		estado_conciliacion = 'conciliado',
 		conciliado_en = CURRENT_TIMESTAMP,
@@ -606,7 +629,11 @@ func setEmpresaMovimientoBancarioConciliado(dbConn *sql.DB, itemID, movimientoID
 }
 
 func setEmpresaMovimientoBancarioConDesviacion(dbConn *sql.DB, itemID int64) error {
-	_, err := dbConn.Exec(`UPDATE empresa_finanzas_bancos_movimientos
+	return setEmpresaMovimientoBancarioConDesviacionContext(context.Background(), dbConn, itemID)
+}
+
+func setEmpresaMovimientoBancarioConDesviacionContext(ctx context.Context, dbConn *sql.DB, itemID int64) error {
+	_, err := dbConn.ExecContext(ctx, `UPDATE empresa_finanzas_bancos_movimientos
 	SET movimiento_finanzas_id = 0,
 		estado_conciliacion = 'con_desviacion',
 		conciliado_en = '',
@@ -618,6 +645,11 @@ func setEmpresaMovimientoBancarioConDesviacion(dbConn *sql.DB, itemID int64) err
 
 // ConciliarEmpresaMovimientosBancariosAutomatico ejecuta conciliacion bancaria automatica contra movimientos financieros internos.
 func ConciliarEmpresaMovimientosBancariosAutomatico(dbConn *sql.DB, empresaID int64, cfg EmpresaConciliacionBancariaAutoConfig) (EmpresaConciliacionBancariaAutoResultado, error) {
+	return ConciliarEmpresaMovimientosBancariosAutomaticoContext(context.Background(), dbConn, empresaID, cfg)
+}
+
+// ConciliarEmpresaMovimientosBancariosAutomaticoContext conserva el contexto durante lecturas y actualizaciones.
+func ConciliarEmpresaMovimientosBancariosAutomaticoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, cfg EmpresaConciliacionBancariaAutoConfig) (EmpresaConciliacionBancariaAutoResultado, error) {
 	result := EmpresaConciliacionBancariaAutoResultado{
 		EmpresaID: empresaID,
 		Errores:   make([]string, 0),
@@ -684,7 +716,7 @@ func ConciliarEmpresaMovimientosBancariosAutomatico(dbConn *sql.DB, empresaID in
 	query += ` ORDER BY pcs_ts(fecha_movimiento) ASC, id ASC LIMIT ?`
 	args = append(args, cfg.Limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return result, err
 	}
@@ -730,7 +762,7 @@ func ConciliarEmpresaMovimientosBancariosAutomatico(dbConn *sql.DB, empresaID in
 
 	result.Revisados = len(items)
 	for _, item := range items {
-		movimientoID, matchErr := findEmpresaMovimientoFinanzasBancarioMatch(dbConn, empresaID, item, cfg)
+		movimientoID, matchErr := findEmpresaMovimientoFinanzasBancarioMatchContext(ctx, dbConn, empresaID, item, cfg)
 		if matchErr != nil {
 			if len(result.Errores) < 20 {
 				result.Errores = append(result.Errores, fmt.Sprintf("extracto_id=%d: %s", item.ID, matchErr.Error()))
@@ -739,7 +771,7 @@ func ConciliarEmpresaMovimientosBancariosAutomatico(dbConn *sql.DB, empresaID in
 		}
 
 		if movimientoID > 0 {
-			if err := setEmpresaMovimientoBancarioConciliado(dbConn, item.ID, movimientoID, cfg.Usuario); err != nil {
+			if err := setEmpresaMovimientoBancarioConciliadoContext(ctx, dbConn, item.ID, movimientoID, cfg.Usuario); err != nil {
 				if len(result.Errores) < 20 {
 					result.Errores = append(result.Errores, fmt.Sprintf("extracto_id=%d: %s", item.ID, err.Error()))
 				}
@@ -754,7 +786,7 @@ func ConciliarEmpresaMovimientosBancariosAutomatico(dbConn *sql.DB, empresaID in
 			continue
 		}
 
-		if err := setEmpresaMovimientoBancarioConDesviacion(dbConn, item.ID); err != nil {
+		if err := setEmpresaMovimientoBancarioConDesviacionContext(ctx, dbConn, item.ID); err != nil {
 			if len(result.Errores) < 20 {
 				result.Errores = append(result.Errores, fmt.Sprintf("extracto_id=%d: %s", item.ID, err.Error()))
 			}
@@ -789,6 +821,11 @@ func getOrCreateEmpresaConciliacionBancariaPeriodo(periodos map[string]*EmpresaC
 
 // GetEmpresaConciliacionBancariaPorPeriodo construye el tablero de desviaciones financieras y conciliacion bancaria.
 func GetEmpresaConciliacionBancariaPorPeriodo(dbConn *sql.DB, empresaID int64, f EmpresaConciliacionBancariaFilter) (EmpresaConciliacionBancariaResumen, error) {
+	return GetEmpresaConciliacionBancariaPorPeriodoContext(context.Background(), dbConn, empresaID, f)
+}
+
+// GetEmpresaConciliacionBancariaPorPeriodoContext construye el tablero bajo el contexto de la solicitud.
+func GetEmpresaConciliacionBancariaPorPeriodoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, f EmpresaConciliacionBancariaFilter) (EmpresaConciliacionBancariaResumen, error) {
 	resumen := EmpresaConciliacionBancariaResumen{
 		EmpresaID:       empresaID,
 		Desde:           strings.TrimSpace(f.Desde),
@@ -834,7 +871,7 @@ func GetEmpresaConciliacionBancariaPorPeriodo(dbConn *sql.DB, empresaID int64, f
 	}
 	queryExtractos += ` GROUP BY ` + periodoExtractoExpr
 
-	rowsExtractos, err := dbConn.Query(queryExtractos, argsExtractos...)
+	rowsExtractos, err := dbConn.QueryContext(ctx, queryExtractos, argsExtractos...)
 	if err != nil {
 		return resumen, err
 	}
@@ -900,7 +937,7 @@ func GetEmpresaConciliacionBancariaPorPeriodo(dbConn *sql.DB, empresaID int64, f
 	}
 	queryInternos += ` GROUP BY ` + periodoInternoExpr
 
-	rowsInternos, err := dbConn.Query(queryInternos, argsInternos...)
+	rowsInternos, err := dbConn.QueryContext(ctx, queryInternos, argsInternos...)
 	if err != nil {
 		return resumen, err
 	}

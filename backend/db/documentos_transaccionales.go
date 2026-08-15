@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -396,7 +397,7 @@ func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) err
 
 // GetEmpresaDocumentoFacturacionByCodigo obtiene un documento de facturacion por llave de negocio.
 func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*EmpresaDocumentoFacturacion, error) {
-	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 
@@ -495,7 +496,7 @@ func UpdateEmpresaDocumentoFacturacionCliente(dbConn *sql.DB, empresaID int64, t
 
 // UpsertEmpresaDocumentoFacturacion registra o actualiza estado transaccional de facturacion.
 func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoFacturacion) (*EmpresaDocumentoFacturacion, error) {
-	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 
@@ -597,6 +598,11 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 
 // ListEmpresaDocumentosFacturacionByEmpresa lista documentos de facturación por empresa con filtros operativos.
 func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDocumentoFacturacionListFilter) ([]EmpresaDocumentoFacturacionListado, error) {
+	return ListEmpresaDocumentosFacturacionByEmpresaContext(context.Background(), dbConn, filter)
+}
+
+// ListEmpresaDocumentosFacturacionByEmpresaContext lista documentos dentro del ciclo de vida de la solicitud.
+func ListEmpresaDocumentosFacturacionByEmpresaContext(ctx context.Context, dbConn *sql.DB, filter EmpresaDocumentoFacturacionListFilter) ([]EmpresaDocumentoFacturacionListado, error) {
 	if filter.EmpresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -714,7 +720,7 @@ func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDoc
 	LIMIT ? OFFSET ?`
 	args = append(args, filter.Limit, filter.Offset)
 
-	rows, err := ExecQueryCompat(dbConn, query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1153,7 +1159,7 @@ func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, ti
 
 // UpdateEmpresaDocumentoCompraComprobante actualiza la evidencia adjunta de un documento de compras.
 func UpdateEmpresaDocumentoCompraComprobante(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo, comprobanteURL, comprobanteNombre string) error {
-	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+	if err := EmpresaDocumentosTransaccionalesSchemaReady(dbConn); err != nil {
 		return err
 	}
 	if empresaID <= 0 {

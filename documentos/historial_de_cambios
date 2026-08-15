@@ -42716,3 +42716,58 @@ acumulativa.
   inserción y actualización bajo el mismo `empresa_id`.
 - Pruebas focalizadas, `go vet` y auditoría aprueban. La deuda DB sin contexto
   baja de 519 a 516; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: lectura GPS cancelable
+
+- El listado y conteo de dispositivos GPS conservan `r.Context()` hasta
+  PostgreSQL, manteniendo filtros y conteo por `empresa_id`.
+- Pruebas GPS de DB/handlers, `go vet` y auditoría aprueban. La deuda DB sin
+  contexto baja de 516 a 514; no se ejecutó `rs`.
+## 2026-08-14 - Plan 110: CRUD GPS cancelable
+
+- Alta, actualización y cambio de estado de dispositivos GPS conservan
+  `r.Context()` hasta PostgreSQL y mantienen sus filtros por `empresa_id`.
+- Pruebas GPS de DB/handlers, `go vet` y auditoría aprueban. La deuda DB sin
+  contexto baja de 514 a 512; no se ejecutó `rs`.
+## 2026-08-15 - Plan 110: recorridos GPS cancelables
+
+- El listado y cambio de estado de puntos de recorrido GPS conservan
+  `r.Context()` hasta PostgreSQL y mantienen el filtro obligatorio por
+  `empresa_id`.
+- Pruebas GPS de DB/handlers y auditoría aprueban. La deuda DB sin contexto
+  baja de 512 a 510; no se ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: conciliación bancaria cancelable
+
+- El tablero, listado, importación idempotente y conciliación automática de
+  extractos bancarios conservan `r.Context()` hasta PostgreSQL, sin cambiar
+  filtros obligatorios por `empresa_id`, hash de idempotencia ni reglas de
+  conciliación.
+- Una regresión evita que el handler vuelva a usar los wrappers no
+  cancelables. Pruebas focalizadas, `go vet` y auditoría estructural aprueban;
+  no se ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: caracterización de frontera fiscal
+
+- Una regresión protege la ruta de facturación electrónica con su middleware
+  empresarial, el alcance por `empresa_id` y la regla de anulación mediante
+  nota crédito aceptada por DIAN.
+- No se emitieron, anularon ni modificaron documentos reales; la prueba y
+  `go vet` de Handlers aprueban.
+
+## 2026-08-15 - Plan 110: documentos transaccionales sin DDL en tráfico
+
+- Las operaciones de lectura y persistencia de documentos fiscales, y la
+  actualización de comprobantes de compra, verifican el esquema en modo
+  lectura y fallan cerradas si falta la migración; el DDL queda exclusivamente
+  bajo el catálogo ejecutado por `pcs-migrate`.
+- La regresión impide reintroducir `EnsureEmpresaDocumentosTransaccionalesSchema`
+  dentro de una operación runtime. Pruebas de DB y `go vet` aprueban; no se
+  ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: listado fiscal cancelable
+
+- El listado de documentos de facturación usa contexto cancelable en las rutas
+  HTTP de consulta y anulación por nota crédito, conservando sus filtros por
+  `empresa_id`, cliente, cajero, fecha y documento.
+- Los consumidores internos conservan el wrapper histórico. Pruebas fiscales,
+  DB y `go vet` quedan requeridas antes de integrar; no se ejecutó `rs`.

@@ -409,7 +409,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "limit invalido", http.StatusBadRequest)
 					return
 				}
-				resumen, err := dbpkg.GetEmpresaConciliacionBancariaPorPeriodo(dbEmp, empresaID, dbpkg.EmpresaConciliacionBancariaFilter{
+				resumen, err := dbpkg.GetEmpresaConciliacionBancariaPorPeriodoContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaConciliacionBancariaFilter{
 					Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
 					Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
 					PeriodoContable: strings.TrimSpace(r.URL.Query().Get("periodo")),
@@ -449,7 +449,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "limit invalido", http.StatusBadRequest)
 					return
 				}
-				rows, err := dbpkg.ListEmpresaFinanzasMovimientosBancarios(dbEmp, empresaID, dbpkg.EmpresaFinanzasMovimientoBancarioFilter{
+				rows, err := dbpkg.ListEmpresaFinanzasMovimientosBancariosContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaFinanzasMovimientoBancarioFilter{
 					Desde:              strings.TrimSpace(r.URL.Query().Get("desde")),
 					Hasta:              strings.TrimSpace(r.URL.Query().Get("hasta")),
 					PeriodoContable:    strings.TrimSpace(r.URL.Query().Get("periodo")),
@@ -587,7 +587,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					payload.Movimientos[i].UsuarioCreador = usuarioOperacion
 				}
 
-				importacion, err := dbpkg.UpsertEmpresaFinanzasMovimientosBancarios(dbEmp, payload.EmpresaID, payload.Movimientos)
+				importacion, err := dbpkg.UpsertEmpresaFinanzasMovimientosBancariosContext(r.Context(), dbEmp, payload.EmpresaID, payload.Movimientos)
 				if err != nil {
 					http.Error(w, "No se pudieron importar los extractos bancarios", http.StatusBadRequest)
 					return
@@ -628,7 +628,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 						toleranciaMonto = v
 					}
 
-					resultado, err := dbpkg.ConciliarEmpresaMovimientosBancariosAutomatico(dbEmp, payload.EmpresaID, dbpkg.EmpresaConciliacionBancariaAutoConfig{
+					resultado, err := dbpkg.ConciliarEmpresaMovimientosBancariosAutomaticoContext(r.Context(), dbEmp, payload.EmpresaID, dbpkg.EmpresaConciliacionBancariaAutoConfig{
 						Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
 						Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
 						PeriodoContable: strings.TrimSpace(r.URL.Query().Get("periodo")),
@@ -766,7 +766,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 
-				resultado, err := dbpkg.ConciliarEmpresaMovimientosBancariosAutomatico(dbEmp, empresaID, dbpkg.EmpresaConciliacionBancariaAutoConfig{
+				resultado, err := dbpkg.ConciliarEmpresaMovimientosBancariosAutomaticoContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaConciliacionBancariaAutoConfig{
 					Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
 					Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
 					PeriodoContable: strings.TrimSpace(r.URL.Query().Get("periodo")),

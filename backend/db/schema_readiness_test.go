@@ -58,6 +58,20 @@ func TestEmpresaDocumentosTransaccionalesSchemaReadyRejectsNilDatabase(t *testin
 	}
 }
 
+func TestDocumentosTransaccionalesNoEjecutanDDLEnOperacionesRuntime(t *testing.T) {
+	raw, err := os.ReadFile("documentos_transaccionales.go")
+	if err != nil {
+		t.Fatalf("read transactional documents repository: %v", err)
+	}
+	source := string(raw)
+	if got := strings.Count(source, "EnsureEmpresaDocumentosTransaccionalesSchema("); got != 1 {
+		t.Fatalf("runtime repository must not call schema ensure; found %d occurrences", got)
+	}
+	if got := strings.Count(source, "EmpresaDocumentosTransaccionalesSchemaReady(dbConn)"); got < 3 {
+		t.Fatalf("runtime document operations must fail closed on missing schema; readiness calls=%d", got)
+	}
+}
+
 func TestEmpresaFacturacionElectronicaSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaFacturacionElectronicaSchemaReady(nil); err == nil {
 		t.Fatal("expected nil database to be rejected")
