@@ -305,7 +305,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				handleDomoticaRaspberrySSHProfile(w, r, dbEmp, empresaID)
 				return
 			case "", "resumen":
-				cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, true)
+				cfg, err := dbpkg.GetEmpresaControlElectricoConfigContext(r.Context(), dbEmp, empresaID, true)
 				if err != nil {
 					log.Printf("[control_electrico] get config empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudo cargar configuracion de domotica", http.StatusInternalServerError)
@@ -318,27 +318,27 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudieron cargar estaciones de domotica", http.StatusInternalServerError)
 					return
 				}
-				eventos, err := dbpkg.ListEmpresaControlElectricoEventos(dbEmp, empresaID, 25)
+				eventos, err := dbpkg.ListEmpresaControlElectricoEventosContext(r.Context(), dbEmp, empresaID, 25)
 				if err != nil {
 					log.Printf("[control_electrico] list eventos empresa_id=%d error: %v", empresaID, err)
 					eventos = []dbpkg.EmpresaControlElectricoEvento{}
 				}
-				reles, err := dbpkg.ListEmpresaControlElectricoReles(dbEmp, empresaID, true)
+				reles, err := dbpkg.ListEmpresaControlElectricoRelesContext(r.Context(), dbEmp, empresaID, true)
 				if err != nil {
 					log.Printf("[control_electrico] list reles resumen empresa_id=%d error: %v", empresaID, err)
 					reles = []dbpkg.EmpresaControlElectricoRele{}
 				}
-				raspberries, err := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)
+				raspberries, err := dbpkg.ListEmpresaControlElectricoRaspberryContext(r.Context(), dbEmp, empresaID, false)
 				if err != nil {
 					log.Printf("[control_electrico] list raspberry resumen empresa_id=%d error: %v", empresaID, err)
 					raspberries = []dbpkg.EmpresaControlElectricoRaspberry{}
 				}
-				lecturas, err := dbpkg.ListEmpresaControlElectricoLecturas(dbEmp, empresaID, 0, 50)
+				lecturas, err := dbpkg.ListEmpresaControlElectricoLecturasContext(r.Context(), dbEmp, empresaID, 0, 50)
 				if err != nil {
 					log.Printf("[control_electrico] list lecturas resumen empresa_id=%d error: %v", empresaID, err)
 					lecturas = []dbpkg.EmpresaControlElectricoLectura{}
 				}
-				reglas, err := dbpkg.ListEmpresaControlElectricoReglas(dbEmp, empresaID, true)
+				reglas, err := dbpkg.ListEmpresaControlElectricoReglasContext(r.Context(), dbEmp, empresaID, true)
 				if err != nil {
 					log.Printf("[control_electrico] list reglas resumen empresa_id=%d error: %v", empresaID, err)
 					reglas = []dbpkg.EmpresaControlElectricoRegla{}
@@ -354,7 +354,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				})
 				return
 			case "config":
-				cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, false)
+				cfg, err := dbpkg.GetEmpresaControlElectricoConfigContext(r.Context(), dbEmp, empresaID, false)
 				if err != nil {
 					log.Printf("[control_electrico] get config empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudo cargar configuracion de domotica", http.StatusInternalServerError)
@@ -363,7 +363,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				writeJSON(w, http.StatusOK, cfg)
 				return
 			case "reles":
-				reles, err := dbpkg.ListEmpresaControlElectricoReles(dbEmp, empresaID, controlElectricoIncludeInactive(r))
+				reles, err := dbpkg.ListEmpresaControlElectricoRelesContext(r.Context(), dbEmp, empresaID, controlElectricoIncludeInactive(r))
 				if err != nil {
 					log.Printf("[control_electrico] list reles empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudieron cargar aparatos", http.StatusInternalServerError)
@@ -372,7 +372,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				writeJSON(w, http.StatusOK, reles)
 				return
 			case "raspberry_pis":
-				rows, err := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, controlElectricoIncludeInactive(r))
+				rows, err := dbpkg.ListEmpresaControlElectricoRaspberryContext(r.Context(), dbEmp, empresaID, controlElectricoIncludeInactive(r))
 				if err != nil {
 					log.Printf("[control_electrico] list raspberry_pis empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudieron cargar Raspberry Pi", http.StatusInternalServerError)
@@ -386,31 +386,31 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "estacion_id requerido", http.StatusBadRequest)
 					return
 				}
-				cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, false)
+				cfg, err := dbpkg.GetEmpresaControlElectricoConfigContext(r.Context(), dbEmp, empresaID, false)
 				if err != nil {
 					log.Printf("[control_electrico] get station config empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
 					http.Error(w, "No se pudo cargar configuracion de domotica", http.StatusInternalServerError)
 					return
 				}
-				reles, err := dbpkg.ListEmpresaControlElectricoRelesByEstacion(dbEmp, empresaID, estacionID, false)
+				reles, err := dbpkg.ListEmpresaControlElectricoRelesByEstacionContext(r.Context(), dbEmp, empresaID, estacionID, false)
 				if err != nil {
 					log.Printf("[control_electrico] list station reles empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
 					http.Error(w, "No se pudieron cargar aparatos de domotica de la estacion", http.StatusInternalServerError)
 					return
 				}
-				reglas, err := dbpkg.ListEmpresaControlElectricoReglasByEstacion(dbEmp, empresaID, estacionID, false)
+				reglas, err := dbpkg.ListEmpresaControlElectricoReglasByEstacionContext(r.Context(), dbEmp, empresaID, estacionID, false)
 				if err != nil {
 					log.Printf("[control_electrico] list station sensors empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
 					http.Error(w, "No se pudieron cargar sensores de domotica de la estacion", http.StatusInternalServerError)
 					return
 				}
-				eventos, err := dbpkg.ListEmpresaControlElectricoEventosByEstacion(dbEmp, empresaID, estacionID, 200)
+				eventos, err := dbpkg.ListEmpresaControlElectricoEventosByEstacionContext(r.Context(), dbEmp, empresaID, estacionID, 200)
 				if err != nil {
 					log.Printf("[control_electrico] list station events empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
 					http.Error(w, "No se pudo cargar el estado de sensores de la estacion", http.StatusInternalServerError)
 					return
 				}
-				raspberryPIs, err := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)
+				raspberryPIs, err := dbpkg.ListEmpresaControlElectricoRaspberryContext(r.Context(), dbEmp, empresaID, false)
 				if err != nil {
 					log.Printf("[control_electrico] list station raspberry empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
 					http.Error(w, "No se pudieron cargar controladores de la estacion", http.StatusInternalServerError)
@@ -427,7 +427,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				return
 			case "eventos":
 				limit := controlElectricoParseLimit(r, 50)
-				eventos, err := dbpkg.ListEmpresaControlElectricoEventos(dbEmp, empresaID, limit)
+				eventos, err := dbpkg.ListEmpresaControlElectricoEventosContext(r.Context(), dbEmp, empresaID, limit)
 				if err != nil {
 					log.Printf("[control_electrico] list eventos empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudieron cargar eventos de domotica", http.StatusInternalServerError)
@@ -438,7 +438,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 			case "lecturas":
 				limit := controlElectricoParseLimit(r, 50)
 				releID, _ := parseInt64QueryOptional(r, "rele_id")
-				lecturas, err := dbpkg.ListEmpresaControlElectricoLecturas(dbEmp, empresaID, releID, limit)
+				lecturas, err := dbpkg.ListEmpresaControlElectricoLecturasContext(r.Context(), dbEmp, empresaID, releID, limit)
 				if err != nil {
 					log.Printf("[control_electrico] list lecturas empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudieron cargar lecturas de domotica", http.StatusInternalServerError)
@@ -447,18 +447,18 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				writeJSON(w, http.StatusOK, lecturas)
 				return
 			case "reportes":
-				reles, err := dbpkg.ListEmpresaControlElectricoReles(dbEmp, empresaID, true)
+				reles, err := dbpkg.ListEmpresaControlElectricoRelesContext(r.Context(), dbEmp, empresaID, true)
 				if err != nil {
 					log.Printf("[control_electrico] report reles empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudo generar reporte de aparatos", http.StatusInternalServerError)
 					return
 				}
-				eventos, _ := dbpkg.ListEmpresaControlElectricoEventos(dbEmp, empresaID, 200)
-				lecturas, _ := dbpkg.ListEmpresaControlElectricoLecturas(dbEmp, empresaID, 0, 200)
+				eventos, _ := dbpkg.ListEmpresaControlElectricoEventosContext(r.Context(), dbEmp, empresaID, 200)
+				lecturas, _ := dbpkg.ListEmpresaControlElectricoLecturasContext(r.Context(), dbEmp, empresaID, 0, 200)
 				writeJSON(w, http.StatusOK, buildControlElectricoReporte(empresaID, reles, eventos, lecturas))
 				return
 			case "reglas":
-				reglas, err := dbpkg.ListEmpresaControlElectricoReglas(dbEmp, empresaID, controlElectricoIncludeInactive(r))
+				reglas, err := dbpkg.ListEmpresaControlElectricoReglasContext(r.Context(), dbEmp, empresaID, controlElectricoIncludeInactive(r))
 				if err != nil {
 					log.Printf("[control_electrico] list reglas empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudieron cargar reglas de domotica", http.StatusInternalServerError)

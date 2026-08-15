@@ -42781,6 +42781,14 @@ acumulativa.
 - Regresiones de frontera fiscal y esquema, pruebas DB/Handlers y `go vet`
   aprueban antes de integración; no se ejecutó `rs`.
 
+## 2026-08-15 - Plan 110: lecturas de Domótica cancelables
+
+- Configuración, Raspberry, salidas eléctricas, sensores, reglas, eventos y
+  telemetría de las vistas HTTP propagan `r.Context()` hasta PostgreSQL y
+  mantienen los filtros obligatorios por `empresa_id` y estación.
+- El túnel, los comandos GPIO y los jobs de programación conservan sus
+  contratos durables: este corte no activa relés ni modifica equipos reales.
+
 ## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
 
 - El listado, eliminación lógica y carga de comprobante de compras propagan
