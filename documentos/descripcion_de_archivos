@@ -13252,6 +13252,11 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 
 backend/db/repository_helpers.go | Helper interno para generación compartida de códigos alfanuméricos de repositorios; no expone endpoints ni cambia persistencia.
 
+2026-08-15 - Contratos de frontera fiscal Plan 110
+- `backend/handlers/facturacion_electronica_boundary_test.go`: regresión de la
+  envoltura empresarial, alcance por `empresa_id` y anulación fiscal mediante
+  nota crédito aceptada; no emite ni altera documentos reales.
+
 2026-08-13 - Utilidades transversales de plataforma
 - `backend/internal/platform/valueutil/valueutil.go`: normalización estándar de texto, hosts, fechas, JSON, identificadores SQL y valores numéricos usada por API, DB, worker y herramientas.
 - `backend/internal/platform/valueutil/valueutil_test.go`: contratos Unicode, host IPv6, identificador SQL, JSON de respaldo y límites genéricos.

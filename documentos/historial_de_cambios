@@ -42745,3 +42745,11 @@ acumulativa.
 - Una regresión evita que el handler vuelva a usar los wrappers no
   cancelables. Pruebas focalizadas, `go vet` y auditoría estructural aprueban;
   no se ejecutó `rs`.
+
+## 2026-08-15 - Plan 110: caracterización de frontera fiscal
+
+- Una regresión protege la ruta de facturación electrónica con su middleware
+  empresarial, el alcance por `empresa_id` y la regla de anulación mediante
+  nota crédito aceptada por DIAN.
+- No se emitieron, anularon ni modificaron documentos reales; la prueba y
+  `go vet` de Handlers aprueban.
