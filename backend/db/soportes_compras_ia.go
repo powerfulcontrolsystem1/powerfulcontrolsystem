@@ -571,17 +571,23 @@ func UpdateEmpresaSoporteComprasIARevision(dbConn *sql.DB, empresaID, soporteID 
 }
 
 func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID int64, usuario string) (EmpresaSoporteComprasIA, error) {
+	return ContabilizarEmpresaSoporteComprasIAContext(context.Background(), dbConn, empresaID, soporteID, usuario)
+}
+
+// ContabilizarEmpresaSoporteComprasIAContext is only called after a separate
+// human approval. It makes the canonical CxP/outbox transaction cancelable.
+func ContabilizarEmpresaSoporteComprasIAContext(ctx context.Context, dbConn *sql.DB, empresaID, soporteID int64, usuario string) (EmpresaSoporteComprasIA, error) {
 	if empresaID <= 0 || soporteID <= 0 {
 		return EmpresaSoporteComprasIA{}, errors.New("empresa_id y soporte_id son obligatorios")
 	}
-	if err := EmpresaSoportesComprasIASchemaReady(dbConn); err != nil {
+	if err := EmpresaSoportesComprasIASchemaReadyContext(ctx, dbConn); err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
 	usuario = strings.TrimSpace(usuario)
 	if usuario == "" {
 		usuario = "sistema"
 	}
-	tx, err := dbConn.Begin()
+	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
@@ -591,7 +597,7 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 	var proveedorID int64
 	var total float64
 	var convertidoID int64
-	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(codigo,''), COALESCE(estado_soporte,'radicado'), COALESCE(estado,'activo'), COALESCE(proveedor_id,0),
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(codigo,''), COALESCE(estado_soporte,'radicado'), COALESCE(estado,'activo'), COALESCE(proveedor_id,0),
 		COALESCE(documento_tipo,'factura_compra'), COALESCE(documento_numero,''),
 		COALESCE(fecha_documento,''), COALESCE(fecha_vencimiento,''), COALESCE(total,0), COALESCE(moneda,'COP'), COALESCE(convertido_id,0)
 		FROM empresa_soportes_compras_ia WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, soporteID).
@@ -606,7 +612,7 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 		if err := tx.Commit(); err != nil {
 			return EmpresaSoporteComprasIA{}, err
 		}
-		return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+		return GetEmpresaSoporteComprasIAContext(ctx, dbConn, empresaID, soporteID)
 	}
 	if estadoSoporte != "aprobado" {
 		return EmpresaSoporteComprasIA{}, errors.New("el soporte debe estar aprobado antes de contabilizar")
@@ -615,7 +621,7 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 		return EmpresaSoporteComprasIA{}, errors.New("el soporte aprobado debe seleccionar un proveedor registrado de la empresa")
 	}
 	var proveedorEstado, proveedorNombre string
-	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado,'activo'), COALESCE(nombre,'')
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado,'activo'), COALESCE(nombre,'')
 		FROM proveedores WHERE empresa_id=? AND id=?`, empresaID, proveedorID).Scan(&proveedorEstado, &proveedorNombre); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return EmpresaSoporteComprasIA{}, errors.New("el proveedor no pertenece a la empresa activa")
@@ -637,7 +643,7 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 	if codigoCxP == "CXP-" {
 		return EmpresaSoporteComprasIA{}, errors.New("el soporte aprobado no tiene codigo operativo")
 	}
-	cxpID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_cuentas_por_pagar
+	cxpID, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_cuentas_por_pagar
 		(empresa_id,codigo,proveedor_id,proveedor_nombre,documento_tipo,documento_codigo,fecha_emision,fecha_vencimiento,dias_mora,valor_original,valor_pagado,saldo,estado_cartera,moneda,periodo_contable,usuario_creador,estado,observaciones)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, empresaID, codigoCxP, proveedorID, proveedorNombreCanonico, documentoTipo, documentoNumero,
 		fechaDocumento, fechaVencimiento, 0, total, 0, total, "pendiente", strings.ToUpper(strings.TrimSpace(moneda)),
@@ -645,7 +651,7 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	updated, err := execTxSQLCompat(tx, `UPDATE empresa_soportes_compras_ia SET estado_soporte='contabilizado', convertido_tipo='cuenta_por_pagar', convertido_id=?, requiere_revision_humana=0, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=? AND estado_soporte='aprobado'`, cxpID, usuario, empresaID, soporteID)
+	updated, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_soportes_compras_ia SET estado_soporte='contabilizado', convertido_tipo='cuenta_por_pagar', convertido_id=?, requiere_revision_humana=0, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=? AND estado_soporte='aprobado'`, cxpID, usuario, empresaID, soporteID)
 	if err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
@@ -653,19 +659,19 @@ func ContabilizarEmpresaSoporteComprasIA(dbConn *sql.DB, empresaID, soporteID in
 		return EmpresaSoporteComprasIA{}, errors.New("el soporte cambio de estado antes de contabilizar")
 	}
 	detalle, _ := json.Marshal(map[string]interface{}{"cuenta_por_pagar_id": cxpID, "proveedor_id": proveedorID, "documento": documentoNumero, "total": total})
-	if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_soportes_compras_ia_eventos
+	if _, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_soportes_compras_ia_eventos
 		(empresa_id,soporte_id,evento,estado_anterior,estado_nuevo,detalle_json,usuario_creador)
 		VALUES (?,?,?,?,?,?,?)`, empresaID, soporteID, "contabilizar", estadoSoporte, "contabilizado", string(detalle), usuario); err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
 	outboxPayload, _ := json.Marshal(map[string]interface{}{"soporte_id": soporteID, "cuenta_por_pagar_id": cxpID, "proveedor_id": proveedorID, "total": total})
-	if err := InsertOutboxEvent(tx, OutboxEvent{EmpresaID: empresaID, Topic: "cuentas_por_pagar.soporte_ia_contabilizado", PayloadJSON: string(outboxPayload), IdempotencyKey: fmt.Sprintf("soporte-ia-cxp:%d:%d", empresaID, soporteID)}); err != nil {
+	if err := InsertOutboxEventContext(ctx, tx, OutboxEvent{EmpresaID: empresaID, Topic: "cuentas_por_pagar.soporte_ia_contabilizado", PayloadJSON: string(outboxPayload), IdempotencyKey: fmt.Sprintf("soporte-ia-cxp:%d:%d", empresaID, soporteID)}); err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
 	if err := tx.Commit(); err != nil {
 		return EmpresaSoporteComprasIA{}, err
 	}
-	return GetEmpresaSoporteComprasIA(dbConn, empresaID, soporteID)
+	return GetEmpresaSoporteComprasIAContext(ctx, dbConn, empresaID, soporteID)
 }
 
 func nombreProveedorCxPCanonico(razonSocial, nombreComercial string) string {

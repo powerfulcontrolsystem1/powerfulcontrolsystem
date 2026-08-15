@@ -346,7 +346,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		row, err := dbpkg.ContabilizarEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, usuario)
+		row, err := dbpkg.ContabilizarEmpresaSoporteComprasIAContext(r.Context(), dbEmp, empresaID, payload.SoporteID, usuario)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

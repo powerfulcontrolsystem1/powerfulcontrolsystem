@@ -20,6 +20,7 @@ func TestSoportesComprasIAGetPropagaContextoYNoEjecutaDDL(t *testing.T) {
 		"ListEmpresaSoportesComprasIAEventosContext(r.Context(), dbEmp",
 		"UpdateEmpresaSoporteComprasIARegistroEstadoContext(r.Context(), dbEmp",
 		"UpdateEmpresaSoporteComprasIAEstadoContext(r.Context(), dbEmp",
+		"ContabilizarEmpresaSoporteComprasIAContext(r.Context(), dbEmp",
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("falta propagacion cancelable: %s", expected)
@@ -38,6 +39,8 @@ func TestSoportesComprasIAGetPropagaContextoYNoEjecutaDDL(t *testing.T) {
 		"querySQLCompatContext(ctx, dbConn",
 		"func UpdateEmpresaSoporteComprasIARegistroEstadoContext(ctx context.Context",
 		"func UpdateEmpresaSoporteComprasIAEstadoContext(ctx context.Context",
+		"func ContabilizarEmpresaSoporteComprasIAContext(ctx context.Context",
+		"InsertOutboxEventContext(ctx, tx",
 		"dbConn.BeginTx(ctx, nil)",
 	} {
 		if !strings.Contains(dbBody, expected) {

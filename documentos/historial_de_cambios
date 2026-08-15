@@ -42805,6 +42805,9 @@ acumulativa.
 - La aprobación o rechazo humano conserva el mismo contexto en `BEGIN`, lock,
   validación de proveedor, transición y evento; contabilizar sigue siendo un
   paso explícito e independiente.
+- La contabilización explícita conserva ahora la cancelación desde el lock del
+  soporte hasta la CxP canónica y su outbox idempotente, sin convertir una
+  extracción ni una edición en una obligación automática.
 
 ## 2026-08-15 - Plan 110: operaciones documentales de compras cancelables
 
