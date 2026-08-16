@@ -106,6 +106,7 @@
       grid-template-rows: 1fr auto;
       position: relative;
       transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+      touch-action: manipulation;
     }
 
     .device-card.is-on {
@@ -260,6 +261,7 @@
     .device-footer.has-photo { grid-template-columns: minmax(0, 1fr) 42px; }
 
     .device-footer .btn { grid-column: 1; width: 100%; min-height: 34px; }
+    .device-footer .btn { position: relative; z-index: 2; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .device-footer.has-photo .device-photo { grid-column: 2; grid-row: 3; justify-self: end; }
     .device-toggle-action { font-weight: 800; }
     .device-toggle-action.is-on { background: var(--cart-electric-success); color: #fff; border-color: var(--cart-electric-success); }
@@ -656,6 +658,18 @@
       grid.innerHTML = devicesHTML + sensorsHTML;
     }
 
+    // En móvil no se reemplaza el grid cada segundo: esa reconstrucción podía
+    // cancelar un toque justo antes del click y dejar la vista bajo el menú
+    // flotante. Solo se actualiza el texto vivo del temporizador; el estado
+    // completo sigue refrescándose al confirmar el comando o al pulsar Actualizar.
+    function refreshLiveTimerLabels() {
+      const grid = document.getElementById('cartElectricGrid');
+      if (!grid) return;
+      grid.querySelectorAll('[data-control-timer][data-rele-id]').forEach(function(button) {
+        button.textContent = timerText(button.getAttribute('data-rele-id'));
+      });
+    }
+
     async function ensureOk(res) {
       if (res && res.ok) return;
       let text = '';
@@ -877,7 +891,7 @@
       document.getElementById('cartElectricScheduleForm').addEventListener('submit', function(ev) { ev.preventDefault(); saveSchedule().catch(function(err) { setMessage(err.message || 'No se pudo guardar programación.', 'error'); }); });
 		document.getElementById('cartElectricTimerForm').addEventListener('click', function(ev){const p=ev.target.closest('[data-timer-preset]');if(!p)return;const n=Number(p.getAttribute('data-timer-preset'));document.getElementById('cartElectricTimerHours').value=Math.floor(n/3600);document.getElementById('cartElectricTimerMinutes').value=Math.floor(n%3600/60);document.getElementById('cartElectricTimerSeconds').value=n%60;});
 		document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const rele=state.reles.find(x=>Number(x.id)===state.selectedReleID)||{}; const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:Number(rele.estacion_id||state.estacionID||0),rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); rele.ultimo_estado='on'; state.timers[String(state.selectedReleID)]=Date.now()+sec*1000;localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers));document.getElementById('cartElectricTimerDialog').close(); render(); await fetchControls(); setMessage('Temporizador iniciado; el equipo quedara encendido hasta finalizar.','success'); });
-		setInterval(function(){ if(Object.keys(state.timers).length || state.reles.some(function(rele){return rele.programacion_habilitada;})) render(); },1000);
+		setInterval(function(){ if(Object.keys(state.timers).length) refreshLiveTimerLabels(); },1000);
 
       fetchControls().catch(function(err) {
         setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');
