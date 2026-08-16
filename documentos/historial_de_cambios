@@ -42823,3 +42823,17 @@ acumulativa.
   Compras y Productos, sin alterar transiciones, aprobaciones, recepción,
   auditoría ni filtro obligatorio por `empresa_id`.
 - Pruebas focalizadas de DB/Handlers y `go vet` aprueban; no se ejecutó `rs`.
+## 2026-08-15 - Domótica: reconexión autónoma de Wi-Fi y túnel
+
+- El instalador de Raspberry conserva la red Wi-Fi previamente registrada,
+  habilita reconexión automática indefinida cuando existe NetworkManager y
+  solicita reconexión con `wpa_supplicant` en instalaciones compatibles, sin
+  exponer SSID ni claves.
+- El agente 1.6.0 mantiene el proceso vivo cuando DNS, Internet o el VPS no
+  están disponibles; respeta el backoff/`Retry-After`, conserva su identidad
+  criptográfica ante un 401 transitorio y, tras fallos repetidos, pide una
+  reconexión local limitada sin reiniciar la Raspberry.
+- La vista móvil de equipos ya no reconstruye las tarjetas cada segundo: el
+  contador del temporizador se actualiza de forma puntual para no perder toques
+  ni transferirlos al menú flotante/IA. El menú móvil del Super Administrador
+  inicia con **Seleccionar empresa**.

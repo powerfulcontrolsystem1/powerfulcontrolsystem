@@ -25,7 +25,7 @@ import (
 //go:embed templates/instalar_domotica_raspberry.sh.tmpl
 var domoticaRaspberryInstallerTemplate string
 
-const domoticaAgentVersion = "1.4.0"
+const domoticaAgentVersion = "1.6.0"
 
 var (
 	domoticaTunnelSchemaOnce sync.Once

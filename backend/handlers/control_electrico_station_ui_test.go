@@ -113,6 +113,8 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"function waitForRelayConfirmation(releID, estado)",
 		"Comando enviado; esperando confirmación de la Raspberry",
 		"El comando sigue en cola. Revisa la conexión de la Raspberry.",
+		"function refreshLiveTimerLabels()",
+		"touch-action: manipulation",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
@@ -123,6 +125,22 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 	}
 	if strings.Contains(source, "Modo: ' + escapeHtml(rele.modo") || strings.Contains(source, "raspberryStatusHTML(rele.raspberry_id)") {
 		t.Fatal("las tarjetas no deben repetir modo ni estado textual de Raspberry")
+	}
+}
+
+func TestSuperAdminMobileStartsWithCompanySelector(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("..", "..", "web", "super_administrador.html"))
+	if err != nil {
+		t.Fatalf("read super admin: %v", err)
+	}
+	source := string(content)
+	selector := `<li class="admin-nav-standalone super-select-company-first">`
+	panel := `<a href="/super/licencias_resumen.html"`
+	if !strings.Contains(source, selector) || !strings.Contains(source, `href="/seleccionar_empresa.html"`) {
+		t.Fatal("el menu super debe exponer Seleccionar empresa como acceso principal")
+	}
+	if strings.Index(source, selector) > strings.Index(source, panel) {
+		t.Fatal("Seleccionar empresa debe aparecer antes del Panel en el menu movil del super administrador")
 	}
 }
 

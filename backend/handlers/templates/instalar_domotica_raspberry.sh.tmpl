@@ -16,8 +16,23 @@ fi
 
 install -d -m 0750 /opt/pcs-domotica /etc/pcs-domotica
 
+# Conserva la red Wi-Fi ya configurada por el administrador y la marca para
+# reconectar indefinidamente tras una perdida de energia, AP o Internet. No se
+# escriben SSID ni claves en este instalador ni en los registros.
+if command -v nmcli >/dev/null 2>&1; then
+  nmcli radio wifi on >/dev/null 2>&1 || true
+  active_wifi="$(nmcli -g GENERAL.CONNECTION device show wlan0 2>/dev/null | head -n 1 || true)"
+  if [ -n "$active_wifi" ] && [ "$active_wifi" != "--" ]; then
+    nmcli connection modify "$active_wifi" connection.autoconnect yes connection.autoconnect-retries 0 >/dev/null 2>&1 || true
+  fi
+fi
+if command -v wpa_cli >/dev/null 2>&1; then
+  wpa_cli -i wlan0 reconnect >/dev/null 2>&1 || true
+  wpa_cli -i wlan0 save_config >/dev/null 2>&1 || true
+fi
+
 cat > /etc/pcs-domotica/agent.json <<'PCS_CONFIG'
-{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.4.0"}
+{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.6.0"}
 PCS_CONFIG
 chmod 0600 /etc/pcs-domotica/agent.json
 
@@ -39,6 +54,8 @@ API_PATH = "/api/public/domotica/tunnel"
 inputs_lock = threading.Lock()
 inputs_cache = []
 stop_event = threading.Event()
+network_recovery_lock = threading.Lock()
+network_recovery_after = 0.0
 
 
 def log(message):
@@ -96,6 +113,43 @@ def request_json(config, action, payload, authenticated=True, timeout=35):
     with urllib.request.urlopen(req, timeout=timeout) as response:
         raw = response.read(262144)
         return json.loads(raw.decode("utf-8")) if raw else {}
+
+
+def retry_after_seconds(exc):
+    """Lee Retry-After sin permitir que un servidor fuerce una espera enorme."""
+    try:
+        value = int(exc.headers.get("Retry-After", ""))
+    except (AttributeError, TypeError, ValueError):
+        return 0
+    return max(0, min(300, value))
+
+
+def request_network_reconnect():
+    """Solicita reconexion a la red local sin conocer ni registrar claves Wi-Fi.
+
+    NetworkManager es el caso habitual en instalaciones recientes; wpa_cli
+    cubre Raspberry Pi OS con wpa_supplicant. Se limita en el tiempo y se llama
+    solo despues de errores repetidos del tunel, por lo que no reinicia la Pi ni
+    interrumpe una conexion sana.
+    """
+    global network_recovery_after
+    now = time.monotonic()
+    with network_recovery_lock:
+        if now < network_recovery_after:
+            return
+        network_recovery_after = now + 30.0
+    try:
+        if shutil.which("nmcli"):
+            subprocess.run(["nmcli", "networking", "on"], check=False, capture_output=True, text=True, timeout=8)
+            subprocess.run(["nmcli", "radio", "wifi", "on"], check=False, capture_output=True, text=True, timeout=8)
+            subprocess.run(["nmcli", "device", "connect", "wlan0"], check=False, capture_output=True, text=True, timeout=15)
+            log("Se solicito reconexion Wi-Fi mediante NetworkManager")
+            return
+        if shutil.which("wpa_cli"):
+            subprocess.run(["wpa_cli", "-i", "wlan0", "reconnect"], check=False, capture_output=True, text=True, timeout=8)
+            log("Se solicito reconexion Wi-Fi mediante wpa_supplicant")
+    except (OSError, subprocess.SubprocessError) as exc:
+        log("No se pudo solicitar reconexion Wi-Fi: " + str(exc))
 
 
 class GPIOBackend:
@@ -381,7 +435,11 @@ def read_vedirect():
 
 
 def main():
-    config = ensure_enrolled(load_config())
+    # El servicio se inicia junto con systemd y network-online no garantiza que
+    # DNS, Wi-Fi o la ruta al VPS ya estén listos. La inscripcion y el primer
+    # poll viven dentro del mismo bucle para que un corte de energia/red nunca
+    # deje al agente detenido esperando una reinstalacion manual.
+    config = load_config()
     boot_id = read_boot_id()
     watcher = threading.Thread(target=monitor_inputs, args=(config,), daemon=True)
     watcher.start()
@@ -390,6 +448,7 @@ def main():
     solar_connected = False
     while not stop_event.is_set():
         try:
+            config = ensure_enrolled(config)
             response = request_json(config, "poll", {
                 "hostname": socket.gethostname(),
                 "local_ip": local_ip(),
@@ -433,15 +492,27 @@ def main():
         except urllib.error.HTTPError as exc:
             log("VPS respondio HTTP {}".format(exc.code))
             if exc.code == 401:
-                config["device_token"] = ""
-                save_config(config)
-                config = ensure_enrolled(config)
-            stop_event.wait(backoff)
-            backoff = min(30, backoff * 2)
+                # El enrollment_token se consume al primer registro. Nunca se
+                # borra el device_token persistente ante un 401 transitorio:
+                # hacerlo dejaba al equipo en un ciclo de reinscripcion
+                # imposible despues de un reinicio o una restauracion de DB.
+                if config.get("enrollment_token"):
+                    config["device_token"] = ""
+                    save_config(config)
+                    log("Credencial de tunel rechazada; se reintentara la inscripcion inicial")
+                else:
+                    log("Credencial de tunel rechazada; conserve el ID del equipo y revise la provision en Domotica")
+            delay = retry_after_seconds(exc) or backoff
+            if backoff >= 8:
+                request_network_reconnect()
+            stop_event.wait(delay)
+            backoff = min(60, backoff * 2)
         except Exception as exc:
             log("Tunel temporalmente desconectado: " + str(exc))
+            if backoff >= 8:
+                request_network_reconnect()
             stop_event.wait(backoff)
-            backoff = min(30, backoff * 2)
+            backoff = min(60, backoff * 2)
 
 
 if __name__ == "__main__":
