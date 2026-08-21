@@ -626,6 +626,11 @@
               <span>Domotica activa</span>
               <input id="habilitado" type="checkbox">
             </label>
+            <label class="electric-switch span-2" for="mostrarBotonDomoticaEstaciones">
+              <span>Mostrar acceso Domótica en tarjetas de estaciones</span>
+              <input id="mostrarBotonDomoticaEstaciones" type="checkbox">
+              <p class="form-help">Añade un botón cuadrado con rayo, abajo a la derecha de cada estación, para abrir sus equipos electrónicos.</p>
+            </label>
             <div class="form-col">
               <label class="form-label" for="raspberryIp">IP o host</label>
               <input id="raspberryIp" class="form-input" placeholder="192.168.1.50">
@@ -944,7 +949,7 @@
 
       var params = new URLSearchParams(window.location.search || '');
       var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
-      var state = { config: null, raspberryPis: [], estaciones: [], reles: [], eventos: [], lecturas: [], reglas: [], escenas: [], reporte: null };
+      var state = { config: null, stationConfig: {}, raspberryPis: [], estaciones: [], reles: [], eventos: [], lecturas: [], reglas: [], escenas: [], reporte: null };
 
       function $(id) { return document.getElementById(id); }
 
@@ -1069,6 +1074,48 @@
         $('observaciones').value = cfg.observaciones || '';
         $('apiToken').value = '';
         $('tokenState').textContent = cfg.api_token_configured ? 'Token: configurado' : 'Token: no configurado';
+      }
+
+      function parseStationConfigValue(raw) {
+        var value = raw;
+        for (var i = 0; i < 8 && typeof value === 'string'; i += 1) {
+          var trimmed = value.trim();
+          if (!trimmed) return {};
+          try { value = JSON.parse(trimmed); } catch (_) { return {}; }
+        }
+        return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+      }
+
+      async function loadStationDomoticaButtonPreference() {
+        var checkbox = $('mostrarBotonDomoticaEstaciones');
+        if (!checkbox || !empresaId) return;
+        checkbox.checked = false;
+        try {
+          var data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
+          var prefs = Array.isArray(data && data.prefs) ? data.prefs : [];
+          var pref = prefs.find(function(item) {
+            return item && Number(item.estacion_id || 0) === 0 && String(item.clave || '') === 'estaciones_config';
+          });
+          state.stationConfig = parseStationConfigValue(pref && pref.valor);
+          var cardUI = state.stationConfig.station_card_ui && typeof state.stationConfig.station_card_ui === 'object' ? state.stationConfig.station_card_ui : {};
+          checkbox.checked = cardUI.mostrar_boton_domotica === true;
+        } catch (_) {
+          state.stationConfig = {};
+        }
+      }
+
+      async function saveStationDomoticaButtonPreference() {
+        var checkbox = $('mostrarBotonDomoticaEstaciones');
+        if (!checkbox || !empresaId) return;
+        var config = state.stationConfig && typeof state.stationConfig === 'object' ? state.stationConfig : {};
+        config.station_card_ui = config.station_card_ui && typeof config.station_card_ui === 'object' ? config.station_card_ui : {};
+        config.station_card_ui.mostrar_boton_domotica = !!checkbox.checked;
+        await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(config) })
+        });
+        state.stationConfig = config;
       }
 
       function readConfigPayload() {
@@ -1702,6 +1749,7 @@
           state.reglas = Array.isArray(data.reglas) ? data.reglas : [];
           state.escenas = await requestJSON(api('escenas')).catch(function () { return []; });
           applyConfig(state.config);
+          await loadStationDomoticaButtonPreference();
           renderRaspberryList();
           renderKpis();
           renderRelays();
@@ -1719,6 +1767,7 @@
 
       async function saveConfig() {
         try {
+          await saveStationDomoticaButtonPreference();
           var data = await requestJSON(api('config'), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
