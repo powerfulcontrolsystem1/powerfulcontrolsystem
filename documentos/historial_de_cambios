@@ -42854,3 +42854,7 @@ acumulativa.
 - Cuando está activo, cada estación muestra abajo a la derecha un botón cuadrado
   con rayo que abre únicamente los equipos de esa estación. El botón detiene la
   propagación del clic para no activar ni abrir el carrito operativo por error.
+- El check se lee y guarda por `GET`/`PUT`
+  `/api/empresa/control_electrico?action=station_card_ui`, protegido por el
+  permiso de Domótica y auditado. La persistencia conserva
+  `estaciones_config.station_card_ui` sin exigir el módulo de Seguridad.

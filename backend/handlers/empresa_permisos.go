@@ -2280,7 +2280,7 @@ func resolveVerticalPermissionAction(r *http.Request) string {
 func resolveControlElectricoPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "config", "raspberry_pi", "rele", "rele_foto", "escena":
+	case "config", "station_card_ui", "raspberry_pi", "rele", "rele_foto", "escena":
 		return defaultPermissionActionFromMethod(r.Method)
 	case "probar_rele", "sincronizar", "ejecutar_programacion", "provisionar_tunel", "instalar_ssh", "ssh_config", "ejecutar_escena":
 		return permActionApprove

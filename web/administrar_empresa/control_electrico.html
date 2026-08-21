@@ -949,7 +949,7 @@
 
       var params = new URLSearchParams(window.location.search || '');
       var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
-      var state = { config: null, stationConfig: {}, raspberryPis: [], estaciones: [], reles: [], eventos: [], lecturas: [], reglas: [], escenas: [], reporte: null };
+      var state = { config: null, raspberryPis: [], estaciones: [], reles: [], eventos: [], lecturas: [], reglas: [], escenas: [], reporte: null };
 
       function $(id) { return document.getElementById(id); }
 
@@ -1076,46 +1076,26 @@
         $('tokenState').textContent = cfg.api_token_configured ? 'Token: configurado' : 'Token: no configurado';
       }
 
-      function parseStationConfigValue(raw) {
-        var value = raw;
-        for (var i = 0; i < 8 && typeof value === 'string'; i += 1) {
-          var trimmed = value.trim();
-          if (!trimmed) return {};
-          try { value = JSON.parse(trimmed); } catch (_) { return {}; }
-        }
-        return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-      }
-
       async function loadStationDomoticaButtonPreference() {
         var checkbox = $('mostrarBotonDomoticaEstaciones');
         if (!checkbox || !empresaId) return;
         checkbox.checked = false;
         try {
-          var data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
-          var prefs = Array.isArray(data && data.prefs) ? data.prefs : [];
-          var pref = prefs.find(function(item) {
-            return item && Number(item.estacion_id || 0) === 0 && String(item.clave || '') === 'estaciones_config';
-          });
-          state.stationConfig = parseStationConfigValue(pref && pref.valor);
-          var cardUI = state.stationConfig.station_card_ui && typeof state.stationConfig.station_card_ui === 'object' ? state.stationConfig.station_card_ui : {};
-          checkbox.checked = cardUI.mostrar_boton_domotica === true;
+          var data = await requestJSON(api('station_card_ui'));
+          checkbox.checked = data && data.mostrar_boton_domotica === true;
         } catch (_) {
-          state.stationConfig = {};
+          checkbox.checked = false;
         }
       }
 
       async function saveStationDomoticaButtonPreference() {
         var checkbox = $('mostrarBotonDomoticaEstaciones');
         if (!checkbox || !empresaId) return;
-        var config = state.stationConfig && typeof state.stationConfig === 'object' ? state.stationConfig : {};
-        config.station_card_ui = config.station_card_ui && typeof config.station_card_ui === 'object' ? config.station_card_ui : {};
-        config.station_card_ui.mostrar_boton_domotica = !!checkbox.checked;
-        await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        await requestJSON(api('station_card_ui'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(config) })
+          body: JSON.stringify({ mostrar_boton_domotica: !!checkbox.checked })
         });
-        state.stationConfig = config;
       }
 
       function readConfigPayload() {

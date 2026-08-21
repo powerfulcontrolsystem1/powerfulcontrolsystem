@@ -37,7 +37,7 @@ func TestDomoticaStationUIHasConfigurableCardEntryAndVisibilityCheck(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, marker := range []string{"mostrarBotonDomoticaEstaciones", "saveStationDomoticaButtonPreference", "loadStationDomoticaButtonPreference", "station_card_ui.mostrar_boton_domotica"} {
+	for _, marker := range []string{"mostrarBotonDomoticaEstaciones", "saveStationDomoticaButtonPreference", "loadStationDomoticaButtonPreference", "api('station_card_ui')"} {
 		if !strings.Contains(string(electricConfig), marker) {
 			t.Fatalf("la configuracion de Domotica no contiene %q", marker)
 		}
@@ -51,6 +51,25 @@ func TestDomoticaStationUIHasConfigurableCardEntryAndVisibilityCheck(t *testing.
 		if !strings.Contains(cartSource, marker) {
 			t.Fatalf("el carrito no contiene %q", marker)
 		}
+	}
+}
+
+func TestDomoticaStationCardPreferenceUsesControlElectricoPermissionBoundary(t *testing.T) {
+	content, err := os.ReadFile("control_electrico.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{"case \"station_card_ui\":", "getControlElectricoStationCardUIButton", "saveControlElectricoStationCardUIButton", "EmpresaEstacionPrefsSchemaReady", "registrarAuditoriaModuloEmpresaNoBloqueante"} {
+		if !strings.Contains(string(content), marker) {
+			t.Fatalf("el endpoint de Domotica no contiene %q", marker)
+		}
+	}
+	permissions, err := os.ReadFile("empresa_permisos.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(permissions), "\"station_card_ui\"") {
+		t.Fatal("la preferencia de tarjetas debe usar permisos de control electrico")
 	}
 }
 

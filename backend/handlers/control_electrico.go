@@ -39,6 +39,10 @@ type controlElectricoCommandPayload struct {
 	Operacion      string `json:"operacion,omitempty"`
 }
 
+type controlElectricoStationCardUIPayload struct {
+	MostrarBotonDomotica bool `json:"mostrar_boton_domotica"`
+}
+
 type controlElectricoDispatchResult struct {
 	OK           bool   `json:"ok"`
 	Skipped      bool   `json:"skipped,omitempty"`
@@ -301,6 +305,15 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 		switch r.Method {
 		case http.MethodGet:
 			switch action {
+			case "station_card_ui":
+				mostrar, err := getControlElectricoStationCardUIButton(dbEmp, empresaID)
+				if err != nil {
+					log.Printf("[control_electrico] get station_card_ui empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo cargar la configuracion de tarjetas", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, controlElectricoStationCardUIPayload{MostrarBotonDomotica: mostrar})
+				return
 			case "ssh_config":
 				handleDomoticaRaspberrySSHProfile(w, r, dbEmp, empresaID)
 				return
@@ -490,6 +503,23 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 
 		case http.MethodPost, http.MethodPut:
 			switch action {
+			case "station_card_ui":
+				var payload controlElectricoStationCardUIPayload
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				id, err := saveControlElectricoStationCardUIButton(dbEmp, empresaID, payload.MostrarBotonDomotica, strings.TrimSpace(adminEmailFromRequest(r)))
+				if err != nil {
+					log.Printf("[control_electrico] save station_card_ui empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo guardar la configuracion de tarjetas", http.StatusInternalServerError)
+					return
+				}
+				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "control_electrico", "configuracion_tarjetas", "empresa_estacion_prefs", id, http.StatusOK, map[string]interface{}{
+					"mostrar_boton_domotica": payload.MostrarBotonDomotica,
+				}, "acceso Domotica en tarjetas de estaciones actualizado")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mostrar_boton_domotica": payload.MostrarBotonDomotica})
+				return
 			case "instalar_ssh":
 				if r.Method != http.MethodPost {
 					http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -835,6 +865,86 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func getControlElectricoStationCardUIButton(dbEmp *sql.DB, empresaID int64) (bool, error) {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
+		return false, err
+	}
+	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	config, err := decodeControlElectricoStationCardConfig(pref.Valor)
+	if err != nil {
+		return false, err
+	}
+	ui, _ := config["station_card_ui"].(map[string]interface{})
+	mostrar, _ := ui["mostrar_boton_domotica"].(bool)
+	return mostrar, nil
+}
+
+func saveControlElectricoStationCardUIButton(dbEmp *sql.DB, empresaID int64, mostrar bool, actor string) (int64, error) {
+	if err := dbpkg.EmpresaEstacionPrefsSchemaReady(dbEmp); err != nil {
+		return 0, err
+	}
+	config := map[string]interface{}{}
+	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+	if pref != nil {
+		config, err = decodeControlElectricoStationCardConfig(pref.Valor)
+		if err != nil {
+			return 0, err
+		}
+	}
+	ui, _ := config["station_card_ui"].(map[string]interface{})
+	if ui == nil {
+		ui = map[string]interface{}{}
+		config["station_card_ui"] = ui
+	}
+	ui["mostrar_boton_domotica"] = mostrar
+	raw, err := json.Marshal(config)
+	if err != nil {
+		return 0, err
+	}
+	return dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          "estaciones_config",
+		Valor:          string(raw),
+		UsuarioCreador: actor,
+		Estado:         "activo",
+		Observaciones:  "preferencia visual de Domotica actualizada desde control electrico",
+	})
+}
+
+func decodeControlElectricoStationCardConfig(raw string) (map[string]interface{}, error) {
+	var current interface{} = strings.TrimSpace(raw)
+	for i := 0; i < 8; i++ {
+		text, ok := current.(string)
+		if !ok {
+			break
+		}
+		if strings.TrimSpace(text) == "" {
+			return map[string]interface{}{}, nil
+		}
+		if err := json.Unmarshal([]byte(text), &current); err != nil {
+			return nil, err
+		}
+	}
+	if current == nil {
+		return map[string]interface{}{}, nil
+	}
+	config, ok := current.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("estaciones_config invalida")
+	}
+	return config, nil
 }
 
 func executeEmpresaControlElectricoScene(dbEmp *sql.DB, empresaID, sceneID int64, actor string) (map[string]interface{}, int) {
