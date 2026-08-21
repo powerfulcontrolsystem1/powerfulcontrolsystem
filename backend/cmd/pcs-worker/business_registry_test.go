@@ -20,6 +20,9 @@ func TestProductionRegistryContainsOnlyBusinessHandlers(t *testing.T) {
 	if _, exists := registry[jobCxPPayment]; !exists {
 		t.Fatal("production registry must reconcile committed CxP payment events")
 	}
+	if _, exists := registry[jobFacturacionRetries]; !exists {
+		t.Fatal("production registry must process durable electronic-invoicing retries")
+	}
 	for kind, spec := range registry {
 		if !spec.Enabled || spec.Handle == nil || spec.Timeout <= 0 || spec.MaxAttempts < 1 {
 			t.Errorf("business handler %s is incomplete: %+v", kind, spec)

@@ -126,7 +126,7 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 			estado_anterior TEXT,
 			evento_ultimo TEXT,
 			periodo_contable TEXT,
-			monto_total REAL DEFAULT 0,
+			monto_total NUMERIC(18,2) NOT NULL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
 			numero_legal TEXT,
 			codigo_validacion TEXT,
@@ -151,7 +151,7 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 			estado_anterior TEXT,
 			evento_ultimo TEXT,
 			periodo_contable TEXT,
-			monto_total REAL DEFAULT 0,
+			monto_total NUMERIC(18,2) NOT NULL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
 			fecha_documento TEXT,
 			entidad_relacionada_id INTEGER,
@@ -206,7 +206,7 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "periodo_contable", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "monto_total", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "monto_total", "NUMERIC(18,2) NOT NULL DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "moneda", "TEXT DEFAULT 'COP'"); err != nil {

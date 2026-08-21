@@ -1,3 +1,17 @@
+2026-08-21: Facturacion electronica / familias DIAN fallan cerrado y consulta sin doble conteo.
+- La auditoria autenticada de Powerful Control System confirmo que produccion
+  declaraba 22 tipos soportados y siete operativos aunque el generador solo
+  construia Invoice, CreditNote y DebitNote.
+- Backend y preflight limitan el adaptador UBL de venta a factura, nota credito
+  y nota debito. Documento soporte, nomina, equivalentes y RADIAN responden 422
+  antes de XML, consecutivo, persistencia o transporte; la cola los trata como
+  fallo final no reintentable.
+- El catalogo publica `disponible_emision`, los controles no implementados se
+  deshabilitan y la bandeja conserva `CP-*` como venta con factura asociada sin
+  contarlo ni rotularlo como otra factura fiscal.
+- QA enfocado de handlers y DB aprobado. El cambio sigue sin desplegar y no se
+  realizaron nuevos envios fiscales.
+
 2026-08-14: Plan 110 / puerto explícito en el orquestador `rs`.
 - `rs.ps1` incorpora `-VpsPort` y lo entrega al hijo `sync_to_vps.ps1`.
   Esto conserva el aislamiento de procesos y permite desplegar desde un
@@ -42837,7 +42851,6 @@ acumulativa.
   contador del temporizador se actualiza de forma puntual para no perder toques
   ni transferirlos al menú flotante/IA. El menú móvil del Super Administrador
   inicia con **Seleccionar empresa**.
-
 ## 2026-08-21 - Domótica: bloqueo temporal de IA sobre relés en móvil
 
 - Cuando el shell empresarial abre la vista operativa de equipos de Domótica,
@@ -42861,3 +42874,36 @@ acumulativa.
 - La consola operativa de equipos detiene el comando y explica el motivo si la
   Raspberry del equipo está desconectada; también aplica al temporizador antes
   de abrirlo y antes de enviar su orden.
+
+2026-08-21: Preparación de producción de facturación electrónica / compuertas P0.
+- DIAN Colombia deja de inferir cantidades del set de habilitación: cada empresa
+  debe guardar el objetivo exacto que muestra su portal antes de que el backend
+  acepte un envío real. La interfaz elimina presets históricos para evitar que
+  una cifra de ejemplo se convierta en efecto fiscal.
+- La reserva de `proximo_consecutivo` se hace bajo `FOR UPDATE` sobre la fila
+  aislada por `empresa_id`, antes de avanzar el número. Esto evita que dos
+  solicitudes concurrentes asignen el mismo folio.
+- `empresa_facturacion_documentos.monto_total` pasa de `REAL` a
+  `NUMERIC(18,2)` mediante la migración versionada
+  `20260821-001-facturacion-documentos-money-v1`. La migración bloquea valores
+  negativos o diferencias materiales de redondeo para conciliación humana.
+- Se agregan regresiones para el bloqueo del objetivo DIAN y el contrato de
+  bloqueo PostgreSQL. Sin despliegue, emisión DIAN ni cambios de datos reales.
+- La consulta GET de conectividad deja de ejecutar reintentos. El botón manual
+  usa POST y `pcs-worker` incorpora el job durable
+  `integrations.facturacion-electronica-retries`, con bloqueo asesor por empresa.
+- Un TrackId asincrono queda pendiente y se consulta con `GetStatusZip`; el XML
+  firmado original se reutiliza para evitar cambiar fecha o CUFE. Los rechazos
+  finales no se reenvian automaticamente y ya no se fabrican referencias `EXT-*`.
+- La migración `20260821-002-facturacion-artefactos-v1` registra XML firmado,
+  acuse y PDF en almacenamiento privado por `empresa_id`, con SHA-256. La
+  bandeja permite descargarlos y el correo de Colombia produccion espera
+  aceptacion DIAN antes de adjuntar XML/PDF.
+- Descargas y correo recalculan SHA-256 antes de entregar artefactos; en
+  produccion Colombia el correo falla cerrado si XML o PDF falta o fue alterado.
+- El hash local previo deja de persistirse como CUFE colombiano. El CUFE/CUDE
+  visible debe ser SHA-384, se recupera tambien del acuse anidado de
+  `GetStatusZip`, y un reintento conserva `IssueDate`/`IssueTime` del XML firmado.
+- La integración usa además un bloqueo asesor derivado de
+  `empresa_id + tipo_documento + documento_codigo`; dos solicitudes concurrentes
+  sobre el mismo folio no pueden transmitirlo en paralelo.

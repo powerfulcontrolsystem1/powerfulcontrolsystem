@@ -13274,3 +13274,13 @@ backend/db/repository_helpers.go | Helper interno para generación compartida de
 - `backend/internal/platform/valueutil/valueutil_test.go`: contratos Unicode, host IPv6, identificador SQL, JSON de respaldo y límites genéricos.
 - `backend/internal/platform/httpguard/methods.go`: contrato HTTP compartido para endpoints de salud GET/HEAD.
 - `backend/internal/platform/httpguard/methods_test.go`: regresión de métodos permitidos, HTTP 405 y encabezado `Allow`.
+2026-08-21
+- `backend/db/facturacion_electronica_postgres_test.go`: regresión estructural
+  PostgreSQL que exige bloquear por `empresa_id` la fila de configuración antes
+  de reservar y avanzar el consecutivo fiscal.
+- `backend/db/facturacion_documentos_money_precision.go`: migración de
+  `monto_total` fiscal a precisión monetaria exacta con compuerta de
+  conciliación antes de modificar datos heredados.
+- `backend/db/facturacion_artefactos.go`: migración, contrato y repositorio
+  multiempresa para XML firmado, acuse de proveedor y representación PDF en
+  almacenamiento privado con verificación SHA-256.

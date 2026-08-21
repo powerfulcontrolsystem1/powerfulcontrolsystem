@@ -768,12 +768,12 @@
         <div class="nomina-demo-panel">
           <div>
             <strong>Nomina electronica DIAN</strong>
-            <span id="nomCoDianResumen" class="form-help">Consulta liquidaciones y prepara el lote por empleado para firma, CUNE y envio documental.</span>
+			<span id="nomCoDianResumen" class="form-help">Consulta liquidaciones y prepara el lote por empleado. El envio permanece bloqueado hasta implementar el adaptador DIAN de nomina, firma y CUNE.</span>
           </div>
           <div class="form-actions" style="margin:0;">
             <button id="nomCoDianVerBtn" type="button" class="btn secondary">Ver estado DIAN</button>
             <button id="nomCoDianPrepararBtn" type="button" class="btn">Preparar lote DIAN</button>
-            <button id="nomCoDianEnviarBtn" type="button" class="btn primary">Enviar nomina electronica a DIAN</button>
+			<button id="nomCoDianEnviarBtn" type="button" class="btn primary" disabled title="Adaptador DIAN de nomina electronica pendiente">Envio DIAN no disponible</button>
           </div>
         </div>
         <div id="nomCoDianPanel" class="nomina-result-summary">Sin lote DIAN consultado.</div>

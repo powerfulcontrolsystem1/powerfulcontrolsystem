@@ -1131,7 +1131,7 @@ func buildEmpresaNominaElectronicaDianResumen(dbEmp *sql.DB, empresaID int64, pe
 		PeriodoHasta:          hasta,
 		Estado:                "pendiente_liquidaciones",
 		Preparado:             preparado,
-		EndpointEnvioSugerido: "/api/empresa/facturacion_electronica?action=nomina_electronica",
+		EndpointEnvioSugerido: "",
 		DocumentosPreparados:  make([]empresaNominaElectronicaDianDocumento, 0, len(liquidaciones)),
 		Mensajes:              make([]string, 0),
 		FuentesNormativas:     dbpkg.ListFacturacionDianFuentesNormativas(),
@@ -1155,8 +1155,9 @@ func buildEmpresaNominaElectronicaDianResumen(dbEmp *sql.DB, empresaID int64, pe
 	}
 	out.Estado = "listo_para_preparar"
 	if preparado {
-		out.Estado = "preparado_para_firma_y_envio"
+		out.Estado = "preparado_sin_adaptador_dian"
 	}
+	out.RequisitosPendientes = append(out.RequisitosPendientes, "El adaptador DIAN de nomina electronica, firma y CUNE aun no esta disponible.")
 	for _, liq := range liquidaciones {
 		doc := empresaNominaElectronicaDianDocumento{
 			TipoDocumento:     "nomina_electronica",
@@ -1200,7 +1201,7 @@ func buildEmpresaNominaElectronicaDianResumen(dbEmp *sql.DB, empresaID int64, pe
 	} else if !preparado {
 		out.Mensajes = append(out.Mensajes, "Liquidaciones listas para preparar documento soporte de pago de nomina electronica por empleado.")
 	} else {
-		out.Mensajes = append(out.Mensajes, "Lote preparado para el flujo documental. La firma, CUNE y transmision se ejecutan desde facturacion electronica con credenciales DIAN por empresa.")
+		out.Mensajes = append(out.Mensajes, "Lote preparado para revision. La firma, CUNE y transmision permanecen bloqueadas hasta implementar el adaptador DIAN propio de nomina.")
 	}
 	return out, nil
 }

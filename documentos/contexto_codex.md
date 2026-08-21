@@ -9,11 +9,16 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
-## Actualizacion 2026-08-13 - Plan 110 es la ruta activa
+## Actualizacion 2026-08-21 - trabajo separado por temas
 
-- Abrir `documentos/plan_110.md` para cualquier trabajo de entrada en
-  producción. Los Planes 106 a 109 son antecedentes; no deben ejecutarse como
-  hoja vigente.
+- Por instruccion del usuario, el Plan 110 deja de ser la ruta activa. Cada modulo se revisa y cierra mediante un alcance especifico autorizado.
+- Para facturacion electronica gobiernan el contrato y runbook especificos bajo `documentos/gobernanza_tecnica/`, junto con las reglas generales de seguridad multiempresa y migraciones.
+- Las referencias a planes 106-110 que siguen son solo historial y no autorizan ejecucion, despliegue ni pruebas reales.
+
+## Historico 2026-08-13 - Plan 110
+
+- En esa fecha `documentos/plan_110.md` era la ruta general de entrada en
+  producción. Ya no es una hoja vigente.
 - Estado formal: 38,5 % de implementación, 0 % de certificación del candidato y
   `NO-GO`.
 - P110-001A exige caracterizar y sanear duplicación, ownership de esquema,
@@ -165,9 +170,10 @@ decisiones en cada tarea.
   nomina electronica DIAN y tutorial.
 - Las subpaginas reutilizan `nomina_sueldos.html?seccion=...` para no duplicar
   reglas ni APIs; la vista antigua sin `seccion` conserva pantalla completa.
-- El boton `Enviar nomina electronica a DIAN` prepara el lote, bloquea requisitos
-  pendientes y llama el endpoint fiscal existente de facturacion electronica con
-  `tipo_documento=nomina_electronica` y `empresa_id`.
+- El boton historico `Enviar nomina electronica a DIAN` prepara el lote, pero el
+  endpoint fiscal bloquea `tipo_documento=nomina_electronica` con 422 hasta que
+  exista un adaptador conforme al anexo tecnico de nomina. No se permite usar el
+  generador de factura de venta como sustituto.
 
 ## Actualizacion 2026-06-10 - IA flotante activa para todas las empresas
 
@@ -365,14 +371,15 @@ decisiones en cada tarea.
 - `GetStatusZip` ahora toma `StatusDescription` del SOAP DIAN para distinguir
   `Batch en proceso de validacion` como acuse pendiente, no aceptacion final.
 
-## Actualizacion 2026-06-08 - DIAN sin preset reducido
+## Historico 2026-06-08 - DIAN sin preset reducido
 
 - `facturacion_electronica_pruebas_dian.html` no debe mostrar boton ni preset
   rapido 2+2+2/pequeno para habilitacion DIAN.
-- El Centro de habilitacion DIAN conserva el objetivo del portal
-  `30 + 10 + 10`, el historico excepcional `60 + 20 + 20` y `Personalizado`.
-- Si llega un valor viejo de preset reducido, la pantalla lo normaliza al
-  objetivo real del portal para evitar envios parciales accidentales.
+- En esa fecha el Centro conservaba presets `30 + 10 + 10`, `60 + 20 + 20` y
+  `Personalizado`. Desde 2026-08-21 esos presets fueron retirados: PCS solo usa
+  el objetivo exacto guardado por empresa desde su portal DIAN.
+- Un valor viejo no se normaliza a una cifra asumida; sin objetivo confirmado,
+  el backend bloquea el envio automatico.
 
 ## Actualizacion 2026-06-08 - Centro de habilitacion DIAN
 
@@ -563,11 +570,9 @@ decisiones en cada tarea.
   System ya reciben HTTP 200, TrackId/ZipKey y respuesta
   `Batch en proceso de validacion`; el bloqueo de transporte `InvalidSecurity`
   queda superado.
-- Lo pendiente para cerrar habilitacion no es simular ni rehacer el transporte:
-  falta reconciliar cada TrackId con `GetStatusZip` hasta acuse final
-  aceptado/rechazado, persistir el estado final por documento/lote, resumirlo en
-  la pantalla y habilitar produccion local solo cuando se cumplan los minimos
-  aceptados configurados por empresa.
+- Los TrackId pendientes se reconcilian mediante `pcs-worker` con `GetStatusZip`
+  hasta acuse final, sin regenerar el XML firmado. La activacion local sigue
+  condicionada a los minimos aceptados configurados por empresa.
 - No documentar PIN, claves tecnicas, certificados, contrasenas ni tokens. El
   TestSetId y demas datos operativos deben leerse de `empresa_dian_configuracion`
   por `empresa_id`, no copiarse como secretos en guias o logs.
@@ -578,11 +583,9 @@ decisiones en cada tarea.
   guardar por empresa el objetivo exacto que muestra el portal DIAN:
   `test_set_id`, facturas, notas debito, notas credito, total requerido y
   minimos aceptados.
-- El preset principal de software propio/proveedor queda en 30 facturas, 10
-  notas debito y 10 notas credito, con minimo aceptado total 1 y minimo de
-  facturas 1, porque ese es el set registrado para la empresa interna Powerful
-  Control System. El boton automatico usa siempre lo guardado por empresa, por
-  lo que otra empresa puede tener otro objetivo.
+- El registro historico de Powerful Control System fue 30 facturas, 10 notas
+  debito y 10 notas credito. No es un preset vigente: el boton automatico exige
+  el objetivo exacto guardado por cada empresa y se bloquea si no existe.
 - En endpoint oficial SOAP/WCF DIAN no se exige `token_emisor_ref`; ese campo
   solo aplica cuando la empresa usa proveedor/API con bearer token. En
   habilitacion real si es obligatorio `test_set_id`.
@@ -1202,13 +1205,13 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
 ## Histórico - Plan 108 de entrada en producción 2026-07-25
 
 - `documentos/plan_108.md` reemplazó temporalmente la ejecución separada de los
-  planes 106, 107 e IA. Plan 110 absorbió los pendientes aún vigentes.
+  planes 106, 107 e IA. Plan 110 absorbió después esos pendientes como antecedente.
 - El estado es `NO-GO`: existe preflight local satisfactorio, pero todavía falta
   candidato inmutable, staging integral, migraciones fuera del runtime,
   aislamiento A/B, consistencia financiera, cierre contable e IA, pruebas
   visuales/impresas, concurrencia de cajas, proveedores, recuperación y piloto.
-- Esta orden se conserva solo como historia; el ejecutor actual comienza por la
-  fase abierta correspondiente de Plan 110.
+- Esta orden se conserva solo como historia. Desde 2026-08-21 el trabajo se
+  autoriza y cierra por temas especificos; Plan 110 no es una ruta activa.
 
 ## Domótica y Energía Solar 2026-08-13
 

@@ -837,10 +837,8 @@ afecte dinero, documentos, licencias o seguridad.
    completo; los botones `Enviar factura`, `Enviar nota debito` y `Enviar nota
    credito` permiten probar un documento a la vez y ver si fue recibido,
    aceptado, rechazado o queda pendiente.
-   Para la empresa interna Powerful Control System, el set registrado desde el
-   portal de habilitacion es: 50 documentos totales, 30 facturas electronicas,
-   10 notas debito, 10 notas credito, minimo aceptado total 1 y minimo aceptado
-   de facturas 1.
+   No existe preset numerico: cada empresa debe guardar el objetivo exacto que
+   muestre su portal DIAN. Sin objetivo persistido, el envio automatico queda bloqueado.
 11. El resultado visual debe mostrar resumen por estado, aceptados por tipo,
    mensaje de recepcion y si el minimo configurado ya se cumple. No se debe
    declarar produccion local hasta tener acuse suficiente de DIAN/proveedor.
@@ -862,11 +860,9 @@ afecte dinero, documentos, licencias o seguridad.
 16. Estado operativo actual: el set real configurado por empresa debe quedar
    como envio real con HTTP 200, TrackId/ZipKey y respuesta inicial `Batch en
    proceso de validacion`. Ese estado todavia no equivale a aceptacion final.
-17. Lo que falta en el modulo DIAN/documentos electronicos es consultar y
-   persistir el acuse final por TrackId hasta aceptado/rechazado, reconciliar
-   `facturacion_electronica_reintentos` y `empresa_facturacion_documentos`,
-   mostrar un resumen claro en la pantalla y habilitar produccion local solo
-   cuando los minimos aceptados del set esten cumplidos.
+17. Los TrackId pendientes se consultan desde `pcs-worker` sin regenerar el XML;
+   el modulo persiste XML firmado, acuse y PDF fuera de `web/`, con SHA-256 y
+   aislamiento por empresa. El correo fiscal de produccion espera aceptacion DIAN.
 18. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
    archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
    puede consultar ni modificar la configuracion. Luego usar `Verificar

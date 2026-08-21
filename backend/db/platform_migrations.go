@@ -180,6 +180,12 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				return applyEmpresaControlElectricoSSHCredentialsSchemaTx(tx)
 			}},
 			{Version: "20260813-003-domotica-scenes-v1", Description: "tenant-scoped scenes with ordered relay targets", Body: empresaControlElectricoScenesSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoScenesSchemaTx(tx) }},
+			{Version: "20260821-001-facturacion-documentos-money-v1", Description: "exact fiscal document amounts with reconciliation gate", Body: empresaFacturacionDocumentosMoneyPrecisionFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaFacturacionDocumentosMoneyPrecisionTx(ctx, tx)
+			}},
+			{Version: "20260821-002-facturacion-artefactos-v1", Description: "tenant-scoped private fiscal XML, provider response and PDF metadata", Body: empresaFacturacionArtefactosFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaFacturacionArtefactosTx(ctx, tx)
+			}},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

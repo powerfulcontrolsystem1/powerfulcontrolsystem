@@ -139,9 +139,47 @@ func TestFacturasElectronicasFrontendOffersSafeDIANRetry(t *testing.T) {
 		`estadoDoc === "anulada"`,
 		`anulacion_confirmada_dian`,
 		`DIAN no confirmó la anulación`,
+		`data-action="artefactos"`,
+		`function downloadFiscalArtifacts(item)`,
+		`action", "artefactos"`,
 	} {
 		if !strings.Contains(page, marker) {
 			t.Fatalf("DIAN retry UI missing marker %q", marker)
+		}
+	}
+}
+
+func TestFacturasElectronicasNoCuentaComprobanteComoFacturaFiscal(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturas_electronicas.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read invoices page: %v", err)
+	}
+	page := string(raw)
+	if !strings.Contains(page, `if (facturaAsociadaParaVenta(item)) return "Venta (factura asociada)";`) {
+		t.Fatal("linked sale must remain visibly distinct from its fiscal invoice")
+	}
+	if strings.Contains(page, `if (facturaAsociadaParaVenta(item)) tipo = "factura_electronica";`) {
+		t.Fatal("internal sale is still double-counted as an electronic invoice")
+	}
+}
+
+func TestDIANFrontendDisablesFamiliesWithoutDedicatedAdapter(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica_pruebas_dian.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read DIAN page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`value="documento_soporte" disabled`,
+		`value="nomina_electronica" disabled`,
+		`value="documento_equivalente_pos" disabled`,
+		`value="eventos_radian_recepcion" disabled`,
+		`codigo: "tipo_documento_dian_no_implementado"`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("DIAN unsupported-family guard missing %q", marker)
 		}
 	}
 }

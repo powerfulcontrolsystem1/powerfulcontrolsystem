@@ -499,6 +499,8 @@ func TestValidateDIANCredentialRefsAllowsMissingTestSetInSimulation(t *testing.T
 
 func TestRunDIANPruebasHabilitacionReportsMissingTestSetForRealRun(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	cfg["set_facturas_requeridas"] = 1
+	cfg["set_documentos_requeridos"] = 1
 	delete(cfg, "test_set_id")
 	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
 		"simular": false,
@@ -518,6 +520,51 @@ func TestRunDIANPruebasHabilitacionReportsMissingTestSetForRealRun(t *testing.T)
 	faltantes, _ := result["faltantes"].([]string)
 	if !dianTestContainsString(faltantes, "test_set_id") {
 		t.Fatalf("expected top-level faltantes to include test_set_id, got %#v", result["faltantes"])
+	}
+}
+
+func TestRunDIANPruebasHabilitacionRequiresSavedPortalObjective(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{"simular": false})
+	if err != nil {
+		t.Fatalf("run pruebas returned err=%v", err)
+	}
+	if status != http.StatusConflict || !parseTruthy(genericStringValue(result["bloqueado"])) {
+		t.Fatalf("expected blocked response without saved portal objective, got status=%d result=%#v", status, result)
+	}
+	if result["paso"] != "confirmar_objetivo_portal" {
+		t.Fatalf("expected portal objective gate, got %#v", result)
+	}
+}
+
+func TestDIANConfiguredSetCountsNeverInventsPortalObjective(t *testing.T) {
+	facturas, debito, credito, total := dianConfiguredSetCounts(map[string]interface{}{})
+	if facturas != 0 || debito != 0 || credito != 0 || total != 0 {
+		t.Fatalf("empty config must not infer a DIAN set, got %d/%d/%d total=%d", facturas, debito, credito, total)
+	}
+}
+
+func TestRunDIANPruebasHabilitacionDoesNotOverrideSavedPortalObjective(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	cfg["set_documentos_requeridos"] = 2
+	cfg["set_facturas_requeridas"] = 2
+	delete(cfg, "test_set_id")
+	payload := map[string]interface{}{
+		"simular":               false,
+		"facturas_electronicas": 1,
+		"notas_debito":          4,
+		"notas_credito":         3,
+		"total_documentos":      8,
+	}
+	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, payload)
+	if err != nil {
+		t.Fatalf("run pruebas returned err=%v", err)
+	}
+	if status != http.StatusConflict || !parseTruthy(genericStringValue(result["bloqueado"])) {
+		t.Fatalf("expected credential gate after using saved objective, got status=%d result=%#v", status, result)
+	}
+	if payload["facturas_electronicas"] != 2 || payload["notas_debito"] != 0 || payload["notas_credito"] != 0 || payload["total_documentos"] != 2 {
+		t.Fatalf("payload must be normalized to saved portal objective, got %#v", payload)
 	}
 }
 
@@ -551,6 +598,10 @@ func TestRunDIANPruebasHabilitacionTwoEachRealSOAPWithStatusZip(t *testing.T) {
 	defer server.Close()
 
 	cfg := testDIANValidConfig(t, server.URL)
+	cfg["set_documentos_requeridos"] = 6
+	cfg["set_facturas_requeridas"] = 2
+	cfg["set_notas_debito_requeridas"] = 2
+	cfg["set_notas_credito_requeridas"] = 2
 	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
 		"simular":                false,
 		"facturas_electronicas":  2,
@@ -593,13 +644,13 @@ func TestRunDIANPruebasHabilitacionTwoEachRealSOAPWithStatusZip(t *testing.T) {
 	}
 }
 
-func TestDIANDefaultSetRequirementUsesSoftwarePropioProveedorTarget(t *testing.T) {
+func TestDIANDefaultSetRequirementRequiresPortalConfirmation(t *testing.T) {
 	got := dianDefaultSetRequirement()
-	if got["facturas_electronicas"] != 30 || got["notas_debito"] != 10 || got["notas_credito"] != 10 || got["total_documentos"] != 50 {
+	if got["facturas_electronicas"] != 0 || got["notas_debito"] != 0 || got["notas_credito"] != 0 || got["total_documentos"] != 0 {
 		t.Fatalf("unexpected default DIAN set requirement: %#v", got)
 	}
-	if !strings.Contains(genericStringValue(got["nota"]), "software propio") {
-		t.Fatalf("expected default note to explain software mode, got %#v", got)
+	if parseTruthy(genericStringValue(got["objetivo_confirmado"])) || !strings.Contains(genericStringValue(got["nota"]), "no presupone") {
+		t.Fatalf("expected unconfirmed portal objective requirement, got %#v", got)
 	}
 }
 
