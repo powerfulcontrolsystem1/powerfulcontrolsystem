@@ -55,7 +55,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaContabilidadColombiaAvanzadaSchema` | [backend/db/contabilidad_colombia_avanzada.go:303](../../backend/db/contabilidad_colombia_avanzada.go#L303) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperContractSchema` | [backend/db/contrato_super.go:133](../../backend/db/contrato_super.go#L133) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureDefaultSuperContract` | [backend/db/contrato_super.go:231](../../backend/db/contrato_super.go#L231) | seed o provisionamiento idempotente | superadministrador o por confirmar |
-| `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:220](../../backend/db/control_electrico.go#L220) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:221](../../backend/db/control_electrico.go#L221) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperCorreoNotificacionesPruebaSchema` | [backend/db/correo_notificaciones_prueba.go:44](../../backend/db/correo_notificaciones_prueba.go#L44) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaCorteCajaConfiguracionSchema` | [backend/db/corte_caja_configuracion.go:102](../../backend/db/corte_caja_configuracion.go#L102) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:622](../../backend/db/creditos.go#L622) | DDL / indice / funcion | empresas o por confirmar |
@@ -114,7 +114,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaNominaSchema` | [backend/db/nomina_sueldos.go:387](../../backend/db/nomina_sueldos.go#L387) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaOdontologiaSchema` | [backend/db/odontologia.go:209](../../backend/db/odontologia.go#L209) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaVentasOfflineSchema` | [backend/db/offline_ventas.go:31](../../backend/db/offline_ventas.go#L31) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureOutboxSchema` | [backend/db/outbox.go:38](../../backend/db/outbox.go#L38) | DDL catalogado de plataforma | superadministrador |
+| `EnsureOutboxSchema` | [backend/db/outbox.go:39](../../backend/db/outbox.go#L39) | DDL catalogado de plataforma | superadministrador |
 | `EnsureEmpresaParqueaderoSchema` | [backend/db/parqueadero.go:89](../../backend/db/parqueadero.go#L89) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureNuevasPlantillasTipoEmpresaYLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:272](../../backend/db/plantillas_nuevas_bootstrap.go#L272) | seed o provisionamiento idempotente | superadministrador o por confirmar |
 | `EnsureNuevasPlantillasProduccionMasivaLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:302](../../backend/db/plantillas_nuevas_bootstrap.go#L302) | regla auxiliar o verificacion | superadministrador o por confirmar |
@@ -135,7 +135,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureRuntimeDatabaseRole` | [backend/db/runtime_db_role.go:17](../../backend/db/runtime_db_role.go#L17) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaSensorPuertasSchema` | [backend/db/sensor_puertas.go:74](../../backend/db/sensor_puertas.go#L74) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaSoporteRemotoSchema` | [backend/db/soporte_remoto.go:401](../../backend/db/soporte_remoto.go#L401) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaSoportesComprasIASchema` | [backend/db/soportes_compras_ia.go:124](../../backend/db/soportes_compras_ia.go#L124) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaSoportesComprasIASchema` | [backend/db/soportes_compras_ia.go:131](../../backend/db/soportes_compras_ia.go#L131) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsurePostgresRuntimeCompat` | [backend/db/sql_compat.go:31](../../backend/db/sql_compat.go#L31) | compatibilidad PostgreSQL | empresas o por confirmar |
 | `EnsurePostgresPrimaryKeySequences` | [backend/db/sql_compat.go:162](../../backend/db/sql_compat.go#L162) | compatibilidad PostgreSQL | empresas o por confirmar |
 | `EnsureSuperAlertasSchema` | [backend/db/super_alertas.go:82](../../backend/db/super_alertas.go#L82) | DDL / indice / funcion | superadministrador o por confirmar |
