@@ -89,7 +89,8 @@
     lastResponseModelMeta: null,
     generatedDocument: null,
     shareArtifact: null,
-    setupWizard: null
+    setupWizard: null,
+    interactionLocked: false
   };
 
   var ICON_MIC = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
@@ -1411,6 +1412,16 @@
     var titleEl = document.getElementById('aiChatTitle');
     var toggleBtn = document.getElementById(TOGGLE_ID);
     var mode = getChatPersonalityMode();
+
+    if (state.interactionLocked) {
+      closeChatDrawerFully();
+      if (toggleBtn) {
+        toggleBtn.hidden = true;
+        toggleBtn.setAttribute('aria-hidden', 'true');
+        toggleBtn.setAttribute('tabindex', '-1');
+      }
+      return;
+    }
 
     if (!state.chatEnabled) {
       closeChatDrawerFully();
@@ -5035,7 +5046,7 @@
   }
 
   function openChatDrawerFromUser() {
-    if (!state.chatEnabled) return;
+    if (!state.chatEnabled || state.interactionLocked) return;
     var drawer = document.getElementById(DRAWER_ID);
     var toggle = document.getElementById(TOGGLE_ID);
     var minibar = document.getElementById(MINIBAR_ID);
@@ -5056,6 +5067,7 @@
   }
 
   function openChatDrawerForHelpPanel() {
+    if (state.interactionLocked) return false;
     var drawer = document.getElementById(DRAWER_ID);
     var toggle = document.getElementById(TOGGLE_ID);
     var minibar = document.getElementById(MINIBAR_ID);
@@ -5090,6 +5102,26 @@
     setChatBodyScrollLock(false);
   }
 
+  function setChatInteractionLock(locked) {
+    state.interactionLocked = !!locked;
+    var toggle = document.getElementById(TOGGLE_ID);
+    document.body.classList.toggle('ai-chat-interaction-locked', state.interactionLocked);
+    if (state.interactionLocked) {
+      closeChatDrawerFully();
+      if (toggle) {
+        toggle.hidden = true;
+        toggle.setAttribute('aria-hidden', 'true');
+        toggle.setAttribute('tabindex', '-1');
+      }
+      return;
+    }
+    if (toggle) {
+      toggle.hidden = false;
+      toggle.setAttribute('tabindex', '0');
+    }
+    applyChatPersonalityMode();
+  }
+
   function initDrawer() {
     ensureDrawerShell();
     var toggle = document.getElementById(TOGGLE_ID);
@@ -5111,6 +5143,9 @@
     var input = document.getElementById(INPUT_ID);
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
+    try {
+      state.interactionLocked = !!(document.body && document.body.dataset && document.body.dataset.pcsAiInteractionLock === 'domotica');
+    } catch (e) {}
     var submitBtn = form.querySelector('button[type="submit"]');
     ensureDocumentModeUI();
     loadChatModels();
@@ -5413,8 +5448,19 @@
 
     window.PCSAIChatHelp = startHelpAssistant;
 
+    window.PCSAIChatDrawer = {
+      setInteractionLock: setChatInteractionLock,
+      isInteractionLocked: function () { return state.interactionLocked; }
+    };
+
+    window.addEventListener('pcs-ai-chat-interaction-lock', function (event) {
+      var detail = event && event.detail ? event.detail : {};
+      setChatInteractionLock(!!detail.locked);
+    });
+
     window.PCSAIChatOpen = function (options) {
       options = options || {};
+      if (state.interactionLocked) return false;
       if (!state.chatEnabled) {
         openChatConfigPage();
         var drawerDisabled = document.getElementById(DRAWER_ID);

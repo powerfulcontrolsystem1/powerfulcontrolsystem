@@ -42837,3 +42837,10 @@ acumulativa.
   contador del temporizador se actualiza de forma puntual para no perder toques
   ni transferirlos al menú flotante/IA. El menú móvil del Super Administrador
   inicia con **Seleccionar empresa**.
+
+## 2026-08-21 - Domótica: bloqueo temporal de IA sobre relés en móvil
+
+- Cuando el shell empresarial abre la vista operativa de equipos de Domótica,
+  cierra cualquier drawer de IA, oculta su acceso flotante y elimina la capa de
+  fondo que podía interceptar los toques de Encender/Apagar. El bloqueo se
+  limita a `carrito_control_electrico.html`; al salir se restaura el asistente.

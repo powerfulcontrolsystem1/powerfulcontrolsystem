@@ -743,6 +743,28 @@ try {
     return normalized.indexOf("/administrar_empresa/") === 0;
   }
 
+  function isOperationalDomoticaFrameHref(href) {
+    var normalized = normalizeHref(href);
+    return normalized.indexOf("/administrar_empresa/carrito_control_electrico.html") === 0;
+  }
+
+  function syncAIChatInteractionLock(frameHref) {
+    var locked = isOperationalDomoticaFrameHref(frameHref);
+    try {
+      if (document.body && document.body.dataset) {
+        if (locked) document.body.dataset.pcsAiInteractionLock = "domotica";
+        else delete document.body.dataset.pcsAiInteractionLock;
+      }
+      document.body.classList.toggle("ai-chat-interaction-locked", locked);
+    } catch (e) {}
+    try {
+      if (window.PCSAIChatDrawer && typeof window.PCSAIChatDrawer.setInteractionLock === "function") {
+        window.PCSAIChatDrawer.setInteractionLock(locked);
+      }
+      window.dispatchEvent(new CustomEvent("pcs-ai-chat-interaction-lock", { detail: { locked: locked } }));
+    } catch (e) {}
+  }
+
   function defaultFrameSrc(empresaId) {
     if (initialFrameSrc && isAllowedFrameHref(initialFrameSrc)) {
       return withEmpresaParam(initialFrameSrc, empresaId) || initialFrameSrc;
@@ -2194,6 +2216,7 @@ try {
           return;
         }
         frame.setAttribute("src", linkHref);
+        syncAIChatInteractionLock(linkHref);
         persistFrameSrc(linkHref, empresaId);
         setActiveByHref(linkHref);
         updateFavoriteButton(linkHref);
@@ -2299,6 +2322,7 @@ try {
     if (!frame) return;
     var initialSrc = resolveInitialFrameSrc(empresaId);
     frame.src = initialSrc;
+    syncAIChatInteractionLock(initialSrc);
     setActiveByHref(initialSrc);
   }
 
@@ -2541,6 +2565,7 @@ try {
         currentHref = frame.getAttribute("src") || "";
       }
       if (!currentHref) return;
+      syncAIChatInteractionLock(currentHref);
 
       // Si una navegación interna del iframe pierde empresa_id,
       // se corrige automáticamente usando el contexto activo.
