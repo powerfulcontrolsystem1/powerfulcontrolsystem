@@ -112,17 +112,9 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 		t.Fatalf("expected documentos_soportados array, got %#v", extra["documentos_soportados"])
 	}
 	wantDocs := map[string]bool{
-		"factura_electronica":                      false,
-		"nota_credito":                             false,
-		"nota_debito":                              false,
-		"documento_soporte":                        false,
-		"nota_ajuste_documento_soporte":            false,
-		"nomina_electronica":                       false,
-		"nota_ajuste_nomina_electronica":           false,
-		"documento_equivalente_pos":                false,
-		"nota_ajuste_documento_equivalente":        false,
-		"documento_equivalente_servicios_publicos": false,
-		"eventos_radian_recepcion":                 false,
+		"factura_electronica": false,
+		"nota_credito":        false,
+		"nota_debito":         false,
 	}
 	for _, raw := range docsRaw {
 		if _, exists := wantDocs[raw.(string)]; exists {
@@ -148,8 +140,8 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 			continue
 		}
 		foundRadian = true
-		if item.EstadoImplementacion != "operativo" || !item.EsEvento || !item.RequiereFirma {
-			t.Fatalf("expected operational signed RADIAN event, got %#v", item)
+		if item.EstadoImplementacion != "bloqueado_contrato" || item.DisponibleEmision || !item.EsEvento || !item.RequiereFirma {
+			t.Fatalf("expected blocked signed RADIAN catalog event, got %#v", item)
 		}
 	}
 	if !foundRadian {

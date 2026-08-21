@@ -1,10 +1,32 @@
 package handlers
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+func TestFacturacionSafeDispatchJSONRemovesRawFiscalPayload(t *testing.T) {
+	raw := facturacionSafeDispatchJSON(map[string]interface{}{
+		"ok": true, "track_id": "abc", "raw_response": "<secret/>",
+		"request_resumen": map[string]interface{}{"xml_firmado": "<Invoice/>"},
+	})
+	if strings.Contains(raw, "secret") || strings.Contains(raw, "xml_firmado") || !strings.Contains(raw, "track_id") {
+		t.Fatalf("unsafe fiscal response summary: %s", raw)
+	}
+}
+
+func TestFacturaElectronicaRepresentationPDFIsRealPDF(t *testing.T) {
+	pdf := buildFacturaElectronicaRepresentationPDF(dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID: 12, TipoDocumento: "factura_electronica", DocumentoCodigo: "FAC-1", NumeroLegal: "1PCS4",
+		CodigoValidacion: "CUFE123", MontoTotal: 100, Moneda: "COP", FechaDocumento: "2026-08-21",
+	}, facturacionOperacionPayload{ClienteNombre: "Cliente", ClienteNumeroDocumento: "123"})
+	if !bytes.HasPrefix(pdf, []byte("%PDF-1.4")) || !bytes.Contains(pdf, []byte("1PCS4")) || !bytes.Contains(pdf, []byte("CUFE123")) {
+		t.Fatal("fiscal representation must be a readable PDF containing legal identifiers")
+	}
+}
 
 func TestNormalizeFacturacionDocumentoElectronicoTipoIncluyeDocumentosSiigoDian(t *testing.T) {
 	cases := map[string]string{
@@ -22,6 +44,59 @@ func TestNormalizeFacturacionDocumentoElectronicoTipoIncluyeDocumentosSiigoDian(
 	for raw, want := range cases {
 		if got := normalizeFacturacionDocumentoElectronicoTipo(raw); got != want {
 			t.Fatalf("normalizeFacturacionDocumentoElectronicoTipo(%q)=%q, want %q", raw, got, want)
+		}
+	}
+}
+
+func TestDIANUBLVentaNoConvierteFamiliasDistintasEnFactura(t *testing.T) {
+	for _, tipo := range []string{"documento_soporte", "nomina_electronica", "documento_equivalente_pos", "eventos_radian_recepcion"} {
+		t.Run(tipo, func(t *testing.T) {
+			if facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipo) {
+				t.Fatalf("%s no pertenece al anexo UBL de factura de venta", tipo)
+			}
+			root, _, _, _, _, _, _, _ := dianDocumentKind(tipo)
+			if root != "" {
+				t.Fatalf("%s cayo silenciosamente en raiz %s", tipo, root)
+			}
+			_, status, err := generateDIANUBLBase(map[string]interface{}{"pais_codigo": "CO"}, 12, map[string]interface{}{
+				"documento_tipo":   tipo,
+				"documento_codigo": "NO-ENVIAR-1",
+			})
+			if err == nil || status != 422 || !strings.Contains(err.Error(), "no se envio informacion fiscal") {
+				t.Fatalf("se esperaba bloqueo 422 para %s, status=%d err=%v", tipo, status, err)
+			}
+		})
+	}
+}
+
+func TestDIANUBLVentaConservaTiposImplementados(t *testing.T) {
+	wantRoots := map[string]string{
+		"factura_electronica": "Invoice",
+		"nota_credito":        "CreditNote",
+		"nota_debito":         "DebitNote",
+	}
+	for tipo, wantRoot := range wantRoots {
+		if !facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipo) {
+			t.Fatalf("%s debe permanecer operativo", tipo)
+		}
+		root, _, _, _, _, _, _, _ := dianDocumentKind(tipo)
+		if root != wantRoot {
+			t.Fatalf("dianDocumentKind(%s)=%s, want %s", tipo, root, wantRoot)
+		}
+	}
+}
+
+func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *testing.T) {
+	got := facturacionFiltrarDocumentosDianOperativos([]string{
+		"factura_electronica", "documento_soporte", "nota_credito", "nomina_electronica", "nota_debito", "factura_electronica", "eventos_radian_recepcion",
+	})
+	want := []string{"factura_electronica", "nota_credito", "nota_debito"}
+	if len(got) != len(want) {
+		t.Fatalf("documentos operativos=%v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("documentos operativos=%v, want %v", got, want)
 		}
 	}
 }
@@ -145,5 +220,50 @@ func TestAnulacionElectronicaSoloConfirmaConNotaCreditoAceptada(t *testing.T) {
 	}
 	if _, err := resolveFacturacionTransitionForDocument("anular", "emitida", "factura_electronica"); err == nil {
 		t.Fatal("la transicion local generica no debe anular una factura electronica")
+	}
+}
+
+func TestFacturacionDIANFechaEmisionDesdeXMLConservaInstanteFirmado(t *testing.T) {
+	xml := `<Invoice xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"><cbc:IssueDate>2026-08-21</cbc:IssueDate><cbc:IssueTime>09:31:45-05:00</cbc:IssueTime></Invoice>`
+	if got := facturacionDIANFechaEmisionDesdeXML(xml); got != "2026-08-21T09:31:45-05:00" {
+		t.Fatalf("fecha fiscal firmada = %q", got)
+	}
+	if got := facturacionDIANFechaEmisionDesdeXML(`<Invoice><IssueDate>2026-08-21</IssueDate></Invoice>`); got != "2026-08-21" {
+		t.Fatalf("fecha fiscal sin hora = %q", got)
+	}
+	if got := facturacionDIANFechaEmisionDesdeXML(`<Invoice>`); got != "" {
+		t.Fatalf("XML invalido no debe producir fecha fiscal: %q", got)
+	}
+}
+
+func TestFacturacionCUFEOficialAceptaAcuseDIANAnidado(t *testing.T) {
+	cufe := strings.Repeat("aB", 48)
+	got := facturacionCUFEOficialDesdeMap(map[string]interface{}{
+		"codigo_validacion": strings.Repeat("f", 64),
+		"respuesta_dian": map[string]interface{}{
+			"xml_document_key": cufe,
+		},
+	})
+	if got != strings.ToLower(cufe) {
+		t.Fatalf("CUFE anidado = %q", got)
+	}
+	if got := facturacionCUFEOficialDesdeMap(map[string]interface{}{"cufe": strings.Repeat("f", 64)}); got != "" {
+		t.Fatalf("un hash local de 64 caracteres no puede aceptarse como CUFE: %q", got)
+	}
+	if qr := facturaElectronicaDIANQRURL(dbpkg.EmpresaDocumentoFacturacion{PaisCodigo: "CO", CodigoValidacion: strings.Repeat("f", 64)}); qr != "" {
+		t.Fatalf("no debe generarse QR DIAN para un codigo no oficial: %q", qr)
+	}
+}
+
+func TestFacturacionDocumentoAdvisoryLockKeyAislaEmpresaYDocumento(t *testing.T) {
+	base := facturacionDocumentoAdvisoryLockKey(12, "factura_electronica", "1PCS8")
+	if base == 0 || base != facturacionDocumentoAdvisoryLockKey(12, "FACTURA_ELECTRONICA", "1pcs8") {
+		t.Fatal("la clave documental debe ser estable y normalizada")
+	}
+	if base == facturacionDocumentoAdvisoryLockKey(13, "factura_electronica", "1PCS8") {
+		t.Fatal("la clave documental debe aislar empresa_id")
+	}
+	if base == facturacionDocumentoAdvisoryLockKey(12, "factura_electronica", "1PCS9") {
+		t.Fatal("la clave documental debe aislar el folio")
 	}
 }

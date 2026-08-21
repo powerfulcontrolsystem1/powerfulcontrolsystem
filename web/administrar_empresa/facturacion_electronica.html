@@ -247,7 +247,7 @@
 
     <div id="feDianDocumentosCard" class="card is-hidden">
       <h2>Documentos electronicos DIAN Colombia</h2>
-      <p class="form-help">Activa los documentos del Sistema de Facturación Electrónica que la empresa usará. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.</p>
+	  <p class="form-help">Selecciona únicamente los tipos con emisión disponible. Los demás se muestran como catálogo y permanecen bloqueados hasta contar con su adaptador DIAN específico.</p>
       <div id="feDianEssentialDocs" class="dian-essential-grid"></div>
       <div id="feRadianStatus" class="fe-radian-panel is-hidden"></div>
       <div class="form-row">
@@ -262,7 +262,7 @@
       </div>
       <div id="feDianFuentesList" class="form-help"></div>
       <div class="form-actions">
-        <button id="feDianSelectAllDocs" class="btn secondary" type="button">Activar todos</button>
+		<button id="feDianSelectAllDocs" class="btn secondary" type="button">Seleccionar operativos</button>
         <button id="feDianApplyDocs" class="btn" type="button">Aplicar seleccion al JSON</button>
       </div>
       <div id="feDianDocumentosMsg" class="form-help"></div>
@@ -1660,6 +1660,11 @@
       input.className = cssClass;
       input.value = item.codigo || "";
       input.checked = !!checked;
+	  if (Object.prototype.hasOwnProperty.call(item, "disponible_emision") && item.disponible_emision !== true) {
+		input.disabled = true;
+		input.checked = false;
+		label.title = item.observacion || "Emision fiscal no disponible para este tipo documental.";
+	  }
       label.appendChild(input);
       label.appendChild(document.createTextNode(" " + (item.titulo || item.codigo || "")));
       if (item.categoria || item.tipo) {
@@ -1720,7 +1725,8 @@
         var found = item.codes.map(function(code) { return catalog[code]; }).filter(Boolean);
         var allFound = found.length === item.codes.length;
         var allOperational = allFound && found.every(isDianEssentialOperational);
-        var status = allOperational ? "Operativo" : (allFound ? "Catalogado" : "Pendiente");
+		var blocked = allFound && found.some(function(doc) { return txt(doc && doc.estado_implementacion).toLowerCase() === "bloqueado_contrato"; });
+		var status = allOperational ? "Operativo" : (blocked ? "Bloqueado" : (allFound ? "Catalogado" : "Pendiente"));
         var card = document.createElement("div");
         card.className = "dian-essential-card";
         var title = document.createElement("strong");
@@ -1729,7 +1735,8 @@
         badge.className = allOperational ? "ok" : (allFound ? "warn" : "");
         badge.textContent = status;
         var note = document.createElement("p");
-        note.textContent = item.note;
+		var detail = found.map(function(doc) { return txt(doc && doc.observacion); }).filter(Boolean).join(" ");
+		note.textContent = detail || item.note;
         card.appendChild(title);
         card.appendChild(badge);
         card.appendChild(note);
@@ -1739,8 +1746,7 @@
     }
 
     function isDianEssentialOperational(doc) {
-      var estado = txt(doc && doc.estado_implementacion).toLowerCase();
-      return estado === "base_operativa" || estado === "operativo" || estado === "implementado";
+	  return !!(doc && doc.disponible_emision === true);
     }
 
     function renderRadianStatus(item) {
@@ -1755,7 +1761,7 @@
 
       var text = document.createElement("div");
       var title = document.createElement("strong");
-      title.textContent = "Eventos RADIAN operativos en habilitacion";
+	  title.textContent = item.disponible_emision === true ? "Eventos RADIAN operativos" : "Eventos RADIAN no disponibles";
       var note = document.createElement("p");
       note.textContent = item.observacion || "Registra acuse, recibo, aceptacion o reclamo sobre facturas electronicas existentes en ambiente de pruebas.";
       text.appendChild(title);
@@ -1791,6 +1797,10 @@
       var contador = {};
       listFromValue(extra.documentos_contadores_colombia).forEach(function(code) { contador[code] = true; });
       document.querySelectorAll(".fe-dian-doc-check").forEach(function(input) {
+		if (input.disabled) {
+		  input.checked = false;
+		  return;
+		}
         input.checked = !!docs[input.value] || (!extra.documentos_soportados && input.checked);
       });
       document.querySelectorAll(".fe-dian-contador-check").forEach(function(input) {
@@ -1806,7 +1816,7 @@
       } catch (e) { extra = {}; }
       extra.documentos_soportados = selectedValues(".fe-dian-doc-check");
       extra.documentos_contadores_colombia = selectedValues(".fe-dian-contador-check");
-      extra.documentos_dian_catalogo_version = "2026-05-20";
+	  extra.documentos_dian_catalogo_version = "2026-08-21";
       document.getElementById("campos_pais_json").value = JSON.stringify(extra, null, 2);
       setDianDocumentosMessage("Seleccion aplicada al JSON. Guarda la configuracion para persistirla.", false);
     }
@@ -2116,7 +2126,7 @@
         var contadorSeleccionados = selectedValues(".fe-dian-contador-check");
         if (docsSeleccionados.length) extra.documentos_soportados = docsSeleccionados;
         if (contadorSeleccionados.length) extra.documentos_contadores_colombia = contadorSeleccionados;
-        if (docsSeleccionados.length || contadorSeleccionados.length) extra.documentos_dian_catalogo_version = "2026-05-20";
+		if (docsSeleccionados.length || contadorSeleccionados.length) extra.documentos_dian_catalogo_version = "2026-08-21";
         delete extra.modo_offline_dian_activo;
         delete extra.modo_offline_preguntar;
         delete extra.modo_offline_auto_reintentar;
@@ -2456,7 +2466,7 @@
     if (btnDianSelectAllDocs) {
       btnDianSelectAllDocs.addEventListener("click", function() {
         document.querySelectorAll(".fe-dian-doc-check, .fe-dian-contador-check").forEach(function(input) {
-          input.checked = true;
+		  input.checked = !input.disabled;
         });
         applyDianCatalogToJson();
       });

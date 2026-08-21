@@ -3,6 +3,21 @@
 Fecha: 2026-04-18
 Estado: vigente
 
+Actualizacion 2026-08-21:
+
+- El adaptador DIAN implementado cubre exclusivamente la familia del Anexo
+  Tecnico de Factura Electronica de Venta: `factura_electronica`,
+  `nota_credito` y `nota_debito`.
+- `documento_soporte`, nomina electronica, documentos equivalentes y RADIAN
+  permanecen catalogados, pero su emision esta bloqueada con HTTP 422 hasta
+  contar con esquema, datos, numeracion, identificador y transporte propios.
+- Ningun tipo desconocido o de otra familia puede convertirse por defecto en
+  `Invoice`. El bloqueo ocurre antes de generar XML, reservar consecutivo,
+  persistir una emision o transmitir informacion fiscal.
+- La consulta visual distingue el comprobante comercial `CP-*` de la factura
+  fiscal `FV-*`; una venta con factura asociada no se cuenta dos veces como
+  factura electronica.
+
 Actualizacion 2026-06-18:
 
 - PCS quedo validado en DIAN produccion para `empresa_id=12` con prefijo `1PCS`, resolucion `18764111318575`, rango `1-100000` y Software ID asociado.
@@ -23,6 +38,8 @@ Este contrato cubre el ciclo documental empresarial de facturacion y documentos 
 - `GET /api/empresa/facturacion_electronica?empresa_id={id}&action=documentos`
 - `GET /api/empresa/facturacion_electronica?empresa_id={id}&action=reintentos`
 - `GET /api/empresa/facturacion_electronica?empresa_id={id}&action=reconciliacion`
+- `GET /api/empresa/facturacion_electronica?empresa_id={id}&action=artefactos&tipo_documento={tipo}&documento_codigo={codigo}`
+- `GET /api/empresa/facturacion_electronica?empresa_id={id}&action=descargar_artefacto&id={id}`
 - `POST|PUT /api/empresa/facturacion_electronica`
 - `POST|PUT /api/empresa/facturacion_electronica?action=emitir`
 - `POST|PUT /api/empresa/facturacion_electronica?action=anular`
@@ -86,11 +103,26 @@ Restriccion clave:
 
 - unicidad por `empresa_id + tipo_documento + documento_codigo`
 
+### Artefactos fiscales privados
+
+- `empresa_facturacion_artefactos` conserva metadatos, SHA-256, MIME, tamano y referencia privada del XML firmado, respuesta del proveedor y representacion PDF.
+- Los archivos viven fuera de `web/`, separados por `empresa_id`; ninguna API devuelve la ruta o el nombre interno de almacenamiento.
+- Un reintento DIAN reutiliza el XML firmado persistido. No regenera fecha/CUFE para el mismo intento documental.
+
 ## Tipos documentales cubiertos
 
 - `factura_electronica`
 - `nota_credito`
+- `nota_debito`
 - `comprobante_pago`
+
+Catalogados sin emision DIAN disponible:
+
+- `documento_soporte` y su nota de ajuste
+- `nomina_electronica` y su nota de ajuste
+- `documento_equivalente_pos`, los demas documentos equivalentes y sus notas
+  de ajuste
+- `eventos_radian_recepcion`
 
 ## Fuentes de generacion documental
 
@@ -175,7 +207,7 @@ Restriccion clave:
 4. Ninguna operacion documental puede ejecutarse sin `documento_codigo` no vacio.
 5. La transicion documental debe respetar la maquina de estados definida; una accion fuera del estado permitido devuelve conflicto.
 6. La emision de `factura_electronica` exige validacion previa de cumplimiento normativo mediante `PrepareFacturacionDocumentoLegal`.
-7. Cuando una emision FE supera la validacion normativa, el documento debe persistir `numero_legal`, `codigo_validacion`, `pais_codigo`, `ambiente_fe` y `fecha_documento`.
+7. Cuando una emision FE supera la validacion normativa, el documento debe persistir `numero_legal`, `pais_codigo`, `ambiente_fe` y `fecha_documento`. En Colombia `codigo_validacion` permanece vacio hasta obtener un CUFE/CUDE SHA-384 del XML o acuse DIAN; nunca se sustituye por un hash local.
 8. Si el documento ya existia, la persistencia conserva los campos legales previos cuando el payload nuevo no los sobreescribe.
 9. Toda operacion documental exitosa registra evento contable no bloqueante.
 10. La integracion fiscal posterior a `emitir`, `anular` o `nota_credito` no bloquea la persistencia del documento; su resultado se refleja aparte como `integracion_fiscal` y opcionalmente en cola de reintentos.
@@ -188,11 +220,17 @@ Restriccion clave:
 17. Las referencias sensibles DIAN (`token_emisor_ref`, `certificado_clave_ref`, software compartido) deben resolverse por `env:`, `file:` o `base64:`; no deben quedar como secretos en codigo fuente.
 18. El set de pruebas DIAN respeta consecutivos y rango configurado; si el rango no alcanza, la operacion debe fallar con conflicto.
 19. La documentacion debe distinguir explicitamente entre `firma base` y `firma oficial`, y entre `envio real base` y `transporte oficial DIAN`.
-20. Para Colombia, el objetivo base vigente del set DIAN en software propio o proveedor tecnologico es 30 facturas, 10 notas debito y 10 notas credito; la UI permite cambiarlo cuando el portal DIAN asigne un objetivo diferente.
+20. Para Colombia no existe un objetivo numerico local por defecto. La empresa debe copiar y guardar el objetivo exacto asignado por el portal DIAN; sin ese dato el envio automatico del set queda bloqueado.
 21. En produccion Colombia, un documento solo queda fiscalmente aceptado cuando DIAN devuelve acuse aceptado, el portal DIAN lo muestra aprobado o existe evidencia oficial equivalente; `Regla 90` por si sola deja el caso pendiente de consulta.
 22. `Aprobado con notificacion` en portal DIAN cuenta como documento aprobado; la notificacion debe conservarse como observacion operativa y corregirse si apunta a datos maestros.
 23. Antes de reenviar un documento con el mismo prefijo/folio, el sistema u operador debe consultar historial DIAN, cola de reintentos, CUFE/TrackId o portal para evitar duplicados y consumo de consecutivos.
 24. Si se ejecuta una prueba directa contra DIAN por fuera de `empresa_facturacion_documentos`, debe registrarse en historial de cambios y adelantar `empresa_dian_configuracion.consecutivo_actual` y `empresa_configuracion_avanzada.proximo_consecutivo` al siguiente folio disponible.
+25. Un `GET` de conectividad, listado o consulta nunca transmite documentos. El procesamiento manual de cola exige `POST`; el automatico pertenece a `pcs-worker`.
+26. Una respuesta asincrona con TrackId queda `pendiente`; el worker consulta `GetStatusZip` con el mismo XML/TrackId hasta aceptacion, rechazo o agotamiento controlado. Un rechazo final no se reenvia automaticamente.
+27. No se fabrican referencias externas. Si DIAN/proveedor no entrega TrackId, ZipKey o referencia equivalente, el campo permanece vacio.
+28. Toda descarga y adjunto fiscal vuelve a calcular SHA-256 contra los metadatos tenant-scoped; una diferencia de integridad bloquea la entrega.
+29. Al reutilizar un XML firmado, la fecha fiscal se toma de `IssueDate`/`IssueTime` del mismo XML y no se reemplaza por la hora del reintento.
+30. El envío o consulta de acuse de un mismo `empresa_id + tipo_documento + documento_codigo` usa bloqueo asesor documental; una segunda ejecución concurrente no transmite el documento.
 
 ## Salidas y estados funcionales
 
@@ -280,6 +318,7 @@ Orden de prioridad:
 ### Comportamiento
 
 - para `factura_electronica`: asunto y cuerpo fiscal con `numero_legal`, `codigo_validacion`, `monto_total`, `moneda`, `pais_codigo` y `ambiente_fe`
+- en Colombia produccion, el correo fiscal espera `estado_envio=aceptado`; XML firmado y representacion PDF son obligatorios y el envio falla cerrado si falta alguno o no supera la validacion de integridad
 - para `comprobante_pago`: asunto y cuerpo comercial equivalentes, sin forzar detalle FE
 - si SMTP global no esta disponible, el handler responde el error dentro de `factura_email` sin deshacer el documento
 
@@ -307,7 +346,7 @@ Orden de prioridad:
 - el cliente SOAP/WSDL base ya construye sobres para `SendBillAsync`, `SendBillSync`, `SendTestSetAsync` y `GetStatusZip`, pero el cierre certificable depende de ejecutar acuses reales con credenciales/firma de la empresa.
 - `GetNumberingRange` permanece como objetivo declarado para automatizar consulta de rangos; los rangos de produccion deben estar configurados y asociados en DIAN antes de emitir.
 - la firma XMLDSig/XAdES base existe para validacion tecnica, pero la aceptacion fiscal final depende del acuse DIAN/proveedor y de las politicas vigentes de DIAN para la empresa.
-- el correo automatico de factura envia resumen fiscal en texto; adjuntar XML/PDF fiscal definitivo queda pendiente hasta persistir artefactos certificados por documento.
+- el XML firmado, el acuse del proveedor y la representacion PDF se persisten en almacenamiento privado por empresa y pueden descargarse desde la bandeja de facturas; el XML y PDF se adjuntan al correo posterior a la aceptacion.
 
 ## Errores de contrato esperados
 
@@ -328,6 +367,8 @@ Orden de prioridad:
 - upsert en `empresa_facturacion_documentos`
 - registro de evento contable no bloqueante
 - posible registro de integracion fiscal y cola de reintentos
+- persistencia privada de XML firmado antes de transmitir, acuse del proveedor y representacion PDF con SHA-256
+- consulta automatica de acuses pendientes mediante `pcs-worker`
 - posible envio de correo al cliente
 - actualizacion de consecutivo o metadata DIAN cuando aplica set de pruebas o carga de firma
 

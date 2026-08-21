@@ -1,27 +1,47 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-08-13.
+Estado: vigente. Ultima actualizacion: 2026-08-21.
 
-## Actualizacion 2026-08-13 - Plan 110 vigente y NO-GO
+## Actualizacion 2026-08-21 - trabajo autorizado por temas especificos
 
-- `documentos/plan_110.md` es la única hoja de ruta activa para el cierre de
-  producción. Los Planes 106 a 109 permanecen como historial y fuente de
-  evidencia, no como orden de ejecución vigente.
+- Por instruccion del usuario, `documentos/plan_110.md` deja de ser una hoja de
+  ruta activa. Cada modulo debe auditarse, implementarse y cerrarse mediante el
+  alcance especifico autorizado, manteniendo las compuertas generales de
+  seguridad, migracion, pruebas y despliegue.
+- Los planes 105 a 110 y sus evidencias se conservan como historia tecnica; no
+  autorizan por si mismos despliegues, pruebas reales, proveedores ni cambios de
+  datos.
+- Para facturacion electronica gobiernan el contrato y runbook especificos de
+  `documentos/gobernanza_tecnica/`, junto con seguridad multiempresa y el
+  migrador `pcs-migrate`.
+- La auditoria real del 2026-08-21 comprobo que produccion aun publicaba como
+  operativas siete familias aunque el generador solo implementaba
+  Invoice/CreditNote/DebitNote. El candidato vigente corrige el contrato: solo
+  factura, nota credito y nota debito permiten emision; soporte, nomina,
+  equivalentes y RADIAN fallan cerrado con 422 hasta tener adaptador propio.
+- En la consulta documental, `comprobante_pago` y su factura asociada son dos
+  piezas distintas. La UI no debe renombrar ni contabilizar el comprobante
+  `CP-*` como una segunda factura fiscal.
+
+## Historico 2026-08-13 - Plan 110 vigente y NO-GO
+
+- En esa fecha `documentos/plan_110.md` era la hoja de ruta para el cierre de
+  producción. Hoy permanece solo como historial y fuente de evidencia.
 - El avance formal documentado es 38,5 % de implementación, 0 % de
   certificación del candidato y veredicto `NO-GO`.
 - P110-001A incorpora el saneamiento obligatorio de fuentes duplicadas,
   autoridad DDL, handlers monolíticos, acceso DB sin contexto, errores
   descartados y repetición frontend antes de congelar el candidato final.
-- La aplicación móvil nativa queda fuera del piloto. La web responsive, PWA,
-  domótica incluida por alcance y todas las pruebas reales autorizadas siguen
-  sujetas a las compuertas del Plan 110.
+- La aplicación móvil nativa quedaba fuera de ese piloto. La web responsive,
+  PWA, domótica y las pruebas reales se rigen hoy por el alcance especifico
+  autorizado y sus compuertas aplicables.
 - Las actualizaciones de Planes 106/108 que aparecen más abajo son históricas y
   no reemplazan esta sección.
 
 ## Historico 2026-07-24 - Plan 106 P0 en ejecucion controlada
 
 - En esa fecha, `documentos/plan_106.md` sustituyó al Plan 105 como hoja de ruta.
-  Hoy solo conserva evidencia histórica; la ruta activa es Plan 110.
+  Hoy solo conserva evidencia histórica; no existe una ruta general activa.
 - El plan exige consolidar la cartera de proveedores porque hoy existen dos
   fuentes de verdad, probar todos los modulos/funciones/botones, cubrir todos
   los controles IA y ejecutar varias cajas simultaneas en una prueba real

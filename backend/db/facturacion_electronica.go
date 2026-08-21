@@ -75,6 +75,7 @@ type FacturacionDianDocumentoCatalogItem struct {
 	RequiereNumeracion   bool   `json:"requiere_numeracion"`
 	RequiereFirma        bool   `json:"requiere_firma"`
 	EsEvento             bool   `json:"es_evento"`
+	DisponibleEmision    bool   `json:"disponible_emision"`
 	Observacion          string `json:"observacion"`
 }
 
@@ -322,7 +323,7 @@ func EmpresaFacturacionElectronicaSchemaReady(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}
-	for _, table := range []string{"facturacion_electronica_pais", "facturacion_electronica_reintentos"} {
+	for _, table := range []string{"facturacion_electronica_pais", "facturacion_electronica_reintentos", "empresa_facturacion_artefactos"} {
 		var registered sql.NullString
 		if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
 			return fmt.Errorf("verify electronic invoicing table %s: %w", table, err)
@@ -569,22 +570,24 @@ func DefaultFacturacionDianDocumentosSoportados() []string {
 	items := ListFacturacionDianDocumentosElectronicos()
 	out := make([]string, 0, len(items))
 	for _, item := range items {
-		out = append(out, item.Codigo)
+		if item.DisponibleEmision {
+			out = append(out, item.Codigo)
+		}
 	}
 	return out
 }
 
 func ListFacturacionDianDocumentosElectronicos() []FacturacionDianDocumentoCatalogItem {
 	return []FacturacionDianDocumentoCatalogItem{
-		{Codigo: "factura_electronica", Titulo: "Factura electronica de venta", Categoria: "Venta", Alcance: "Venta de bienes o servicios validada previamente por DIAN.", ModuloSugerido: "ventas_simple/carritos", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "base_operativa", RequiereFirma: true},
-		{Codigo: "nota_debito", Titulo: "Nota debito electronica", Categoria: "Ajustes de venta", Alcance: "Aumenta o corrige valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "base_operativa", RequiereFirma: true},
+		{Codigo: "factura_electronica", Titulo: "Factura electronica de venta", Categoria: "Venta", Alcance: "Venta de bienes o servicios validada previamente por DIAN.", ModuloSugerido: "ventas_simple/carritos", EstadoImplementacion: "operativo", RequiereNumeracion: true, RequiereFirma: true, DisponibleEmision: true},
+		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "operativo", RequiereFirma: true, DisponibleEmision: true},
+		{Codigo: "nota_debito", Titulo: "Nota debito electronica", Categoria: "Ajustes de venta", Alcance: "Aumenta o corrige valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "operativo", RequiereFirma: true, DisponibleEmision: true},
 		{Codigo: "factura_talonario_contingencia", Titulo: "Reporte de factura de talonario o papel por contingencia", Categoria: "Contingencia", Alcance: "Reporte para validacion posterior cuando hubo inconveniente tecnologico del facturador.", ModuloSugerido: "facturacion_electronica/offline", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_soporte", Titulo: "Documento soporte en adquisiciones a no obligados", Categoria: "Compras", Alcance: "Soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.", ModuloSugerido: "compras", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_soporte", Titulo: "Documento soporte en adquisiciones a no obligados", Categoria: "Compras", Alcance: "Soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.", ModuloSugerido: "compras", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emision bloqueada: requiere adaptador propio del Anexo Tecnico Documento Soporte 1.0 y datos del vendedor no obligado."},
 		{Codigo: "nota_ajuste_documento_soporte", Titulo: "Nota de ajuste del documento soporte", Categoria: "Compras", Alcance: "Ajusta o corrige un documento soporte de adquisiciones.", ModuloSugerido: "compras", EstadoImplementacion: "catalogado", RequiereFirma: true},
-		{Codigo: "nomina_electronica", Titulo: "Documento soporte de pago de nomina electronica", Categoria: "Nomina", Alcance: "Soporta valores devengados, deducidos y pagados a empleados.", ModuloSugerido: "nomina", EstadoImplementacion: "base_operativa", RequiereFirma: true},
+		{Codigo: "nomina_electronica", Titulo: "Documento soporte de pago de nomina electronica", Categoria: "Nomina", Alcance: "Soporta valores devengados, deducidos y pagados a empleados.", ModuloSugerido: "nomina", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emision bloqueada: requiere XML, CUNE y transporte del Anexo Tecnico de Nomina Electronica."},
 		{Codigo: "nota_ajuste_nomina_electronica", Titulo: "Nota de ajuste de nomina electronica", Categoria: "Nomina", Alcance: "Ajusta o corrige documentos soporte de pago de nomina electronica.", ModuloSugerido: "nomina", EstadoImplementacion: "catalogado", RequiereFirma: true},
-		{Codigo: "documento_equivalente_pos", Titulo: "Documento equivalente electronico POS", Categoria: "Documentos equivalentes", Alcance: "Tiquete de maquina registradora con sistema POS transmitido para validacion.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_pos", Titulo: "Documento equivalente electronico POS", Categoria: "Documentos equivalentes", Alcance: "Tiquete de maquina registradora con sistema POS transmitido para validacion.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emision bloqueada: requiere adaptador del Anexo Tecnico de Documento Equivalente Electronico 1.0."},
 		{Codigo: "nota_ajuste_documento_equivalente", Titulo: "Nota de ajuste del documento equivalente electronico", Categoria: "Documentos equivalentes", Alcance: "Ajusta errores aritmeticos o de contenido en documentos equivalentes electronicos.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "catalogado", RequiereFirma: true},
 		{Codigo: "documento_equivalente_servicios_publicos", Titulo: "Documento equivalente electronico de servicios publicos", Categoria: "Documentos equivalentes", Alcance: "Documento electronico aplicable a servicios publicos domiciliarios.", ModuloSugerido: "plantillas/servicios_publicos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
 		{Codigo: "documento_equivalente_transporte_pasajeros", Titulo: "Documento equivalente electronico de transporte de pasajeros", Categoria: "Documentos equivalentes", Alcance: "Tiquete de transporte de pasajeros cuando aplique la modalidad equivalente.", ModuloSugerido: "plantillas/transporte", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
@@ -597,7 +600,7 @@ func ListFacturacionDianDocumentosElectronicos() []FacturacionDianDocumentoCatal
 		{Codigo: "documento_equivalente_bolsa_agropecuaria", Titulo: "Documento electronico de bolsa agropecuaria y commodities", Categoria: "Documentos equivalentes", Alcance: "Operaciones de bolsa agropecuaria y de otros commodities.", ModuloSugerido: "contabilidad/tesoreria", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
 		{Codigo: "documento_equivalente_espectaculos", Titulo: "Documento equivalente electronico de espectaculos publicos", Categoria: "Documentos equivalentes", Alcance: "Boleta de ingreso a espectaculos publicos de artes escenicas y otros espectaculos.", ModuloSugerido: "plantillas/eventos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
 		{Codigo: "documento_equivalente_cine", Titulo: "Documento equivalente electronico de cine", Categoria: "Documentos equivalentes", Alcance: "Boleta de ingreso a cine.", ModuloSugerido: "plantillas/eventos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "eventos_radian_recepcion", Titulo: "Eventos de recepcion y aceptacion RADIAN", Categoria: "Eventos", Alcance: "Acuse de recibo, recibo de bienes o servicios, aceptacion, reclamo y trazabilidad de factura como titulo valor.", ModuloSugerido: "facturacion_electronica/radian", EstadoImplementacion: "operativo", RequiereFirma: true, EsEvento: true, Observacion: "Disponible como evento documental firmado desde el Centro de habilitacion DIAN mientras la empresa no active produccion; no es una venta nueva."},
+		{Codigo: "eventos_radian_recepcion", Titulo: "Eventos de recepcion y aceptacion RADIAN", Categoria: "Eventos", Alcance: "Acuse de recibo, recibo de bienes o servicios, aceptacion, reclamo y trazabilidad de factura como titulo valor.", ModuloSugerido: "facturacion_electronica/radian", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, EsEvento: true, Observacion: "Emision bloqueada: RADIAN requiere ApplicationResponse/AttachedDocument, eventos, CUDE y habilitacion propios; no es una venta nueva."},
 	}
 }
 
@@ -613,9 +616,13 @@ func ListFacturacionDianObligacionesContadores() []FacturacionDianObligacionCont
 func ListFacturacionDianFuentesNormativas() []FacturacionDianFuenteNormativa {
 	return []FacturacionDianFuenteNormativa{
 		{Titulo: "DIAN - Abece Sistema de Factura Electronica", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/abece-sistema-de-factura-electronica/"},
+		{Titulo: "DIAN - Anexo Tecnico Documento Soporte No Obligados 1.0", URL: "https://www.dian.gov.co/impuestos/factura-electronica/Documents/Anexo-Tecnico-Documento-Soporte-No-Obligados.pdf"},
+		{Titulo: "DIAN - Documentacion Tecnica Nomina Electronica", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/documentacion-tecnica-soporte-de-pago-nomina-electronica/"},
 		{Titulo: "DIAN - Documento Equivalente Electronico", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/documento-equivalente-electronico/"},
+		{Titulo: "DIAN - Anexo Tecnico Documento Equivalente Electronico 1.0", URL: "https://www.dian.gov.co/impuestos/factura-electronica/Documents/Anexo-Tecnico-Documento-Equivalente-Electronico-V1-0-final.pdf"},
 		{Titulo: "DIAN - Resolucion 000165 de 2023 compilada", URL: "https://normograma.dian.gov.co/dian/compilacion/docs/resolucion_dian_0165_2023.htm"},
 		{Titulo: "DIAN - RADIAN", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/radian/"},
+		{Titulo: "DIAN - Anexo Tecnico RADIAN 1.0", URL: "https://www.dian.gov.co/impuestos/factura-electronica/Documents/Anexo-Tecnico-RADIAN.pdf"},
 	}
 }
 
@@ -679,7 +686,7 @@ func defaultCamposPaisJSON(paisCodigo string) string {
 		fields["integracion"] = "dian_ubl_2_1"
 		fields["documentos_soportados"] = DefaultFacturacionDianDocumentosSoportados()
 		fields["documentos_contadores_colombia"] = []string{"declaraciones_tributarias", "informacion_exogena", "certificados_retencion", "conciliacion_fiscal"}
-		fields["documentos_dian_catalogo_version"] = "2026-05-20"
+		fields["documentos_dian_catalogo_version"] = "2026-08-21"
 		fields["documentos_siigo_referencia"] = []string{"documento_soporte", "nota_credito_ventas", "nota_debito_ventas", "nomina_electronica", "pos_electronico"}
 	}
 	raw, _ := json.Marshal(fields)
@@ -1363,7 +1370,7 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 		COALESCE(proximo_consecutivo, 1)
 	FROM empresa_configuracion_avanzada
 	WHERE empresa_id = ?
-	LIMIT 1`, empresaID).Scan(
+	FOR UPDATE`, empresaID).Scan(
 		&tipoDocumentoEmisor,
 		&nit,
 		&razonSocial,
@@ -1486,6 +1493,12 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 		cfg.ResolucionNumero,
 		fechaEmisionLegal,
 	)
+	// En Colombia el codigo fiscal visible debe ser exclusivamente el CUFE/CUDE
+	// SHA-384 del XML/acuse DIAN. El hash local sirve para otras jurisdicciones,
+	// pero no puede presentarse ni persistirse como si fuera una validacion DIAN.
+	if strings.EqualFold(strings.TrimSpace(cfg.PaisCodigo), "CO") {
+		codigoValidacion = ""
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -1836,7 +1849,7 @@ func ListFacturacionElectronicaRetriesByEmpresaContext(ctx context.Context, dbCo
 	}
 
 	if filter.SoloVencidos {
-		query += " AND estado_envio IN ('pendiente','fallido','contingencia') AND (COALESCE(proximo_intento, '') = '' OR proximo_intento <= CURRENT_TIMESTAMP)"
+		query += " AND estado_envio IN ('pendiente','fallido','contingencia') AND COALESCE(intentos, 0) < COALESCE(max_intentos, 5) AND (COALESCE(proximo_intento, '') = '' OR CASE WHEN proximo_intento ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T]' THEN CAST(proximo_intento AS TIMESTAMPTZ) ELSE CURRENT_TIMESTAMP END <= CURRENT_TIMESTAMP)"
 	}
 
 	if !filter.IncludeInactive {
@@ -1902,6 +1915,43 @@ func ListFacturacionElectronicaRetriesByEmpresaContext(ctx context.Context, dbCo
 		items = append(items, it)
 	}
 
+	return items, rows.Err()
+}
+
+// ListFacturacionElectronicaRetryEmpresaIDsDueContext lista tenants con trabajo
+// fiscal vencido para que pcs-worker procese cada cola de forma aislada.
+func ListFacturacionElectronicaRetryEmpresaIDsDueContext(ctx context.Context, dbConn *sql.DB, limit int) ([]int64, error) {
+	if dbConn == nil {
+		return nil, fmt.Errorf("conexion empresarial no disponible")
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	rows, err := dbConn.QueryContext(ctx, `SELECT DISTINCT empresa_id
+		FROM facturacion_electronica_reintentos
+		WHERE estado = 'activo'
+		  AND estado_envio IN ('pendiente','fallido','contingencia')
+		  AND COALESCE(intentos, 0) < COALESCE(max_intentos, 5)
+		  AND (COALESCE(proximo_intento, '') = '' OR CASE WHEN proximo_intento ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T]' THEN CAST(proximo_intento AS TIMESTAMPTZ) ELSE CURRENT_TIMESTAMP END <= CURRENT_TIMESTAMP)
+		ORDER BY empresa_id
+		LIMIT $1`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]int64, 0)
+	for rows.Next() {
+		var empresaID int64
+		if err := rows.Scan(&empresaID); err != nil {
+			return nil, err
+		}
+		if empresaID > 0 {
+			items = append(items, empresaID)
+		}
+	}
 	return items, rows.Err()
 }
 

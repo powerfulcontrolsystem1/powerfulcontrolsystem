@@ -1,3 +1,14 @@
+2026-08-21: Cierre especifico de facturacion electronica Colombia.
+- Backend/worker: la conectividad GET es de solo lectura; reintentos manuales
+  usan POST y el worker consulta acuses pendientes con bloqueo por empresa.
+- Datos/seguridad: consecutivos bajo `FOR UPDATE`, montos `NUMERIC(18,2)` y
+  artefactos XML/acuse/PDF privados con SHA-256 y filtro obligatorio por
+  `empresa_id`.
+- Frontend/correo: no hay preset DIAN; la bandeja descarga artefactos y el
+  correo de produccion espera aceptacion y exige XML/PDF integros. En Colombia
+  no se persiste ni muestra un hash local como CUFE: el valor nace del XML/acuse
+  DIAN y debe cumplir SHA-384.
+
 2026-08-11: Plan 110 / guardia de fuente canónica CxP.
 - Módulos afectados: `finanzas`, `cartera de proveedores`, `contabilidad
   avanzada` y `outbox CxP`.
@@ -400,11 +411,14 @@
 - Frontend: la pagina muestra avisos de campos obligatorios en configuracion DIAN y configuracion por pais, marca labels con asterisco y resalta campos faltantes en tiempo real.
 - UX: la opcion de envio automatico de factura electronica al correo del cliente queda visible solo en la seccion principal; configuracion avanzada conserva el valor oculto para compatibilidad de payload.
 
-2026-06-09: Eventos RADIAN operativos en facturacion electronica
+2026-06-09: Eventos RADIAN declarados operativos en facturacion electronica (historico, corregido 2026-08-21)
 - Modulo afectado: `facturacion_electronica`.
 - Backend: el catalogo DIAN Colombia marca `eventos_radian_recepcion` como `operativo`, con firma requerida, bandera de evento y alcance de habilitacion mientras la empresa no active produccion.
 - Frontend: el resumen de cobertura esencial muestra RADIAN como operativo en habilitacion y enlaza al Centro de habilitacion DIAN para registrar el evento documental.
 - Alcance: RADIAN sigue separado de factura, nota, documento soporte y nomina; opera sobre facturas electronicas existentes y no crea una venta nueva.
+- Correccion vigente: esa declaracion no correspondia al generador disponible.
+  RADIAN queda `bloqueado_contrato` hasta implementar ApplicationResponse,
+  AttachedDocument, CUDE, eventos y habilitacion propios.
 
 2026-06-18: Centro de mando super con reinicio de indicadores.
 - Modulo afectado: `super_administrador`.
@@ -663,7 +677,7 @@
 2026-06-06: Set DIAN completo sin timeout de proxy
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
 - Frontend: el boton `Ejecutar set automatico` divide el set completo en tandas reales de 3 documentos cuando no hay limite manual, para evitar `504 Gateway Time-out`.
-- Operacion: cada tanda mantiene TestSetId, firma y envio real a habilitacion; la pantalla acumula resultados para cubrir las 30 facturas, 10 notas debito y 10 notas credito del portal DIAN.
+- Operacion historica: cada tanda mantenia TestSetId, firma y envio real a habilitacion. Desde 2026-08-21 la pantalla acumula exclusivamente el objetivo exacto guardado para la empresa; las cantidades observadas en ejecuciones anteriores no son presets.
 - Seguridad: no se agrega simulacion ni se exponen secretos en la consola.
 
 2026-06-06: Resumen portal DIAN en centro de pruebas
@@ -694,7 +708,7 @@
 
 2026-06-05: Set automatico DIAN configurable por empresa
 - Modulo afectado: `facturacion_electronica`, `DIAN`, `licencias`.
-- Cambio funcional: el preset principal del `Centro de habilitación DIAN` queda alineado con el objetivo de habilitacion de Powerful Control System (30 facturas, 10 notas debito, 10 notas credito, minimo aceptado 1 factura), y el backend usa el objetivo guardado por cada empresa antes de ejecutar `action=pruebas_dian`.
+- Cambio historico: en esa fecha el Centro mostraba el objetivo observado de Powerful Control System. Desde 2026-08-21 el preset fue retirado y el backend bloquea `action=pruebas_dian` hasta que exista un objetivo exacto guardado por la empresa.
 - Operacion: el flujo vigente de pruebas DIAN exige `test_set_id`, firma y acuse aceptado; la simulacion queda bloqueada para `action=pruebas_dian` y `action=enviar_set_pruebas`.
 - Licencias: se documenta que el correo unificado solo adjunta factura electronica cuando el pago comercial aprobado es mayor que cero; descuento total o valor cero no emite factura.
 
@@ -1744,9 +1758,9 @@
 2026-05-17: Revision de facturacion electronica por pais y DIAN Colombia.
 - La configuracion principal de facturacion electronica conserva perfiles separados por `empresa_id + pais_codigo` para Colombia, Ecuador, Panama, Costa Rica, Argentina y Venezuela.
 - Colombia muestra configuracion DIAN propia dentro de la pagina principal y envia las pruebas, diagnostico, cola y emision documental manual a `facturacion_electronica_pruebas_dian.html`.
-- El set base DIAN para software propio/proveedor tecnologico queda en 60 facturas, 20 notas debito y 20 notas credito, editable segun el objetivo que DIAN asigne en habilitacion.
-- Los documentos electronicos soportados por el flujo operativo son `factura_electronica`, `nota_credito`, `nota_debito`, `documento_soporte`, `nomina_electronica` y `documento_equivalente_pos`.
-- El correo automatico actual informa los datos fiscales principales del documento; queda como brecha de producto adjuntar XML/PDF certificado cuando la integracion DIAN/proveedor produzca artefactos finales.
+- En esa revision se documento un set numerico hoy historico. Desde 2026-08-21 no existe set base local: gobierna exclusivamente el objetivo asignado y guardado por empresa desde el portal DIAN.
+- Los documentos con emision DIAN operativa son `factura_electronica`, `nota_credito` y `nota_debito`. `documento_soporte`, `nomina_electronica`, documentos equivalentes y RADIAN se muestran como catalogados/bloqueados hasta disponer de adaptadores conformes a sus anexos tecnicos propios; el backend responde 422 antes de generar XML, consumir consecutivo o persistir una emision.
+- Esa revision no adjuntaba XML/PDF. Desde 2026-08-21 Colombia produccion exige aceptacion DIAN y artefactos XML/PDF privados e integros antes de enviar el correo fiscal.
 
 2026-05-17: Estaciones con primer clic solo activa.
 - Modulo: `estaciones`, `carritos`, `configuracion`.

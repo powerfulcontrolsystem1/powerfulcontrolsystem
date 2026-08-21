@@ -15,7 +15,14 @@ milisegundos.
 Actualizacion 2026-06-18: PCS quedo validado en DIAN produccion. El portal DIAN
 mostro `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien fue
 aceptada por SOAP/WCF `SendBillSync`. El siguiente consecutivo operativo quedo
-en `1PCS4`.
+en `1PCS4` en esa fecha.
+
+Actualizacion 2026-08-21: la auditoria autenticada de Powerful Control System
+confirmo ambiente produccion, estado DIAN aceptado, rango `1PCS 1-100000` y
+siguiente consecutivo visible `1PCS11`. Tambien comprobo que el despliegue
+publicado aun declaraba siete familias como operativas. El candidato corrige el
+contrato: solo factura, nota credito y nota debito pueden usar el adaptador UBL
+de venta; las demas familias se bloquean antes de cualquier efecto fiscal.
 
 ## Sintomas cubiertos
 
@@ -48,8 +55,12 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 4. Confirmar que los secretos DIAN no esten incrustados en texto plano y que las referencias `env:`, `file:` o `base64:` resuelvan valores no vacios.
 5. Verificar que el software configurado sea `compartido` o `empresa` segun el escenario esperado, sin asumir que uno reemplaza el token o la firma por empresa.
 6. Validar el rango y consecutivos antes de correr `enviar_set_pruebas`.
-7. Para software propio o proveedor tecnologico, abrir `Facturacion electronica > Pasar test DIAN`, cargar el objetivo exacto mostrado por el portal DIAN y guardar modo de operacion, fechas, rango, totales requeridos y minimos aceptados. La base historica 60/20/20 solo sirve como respaldo si la empresa aun no tiene datos del portal.
+7. Para software propio o proveedor tecnologico, abrir `Facturacion electronica > Pasar test DIAN`, cargar el objetivo exacto mostrado por el portal DIAN y guardar modo de operacion, fechas, rango, totales requeridos y minimos aceptados. No usar 60/20/20, 30/10/10 ni otro valor historico como sustituto del objetivo asignado.
 8. En produccion, confirmar el siguiente consecutivo contra `empresa_dian_configuracion`, `empresa_configuracion_avanzada`, `empresa_facturacion_documentos`, `facturacion_electronica_reintentos` y portal DIAN cuando haya duda.
+9. Confirmar el tipo documental. Solo `factura_electronica`, `nota_credito` y
+   `nota_debito` pueden entrar al adaptador UBL de venta. Un 422
+   `tipo_documento_dian_no_implementado` es un bloqueo correcto, no una
+   contingencia ni un caso reintentable.
 
 ## Causas probables
 
@@ -68,7 +79,7 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 4. Generar `generar_xml_ubl_base` y, si hace falta evidencia de firma, correr `firmar_xml_xades_base` para verificar que la salida base exista antes de intentar envios.
 5. Usar `diagnostico_oficial` para distinguir entre una falla de configuracion local y una brecha del transporte oficial aun no implementado.
 6. Si el error es de rango, corregir consecutivos o ampliar el tramo disponible antes de repetir `enviar_set_pruebas`.
-7. Si el objetivo guardado no coincide con el portal, actualizarlo antes de repetir el set; los botones manuales pueden usar totales 1/0/0 para verificar recepcion por tipo sin consumir un lote completo.
+7. Si el objetivo guardado no coincide con el portal, actualizarlo antes de repetir el set. Una prueba manual consume folios y solo debe ejecutarse con alcance confirmado y trazabilidad del documento.
 8. Si el problema ocurre en `enviar_documento_real` o `consultar_acuse_real`, registrar la respuesta exacta y verificar primero que no se trate de una limitacion conocida del transporte oficial pendiente.
 9. Si la empresa usa software `compartido`, confirmar que las referencias compartidas existan y que la empresa aun provea sus propios secretos exigidos por el flujo real.
 10. Si DIAN devuelve `Regla 90`, consultar primero el portal, CUFE/TrackId o historial de acuse original. No marcar el documento como aceptado solo por esa regla.
@@ -81,17 +92,23 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 - `generar_xml_ubl_base` produce una salida reutilizable.
 - `firmar_xml_xades_base` o `firmar_xml_real` generan evidencia consistente de firma base.
 - `enviar_set_pruebas` responde sin conflicto de rango, envia documentos reales y consulta `GetStatusZip` cuando DIAN devuelve `ZipKey`.
+- la consulta de conectividad no procesa cola; el boton manual usa `POST` y `pcs-worker` procesa automaticamente los vencidos con bloqueo por empresa.
+- cada documento enviado conserva XML firmado, acuse y representacion PDF privados con SHA-256; un TrackId pendiente se consulta sin regenerar el XML.
 - el equipo entiende si el bloqueo restante es de datos/configuracion, transporte DIAN, portal DIAN o evidencia de acuse.
-- Para PCS produccion, `1PCS2` y `1PCS3` aparecen en portal DIAN como `Aprobado con notificacion` y el siguiente folio esperado es `1PCS4`.
+- Para PCS produccion, la auditoria del 2026-08-21 mostro siguiente folio
+  `1PCS11`; debe reconfirmarse inmediatamente antes de cualquier envio real.
 
 ## Limites vigentes del modulo
 
 1. El backend ofrece una base operativa util para onboarding, validacion, diagnostico, firma base, pruebas reales de habilitacion y envio real de factura Colombia por SOAP/WCF en produccion PCS.
 2. El backend no debe prometer aceptacion fiscal sin acuse real DIAN/proveedor, documento visible en portal DIAN o evidencia oficial equivalente.
-3. El correo automatico actual envia resumen fiscal; el adjunto XML/PDF certificado por documento queda como brecha hasta persistir artefactos fiscales definitivos.
+3. El correo de Colombia produccion se envia despues de la aceptacion DIAN y adjunta el XML firmado y la representacion PDF persistidos. El XML y el acuse siguen siendo la evidencia fiscal autentica.
 4. Cualquier incidencia debe clasificarse explicitamente en una de estas dos categorias:
    - error de configuracion o datos de la empresa
    - brecha de implementacion del transporte oficial
+5. Documento soporte, nomina electronica, documentos equivalentes y RADIAN no
+   comparten el contrato de Invoice/CreditNote/DebitNote. Permanecen sin emision
+   hasta implementar y probar sus anexos tecnicos y servicios especificos.
 
 ## Contrato relacionado
 

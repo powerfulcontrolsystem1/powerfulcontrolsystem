@@ -631,7 +631,7 @@ Actualizacion 2026-05-21 (alerta visual configurable de carrito)
 Actualizacion 2026-05-20 (catalogo DIAN Colombia documentos electronicos)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `facturacion_electronica_pais` con `pais_codigo='CO'` y `UNIQUE(empresa_id, pais_codigo)`.
-- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version` para activar por empresa factura electronica, notas, documento soporte, nomina, documentos equivalentes electronicos, contingencia y eventos RADIAN.
+- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version`. Desde la version `2026-08-21`, `documentos_soportados` solo activa factura electronica, nota credito y nota debito; soporte, nomina, equivalentes, contingencia y RADIAN permanecen catalogados sin emision.
 - `empresa_facturacion_documentos` y `facturacion_electronica_reintentos` aceptan los nuevos codigos canonicos como `tipo_documento`, siempre aislados por `empresa_id`.
 - Las obligaciones de contador se registran como configuracion/catalogo, no como documentos UBL de venta.
 
@@ -1566,6 +1566,18 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - al crear el esquema FTS se repueblan filas existentes para consistencia historica.
 
 ### Tablas de documentos transaccionales canonicos
+
+Actualizacion 2026-08-21 (precision fiscal y consecutivos):
+- `empresa_facturacion_documentos.monto_total` se migra por
+  `pcs-migrate` a `NUMERIC(18,2) NOT NULL DEFAULT 0`; la migracion falla
+  cerrada si encuentra valores negativos o una diferencia de precision que
+  exige conciliacion manual.
+- La reserva de `empresa_configuracion_avanzada.proximo_consecutivo` se realiza
+  bajo bloqueo PostgreSQL `FOR UPDATE` y filtro `empresa_id` antes de avanzar
+  el valor, evitando folios duplicados entre emisiones concurrentes.
+- `20260821-002-facturacion-artefactos-v1` crea el catalogo privado de XML,
+  acuses y PDF fiscales; la API y el worker solo verifican/read-write, sin DDL.
+
 - empresa_facturacion_documentos:
   - empresa_id, tipo_documento, documento_codigo
   - estado_documento, estado_anterior, evento_ultimo
@@ -1661,13 +1673,21 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - facturacion_electronica_reintentos:
   - empresa_id, tipo_documento, documento_codigo
   - pais_codigo, proveedor, ambiente
-  - estado_envio (`pendiente`, `fallido`, `enviado`, `reconciliado`, `contingencia`, `no_aplica`)
+  - estado_envio (`pendiente`, `fallido`, `enviado`, `aceptado`, `reconciliado`, `contingencia`, `no_aplica`)
   - intentos, max_intentos, proximo_intento, fecha_ultimo_intento
   - ultimo_error, respuesta_proveedor_json
   - contingencia_activa, fecha_contingencia
   - referencia_externa
   - numero_legal, codigo_validacion, fecha_emision_legal
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
+
+### Tabla de artefactos privados de facturacion electronica
+- empresa_facturacion_artefactos:
+  - empresa_id, tipo_documento, documento_codigo, tipo_artefacto
+  - `tipo_artefacto`: `xml_firmado`, `respuesta_proveedor` o `representacion_pdf`
+  - storage_ref privada fuera de `web/`, sha256, mime_type, tamano_bytes, estado
+  - UNIQUE(empresa_id, tipo_documento, documento_codigo, tipo_artefacto)
+  - la descarga siempre resuelve primero `empresa_id + id`; la API no expone `storage_ref`
 
 ### Tablas de chat y tareas (nuevo modulo)
 - chat_tareas_conversaciones:

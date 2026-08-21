@@ -159,7 +159,7 @@
     <div class="card">
       <h2>Set de habilitación DIAN</h2>
       <p class="dian-source-note">
-        El objetivo del set debe coincidir con lo que muestre el portal de habilitación DIAN para esta empresa. Si hay objetivo guardado, se carga automáticamente; los presets son solo ayudas rápidas.
+        El objetivo del set debe coincidir exactamente con lo que muestre el portal de habilitación DIAN para esta empresa. Si no existe un objetivo guardado, el envío automático permanece bloqueado.
       </p>
       <div class="form-row">
         <div class="form-col">
@@ -181,30 +181,22 @@
       </div>
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Preset del set</label>
-          <select id="feDianSetPreset" class="form-input">
-            <option value="actual">Portal DIAN software propio/proveedor: 30 + 10 + 10</option>
-            <option value="historico">Historico si DIAN lo exige: 60 + 20 + 20</option>
-            <option value="personalizado">Personalizado</option>
-          </select>
+          <label class="form-label">Facturas electronicas asignadas por DIAN</label>
+          <input id="feDianSetFacturas" class="form-input" type="number" min="0" value="0">
         </div>
         <div class="form-col">
-          <label class="form-label">Facturas electronicas</label>
-          <input id="feDianSetFacturas" class="form-input" type="number" min="0" value="30">
+          <label class="form-label">Notas debito asignadas por DIAN</label>
+          <input id="feDianSetNotasDebito" class="form-input" type="number" min="0" value="0">
         </div>
         <div class="form-col">
-          <label class="form-label">Notas debito</label>
-          <input id="feDianSetNotasDebito" class="form-input" type="number" min="0" value="10">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Notas credito</label>
-          <input id="feDianSetNotasCredito" class="form-input" type="number" min="0" value="10">
+          <label class="form-label">Notas credito asignadas por DIAN</label>
+          <input id="feDianSetNotasCredito" class="form-input" type="number" min="0" value="0">
         </div>
       </div>
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Documentos requeridos</label>
-          <input id="feDianSetTotalRequerido" class="form-input" type="number" min="0" value="50">
+          <input id="feDianSetTotalRequerido" class="form-input" type="number" min="0" value="0">
         </div>
         <div class="form-col">
           <label class="form-label">Aceptados requeridos</label>
@@ -334,10 +326,10 @@
             <option value="factura_electronica">Factura electronica de venta</option>
             <option value="nota_credito">Nota credito electronica</option>
             <option value="nota_debito">Nota debito electronica</option>
-            <option value="documento_soporte">Documento soporte electronico</option>
-            <option value="nomina_electronica">Nomina electronica</option>
-            <option value="documento_equivalente_pos">Documento equivalente POS electronico</option>
-            <option value="eventos_radian_recepcion">Eventos RADIAN de recepcion</option>
+            <option value="documento_soporte" disabled>Documento soporte (adaptador DIAN pendiente)</option>
+            <option value="nomina_electronica" disabled>Nomina electronica (adaptador DIAN pendiente)</option>
+            <option value="documento_equivalente_pos" disabled>Documento equivalente POS (adaptador DIAN pendiente)</option>
+            <option value="eventos_radian_recepcion" disabled>Eventos RADIAN (adaptador DIAN pendiente)</option>
           </select>
         </div>
         <div class="form-col">
@@ -390,10 +382,10 @@
         <button type="button" id="btnEmitirFactura" class="btn secondary">Emitir factura</button>
         <button type="button" id="btnEmitirNC" class="btn secondary">Emitir nota credito</button>
         <button type="button" id="btnEmitirND" class="btn secondary">Emitir nota debito</button>
-        <button type="button" id="btnEmitirSoporte" class="btn secondary">Emitir soporte</button>
-        <button type="button" id="btnEmitirNominaElectronica" class="btn secondary">Emitir nomina</button>
-        <button type="button" id="btnEmitirPOSElectronico" class="btn secondary">Emitir POS electronico</button>
-        <button type="button" id="btnEmitirRadian" class="btn secondary">Registrar evento RADIAN</button>
+        <button type="button" id="btnEmitirSoporte" class="btn secondary" disabled title="Requiere el adaptador oficial de documento soporte">Soporte no disponible</button>
+        <button type="button" id="btnEmitirNominaElectronica" class="btn secondary" disabled title="Requiere el adaptador oficial de nomina electronica">Nomina no disponible</button>
+        <button type="button" id="btnEmitirPOSElectronico" class="btn secondary" disabled title="Requiere el adaptador oficial de documento equivalente">POS no disponible</button>
+        <button type="button" id="btnEmitirRadian" class="btn secondary" disabled title="Requiere el adaptador oficial de eventos RADIAN">RADIAN no disponible</button>
       </div>
       <div id="op_msg" class="form-help"></div>
       <div id="op_resultado" class="dian-readable-result is-empty"></div>
@@ -422,10 +414,6 @@
       dianTrackHistory: []
     };
 
-    const DIAN_SET_PRESETS = {
-      actual: { facturas: 30, debito: 10, credito: 10, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 },
-      historico: { facturas: 60, debito: 20, credito: 20, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 }
-    };
     const DIAN_ERROR_HELP = [
       { match: /fab05c|identificador del software.*rango|software.*no corresponde.*rango/i, title: "FAB05c: software no asociado al rango DIAN", help: "Asocia en el portal DIAN de produccion el prefijo/rango al Software ID correcto. En PCS revisa Software ID, prefijo, resolucion, rango y ambiente." },
       { match: /fad06|cufe/i, title: "FAD06: CUFE no coincide", help: "Consulta de nuevo la clave tecnica con GetNumberingRange y valida prefijo, numero legal, fecha/hora, impuestos, totales, NIT emisor y documento del cliente." },
@@ -970,7 +958,6 @@
       setValue("feDianModoFechaTermino", asDateTimeLocal(cfg.modo_operacion_fecha_termino));
       setValue("feDianTestSetId", cfg.test_set_id || "");
       if (Number(cfg.set_facturas_requeridas || 0) || Number(cfg.set_notas_debito_requeridas || 0) || Number(cfg.set_notas_credito_requeridas || 0)) {
-        setValue("feDianSetPreset", "personalizado");
         setValue("feDianSetFacturas", Number(cfg.set_facturas_requeridas || 0));
         setValue("feDianSetNotasDebito", Number(cfg.set_notas_debito_requeridas || 0));
         setValue("feDianSetNotasCredito", Number(cfg.set_notas_credito_requeridas || 0));
@@ -1038,26 +1025,7 @@
       return Math.trunc(value);
     }
 
-    function applyDianPreset(presetKey) {
-      const preset = DIAN_SET_PRESETS[presetKey] || DIAN_SET_PRESETS.actual;
-      if (!DIAN_SET_PRESETS[presetKey]) {
-        setValue("feDianSetPreset", "actual");
-      }
-      setValue("feDianSetFacturas", preset.facturas);
-      setValue("feDianSetNotasDebito", preset.debito);
-      setValue("feDianSetNotasCredito", preset.credito);
-      setValue("feDianSetTotalRequerido", preset.facturas + preset.debito + preset.credito);
-      setValue("feDianSetAceptadosTotal", preset.aceptadosTotal);
-      setValue("feDianSetAceptadasFacturas", preset.aceptadasFacturas);
-      setValue("feDianSetAceptadasND", preset.aceptadasDebito);
-      setValue("feDianSetAceptadasNC", preset.aceptadasCredito);
-      setValue("feDianSetMaxEnvios", "");
-      updateDianProgress();
-    }
-
-    function markPresetPersonalizado() {
-      const select = document.getElementById("feDianSetPreset");
-      if (select) select.value = "personalizado";
+    function refreshDianObjectiveProgress() {
       updateDianProgress();
     }
 
@@ -1549,15 +1517,18 @@
     }
 
     async function checkDianConnection(procesarCola) {
-      const url = "/api/empresa/facturacion_electronica?action=estado_conexion_dian&empresa_id=" +
-        encodeURIComponent(state.empresaID) + "&pais_codigo=CO&procesar_reintentos=" + (procesarCola ? "1" : "0");
-      const data = await dianFetchJSON(url, { credentials: "same-origin" }, procesarCola ? "Procesar cola DIAN" : "Probar conexion DIAN");
+      const url = procesarCola
+        ? ("/api/empresa/facturacion_electronica?action=procesar_reintentos&empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=100")
+        : ("/api/empresa/facturacion_electronica?action=estado_conexion_dian&empresa_id=" + encodeURIComponent(state.empresaID) + "&pais_codigo=CO");
+      const data = await dianFetchJSON(url, procesarCola ? { method: "POST", credentials: "same-origin" } : { credentials: "same-origin" }, procesarCola ? "Procesar cola DIAN" : "Probar conexion DIAN");
+      if (procesarCola) {
+        const queueMsg = "Cola procesada: " + Number(data.enviados || 0) + " enviados/aceptados, " + Number(data.fallidos || 0) + " fallidos y " + Number(data.procesados || 0) + " procesados.";
+        setText("feDianOfflineMsg", queueMsg, Number(data.errores_internos || 0) > 0);
+        return data;
+      }
       let msg = data.mensaje || "Estado de conexion consultado.";
       if (data.online) {
         msg = "Conexion DIAN/proveedor disponible. " + msg;
-        if (data.retry_procesado && typeof data.retry_procesado.enviados !== "undefined") {
-          msg += " Cola procesada: " + data.retry_procesado.enviados + " enviados, " + data.retry_procesado.fallidos + " fallidos.";
-        }
       } else {
         msg = "Sin conexion DIAN/proveedor. La facturacion electronica requiere conexion activa.";
       }
@@ -1582,6 +1553,17 @@
 
     async function ejecutarOperacionFacturacion(action) {
       const payload = collectOperacionPayload(action);
+      const tiposOperativos = ["factura_electronica", "nota_credito", "nota_debito"];
+      if (tiposOperativos.indexOf(txt(payload.tipo_documento).toLowerCase()) === -1) {
+        setJSON("op_resultado", {
+          ok: false,
+          codigo: "tipo_documento_dian_no_implementado",
+          tipo_documento: payload.tipo_documento,
+          bloqueado: true
+        });
+        setText("op_msg", "Este tipo documental requiere un adaptador DIAN propio. No se genero XML, no se consumio consecutivo y no se envio informacion fiscal.", true);
+        return;
+      }
       if (!payload.documento_codigo) {
         setText("op_msg", "documento_codigo es obligatorio", true);
         return;
@@ -1668,10 +1650,9 @@
     document.getElementById("feDianConsoleAutoScroll").addEventListener("change", function(event) {
       state.dianConsoleAutoScroll = !!event.target.checked;
     });
-    document.getElementById("feDianSetPreset").addEventListener("change", function(event) { applyDianPreset(event.target.value); });
     ["feDianSetFacturas", "feDianSetNotasDebito", "feDianSetNotasCredito", "feDianSetTotalRequerido", "feDianSetAceptadosTotal", "feDianSetAceptadasFacturas", "feDianSetAceptadasND", "feDianSetAceptadasNC"].forEach(function(id) {
       var el = document.getElementById(id);
-      if (el) el.addEventListener("input", markPresetPersonalizado);
+      if (el) el.addEventListener("input", refreshDianObjectiveProgress);
     });
     document.getElementById("btnDianCheckConexion").addEventListener("click", function() {
       setText("feDianOfflineMsg", "Probando conexion DIAN/proveedor...", false);

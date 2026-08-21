@@ -61,13 +61,13 @@ var allowedPrivateExtensions = map[string]bool{
 	".pem": true, ".png": true, ".ppt": true, ".pptx": true, ".rtf": true,
 	".tif": true, ".tiff": true, ".txt": true,
 	".wav": true, ".webm": true, ".webp": true, ".xls": true, ".xlsx": true,
-	".xml": true,
+	".xml": true, ".zip": true,
 }
 
 func empresaPrivateCategoryRoot(empresaID int64, category string) (string, error) {
 	category = strings.ToLower(strings.TrimSpace(category))
 	switch category {
-	case "buzon", "chat_tareas", "dian", "finanzas", "grafologia", "soportes_compras_ia":
+	case "buzon", "chat_tareas", "dian", "facturacion_electronica", "finanzas", "grafologia", "soportes_compras_ia":
 	default:
 		return "", errors.New("categoria privada no permitida")
 	}
@@ -129,6 +129,8 @@ func privateCategoryAllowsExtension(category, extension string) bool {
 	switch strings.ToLower(strings.TrimSpace(category)) {
 	case "dian":
 		return extension == ".pem" || extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".tif" || extension == ".tiff"
+	case "facturacion_electronica":
+		return extension == ".xml" || extension == ".json" || extension == ".pdf" || extension == ".zip"
 	case "grafologia":
 		return extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".gif" || extension == ".webp"
 	case "finanzas":
@@ -179,6 +181,8 @@ func privateExtensionMatchesContent(extension, detected string) bool {
 		return detected == "image/webp"
 	case ".pdf":
 		return detected == "application/pdf"
+	case ".zip":
+		return detected == "application/zip" || detected == "application/x-zip-compressed"
 	case ".tif", ".tiff":
 		return detected == "image/tiff" || detected == "image/x-tiff"
 	case ".pem":
@@ -214,7 +218,11 @@ func resolveEmpresaPrivateFile(empresaID int64, category, ref string) (string, e
 }
 
 func serveEmpresaPrivateFile(w http.ResponseWriter, r *http.Request, empresaID int64, category string) {
-	path, err := resolveEmpresaPrivateFile(empresaID, category, r.URL.Query().Get("ref"))
+	serveEmpresaPrivateFileReference(w, r, empresaID, category, r.URL.Query().Get("ref"), "", "")
+}
+
+func serveEmpresaPrivateFileReference(w http.ResponseWriter, r *http.Request, empresaID int64, category, ref, downloadName, mimeType string) {
+	path, err := resolveEmpresaPrivateFile(empresaID, category, ref)
 	if err != nil {
 		http.Error(w, "archivo no disponible", http.StatusNotFound)
 		return
@@ -232,9 +240,16 @@ func serveEmpresaPrivateFile(w http.ResponseWriter, r *http.Request, empresaID i
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(path)))
-	http.ServeContent(w, r, filepath.Base(path), info.ModTime(), file)
+	if strings.TrimSpace(mimeType) == "" {
+		mimeType = "application/octet-stream"
+	}
+	downloadName = filepath.Base(strings.TrimSpace(downloadName))
+	if downloadName == "." || downloadName == "" {
+		downloadName = filepath.Base(path)
+	}
+	w.Header().Set("Content-Type", mimeType)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
+	http.ServeContent(w, r, downloadName, info.ModTime(), file)
 }
 
 // MigrateLegacyPrivateUploads moves legacy business attachments out of the web

@@ -360,7 +360,7 @@
       }
 
       function visibleTypeLabel(item) {
-        if (facturaAsociadaParaVenta(item)) return "Factura electrónica";
+		if (facturaAsociadaParaVenta(item)) return "Venta (factura asociada)";
         return typeLabel(item && item.tipo_documento);
       }
 
@@ -746,7 +746,6 @@
 
         state.items.forEach(function (item) {
           var tipo = normalize(item.tipo_documento).toLowerCase();
-          if (facturaAsociadaParaVenta(item)) tipo = "factura_electronica";
           var estadoDoc = normalize(item.estado_documento).toLowerCase();
           var estado = normalize(item.estado).toLowerCase();
           var amount = Number(item.monto_total || 0);
@@ -1208,6 +1207,9 @@
           var retryInfo = retryDIANAvailability(item);
           var retryActionHTML = retryInfo.visible === false ? '' :
             '<button type="button" class="btn fe-only-action" data-action="reenviar_dian" data-key="' + escapeHtml(key) + '"' + (retryInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(retryInfo.reason) + '"><img class="icon" src="/img/invoice.svg" alt="">Reenviar DIAN</button>';
+          var artifactActionHTML = normalize(item.tipo_documento).toLowerCase() === "factura_electronica"
+            ? '<button type="button" class="btn secondary fe-only-action" data-action="artefactos" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/invoice.svg" alt="">Archivos fiscales</button>'
+            : '';
           return '<tr data-key="' + escapeHtml(key) + '">' +
             '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
             '<td>' + escapeHtml(visibleTypeLabel(item)) + '</td>' +
@@ -1220,6 +1222,7 @@
             '<td>' + escapeHtml(item.estado || "activo") + '</td>' +
             '<td class="fe-actions-cell">' +
               '<button type="button" class="btn secondary fe-only-action" data-action="imprimir" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/print-color.svg" alt="">Visualizar</button>' +
+              artifactActionHTML +
               retryActionHTML +
               cancelActionHTML +
               ' <details class="fe-share-dropdown">' +
@@ -1498,6 +1501,36 @@
         });
       }
 
+      function downloadFiscalArtifacts(item) {
+        if (!item) return;
+        var params = new URLSearchParams();
+        params.set("action", "artefactos");
+        params.set("empresa_id", String(empresaID));
+        params.set("tipo_documento", normalize(item.tipo_documento) || "factura_electronica");
+        params.set("documento_codigo", normalize(item.documento_codigo));
+        apiRequest("/api/empresa/facturacion_electronica?" + params.toString()).then(function(out) {
+          var items = Array.isArray(out && out.items) ? out.items : [];
+          if (!items.length) {
+            showMessage("Este documento todavía no tiene XML, acuse o PDF fiscal persistido.", "error");
+            return;
+          }
+          items.forEach(function(artifact, index) {
+            window.setTimeout(function() {
+              var link = document.createElement("a");
+              link.href = artifact.download_url;
+              link.download = "";
+              link.rel = "noopener";
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            }, index * 180);
+          });
+          showMessage("Descarga de " + items.length + " archivo(s) fiscal(es) iniciada.", "ok");
+        }).catch(function(err) {
+          showMessage(err.message || "No se pudieron descargar los archivos fiscales", "error");
+        });
+      }
+
       function shareInvoice(item, channel) {
         if (!item) return;
         var docUrl = new URL("/administrar_empresa/facturas_electronicas.html", window.location.origin);
@@ -1720,6 +1753,10 @@
         }
         if (action === "reenviar_dian") {
           retryInvoiceDIAN(item);
+          return;
+        }
+        if (action === "artefactos") {
+          downloadFiscalArtifacts(item);
           return;
         }
         if (action === "compartir_whatsapp") {
