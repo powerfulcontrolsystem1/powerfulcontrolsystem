@@ -114,18 +114,29 @@ func recaptchaProvider(dbSuper *sql.DB) string {
 }
 
 func recaptchaDevBypassEnabled() bool {
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") || strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production") {
+		return false
+	}
 	return parseTruthyConfigValue(recaptchaEnvValue("RECAPTCHA_DEV_BYPASS"), false)
 }
 
-func isRecaptchaFeatureEnabled(dbSuper *sql.DB) bool {
+func recaptchaFeatureRequested(dbSuper *sql.DB) (bool, error) {
 	if dbSuper == nil {
-		return false
+		return false, fmt.Errorf("recaptcha configuration database is unavailable")
 	}
 	value, err := getDecryptedConfigValue(dbSuper, superRecaptchaEnabledConfigKey)
-	if err != nil {
-		return false
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
 	}
-	return parseTruthyConfigValue(value, false)
+	if err != nil {
+		return false, err
+	}
+	return parseTruthyConfigValue(value, false), nil
+}
+
+func isRecaptchaFeatureEnabled(dbSuper *sql.DB) bool {
+	enabled, err := recaptchaFeatureRequested(dbSuper)
+	return err == nil && enabled
 }
 
 func isRecaptchaConfigured(dbSuper *sql.DB) bool {
@@ -313,15 +324,15 @@ func validateRecaptchaToken(dbSuper *sql.DB, r *http.Request, token string) erro
 	if recaptchaDevBypassEnabled() {
 		return nil
 	}
-	if !isRecaptchaFeatureEnabled(dbSuper) {
+	requested, err := recaptchaFeatureRequested(dbSuper)
+	if err != nil {
+		return recaptchaValidationError{Status: http.StatusServiceUnavailable, Message: "La verificacion de seguridad no esta disponible temporalmente.", Detail: err.Error()}
+	}
+	if !requested {
 		return nil
 	}
-	// Si la funcionalidad fue activada pero faltan credenciales, no bloquear el acceso:
-	// el frontend no tendrá un widget operativo (RECAPTCHA_ENABLED=false) y, si aquí
-	// exigiéramos token, romperíamos el login/reset/registro. La configuración avanzada
-	// ya expone que está "requested_enabled" pero no "configured".
 	if !isRecaptchaConfigured(dbSuper) {
-		return nil
+		return recaptchaValidationError{Status: http.StatusServiceUnavailable, Message: "La verificacion de seguridad esta activada, pero su configuracion no esta completa."}
 	}
 	if strings.TrimSpace(token) == "" {
 		return recaptchaValidationError{Status: http.StatusBadRequest, Message: "Completa la verificacion de seguridad para continuar."}

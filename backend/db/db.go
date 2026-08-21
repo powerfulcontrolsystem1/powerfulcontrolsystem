@@ -580,9 +580,16 @@ func migrateSessionTokensToHashesTx(tx *sql.Tx) error {
 
 // CreateSession registers only a SHA-256 token verifier. The original token
 // never crosses the database boundary.
-func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) error {
+func createSessionWithPrincipal(dbConn *sql.DB, adminEmail, ip, userAgent, token, principalType string, principalID, empresaID int64, principalRole string) error {
 	if strings.TrimSpace(token) == "" {
 		return fmt.Errorf("session token required")
+	}
+	principalType = strings.ToLower(strings.TrimSpace(principalType))
+	if principalType != "admin" && principalType != "empresa_usuario" {
+		return fmt.Errorf("invalid session principal type")
+	}
+	if principalType == "empresa_usuario" && (principalID <= 0 || empresaID <= 0 || strings.TrimSpace(principalRole) == "") {
+		return fmt.Errorf("enterprise-user session requires principal, company and role")
 	}
 	if dbConn == nil {
 		dbConn = GetDB()
@@ -597,14 +604,22 @@ func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) erro
 	}
 	nowExpr := sqlNowExpr()
 	expiresExpr := sqlPlusHoursExpr(24)
-	query := "INSERT INTO sesiones (admin_email, token, token_hash, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, ?, " + nowExpr + ", " + expiresExpr + ", 1, " + nowExpr + ")"
-	if _, err := execTxSQLCompat(tx, query, adminEmail, "", hashSessionToken(token), ip, userAgent); err != nil {
+	query := "INSERT INTO sesiones (admin_email, token, token_hash, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion, principal_type, principal_id, empresa_id, principal_role) VALUES (?, ?, ?, ?, ?, " + nowExpr + ", " + expiresExpr + ", 1, " + nowExpr + ", ?, ?, ?, ?)"
+	if _, err := execTxSQLCompat(tx, query, adminEmail, "", hashSessionToken(token), ip, userAgent, principalType, principalID, empresaID, strings.TrimSpace(principalRole)); err != nil {
 		return err
 	}
 	if err := pruneAdminSessionsTx(tx, adminEmail); err != nil {
 		return err
 	}
 	return tx.Commit()
+}
+
+func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) error {
+	return createSessionWithPrincipal(dbConn, adminEmail, ip, userAgent, token, "admin", 0, 0, "")
+}
+
+func CreateEmpresaUsuarioSession(dbConn *sql.DB, email, ip, userAgent, token string, usuarioID, empresaID int64, role string) error {
+	return createSessionWithPrincipal(dbConn, email, ip, userAgent, token, "empresa_usuario", usuarioID, empresaID, role)
 }
 
 // RevokeSessionByToken invalida una sesión activa por token.
@@ -1213,18 +1228,22 @@ type Session struct {
 	FechaFin      string `json:"fecha_fin,omitempty"`
 	FechaCreacion string `json:"fecha_creacion"`
 	Activo        int    `json:"activo"`
+	PrincipalType string `json:"principal_type"`
+	PrincipalID   int64  `json:"principal_id"`
+	EmpresaID     int64  `json:"empresa_id"`
+	PrincipalRole string `json:"principal_role"`
 }
 
 // GetSessionByToken devuelve una sesión activa por token
 func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 	condition := sessionNotExpiredCondition("fecha_fin")
-	query := "SELECT id, admin_email, token_hash, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones WHERE token_hash = ? AND activo = 1 AND " + condition + " LIMIT 1"
+	query := "SELECT id, admin_email, token_hash, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo, COALESCE(principal_type, 'admin'), COALESCE(principal_id, 0), COALESCE(empresa_id, 0), COALESCE(principal_role, '') FROM sesiones WHERE token_hash = ? AND activo = 1 AND " + condition + " LIMIT 1"
 	row := queryRowSQLCompat(dbConn, query, hashSessionToken(token))
 	var s Session
 	var fechaInicio sql.NullString
 	var fechaFin sql.NullString
 	var fechaCreacion sql.NullString
-	if err := row.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaFin, &fechaCreacion, &s.Activo); err != nil {
+	if err := row.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaFin, &fechaCreacion, &s.Activo, &s.PrincipalType, &s.PrincipalID, &s.EmpresaID, &s.PrincipalRole); err != nil {
 		return nil, err
 	}
 	if fechaInicio.Valid {
@@ -1496,19 +1515,10 @@ func getAdminByEmailFullCore(dbConn *sql.DB, email string) (*Admin, error) {
 
 // GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt, TOTP).
 func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
-	admin, err := getAdminByEmailFullCore(dbConn, email)
-	if err == nil {
-		return admin, nil
-	}
-	if isMissingColumnError(err) {
-		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr == nil {
-			if admin, retryErr := getAdminByEmailFullCore(dbConn, email); retryErr == nil {
-				return admin, nil
-			}
-		}
-		return GetAdminByEmail(dbConn, email)
-	}
-	return nil, err
+	// El esquema se aplica exclusivamente durante la fase de migracion. Un
+	// request de autenticacion no debe ejecutar DDL ni degradar a una consulta
+	// legacy que omita estado, tokens o controles de segundo factor.
+	return getAdminByEmailFullCore(dbConn, email)
 }
 
 // ResolveAdminPrincipalEmail devuelve el email del administrador principal asociado a un administrador.
@@ -1565,24 +1575,51 @@ func AdministradorEmailConfirmTokenMatches(storedHash, suppliedToken string) boo
 	return len(storedHash) == len(expected) && subtle.ConstantTimeCompare([]byte(storedHash), []byte(expected)) == 1
 }
 
+func parseAuthTokenExpiration(raw string) (time.Time, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, false
+	}
+	for _, layout := range []string{"2006-01-02 15:04:05", time.RFC3339, "2006-01-02T15:04:05"} {
+		if parsed, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
 // ConfirmAdministradorByToken confirma el correo de un administrador usando su token.
 func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1`, hashOneTimeSecret(token))
+	tokenHash := hashOneTimeSecret(token)
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	row := queryRowTxSQLCompat(tx, `SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1 FOR UPDATE`, tokenHash)
 	var id int64
 	var expiraRaw string
 	if err := row.Scan(&id, &expiraRaw); err != nil {
 		return 0, err
 	}
-	if expiraRaw != "" {
-		if expiraAt, err := time.ParseInLocation("2006-01-02 15:04:05", expiraRaw, time.Local); err == nil {
-			if time.Now().After(expiraAt) {
-				return 0, fmt.Errorf("token de confirmacion expirado")
-			}
+	expiraAt, validExpiry := parseAuthTokenExpiration(expiraRaw)
+	if !validExpiry || time.Now().After(expiraAt) {
+		_, _ = execTxSQLCompat(tx, `UPDATE administradores SET email_confirm_token = '', email_confirm_expira = '' WHERE id = ? AND email_confirm_token = ?`, id, tokenHash)
+		if commitErr := tx.Commit(); commitErr != nil {
+			return 0, commitErr
 		}
+		return 0, fmt.Errorf("token de confirmacion invalido o expirado")
 	}
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, `UPDATE administradores SET email_confirmado = 1, email_confirmado_en = `+nowExpr+`, estado = 'activo', email_confirm_token = '', email_confirm_expira = '', fecha_actualizacion = `+nowExpr+` WHERE id = ?`, id)
+	result, err := execTxSQLCompat(tx, `UPDATE administradores SET email_confirmado = 1, email_confirmado_en = `+nowExpr+`, estado = 'activo', email_confirm_token = '', email_confirm_expira = '', fecha_actualizacion = `+nowExpr+` WHERE id = ? AND email_confirm_token = ?`, id, tokenHash)
 	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil || affected != 1 {
+		return 0, sql.ErrNoRows
+	}
+	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
 	return id, nil
@@ -1634,12 +1671,6 @@ func MigrateAdministradorEmailConfirmTokens(dbConn *sql.DB, dryRun bool) (int, e
 func SetAdministradorPassword(dbConn *sql.DB, email, hash, salt string) error {
 	nowExpr := sqlNowExpr()
 	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_hash = ?, password_salt = ?, password_set = 1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(hash), strings.TrimSpace(salt), strings.TrimSpace(email))
-	if err != nil && isMissingColumnError(err) {
-		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr != nil {
-			return schemaErr
-		}
-		_, err = execSQLCompat(dbConn, "UPDATE administradores SET password_hash = ?, password_salt = ?, password_set = 1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(hash), strings.TrimSpace(salt), strings.TrimSpace(email))
-	}
 	return err
 }
 
@@ -1651,24 +1682,12 @@ func SetAdministradorTOTPSecret(dbConn *sql.DB, email, secret string) error {
 	}
 	nowExpr := sqlNowExpr()
 	_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_secret = ?, totp_enabled = 0, totp_confirmado_en = '', totp_last_counter = -1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", encrypted, strings.TrimSpace(email))
-	if err != nil && isMissingColumnError(err) {
-		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr != nil {
-			return schemaErr
-		}
-		_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_secret = ?, totp_enabled = 0, totp_confirmado_en = '', totp_last_counter = -1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", encrypted, strings.TrimSpace(email))
-	}
 	return err
 }
 
 func EnableAdministradorTOTP(dbConn *sql.DB, email string) error {
 	nowExpr := sqlNowExpr()
 	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 1, totp_confirmado_en = "+nowExpr+", fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND COALESCE(totp_secret, '') <> ''", strings.TrimSpace(email))
-	if err != nil && isMissingColumnError(err) {
-		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr != nil {
-			return schemaErr
-		}
-		_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 1, totp_confirmado_en = "+nowExpr+", fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND COALESCE(totp_secret, '') <> ''", strings.TrimSpace(email))
-	}
 	return err
 }
 
@@ -1690,12 +1709,6 @@ func ConsumeAdministradorTOTPCounter(dbConn *sql.DB, email string, counter int64
 func DisableAdministradorTOTP(dbConn *sql.DB, email string) error {
 	nowExpr := sqlNowExpr()
 	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 0, totp_secret = '', totp_confirmado_en = '', totp_last_counter = -1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(email))
-	if err != nil && isMissingColumnError(err) {
-		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr != nil {
-			return schemaErr
-		}
-		_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 0, totp_secret = '', totp_confirmado_en = '', totp_last_counter = -1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(email))
-	}
 	return err
 }
 
@@ -1786,9 +1799,6 @@ func ReplaceAdministradorTOTPRecoveryCodes(dbConn *sql.DB, email, batchID string
 	if dbConn == nil || strings.TrimSpace(email) == "" || strings.TrimSpace(batchID) == "" || len(codes) == 0 {
 		return fmt.Errorf("recovery codes require email, batch and values")
 	}
-	if err := EnsureAdministradoresAuthSchema(dbConn); err != nil {
-		return err
-	}
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
@@ -1827,6 +1837,39 @@ func SetAdministradorPasswordResetToken(dbConn *sql.DB, email, token, expira str
 	nowExpr := sqlNowExpr()
 	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_reset_token = ?, password_reset_expira = ?, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", hashOneTimeSecret(token), strings.TrimSpace(expira), strings.TrimSpace(email))
 	return err
+}
+
+// SetAdministradorPasswordFromResetToken consumes one recovery token exactly
+// once while persisting its replacement password verifier.
+func SetAdministradorPasswordFromResetToken(dbConn *sql.DB, email, token, hash, salt string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	nowExpr := sqlNowExpr()
+	result, err := execTxSQLCompat(tx, `UPDATE administradores
+		SET password_hash = ?, password_salt = ?, password_set = 1,
+			password_reset_token = '', password_reset_expira = '', fecha_actualizacion = `+nowExpr+`
+		WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND password_reset_token = ?`,
+		strings.TrimSpace(hash), strings.TrimSpace(salt), strings.TrimSpace(email), hashOneTimeSecret(token))
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return sql.ErrNoRows
+	}
+	if _, err := execTxSQLCompat(tx, `UPDATE sesiones SET activo = 0, fecha_fin = `+nowExpr+` WHERE LOWER(COALESCE(admin_email, '')) = LOWER(?) AND activo = 1`, strings.TrimSpace(email)); err != nil {
+		return err
+	}
+	if _, err := execTxSQLCompat(tx, `DELETE FROM administrador_login_intentos WHERE LOWER(email) = LOWER(?)`, strings.TrimSpace(email)); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // AdministradorPasswordResetTokenMatches compares the supplied original token

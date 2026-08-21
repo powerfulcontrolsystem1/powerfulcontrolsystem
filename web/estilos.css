@@ -2104,8 +2104,8 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:max(var(--fl
   .radio-country-panel{grid-template-columns:1fr}
   .radio-custom-fields{grid-template-columns:1fr}
 }
-.ai-chat-drawer{position:fixed;z-index:1650;display:flex;flex-direction:column;overflow:visible;pointer-events:none;opacity:0;transition:opacity .22s ease,transform .28s cubic-bezier(.2,.8,.2,1)}
-.ai-chat-drawer.open{pointer-events:auto;opacity:1}
+.ai-chat-drawer{position:fixed;z-index:1650;display:flex;flex-direction:column;overflow:visible;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .22s ease,transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s linear .28s}
+.ai-chat-drawer.open{pointer-events:auto;opacity:1;visibility:visible;transition-delay:0s}
 .ai-chat-drawer.minimized:not(.open){opacity:1;pointer-events:none}
 .ai-chat-minibar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:999px;box-shadow:0 12px 36px rgba(3,10,20,.28);pointer-events:auto}
 .ai-chat-drawer.minimized .ai-chat-minibar{display:flex}
@@ -2122,12 +2122,12 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:max(var(--fl
     border-radius:20px;
     border:1px solid var(--border);
     box-shadow:0 24px 60px rgba(3,10,20,.35);
-    transform:translateY(calc(100% + 100px)) scale(.96);
+    transform:scale(.96);
   }
   .ai-chat-drawer.open{transform:translateY(0) scale(1)}
   .ai-chat-drawer.minimized{
     right:24px;bottom:24px;width:auto;height:auto;max-height:none;
-    background:transparent;border:none;box-shadow:none;transform:none;opacity:1;pointer-events:none;
+    background:transparent;border:none;box-shadow:none;transform:none;opacity:1;visibility:visible;pointer-events:none;
     align-items:flex-end
   }
   .ai-chat-drawer.minimized .ai-chat-minibar{pointer-events:auto}
@@ -2135,7 +2135,7 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:max(var(--fl
 @media (max-width: 860px){
   .ai-chat-drawer{
     inset:0;width:100%;height:100%;height:100dvh;max-width:none;border-radius:0;
-    transform:translateY(110%);
+    transform:scale(.98);
     box-shadow:none;border:none;
   }
   .ai-chat-drawer.open{transform:translateY(0)}

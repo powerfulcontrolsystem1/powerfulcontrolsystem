@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -48,6 +50,11 @@ const (
 	empresaUsuarioPasswordRequireDigitDefault  = true
 	empresaUsuarioPasswordRequireSymbolDefault = false
 	empresaUsuarioPasswordRotationDaysDefault  = 0
+)
+
+const (
+	empresaUsuarioPasswordKDFName       = "pbkdf2_sha256"
+	empresaUsuarioPasswordKDFIterations = 210000
 )
 
 type empresaUsuarioPasswordPolicy struct {
@@ -153,88 +160,48 @@ func resolveEmpresaUsuarioLoginURL(r *http.Request, dbEmp, dbSuper *sql.DB, empr
 	return resolveEmpresaUsuarioLoginURLFromBase(baseURL, "", "", empresaID)
 }
 
-var errEmpresaUsuarioEmailAmbiguo = errors.New("empresa user email resolves to multiple companies")
+var errEmpresaUsuarioScopeRequired = errors.New("empresa_id is required for company user authentication")
+
+// requireEmpresaUsuarioScope keeps every public company-user credential flow
+// bound to the tenant previously validated by WithEmpresaPublicScope. Direct
+// handler tests still require an explicit empresa_id and cannot silently fall
+// back to a global email lookup.
+func requireEmpresaUsuarioScope(r *http.Request, empresaID int64) (int64, error) {
+	if empresaID <= 0 {
+		return 0, errEmpresaUsuarioScopeRequired
+	}
+	if tenant, ok := TenantContextFromRequest(r); ok {
+		if tenant.EmpresaID != empresaID {
+			return 0, fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+		}
+		return tenant.EmpresaID, nil
+	}
+	if err := validateEmpresaIDConsistency(r, empresaID); err != nil {
+		return 0, err
+	}
+	return empresaID, nil
+}
 
 func resolveUniqueEmpresaUsuarioByEmail(dbEmp *sql.DB, email string, empresaID int64) (*dbpkg.EmpresaUsuario, error) {
-	if empresaID > 0 {
-		return dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
+	if empresaID <= 0 {
+		return nil, errEmpresaUsuarioScopeRequired
 	}
-	items, err := dbpkg.GetEmpresaUsuariosByEmail(dbEmp, email)
-	if err != nil {
-		return nil, err
-	}
-	if len(items) == 0 {
-		return nil, sql.ErrNoRows
-	}
-	if len(items) > 1 {
-		return nil, errEmpresaUsuarioEmailAmbiguo
-	}
-	return &items[0], nil
+	return dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
 }
 
 func resolveEmpresaUsuarioForPasswordLogin(dbEmp *sql.DB, email, password string, empresaID int64) (*dbpkg.EmpresaUsuario, bool, error) {
-	if empresaID > 0 {
-		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
-		return item, false, err
+	if empresaID <= 0 {
+		return nil, false, errEmpresaUsuarioScopeRequired
 	}
-
-	items, err := dbpkg.GetEmpresaUsuariosByEmail(dbEmp, email)
-	if err != nil {
-		return nil, false, err
-	}
-	if len(items) == 0 {
-		return nil, false, sql.ErrNoRows
-	}
-	if len(items) == 1 {
-		return &items[0], false, nil
-	}
-
-	password = strings.TrimSpace(password)
-	if password == "" {
-		return nil, false, errEmpresaUsuarioEmailAmbiguo
-	}
-	matches := make([]*dbpkg.EmpresaUsuario, 0, 1)
-	for i := range items {
-		item := &items[i]
-		if item.PasswordSet == 1 && strings.TrimSpace(item.PasswordHash) != "" && strings.TrimSpace(item.PasswordSalt) != "" && verifyEmpresaUsuarioPassword(password, item) {
-			matches = append(matches, item)
-		}
-	}
-	if len(matches) == 1 {
-		return matches[0], true, nil
-	}
-	if len(matches) > 1 {
-		return nil, false, errEmpresaUsuarioEmailAmbiguo
-	}
-	return nil, false, sql.ErrNoRows
+	item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
+	return item, false, err
 }
 
 func resolveEmpresaUsuarioForPasswordReset(dbEmp *sql.DB, email, token string, empresaID int64) (*dbpkg.EmpresaUsuario, error) {
-	if empresaID > 0 {
-		return dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
+	if empresaID <= 0 {
+		return nil, errEmpresaUsuarioScopeRequired
 	}
-	items, err := dbpkg.GetEmpresaUsuariosByEmail(dbEmp, email)
-	if err != nil {
-		return nil, err
-	}
-	if len(items) == 0 {
-		return nil, sql.ErrNoRows
-	}
-	token = strings.TrimSpace(token)
-	var matched *dbpkg.EmpresaUsuario
-	for i := range items {
-		storedToken := strings.TrimSpace(items[i].PasswordResetToken)
-		if storedToken != "" && token != "" && dbpkg.EmpresaUsuarioTokenMatches(storedToken, token) {
-			if matched != nil {
-				return nil, errEmpresaUsuarioEmailAmbiguo
-			}
-			matched = &items[i]
-		}
-	}
-	if matched == nil {
-		return nil, sql.ErrNoRows
-	}
-	return matched, nil
+	return dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
 }
 
 func empresaUsuarioContractAccepted(item *dbpkg.EmpresaUsuario, contract *dbpkg.SuperContractVersion) bool {
@@ -831,11 +798,12 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "email inv?lido", http.StatusBadRequest)
 			return
 		}
-		if payload.EmpresaID <= 0 {
-			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
-				payload.EmpresaID = qEmpresaID
-			}
+		empresaID, scopeErr := requireEmpresaUsuarioScope(r, payload.EmpresaID)
+		if scopeErr != nil {
+			http.Error(w, "empresa_id valido es obligatorio para iniciar sesion", http.StatusBadRequest)
+			return
 		}
+		payload.EmpresaID = empresaID
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
 			writeRecaptchaValidationError(w, err)
 			return
@@ -844,11 +812,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		item, passwordAlreadyVerified, err := resolveEmpresaUsuarioForPasswordLogin(dbEmp, email, payload.Password, payload.EmpresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "credenciales inv?lidas", http.StatusUnauthorized)
-				return
-			}
-			if errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
-				http.Error(w, "este correo esta asociado a mas de una empresa; solicita al administrador usar un correo unico por empresa", http.StatusConflict)
+				http.Error(w, "Credenciales inválidas.", http.StatusUnauthorized)
 				return
 			}
 			log.Printf("[usuarios_empresa] failed to query user (login) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
@@ -885,7 +849,8 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "password es obligatorio", http.StatusBadRequest)
 			return
 		}
-		if !passwordAlreadyVerified && !verifyEmpresaUsuarioPassword(payload.Password, item) {
+		passwordOK, passwordNeedsUpgrade := verifyEmpresaUsuarioPasswordHash(payload.Password, item.PasswordSalt, item.PasswordHash)
+		if !passwordAlreadyVerified && !passwordOK {
 			_, lockUntil, registerErr := dbpkg.RegisterEmpresaUsuarioLoginFailure(
 				dbEmp,
 				item.EmpresaID,
@@ -901,8 +866,18 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "usuario bloqueado temporalmente por intentos fallidos hasta "+lockUntil, http.StatusTooManyRequests)
 				return
 			}
-			http.Error(w, "credenciales inv?lidas", http.StatusUnauthorized)
+			http.Error(w, "Credenciales inválidas.", http.StatusUnauthorized)
 			return
+		}
+		if passwordNeedsUpgrade {
+			upgradedHash, upgradedSalt, upgradeErr := generateEmpresaUsuarioPasswordHash(payload.Password)
+			if upgradeErr != nil || dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, upgradedHash, upgradedSalt) != nil {
+				log.Printf("[usuarios_empresa] failed to upgrade password verifier empresa_id=%d id=%d email=%s", item.EmpresaID, item.ID, redactEmailForLog(item.Email))
+				http.Error(w, "No se pudo actualizar la seguridad de acceso", http.StatusInternalServerError)
+				return
+			}
+			item.PasswordHash = upgradedHash
+			item.PasswordSalt = upgradedSalt
 		}
 
 		if err := dbpkg.ClearEmpresaUsuarioLoginFailures(dbEmp, item.EmpresaID, item.ID); err != nil {
@@ -995,11 +970,12 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "email invalido", http.StatusBadRequest)
 			return
 		}
-		if payload.EmpresaID <= 0 {
-			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
-				payload.EmpresaID = qEmpresaID
-			}
+		empresaID, scopeErr := requireEmpresaUsuarioScope(r, payload.EmpresaID)
+		if scopeErr != nil {
+			http.Error(w, "empresa_id valido es obligatorio para establecer la contrasena", http.StatusBadRequest)
+			return
 		}
+		payload.EmpresaID = empresaID
 		if strings.TrimSpace(payload.Password) == "" {
 			http.Error(w, "debes ingresar una contrasena", http.StatusBadRequest)
 			return
@@ -1130,29 +1106,29 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 			http.Error(w, "email inv?lido", http.StatusBadRequest)
 			return
 		}
-		if payload.EmpresaID <= 0 {
-			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
-				payload.EmpresaID = qEmpresaID
-			}
+		empresaID, scopeErr := requireEmpresaUsuarioScope(r, payload.EmpresaID)
+		if scopeErr != nil {
+			http.Error(w, "empresa_id valido es obligatorio para recuperar la contrasena", http.StatusBadRequest)
+			return
 		}
+		payload.EmpresaID = empresaID
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
 			writeRecaptchaValidationError(w, err)
 			return
 		}
 
-		respondAccepted := func(delivery string) {
+		respondAccepted := func() {
 			w.Header().Set("Content-Type", "application/json")
 			encodeJSONResponse(w, map[string]interface{}{
-				"ok":       true,
-				"delivery": delivery,
-				"message":  "Si el correo existe, enviaremos instrucciones para recuperar la contraseña.",
+				"ok":      true,
+				"message": "Si el correo existe, enviaremos instrucciones para recuperar la contraseña.",
 			})
 		}
 
 		item, err := resolveUniqueEmpresaUsuarioByEmail(dbEmp, email, payload.EmpresaID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) || errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
-				respondAccepted("masked")
+			if errors.Is(err, sql.ErrNoRows) {
+				respondAccepted()
 				return
 			}
 			log.Printf("[usuarios_empresa] failed to query user (password_recovery_request) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
@@ -1160,7 +1136,7 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 			return
 		}
 		if item.EmailConfirmado != 1 || strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
-			respondAccepted("masked")
+			respondAccepted()
 			return
 		}
 
@@ -1177,11 +1153,11 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 
 		if _, mailErr := sendEmpresaUsuarioPasswordRecoveryEmail(r, dbEmp, dbSuper, item.EmpresaID, item.Email, item.Nombre, token); mailErr != nil {
 			log.Printf("[usuarios_empresa] password recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), mailErr)
-			respondAccepted("manual")
+			respondAccepted()
 			return
 		}
 
-		respondAccepted("email")
+		respondAccepted()
 	}
 }
 
@@ -1212,29 +1188,29 @@ func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http
 			http.Error(w, "email inv?lido", http.StatusBadRequest)
 			return
 		}
-		if payload.EmpresaID <= 0 {
-			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
-				payload.EmpresaID = qEmpresaID
-			}
+		empresaID, scopeErr := requireEmpresaUsuarioScope(r, payload.EmpresaID)
+		if scopeErr != nil {
+			http.Error(w, "empresa_id valido es obligatorio para recuperar la invitacion", http.StatusBadRequest)
+			return
 		}
+		payload.EmpresaID = empresaID
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
 			writeRecaptchaValidationError(w, err)
 			return
 		}
 
-		respondAccepted := func(delivery string) {
+		respondAccepted := func() {
 			w.Header().Set("Content-Type", "application/json")
 			encodeJSONResponse(w, map[string]interface{}{
-				"ok":       true,
-				"delivery": delivery,
-				"message":  "Si ese correo tiene una invitacion pendiente, enviaremos nuevamente el email de invitacion.",
+				"ok":      true,
+				"message": "Si ese correo tiene una invitacion pendiente, enviaremos nuevamente el email de invitacion.",
 			})
 		}
 
 		item, err := resolveUniqueEmpresaUsuarioByEmail(dbEmp, email, payload.EmpresaID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) || errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
-				respondAccepted("masked")
+			if errors.Is(err, sql.ErrNoRows) {
+				respondAccepted()
 				return
 			}
 			log.Printf("[usuarios_empresa] failed to query user (invitation_recovery) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
@@ -1242,7 +1218,7 @@ func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http
 			return
 		}
 		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") || (item.PasswordSet == 1 && strings.TrimSpace(item.PasswordHash) != "") {
-			respondAccepted("masked")
+			respondAccepted()
 			return
 		}
 
@@ -1259,11 +1235,11 @@ func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http
 
 		if _, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, item.EmpresaID, item.Email, item.Nombre, token, "Reenvio de invitacion solicitado desde el portal de usuarios."); mailErr != nil {
 			log.Printf("[usuarios_empresa] invitation recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), mailErr)
-			respondAccepted("manual")
+			respondAccepted()
 			return
 		}
 
-		respondAccepted("email")
+		respondAccepted()
 	}
 }
 
@@ -1290,11 +1266,12 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 
 		email := strings.TrimSpace(payload.Email)
 		token := strings.TrimSpace(payload.Token)
-		if payload.EmpresaID <= 0 {
-			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
-				payload.EmpresaID = qEmpresaID
-			}
+		empresaID, scopeErr := requireEmpresaUsuarioScope(r, payload.EmpresaID)
+		if scopeErr != nil {
+			http.Error(w, "empresa_id valido es obligatorio para restablecer la contrasena", http.StatusBadRequest)
+			return
 		}
+		payload.EmpresaID = empresaID
 		if email == "" || token == "" {
 			http.Error(w, "email y token son obligatorios", http.StatusBadRequest)
 			return
@@ -1328,10 +1305,6 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 				http.Error(w, "token de recuperación inv?lido", http.StatusUnauthorized)
 				return
 			}
-			if errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
-				http.Error(w, "este correo esta asociado a mas de una empresa; solicita un nuevo token de recuperacion", http.StatusConflict)
-				return
-			}
 			log.Printf("[usuarios_empresa] failed to query user (password_reset) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
 			http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 			return
@@ -1362,9 +1335,16 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			http.Error(w, "no se pudo generar password hash", http.StatusInternalServerError)
 			return
 		}
-		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
+		// Revoke first: if the subsequent write fails the account may require a
+		// new login, but no pre-reset browser session can survive the event.
+		if err := revokeEmpresaUsuarioSessions(dbSuper, item); err != nil {
+			log.Printf("[usuarios_empresa] failed to revoke sessions before password reset empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
+			http.Error(w, "No se pudieron proteger las sesiones anteriores", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.SetEmpresaUsuarioPasswordFromResetToken(dbEmp, item.EmpresaID, item.ID, token, hash, salt); err != nil {
 			log.Printf("[usuarios_empresa] failed to reset password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
-			http.Error(w, "No se pudo actualizar la contraseña", http.StatusInternalServerError)
+			http.Error(w, "El token de recuperación ya no es válido", http.StatusUnauthorized)
 			return
 		}
 
@@ -1404,11 +1384,12 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			return
 		}
 
-		if payload.EmpresaID <= 0 {
-			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
-				payload.EmpresaID = qEmpresaID
-			}
+		empresaID, scopeErr := requireEmpresaUsuarioScope(r, payload.EmpresaID)
+		if scopeErr != nil {
+			http.Error(w, "empresa_id valido es obligatorio para cambiar la contrasena", http.StatusBadRequest)
+			return
 		}
+		payload.EmpresaID = empresaID
 
 		email := strings.TrimSpace(payload.Email)
 		if email == "" {
@@ -1445,11 +1426,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 		item, currentPasswordAlreadyVerified, err := resolveEmpresaUsuarioForPasswordLogin(dbEmp, email, currentPassword, payload.EmpresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "credenciales inv?lidas", http.StatusUnauthorized)
-				return
-			}
-			if errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
-				http.Error(w, "este correo esta asociado a mas de una empresa; solicita al administrador usar un correo unico por empresa", http.StatusConflict)
+				http.Error(w, "Credenciales inválidas.", http.StatusUnauthorized)
 				return
 			}
 			log.Printf("[usuarios_empresa] failed to query user (change_password) empresa_id=%d email=%s error=%v", payload.EmpresaID, redactEmailForLog(email), err)
@@ -1470,7 +1447,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			return
 		}
 		if !currentPasswordAlreadyVerified && !verifyEmpresaUsuarioPassword(currentPassword, item) {
-			http.Error(w, "credenciales inv?lidas", http.StatusUnauthorized)
+			http.Error(w, "Credenciales inválidas.", http.StatusUnauthorized)
 			return
 		}
 		if currentPassword == newPassword {
@@ -1487,6 +1464,11 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 		hash, salt, err := generateEmpresaUsuarioPasswordHash(newPassword)
 		if err != nil {
 			http.Error(w, "no se pudo generar password hash", http.StatusInternalServerError)
+			return
+		}
+		if err := revokeEmpresaUsuarioSessions(dbSuper, item); err != nil {
+			log.Printf("[usuarios_empresa] failed to revoke sessions before password change empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
+			http.Error(w, "No se pudieron proteger las sesiones anteriores", http.StatusInternalServerError)
 			return
 		}
 		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
@@ -2759,19 +2741,27 @@ type empresaUsuarioSessionResult struct {
 	Apariencia  string
 }
 
-func empresaUsuarioSessionRole(item *dbpkg.EmpresaUsuario) string {
+func empresaUsuarioSessionRole(item *dbpkg.EmpresaUsuario) (string, error) {
 	if item == nil {
-		return "admin_empresa"
-	}
-	if utils.AdminShouldUseSuperRole(item.Email) {
-		return "super_administrador"
+		return "", fmt.Errorf("usuario de empresa requerido")
 	}
 
 	sessionRole := normalizePermissionRole(item.RolNombre)
 	if sessionRole == "" || sessionRole == "sin_rol" {
-		sessionRole = "admin_empresa"
+		return "", fmt.Errorf("usuario de empresa sin rol operativo valido")
 	}
-	return sessionRole
+	return sessionRole, nil
+}
+
+func revokeEmpresaUsuarioSessions(dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) error {
+	if item == nil || strings.TrimSpace(item.Email) == "" {
+		return fmt.Errorf("usuario de empresa requerido para revocar sesiones")
+	}
+	if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, item.Email); err != nil {
+		return err
+	}
+	utils.InvalidateAuthCacheForAdmin(item.Email)
+	return nil
 }
 
 func createEmpresaUsuarioSession(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) (empresaUsuarioSessionResult, error) {
@@ -2779,7 +2769,10 @@ func createEmpresaUsuarioSession(w http.ResponseWriter, r *http.Request, dbSuper
 	if item == nil {
 		return result, fmt.Errorf("usuario de empresa requerido")
 	}
-	sessionRole := empresaUsuarioSessionRole(item)
+	sessionRole, err := empresaUsuarioSessionRole(item)
+	if err != nil {
+		return result, err
+	}
 	if err := dbpkg.UpsertAdministrador(dbSuper, item.Email, item.Nombre, sessionRole, ""); err != nil {
 		return result, fmt.Errorf("failed to upsert admin: %w", err)
 	}
@@ -2799,7 +2792,7 @@ func createEmpresaUsuarioSession(w http.ResponseWriter, r *http.Request, dbSuper
 	if err != nil {
 		return result, fmt.Errorf("failed to generate session token: %w", err)
 	}
-	if err := dbpkg.CreateSession(dbSuper, item.Email, r.RemoteAddr, r.UserAgent(), token); err != nil {
+	if err := dbpkg.CreateEmpresaUsuarioSession(dbSuper, item.Email, r.RemoteAddr, r.UserAgent(), token, item.ID, item.EmpresaID, sessionRole); err != nil {
 		return result, fmt.Errorf("failed to create session: %w", err)
 	}
 
@@ -2852,9 +2845,59 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
-func hashEmpresaUsuarioPassword(password, salt string) string {
+func legacyEmpresaUsuarioPasswordHash(password, salt string) string {
 	sum := sha256.Sum256([]byte(salt + ":" + password))
 	return hex.EncodeToString(sum[:])
+}
+
+func deriveEmpresaUsuarioPBKDF2(password, salt string, iterations, keyLength int) []byte {
+	if iterations <= 0 || keyLength <= 0 {
+		return nil
+	}
+	hashLength := sha256.Size
+	blocks := (keyLength + hashLength - 1) / hashLength
+	result := make([]byte, 0, blocks*hashLength)
+	blockIndex := make([]byte, 4)
+	for block := 1; block <= blocks; block++ {
+		binary.BigEndian.PutUint32(blockIndex, uint32(block))
+		mac := hmac.New(sha256.New, []byte(password))
+		_, _ = mac.Write([]byte(salt))
+		_, _ = mac.Write(blockIndex)
+		u := mac.Sum(nil)
+		accumulator := append([]byte(nil), u...)
+		for iteration := 1; iteration < iterations; iteration++ {
+			mac.Reset()
+			_, _ = mac.Write(u)
+			u = mac.Sum(u[:0])
+			for index := range accumulator {
+				accumulator[index] ^= u[index]
+			}
+		}
+		result = append(result, accumulator...)
+	}
+	return result[:keyLength]
+}
+
+func currentEmpresaUsuarioPasswordHash(password, salt string) string {
+	derived := deriveEmpresaUsuarioPBKDF2(password, salt, empresaUsuarioPasswordKDFIterations, sha256.Size)
+	return fmt.Sprintf("%s$%d$%s", empresaUsuarioPasswordKDFName, empresaUsuarioPasswordKDFIterations, base64.RawStdEncoding.EncodeToString(derived))
+}
+
+func verifyEmpresaUsuarioPasswordHash(password, salt, storedHash string) (valid, needsUpgrade bool) {
+	storedHash = strings.TrimSpace(storedHash)
+	parts := strings.Split(storedHash, "$")
+	if len(parts) == 3 && parts[0] == empresaUsuarioPasswordKDFName {
+		iterations, err := strconv.Atoi(parts[1])
+		if err != nil || iterations < 100000 || iterations > 2000000 {
+			return false, false
+		}
+		expected := fmt.Sprintf("%s$%d$%s", parts[0], iterations, base64.RawStdEncoding.EncodeToString(deriveEmpresaUsuarioPBKDF2(password, salt, iterations, sha256.Size)))
+		valid = hmac.Equal([]byte(expected), []byte(storedHash))
+		return valid, valid && iterations < empresaUsuarioPasswordKDFIterations
+	}
+	legacy := legacyEmpresaUsuarioPasswordHash(password, salt)
+	valid = hmac.Equal([]byte(legacy), []byte(storedHash))
+	return valid, valid
 }
 
 func generateEmpresaUsuarioPasswordHash(password string) (string, string, error) {
@@ -2862,7 +2905,7 @@ func generateEmpresaUsuarioPasswordHash(password string) (string, string, error)
 	if err != nil {
 		return "", "", err
 	}
-	return hashEmpresaUsuarioPassword(password, salt), salt, nil
+	return currentEmpresaUsuarioPasswordHash(password, salt), salt, nil
 }
 
 func verifyEmpresaUsuarioPassword(password string, item *dbpkg.EmpresaUsuario) bool {
@@ -2872,7 +2915,8 @@ func verifyEmpresaUsuarioPassword(password string, item *dbpkg.EmpresaUsuario) b
 	if strings.TrimSpace(item.PasswordHash) == "" || strings.TrimSpace(item.PasswordSalt) == "" {
 		return false
 	}
-	return hashEmpresaUsuarioPassword(password, item.PasswordSalt) == strings.TrimSpace(item.PasswordHash)
+	valid, _ := verifyEmpresaUsuarioPasswordHash(password, item.PasswordSalt, item.PasswordHash)
+	return valid
 }
 
 func warmEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) {

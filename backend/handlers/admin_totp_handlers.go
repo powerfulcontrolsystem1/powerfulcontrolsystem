@@ -162,9 +162,8 @@ func adminPasswordReauthenticated(admin *dbpkg.Admin, password string) bool {
 	if admin == nil || strings.TrimSpace(password) == "" || strings.TrimSpace(admin.PasswordHash) == "" || strings.TrimSpace(admin.PasswordSalt) == "" {
 		return false
 	}
-	expected := hashEmpresaUsuarioPassword(password, admin.PasswordSalt)
-	stored := strings.TrimSpace(admin.PasswordHash)
-	return len(expected) == len(stored) && hmac.Equal([]byte(expected), []byte(stored))
+	valid, _ := verifyEmpresaUsuarioPasswordHash(password, admin.PasswordSalt, admin.PasswordHash)
+	return valid
 }
 
 func issueReplacementAdminSession(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, adminEmail string) error {

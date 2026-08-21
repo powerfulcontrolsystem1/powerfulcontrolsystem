@@ -387,6 +387,22 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "empresa_id required", http.StatusBadRequest)
 					return
 				}
+				dbEmp := dbpkg.GetDB()
+				if dbEmp == nil {
+					http.Error(w, "database not available", http.StatusServiceUnavailable)
+					return
+				}
+				if _, _, owner, ownerErr := ensureEmpresaOwnerAccess(dbEmp, dbSuper, r, empresaID); ownerErr != nil {
+					if errors.Is(ownerErr, sql.ErrNoRows) {
+						http.Error(w, "empresa not found", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo validar el propietario de la empresa", http.StatusInternalServerError)
+					return
+				} else if !owner {
+					http.Error(w, "solo el propietario de la empresa puede activar la prueba", http.StatusForbidden)
+					return
+				}
 				tipoID := int64(1)
 				if s := strings.TrimSpace(q.Get("tipo_id")); s != "" {
 					if v, perr := strconv.ParseInt(s, 10, 64); perr == nil && v > 0 {
@@ -497,6 +513,9 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				})
 				return
 			}
+			if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+				return
+			}
 
 			var payload struct {
 				TipoID                 int64   `json:"tipo_id"`
@@ -521,6 +540,9 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPut:
+			if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+				return
+			}
 			q := r.URL.Query()
 			idStr := q.Get("id")
 			if idStr == "" {
@@ -601,6 +623,9 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		case http.MethodDelete:
+			if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+				return
+			}
 			q := r.URL.Query()
 			idStr := q.Get("id")
 			if idStr == "" {

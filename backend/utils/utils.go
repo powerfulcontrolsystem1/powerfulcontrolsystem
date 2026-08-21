@@ -1168,6 +1168,23 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
+		principalType := strings.ToLower(strings.TrimSpace(sess.PrincipalType))
+		if principalType == "" {
+			principalType = "admin"
+		}
+		if principalType == "empresa_usuario" {
+			if sess.PrincipalID <= 0 || sess.EmpresaID <= 0 || strings.TrimSpace(sess.PrincipalRole) == "" {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			if path == "/super_administrador.html" || strings.HasPrefix(path, "/super/") {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+		} else if principalType != "admin" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
 
 		admin, err := getCachedAdminByEmailFull(dbSuper, sess.AdminEmail)
 		if err != nil {
@@ -1193,6 +1210,10 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 
 		// Propagar información del admin en el contexto
 		ctx := context.WithValue(r.Context(), "adminEmail", admin.Email)
+		ctx = context.WithValue(ctx, "sessionPrincipalType", principalType)
+		ctx = context.WithValue(ctx, "sessionPrincipalID", sess.PrincipalID)
+		ctx = context.WithValue(ctx, "sessionEmpresaID", sess.EmpresaID)
+		ctx = context.WithValue(ctx, "sessionPrincipalRole", strings.TrimSpace(sess.PrincipalRole))
 		r = r.WithContext(ctx)
 		// Añadir cabecera informativa
 		r.Header.Set("X-Admin-Email", admin.Email)

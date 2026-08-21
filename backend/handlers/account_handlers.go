@@ -28,15 +28,24 @@ func AccountHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Intentar obtener admin desde dbSuper (incluye campos extendidos como telefono)
-		adminFull, _ := dbpkg.GetAdminByEmailFull(dbSuper, s.AdminEmail)
-
-		// Intentar obtener usuario de empresa (si existe tabla/registro)
+		// A typed enterprise-user session must resolve the exact company user. It
+		// must never fall back to the first global row sharing the same email.
 		var empresaUser *dbpkg.EmpresaUsuario
-		if dbEmp != nil {
-			if eu, err := dbpkg.GetEmpresaUsuarioByEmail(dbEmp, s.AdminEmail); err == nil && eu != nil {
-				empresaUser = eu
+		if strings.EqualFold(strings.TrimSpace(s.PrincipalType), "empresa_usuario") {
+			if dbEmp == nil || s.EmpresaID <= 0 || s.PrincipalID <= 0 {
+				http.Error(w, "unauthenticated", http.StatusUnauthorized)
+				return
 			}
+			empresaUser, err = dbpkg.GetEmpresaUsuarioByID(dbEmp, s.EmpresaID, s.PrincipalID)
+			if err != nil || empresaUser == nil {
+				http.Error(w, "unauthenticated", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		var adminFull *dbpkg.Admin
+		if empresaUser == nil {
+			adminFull, _ = dbpkg.GetAdminByEmailFull(dbSuper, s.AdminEmail)
 		}
 
 		// Payload de respuesta
@@ -63,6 +72,11 @@ func AccountHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			out.Email = s.AdminEmail
 		}
 		if empresaUser != nil {
+			out.Email = empresaUser.Email
+			out.Name = empresaUser.Nombre
+			out.Photo = empresaUser.FotoURL
+			out.Role = strings.TrimSpace(s.PrincipalRole)
+			out.IsSuper = false
 			out.EmpresaUser = empresaUser
 		}
 
@@ -86,6 +100,10 @@ func AccountUpdateProfileHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		s, err := dbpkg.GetSessionByToken(dbSuper, c.Value)
 		if err != nil || s == nil {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		if strings.EqualFold(strings.TrimSpace(s.PrincipalType), "empresa_usuario") {
+			http.Error(w, "usa el perfil de usuario dentro de la empresa asignada", http.StatusForbidden)
 			return
 		}
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, s.AdminEmail)
@@ -167,6 +185,10 @@ func AccountChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
 			return
 		}
+		if strings.EqualFold(strings.TrimSpace(s.PrincipalType), "empresa_usuario") {
+			http.Error(w, "usa el cambio de contraseña de usuario de empresa", http.StatusForbidden)
+			return
+		}
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, s.AdminEmail)
 		if err != nil || admin == nil {
 			http.Error(w, "account not found", http.StatusNotFound)
@@ -186,9 +208,13 @@ func AccountChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "current and new password required", http.StatusBadRequest)
 			return
 		}
+		if err := validateEmpresaUsuarioPasswordWithPolicy(payload.NewPassword, resolveEmpresaUsuarioPasswordPolicy(dbSuper)); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		// verificar contraseña actual
-		expected := hashEmpresaUsuarioPassword(payload.CurrentPassword, admin.PasswordSalt)
-		if expected != strings.TrimSpace(admin.PasswordHash) {
+		passwordOK, _ := verifyEmpresaUsuarioPasswordHash(payload.CurrentPassword, admin.PasswordSalt, admin.PasswordHash)
+		if !passwordOK {
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			return
 		}
@@ -231,6 +257,10 @@ func AccountSetGooglePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
 			return
 		}
+		if strings.EqualFold(strings.TrimSpace(s.PrincipalType), "empresa_usuario") {
+			http.Error(w, "flujo no disponible para usuarios de empresa", http.StatusForbidden)
+			return
+		}
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, s.AdminEmail)
 		if err != nil || admin == nil {
 			http.Error(w, "account not found", http.StatusNotFound)
@@ -256,8 +286,8 @@ func AccountSetGooglePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "password and confirmation required", http.StatusBadRequest)
 			return
 		}
-		if len(payload.Password) < minAdminPasswordLength {
-			http.Error(w, "password must be at least 8 characters", http.StatusBadRequest)
+		if err := validateEmpresaUsuarioPasswordWithPolicy(payload.Password, resolveEmpresaUsuarioPasswordPolicy(dbSuper)); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if payload.Password != payload.PasswordConfirm {

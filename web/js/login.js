@@ -11,6 +11,15 @@
     return String(value || "").trim();
   }
 
+  function passwordPolicyError(password) {
+    if (String(password || '').length < 8) return 'La nueva contraseña debe tener mínimo 8 caracteres.';
+    if (!/[A-ZÁÉÍÓÚÑ]/.test(password)) return 'La nueva contraseña debe incluir una letra mayúscula.';
+    if (!/[a-záéíóúñ]/.test(password)) return 'La nueva contraseña debe incluir una letra minúscula.';
+    if (!/[0-9]/.test(password)) return 'La nueva contraseña debe incluir un número.';
+    if (/\s/.test(password)) return 'La nueva contraseña no debe contener espacios.';
+    return '';
+  }
+
   function getStoredRememberedEmail() {
     try {
       return normalizeEmail(window.localStorage.getItem(rememberedEmailStorageKey));
@@ -465,8 +474,9 @@
         showMsg(resetMessageDiv, 'El enlace de recuperación no es válido o ya no contiene el código de seguridad.', true);
         return;
       }
-      if (password.length < 8) {
-        showMsg(resetMessageDiv, 'La nueva contraseña debe tener mínimo 8 caracteres.', true);
+	  var passwordError = passwordPolicyError(password);
+	  if (passwordError) {
+		showMsg(resetMessageDiv, passwordError, true);
         return;
       }
       if (password !== passwordConfirm) {
@@ -513,6 +523,7 @@
       var queryEmail = normalizeEmail(params.get('email'));
       var token = normalizeEmail(params.get('token_recuperacion') || params.get('token')).replace(/\s+/g, '');
       var view = normalizeEmail(params.get('view') || params.get('modo')).toLowerCase();
+      var confirmation = normalizeEmail(params.get('confirmacion')).toLowerCase();
 
       if (queryEmail) {
         prefillEmailFields(queryEmail);
@@ -534,6 +545,11 @@
         return;
       }
       showAuthView('login');
+      if (confirmation === 'ok') {
+        showMsg(loginMessageDiv, 'Correo confirmado. Ya puedes iniciar sesión.', false);
+      } else if (confirmation === 'error') {
+        showMsg(loginMessageDiv, 'El enlace de confirmación es inválido, expiró o ya fue utilizado.', true);
+      }
     } catch (e) {
       showAuthView('login');
     }
