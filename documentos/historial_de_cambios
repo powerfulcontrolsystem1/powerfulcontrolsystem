@@ -42844,3 +42844,13 @@ acumulativa.
   cierra cualquier drawer de IA, oculta su acceso flotante y elimina la capa de
   fondo que podía interceptar los toques de Encender/Apagar. El bloqueo se
   limita a `carrito_control_electrico.html`; al salir se restaura el asistente.
+
+## 2026-08-21 - Domótica: acceso por tarjeta de estación configurable
+
+- Configuración de Domótica incorpora el check empresarial **Mostrar acceso
+  Domótica en tarjetas de estaciones**. Su valor se conserva en
+  `empresa_estacion_prefs.estaciones_config.station_card_ui` y mantiene el
+  aislamiento y la auditoría existentes por `empresa_id`.
+- Cuando está activo, cada estación muestra abajo a la derecha un botón cuadrado
+  con rayo que abre únicamente los equipos de esa estación. El botón detiene la
+  propagación del clic para no activar ni abrir el carrito operativo por error.

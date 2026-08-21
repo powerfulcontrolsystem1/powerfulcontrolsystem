@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
+func TestDomoticaStationUIHasConfigurableCardEntryAndVisibilityCheck(t *testing.T) {
 	stationPage, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "estaciones.html"))
 	if err != nil {
 		t.Fatal(err)
@@ -28,8 +28,19 @@ func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
 			t.Fatalf("la configuracion de estaciones no contiene %q", marker)
 		}
 	}
-	if strings.Contains(stationSource, "data-open-station-domotica") || strings.Contains(stationSource, "station-domotica-button") {
-		t.Fatal("la pagina de estaciones no debe mostrar un boton Domotica dentro de la tarjeta")
+	for _, marker := range []string{"data-station-domotica", "station-domotica-button", "station-domotica-action", "ev.stopPropagation()"} {
+		if !strings.Contains(stationSource, marker) {
+			t.Fatalf("la pagina de estaciones no contiene el acceso Domotica configurable %q", marker)
+		}
+	}
+	electricConfig, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{"mostrarBotonDomoticaEstaciones", "saveStationDomoticaButtonPreference", "loadStationDomoticaButtonPreference", "station_card_ui.mostrar_boton_domotica"} {
+		if !strings.Contains(string(electricConfig), marker) {
+			t.Fatalf("la configuracion de Domotica no contiene %q", marker)
+		}
 	}
 	cartPage, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "carrito_de_compras.html"))
 	if err != nil {
