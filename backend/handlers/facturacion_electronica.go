@@ -2898,12 +2898,15 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 
 func facturacionDocumentoAdvisoryLockKey(empresaID int64, tipoDocumento, documentoCodigo string) int64 {
 	raw := fmt.Sprintf("facturacion-electronica|%d|%s|%s", empresaID, strings.ToLower(strings.TrimSpace(tipoDocumento)), strings.ToUpper(strings.TrimSpace(documentoCodigo)))
-	hash := uint64(14695981039346656037)
+	// Signed representation of the FNV-1a 64-bit offset basis. Keeping the
+	// accumulator signed preserves the same PostgreSQL advisory-lock key while
+	// avoiding an unchecked uint64 -> int64 conversion.
+	hash := int64(-3750763034362895579)
 	for i := 0; i < len(raw); i++ {
-		hash ^= uint64(raw[i])
+		hash ^= int64(raw[i])
 		hash *= 1099511628211
 	}
-	return int64(hash)
+	return hash
 }
 
 func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion, usuario string, dbSuperOpt ...*sql.DB) (facturacionIntegracionResultado, *dbpkg.FacturacionElectronicaRetryItem, error) {

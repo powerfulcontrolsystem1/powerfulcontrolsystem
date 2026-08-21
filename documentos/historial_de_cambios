@@ -9,6 +9,9 @@
 - El catalogo publica `disponible_emision`, los controles no implementados se
   deshabilitan y la bandeja conserva `CP-*` como venta con factura asociada sin
   contarlo ni rotularlo como otra factura fiscal.
+- La clave de exclusion mutua por documento conserva FNV-1a de 64 bits con un
+  acumulador firmado y evita una conversion `uint64` a `int64` que el analisis
+  estatico clasifico como posible overflow.
 - QA enfocado de handlers y DB aprobado. El cambio sigue sin desplegar y no se
   realizaron nuevos envios fiscales.
 
