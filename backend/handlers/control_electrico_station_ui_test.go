@@ -143,6 +143,9 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"function waitForRelayConfirmation(releID, estado)",
 		"Comando enviado; esperando confirmación de la Raspberry",
 		"El comando sigue en cola. Revisa la conexión de la Raspberry.",
+		"function relayRaspberryConnected(rele)",
+		"function explainDisconnectedRelay(rele, action)",
+		"porque ' + raspberry + ' está desconectada",
 		"function refreshLiveTimerLabels()",
 		"touch-action: manipulation",
 	} {

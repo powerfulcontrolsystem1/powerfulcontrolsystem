@@ -42858,3 +42858,6 @@ acumulativa.
   `/api/empresa/control_electrico?action=station_card_ui`, protegido por el
   permiso de Domótica y auditado. La persistencia conserva
   `estaciones_config.station_card_ui` sin exigir el módulo de Seguridad.
+- La consola operativa de equipos detiene el comando y explica el motivo si la
+  Raspberry del equipo está desconectada; también aplica al temporizador antes
+  de abrirlo y antes de enviar su orden.
