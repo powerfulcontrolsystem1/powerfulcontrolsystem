@@ -4812,6 +4812,9 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - Cuota mensual del túnel por empresa, advertencia y bloqueo administrados exclusivamente por Super Administrador.
 - Entradas GPIO con salida normal, temporizada o condicionada a la agenda del aparato, siempre aisladas por empresa/Raspberry y dentro de la cola de encendidos.
 
+2026-08-21: Proteccion movil para controles de Domotica
+- La vista operativa `carrito_control_electrico.html` bloquea temporalmente el acceso flotante de IA en el shell empresarial. Al cambiar a otra pagina, el acceso IA se restaura. Esto evita que su capa modal intercepte los toques de Encender/Apagar de equipos en celular.
+
 2026-08-13: Domotica 1.4 / recuperación, escenas y conexión solar local
 - Los comandos GPIO durables usan instantes con zona horaria, ACK visible y
   recuperación por arranque real; el estado lógico no se declara aplicado hasta
