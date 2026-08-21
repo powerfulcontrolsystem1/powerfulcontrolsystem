@@ -4816,8 +4816,9 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - La vista operativa `carrito_control_electrico.html` bloquea temporalmente el acceso flotante de IA en el shell empresarial. Al cambiar a otra pagina, el acceso IA se restaura. Esto evita que su capa modal intercepte los toques de Encender/Apagar de equipos en celular.
 
 2026-08-21: Acceso Domotica por tarjeta de estacion
-- `control_electrico.html` permite habilitar por empresa el acceso visual de Domotica en las tarjetas de estaciones. La preferencia vive en `estaciones_config.station_card_ui.mostrar_boton_domotica`.
+- `control_electrico.html` permite habilitar por empresa el acceso visual de Domotica en las tarjetas de estaciones mediante `control_electrico?action=station_card_ui`. La preferencia vive en `estaciones_config.station_card_ui.mostrar_boton_domotica`.
 - `estaciones.html` muestra el boton cuadrado con rayo en el extremo inferior derecho de cada estacion habilitada; su destino conserva `empresa_id` y `estacion_id` hacia `carrito_control_electrico.html`.
+- `carrito_control_electrico.html` informa de forma accionable cuando un equipo no puede encenderse, apagarse o temporizarse porque su Raspberry no tiene túnel conectado reciente.
 
 2026-08-13: Domotica 1.4 / recuperación, escenas y conexión solar local
 - Los comandos GPIO durables usan instantes con zona horaria, ACK visible y
