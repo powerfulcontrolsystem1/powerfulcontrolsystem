@@ -1,11 +1,27 @@
 package handlers
 
 import (
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestDomoticaEventReportFilterParsesScopedFields(t *testing.T) {
+	req := httptest.NewRequest("GET", "/api/empresa/control_electrico?action=eventos&estacion_id=4&rele_id=8&raspberry_id=2&comando=encender&resultado=ok&desde=2026-08-23T08%3A00&hasta=2026-08-23T18%3A00&limit=80", nil)
+	filter, err := controlElectricoEventFilterFromRequest(req)
+	if err != nil {
+		t.Fatalf("filtro valido: %v", err)
+	}
+	if filter.EstacionID != 4 || filter.ReleID != 8 || filter.RaspberryID != 2 || filter.Comando != "encender" || filter.Resultado != "ok" || filter.Limit != 80 {
+		t.Fatalf("filtro inesperado: %#v", filter)
+	}
+	invalid := httptest.NewRequest("GET", "/api/empresa/control_electrico?action=eventos&rele_id=-1", nil)
+	if _, err := controlElectricoEventFilterFromRequest(invalid); err == nil {
+		t.Fatal("rele_id negativo debe rechazarse")
+	}
+}
 
 func TestDomoticaStationUIHasConfigurableCardEntryAndVisibilityCheck(t *testing.T) {
 	stationPage, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "estaciones.html"))
@@ -158,6 +174,66 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 	}
 	if strings.Contains(source, "Modo: ' + escapeHtml(rele.modo") || strings.Contains(source, "raspberryStatusHTML(rele.raspberry_id)") {
 		t.Fatal("las tarjetas no deben repetir modo ni estado textual de Raspberry")
+	}
+}
+
+func TestDomoticaEventsMirrorIntoCompanyAuditWithTenantScope(t *testing.T) {
+	dbSource, err := os.ReadFile(filepath.Join("..", "db", "control_electrico.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{
+		"func createEmpresaControlElectricoAuditMirror",
+		"CreateEmpresaAuditoriaEvento",
+		"EmpresaID:      ev.EmpresaID",
+		"domotica_evento_id",
+		"empresa_control_electrico_eventos",
+	} {
+		if !strings.Contains(string(dbSource), marker) {
+			t.Fatalf("el espejo de auditoria Domotica no contiene %q", marker)
+		}
+	}
+	handlerSource, err := os.ReadFile("control_electrico.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{
+		"func registrarEventoControlElectrico",
+		"configuracion_domotica",
+		"equipo_configurado",
+		"regla_sensor_configurada",
+		"sensor_input",
+		"lectura_telemetria",
+		"prueba_gpio",
+		"operacion_raspberry",
+		"controlElectricoEventFilterFromRequest",
+		"ListEmpresaControlElectricoEventosFilteredContext",
+		"El equipo no pertenece a esta empresa",
+		"La Raspberry Pi no pertenece a esta empresa",
+	} {
+		if !strings.Contains(string(handlerSource), marker) {
+			t.Fatalf("la trazabilidad operativa Domotica no contiene %q", marker)
+		}
+	}
+	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{
+		"Seguimiento de eventos",
+		"eventStationFilter",
+		"eventDeviceFilter",
+		"eventRaspberryFilter",
+		"eventCommandFilter",
+		"eventResultFilter",
+		"eventFromFilter",
+		"eventUntilFilter",
+		"loadEventReport",
+		"eventFilterApplyBtn",
+	} {
+		if !strings.Contains(string(page), marker) {
+			t.Fatalf("el reporte filtrable de Domotica no contiene %q", marker)
+		}
 	}
 }
 

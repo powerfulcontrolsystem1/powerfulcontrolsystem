@@ -4834,6 +4834,14 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - `estaciones.html` muestra el boton cuadrado con rayo en el extremo inferior derecho de cada estacion habilitada; su destino conserva `empresa_id` y `estacion_id` hacia `carrito_control_electrico.html`.
 - `carrito_control_electrico.html` informa de forma accionable cuando un equipo no puede encenderse, apagarse o temporizarse porque su Raspberry no tiene túnel conectado reciente.
 
+2026-08-23: Auditoria integral de Domotica por empresa
+- Cada alta, cambio o desactivacion de configuracion, Raspberry, equipo, foto, regla, escena, lectura, señal de sensor, prueba GPIO, operacion de Raspberry, temporizador, programacion y comando de relay se conserva en `empresa_control_electrico_eventos` con `empresa_id`, actor, origen, estación, equipo y Raspberry cuando aplican.
+- Cada evento de esa bitacora genera tambien un espejo seguro en `empresa_auditoria_eventos` bajo el modulo tecnico `control_electrico`; no replica IP, respuesta del dispositivo, token ni otros secretos. La vista `Auditoria` ya permite filtrar `Domotica` y conserva el aislamiento por empresa.
+
+2026-08-23: Reporte filtrable de seguimiento Domotica
+- `Administrar empresa > Domotica y Energia Solar > Reportes` incorpora el bloque **Seguimiento de eventos** para filtrar la bitácora por estación, equipo, Raspberry Pi, tipo de evento, resultado y rango de fecha/hora.
+- La consulta usa `GET /api/empresa/control_electrico?action=eventos` y siempre resuelve el `empresa_id` desde el contexto autorizado; el backend valida los IDs de equipo, Raspberry y estación dentro de la misma empresa antes de consultar.
+
 2026-08-13: Domotica 1.4 / recuperación, escenas y conexión solar local
 - Los comandos GPIO durables usan instantes con zona horaria, ACK visible y
   recuperación por arranque real; el estado lógico no se declara aplicado hasta
