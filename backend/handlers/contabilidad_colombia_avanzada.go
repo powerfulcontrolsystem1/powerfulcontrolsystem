@@ -61,6 +61,42 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 				}
 				writeJSON(w, http.StatusOK, rows)
 				return
+			case "nomina_electronica_preflight":
+				nominaID, err := parseInt64QueryOptional(r, "nomina_id")
+				if err != nil || nominaID <= 0 {
+					http.Error(w, "nomina_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				nomina, err := dbpkg.GetEmpresaNominaElectronicaByIDContext(r.Context(), dbEmp, empresaID, nominaID)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "nómina electrónica no encontrada", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar la nómina electrónica", http.StatusInternalServerError)
+					return
+				}
+				var configuracion *dbpkg.EmpresaDIANDocumentoConfiguracion
+				configuracionPendiente := ""
+				if err := dbpkg.EmpresaDIANDocumentosConfiguracionSchemaReady(dbEmp); err != nil {
+					configuracionPendiente = "La tabla de configuración DIAN por documento no está disponible; ejecute pcs-migrate."
+				} else {
+					configuracion, err = dbpkg.GetEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, empresaID, "nomina_electronica")
+					if err != nil && !errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "No se pudo consultar la configuración DIAN de nómina electrónica", http.StatusInternalServerError)
+						return
+					}
+					if errors.Is(err, sql.ErrNoRows) {
+						configuracionPendiente = "No existe configuración DIAN separada para nómina electrónica."
+					}
+				}
+				resultado := buildNominaElectronicaDIANPreflight(nomina, configuracion)
+				if configuracionPendiente != "" {
+					resultado.Bloqueos = append(resultado.Bloqueos, configuracionPendiente)
+					resultado.PuedeEmitir = false
+				}
+				writeJSON(w, http.StatusOK, resultado)
+				return
 			case "documentos_soporte":
 				rows, err := dbpkg.ListEmpresaDocumentosSoporte(dbEmp, empresaID, r.URL.Query().Get("periodo"))
 				if err != nil {
@@ -434,6 +470,71 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 		}
 		http.Error(w, "Metodo o accion no permitida", http.StatusMethodNotAllowed)
 	}
+}
+
+type nominaElectronicaDIANPreflight struct {
+	EmpresaID           int64    `json:"empresa_id"`
+	NominaID            int64    `json:"nomina_id"`
+	TipoDocumento       string   `json:"tipo_documento"`
+	Estado              string   `json:"estado"`
+	PuedeEmitir         bool     `json:"puede_emitir"`
+	Bloqueos            []string `json:"bloqueos"`
+	Advertencias        []string `json:"advertencias"`
+	EstadoConfiguracion string   `json:"estado_configuracion,omitempty"`
+	Ambiente            string   `json:"ambiente,omitempty"`
+}
+
+// buildNominaElectronicaDIANPreflight validates the draft without creating a
+// NominaIndividual XML, CUNE, signature, consecutive or DIAN request.
+func buildNominaElectronicaDIANPreflight(nomina *dbpkg.EmpresaNominaElectronica, configuracion *dbpkg.EmpresaDIANDocumentoConfiguracion) nominaElectronicaDIANPreflight {
+	resultado := nominaElectronicaDIANPreflight{
+		TipoDocumento: "nomina_electronica",
+		Estado:        "bloqueado_adaptador_dian",
+		Bloqueos: []string{
+			"La emisión permanece bloqueada: falta el adaptador DIAN propio de nómina electrónica (NominaIndividual, firma, transporte y acuse).",
+		},
+		Advertencias: make([]string, 0),
+	}
+	if nomina == nil {
+		resultado.Bloqueos = append(resultado.Bloqueos, "No se encontró el borrador de nómina electrónica.")
+		return resultado
+	}
+	resultado.EmpresaID = nomina.EmpresaID
+	resultado.NominaID = nomina.ID
+	if strings.TrimSpace(nomina.Documento) == "" || strings.TrimSpace(nomina.Nombre) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta identificación o nombre del empleado.")
+	}
+	if strings.TrimSpace(nomina.Periodo) == "" || strings.TrimSpace(nomina.FechaPago) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta período o fecha de pago de nómina.")
+	}
+	if nomina.Devengados <= 0 || nomina.Deducciones < 0 || nomina.Total < 0 {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Los importes de nómina deben contener devengados positivos y deducciones válidas.")
+	}
+	if math.Abs((nomina.Devengados-nomina.Deducciones)-nomina.Total) > 0.01 {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Los importes no cuadran: total debe ser devengados - deducciones.")
+	}
+	if nomina.EmpleadoID <= 0 {
+		resultado.Advertencias = append(resultado.Advertencias, "El borrador no está vinculado a un empleado empresarial; revise identidad y datos contractuales antes de emitir.")
+	}
+	resultado.Bloqueos = append(resultado.Bloqueos, "Faltan en el borrador los datos estructurados exigidos para nómina electrónica (contrato, municipio, tipo de trabajador, novedades y conceptos detallados).")
+	if configuracion == nil {
+		return resultado
+	}
+	resultado.EstadoConfiguracion = configuracion.Estado
+	resultado.Ambiente = configuracion.TipoAmbiente
+	if configuracion.Estado != "configurando" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "La configuración de nómina electrónica debe estar en estado configurando.")
+	}
+	if configuracion.Prefijo == "" || configuracion.RangoDesde <= 0 || configuracion.RangoHasta < configuracion.RangoDesde {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta prefijo o rango DIAN propio de nómina electrónica.")
+	}
+	if configuracion.TipoAmbiente == "habilitacion" && strings.TrimSpace(configuracion.TestSetID) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta TestSet DIAN para habilitación de nómina electrónica.")
+	}
+	if configuracion.TipoAmbiente == "produccion" && strings.TrimSpace(configuracion.ResolucionNumero) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta autorización DIAN propia de nómina electrónica para producción.")
+	}
+	return resultado
 }
 
 type documentoSoporteDIANPreflight struct {

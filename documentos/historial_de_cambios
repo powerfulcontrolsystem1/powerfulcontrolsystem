@@ -5,6 +5,12 @@
 - Frontend: cada borrador ofrece `Revisar DIAN` y muestra bloqueos/advertencias dejando explícito que la acción no emitió ni transmitió un documento.
 - QA: regresiones de prevalidación, aislamiento por `empresa_id` y contrato visible; no se realizaron nuevos envíos fiscales.
 
+2026-08-23: Prevalidación segura de nómina electrónica DIAN.
+- Módulo afectado: Contabilidad Colombia avanzada / nómina electrónica.
+- Backend: `GET /api/empresa/contabilidad_colombia_avanzada?action=nomina_electronica_preflight&empresa_id=&nomina_id=` consulta exclusivamente el borrador de su `empresa_id`, revisa consistencia de devengados/deducciones y configuración separada, sin generar `NominaIndividual`, CUNE, firma, consecutivo ni transporte.
+- Estado operativo: el resultado falla cerrado como `bloqueado_adaptador_dian`; la emisión continúa impedida hasta contar con adaptador especializado de nómina y datos estructurados del empleado/contrato/novedades.
+- Frontend y QA: `Revisar DIAN` muestra bloqueos sin envío; regresiones cubren bloqueo, totales, aislamiento y contrato visible. No se realizaron nuevos envíos fiscales.
+
 2026-08-21: Facturacion electronica / familias DIAN fallan cerrado y consulta sin doble conteo.
 - La auditoria autenticada de Powerful Control System confirmo que produccion
   declaraba 22 tipos soportados y siete operativos aunque el generador solo

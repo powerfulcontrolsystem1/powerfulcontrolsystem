@@ -810,6 +810,35 @@ func ListEmpresaNominaElectronica(dbConn *sql.DB, empresaID int64, periodo strin
 	return out, rows.Err()
 }
 
+// GetEmpresaNominaElectronicaByIDContext resolves a payroll draft only inside
+// its tenant. DIAN preflight must never disclose employee data across empresas.
+func GetEmpresaNominaElectronicaByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, nominaID int64) (*EmpresaNominaElectronica, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || nominaID <= 0 {
+		return nil, errors.New("empresa_id y nomina_id son obligatorios")
+	}
+	var item EmpresaNominaElectronica
+	err := QueryRowCompatContext(ctx, dbConn, `SELECT
+		id, empresa_id, empleado_id, tipo_documento, documento, nombre, periodo, fecha_pago, salario_base,
+		devengados, deducciones, total, COALESCE(cune,''), estado_dian, COALESCE(respuesta_dian,''),
+		COALESCE(json_payload,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''),
+		COALESCE(usuario_creador,'')
+	FROM empresa_contabilidad_nomina_electronica
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, nominaID).Scan(
+		&item.ID, &item.EmpresaID, &item.EmpleadoID, &item.TipoDocumento, &item.Documento,
+		&item.Nombre, &item.Periodo, &item.FechaPago, &item.SalarioBase, &item.Devengados,
+		&item.Deducciones, &item.Total, &item.CUNE, &item.EstadoDIAN, &item.RespuestaDIAN,
+		&item.JSONPayload, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 func CreateEmpresaDocumentoSoporte(dbConn *sql.DB, x EmpresaDocumentoSoporteElectronico) (int64, error) {
 	if x.EmpresaID <= 0 || strings.TrimSpace(x.Documento) == "" || strings.TrimSpace(x.NombreProveedor) == "" || strings.TrimSpace(x.Concepto) == "" {
 		return 0, errors.New("proveedor, documento y concepto son requeridos")

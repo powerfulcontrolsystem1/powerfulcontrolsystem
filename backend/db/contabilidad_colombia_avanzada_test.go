@@ -61,8 +61,24 @@ func TestGetEmpresaDocumentoSoporteByIDContextIsTenantScoped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read document-support data access: %v", err)
 	}
-	if !strings.Contains(string(raw), "WHERE empresa_id = ? AND id = ?") {
+	source := string(raw)
+	start := strings.Index(source, "func GetEmpresaDocumentoSoporteByIDContext")
+	end := strings.Index(source[start:], "\nfunc normalizeEmpresaNominaElectronicaDraft")
+	if start < 0 || end < 0 || !strings.Contains(source[start:start+end], "WHERE empresa_id = ? AND id = ?") {
 		t.Fatal("document-support lookup must filter by empresa_id and id")
+	}
+}
+
+func TestGetEmpresaNominaElectronicaByIDContextIsTenantScoped(t *testing.T) {
+	raw, err := os.ReadFile("contabilidad_colombia_avanzada.go")
+	if err != nil {
+		t.Fatalf("read payroll data access: %v", err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func GetEmpresaNominaElectronicaByIDContext")
+	end := strings.Index(source[start:], "\nfunc CreateEmpresaDocumentoSoporte")
+	if start < 0 || end < 0 || !strings.Contains(source[start:start+end], "WHERE empresa_id = ? AND id = ?") {
+		t.Fatal("payroll lookup must filter by empresa_id and id")
 	}
 }
 

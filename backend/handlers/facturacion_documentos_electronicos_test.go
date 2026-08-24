@@ -163,6 +163,43 @@ func TestDocumentoSoportePreflightFailsClosed(t *testing.T) {
 	}
 }
 
+func TestNominaElectronicaPreflightFailsClosed(t *testing.T) {
+	nomina := &dbpkg.EmpresaNominaElectronica{
+		ID:          8,
+		EmpresaID:   12,
+		Documento:   "123456",
+		Nombre:      "Empleado de prueba",
+		Periodo:     "2026-08",
+		FechaPago:   "2026-08-23",
+		EmpleadoID:  1,
+		Devengados:  1000,
+		Deducciones: 100,
+		Total:       900,
+		SalarioBase: 1000,
+	}
+	configuracion := &dbpkg.EmpresaDIANDocumentoConfiguracion{
+		Estado:       "configurando",
+		TipoAmbiente: "habilitacion",
+		Prefijo:      "NE",
+		RangoDesde:   1,
+		RangoHasta:   10,
+		TestSetID:    "test-set",
+	}
+	resultado := buildNominaElectronicaDIANPreflight(nomina, configuracion)
+	if resultado.PuedeEmitir || resultado.Estado != "bloqueado_adaptador_dian" {
+		t.Fatalf("la prevalidacion debe cerrar la emisión hasta tener adaptador propio: %+v", resultado)
+	}
+	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "NominaIndividual") {
+		t.Fatalf("faltó el bloqueo explícito del adaptador de nómina: %+v", resultado.Bloqueos)
+	}
+
+	nomina.Total = 899
+	resultado = buildNominaElectronicaDIANPreflight(nomina, configuracion)
+	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "no cuadran") {
+		t.Fatalf("la prevalidacion debe detectar totales inconsistentes: %+v", resultado.Bloqueos)
+	}
+}
+
 func TestResolveFacturacionTransitionForDocumentosElectronicosNuevos(t *testing.T) {
 	cases := []struct {
 		name          string
