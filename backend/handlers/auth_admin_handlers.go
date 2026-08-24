@@ -421,6 +421,97 @@ func ConfirmarAdminHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+type adminLoginPayload struct {
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	OTPCode        string `json:"otp_code"`
+	RecaptchaToken string `json:"recaptcha_token"`
+}
+
+func authenticateAdminCredentials(w http.ResponseWriter, dbSuper *sql.DB, payload adminLoginPayload) (*dbpkg.Admin, bool, bool) {
+	now := time.Now().UTC()
+	attemptState, err := dbpkg.GetAdministradorLoginAttemptState(dbSuper, payload.Email)
+	if err != nil {
+		log.Println("AdminLoginHandler load throttle state error:", err)
+		writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+		return nil, false, false
+	}
+	if attemptState.Locked(now) {
+		retryAfter := int(time.Until(attemptState.LockedUntil).Seconds())
+		if retryAfter < 1 {
+			retryAfter = 1
+		}
+		w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+		writeAdminAuthError(w, http.StatusTooManyRequests, "Demasiados intentos. Espera antes de volver a intentar.")
+		return nil, false, false
+	}
+	registerFailure := func() bool {
+		state, failureErr := dbpkg.RegisterAdministradorLoginFailure(dbSuper, payload.Email, time.Now().UTC())
+		if failureErr != nil {
+			log.Println("AdminLoginHandler register failure error:", failureErr)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+			return true
+		}
+		if state.Locked(time.Now().UTC()) {
+			retryAfter := int(time.Until(state.LockedUntil).Seconds())
+			if retryAfter < 1 {
+				retryAfter = 1
+			}
+			w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+			writeAdminAuthError(w, http.StatusTooManyRequests, "Demasiados intentos. Espera antes de volver a intentar.")
+			return true
+		}
+		return false
+	}
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			log.Println("AdminLoginHandler get admin error:", err)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+			return nil, false, false
+		}
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
+		return nil, false, false
+	}
+	admin, err = enforceManagedAdminRole(dbSuper, admin)
+	if err != nil {
+		log.Println("AdminLoginHandler enforce managed role error:", err)
+		writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
+		return nil, false, false
+	}
+	if !strings.EqualFold(strings.TrimSpace(admin.Estado), "activo") {
+		writeAdminAuthError(w, http.StatusForbidden, "La cuenta administrativa no esta disponible para iniciar sesión.")
+		return nil, false, false
+	}
+	if admin.EmailConfirmado != 1 {
+		writeAdminAuthError(w, http.StatusForbidden, "Debes confirmar tu correo antes de iniciar sesión.")
+		return nil, false, false
+	}
+	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": false, "password_setup_required": true, "message": "Tu cuenta todavía no tiene una contraseña activa."})
+		return nil, false, false
+	}
+	passwordOK, passwordNeedsUpgrade := verifyEmpresaUsuarioPasswordHash(payload.Password, admin.PasswordSalt, admin.PasswordHash)
+	if !passwordOK {
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
+		return nil, false, false
+	}
+	if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
+		return nil, false, false
+	}
+	return admin, passwordNeedsUpgrade, true
+}
+
 // AdminLoginHandler maneja login por email/contraseña para administradores.
 func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -428,12 +519,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
-		var payload struct {
-			Email          string `json:"email"`
-			Password       string `json:"password"`
-			OTPCode        string `json:"otp_code"`
-			RecaptchaToken string `json:"recaptcha_token"`
-		}
+		var payload adminLoginPayload
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de acceso es inválido.")
 			return
@@ -448,86 +534,8 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeRecaptchaValidationError(w, err)
 			return
 		}
-		now := time.Now().UTC()
-		attemptState, err := dbpkg.GetAdministradorLoginAttemptState(dbSuper, payload.Email)
-		if err != nil {
-			log.Println("AdminLoginHandler load throttle state error:", err)
-			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
-			return
-		}
-		if attemptState.Locked(now) {
-			retryAfter := int(time.Until(attemptState.LockedUntil).Seconds())
-			if retryAfter < 1 {
-				retryAfter = 1
-			}
-			w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
-			writeAdminAuthError(w, http.StatusTooManyRequests, "Demasiados intentos. Espera antes de volver a intentar.")
-			return
-		}
-		registerFailure := func() bool {
-			state, failureErr := dbpkg.RegisterAdministradorLoginFailure(dbSuper, payload.Email, time.Now().UTC())
-			if failureErr != nil {
-				log.Println("AdminLoginHandler register failure error:", failureErr)
-				writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
-				return true
-			}
-			if state.Locked(time.Now().UTC()) {
-				retryAfter := int(time.Until(state.LockedUntil).Seconds())
-				if retryAfter < 1 {
-					retryAfter = 1
-				}
-				w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
-				writeAdminAuthError(w, http.StatusTooManyRequests, "Demasiados intentos. Espera antes de volver a intentar.")
-				return true
-			}
-			return false
-		}
-		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
-		if err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				log.Println("AdminLoginHandler get admin error:", err)
-				writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
-				return
-			}
-			if registerFailure() {
-				return
-			}
-			writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
-			return
-		}
-		admin, err = enforceManagedAdminRole(dbSuper, admin)
-		if err != nil {
-			log.Println("AdminLoginHandler enforce managed role error:", err)
-			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
-			return
-		}
-		if !strings.EqualFold(strings.TrimSpace(admin.Estado), "activo") {
-			writeAdminAuthError(w, http.StatusForbidden, "La cuenta administrativa no esta disponible para iniciar sesión.")
-			return
-		}
-		if admin.EmailConfirmado != 1 {
-			writeAdminAuthError(w, http.StatusForbidden, "Debes confirmar tu correo antes de iniciar sesión.")
-			return
-		}
-		if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
-			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": false, "password_setup_required": true, "message": "Tu cuenta todavía no tiene una contraseña activa."})
-			return
-		}
-		// verificar contraseña
-		passwordOK, passwordNeedsUpgrade := verifyEmpresaUsuarioPasswordHash(payload.Password, admin.PasswordSalt, admin.PasswordHash)
-		if !passwordOK {
-			if registerFailure() {
-				return
-			}
-			writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
-			return
-		}
-		// crear sesión
-		if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
-			if registerFailure() {
-				return
-			}
-			writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
+		admin, passwordNeedsUpgrade, authenticated := authenticateAdminCredentials(w, dbSuper, payload)
+		if !authenticated {
 			return
 		}
 		if passwordNeedsUpgrade {
@@ -711,7 +719,9 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 		// indefinitely valid credential.
 		expiresAt, expiresOK := parseEmpresaUsuarioDateTime(strings.TrimSpace(admin.PasswordResetExpira))
 		if !expiresOK || time.Now().After(expiresAt) {
-			_ = dbpkg.ClearAdministradorPasswordResetToken(dbSuper, admin.ID)
+			if clearErr := dbpkg.ClearAdministradorPasswordResetToken(dbSuper, admin.ID); clearErr != nil {
+				log.Printf("AdminResetPasswordHandler clear expired token error: %v", clearErr)
+			}
 			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación no es válido o ya expiró.")
 			return
 		}
@@ -1470,14 +1480,13 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 
 	if consumeInvitation {
 		acceptContract := googleUsuarioCookieValue(r, googleOAuthUsuarioAcceptContractCookieName) == "1"
-		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmpresas, dbSuper, item, acceptContract)
+		_, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmpresas, dbSuper, item, acceptContract)
 		if err != nil {
 			log.Printf("[usuarios_empresa] google login contract check failed empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 			redirectGoogleUsuarioError(w, r, "contrato_error", email, item.EmpresaID, invitationToken)
 			return
 		}
 		if !accepted {
-			_ = contract
 			redirectGoogleUsuarioError(w, r, "contrato_requerido", email, item.EmpresaID, invitationToken)
 			return
 		}

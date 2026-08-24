@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"database/sql"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	"github.com/you/pos-backend/secure"
 )
 
@@ -1576,16 +1578,16 @@ func AdministradorEmailConfirmTokenMatches(storedHash, suppliedToken string) boo
 }
 
 func parseAuthTokenExpiration(raw string) (time.Time, bool) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return time.Time{}, false
+	return valueutil.ParseDateTimeLocal(raw)
+}
+
+func rollbackTransaction(tx *sql.Tx) {
+	if tx == nil {
+		return
 	}
-	for _, layout := range []string{"2006-01-02 15:04:05", time.RFC3339, "2006-01-02T15:04:05"} {
-		if parsed, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
-			return parsed, true
-		}
+	if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+		return
 	}
-	return time.Time{}, false
 }
 
 // ConfirmAdministradorByToken confirma el correo de un administrador usando su token.
@@ -1595,7 +1597,7 @@ func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer rollbackTransaction(tx)
 	row := queryRowTxSQLCompat(tx, `SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1 FOR UPDATE`, tokenHash)
 	var id int64
 	var expiraRaw string
@@ -1604,7 +1606,9 @@ func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
 	}
 	expiraAt, validExpiry := parseAuthTokenExpiration(expiraRaw)
 	if !validExpiry || time.Now().After(expiraAt) {
-		_, _ = execTxSQLCompat(tx, `UPDATE administradores SET email_confirm_token = '', email_confirm_expira = '' WHERE id = ? AND email_confirm_token = ?`, id, tokenHash)
+		if _, clearErr := execTxSQLCompat(tx, `UPDATE administradores SET email_confirm_token = '', email_confirm_expira = '' WHERE id = ? AND email_confirm_token = ?`, id, tokenHash); clearErr != nil {
+			return 0, clearErr
+		}
 		if commitErr := tx.Commit(); commitErr != nil {
 			return 0, commitErr
 		}
@@ -1655,7 +1659,7 @@ func MigrateAdministradorEmailConfirmTokens(dbConn *sql.DB, dryRun bool) (int, e
 	if err != nil {
 		return 0, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer rollbackTransaction(tx)
 	for _, item := range legacy {
 		if _, err := tx.Exec(rebindCompatQuery("UPDATE administradores SET email_confirm_token = ? WHERE id = ? AND email_confirm_token = ?"), hashOneTimeSecret(item.token), item.id, item.token); err != nil {
 			return 0, err

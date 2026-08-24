@@ -77,7 +77,7 @@ func RegisterAdministradorLoginFailure(dbConn *sql.DB, email string, now time.Ti
 	if err != nil {
 		return AdministradorLoginAttemptState{}, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer rollbackTransaction(tx)
 	if _, err := execTxSQLCompat(tx, `INSERT INTO administrador_login_intentos
 		(email, failed_attempts, window_started_at, locked_until, updated_at)
 		VALUES (?, 0, ?, ?, ?)

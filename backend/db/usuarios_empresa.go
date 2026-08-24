@@ -1187,7 +1187,7 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer rollbackTransaction(tx)
 	row := queryRowTxSQLCompat(tx, `SELECT id, empresa_id, COALESCE(email_confirm_expira, '') FROM users WHERE email_confirm_token = ? LIMIT 1 FOR UPDATE`, tokenHash)
 	var id int64
 	var empresaID int64
@@ -1198,7 +1198,9 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 
 	expiraAt, validExpiry := parseAuthTokenExpiration(expiraRaw)
 	if !validExpiry || time.Now().After(expiraAt) {
-		_, _ = execTxSQLCompat(tx, `UPDATE users SET email_confirm_token = '', email_confirm_expira = '' WHERE id = ? AND empresa_id = ? AND email_confirm_token = ?`, id, empresaID, tokenHash)
+		if _, clearErr := execTxSQLCompat(tx, `UPDATE users SET email_confirm_token = '', email_confirm_expira = '' WHERE id = ? AND empresa_id = ? AND email_confirm_token = ?`, id, empresaID, tokenHash); clearErr != nil {
+			return 0, clearErr
+		}
 		if commitErr := tx.Commit(); commitErr != nil {
 			return 0, commitErr
 		}
