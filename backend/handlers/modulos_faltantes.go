@@ -8961,6 +8961,28 @@ func buildDIANCUFEFacturaVenta(documentoCodigo, issueDate, issueTime, lineExtens
 	)
 }
 
+// buildDIANCUDSDocumentoSoporte calcula el CUDS de la operación de compra a
+// un no obligado a facturar. Su semilla no es el CUFE de venta: usa la
+// identificación del vendedor no obligado, la del adquirente y el PIN del
+// software, en el orden definido por el anexo técnico DIAN de documento
+// soporte. Mantenerlo separado evita que un soporte se convierta en factura de
+// venta por accidente.
+func buildDIANCUDSDocumentoSoporte(documentoCodigo, issueDate, issueTime, lineExtensionAmount, tax01, payableAmount, vendedorNoObligadoDocumento, adquirenteNIT, softwarePIN, profileExecutionID string) string {
+	return buildDIANSHA384Hex(
+		strings.TrimSpace(documentoCodigo),
+		strings.TrimSpace(issueDate),
+		strings.TrimSpace(issueTime),
+		dianFormatDecimal(lineExtensionAmount, 0),
+		"01",
+		dianFormatDecimal(tax01, 0),
+		dianFormatDecimal(payableAmount, 0),
+		dianOnlyDigits(vendedorNoObligadoDocumento),
+		dianOnlyDigits(adquirenteNIT),
+		strings.TrimSpace(softwarePIN),
+		strings.TrimSpace(profileExecutionID),
+	)
+}
+
 func dianFormatDecimal(raw string, fallback float64) string {
 	value := ventasAnyToFloat64(raw)
 	if value == 0 && strings.TrimSpace(raw) == "" {

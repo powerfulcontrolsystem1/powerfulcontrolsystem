@@ -101,6 +101,20 @@ func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *t
 	}
 }
 
+func TestBuildDIANCUDSDocumentoSoporteCoincideConEjemploOficial(t *testing.T) {
+	// Vector tomado del ejemplo público DIAN de operación con residente. No se
+	// usan credenciales ni datos de una empresa PCS.
+	got := buildDIANCUDSDocumentoSoporte(
+		"DS236000000", "2022-02-18", "13:34:59-05:00",
+		"3899000.00", "322430.00", "4152176.00",
+		"1020", "800197268", "12345", "2",
+	)
+	const want = "C96A728F4453822BFC69B94253880D21D29DD1A9424444DA07610799C203506D33FA4F16830DBD6EE0FEBB4711BFA23A"
+	if got != want {
+		t.Fatalf("CUDS=%s, want %s", got, want)
+	}
+}
+
 func TestResolveFacturacionTransitionForDocumentosElectronicosNuevos(t *testing.T) {
 	cases := []struct {
 		name          string
