@@ -11,6 +11,10 @@
 - Estado operativo: el resultado falla cerrado como `bloqueado_adaptador_dian`; la emisión continúa impedida hasta contar con adaptador especializado de nómina y datos estructurados del empleado/contrato/novedades.
 - Frontend y QA: `Revisar DIAN` muestra bloqueos sin envío; regresiones cubren bloqueo, totales, aislamiento y contrato visible. No se realizaron nuevos envíos fiscales.
 
+2026-08-23: Ciclo de vida DIAN cerrado para familias sin adaptador.
+- Backend: `resolveFacturacionTransitionForDocument` ahora rechaza antes de cualquier estado `emitida` toda familia que no esté cubierta por el adaptador UBL de factura/nota de venta. Esto cubre documentos soporte, nómina, equivalentes, RADIAN y notas de ajuste mientras sus flujos especializados no existan.
+- Seguridad: el catálogo puede informar la familia y su ruta futura, pero ninguna transición compartida puede convertirla en evidencia fiscal; las regresiones verifican el bloqueo y conservan factura, nota crédito y nota débito implementadas.
+
 2026-08-21: Facturacion electronica / familias DIAN fallan cerrado y consulta sin doble conteo.
 - La auditoria autenticada de Powerful Control System confirmo que produccion
   declaraba 22 tipos soportados y siete operativos aunque el generador solo

@@ -200,30 +200,34 @@ func TestNominaElectronicaPreflightFailsClosed(t *testing.T) {
 	}
 }
 
-func TestResolveFacturacionTransitionForDocumentosElectronicosNuevos(t *testing.T) {
+func TestResolveFacturacionTransitionFailsClosedForDocumentosSinAdaptador(t *testing.T) {
 	cases := []struct {
 		name          string
 		action        string
 		tipoDocumento string
-		wantAccion    string
-		wantEstado    string
-		wantEvento    string
+		bloqueado     bool
 	}{
-		{name: "nota debito", action: "nota_debito", tipoDocumento: "nota_debito", wantAccion: "nota_debito", wantEstado: "emitida", wantEvento: "nota_debito_emitida"},
-		{name: "documento soporte", action: "documento_soporte", tipoDocumento: "documento_soporte", wantAccion: "documento_soporte", wantEstado: "emitida", wantEvento: "documento_soporte_emitido"},
-		{name: "nomina electronica", action: "nomina_electronica", tipoDocumento: "nomina_electronica", wantAccion: "nomina_electronica", wantEstado: "emitida", wantEvento: "nomina_electronica_emitida"},
-		{name: "pos electronico", action: "documento_equivalente_pos", tipoDocumento: "documento_equivalente_pos", wantAccion: "documento_equivalente_pos", wantEstado: "emitida", wantEvento: "documento_equivalente_pos_emitido"},
-		{name: "eventos radian", action: "eventos_radian_recepcion", tipoDocumento: "eventos_radian_recepcion", wantAccion: "eventos_radian_recepcion", wantEstado: "emitida", wantEvento: "eventos_radian_recepcion_emitido"},
-		{name: "nota ajuste soporte", action: "emitir_nota_ajuste_documento_soporte", tipoDocumento: "nota_ajuste_documento_soporte", wantAccion: "nota_ajuste_documento_soporte", wantEstado: "emitida", wantEvento: "nota_ajuste_documento_soporte_emitido"},
-		{name: "documento equivalente peajes", action: "documento_equivalente_peajes", tipoDocumento: "documento_equivalente_peajes", wantAccion: "documento_equivalente_peajes", wantEstado: "emitida", wantEvento: "documento_equivalente_peajes_emitido"},
+		{name: "nota debito", action: "nota_debito", tipoDocumento: "nota_debito"},
+		{name: "documento soporte", action: "documento_soporte", tipoDocumento: "documento_soporte", bloqueado: true},
+		{name: "nomina electronica", action: "nomina_electronica", tipoDocumento: "nomina_electronica", bloqueado: true},
+		{name: "pos electronico", action: "documento_equivalente_pos", tipoDocumento: "documento_equivalente_pos", bloqueado: true},
+		{name: "eventos radian", action: "eventos_radian_recepcion", tipoDocumento: "eventos_radian_recepcion", bloqueado: true},
+		{name: "nota ajuste soporte", action: "emitir_nota_ajuste_documento_soporte", tipoDocumento: "nota_ajuste_documento_soporte", bloqueado: true},
+		{name: "documento equivalente peajes", action: "documento_equivalente_peajes", tipoDocumento: "documento_equivalente_peajes", bloqueado: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := resolveFacturacionTransitionForDocument(tc.action, "borrador", tc.tipoDocumento)
+			if tc.bloqueado {
+				if err == nil || !strings.Contains(err.Error(), "no dispone aun de un adaptador DIAN") {
+					t.Fatalf("se esperaba bloqueo DIAN para %s, transition=%#v err=%v", tc.tipoDocumento, got, err)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("resolve transition returned error: %v", err)
 			}
-			if got.Accion != tc.wantAccion || got.EstadoNuevo != tc.wantEstado || got.Evento != tc.wantEvento {
+			if got.Accion != "nota_debito" || got.EstadoNuevo != "emitida" || got.Evento != "nota_debito_emitida" {
 				t.Fatalf("unexpected transition: %#v", got)
 			}
 		})
