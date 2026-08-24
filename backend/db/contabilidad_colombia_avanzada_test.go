@@ -1,6 +1,13 @@
 package db
 
-import "testing"
+import (
+	"context"
+	"database/sql"
+	"os"
+	"testing"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+)
 
 func TestEmpresaCarteraCXPEdadRango(t *testing.T) {
 	cases := []struct {
@@ -45,5 +52,75 @@ func TestManualElectronicDocumentsCannotClaimDIANAcceptance(t *testing.T) {
 	normalizeEmpresaDocumentoSoporteDraft(soporte)
 	if soporte.EstadoDIAN != "borrador" || soporte.CUDS != "" || soporte.RespuestaDIAN != "" || soporte.JSONPayload != "" {
 		t.Fatalf("soporte manual no quedo como borrador seguro: %+v", soporte)
+	}
+}
+
+func TestDIANManualDocumentsDraftMigrationIsCatalogued(t *testing.T) {
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version != "20260823-002-dian-manual-document-drafts-v1" {
+			continue
+		}
+		if migration.Body != empresaDIANManualDocumentDraftsFingerprint || migration.Apply == nil {
+			t.Fatal("la migracion de borradores DIAN debe ser inmutable y ejecutable")
+		}
+		return
+	}
+	t.Fatal("no se encontro la migracion de borradores DIAN")
+}
+
+func TestDIANManualDocumentsDraftMigrationPostgres(t *testing.T) {
+	dsn := os.Getenv("PCS_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("PCS_TEST_POSTGRES_DSN is not configured")
+	}
+	dbConn, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbConn.Close()
+	tx, err := dbConn.BeginTx(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	for _, statement := range []string{
+		`CREATE TEMP TABLE empresa_contabilidad_nomina_electronica (
+			estado_dian TEXT, cune TEXT, respuesta_dian TEXT, json_payload TEXT,
+			fecha_actualizacion TIMESTAMPTZ, total NUMERIC
+		) ON COMMIT DROP`,
+		`CREATE TEMP TABLE empresa_contabilidad_documentos_soporte (
+			estado_dian TEXT, cuds TEXT, respuesta_dian TEXT, json_payload TEXT,
+			fecha_actualizacion TIMESTAMPTZ, total NUMERIC
+		) ON COMMIT DROP`,
+		`INSERT INTO empresa_contabilidad_nomina_electronica (estado_dian, cune, respuesta_dian, json_payload, total)
+			VALUES ('enviado', 'NO-VERIFICADO', 'aceptado', '{"fake":true}', 1250000)`,
+		`INSERT INTO empresa_contabilidad_documentos_soporte (estado_dian, cuds, respuesta_dian, json_payload, total)
+			VALUES ('validado', 'NO-VERIFICADO', 'aceptado', '{"fake":true}', 45000)`,
+	} {
+		if _, err := tx.Exec(statement); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := applyEmpresaDIANManualDocumentDraftsTx(context.Background(), tx); err != nil {
+		t.Fatal(err)
+	}
+	for _, table := range []string{"empresa_contabilidad_nomina_electronica", "empresa_contabilidad_documentos_soporte"} {
+		var estado string
+		var cuneOrCUDS, respuesta, payload sql.NullString
+		var total string
+		column := "cune"
+		if table == "empresa_contabilidad_documentos_soporte" {
+			column = "cuds"
+		}
+		if err := tx.QueryRow(`SELECT estado_dian, `+column+`, respuesta_dian, json_payload, total::TEXT FROM `+table).Scan(&estado, &cuneOrCUDS, &respuesta, &payload, &total); err != nil {
+			t.Fatal(err)
+		}
+		if estado != "borrador" || cuneOrCUDS.Valid || respuesta.Valid || payload.Valid || total == "" {
+			t.Fatalf("%s no quedo limpio y contablemente preservado: estado=%s id=%+v respuesta=%+v payload=%+v total=%s", table, estado, cuneOrCUDS, respuesta, payload, total)
+		}
 	}
 }

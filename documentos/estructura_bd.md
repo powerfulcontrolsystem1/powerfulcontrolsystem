@@ -1576,6 +1576,10 @@ Actualizacion 2026-08-23 (configuracion DIAN por familia documental):
   de documento soporte, nomina, equivalentes o RADIAN. La nueva tabla inicia
   inactiva y no habilita ningun envio hasta que el adaptador y sus validaciones
   tecnicas correspondientes esten terminados.
+- La migración `20260823-002-dian-manual-document-drafts-v1` conserva los
+  valores contables de nómina y documento soporte, pero restablece a borrador
+  cualquier estado, CUNE/CUDS o respuesta fiscal que hubiera sido digitado
+  manualmente antes de existir un adaptador DIAN verificable.
 
 Actualizacion 2026-08-21 (precision fiscal y consecutivos):
 - `empresa_facturacion_documentos.monto_total` se migra por

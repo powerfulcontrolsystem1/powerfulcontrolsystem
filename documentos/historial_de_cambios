@@ -42904,6 +42904,9 @@ acumulativa.
   alta manual a `borrador` y limpia CUNE/CUDS, respuesta y payload fiscal.
 - Solo el futuro adaptador técnico, tras firma y respuesta verificable de DIAN,
   podrá registrar identificadores y estados fiscales finales.
+- La migración `20260823-002-dian-manual-document-drafts-v1` corrige los
+  registros históricos del mismo origen: conserva importes y tercero, pero
+  devuelve a borrador los estados/identificadores no verificables.
   El bloqueo de producción se conserva hasta completar esos contratos.
 
 2026-08-23: Venta directa: aislamiento obligatorio del carrito fiscal seleccionado.

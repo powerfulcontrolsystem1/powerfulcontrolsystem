@@ -1,12 +1,61 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 )
+
+const empresaDIANManualDocumentDraftsFingerprint = "empresa-dian-manual-documents:v1:clear-unverified-fiscal-state"
+
+// applyEmpresaDIANManualDocumentDraftsTx corrects historical rows created by
+// manual forms before DIAN adapters existed. It preserves accounting values,
+// but removes unverified fiscal identifiers and state claims.
+func applyEmpresaDIANManualDocumentDraftsTx(ctx context.Context, tx *sql.Tx) error {
+	if tx == nil {
+		return errors.New("migration transaction is required")
+	}
+	for _, table := range []struct {
+		name  string
+		query string
+	}{
+		{
+			name: "empresa_contabilidad_nomina_electronica",
+			query: `UPDATE empresa_contabilidad_nomina_electronica
+				SET estado_dian = 'borrador', cune = NULL, respuesta_dian = NULL,
+					json_payload = NULL, fecha_actualizacion = CURRENT_TIMESTAMP
+				WHERE LOWER(TRIM(COALESCE(estado_dian, ''))) <> 'borrador'
+					OR NULLIF(TRIM(COALESCE(cune, '')), '') IS NOT NULL
+					OR NULLIF(TRIM(COALESCE(respuesta_dian, '')), '') IS NOT NULL
+					OR NULLIF(TRIM(COALESCE(json_payload, '')), '') IS NOT NULL`,
+		},
+		{
+			name: "empresa_contabilidad_documentos_soporte",
+			query: `UPDATE empresa_contabilidad_documentos_soporte
+				SET estado_dian = 'borrador', cuds = NULL, respuesta_dian = NULL,
+					json_payload = NULL, fecha_actualizacion = CURRENT_TIMESTAMP
+				WHERE LOWER(TRIM(COALESCE(estado_dian, ''))) <> 'borrador'
+					OR NULLIF(TRIM(COALESCE(cuds, '')), '') IS NOT NULL
+					OR NULLIF(TRIM(COALESCE(respuesta_dian, '')), '') IS NOT NULL
+					OR NULLIF(TRIM(COALESCE(json_payload, '')), '') IS NOT NULL`,
+		},
+	} {
+		var registered sql.NullString
+		if err := tx.QueryRowContext(ctx, `SELECT to_regclass($1)`, table.name).Scan(&registered); err != nil {
+			return fmt.Errorf("verify %s before DIAN draft cleanup: %w", table.name, err)
+		}
+		if !registered.Valid || strings.TrimSpace(registered.String) == "" {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, table.query); err != nil {
+			return fmt.Errorf("clear unverified DIAN state in %s: %w", table.name, err)
+		}
+	}
+	return nil
+}
 
 type EmpresaContabilidadAvanzadaDashboard struct {
 	EmpresaID             int64                         `json:"empresa_id"`
