@@ -53,7 +53,7 @@ const (
 )
 
 const (
-	empresaUsuarioPasswordKDFName       = "pbkdf2_sha256"
+	empresaUsuarioPasswordKDFName       = "pbkdf2_sha256" // #nosec G101 -- identificador del algoritmo, no es una credencial.
 	empresaUsuarioPasswordKDFIterations = 210000
 )
 
@@ -2859,7 +2859,7 @@ func deriveEmpresaUsuarioPBKDF2(password, salt string, iterations, keyLength int
 	result := make([]byte, 0, blocks*hashLength)
 	blockIndex := make([]byte, 4)
 	for block := 1; block <= blocks; block++ {
-		binary.BigEndian.PutUint32(blockIndex, uint32(block))
+		binary.BigEndian.PutUint32(blockIndex, uint32(block)) // #nosec G115 -- block queda acotado por el tamaño de la clave derivada.
 		mac := hmac.New(sha256.New, []byte(password))
 		_, _ = mac.Write([]byte(salt))
 		_, _ = mac.Write(blockIndex)
