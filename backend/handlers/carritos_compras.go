@@ -392,9 +392,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "No se pudieron listar los carritos", http.StatusInternalServerError)
 				return
 			}
-			if carritoCodigo != "" {
-				rows = filterCarritosByExactCode(rows, carritoCodigo)
-			}
+			rows = filterCarritosByExactCode(rows, carritoCodigo)
 			if estacionID > 0 {
 				filtered := make([]dbpkg.CarritoCompra, 0, len(rows))
 				for _, row := range rows {
@@ -1039,18 +1037,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					payload.PagosMixtos = payload.Pagos
 				}
 				modoDocumentoVenta := normalizeCarritoPaymentDocumentMode(payload.ModoDocumentoVenta)
-				requiereFacturaElectronicaPago, errRequiereFactura := carritoPaymentRequiresFacturaElectronica(dbEmp, carrito, modoDocumentoVenta)
-				if errRequiereFactura != nil {
-					log.Printf("[carritos] resolver modo fiscal empresa_id=%d id=%d error: %v", empresaID, id, errRequiereFactura)
-					http.Error(w, "No se pudo validar el modo de facturacion del pago", http.StatusInternalServerError)
-					return
-				}
-				if prerequisite, err := validateCarritoPaymentPrerequisites(dbEmp, carrito, modoDocumentoVenta); err != nil {
-					log.Printf("[carritos] preflight pago empresa_id=%d id=%d modo_documento=%s error: %v", empresaID, id, modoDocumentoVenta, err)
-					http.Error(w, "No se pudieron validar las dependencias operativas del pago", http.StatusInternalServerError)
-					return
-				} else if prerequisite != nil {
-					writeCarritoBusinessPrerequisite(w, http.StatusConflict, *prerequisite)
+				if !carritoPaymentPrerequisitesAllowed(w, dbEmp, carrito, modoDocumentoVenta) {
 					return
 				}
 
@@ -1164,20 +1151,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					devolucionTotal = maxDevolucion
 				}
 				devolucionTotal = roundMoneyCarritoForMoneda(devolucionTotal, carrito.Moneda)
-				if requiereFacturaElectronicaPago && (descuentoValor > carritoMoneyTolerance(carrito.Moneda) || devolucionTotal > carritoMoneyTolerance(carrito.Moneda)) {
-					writeCarritoBusinessPrerequisite(w, http.StatusConflict, carritoBusinessPrerequisite{
-						Code:         "factura_descuento_global_sin_distribuir",
-						Title:        "Distribuye el ajuste antes de facturar",
-						Message:      "La factura electronica no puede cerrarse con descuento o devolucion global sin distribuir entre sus lineas e impuestos.",
-						RobotMessage: "Antes de pagar con factura electronica, aplica el descuento directamente a las lineas correspondientes o elige comprobante de pago. Esto evita enviar bases e impuestos inconsistentes a DIAN.",
-						Scope:        "pagar_estacion",
-						Missing:      []string{"descuento/devolucion distribuido por linea"},
-						Steps: []string{
-							"Regresa al detalle del carrito.",
-							"Aplica el descuento en cada producto o servicio afectado.",
-							"Verifica que base, impuesto y total queden recalculados antes de pagar.",
-						},
-					})
+				if !carritoPaymentAdjustmentsAllowed(w, dbEmp, carrito, modoDocumentoVenta, descuentoValor, devolucionTotal) {
 					return
 				}
 
@@ -4067,6 +4041,57 @@ func carritoShouldEmitFacturaElectronica(cfg *dbpkg.EmpresaConfiguracionAvanzada
 			contador = 0
 		}
 		return contador == 0
+	}
+	return true
+}
+
+func carritoPaymentPrerequisitesAllowed(w http.ResponseWriter, dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, modoDocumentoVenta string) bool {
+	prerequisite, err := validateCarritoPaymentPrerequisites(dbEmp, carrito, modoDocumentoVenta)
+	if err != nil {
+		log.Printf("[carritos] preflight pago empresa_id=%d id=%d modo_documento=%s error: %v", carrito.EmpresaID, carrito.ID, modoDocumentoVenta, err)
+		http.Error(w, "No se pudieron validar las dependencias operativas del pago", http.StatusInternalServerError)
+		return false
+	}
+	if prerequisite != nil {
+		writeCarritoBusinessPrerequisite(w, http.StatusConflict, *prerequisite)
+		return false
+	}
+	return true
+}
+
+func validateFacturaElectronicaPaymentAdjustments(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, modoDocumentoVenta string, descuentoValor, devolucionTotal float64) (*carritoBusinessPrerequisite, error) {
+	requiereFactura, err := carritoPaymentRequiresFacturaElectronica(dbEmp, carrito, modoDocumentoVenta)
+	if err != nil || !requiereFactura {
+		return nil, err
+	}
+	if descuentoValor <= carritoMoneyTolerance(carrito.Moneda) && devolucionTotal <= carritoMoneyTolerance(carrito.Moneda) {
+		return nil, nil
+	}
+	return &carritoBusinessPrerequisite{
+		Code:         "factura_descuento_global_sin_distribuir",
+		Title:        "Distribuye el ajuste antes de facturar",
+		Message:      "La factura electronica no puede cerrarse con descuento o devolucion global sin distribuir entre sus lineas e impuestos.",
+		RobotMessage: "Antes de pagar con factura electronica, aplica el descuento directamente a las lineas correspondientes o elige comprobante de pago. Esto evita enviar bases e impuestos inconsistentes a DIAN.",
+		Scope:        "pagar_estacion",
+		Missing:      []string{"descuento/devolucion distribuido por linea"},
+		Steps: []string{
+			"Regresa al detalle del carrito.",
+			"Aplica el descuento en cada producto o servicio afectado.",
+			"Verifica que base, impuesto y total queden recalculados antes de pagar.",
+		},
+	}, nil
+}
+
+func carritoPaymentAdjustmentsAllowed(w http.ResponseWriter, dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, modoDocumentoVenta string, descuentoValor, devolucionTotal float64) bool {
+	prerequisite, err := validateFacturaElectronicaPaymentAdjustments(dbEmp, carrito, modoDocumentoVenta, descuentoValor, devolucionTotal)
+	if err != nil {
+		log.Printf("[carritos] validar ajustes fiscales empresa_id=%d id=%d error: %v", carrito.EmpresaID, carrito.ID, err)
+		http.Error(w, "No se pudo validar el modo de facturacion del pago", http.StatusInternalServerError)
+		return false
+	}
+	if prerequisite != nil {
+		writeCarritoBusinessPrerequisite(w, http.StatusConflict, *prerequisite)
+		return false
 	}
 	return true
 }

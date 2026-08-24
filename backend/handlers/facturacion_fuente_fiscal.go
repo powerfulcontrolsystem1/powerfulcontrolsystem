@@ -173,8 +173,20 @@ func buildFacturacionFuenteFiscalSnapshot(carrito *dbpkg.CarritoCompra, items []
 		},
 	}
 
+	snapshot.Emisor, snapshot.Cliente = facturacionFuenteFiscalPartes(cfg, cliente)
+	if err := facturacionFuenteFiscalAgregarLineas(snapshot, carrito, items); err != nil {
+		return nil, err
+	}
+	facturacionFuenteFiscalFinalizarTotales(snapshot, carrito, doc)
+	facturacionFuenteFiscalCompletarBloqueantes(snapshot, cfg, cliente)
+	return snapshot, nil
+}
+
+func facturacionFuenteFiscalPartes(cfg *dbpkg.EmpresaConfiguracionAvanzada, cliente *dbpkg.Cliente) (facturacionFuenteFiscalParte, facturacionFuenteFiscalParte) {
+	emisor := facturacionFuenteFiscalParte{}
+	adquiriente := facturacionFuenteFiscalParte{}
 	if cfg != nil {
-		snapshot.Emisor = facturacionFuenteFiscalParte{
+		emisor = facturacionFuenteFiscalParte{
 			TipoDocumento: strings.TrimSpace(cfg.TipoDocumentoEmisor), NumeroDocumento: strings.TrimSpace(cfg.NIT),
 			DigitoVerificacion: strings.TrimSpace(cfg.DigitoVerificacion), TipoPersona: strings.TrimSpace(cfg.TipoPersonaFiscal),
 			NombreRazonSocial: strings.TrimSpace(cfg.RazonSocial), NombreComercial: strings.TrimSpace(cfg.NombreComercial),
@@ -187,7 +199,7 @@ func buildFacturacionFuenteFiscalSnapshot(carrito *dbpkg.CarritoCompra, items []
 		}
 	}
 	if cliente != nil {
-		snapshot.Cliente = facturacionFuenteFiscalParte{
+		adquiriente = facturacionFuenteFiscalParte{
 			ID: cliente.ID, TipoDocumento: strings.TrimSpace(cliente.TipoDocumento), NumeroDocumento: strings.TrimSpace(cliente.NumeroDocumento),
 			DigitoVerificacion: strings.TrimSpace(cliente.DigitoVerificacion), TipoPersona: strings.TrimSpace(cliente.TipoPersona),
 			NombreRazonSocial: strings.TrimSpace(cliente.NombreRazonSocial), NombreComercial: strings.TrimSpace(cliente.NombreComercial),
@@ -197,7 +209,10 @@ func buildFacturacionFuenteFiscalSnapshot(carrito *dbpkg.CarritoCompra, items []
 			DepartamentoCodigoDANE: strings.TrimSpace(cliente.DepartamentoCodigoDANE), Municipio: strings.TrimSpace(cliente.Municipio), MunicipioCodigoDANE: strings.TrimSpace(cliente.MunicipioCodigoDANE), CodigoPostal: strings.TrimSpace(cliente.CodigoPostal),
 		}
 	}
+	return emisor, adquiriente
+}
 
+func facturacionFuenteFiscalAgregarLineas(snapshot *facturacionFuenteFiscalSnapshot, carrito *dbpkg.CarritoCompra, items []dbpkg.CarritoCompraItem) error {
 	orderedItems := append([]dbpkg.CarritoCompraItem(nil), items...)
 	sort.SliceStable(orderedItems, func(i, j int) bool {
 		if orderedItems[i].ID != orderedItems[j].ID {
@@ -207,10 +222,10 @@ func buildFacturacionFuenteFiscalSnapshot(carrito *dbpkg.CarritoCompra, items []
 	})
 	for index, item := range orderedItems {
 		if item.EmpresaID != carrito.EmpresaID || item.CarritoID != carrito.ID {
-			return nil, fmt.Errorf("linea de carrito pertenece a otra empresa o carrito")
+			return fmt.Errorf("linea de carrito pertenece a otra empresa o carrito")
 		}
 		if !facturacionFuenteFiscalNumerosValidos(item.Cantidad, item.PrecioUnitario, item.DescuentoPorcentaje, item.ValorDescuento, item.BaseGravable, item.ImpuestoPorcentaje, item.ValorImpuesto, item.SubtotalLinea, item.TotalLinea) {
-			return nil, fmt.Errorf("linea fiscal %d contiene valores no finitos", item.ID)
+			return fmt.Errorf("linea fiscal %d contiene valores no finitos", item.ID)
 		}
 		linea := facturacionFuenteFiscalLinea{
 			Numero: index + 1, ItemID: item.ID, TipoItem: strings.TrimSpace(item.TipoItem), ReferenciaID: item.ReferenciaID,
@@ -257,7 +272,10 @@ func buildFacturacionFuenteFiscalSnapshot(carrito *dbpkg.CarritoCompra, items []
 			snapshot.Bloqueantes = append(snapshot.Bloqueantes, fmt.Sprintf("lineas.%d.tratamiento_tributario_faltante", linea.Numero))
 		}
 	}
+	return nil
+}
 
+func facturacionFuenteFiscalFinalizarTotales(snapshot *facturacionFuenteFiscalSnapshot, carrito *dbpkg.CarritoCompra, doc dbpkg.EmpresaDocumentoFacturacion) {
 	snapshot.Totales.BrutoLineas = facturacionFuenteFiscalRound(snapshot.Totales.BrutoLineas)
 	snapshot.Totales.DescuentoLineas = facturacionFuenteFiscalRound(snapshot.Totales.DescuentoLineas)
 	snapshot.Totales.BaseGravableLineas = facturacionFuenteFiscalRound(snapshot.Totales.BaseGravableLineas)
@@ -268,8 +286,6 @@ func buildFacturacionFuenteFiscalSnapshot(carrito *dbpkg.CarritoCompra, items []
 	snapshot.Totales.ImpuestoCarrito = carrito.ImpuestoTotal
 	snapshot.Totales.TotalCarrito = carrito.Total
 	snapshot.Totales.TotalDocumentoOrigen = doc.MontoTotal
-	facturacionFuenteFiscalCompletarBloqueantes(snapshot, cfg, cliente)
-	return snapshot, nil
 }
 
 func facturacionFuenteFiscalCompletarBloqueantes(snapshot *facturacionFuenteFiscalSnapshot, cfg *dbpkg.EmpresaConfiguracionAvanzada, cliente *dbpkg.Cliente) {
@@ -524,11 +540,124 @@ type dianFuenteFiscalTaxGroup struct {
 	Impuesto   float64
 }
 
+type dianFuenteFiscalUBLContext struct {
+	DocumentoTipo      string
+	DocumentoCodigo    string
+	EmisorNIT          string
+	Prefijo            string
+	ResolucionNumero   string
+	ResolucionDesde    string
+	ResolucionHasta    string
+	LlaveTecnica       string
+	RangoDesde         int64
+	RangoHasta         int64
+	SoftwareID         string
+	SoftwarePIN        string
+	IssueDate          string
+	IssueTime          string
+	Moneda             string
+	ProfileExecutionID string
+}
+
 // generateDIANUBLDesdeFuenteFiscal is the only commercial UBL generator. It
 // accepts a server-loaded immutable snapshot, never request-provided lines or
 // parties. The older payload generator remains limited to explicit DIAN
 // habilitation fixtures and must not be used by the commercial dispatcher.
 func generateDIANUBLDesdeFuenteFiscal(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}, snapshot *facturacionFuenteFiscalSnapshot) (map[string]interface{}, int, error) {
+	prepared, status, err := prepareDIANUBLDesdeFuenteFiscal(cfg, empresaID, payload, snapshot)
+	if err != nil {
+		return nil, status, err
+	}
+	documentoTipo := prepared.DocumentoTipo
+	documentoCodigo := prepared.DocumentoCodigo
+	emisorNIT := prepared.EmisorNIT
+	prefijo := prepared.Prefijo
+	resolucionNumero := prepared.ResolucionNumero
+	resolucionDesde := prepared.ResolucionDesde
+	resolucionHasta := prepared.ResolucionHasta
+	llaveTecnica := prepared.LlaveTecnica
+	rangoDesde := prepared.RangoDesde
+	rangoHasta := prepared.RangoHasta
+	softwareID := prepared.SoftwareID
+	softwarePIN := prepared.SoftwarePIN
+	issueDate := prepared.IssueDate
+	issueTime := prepared.IssueTime
+	moneda := prepared.Moneda
+	profileExecutionID := prepared.ProfileExecutionID
+
+	taxGroups, taxByCode, err := dianFuenteFiscalTaxGroups(snapshot.Lineas)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	lineExtension := facturacionFuenteFiscalRound(snapshot.Totales.BaseGravableLineas)
+	taxInclusive := facturacionFuenteFiscalRound(lineExtension + snapshot.Totales.ImpuestoLineas)
+	total := facturacionFuenteFiscalRound(snapshot.Totales.TotalDocumentoOrigen)
+	if !facturacionFuenteFiscalClose(taxInclusive, total) {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("base mas impuestos no concilia con el total de la fuente fiscal")
+	}
+	cuFE := buildDIANCUFEFacturaVenta(
+		documentoCodigo,
+		issueDate,
+		issueTime,
+		fmt.Sprintf("%.2f", lineExtension),
+		fmt.Sprintf("%.2f", taxByCode["01"]),
+		fmt.Sprintf("%.2f", taxByCode["04"]),
+		fmt.Sprintf("%.2f", taxByCode["03"]),
+		fmt.Sprintf("%.2f", total),
+		emisorNIT,
+		dianNormalizeCustomerDocumentNumber(snapshot.Cliente.NumeroDocumento, snapshot.Cliente.TipoDocumento),
+		llaveTecnica,
+		profileExecutionID,
+	)
+	softwareSecurityCode := buildDIANSHA384Hex(softwareID, softwarePIN, documentoCodigo)
+	qrURL := "https://catalogo-vpfe-hab.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(cuFE)
+	if profileExecutionID == "1" {
+		qrURL = "https://catalogo-vpfe.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(cuFE)
+	}
+
+	invoiceControl := fmt.Sprintf(`<sts:InvoiceControl><sts:InvoiceAuthorization>%s</sts:InvoiceAuthorization><sts:AuthorizationPeriod><cbc:StartDate>%s</cbc:StartDate><cbc:EndDate>%s</cbc:EndDate></sts:AuthorizationPeriod><sts:AuthorizedInvoices><sts:Prefix>%s</sts:Prefix><sts:From>%d</sts:From><sts:To>%d</sts:To></sts:AuthorizedInvoices></sts:InvoiceControl>`,
+		escapeXML(resolucionNumero), escapeXML(resolucionDesde), escapeXML(resolucionHasta), escapeXML(prefijo), rangoDesde, rangoHasta)
+	dianExtensions := fmt.Sprintf(`<ext:UBLExtensions><ext:UBLExtension><ext:ExtensionContent><sts:DianExtensions>%s<sts:InvoiceSource><cbc:IdentificationCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listSchemeURI="urn:oasis:names:specification:ubl:codelist:gc:CountryIdentificationCode-2.1">CO</cbc:IdentificationCode></sts:InvoiceSource><sts:SoftwareProvider><sts:ProviderID schemeAgencyID="195" schemeAgencyName="%s" schemeID="%s" schemeName="31">%s</sts:ProviderID><sts:SoftwareID schemeAgencyID="195" schemeAgencyName="%s">%s</sts:SoftwareID></sts:SoftwareProvider><sts:SoftwareSecurityCode schemeAgencyID="195" schemeAgencyName="%s">%s</sts:SoftwareSecurityCode><sts:AuthorizationProvider><sts:AuthorizationProviderID schemeAgencyID="195" schemeAgencyName="%s" schemeID="4" schemeName="31">800197268</sts:AuthorizationProviderID></sts:AuthorizationProvider><sts:QRCode>NroFactura=%s&#10;NitFacturador=%s&#10;NitAdquiriente=%s&#10;FechaFactura=%s&#10;ValorTotalFactura=%s&#10;CUFE=%s&#10;URL=%s</sts:QRCode></sts:DianExtensions></ext:ExtensionContent></ext:UBLExtension><ext:UBLExtension><ext:ExtensionContent></ext:ExtensionContent></ext:UBLExtension></ext:UBLExtensions>`,
+		invoiceControl,
+		escapeXML(dianAgencyName), escapeXML(dianCompanyIDSchemeID(emisorNIT, snapshot.Emisor.DigitoVerificacion)), escapeXML(emisorNIT),
+		escapeXML(dianAgencyName), escapeXML(softwareID), escapeXML(dianAgencyName), escapeXML(softwareSecurityCode), escapeXML(dianAgencyName),
+		escapeXML(documentoCodigo), escapeXML(emisorNIT), escapeXML(dianNormalizeCustomerDocumentNumber(snapshot.Cliente.NumeroDocumento, snapshot.Cliente.TipoDocumento)),
+		escapeXML(issueDate), escapeXML(fmt.Sprintf("%.2f", total)), escapeXML(strings.ToLower(cuFE)), escapeXML(qrURL),
+	)
+	header := fmt.Sprintf(`<cbc:UBLVersionID>UBL 2.1</cbc:UBLVersionID><cbc:CustomizationID>01</cbc:CustomizationID><cbc:ProfileID>DIAN 2.1</cbc:ProfileID><cbc:ProfileExecutionID>%s</cbc:ProfileExecutionID><cbc:ID>%s</cbc:ID><cbc:UUID schemeID="%s" schemeName="CUFE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate><cbc:IssueTime>%s</cbc:IssueTime><cbc:DueDate>%s</cbc:DueDate><cbc:InvoiceTypeCode>01</cbc:InvoiceTypeCode><cbc:DocumentCurrencyCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listID="ISO 4217 Alpha">%s</cbc:DocumentCurrencyCode><cbc:LineCountNumeric>%d</cbc:LineCountNumeric>`,
+		escapeXML(profileExecutionID), escapeXML(documentoCodigo), escapeXML(profileExecutionID), escapeXML(strings.ToLower(cuFE)), escapeXML(issueDate), escapeXML(issueTime), escapeXML(issueDate), escapeXML(moneda), len(snapshot.Lineas))
+	supplierParty, err := dianFuenteFiscalSupplierPartyXML(snapshot.Emisor, prefijo)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	customerParty, err := dianFuenteFiscalCustomerPartyXML(snapshot.Cliente)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	paymentMeans, err := dianFuenteFiscalPaymentMeansXML(snapshot.Pago, issueDate)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	linesXML, err := dianFuenteFiscalLinesXML(snapshot.Lineas, moneda)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	taxesXML := dianFuenteFiscalTaxTotalsXML(taxGroups, moneda)
+	monetaryXML := dianFuenteFiscalMonetaryTotalXML(snapshot, moneda)
+	xmlPayload := `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` +
+		`<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2" xmlns:sts="dian:gov:co:facturaelectronica:Structures-2-1" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 http://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-Invoice-2.1.xsd">` +
+		dianExtensions + header + supplierParty + customerParty + paymentMeans + taxesXML + monetaryXML + linesXML + `</Invoice>`
+
+	return map[string]interface{}{
+		"ok": true, "empresa_id": empresaID, "documento_codigo": documentoCodigo, "documento_tipo": documentoTipo,
+		"ubl_version": "UBL 2.1", "profile_execution_id": profileExecutionID, "customization_id": "01",
+		"uuid_scheme": "CUFE-SHA384", "uuid": strings.ToLower(cuFE), "software_security_code": "[calculado]",
+		"xml_ubl_base": xmlPayload, "estado_preparacion": "pre_envio_validable",
+		"fuente_fiscal": map[string]interface{}{"tipo": snapshot.Documento.TipoOrigen, "codigo": snapshot.Documento.CodigoOrigen, "lineas": len(snapshot.Lineas)},
+	}, http.StatusOK, nil
+}
+
+func prepareDIANUBLDesdeFuenteFiscal(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}, snapshot *facturacionFuenteFiscalSnapshot) (*dianFuenteFiscalUBLContext, int, error) {
 	if snapshot == nil || snapshot.EmpresaID != empresaID || snapshot.Esquema != facturacionFuenteFiscalEsquema || snapshot.Version != facturacionFuenteFiscalVersion {
 		return nil, http.StatusUnprocessableEntity, fmt.Errorf("fuente fiscal inmutable invalida o de otra empresa")
 	}
@@ -603,76 +732,12 @@ func generateDIANUBLDesdeFuenteFiscal(cfg map[string]interface{}, empresaID int6
 	if chooseDIANAmbiente(cfg) == "produccion" {
 		profileExecutionID = "1"
 	}
-
-	taxGroups, taxByCode, err := dianFuenteFiscalTaxGroups(snapshot.Lineas)
-	if err != nil {
-		return nil, http.StatusUnprocessableEntity, err
-	}
-	lineExtension := facturacionFuenteFiscalRound(snapshot.Totales.BaseGravableLineas)
-	taxInclusive := facturacionFuenteFiscalRound(lineExtension + snapshot.Totales.ImpuestoLineas)
-	total := facturacionFuenteFiscalRound(snapshot.Totales.TotalDocumentoOrigen)
-	if !facturacionFuenteFiscalClose(taxInclusive, total) {
-		return nil, http.StatusUnprocessableEntity, fmt.Errorf("base mas impuestos no concilia con el total de la fuente fiscal")
-	}
-	cuFE := buildDIANCUFEFacturaVenta(
-		documentoCodigo,
-		issueDate,
-		issueTime,
-		fmt.Sprintf("%.2f", lineExtension),
-		fmt.Sprintf("%.2f", taxByCode["01"]),
-		fmt.Sprintf("%.2f", taxByCode["04"]),
-		fmt.Sprintf("%.2f", taxByCode["03"]),
-		fmt.Sprintf("%.2f", total),
-		emisorNIT,
-		dianNormalizeCustomerDocumentNumber(snapshot.Cliente.NumeroDocumento, snapshot.Cliente.TipoDocumento),
-		llaveTecnica,
-		profileExecutionID,
-	)
-	softwareSecurityCode := buildDIANSHA384Hex(softwareID, softwarePIN, documentoCodigo)
-	qrURL := "https://catalogo-vpfe-hab.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(cuFE)
-	if profileExecutionID == "1" {
-		qrURL = "https://catalogo-vpfe.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(cuFE)
-	}
-
-	invoiceControl := fmt.Sprintf(`<sts:InvoiceControl><sts:InvoiceAuthorization>%s</sts:InvoiceAuthorization><sts:AuthorizationPeriod><cbc:StartDate>%s</cbc:StartDate><cbc:EndDate>%s</cbc:EndDate></sts:AuthorizationPeriod><sts:AuthorizedInvoices><sts:Prefix>%s</sts:Prefix><sts:From>%d</sts:From><sts:To>%d</sts:To></sts:AuthorizedInvoices></sts:InvoiceControl>`,
-		escapeXML(resolucionNumero), escapeXML(resolucionDesde), escapeXML(resolucionHasta), escapeXML(prefijo), rangoDesde, rangoHasta)
-	dianExtensions := fmt.Sprintf(`<ext:UBLExtensions><ext:UBLExtension><ext:ExtensionContent><sts:DianExtensions>%s<sts:InvoiceSource><cbc:IdentificationCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listSchemeURI="urn:oasis:names:specification:ubl:codelist:gc:CountryIdentificationCode-2.1">CO</cbc:IdentificationCode></sts:InvoiceSource><sts:SoftwareProvider><sts:ProviderID schemeAgencyID="195" schemeAgencyName="%s" schemeID="%s" schemeName="31">%s</sts:ProviderID><sts:SoftwareID schemeAgencyID="195" schemeAgencyName="%s">%s</sts:SoftwareID></sts:SoftwareProvider><sts:SoftwareSecurityCode schemeAgencyID="195" schemeAgencyName="%s">%s</sts:SoftwareSecurityCode><sts:AuthorizationProvider><sts:AuthorizationProviderID schemeAgencyID="195" schemeAgencyName="%s" schemeID="4" schemeName="31">800197268</sts:AuthorizationProviderID></sts:AuthorizationProvider><sts:QRCode>NroFactura=%s&#10;NitFacturador=%s&#10;NitAdquiriente=%s&#10;FechaFactura=%s&#10;ValorTotalFactura=%s&#10;CUFE=%s&#10;URL=%s</sts:QRCode></sts:DianExtensions></ext:ExtensionContent></ext:UBLExtension><ext:UBLExtension><ext:ExtensionContent></ext:ExtensionContent></ext:UBLExtension></ext:UBLExtensions>`,
-		invoiceControl,
-		escapeXML(dianAgencyName), escapeXML(dianCompanyIDSchemeID(emisorNIT, snapshot.Emisor.DigitoVerificacion)), escapeXML(emisorNIT),
-		escapeXML(dianAgencyName), escapeXML(softwareID), escapeXML(dianAgencyName), escapeXML(softwareSecurityCode), escapeXML(dianAgencyName),
-		escapeXML(documentoCodigo), escapeXML(emisorNIT), escapeXML(dianNormalizeCustomerDocumentNumber(snapshot.Cliente.NumeroDocumento, snapshot.Cliente.TipoDocumento)),
-		escapeXML(issueDate), escapeXML(fmt.Sprintf("%.2f", total)), escapeXML(strings.ToLower(cuFE)), escapeXML(qrURL),
-	)
-	header := fmt.Sprintf(`<cbc:UBLVersionID>UBL 2.1</cbc:UBLVersionID><cbc:CustomizationID>01</cbc:CustomizationID><cbc:ProfileID>DIAN 2.1</cbc:ProfileID><cbc:ProfileExecutionID>%s</cbc:ProfileExecutionID><cbc:ID>%s</cbc:ID><cbc:UUID schemeID="%s" schemeName="CUFE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate><cbc:IssueTime>%s</cbc:IssueTime><cbc:DueDate>%s</cbc:DueDate><cbc:InvoiceTypeCode>01</cbc:InvoiceTypeCode><cbc:DocumentCurrencyCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listID="ISO 4217 Alpha">%s</cbc:DocumentCurrencyCode><cbc:LineCountNumeric>%d</cbc:LineCountNumeric>`,
-		escapeXML(profileExecutionID), escapeXML(documentoCodigo), escapeXML(profileExecutionID), escapeXML(strings.ToLower(cuFE)), escapeXML(issueDate), escapeXML(issueTime), escapeXML(issueDate), escapeXML(moneda), len(snapshot.Lineas))
-	supplierParty, err := dianFuenteFiscalSupplierPartyXML(snapshot.Emisor, prefijo)
-	if err != nil {
-		return nil, http.StatusUnprocessableEntity, err
-	}
-	customerParty, err := dianFuenteFiscalCustomerPartyXML(snapshot.Cliente)
-	if err != nil {
-		return nil, http.StatusUnprocessableEntity, err
-	}
-	paymentMeans, err := dianFuenteFiscalPaymentMeansXML(snapshot.Pago, issueDate)
-	if err != nil {
-		return nil, http.StatusUnprocessableEntity, err
-	}
-	linesXML, err := dianFuenteFiscalLinesXML(snapshot.Lineas, moneda)
-	if err != nil {
-		return nil, http.StatusUnprocessableEntity, err
-	}
-	taxesXML := dianFuenteFiscalTaxTotalsXML(taxGroups, moneda)
-	monetaryXML := dianFuenteFiscalMonetaryTotalXML(snapshot, moneda)
-	xmlPayload := `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` +
-		`<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2" xmlns:sts="dian:gov:co:facturaelectronica:Structures-2-1" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 http://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-Invoice-2.1.xsd">` +
-		dianExtensions + header + supplierParty + customerParty + paymentMeans + taxesXML + monetaryXML + linesXML + `</Invoice>`
-
-	return map[string]interface{}{
-		"ok": true, "empresa_id": empresaID, "documento_codigo": documentoCodigo, "documento_tipo": documentoTipo,
-		"ubl_version": "UBL 2.1", "profile_execution_id": profileExecutionID, "customization_id": "01",
-		"uuid_scheme": "CUFE-SHA384", "uuid": strings.ToLower(cuFE), "software_security_code": "[calculado]",
-		"xml_ubl_base": xmlPayload, "estado_preparacion": "pre_envio_validable",
-		"fuente_fiscal": map[string]interface{}{"tipo": snapshot.Documento.TipoOrigen, "codigo": snapshot.Documento.CodigoOrigen, "lineas": len(snapshot.Lineas)},
+	return &dianFuenteFiscalUBLContext{
+		DocumentoTipo: documentoTipo, DocumentoCodigo: documentoCodigo, EmisorNIT: emisorNIT,
+		Prefijo: prefijo, ResolucionNumero: resolucionNumero, ResolucionDesde: resolucionDesde,
+		ResolucionHasta: resolucionHasta, LlaveTecnica: llaveTecnica, RangoDesde: rangoDesde, RangoHasta: rangoHasta,
+		SoftwareID: softwareID, SoftwarePIN: softwarePIN, IssueDate: issueDate, IssueTime: issueTime,
+		Moneda: moneda, ProfileExecutionID: profileExecutionID,
 	}, http.StatusOK, nil
 }
 

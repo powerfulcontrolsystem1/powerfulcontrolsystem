@@ -43108,6 +43108,22 @@ Archivos modificados:
   ejecuciones programadas ya usan el mismo inserto central.
 - web/administrar_empresa/nomina_sueldos.html
 
+2026-08-24: fix: satisfacer compuertas CI de facturacion DIAN.
+- La primera ejecucion del check requerido `Professional CI / Preflight, audits
+  and Docker config` de la PR 191 reprodujo localmente dos causas: el inventario
+  generado de bootstrap estaba desactualizado y la rama aumentaba en dos el
+  numero de funciones Go mayores de 100 lineas.
+- Se regeneraron el manifiesto legado y su inventario documental. Los handlers
+  de fuente fiscal y pago de carrito se dividieron en helpers conservando la
+  misma validacion, los mismos estados HTTP y el aislamiento por `empresa_id`.
+- La auditoria estructural volvio a su linea base de 450 funciones mayores de
+  100 lineas, sin duplicados nuevos. El preflight profesional completo, la suite
+  Go y `git diff --check` aprobaron localmente.
+- No se desplego, no se aplicaron migraciones y no se emitio ningun documento
+  fiscal real durante esta correccion de CI. El candidato permanece NO-GO hasta
+  que aprueben CI y revision, se pruebe la migracion sobre un clon vigente, se
+  despliegue el commit aprobado y DIAN acepte la venta real autorizada.
+
 2026-08-23: feat: reporte filtrable de seguimiento de Domotica
 - La pestaña `Reportes` incorpora seguimiento de eventos por estación, equipo, Raspberry Pi, tipo de evento, resultado y fecha/hora, con resultado, actor y origen legibles para seguimiento operativo.
 - `action=eventos` conserva el wrapper y el `empresa_id` autorizado; valida cada identificador secundario en la empresa antes de usar una consulta SQL parametrizada sobre `empresa_control_electrico_eventos`.
