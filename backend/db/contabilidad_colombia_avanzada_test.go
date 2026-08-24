@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"strings"
 	"testing"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -52,6 +53,16 @@ func TestManualElectronicDocumentsCannotClaimDIANAcceptance(t *testing.T) {
 	normalizeEmpresaDocumentoSoporteDraft(soporte)
 	if soporte.EstadoDIAN != "borrador" || soporte.CUDS != "" || soporte.RespuestaDIAN != "" || soporte.JSONPayload != "" {
 		t.Fatalf("soporte manual no quedo como borrador seguro: %+v", soporte)
+	}
+}
+
+func TestGetEmpresaDocumentoSoporteByIDContextIsTenantScoped(t *testing.T) {
+	raw, err := os.ReadFile("contabilidad_colombia_avanzada.go")
+	if err != nil {
+		t.Fatalf("read document-support data access: %v", err)
+	}
+	if !strings.Contains(string(raw), "WHERE empresa_id = ? AND id = ?") {
+		t.Fatal("document-support lookup must filter by empresa_id and id")
 	}
 }
 

@@ -127,6 +127,42 @@ func TestBuildDIANCUDSDocumentoSoporteCoincideConEjemploOficial(t *testing.T) {
 	}
 }
 
+func TestDocumentoSoportePreflightFailsClosed(t *testing.T) {
+	documento := &dbpkg.EmpresaDocumentoSoporteElectronico{
+		ID:              7,
+		EmpresaID:       12,
+		Documento:       "DS-7",
+		NombreProveedor: "Proveedor de prueba",
+		FechaDocumento:  "2026-08-23",
+		Concepto:        "Servicio de prueba",
+		ProveedorID:     1,
+		Subtotal:        100,
+		IVA:             19,
+		Total:           119,
+	}
+	configuracion := &dbpkg.EmpresaDIANDocumentoConfiguracion{
+		Estado:       "configurando",
+		TipoAmbiente: "habilitacion",
+		Prefijo:      "DS",
+		RangoDesde:   1,
+		RangoHasta:   10,
+		TestSetID:    "test-set",
+	}
+	resultado := buildDocumentoSoporteDIANPreflight(documento, configuracion)
+	if resultado.PuedeEmitir || resultado.Estado != "bloqueado_adaptador_dian" {
+		t.Fatalf("la prevalidacion debe cerrar la emision hasta tener adaptador propio: %+v", resultado)
+	}
+	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "adaptador DIAN propio") {
+		t.Fatalf("faltó el bloqueo explicito del adaptador: %+v", resultado.Bloqueos)
+	}
+
+	documento.Total = 118
+	resultado = buildDocumentoSoporteDIANPreflight(documento, configuracion)
+	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "no cuadran") {
+		t.Fatalf("la prevalidacion debe detectar totales inconsistentes: %+v", resultado.Bloqueos)
+	}
+}
+
 func TestResolveFacturacionTransitionForDocumentosElectronicosNuevos(t *testing.T) {
 	cases := []struct {
 		name          string

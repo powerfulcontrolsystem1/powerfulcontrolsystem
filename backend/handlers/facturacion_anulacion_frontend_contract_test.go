@@ -205,6 +205,26 @@ func TestContabilidadManualFormsDoNotOfferForgedDIANStates(t *testing.T) {
 	}
 }
 
+func TestContabilidadDocumentoSoportePreflightIsVisibleAndNonEmitting(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "contabilidad_colombia_avanzada.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read Colombia accounting page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`id="soportePreflight"`,
+		`data-ds-preflight`,
+		`documento_soporte_preflight`,
+		`La revisión no genera XML, no consume consecutivo y no envía información.`,
+		`No se emitió ni transmitió ningún documento.`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("document-support preflight UI missing safety marker %q", marker)
+		}
+	}
+}
+
 func TestFacturasElectronicasExportButtonsHaveAccessibleLabels(t *testing.T) {
 	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturas_electronicas.html")
 	raw, err := os.ReadFile(path)

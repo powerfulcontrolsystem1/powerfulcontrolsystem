@@ -3,6 +3,8 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -66,6 +68,42 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 					return
 				}
 				writeJSON(w, http.StatusOK, rows)
+				return
+			case "documento_soporte_preflight":
+				documentoSoporteID, err := parseInt64QueryOptional(r, "documento_soporte_id")
+				if err != nil || documentoSoporteID <= 0 {
+					http.Error(w, "documento_soporte_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				documento, err := dbpkg.GetEmpresaDocumentoSoporteByIDContext(r.Context(), dbEmp, empresaID, documentoSoporteID)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "documento soporte no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar el documento soporte", http.StatusInternalServerError)
+					return
+				}
+				var configuracion *dbpkg.EmpresaDIANDocumentoConfiguracion
+				configuracionPendiente := ""
+				if err := dbpkg.EmpresaDIANDocumentosConfiguracionSchemaReady(dbEmp); err != nil {
+					configuracionPendiente = "La tabla de configuración DIAN por documento no está disponible; ejecute pcs-migrate."
+				} else {
+					configuracion, err = dbpkg.GetEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, empresaID, "documento_soporte")
+					if err != nil && !errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "No se pudo consultar la configuración DIAN de documento soporte", http.StatusInternalServerError)
+						return
+					}
+					if errors.Is(err, sql.ErrNoRows) {
+						configuracionPendiente = "No existe configuración DIAN separada para documento soporte."
+					}
+				}
+				resultado := buildDocumentoSoporteDIANPreflight(documento, configuracion)
+				if configuracionPendiente != "" {
+					resultado.Bloqueos = append(resultado.Bloqueos, configuracionPendiente)
+					resultado.PuedeEmitir = false
+				}
+				writeJSON(w, http.StatusOK, resultado)
 				return
 			case "activos_fijos":
 				rows, err := dbpkg.ListEmpresaActivosFijos(dbEmp, empresaID, r.URL.Query().Get("estado"))
@@ -396,6 +434,76 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 		}
 		http.Error(w, "Metodo o accion no permitida", http.StatusMethodNotAllowed)
 	}
+}
+
+type documentoSoporteDIANPreflight struct {
+	EmpresaID           int64    `json:"empresa_id"`
+	DocumentoSoporteID  int64    `json:"documento_soporte_id"`
+	TipoDocumento       string   `json:"tipo_documento"`
+	Estado              string   `json:"estado"`
+	PuedeEmitir         bool     `json:"puede_emitir"`
+	Bloqueos            []string `json:"bloqueos"`
+	Advertencias        []string `json:"advertencias"`
+	EstadoConfiguracion string   `json:"estado_configuracion,omitempty"`
+	Ambiente            string   `json:"ambiente,omitempty"`
+}
+
+// buildDocumentoSoporteDIANPreflight makes data gaps visible without
+// generating a fiscal artifact. Documento soporte intentionally remains
+// blocked until its dedicated UBL, signature, DIAN transport and response
+// adapter are implemented.
+func buildDocumentoSoporteDIANPreflight(documento *dbpkg.EmpresaDocumentoSoporteElectronico, configuracion *dbpkg.EmpresaDIANDocumentoConfiguracion) documentoSoporteDIANPreflight {
+	resultado := documentoSoporteDIANPreflight{
+		TipoDocumento: "documento_soporte",
+		Estado:        "bloqueado_adaptador_dian",
+		Bloqueos: []string{
+			"La emisión permanece bloqueada: falta el adaptador DIAN propio de documento soporte (UBL, firma, transporte y acuse).",
+		},
+		Advertencias: make([]string, 0),
+	}
+	if documento == nil {
+		resultado.Bloqueos = append(resultado.Bloqueos, "No se encontró el borrador contable de documento soporte.")
+		return resultado
+	}
+	resultado.EmpresaID = documento.EmpresaID
+	resultado.DocumentoSoporteID = documento.ID
+	if strings.TrimSpace(documento.Documento) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta el documento del vendedor no obligado.")
+	}
+	if strings.TrimSpace(documento.NombreProveedor) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta el nombre del vendedor no obligado.")
+	}
+	if strings.TrimSpace(documento.FechaDocumento) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta la fecha de emisión del documento soporte.")
+	}
+	if strings.TrimSpace(documento.Concepto) == "" || documento.Subtotal <= 0 || documento.Total <= 0 {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta concepto o importes positivos del documento soporte.")
+	}
+	if math.Abs((documento.Subtotal+documento.IVA-documento.Retenciones)-documento.Total) > 0.01 {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Los importes no cuadran: total debe ser subtotal + IVA - retenciones.")
+	}
+	if documento.ProveedorID <= 0 {
+		resultado.Advertencias = append(resultado.Advertencias, "El borrador no está vinculado a un proveedor empresarial; revise identidad y datos de contacto antes de emitir.")
+	}
+	resultado.Bloqueos = append(resultado.Bloqueos, "Faltan en el borrador los datos fiscales estructurados del vendedor no obligado (dirección, municipio, responsabilidades y tipo de persona).")
+	if configuracion == nil {
+		return resultado
+	}
+	resultado.EstadoConfiguracion = configuracion.Estado
+	resultado.Ambiente = configuracion.TipoAmbiente
+	if configuracion.Estado != "configurando" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "La configuración de documento soporte debe estar en estado configurando.")
+	}
+	if configuracion.Prefijo == "" || configuracion.RangoDesde <= 0 || configuracion.RangoHasta < configuracion.RangoDesde {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta prefijo o rango DIAN propio de documento soporte.")
+	}
+	if configuracion.TipoAmbiente == "habilitacion" && strings.TrimSpace(configuracion.TestSetID) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta TestSet DIAN para habilitación de documento soporte.")
+	}
+	if configuracion.TipoAmbiente == "produccion" && strings.TrimSpace(configuracion.ResolucionNumero) == "" {
+		resultado.Bloqueos = append(resultado.Bloqueos, "Falta resolución DIAN propia de documento soporte para producción.")
+	}
+	return resultado
 }
 
 func intQuery(r *http.Request, key string) int {

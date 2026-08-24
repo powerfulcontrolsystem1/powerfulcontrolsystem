@@ -852,6 +852,37 @@ func ListEmpresaDocumentosSoporte(dbConn *sql.DB, empresaID int64, periodo strin
 	return out, rows.Err()
 }
 
+// GetEmpresaDocumentoSoporteByIDContext resolves a purchase-support draft only
+// inside its tenant. It is intentionally separate from the list helper so a
+// DIAN preflight cannot inspect a document from another empresa.
+func GetEmpresaDocumentoSoporteByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, documentoSoporteID int64) (*EmpresaDocumentoSoporteElectronico, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || documentoSoporteID <= 0 {
+		return nil, errors.New("empresa_id y documento_soporte_id son obligatorios")
+	}
+	var item EmpresaDocumentoSoporteElectronico
+	err := QueryRowCompatContext(ctx, dbConn, `SELECT
+		id, empresa_id, proveedor_id, tipo_documento, documento, nombre_proveedor, fecha_documento, periodo,
+		concepto, subtotal, iva, retenciones, total, COALESCE(cuds,''), estado_dian,
+		COALESCE(respuesta_dian,''), COALESCE(json_payload,''), COALESCE(fecha_creacion,''),
+		COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	FROM empresa_contabilidad_documentos_soporte
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, documentoSoporteID).Scan(
+		&item.ID, &item.EmpresaID, &item.ProveedorID, &item.TipoDocumento, &item.Documento,
+		&item.NombreProveedor, &item.FechaDocumento, &item.Periodo, &item.Concepto,
+		&item.Subtotal, &item.IVA, &item.Retenciones, &item.Total, &item.CUDS,
+		&item.EstadoDIAN, &item.RespuestaDIAN, &item.JSONPayload, &item.FechaCreacion,
+		&item.FechaActualizacion, &item.UsuarioCreador,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 // normalizeEmpresaNominaElectronicaDraft keeps user-entered accounting data
 // from impersonating a DIAN response. CUNE, provider reply and state are only
 // written later by the dedicated DIAN adapter after a signed submission.
