@@ -18179,6 +18179,34 @@ Archivos modificados:
 - web/administrar_empresa/facturas_electronicas.html
 - web/administrar_empresa/finanzas.html
 - web/administrar_empresa/nomina_sueldos.html
+
+2026-08-24: auditoria autenticada PCS y cierre de falsas acciones manuales DIAN
+Estado: NO-GO hasta desplegar y obtener acuse real con el candidato.
+Cambios:
+- Se verifico visualmente el dominio productivo en el contexto de Powerful Control System.
+- La validacion de credenciales y firma respondio correctamente; el diagnostico
+  devolvio preparacion pre_envio_validable y la prueba de red alcanzo el servidor,
+  pero una respuesta HTTP no se interpreta como validacion SOAP ni aceptacion fiscal.
+- La version publicada aun muestra emisiones manuales de factura y notas, no pide
+  codigos DANE en las fichas y puede mostrar 100% por activacion local; por eso no
+  se emitio una venta fiscal con codigo anterior.
+- El candidato deshabilita las emisiones/anulaciones manuales, mantiene la factura
+  comercial atada a una venta pagada con fuente fiscal inmutable y exige evidencia
+  independiente para credenciales, envio, acuse y activacion local.
+- Se comprobo un producto de prueba de COP 100 con SKU, codigo de barras, unidad,
+  descripcion, IVA y stock positivo. El cliente empresarial de prueba conserva NIT,
+  DV, regimen, responsabilidad, direccion y ciudad; los codigos DANE se completaran
+  despues de aplicar la migracion del candidato.
+Pruebas:
+- go test ./handlers -run TestDIANFrontend...: OK.
+- scripts/check_inline_js.js facturacion_electronica_pruebas_dian.html: OK.
+- Validacion DOM y visual local: acciones fiscales manuales deshabilitadas: OK.
+Archivos:
+- backend/handlers/facturacion_anulacion_frontend_contract_test.go
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
 - web/administrar_empresa/propinas.html
 - web/administrar_empresa/reportes.html
 - web/administrar_empresa/reservas_hotel.html

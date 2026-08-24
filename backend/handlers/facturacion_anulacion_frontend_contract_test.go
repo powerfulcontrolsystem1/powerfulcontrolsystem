@@ -184,6 +184,50 @@ func TestDIANFrontendDisablesFamiliesWithoutDedicatedAdapter(t *testing.T) {
 	}
 }
 
+func TestDIANFrontendDisablesFreeFormFiscalEmission(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica_pruebas_dian.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read DIAN page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`id="btnDianEnviarFactura" type="button" class="btn secondary" disabled`,
+		`id="btnDianEnviarND" type="button" class="btn secondary" disabled`,
+		`id="btnDianEnviarNC" type="button" class="btn secondary" disabled`,
+		`id="op_tipo_documento" class="form-input" disabled`,
+		`id="btnEmitirDocumento" class="btn" disabled`,
+		`id="btnAnularDocumento" class="btn secondary" disabled`,
+		`La emision comercial real nace exclusivamente de una venta pagada con fuente fiscal inmutable.`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("free-form fiscal emission must be disabled; missing %q", marker)
+		}
+	}
+}
+
+func TestDIANFrontendProgressRequiresIndependentEvidence(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica_pruebas_dian.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read DIAN page: %v", err)
+	}
+	page := string(raw)
+	for _, forbidden := range []string{
+		`const acuseReady = hasDianAcuseFinal(cfg, result) || productionReady;`,
+		`const validationReady = state.dianValidationOk || acuseReady || productionReady;`,
+		`done: hasDianEnvioReal(result) || acuseReady || productionReady`,
+		`estado === "habilitacion_aprobada" || estado === "produccion_local_activa"`,
+	} {
+		if strings.Contains(page, forbidden) {
+			t.Fatalf("local production activation must not forge DIAN evidence: found %q", forbidden)
+		}
+	}
+	if !strings.Contains(page, "Servidor DIAN/proveedor alcanzable. Esta prueba no valida SOAP, credenciales ni aceptación fiscal.") {
+		t.Fatal("connection probe must distinguish reachability from DIAN validation")
+	}
+}
+
 func TestContabilidadManualFormsDoNotOfferForgedDIANStates(t *testing.T) {
 	path := filepath.Join("..", "..", "web", "administrar_empresa", "contabilidad_colombia_avanzada.html")
 	raw, err := os.ReadFile(path)

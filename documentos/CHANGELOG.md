@@ -9,9 +9,15 @@
   descuentos de línea no se duplican como descuento global.
 - [Seguridad] Secretos DIAN cifrados por empresa/campo y rutas libres de
   firma/envío bloqueadas.
+- [UX/seguridad] El centro DIAN deja deshabilitada toda emisión fiscal manual,
+  no convierte la activación local en evidencia falsa de envío/acuse y distingue
+  un servidor alcanzable de una validación SOAP o fiscal exitosa.
 - [QA] Go, vet, JavaScript, PostgreSQL 17.11 aislado, XSD oficial, XMLDSig y
-  Schematron DIAN aprobados. Clon del esquema vigente, prueba autenticada, acuse
-  DIAN, despliegue y emisión real pendientes; estado NO-GO.
+  Schematron DIAN aprobados. La auditoría autenticada de PCS confirmó ambiente
+  productivo, credenciales/firma configuradas y conexión de red; también confirmó
+  que la versión publicada aún no contiene esta reparación. Clon del esquema
+  vigente, despliegue del candidato y acuse de una venta real siguen pendientes;
+  estado NO-GO.
 
 ## [2026-08-13] Domótica 1.4, SSH cifrado, escenas y Victron VE.Direct
 - [Corrección] La cola interpreta fechas RFC3339 como `TIMESTAMPTZ`; botones, temporizadores, escenas y recuperación ya no quedan pendientes por desfase UTC/local.

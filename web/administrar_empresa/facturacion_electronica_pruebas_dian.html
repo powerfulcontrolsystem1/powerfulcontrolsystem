@@ -125,7 +125,7 @@
     <div class="card">
       <h2>Estado del centro DIAN</h2>
       <p class="form-help">
-        Usa esta página para validar credenciales, enviar manualmente cada tipo de documento electrónico y ejecutar automáticamente el set de habilitación de Colombia con los datos guardados en Facturación electrónica.
+        Usa esta página para validar configuración y credenciales, consultar trazabilidad y ejecutar el set de habilitación de Colombia. La factura comercial real se origina únicamente en una venta pagada; los ajustes y demás familias permanecen bloqueados hasta tener su fuente fiscal y adaptador propios.
       </p>
       <div class="dian-status-grid" id="feDianStatusGrid">
         <div class="dian-status-item"><span class="dian-status-label">Ambiente</span><span id="feDianStatusAmbiente" class="dian-status-value">Cargando</span></div>
@@ -254,9 +254,9 @@
       <div class="dian-test-actions">
         <button id="btnDianGuardarObjetivo" type="button" class="btn secondary">Guardar objetivo DIAN</button>
         <button id="btnDianPruebas" type="button" class="btn">Ejecutar set automatico</button>
-        <button id="btnDianEnviarFactura" type="button" class="btn secondary">Enviar factura</button>
-        <button id="btnDianEnviarND" type="button" class="btn secondary">Enviar nota debito</button>
-        <button id="btnDianEnviarNC" type="button" class="btn secondary">Enviar nota credito</button>
+        <button id="btnDianEnviarFactura" type="button" class="btn secondary" disabled title="La factura comercial real solo se emite desde una venta pagada con fuente fiscal inmutable">Factura manual no disponible</button>
+        <button id="btnDianEnviarND" type="button" class="btn secondary" disabled title="Requiere una fuente fiscal inmutable de ajuste y referencia DIAN aceptada">Nota debito no disponible</button>
+        <button id="btnDianEnviarNC" type="button" class="btn secondary" disabled title="Requiere una fuente fiscal inmutable de ajuste y referencia DIAN aceptada">Nota credito no disponible</button>
       </div>
       <div id="feDianPruebasMsg" class="form-help"></div>
       <div id="feDianResumenResultado" class="dian-status-grid"></div>
@@ -311,9 +311,9 @@
     </div>
 
     <div class="card">
-      <h2>Emision documental manual</h2>
+      <h2>Revision documental manual</h2>
       <p class="form-help">
-        Ejecuta operaciones manuales de documentos electronicos para pruebas controladas, soporte o conciliacion.
+        La emision comercial real nace exclusivamente de una venta pagada con fuente fiscal inmutable. Este formulario queda visible solo como referencia de soporte y no puede emitir, anular ni ajustar documentos fiscales.
       </p>
       <div class="form-row">
         <div class="form-col">
@@ -322,10 +322,10 @@
         </div>
         <div class="form-col">
           <label class="form-label">Tipo documento electronico</label>
-          <select id="op_tipo_documento" class="form-input">
+          <select id="op_tipo_documento" class="form-input" disabled>
             <option value="factura_electronica">Factura electronica de venta</option>
-            <option value="nota_credito">Nota credito electronica</option>
-            <option value="nota_debito">Nota debito electronica</option>
+            <option value="nota_credito" disabled>Nota credito (fuente de ajuste pendiente)</option>
+            <option value="nota_debito" disabled>Nota debito (fuente de ajuste pendiente)</option>
             <option value="documento_soporte" disabled>Documento soporte (adaptador DIAN pendiente)</option>
             <option value="nomina_electronica" disabled>Nomina electronica (adaptador DIAN pendiente)</option>
             <option value="documento_equivalente_pos" disabled>Documento equivalente POS (adaptador DIAN pendiente)</option>
@@ -377,11 +377,11 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" id="btnEmitirDocumento" class="btn">Emitir documento</button>
-        <button type="button" id="btnAnularDocumento" class="btn secondary">Anular factura con nota credito</button>
-        <button type="button" id="btnEmitirFactura" class="btn secondary">Emitir factura</button>
-        <button type="button" id="btnEmitirNC" class="btn secondary">Emitir nota credito</button>
-        <button type="button" id="btnEmitirND" class="btn secondary">Emitir nota debito</button>
+        <button type="button" id="btnEmitirDocumento" class="btn" disabled title="La emision comercial se origina en una venta pagada">Emision manual no disponible</button>
+        <button type="button" id="btnAnularDocumento" class="btn secondary" disabled title="Requiere una nota credito con fuente fiscal inmutable y acuse DIAN">Anulacion manual no disponible</button>
+        <button type="button" id="btnEmitirFactura" class="btn secondary" disabled title="La factura comercial se origina en una venta pagada">Factura manual no disponible</button>
+        <button type="button" id="btnEmitirNC" class="btn secondary" disabled title="Requiere una fuente fiscal inmutable de ajuste">Nota credito no disponible</button>
+        <button type="button" id="btnEmitirND" class="btn secondary" disabled title="Requiere una fuente fiscal inmutable de ajuste">Nota debito no disponible</button>
         <button type="button" id="btnEmitirSoporte" class="btn secondary" disabled title="Requiere el adaptador oficial de documento soporte">Soporte no disponible</button>
         <button type="button" id="btnEmitirNominaElectronica" class="btn secondary" disabled title="Requiere el adaptador oficial de nomina electronica">Nomina no disponible</button>
         <button type="button" id="btnEmitirPOSElectronico" class="btn secondary" disabled title="Requiere el adaptador oficial de documento equivalente">POS no disponible</button>
@@ -695,7 +695,7 @@
       const estado = lowerValue(cfg.estado_dian || cfg.estado);
       const resumen = result.resumen || {};
       if (result.habilitacion_aprobada === true) return true;
-      if (estado === "habilitacion_aprobada" || estado === "produccion_local_activa") return true;
+      if (estado === "habilitacion_aprobada" || estado === "aceptado") return true;
       if (Number(resumen.aceptado || 0) > 0) return true;
       return false;
     }
@@ -714,15 +714,15 @@
       const cfg = state.dianConfig || {};
       const result = state.ultimoResultado || {};
       const productionReady = hasDianProduccionLocal(cfg);
-      const acuseReady = hasDianAcuseFinal(cfg, result) || productionReady;
-      const validationReady = state.dianValidationOk || acuseReady || productionReady;
+      const acuseReady = hasDianAcuseFinal(cfg, result);
+      const validationReady = state.dianValidationOk || hasDianEnvioReal(result) || acuseReady;
       const steps = [
         { key: "base", label: "Configuracion base", weight: 15, done: hasDianBaseConfig(cfg) },
         { key: "firma", label: "Firma digital", weight: 15, done: hasDianFirma(cfg) },
         { key: "testset", label: "TestSetId", weight: 10, done: hasDianTestSet(cfg) },
         { key: "objetivo", label: "Objetivo del set", weight: 10, done: hasDianObjetivo() },
         { key: "credenciales", label: "Credenciales validadas", weight: 15, done: validationReady },
-        { key: "envio", label: "Envio real a DIAN", weight: 15, done: hasDianEnvioReal(result) || acuseReady || productionReady },
+        { key: "envio", label: "Envio real a DIAN", weight: 15, done: hasDianEnvioReal(result) || acuseReady },
         { key: "acuse", label: "Acuse final aceptado", weight: 15, done: acuseReady },
         { key: "produccion", label: "Produccion local activa", weight: 5, done: productionReady }
       ];
@@ -733,7 +733,7 @@
       const firstPending = steps.find(function(step) { return !step.done; });
       const stage = firstPending
         ? "Siguiente paso: " + firstPending.label + "."
-        : "Proceso completo para emitir en produccion local.";
+        : "Evidencia DIAN registrada. La factura comercial debe salir de una venta pagada validada.";
       const percentEl = document.getElementById("feDianProgressPercent");
       const fillEl = document.getElementById("feDianProgressFill");
       const stageEl = document.getElementById("feDianProgressStage");
@@ -1528,7 +1528,7 @@
       }
       let msg = data.mensaje || "Estado de conexion consultado.";
       if (data.online) {
-        msg = "Conexion DIAN/proveedor disponible. " + msg;
+        msg = "Servidor DIAN/proveedor alcanzable. Esta prueba no valida SOAP, credenciales ni aceptación fiscal. " + msg;
       } else {
         msg = "Sin conexion DIAN/proveedor. La facturacion electronica requiere conexion activa.";
       }
