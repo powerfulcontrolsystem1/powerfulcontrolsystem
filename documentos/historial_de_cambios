@@ -42878,6 +42878,16 @@ acumulativa.
   Raspberry del equipo está desconectada; también aplica al temporizador antes
   de abrirlo y antes de enviar su orden.
 
+2026-08-23: Venta directa: aislamiento obligatorio del carrito fiscal seleccionado.
+- `GET /api/empresa/carritos_compra` ahora aplica `carrito_codigo` como filtro
+  exacto dentro de la empresa antes de que la interfaz resuelva el carrito.
+  Un código temporal inexistente devuelve una lista vacía en vez de degradarse
+  a una venta directa anterior. Esto evita cerrar o facturar por error una
+  cuenta histórica cuando se abre una prueba o una venta nueva.
+- La regresión cubre coincidencia insensible a mayúsculas y ausencia de
+  fallback. El cambio conserva permisos, estación y aislamiento por
+  `empresa_id`; no modifica carritos, documentos ni datos existentes.
+
 2026-08-21: Preparación de producción de facturación electrónica / compuertas P0.
 - DIAN Colombia deja de inferir cantidades del set de habilitación: cada empresa
   debe guardar el objetivo exacto que muestra su portal antes de que el backend

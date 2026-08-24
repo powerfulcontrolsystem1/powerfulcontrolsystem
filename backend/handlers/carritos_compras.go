@@ -352,6 +352,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			includeInactive := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "1") ||
 				strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "true")
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
+			carritoCodigo := strings.TrimSpace(r.URL.Query().Get("carrito_codigo"))
 			estacionID, err := parseOptionalInt64CarritoQuery(r, "estacion_id")
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -390,6 +391,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				log.Printf("[carritos] list empresa_id=%d error: %v", empresaID, err)
 				http.Error(w, "No se pudieron listar los carritos", http.StatusInternalServerError)
 				return
+			}
+			if carritoCodigo != "" {
+				rows = filterCarritosByExactCode(rows, carritoCodigo)
 			}
 			if estacionID > 0 {
 				filtered := make([]dbpkg.CarritoCompra, 0, len(rows))
@@ -2856,6 +2860,23 @@ func ensureCarritoStationAccessByID(dbEmp *sql.DB, empresaID, carritoID int64, u
 		return err
 	}
 	return ensureCarritoStationAccessForCarrito(dbEmp, empresaID, usuario, carrito)
+}
+
+// filterCarritosByExactCode preserves the explicit cart selected in the URL.
+// It intentionally does not fall back to a similarly named direct-sale cart:
+// doing so could turn an older pending cart into the current fiscal sale.
+func filterCarritosByExactCode(rows []dbpkg.CarritoCompra, codigo string) []dbpkg.CarritoCompra {
+	codigo = strings.TrimSpace(codigo)
+	if codigo == "" {
+		return rows
+	}
+	filtered := make([]dbpkg.CarritoCompra, 0, 1)
+	for _, row := range rows {
+		if strings.EqualFold(strings.TrimSpace(row.Codigo), codigo) {
+			filtered = append(filtered, row)
+		}
+	}
+	return filtered
 }
 
 func filterCarritosByStationAccess(dbEmp *sql.DB, empresaID int64, usuario string, rows []dbpkg.CarritoCompra) ([]dbpkg.CarritoCompra, error) {
