@@ -45,6 +45,21 @@ if (!(Test-Path -LiteralPath $schemaPath)) {
 $messages = New-Object System.Collections.Generic.List[string]
 $schemas = New-Object System.Xml.Schema.XmlSchemaSet
 $schemas.XmlResolver = New-Object System.Xml.XmlUrlResolver
+$signatureSchemaPath = Join-Path $ToolboxRoot "common\UBL-xmldsig-core-schema-2.1.xsd"
+if (!(Test-Path -LiteralPath $signatureSchemaPath)) {
+    throw "No existe el XSD XMLDSig esperado: $signatureSchemaPath"
+}
+# XmlSchemaSet no siempre resuelve el import indirecto de XMLDSig incluido en
+# la caja UBL. Registrarlo primero evita un falso fallo de compilacion del XSD.
+$schemaReaderSettings = New-Object System.Xml.XmlReaderSettings
+$schemaReaderSettings.DtdProcessing = [System.Xml.DtdProcessing]::Parse
+$schemaReaderSettings.XmlResolver = New-Object System.Xml.XmlUrlResolver
+$signatureSchemaReader = [System.Xml.XmlReader]::Create((Resolve-Path -LiteralPath $signatureSchemaPath).Path, $schemaReaderSettings)
+try {
+    [void]$schemas.Add("http://www.w3.org/2000/09/xmldsig#", $signatureSchemaReader)
+} finally {
+    $signatureSchemaReader.Close()
+}
 [void]$schemas.Add($namespace, $schemaPath)
 $schemas.Compile()
 
@@ -64,9 +79,14 @@ try {
     $reader.Close()
 }
 
+$validationOK = ($messages.Count -eq 0)
 [pscustomobject]@{
-    ok = ($messages.Count -eq 0)
+    ok = $validationOK
     xml = (Resolve-Path -LiteralPath $XmlPath).Path
     schema = (Resolve-Path -LiteralPath $schemaPath).Path
     errores = @($messages)
 } | ConvertTo-Json -Depth 4
+
+if (!$validationOK) {
+    exit 1
+}

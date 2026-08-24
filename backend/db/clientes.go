@@ -26,7 +26,9 @@ type Cliente struct {
 	Direccion                 string `json:"direccion,omitempty"`
 	Pais                      string `json:"pais,omitempty"`
 	Departamento              string `json:"departamento,omitempty"`
+	DepartamentoCodigoDANE    string `json:"departamento_codigo_dane,omitempty"`
 	Municipio                 string `json:"municipio,omitempty"`
+	MunicipioCodigoDANE       string `json:"municipio_codigo_dane,omitempty"`
 	CodigoPostal              string `json:"codigo_postal,omitempty"`
 	FechaCreacion             string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion        string `json:"fecha_actualizacion,omitempty"`
@@ -266,7 +268,9 @@ func EnsureEmpresaClientesSchema(dbConn *sql.DB) error {
 			direccion TEXT,
 			pais TEXT DEFAULT 'CO',
 			departamento TEXT,
+			departamento_codigo_dane TEXT,
 			municipio TEXT,
+			municipio_codigo_dane TEXT,
 			codigo_postal TEXT,
 			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
 			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
@@ -330,7 +334,13 @@ func ensureClientesColumns(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "clientes", "departamento", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "clientes", "departamento_codigo_dane", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "clientes", "municipio", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "clientes", "municipio_codigo_dane", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "clientes", "codigo_postal", "TEXT"); err != nil {
@@ -359,6 +369,11 @@ func CreateCliente(dbConn *sql.DB, payload Cliente) (int64, error) {
 	if strings.TrimSpace(payload.Pais) == "" {
 		payload.Pais = "CO"
 	}
+	var err error
+	payload.DepartamentoCodigoDANE, payload.MunicipioCodigoDANE, err = normalizeFacturacionDANECodes(payload.DepartamentoCodigoDANE, payload.MunicipioCodigoDANE)
+	if err != nil {
+		return 0, err
+	}
 	if err := ensureClienteNoDuplicados(dbConn, payload, 0); err != nil {
 		return 0, err
 	}
@@ -377,14 +392,16 @@ func CreateCliente(dbConn *sql.DB, payload Cliente) (int64, error) {
 		direccion,
 		pais,
 		departamento,
+		departamento_codigo_dane,
 		municipio,
+		municipio_codigo_dane,
 		codigo_postal,
 		usuario_creador,
 		estado,
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		strings.TrimSpace(payload.TipoDocumento),
 		strings.TrimSpace(payload.NumeroDocumento),
@@ -399,7 +416,9 @@ func CreateCliente(dbConn *sql.DB, payload Cliente) (int64, error) {
 		strings.TrimSpace(payload.Direccion),
 		strings.TrimSpace(payload.Pais),
 		strings.TrimSpace(payload.Departamento),
+		strings.TrimSpace(payload.DepartamentoCodigoDANE),
 		strings.TrimSpace(payload.Municipio),
+		strings.TrimSpace(payload.MunicipioCodigoDANE),
 		strings.TrimSpace(payload.CodigoPostal),
 		strings.TrimSpace(payload.UsuarioCreador),
 		strings.TrimSpace(payload.Observaciones),
@@ -434,7 +453,9 @@ func GetClientesByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive bool,
 		COALESCE(direccion, ''),
 		COALESCE(pais, 'CO'),
 		COALESCE(departamento, ''),
+		COALESCE(departamento_codigo_dane, ''),
 		COALESCE(municipio, ''),
+		COALESCE(municipio_codigo_dane, ''),
 		COALESCE(codigo_postal, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
@@ -485,7 +506,9 @@ func GetClientesByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive bool,
 			&item.Direccion,
 			&item.Pais,
 			&item.Departamento,
+			&item.DepartamentoCodigoDANE,
 			&item.Municipio,
+			&item.MunicipioCodigoDANE,
 			&item.CodigoPostal,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
@@ -525,7 +548,9 @@ func GetClienteByID(dbConn *sql.DB, empresaID, clienteID int64) (*Cliente, error
 		COALESCE(direccion, ''),
 		COALESCE(pais, 'CO'),
 		COALESCE(departamento, ''),
+		COALESCE(departamento_codigo_dane, ''),
 		COALESCE(municipio, ''),
+		COALESCE(municipio_codigo_dane, ''),
 		COALESCE(codigo_postal, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
@@ -553,7 +578,9 @@ func GetClienteByID(dbConn *sql.DB, empresaID, clienteID int64) (*Cliente, error
 		&item.Direccion,
 		&item.Pais,
 		&item.Departamento,
+		&item.DepartamentoCodigoDANE,
 		&item.Municipio,
+		&item.MunicipioCodigoDANE,
 		&item.CodigoPostal,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
@@ -575,10 +602,15 @@ func UpdateCliente(dbConn *sql.DB, payload Cliente) error {
 	if strings.TrimSpace(payload.Pais) == "" {
 		payload.Pais = "CO"
 	}
+	var err error
+	payload.DepartamentoCodigoDANE, payload.MunicipioCodigoDANE, err = normalizeFacturacionDANECodes(payload.DepartamentoCodigoDANE, payload.MunicipioCodigoDANE)
+	if err != nil {
+		return err
+	}
 	if err := ensureClienteNoDuplicados(dbConn, payload, payload.ID); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`UPDATE clientes SET
+	_, err = dbConn.Exec(`UPDATE clientes SET
 		tipo_documento = ?,
 		numero_documento = ?,
 		digito_verificacion = ?,
@@ -592,7 +624,9 @@ func UpdateCliente(dbConn *sql.DB, payload Cliente) error {
 		direccion = ?,
 		pais = ?,
 		departamento = ?,
+		departamento_codigo_dane = ?,
 		municipio = ?,
+		municipio_codigo_dane = ?,
 		codigo_postal = ?,
 		observaciones = ?,
 		fecha_actualizacion = CURRENT_TIMESTAMP
@@ -610,7 +644,9 @@ func UpdateCliente(dbConn *sql.DB, payload Cliente) error {
 		strings.TrimSpace(payload.Direccion),
 		strings.TrimSpace(payload.Pais),
 		strings.TrimSpace(payload.Departamento),
+		strings.TrimSpace(payload.DepartamentoCodigoDANE),
 		strings.TrimSpace(payload.Municipio),
+		strings.TrimSpace(payload.MunicipioCodigoDANE),
 		strings.TrimSpace(payload.CodigoPostal),
 		strings.TrimSpace(payload.Observaciones),
 		payload.ID,
@@ -662,7 +698,9 @@ func GetClientePerfilComercialByEmpresa(dbConn *sql.DB, empresaID, clienteID int
 		COALESCE(direccion, ''),
 		COALESCE(pais, 'CO'),
 		COALESCE(departamento, ''),
+		COALESCE(departamento_codigo_dane, ''),
 		COALESCE(municipio, ''),
+		COALESCE(municipio_codigo_dane, ''),
 		COALESCE(codigo_postal, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
@@ -690,7 +728,9 @@ func GetClientePerfilComercialByEmpresa(dbConn *sql.DB, empresaID, clienteID int
 		&cliente.Direccion,
 		&cliente.Pais,
 		&cliente.Departamento,
+		&cliente.DepartamentoCodigoDANE,
 		&cliente.Municipio,
+		&cliente.MunicipioCodigoDANE,
 		&cliente.CodigoPostal,
 		&cliente.FechaCreacion,
 		&cliente.FechaActualizacion,

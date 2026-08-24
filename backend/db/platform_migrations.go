@@ -189,8 +189,14 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260823-001-dian-documentos-configuracion-v1", Description: "per-document DIAN numbering and operation configuration", Body: empresaDIANDocumentosConfiguracionFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaDIANDocumentosConfiguracionTx(ctx, tx)
 			}},
-			{Version: "20260823-002-dian-manual-document-drafts-v1", Description: "clear unverified manual DIAN states from support and payroll", Body: empresaDIANManualDocumentDraftsFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
-				return applyEmpresaDIANManualDocumentDraftsTx(ctx, tx)
+			{Version: "20260823-002-dian-config-secrets-encrypted-v1", Description: "purpose-bound encryption for tenant DIAN credentials", Body: empresaDIANConfigSecretsFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaDIANConfigSecretsTx(ctx, tx)
+			}},
+			{Version: "20260823-003-facturacion-fuente-fiscal-v1", Description: "immutable tenant-scoped fiscal source JSON for paid sales", Body: empresaFacturacionFuenteFiscalFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaFacturacionFuenteFiscalTx(ctx, tx)
+			}},
+			{Version: "20260824-001-facturacion-dane-codes-v1", Description: "authoritative DANE codes for electronic document parties", Body: empresaFacturacionDANECodesFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaFacturacionDANECodesTx(ctx, tx)
 			}},
 		}, nil
 	case MigrationTargetSuper:

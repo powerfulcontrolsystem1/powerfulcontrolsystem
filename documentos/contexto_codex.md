@@ -673,6 +673,23 @@ decisiones en cada tarea.
   `certificado_vencimiento`, `certificado_vencimiento_en`,
   `certificado_alerta_dias`, `certificado_alerta_ultimo_envio` y
   `certificado_alerta_email` en `empresa_dian_configuracion`.
+
+### Estado de candidato DIAN al 2026-08-24
+
+- La factura comercial Colombia usa exclusivamente la fuente fiscal inmutable
+  capturada al pagar el carrito. No reutilizar `generar_xml_ubl_base` para una
+  venta: esa acción solo produce fixtures explícitos de habilitación.
+- Emisor y cliente requieren códigos DANE válidos; no inferir Bogotá ni otro
+  municipio a partir del nombre. Una venta capturada antes de completar esos
+  datos permanece bloqueada y debe conciliarse, no reescribirse.
+- Nota crédito/débito, soporte, nómina, equivalentes, contingencia y RADIAN no
+  están habilitados para emisión comercial. Mantener `bloqueado_contrato` hasta
+  implementar y probar el adaptador y fuente específicos.
+- Antes de producción ejecutar migraciones, pruebas PostgreSQL con
+  `PCS_TEST_POSTGRES_DSN`, `go test ./...`, `go vet ./...`, validación XSD,
+  XMLDSig independiente y Schematron DIAN aprobaron sobre la factura de
+  regresión; PostgreSQL 17.11 aislado también aprobó. Todavía se exige clon del
+  esquema vigente y un acuse oficial controlado.
 - La ultima carga de firma conserva metadatos seguros
   (`certificado_ultima_carga_en`, archivo original, formato, titular, emisor,
   serial y estado de clave). La clave del P12/PFX nunca debe guardarse ni

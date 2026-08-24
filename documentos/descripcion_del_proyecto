@@ -1,3 +1,13 @@
+Revision candidato DIAN desde fuente fiscal real 2026-08-24: la emision comercial
+queda limitada a factura electronica de venta construida desde un snapshot privado
+e inmutable del carrito pagado, cliente y emisor de la empresa. No se fabrican
+productos, direcciones, clientes ni codigos territoriales; pais Colombia y codigos
+DANE coherentes son obligatorios. Nota credito/debito y las demas familias siguen
+visibles pero bloqueadas hasta tener fuente/adaptador documental propio. Es un
+candidato local NO-GO: PostgreSQL 17.11 aislado, XSD, XMLDSig y Schematron
+aprobaron; faltan clon del esquema vigente, prueba autenticada, acuse DIAN,
+despliegue y emision real controlada.
+
 Revision diagramas tecnicos 2026-07-07: el super administrador incorpora el grupo `Diagramas tecnicos` con una pagina propia para cada diagrama del sistema: modulos, ERD, multiempresa, arquitectura, ventas POS, facturacion DIAN, inventario, roles/permisos, API/endpoints, despliegue, seguridad, auditoria/logs, reportes, integraciones y agentes automaticos. La fuente interna para Codex queda en `documentos/diagramas/diagramas_sistema_pcs.md`, `documentos/diagramas/diagramas_sistema_pcs_manifest.json` y `web/js/super_diagramas_data.js`, en formato texto/Mermaid y sin dependencias externas.
 
 Revision DIAN produccion PCS 2026-06-18: la facturacion electronica Colombia de Powerful Control System quedo validada en produccion DIAN. El portal DIAN muestra las facturas `1PCS2` y `1PCS3` como `Aprobado con notificacion`, `1PCS3` tambien tuvo acuse SOAP/WCF aceptado, y el siguiente consecutivo operativo quedo en `1PCS4`. `Regla 90, Documento procesado anteriormente` no se considera aceptacion automatica: requiere acuse original, portal DIAN, CUFE/TrackId o evidencia oficial equivalente antes de cerrar el documento. La ayuda `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` queda adaptada a PCS con control diario de consecutivos, lectura de `RUT01` y pasos para no reenviar folios aprobados.

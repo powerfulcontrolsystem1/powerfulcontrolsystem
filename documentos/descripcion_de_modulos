@@ -1,3 +1,13 @@
+2026-08-24: Facturacion electronica Colombia, alcance comercial verificable.
+- Factura electronica de venta es la unica familia disponible para emision.
+- La fuente fiscal privada conserva lineas, partes, pago y totales reales por
+  `empresa_id`; el UBL no acepta defaults ni datos comerciales del request.
+- Nota credito/debito, soporte, nomina, equivalentes, contingencia y RADIAN se
+  muestran bloqueados hasta implementar su contrato documental propio.
+- Estado: candidato local con PostgreSQL 17.11 aislado, XSD, XMLDSig y
+  Schematron aprobados; NO-GO hasta completar clon del esquema vigente, prueba
+  visual autenticada, acuse DIAN, despliegue y emision real controlada.
+
 2026-08-21: Cierre especifico de facturacion electronica Colombia.
 - Backend/worker: la conectividad GET es de solo lectura; reintentos manuales
   usan POST y el worker consulta acuses pendientes con bloqueo por empresa.

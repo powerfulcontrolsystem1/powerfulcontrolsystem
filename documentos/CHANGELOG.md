@@ -1,3 +1,18 @@
+## [2026-08-24] Factura DIAN desde fuente fiscal real
+
+- [Contrato] La emisión comercial queda limitada a factura electrónica de venta;
+  nota crédito/débito y las demás familias fallan cerrado hasta tener fuente y
+  adaptador propios.
+- [Datos] Se persiste un snapshot fiscal privado e inmutable y se agregan códigos
+  DANE de emisor/cliente sin inferir valores existentes.
+- [UBL] Las líneas, partes, pago, impuestos y totales nacen de la venta real; los
+  descuentos de línea no se duplican como descuento global.
+- [Seguridad] Secretos DIAN cifrados por empresa/campo y rutas libres de
+  firma/envío bloqueadas.
+- [QA] Go, vet, JavaScript, PostgreSQL 17.11 aislado, XSD oficial, XMLDSig y
+  Schematron DIAN aprobados. Clon del esquema vigente, prueba autenticada, acuse
+  DIAN, despliegue y emisión real pendientes; estado NO-GO.
+
 ## [2026-08-13] Domótica 1.4, SSH cifrado, escenas y Victron VE.Direct
 - [Corrección] La cola interpreta fechas RFC3339 como `TIMESTAMPTZ`; botones, temporizadores, escenas y recuperación ya no quedan pendientes por desfase UTC/local.
 - [Raspberry] El agente usa el `boot_id` del kernel, se reemplaza y reinicia al actualizar y recupera las salidas previamente confirmadas mediante la cola empresarial.

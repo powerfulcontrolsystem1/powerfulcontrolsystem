@@ -1475,6 +1475,23 @@ afecte dinero, documentos, licencias o seguridad.
    correccion posterior.
 8. Firma o resolucion vencida: renovar, cargar en PCS, asociar en DIAN y volver a
    probar.
+
+### Factura electrónica comercial Colombia con fuente real (2026-08-24)
+
+1. Completar emisor y cliente con documento, responsabilidad tributaria,
+   dirección, departamento/municipio y códigos DANE coherentes.
+2. Confirmar que cada línea del carrito tenga descripción, unidad convertible a
+   código DIAN, código de impuesto y porcentaje explícitos; no se inventa el
+   tratamiento de una línea al 0 %.
+3. Al pagar, PCS persiste primero el comprobante y su `fuente_fiscal_json`
+   inmutable antes de reutilizar o limpiar el carrito.
+4. La factura carga la fuente por `empresa_id` y documento, concilia líneas,
+   impuestos y total, reserva el folio, genera UBL, firma, guarda XML y solo
+   entonces transmite por el flujo canónico.
+5. Una respuesta de transporte sin acuse concluyente queda pendiente; solo el
+   acuse oficial permite marcar aceptada y enviar XML/PDF al cliente.
+6. Nota crédito/débito, soporte, nómina, equivalentes, contingencia y RADIAN
+   permanecen bloqueados mientras no tengan fuente y adaptador específicos.
 ## Domotica: provisionar Raspberry desde su navegador
 
 1. El administrador abre PCS en la Raspberry, entra a Domotica y registra el
@@ -1505,3 +1522,14 @@ afecte dinero, documentos, licencias o seguridad.
 11. Una entrada GPIO autenticada puede encender/apagar el aparato destino,
     iniciar su temporizador o respetar su agenda; todo ON reserva la cola única
     de la empresa.
+### Preflight fiscal antes de pagar una factura Colombia
+
+- Si el pago solicita factura electrónica (manual o automática), el backend
+  reconstruye en memoria la misma fuente fiscal a partir del carrito, cliente y
+  emisor reales antes de cerrar la venta.
+- Datos maestros incompletos, códigos DANE inválidos, líneas sin código/unidad o
+  totales/impuestos no conciliados responden `409` sin pagar, reservar consecutivo,
+  firmar ni transmitir.
+- Descuentos y devoluciones globales no distribuidos se rechazan para factura;
+  deben aplicarse por línea o usarse únicamente con comprobante de pago.
+- Una fuente con bloqueantes nunca se persiste como artefacto inmutable.

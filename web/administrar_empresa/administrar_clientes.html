@@ -102,8 +102,16 @@
           <input id="departamento" class="form-input" placeholder="Ej: Antioquia">
         </div>
         <div class="form-col">
+          <label class="form-label">Código DANE departamento</label>
+          <input id="departamento_codigo_dane" class="form-input" inputmode="numeric" maxlength="2" placeholder="05">
+        </div>
+        <div class="form-col">
           <label class="form-label">Municipio</label>
           <input id="municipio" class="form-input" placeholder="Ej: Medellín">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Código DANE municipio</label>
+          <input id="municipio_codigo_dane" class="form-input" inputmode="numeric" maxlength="5" placeholder="05001">
         </div>
         <div class="form-col">
           <label class="form-label">Código postal</label>
@@ -374,7 +382,9 @@
       document.getElementById('direccion').value = '';
       document.getElementById('pais').value = 'CO';
       document.getElementById('departamento').value = '';
+      document.getElementById('departamento_codigo_dane').value = '';
       document.getElementById('municipio').value = '';
+      document.getElementById('municipio_codigo_dane').value = '';
       document.getElementById('codigo_postal').value = '';
       document.getElementById('observaciones').value = '';
       document.getElementById('saveBtn').textContent = 'Guardar';
@@ -457,7 +467,9 @@
           document.getElementById('direccion').value = normalize(item.direccion);
           document.getElementById('pais').value = normalize(item.pais) || 'CO';
           document.getElementById('departamento').value = normalize(item.departamento);
+          document.getElementById('departamento_codigo_dane').value = normalize(item.departamento_codigo_dane);
           document.getElementById('municipio').value = normalize(item.municipio);
+          document.getElementById('municipio_codigo_dane').value = normalize(item.municipio_codigo_dane);
           document.getElementById('codigo_postal').value = normalize(item.codigo_postal);
           document.getElementById('observaciones').value = normalize(item.observaciones);
 
@@ -615,7 +627,9 @@
         direccion: normalize(document.getElementById('direccion').value),
         pais: normalize(document.getElementById('pais').value) || 'CO',
         departamento: normalize(document.getElementById('departamento').value),
+        departamento_codigo_dane: normalize(document.getElementById('departamento_codigo_dane').value),
         municipio: normalize(document.getElementById('municipio').value),
+        municipio_codigo_dane: normalize(document.getElementById('municipio_codigo_dane').value),
         codigo_postal: normalize(document.getElementById('codigo_postal').value),
         observaciones: normalize(document.getElementById('observaciones').value)
       };

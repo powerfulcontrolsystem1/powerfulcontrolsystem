@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -44,9 +45,33 @@ func testDIANKeyAndCertPEM(t *testing.T) (string, string) {
 	return keyPEM.String(), certPEM.String()
 }
 
-func testDIANValidConfig(t *testing.T, endpoint string) map[string]interface{} {
+func testDIANValidConfig(t *testing.T, endpoint string, empresaIDs ...int64) map[string]interface{} {
 	t.Helper()
+	empresaID := int64(12)
+	if len(empresaIDs) > 0 {
+		empresaID = empresaIDs[0]
+	}
+	if empresaID <= 0 {
+		t.Fatalf("empresa_id de prueba invalido: %d", empresaID)
+	}
 	keyPEM, certPEM := testDIANKeyAndCertPEM(t)
+	privateStorage := t.TempDir()
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", privateStorage)
+	tenantDIANRoot, err := empresaPrivateCategoryRoot(empresaID, "dian")
+	if err != nil {
+		t.Fatalf("resolve private DIAN root: %v", err)
+	}
+	if err := os.MkdirAll(tenantDIANRoot, 0o700); err != nil {
+		t.Fatalf("create private DIAN root: %v", err)
+	}
+	keyPath := filepath.Join(tenantDIANRoot, "test-private-key.pem")
+	certPath := filepath.Join(tenantDIANRoot, "test-certificate.pem")
+	if err := os.WriteFile(keyPath, []byte(keyPEM), 0o600); err != nil {
+		t.Fatalf("write private DIAN key: %v", err)
+	}
+	if err := os.WriteFile(certPath, []byte(certPEM), 0o600); err != nil {
+		t.Fatalf("write private DIAN certificate: %v", err)
+	}
 	return map[string]interface{}{
 		"nit":                       "900373913",
 		"digito_verificacion":       "4",
@@ -61,8 +86,8 @@ func testDIANValidConfig(t *testing.T, endpoint string) map[string]interface{} {
 		"consecutivo_actual":        1,
 		"llave_tecnica":             "llave-tecnica-test",
 		"url_dian":                  endpoint,
-		"certificado_clave_ref":     keyPEM,
-		"certificado_url":           certPEM,
+		"certificado_clave_ref":     "file:" + keyPath,
+		"certificado_url":           "file:" + certPath,
 		"test_set_id":               "test-set",
 		"software_id":               "software-id",
 		"software_pin":              "software-pin",
@@ -819,7 +844,7 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 		t.Fatalf("expected DIAN extensions and invoice line, got %s", xmlPayload)
 	}
 	for _, expected := range []string{
-		"<cbc:ProfileID>DIAN 2.1: Factura Electrónica de Venta</cbc:ProfileID>",
+		"<cbc:ProfileID>DIAN 2.1</cbc:ProfileID>",
 		"<cbc:PrepaidAmount",
 		"<cac:PaymentMeans>",
 		"<cbc:AdditionalAccountID>2</cbc:AdditionalAccountID>",
@@ -837,7 +862,7 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 }
 
 func TestSignDIANXMLXAdESBaseUsesOfficialFEVPolicyAndDataObjectProperties(t *testing.T) {
-	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc")
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc", 1)
 	result, status, err := generateDIANUBLBase(cfg, 1, map[string]interface{}{
 		"documento_codigo": "SETP1",
 		"cliente_nombre":   "Cliente Test",
@@ -855,6 +880,11 @@ func TestSignDIANXMLXAdESBaseUsesOfficialFEVPolicyAndDataObjectProperties(t *tes
 	})
 	if signErr != nil || signStatus != http.StatusOK {
 		t.Fatalf("signDIANXMLXAdESBase status=%d err=%v result=%#v", signStatus, signErr, signResp)
+	}
+	if outputPath := strings.TrimSpace(os.Getenv("PCS_TEST_DIAN_HABILITACION_XML_OUTPUT")); outputPath != "" {
+		if err := os.WriteFile(outputPath, []byte(genericStringValue(signResp["xml_firmado"])), 0o600); err != nil {
+			t.Fatalf("guardar XML de habilitacion para QA: %v", err)
+		}
 	}
 	signatureXML := genericStringValue(signResp["xml_signature"])
 	for _, expected := range []string{
@@ -902,8 +932,8 @@ func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 		expectedCUDE string
 		expectedID   string
 	}{
-		{docType: "nota_credito", expectedRoot: "<CreditNote ", expectedLine: "<cac:CreditNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1: Nota Crédito de Factura Electrónica de Venta</cbc:ProfileID>"},
-		{docType: "nota_debito", expectedRoot: "<DebitNote ", expectedLine: "<cac:DebitNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1: Nota Débito de Factura Electrónica de Venta</cbc:ProfileID>"},
+		{docType: "nota_credito", expectedRoot: "<CreditNote ", expectedLine: "<cac:CreditNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1</cbc:ProfileID>"},
+		{docType: "nota_debito", expectedRoot: "<DebitNote ", expectedLine: "<cac:DebitNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1</cbc:ProfileID>"},
 	} {
 		result, status, err := generateDIANUBLBase(cfg, 1, map[string]interface{}{
 			"documento_codigo": "SETP99",

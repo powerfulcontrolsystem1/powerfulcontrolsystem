@@ -225,6 +225,16 @@ Catalogados sin emision DIAN disponible:
 22. `Aprobado con notificacion` en portal DIAN cuenta como documento aprobado; la notificacion debe conservarse como observacion operativa y corregirse si apunta a datos maestros.
 23. Antes de reenviar un documento con el mismo prefijo/folio, el sistema u operador debe consultar historial DIAN, cola de reintentos, CUFE/TrackId o portal para evitar duplicados y consumo de consecutivos.
 24. Si se ejecuta una prueba directa contra DIAN por fuera de `empresa_facturacion_documentos`, debe registrarse en historial de cambios y adelantar `empresa_dian_configuracion.consecutivo_actual` y `empresa_configuracion_avanzada.proximo_consecutivo` al siguiente folio disponible.
+25. Una factura comercial Colombia solo puede generarse desde un
+    `fuente_fiscal_json` cargado por el servidor y perteneciente a la misma
+    empresa/documento; cuerpo HTTP, valores por defecto y líneas de habilitación
+    no son fuentes fiscales válidas.
+26. La fuente conserva las líneas y partes existentes al pagar. Su SHA-256 es
+    inmutable; cualquier diferencia, dato DANE ausente, total no conciliado,
+    unidad o impuesto desconocido bloquea antes de firma y transporte.
+27. Nota crédito y nota débito no reutilizan la factura ni un fixture sintético:
+    requieren una fuente de ajuste propia y referencia verificable a una factura
+    aceptada. Mientras falte, catálogo y endpoint deben responder bloqueados.
 25. Un `GET` de conectividad, listado o consulta nunca transmite documentos. El procesamiento manual de cola exige `POST`; el automatico pertenece a `pcs-worker`.
 26. Una respuesta asincrona con TrackId queda `pendiente`; el worker consulta `GetStatusZip` con el mismo XML/TrackId hasta aceptacion, rechazo o agotamiento controlado. Un rechazo final no se reenvia automaticamente.
 27. No se fabrican referencias externas. Si DIAN/proveedor no entrega TrackId, ZipKey o referencia equivalente, el campo permanece vacio.

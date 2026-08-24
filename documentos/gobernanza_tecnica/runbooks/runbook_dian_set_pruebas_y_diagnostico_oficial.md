@@ -76,7 +76,10 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 1. Releer la salida de `guia_onboarding` y `checklist` para identificar el prerequisito exacto faltante antes de reintentar.
 2. Ejecutar `validar_credenciales` si el problema apunta a token, software ID, prefijo, ambiente o datos tributarios incompletos.
 3. Repetir `subir_firma` si el certificado o la clave se cargaron en formato incorrecto o quedaron asociados a referencias no validas.
-4. Generar `generar_xml_ubl_base` y, si hace falta evidencia de firma, correr `firmar_xml_xades_base` para verificar que la salida base exista antes de intentar envios.
+4. Para un set de habilitación, `generar_xml_ubl_base` solo admite el marcador
+   explícito `set_habilitacion=true`. La firma y el envío libres están
+   bloqueados; usar `pruebas_dian` o el flujo documental canónico. Una factura
+   comercial debe provenir de `fuente_fiscal_json` y nunca de ese fixture.
 5. Usar `diagnostico_oficial` para distinguir entre una falla de configuracion local y una brecha del transporte oficial aun no implementado.
 6. Si el error es de rango, corregir consecutivos o ampliar el tramo disponible antes de repetir `enviar_set_pruebas`.
 7. Si el objetivo guardado no coincide con el portal, actualizarlo antes de repetir el set. Una prueba manual consume folios y solo debe ejecutarse con alcance confirmado y trazabilidad del documento.
@@ -89,8 +92,11 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 ## Validacion posterior
 
 - `diagnostico_oficial` refleja menos brechas o deja claramente separada la brecha del transporte oficial pendiente.
-- `generar_xml_ubl_base` produce una salida reutilizable.
-- `firmar_xml_xades_base` o `firmar_xml_real` generan evidencia consistente de firma base.
+- el set explícito genera su fixture UBL; la factura comercial genera líneas y
+  partes desde la fuente fiscal privada e inmutable.
+- el XML firmado pasa `scripts/validar_dian_xsd.ps1` y
+  `scripts/validar_dian_firma.ps1` antes de usarlo como candidato de
+  habilitación. El acuse DIAN sigue siendo la evidencia fiscal final.
 - `enviar_set_pruebas` responde sin conflicto de rango, envia documentos reales y consulta `GetStatusZip` cuando DIAN devuelve `ZipKey`.
 - la consulta de conectividad no procesa cola; el boton manual usa `POST` y `pcs-worker` procesa automaticamente los vencidos con bloqueo por empresa.
 - cada documento enviado conserva XML firmado, acuse y representacion PDF privados con SHA-256; un TrackId pendiente se consulta sin regenerar el XML.
@@ -100,15 +106,18 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 
 ## Limites vigentes del modulo
 
-1. El backend ofrece una base operativa util para onboarding, validacion, diagnostico, firma base, pruebas reales de habilitacion y envio real de factura Colombia por SOAP/WCF en produccion PCS.
+1. El backend ofrece onboarding, diagnóstico, set real de habilitación y un
+   candidato de factura Colombia por SOAP/WCF basado en fuente fiscal real. No
+   se declara producción lista hasta validar migraciones PostgreSQL, Schematron,
+   portal y acuse real de la empresa.
 2. El backend no debe prometer aceptacion fiscal sin acuse real DIAN/proveedor, documento visible en portal DIAN o evidencia oficial equivalente.
 3. El correo de Colombia produccion se envia despues de la aceptacion DIAN y adjunta el XML firmado y la representacion PDF persistidos. El XML y el acuse siguen siendo la evidencia fiscal autentica.
 4. Cualquier incidencia debe clasificarse explicitamente en una de estas dos categorias:
    - error de configuracion o datos de la empresa
    - brecha de implementacion del transporte oficial
-5. Documento soporte, nomina electronica, documentos equivalentes y RADIAN no
-   comparten el contrato de Invoice/CreditNote/DebitNote. Permanecen sin emision
-   hasta implementar y probar sus anexos tecnicos y servicios especificos.
+5. Nota crédito/débito, documento soporte, nómina, equivalentes, contingencia y
+   RADIAN permanecen sin emisión comercial hasta implementar y probar sus
+   fuentes, anexos técnicos y servicios específicos.
 
 ## Contrato relacionado
 

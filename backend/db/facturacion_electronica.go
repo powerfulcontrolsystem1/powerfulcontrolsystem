@@ -580,8 +580,8 @@ func DefaultFacturacionDianDocumentosSoportados() []string {
 func ListFacturacionDianDocumentosElectronicos() []FacturacionDianDocumentoCatalogItem {
 	return []FacturacionDianDocumentoCatalogItem{
 		{Codigo: "factura_electronica", Titulo: "Factura electronica de venta", Categoria: "Venta", Alcance: "Venta de bienes o servicios validada previamente por DIAN.", ModuloSugerido: "ventas_simple/carritos", EstadoImplementacion: "operativo", RequiereNumeracion: true, RequiereFirma: true, DisponibleEmision: true},
-		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "operativo", RequiereFirma: true, DisponibleEmision: true},
-		{Codigo: "nota_debito", Titulo: "Nota debito electronica", Categoria: "Ajustes de venta", Alcance: "Aumenta o corrige valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "operativo", RequiereFirma: true, DisponibleEmision: true},
+		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emision bloqueada: falta una fuente fiscal inmutable de ajuste con lineas y referencia a una factura DIAN aceptada; no se reutiliza el UBL sintetico de habilitacion."},
+		{Codigo: "nota_debito", Titulo: "Nota debito electronica", Categoria: "Ajustes de venta", Alcance: "Aumenta o corrige valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emision bloqueada: falta una fuente fiscal inmutable de ajuste con lineas y referencia a una factura DIAN aceptada; no se reutiliza el UBL sintetico de habilitacion."},
 		{Codigo: "factura_talonario_contingencia", Titulo: "Reporte de factura de talonario o papel por contingencia", Categoria: "Contingencia", Alcance: "Reporte para validacion posterior cuando hubo inconveniente tecnologico del facturador.", ModuloSugerido: "facturacion_electronica/offline", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere flujo de contingencia, reporte y validación DIAN propios."},
 		{Codigo: "documento_soporte", Titulo: "Documento soporte en adquisiciones a no obligados", Categoria: "Compras", Alcance: "Soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.", ModuloSugerido: "compras", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emision bloqueada: requiere adaptador propio del Anexo Tecnico Documento Soporte 1.0 y datos del vendedor no obligado."},
 		{Codigo: "nota_ajuste_documento_soporte", Titulo: "Nota de ajuste del documento soporte", Categoria: "Compras", Alcance: "Ajusta o corrige un documento soporte de adquisiciones.", ModuloSugerido: "compras", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador de ajuste ligado a un documento soporte aceptado."},
@@ -1528,6 +1528,8 @@ func normalizeFacturacionRetryEstado(raw string) string {
 		return "pendiente"
 	case "fallido":
 		return "fallido"
+	case "fallido_terminal":
+		return "fallido_terminal"
 	case "enviado":
 		return "enviado"
 	case "aceptado":
@@ -1868,7 +1870,7 @@ func ListFacturacionElectronicaRetriesByEmpresaContext(ctx context.Context, dbCo
 		offset = 0
 	}
 
-	query += " ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 WHEN 'contingencia' THEN 2 WHEN 'enviado' THEN 3 WHEN 'aceptado' THEN 4 ELSE 5 END, COALESCE(proximo_intento, ''), id DESC LIMIT ? OFFSET ?"
+	query += " ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 WHEN 'contingencia' THEN 2 WHEN 'fallido_terminal' THEN 3 WHEN 'enviado' THEN 4 WHEN 'aceptado' THEN 5 ELSE 6 END, COALESCE(proximo_intento, ''), id DESC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
 	rows, err := dbConn.QueryContext(ctx, query, args...)

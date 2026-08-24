@@ -308,3 +308,97 @@ func TestFacturacionElectronicaMobileContainsWideContent(t *testing.T) {
 		}
 	}
 }
+
+func dianFrontendContractSection(t *testing.T, page, start, end string) string {
+	t.Helper()
+	startAt := strings.Index(page, start)
+	if startAt < 0 {
+		t.Fatalf("DIAN frontend contract is missing section %q", start)
+	}
+	endAt := strings.Index(page[startAt+len(start):], end)
+	if endAt < 0 {
+		t.Fatalf("DIAN frontend contract section %q has no end marker %q", start, end)
+	}
+	return page[startAt : startAt+len(start)+endAt]
+}
+
+func readDIANFrontendContractPage(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read DIAN configuration page: %v", err)
+	}
+	return string(raw)
+}
+
+func TestDIANFrontendSecretsAreWriteOnlyAndUseConfiguredFlags(t *testing.T) {
+	page := readDIANFrontendContractPage(t)
+	for _, inputID := range []string{
+		"dian_test_set_id",
+		"dian_software_id",
+		"dian_software_pin",
+		"dian_llave_tecnica",
+		"dian_token_emisor_ref",
+		"dian_certificado_url",
+		"dian_certificado_clave_ref",
+	} {
+		inputMarker := `id="` + inputID + `" class="form-input" type="password"`
+		if !strings.Contains(page, inputMarker) {
+			t.Errorf("sensitive DIAN input %q is not a password field", inputID)
+		}
+		if !strings.Contains(page, `id="`+inputID+`_estado"`) {
+			t.Errorf("sensitive DIAN input %q has no visible configured-state indicator", inputID)
+		}
+	}
+
+	setSection := dianFrontendContractSection(t, page, "function setDianConfigFormData(cfg)", "function collectDianConfigPayload()")
+	for _, forbidden := range []string{
+		"cfg.test_set_id",
+		"cfg.software_id",
+		"cfg.software_pin",
+		"cfg.llave_tecnica",
+		"cfg.token_emisor_ref",
+		"cfg.certificado_url",
+		"cfg.certificado_clave_ref",
+	} {
+		if strings.Contains(setSection, forbidden) {
+			t.Errorf("DIAN frontend must not rehydrate a secret from API config: found %q", forbidden)
+		}
+	}
+	if !strings.Contains(setSection, "resetDianSecretInputs(cfg);") {
+		t.Error("DIAN frontend does not reset write-only secret fields after loading config")
+	}
+	if !strings.Contains(setSection, "cfg = dianConfigForUI(cfg);") {
+		t.Error("DIAN frontend does not discard raw secrets before retaining API config in UI state")
+	}
+	if !strings.Contains(page, `field + "_configurado"`) {
+		t.Error("DIAN frontend does not consume the server *_configurado indicators")
+	}
+	for _, hiddenResultKey := range []string{"software_id", "software_pin", "test_set_id", "llave_tecnica", "certificado_url", "certificado_clave"} {
+		if !strings.Contains(page, "|"+hiddenResultKey) {
+			t.Errorf("DIAN visible-result sanitizer does not hide %q", hiddenResultKey)
+		}
+	}
+}
+
+func TestDIANFrontendOmitsUnchangedSecretsAndCertificateReferences(t *testing.T) {
+	page := readDIANFrontendContractPage(t)
+	collectSection := dianFrontendContractSection(t, page, "function collectDianConfigPayload()", "async function loadDianConfig()")
+	for _, certificateField := range []string{"certificado_url", "certificado_clave_ref"} {
+		if strings.Contains(collectSection, certificateField) {
+			t.Errorf("DIAN configuration save must never submit upload-managed field %q", certificateField)
+		}
+	}
+	for _, secretField := range []string{"software_id", "software_pin", "test_set_id", "llave_tecnica", "token_emisor_ref"} {
+		if !strings.Contains(collectSection, `{ field: "`+secretField+`"`) {
+			t.Errorf("DIAN configuration save is missing write-only field %q", secretField)
+		}
+	}
+	if !strings.Contains(collectSection, "if (value) payload[secret.field] = value;") {
+		t.Error("DIAN configuration save does not omit empty write-only secret values")
+	}
+	if !strings.Contains(page, "state.dianConfig.certificado_clave_ref_configurado") {
+		t.Error("signature replacement confirmation is not based on the server configured flag")
+	}
+}

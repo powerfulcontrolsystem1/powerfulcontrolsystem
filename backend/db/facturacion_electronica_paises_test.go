@@ -114,8 +114,6 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 	}
 	wantDocs := map[string]bool{
 		"factura_electronica": false,
-		"nota_credito":        false,
-		"nota_debito":         false,
 	}
 	for _, raw := range docsRaw {
 		if _, exists := wantDocs[raw.(string)]; exists {
@@ -153,8 +151,6 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 func TestCatalogoDianSoloDeclaraOperativasFamiliasConAdaptador(t *testing.T) {
 	operativos := map[string]bool{
 		"factura_electronica": true,
-		"nota_credito":        true,
-		"nota_debito":         true,
 	}
 	for _, item := range ListFacturacionDianDocumentosElectronicos() {
 		if operativos[item.Codigo] {

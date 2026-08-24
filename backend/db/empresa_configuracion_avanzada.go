@@ -37,7 +37,9 @@ type EmpresaConfiguracionAvanzada struct {
 	TelefonoFacturacion                   string `json:"telefono_facturacion,omitempty"`
 	DireccionFiscal                       string `json:"direccion_fiscal,omitempty"`
 	Departamento                          string `json:"departamento,omitempty"`
+	DepartamentoCodigoDANE                string `json:"departamento_codigo_dane,omitempty"`
 	Municipio                             string `json:"municipio,omitempty"`
+	MunicipioCodigoDANE                   string `json:"municipio_codigo_dane,omitempty"`
 	PaisCodigo                            string `json:"pais_codigo,omitempty"`
 	CodigoPostal                          string `json:"codigo_postal,omitempty"`
 	AmbienteFE                            string `json:"ambiente_fe,omitempty"`
@@ -148,7 +150,9 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			telefono_facturacion TEXT,
 			direccion_fiscal TEXT,
 			departamento TEXT,
+			departamento_codigo_dane TEXT,
 			municipio TEXT,
+			municipio_codigo_dane TEXT,
 			pais_codigo TEXT DEFAULT 'CO',
 			codigo_postal TEXT,
 			ambiente_fe TEXT DEFAULT 'habilitacion',
@@ -276,7 +280,13 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "departamento", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "departamento_codigo_dane", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "municipio", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "municipio_codigo_dane", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "pais_codigo", "TEXT DEFAULT 'CO'"); err != nil {
@@ -793,7 +803,9 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(telefono_facturacion, ''),
 		COALESCE(direccion_fiscal, ''),
 		COALESCE(departamento, ''),
+		COALESCE(departamento_codigo_dane, ''),
 		COALESCE(municipio, ''),
+		COALESCE(municipio_codigo_dane, ''),
 		COALESCE(pais_codigo, 'CO'),
 		COALESCE(codigo_postal, ''),
 		COALESCE(ambiente_fe, 'habilitacion'),
@@ -883,7 +895,9 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&cfg.TelefonoFacturacion,
 		&cfg.DireccionFiscal,
 		&cfg.Departamento,
+		&cfg.DepartamentoCodigoDANE,
 		&cfg.Municipio,
+		&cfg.MunicipioCodigoDANE,
 		&cfg.PaisCodigo,
 		&cfg.CodigoPostal,
 		&cfg.AmbienteFE,
@@ -995,6 +1009,12 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	if payload.PaisCodigo == "" {
 		payload.PaisCodigo = "CO"
 	}
+	departamentoCodigoDANE, municipioCodigoDANE, err := normalizeFacturacionDANECodes(payload.DepartamentoCodigoDANE, payload.MunicipioCodigoDANE)
+	if err != nil {
+		return 0, err
+	}
+	payload.DepartamentoCodigoDANE = departamentoCodigoDANE
+	payload.MunicipioCodigoDANE = municipioCodigoDANE
 	payload.AmbienteFE = defaultAmbienteFE(payload.AmbienteFE)
 	payload.TipoOperacion = defaultTipoOperacion(payload.TipoOperacion)
 	payload.FormatoImpresion = defaultFormatoImpresion(payload.FormatoImpresion)
@@ -1139,7 +1159,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	}
 
 	nowExpr := sqlNowExpr()
-	_, err := ExecCompat(dbConn, `INSERT INTO empresa_configuracion_avanzada (
+	_, err = ExecCompat(dbConn, `INSERT INTO empresa_configuracion_avanzada (
 		empresa_id,
 		modo_documento_venta,
 		enviar_email_venta,
@@ -1324,6 +1344,8 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 			inc_responsabilidad = ?,
 			responsabilidades_rut_json = ?,
 			obligaciones_fiscales_json = ?,
+			departamento_codigo_dane = ?,
+			municipio_codigo_dane = ?,
 			fecha_actualizacion = `+nowExpr+`
 		WHERE empresa_id = ?`,
 		mostrarLogoEmpresaInt,
@@ -1345,6 +1367,8 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		payload.INCResponsabilidad,
 		payload.ResponsabilidadesRUTJSON,
 		payload.ObligacionesFiscalesJSON,
+		strings.TrimSpace(payload.DepartamentoCodigoDANE),
+		strings.TrimSpace(payload.MunicipioCodigoDANE),
 		payload.EmpresaID,
 	); err != nil {
 		return 0, err

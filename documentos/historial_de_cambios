@@ -1,9 +1,57 @@
+2026-08-24: Fuente fiscal real, secretos DIAN y cierre preventivo para candidato de producción.
+- La factura comercial Colombia deja de usar la línea única de habilitación. Al
+  pagar el carrito se conserva un artefacto privado e inmutable
+  `fuente_fiscal_json`, aislado por `empresa_id`, con emisor, cliente, líneas,
+  impuestos, descuentos, totales y pago reales. El mismo origen solo admite el
+  mismo SHA-256; una mutación posterior falla cerrada.
+- El UBL comercial carga únicamente ese artefacto desde el servidor, genera
+  todas sus líneas y direcciones reales y rechaza cualquier diferencia de
+  empresa, documento, total, código de producto, país, código tributario,
+  unidad o dato geográfico. Los descuentos de línea no se repiten en el total
+  legal como descuento global, evitando una doble resta. Se
+  eliminaron del camino comercial Bogotá/11001, consumidor, correo, producto y
+  precio ficticios. La factura firmada de regresión pasó el XSD UBL 2.1 de la
+  caja DIAN y verificación XMLDSig independiente.
+- Antes de pagar con factura electrónica, el carrito pre valida por servidor
+  emisor, adquiriente, códigos DANE, líneas, unidades, impuestos y conciliación.
+  Una fuente incompleta no se sella como inmutable. Los descuentos/devoluciones
+  globales sin distribución por línea se bloquean antes del pago para no alterar
+  bases e impuestos después de cerrar la venta.
+- `empresa_configuracion_avanzada` y `clientes` agregan códigos DANE de
+  departamento y municipio mediante la migración append-only
+  `20260824-001-facturacion-dane-codes-v1`. No se infieren códigos históricos;
+  la interfaz permite capturarlos y el backend valida longitud y pertenencia.
+- Nota crédito y nota débito ya no se anuncian operativas: quedan
+  `bloqueado_contrato` hasta tener fuente inmutable de ajuste, líneas y
+  referencia a una factura aceptada. Soporte, nómina, equivalentes, contingencia
+  y RADIAN conservan su bloqueo especializado.
+- Credenciales DIAN persistidas se cifran con propósito distinto por empresa y
+  campo; GET/listados no devuelven secretos y la firma/certificado solo se leen
+  desde almacenamiento privado del tenant. Se bloquearon firma, XML y envío
+  libre fuera del flujo canónico.
+- Se reforzaron cuerpo JSON estricto, autorización efectiva, aislamiento del
+  `empresa_id`, acuse con negaciones, estados pendientes/terminales, bloqueo
+  asesor por documento, consecutivo sin rebobinado, saneamiento recursivo de
+  respuestas y persistencia obligatoria de historial/artefactos.
+- QA local: `go test ./...` y `go vet ./...` correctos usando temporal en D:;
+  scripts inline de las tres vistas modificadas válidos; UBL firmado válido
+  contra XSD oficial, firma XMLDSig independiente y Schematron DIAN completo
+  con cero mensajes fatales. El clon del esquema vigente, portal autenticado y
+  acuse real siguen siendo compuertas antes del despliegue; no hubo emisión ni
+  modificación de datos de producción.
+- QA PostgreSQL: una instancia temporal PostgreSQL 17.11 en D: ejecutó
+  `go test ./db -count=1` con `PCS_TEST_POSTGRES_DSN`, incluyendo migraciones de
+  secretos, fuente fiscal, DANE, inmutabilidad y aislamiento. El catálogo
+  completo sobre base vacía se detuvo en la migración histórica
+  `20260716-002-nextcloud-accounts-v1` porque presupone la tabla legado
+  `empresas`; el gate de despliegue exige por ello un clon del esquema vigente.
+
 2026-08-23: Entrada JSON fiscal limitada y estricta.
 - Backend: las acciones electrónicas de `/api/empresa/facturacion_electronica` limitan el cuerpo a 64 KiB, rechazan JSON malformado, campos desconocidos y objetos concatenados; antes el error de decodificación se descartaba y la operación podía continuar con un payload parcial.
 - Compatibilidad: el cuerpo vacío continúa permitido para las acciones históricas que reciben los identificadores por parámetros de consulta. La regresión cubre payload válido, campo desconocido, JSON adicional y cuerpo vacío.
 
 2026-08-23: Catálogo DIAN sin estados ambiguos.
-- Backend: todas las familias sin adaptador especializado se publican como `bloqueado_contrato`, `disponible_emision=false` y con una explicación visible; únicamente factura electrónica, nota crédito y nota débito conservan estado `operativo`.
+- Backend: todas las familias sin adaptador especializado se publican como `bloqueado_contrato`, `disponible_emision=false` y con una explicación visible; después de la revisión de fuente fiscal solo factura electrónica conserva estado `operativo`.
 - Alcance: incluye contingencia, soporte y ajustes, nómina y ajustes, todos los documentos equivalentes/ajustes y RADIAN. Una regresión recorre el catálogo completo para impedir que una familia vuelva a aparecer como operativa por error.
 
 2026-08-23: Prevalidación segura de documento soporte DIAN.
@@ -20,8 +68,8 @@
 - Frontend y QA: `Revisar DIAN` muestra bloqueos sin envío; regresiones cubren bloqueo, totales, aislamiento y contrato visible. No se realizaron nuevos envíos fiscales.
 
 2026-08-23: Ciclo de vida DIAN cerrado para familias sin adaptador.
-- Backend: `resolveFacturacionTransitionForDocument` ahora rechaza antes de cualquier estado `emitida` toda familia que no esté cubierta por el adaptador UBL de factura/nota de venta. Esto cubre documentos soporte, nómina, equivalentes, RADIAN y notas de ajuste mientras sus flujos especializados no existan.
-- Seguridad: el catálogo puede informar la familia y su ruta futura, pero ninguna transición compartida puede convertirla en evidencia fiscal; las regresiones verifican el bloqueo y conservan factura, nota crédito y nota débito implementadas.
+- Backend: `resolveFacturacionTransitionForDocument` rechaza antes de cualquier estado fiscal las familias sin adaptador especializado. El dispatcher comercial restringe además la emisión DIAN a factura con fuente fiscal inmutable; las notas de venta quedan bloqueadas hasta implementar su fuente de ajuste.
+- Seguridad: el catálogo puede informar la familia y su ruta futura, pero ninguna transición compartida puede convertirla en evidencia fiscal; las regresiones verifican el bloqueo y conservan únicamente factura implementada para emisión comercial.
 
 2026-08-21: Facturacion electronica / familias DIAN fallan cerrado y consulta sin doble conteo.
 - La auditoria autenticada de Powerful Control System confirmo que produccion
@@ -42929,9 +42977,8 @@ acumulativa.
   alta manual a `borrador` y limpia CUNE/CUDS, respuesta y payload fiscal.
 - Solo el futuro adaptador técnico, tras firma y respuesta verificable de DIAN,
   podrá registrar identificadores y estados fiscales finales.
-- La migración `20260823-002-dian-manual-document-drafts-v1` corrige los
-  registros históricos del mismo origen: conserva importes y tercero, pero
-  devuelve a borrador los estados/identificadores no verificables.
+- No se reescriben registros históricos al desplegar: cualquier estado legado
+  requiere conciliación y evidencia antes de modificar CUNE, CUDS o respuestas.
   El bloqueo de producción se conserva hasta completar esos contratos.
 
 2026-08-23: Venta directa: aislamiento obligatorio del carrito fiscal seleccionado.
