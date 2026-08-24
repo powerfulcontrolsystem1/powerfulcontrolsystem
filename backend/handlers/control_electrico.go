@@ -474,8 +474,43 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				})
 				return
 			case "eventos":
-				limit := controlElectricoParseLimit(r, 50)
-				eventos, err := dbpkg.ListEmpresaControlElectricoEventosContext(r.Context(), dbEmp, empresaID, limit)
+				filter, filterErr := controlElectricoEventFilterFromRequest(r)
+				if filterErr != nil {
+					http.Error(w, filterErr.Error(), http.StatusBadRequest)
+					return
+				}
+				if filter.ReleID > 0 {
+					if _, err := dbpkg.GetEmpresaControlElectricoReleByIDContext(r.Context(), dbEmp, empresaID, filter.ReleID); err != nil {
+						http.Error(w, "El equipo no pertenece a esta empresa", http.StatusBadRequest)
+						return
+					}
+				}
+				if filter.RaspberryID > 0 {
+					if _, err := dbpkg.GetEmpresaControlElectricoRaspberryByID(dbEmp, empresaID, filter.RaspberryID, false); err != nil {
+						http.Error(w, "La Raspberry Pi no pertenece a esta empresa", http.StatusBadRequest)
+						return
+					}
+				}
+				if filter.EstacionID > 0 {
+					estaciones, err := dbpkg.ListEmpresaControlElectricoEstaciones(dbEmp, empresaID)
+					if err != nil {
+						log.Printf("[control_electrico] list filter stations empresa_id=%d error: %v", empresaID, err)
+						http.Error(w, "No se pudieron validar las estaciones de domotica", http.StatusInternalServerError)
+						return
+					}
+					found := false
+					for _, estacion := range estaciones {
+						if estacion.EstacionID == filter.EstacionID {
+							found = true
+							break
+						}
+					}
+					if !found {
+						http.Error(w, "La estacion no pertenece a esta empresa", http.StatusBadRequest)
+						return
+					}
+				}
+				eventos, err := dbpkg.ListEmpresaControlElectricoEventosFilteredContext(r.Context(), dbEmp, empresaID, filter)
 				if err != nil {
 					log.Printf("[control_electrico] list eventos empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, "No se pudieron cargar eventos de domotica", http.StatusInternalServerError)
@@ -1910,4 +1945,41 @@ func controlElectricoParseLimit(r *http.Request, fallback int) int {
 		return fallback
 	}
 	return limit
+}
+
+func controlElectricoEventFilterFromRequest(r *http.Request) (dbpkg.EmpresaControlElectricoEventoFilter, error) {
+	filter := dbpkg.EmpresaControlElectricoEventoFilter{Limit: controlElectricoParseLimit(r, 50)}
+	query := r.URL.Query()
+	parseID := func(name string) (int64, error) {
+		raw := strings.TrimSpace(query.Get(name))
+		if raw == "" {
+			return 0, nil
+		}
+		value, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || value <= 0 {
+			return 0, fmt.Errorf("%s debe ser un identificador valido", name)
+		}
+		return value, nil
+	}
+	var err error
+	if filter.EstacionID, err = parseID("estacion_id"); err != nil {
+		return filter, err
+	}
+	if filter.ReleID, err = parseID("rele_id"); err != nil {
+		return filter, err
+	}
+	if filter.RaspberryID, err = parseID("raspberry_id"); err != nil {
+		return filter, err
+	}
+	filter.Comando = strings.ToLower(strings.TrimSpace(query.Get("comando")))
+	filter.Resultado = strings.ToLower(strings.TrimSpace(query.Get("resultado")))
+	if len(filter.Comando) > 80 || len(filter.Resultado) > 32 {
+		return filter, fmt.Errorf("filtro de evento invalido")
+	}
+	filter.Desde = strings.TrimSpace(query.Get("desde"))
+	filter.Hasta = strings.TrimSpace(query.Get("hasta"))
+	if len(filter.Desde) > 40 || len(filter.Hasta) > 40 {
+		return filter, fmt.Errorf("rango de fechas invalido")
+	}
+	return filter, nil
 }

@@ -2431,6 +2431,11 @@ reconciliación operativa explícita.
 - `empresa_control_electrico_limites_tunel`: una fila por `empresa_id`, cuota mensual MB, porcentaje de advertencia, bloqueo, auditoría y observaciones.
 - `empresa_control_electrico_trafico_diario` conserva RX/TX/solicitudes por `(empresa_id, raspberry_id, fecha)` y añade índice por empresa/fecha para agregación mensual.
 
+## Reporte de seguimiento Domótica (2026-08-23)
+
+- No crea tablas ni retiene secretos nuevos: consulta `empresa_control_electrico_eventos`, que se filtra siempre por `empresa_id` y, de forma opcional, por `estacion_id`, `rele_id`, `raspberry_id`, `comando`, `resultado` y rango de `fecha_evento`.
+- La validación del handler comprueba que cada identificador secundario solicitado pertenece a la empresa autorizada antes de ejecutar la consulta; la UI solo carga selectores a partir del resumen de esa misma empresa.
+
 ## 2026-08-13 - SSH cifrado y escenas de Domotica
 
 - `empresa_control_electrico_raspberry_pis` agrega `ssh_host`, `ssh_port`,

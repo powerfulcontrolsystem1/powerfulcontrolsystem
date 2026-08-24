@@ -162,6 +162,21 @@ type EmpresaControlElectricoEvento struct {
 	MetadataJSON   string `json:"metadata_json,omitempty"`
 }
 
+// EmpresaControlElectricoEventoFilter limita el historial operativo a los
+// recursos de la empresa autenticada. Los IDs se validan en el handler antes
+// de llegar a esta consulta; la clausula empresa_id se conserva siempre como
+// primera condicion de aislamiento.
+type EmpresaControlElectricoEventoFilter struct {
+	EstacionID  int64
+	ReleID      int64
+	RaspberryID int64
+	Comando     string
+	Resultado   string
+	Desde       string
+	Hasta       string
+	Limit       int
+}
+
 // EmpresaControlElectricoLectura registra telemetria de estado y consumo por aparato.
 type EmpresaControlElectricoLectura struct {
 	ID           int64   `json:"id"`
@@ -1270,7 +1285,7 @@ func ListEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID int64, limit i
 }
 
 func ListEmpresaControlElectricoEventosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, limit int) ([]EmpresaControlElectricoEvento, error) {
-	return listEmpresaControlElectricoEventosContext(ctx, dbConn, empresaID, 0, false, limit)
+	return ListEmpresaControlElectricoEventosFilteredContext(ctx, dbConn, empresaID, EmpresaControlElectricoEventoFilter{Limit: limit})
 }
 
 // ListEmpresaControlElectricoEventosByEstacion entrega solo la trazabilidad de
@@ -1283,7 +1298,7 @@ func ListEmpresaControlElectricoEventosByEstacionContext(ctx context.Context, db
 	if estacionID <= 0 {
 		return nil, errors.New("estacion_id invalido")
 	}
-	return listEmpresaControlElectricoEventosContext(ctx, dbConn, empresaID, estacionID, true, limit)
+	return ListEmpresaControlElectricoEventosFilteredContext(ctx, dbConn, empresaID, EmpresaControlElectricoEventoFilter{EstacionID: estacionID, Limit: limit})
 }
 
 func listEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID, estacionID int64, filterStation bool, limit int) ([]EmpresaControlElectricoEvento, error) {
@@ -1291,23 +1306,61 @@ func listEmpresaControlElectricoEventos(dbConn *sql.DB, empresaID, estacionID in
 }
 
 func listEmpresaControlElectricoEventosContext(ctx context.Context, dbConn *sql.DB, empresaID, estacionID int64, filterStation bool, limit int) ([]EmpresaControlElectricoEvento, error) {
+	filter := EmpresaControlElectricoEventoFilter{Limit: limit}
+	if filterStation {
+		filter.EstacionID = estacionID
+	}
+	return ListEmpresaControlElectricoEventosFilteredContext(ctx, dbConn, empresaID, filter)
+}
+
+// ListEmpresaControlElectricoEventosFiltered devuelve la bitacora filtrable
+// para seguimiento de aparatos. No acepta empresa_id dentro del filtro.
+func ListEmpresaControlElectricoEventosFiltered(dbConn *sql.DB, empresaID int64, filter EmpresaControlElectricoEventoFilter) ([]EmpresaControlElectricoEvento, error) {
+	return ListEmpresaControlElectricoEventosFilteredContext(context.Background(), dbConn, empresaID, filter)
+}
+
+func ListEmpresaControlElectricoEventosFilteredContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaControlElectricoEventoFilter) ([]EmpresaControlElectricoEvento, error) {
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
-	if limit <= 0 {
-		limit = 30
+	if filter.Limit <= 0 {
+		filter.Limit = 30
 	}
-	if limit > 200 {
-		limit = 200
+	if filter.Limit > 200 {
+		filter.Limit = 200
 	}
 	q := `SELECT id, empresa_id, COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(raspberry_id,0), COALESCE(gpio_pin,0), COALESCE(comando,''), COALESCE(estado_objetivo,''), COALESCE(resultado,''), COALESCE(http_status,0), COALESCE(raspberry_ip,''), COALESCE(response_body,''), COALESCE(error,''), COALESCE(fecha_evento,''), COALESCE(actor,''), COALESCE(origen,''), COALESCE(metadata_json,'') FROM empresa_control_electrico_eventos WHERE empresa_id=?`
 	args := []interface{}{empresaID}
-	if filterStation {
+	if filter.EstacionID > 0 {
 		q += " AND estacion_id=?"
-		args = append(args, estacionID)
+		args = append(args, filter.EstacionID)
+	}
+	if filter.ReleID > 0 {
+		q += " AND rele_id=?"
+		args = append(args, filter.ReleID)
+	}
+	if filter.RaspberryID > 0 {
+		q += " AND raspberry_id=?"
+		args = append(args, filter.RaspberryID)
+	}
+	if comando := strings.ToLower(strings.TrimSpace(filter.Comando)); comando != "" {
+		q += " AND LOWER(COALESCE(comando,''))=?"
+		args = append(args, comando)
+	}
+	if resultado := strings.ToLower(strings.TrimSpace(filter.Resultado)); resultado != "" {
+		q += " AND LOWER(COALESCE(resultado,''))=?"
+		args = append(args, resultado)
+	}
+	if desde := strings.TrimSpace(filter.Desde); desde != "" {
+		q += " AND pcs_ts(COALESCE(CAST(fecha_evento AS TEXT),'')) >= pcs_ts(?)"
+		args = append(args, desde)
+	}
+	if hasta := strings.TrimSpace(filter.Hasta); hasta != "" {
+		q += " AND pcs_ts(COALESCE(CAST(fecha_evento AS TEXT),'')) <= pcs_ts(?)"
+		args = append(args, hasta)
 	}
 	q += " ORDER BY id DESC LIMIT ?"
-	args = append(args, limit)
+	args = append(args, filter.Limit)
 	rows, err := querySQLCompatContext(ctx, dbConn, q, args...)
 	if err != nil {
 		return nil, err
