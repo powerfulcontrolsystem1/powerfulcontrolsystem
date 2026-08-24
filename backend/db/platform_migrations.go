@@ -256,6 +256,22 @@ func PlatformMigrations(target string) ([]Migration, error) {
 					return applyPortalVisitasSchemaTx(ctx, tx)
 				},
 			},
+			{
+				Version:     "20260821-001-admin-login-throttle-v1",
+				Description: "durable administrator login failure throttling and lockout",
+				Body:        administradorLoginThrottleSchemaFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applyAdministradorLoginThrottleSchemaTx(ctx, tx)
+				},
+			},
+			{
+				Version:     "20260821-002-session-principal-claims-v1",
+				Description: "typed administrator and enterprise-user session claims",
+				Body:        sessionPrincipalClaimsSchemaFingerprint,
+				Apply: func(ctx context.Context, tx *sql.Tx) error {
+					return applySessionPrincipalClaimsSchemaTx(ctx, tx)
+				},
+			},
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown platform migration target %q", target)

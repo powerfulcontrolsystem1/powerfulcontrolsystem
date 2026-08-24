@@ -33,7 +33,6 @@ const googleOAuthUsuarioEmpresaCookieName = "oauth_usuario_empresa_id"
 const googleOAuthUsuarioInvitationCookieName = "oauth_usuario_invitation_token"
 const googleOAuthUsuarioAcceptContractCookieName = "oauth_usuario_accept_contract"
 const browserSessionStateCookieName = "browser_session_active"
-const minAdminPasswordLength = 8
 const googlePasswordSetupPagePath = "/registrar_contrasena_usuario_de_google.html"
 
 const googleOAuthCookiePath = "/auth/google"
@@ -63,9 +62,13 @@ func setGoogleOAuthCookie(w http.ResponseWriter, r *http.Request, name, value st
 
 func clearGoogleOAuthFlowCookies(w http.ResponseWriter, r *http.Request) {
 	for _, usuario := range []bool{false, true} {
-		setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, true), "", -1)
-		setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, false), "", -1)
+		clearGoogleOAuthFlowCookiesFor(w, r, usuario)
 	}
+}
+
+func clearGoogleOAuthFlowCookiesFor(w http.ResponseWriter, r *http.Request, usuario bool) {
+	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, true), "", -1)
+	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, false), "", -1)
 }
 
 func beginGoogleOAuthFlow(w http.ResponseWriter, r *http.Request, usuario bool) (state, verifier, challenge string, err error) {
@@ -79,7 +82,10 @@ func beginGoogleOAuthFlow(w http.ResponseWriter, r *http.Request, usuario bool) 
 	}
 	sum := sha256.Sum256([]byte(verifier))
 	challenge = base64.RawURLEncoding.EncodeToString(sum[:])
-	clearGoogleOAuthFlowCookies(w, r)
+	// Solo se limpia el flujo contrario. Emitir borrados para los cuatro cookies
+	// junto con los metadatos de usuario superaba el buffer de cabeceras de Nginx
+	// y convertia el redirect valido de Google en un 502.
+	clearGoogleOAuthFlowCookiesFor(w, r, !usuario)
 	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, true), hashOAuthValue(state), googleOAuthFlowTTL)
 	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, false), verifier, googleOAuthFlowTTL)
 	return state, verifier, challenge, nil
@@ -101,7 +107,7 @@ func validateAndConsumeGoogleOAuthState(w http.ResponseWriter, r *http.Request) 
 		stored := strings.TrimSpace(stateCookie.Value)
 		if len(stored) == len(hash) && subtle.ConstantTimeCompare([]byte(stored), []byte(hash)) == 1 {
 			verifier = strings.TrimSpace(verifierCookie.Value)
-			clearGoogleOAuthFlowCookies(w, r)
+			clearGoogleOAuthFlowCookiesFor(w, r, candidate)
 			if verifier == "" {
 				return false, "", errors.New("oauth verifier missing")
 			}
@@ -174,6 +180,43 @@ func resolveAdminPostLoginRedirect(admin *dbpkg.Admin) string {
 	return "/seleccionar_empresa.html"
 }
 
+func resolveAdminContractAcceptanceRedirect(dbSuper *sql.DB, admin *dbpkg.Admin) (string, bool, error) {
+	if admin == nil || strings.TrimSpace(admin.Email) == "" {
+		return "", false, errors.New("administrator is required")
+	}
+	if err := dbpkg.SuperContractSchemaReady(dbSuper); err != nil {
+		return "", false, err
+	}
+	currentContract, err := dbpkg.GetCurrentSuperContract(dbSuper)
+	if err != nil || currentContract == nil {
+		if err == nil {
+			err = errors.New("current contract is unavailable")
+		}
+		return "", false, err
+	}
+	acceptance, err := dbpkg.GetAdministradorContratoAceptacion(dbSuper, admin.Email)
+	if err != nil {
+		return "", false, err
+	}
+	if admin.AceptaContrato == 1 && acceptance.Acepta && acceptance.Version >= currentContract.Version {
+		return "", false, nil
+	}
+	payload := map[string]interface{}{
+		"email": admin.Email,
+		"exp":   time.Now().Add(10 * time.Minute).Unix(),
+		"next":  resolveAdminPostLoginRedirect(admin),
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return "", false, err
+	}
+	encrypted, err := utils.EncryptString(string(payloadBytes))
+	if err != nil {
+		return "", false, err
+	}
+	return "/accept.html?payload=" + url.QueryEscape(encrypted), true, nil
+}
+
 func enforceManagedAdminRole(dbSuper *sql.DB, admin *dbpkg.Admin) (*dbpkg.Admin, error) {
 	if admin == nil {
 		return nil, nil
@@ -236,8 +279,8 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar una ciudad valida.")
 			return
 		}
-		if len(payload.Password) < minAdminPasswordLength {
-			writeAdminAuthError(w, http.StatusBadRequest, "La contraseña debe tener mínimo 8 caracteres.")
+		if err := validateEmpresaUsuarioPasswordWithPolicy(payload.Password, resolveEmpresaUsuarioPasswordPolicy(dbSuper)); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
@@ -355,30 +398,118 @@ func isPendingAdminScopedInvitation(admin *dbpkg.Admin) bool {
 		strings.TrimSpace(admin.UsuarioCreador) != ""
 }
 
-// ConfirmarAdminHandler confirma el correo vía token y muestra una página simple.
+// ConfirmarAdminHandler confirma el correo vía token y vuelve al acceso con un
+// estado visual accesible. El token nunca se conserva en la URL de destino.
 func ConfirmarAdminHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
+			return
+		}
 		q := r.URL.Query()
 		token := strings.TrimSpace(q.Get("token"))
 		if token == "" {
-			http.Error(w, "token required", http.StatusBadRequest)
+			http.Redirect(w, r, "/login.html?confirmacion=error", http.StatusSeeOther)
 			return
 		}
 		if _, err := dbpkg.ConfirmAdministradorByToken(dbSuper, token); err != nil {
 			log.Println("ConfirmarAdminHandler error:", err)
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			if _, writeErr := w.Write([]byte(`<html><body><h3>Token inválido o expirado</h3><p>Si ya confirmaste, intenta iniciar sesión: <a href="/login.html">Iniciar</a></p></body></html>`)); writeErr != nil {
-				log.Printf("ConfirmarAdminHandler write response error: %v", writeErr)
-			}
+			http.Redirect(w, r, "/login.html?confirmacion=error", http.StatusSeeOther)
 			return
 		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		if _, writeErr := w.Write([]byte(`<html><body><h3>Correo confirmado</h3><p>Tu cuenta ha sido confirmada. Ahora puedes <a href="/login.html">iniciar sesión</a>.</p></body></html>`)); writeErr != nil {
-			log.Printf("ConfirmarAdminHandler write response error: %v", writeErr)
-		}
+		http.Redirect(w, r, "/login.html?confirmacion=ok", http.StatusSeeOther)
 	}
+}
+
+type adminLoginPayload struct {
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	OTPCode        string `json:"otp_code"`
+	RecaptchaToken string `json:"recaptcha_token"`
+}
+
+func authenticateAdminCredentials(w http.ResponseWriter, dbSuper *sql.DB, payload adminLoginPayload) (*dbpkg.Admin, bool, bool) {
+	now := time.Now().UTC()
+	attemptState, err := dbpkg.GetAdministradorLoginAttemptState(dbSuper, payload.Email)
+	if err != nil {
+		log.Println("AdminLoginHandler load throttle state error:", err)
+		writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+		return nil, false, false
+	}
+	if attemptState.Locked(now) {
+		retryAfter := int(time.Until(attemptState.LockedUntil).Seconds())
+		if retryAfter < 1 {
+			retryAfter = 1
+		}
+		w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+		writeAdminAuthError(w, http.StatusTooManyRequests, "Demasiados intentos. Espera antes de volver a intentar.")
+		return nil, false, false
+	}
+	registerFailure := func() bool {
+		state, failureErr := dbpkg.RegisterAdministradorLoginFailure(dbSuper, payload.Email, time.Now().UTC())
+		if failureErr != nil {
+			log.Println("AdminLoginHandler register failure error:", failureErr)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+			return true
+		}
+		if state.Locked(time.Now().UTC()) {
+			retryAfter := int(time.Until(state.LockedUntil).Seconds())
+			if retryAfter < 1 {
+				retryAfter = 1
+			}
+			w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+			writeAdminAuthError(w, http.StatusTooManyRequests, "Demasiados intentos. Espera antes de volver a intentar.")
+			return true
+		}
+		return false
+	}
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			log.Println("AdminLoginHandler get admin error:", err)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+			return nil, false, false
+		}
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
+		return nil, false, false
+	}
+	admin, err = enforceManagedAdminRole(dbSuper, admin)
+	if err != nil {
+		log.Println("AdminLoginHandler enforce managed role error:", err)
+		writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
+		return nil, false, false
+	}
+	if !strings.EqualFold(strings.TrimSpace(admin.Estado), "activo") {
+		writeAdminAuthError(w, http.StatusForbidden, "La cuenta administrativa no esta disponible para iniciar sesión.")
+		return nil, false, false
+	}
+	if admin.EmailConfirmado != 1 {
+		writeAdminAuthError(w, http.StatusForbidden, "Debes confirmar tu correo antes de iniciar sesión.")
+		return nil, false, false
+	}
+	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": false, "password_setup_required": true, "message": "Tu cuenta todavía no tiene una contraseña activa."})
+		return nil, false, false
+	}
+	passwordOK, passwordNeedsUpgrade := verifyEmpresaUsuarioPasswordHash(payload.Password, admin.PasswordSalt, admin.PasswordHash)
+	if !passwordOK {
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
+		return nil, false, false
+	}
+	if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
+		return nil, false, false
+	}
+	return admin, passwordNeedsUpgrade, true
 }
 
 // AdminLoginHandler maneja login por email/contraseña para administradores.
@@ -388,12 +519,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
-		var payload struct {
-			Email          string `json:"email"`
-			Password       string `json:"password"`
-			OTPCode        string `json:"otp_code"`
-			RecaptchaToken string `json:"recaptcha_token"`
-		}
+		var payload adminLoginPayload
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de acceso es inválido.")
 			return
@@ -408,35 +534,36 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeRecaptchaValidationError(w, err)
 			return
 		}
-		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
-		if err != nil {
-			log.Println("AdminLoginHandler get admin error:", err)
-			writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
+		admin, passwordNeedsUpgrade, authenticated := authenticateAdminCredentials(w, dbSuper, payload)
+		if !authenticated {
 			return
 		}
-		admin, err = enforceManagedAdminRole(dbSuper, admin)
-		if err != nil {
-			log.Println("AdminLoginHandler enforce managed role error:", err)
-			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
+		if passwordNeedsUpgrade {
+			upgradedHash, upgradedSalt, upgradeErr := generateEmpresaUsuarioPasswordHash(payload.Password)
+			if upgradeErr != nil || dbpkg.SetAdministradorPassword(dbSuper, admin.Email, upgradedHash, upgradedSalt) != nil {
+				log.Println("AdminLoginHandler password verifier upgrade error")
+				writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+				return
+			}
+		}
+		if err := dbpkg.ClearAdministradorLoginFailures(dbSuper, admin.Email); err != nil {
+			log.Println("AdminLoginHandler clear failures error:", err)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
 			return
 		}
-		if admin.EmailConfirmado != 1 {
-			writeAdminAuthError(w, http.StatusForbidden, "Debes confirmar tu correo antes de iniciar sesión.")
+		contractRedirect, contractRequired, contractErr := resolveAdminContractAcceptanceRedirect(dbSuper, admin)
+		if contractErr != nil {
+			log.Println("AdminLoginHandler contract gate error:", contractErr)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "No se pudo validar el contrato vigente.")
 			return
 		}
-		if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
-			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": false, "password_setup_required": true, "message": "Tu cuenta todavía no tiene una contraseña activa."})
-			return
-		}
-		// verificar contraseña
-		expected := hashEmpresaUsuarioPassword(payload.Password, admin.PasswordSalt)
-		if expected != strings.TrimSpace(admin.PasswordHash) {
-			writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
-			return
-		}
-		// crear sesión
-		if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
-			writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
+		if contractRequired {
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":                           true,
+				"contract_acceptance_required": true,
+				"redirect_url":                 contractRedirect,
+				"message":                      "Debes aceptar el contrato vigente antes de iniciar sesión.",
+			})
 			return
 		}
 		token, terr := utils.GenerateSecureToken(32)
@@ -478,6 +605,12 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 // AdminRequestPasswordRecoveryHandler solicita envío de token de recuperación.
 func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		respondAccepted := func() {
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":      true,
+				"message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña.",
+			})
+		}
 		if r.Method != http.MethodPost {
 			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
@@ -502,7 +635,7 @@ func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": false, "message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña."})
+				respondAccepted()
 				return
 			}
 			log.Println("AdminRequestPasswordRecoveryHandler get admin error:", err)
@@ -510,7 +643,7 @@ func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if admin == nil || admin.EmailConfirmado != 1 {
-			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": false, "message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña."})
+			respondAccepted()
 			return
 		}
 		// generar token
@@ -527,10 +660,10 @@ func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if _, err := sendAdminPasswordRecoveryEmail(r, dbSuper, payload.Email, "", token); err != nil {
 			log.Println("AdminRequestPasswordRecoveryHandler send mail error:", err)
-			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": false, "message": "No se pudo enviar el correo de recuperación. Revisa la configuración SMTP."})
+			respondAccepted()
 			return
 		}
-		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": true, "message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña."})
+		respondAccepted()
 	}
 }
 
@@ -558,8 +691,8 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar correo, token y nueva contraseña.")
 			return
 		}
-		if len(payload.Password) < minAdminPasswordLength {
-			writeAdminAuthError(w, http.StatusBadRequest, "La nueva contraseña debe tener mínimo 8 caracteres.")
+		if err := validateEmpresaUsuarioPasswordWithPolicy(payload.Password, resolveEmpresaUsuarioPasswordPolicy(dbSuper)); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
@@ -582,14 +715,15 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación no es válido.")
 			return
 		}
-		// verificar expiración
-		if admin.PasswordResetExpira != "" {
-			if t, ok := parseEmpresaUsuarioDateTime(admin.PasswordResetExpira); ok {
-				if time.Now().After(t) {
-					writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación ya expiró.")
-					return
-				}
+		// An absent or malformed expiry must never turn a recovery token into an
+		// indefinitely valid credential.
+		expiresAt, expiresOK := parseEmpresaUsuarioDateTime(strings.TrimSpace(admin.PasswordResetExpira))
+		if !expiresOK || time.Now().After(expiresAt) {
+			if clearErr := dbpkg.ClearAdministradorPasswordResetToken(dbSuper, admin.ID); clearErr != nil {
+				log.Printf("AdminResetPasswordHandler clear expired token error: %v", clearErr)
 			}
+			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación no es válido o ya expiró.")
+			return
 		}
 		// generar hash y guardar
 		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
@@ -598,21 +732,12 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger la nueva contraseña.")
 			return
 		}
-		if err := dbpkg.SetAdministradorPassword(dbSuper, payload.Email, hash, salt); err != nil {
+		if err := dbpkg.SetAdministradorPasswordFromResetToken(dbSuper, payload.Email, payload.Token, hash, salt); err != nil {
 			log.Println("AdminResetPasswordHandler set password error:", err)
-			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la nueva contraseña.")
-			return
-		}
-		if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, admin.Email); err != nil {
-			log.Println("AdminResetPasswordHandler revoke sessions error:", err)
-			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger las sesiones anteriores.")
+			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación ya no es válido.")
 			return
 		}
 		utils.InvalidateAuthCacheForAdmin(admin.Email)
-		// limpiar token
-		if err := dbpkg.ClearAdministradorPasswordResetToken(dbSuper, admin.ID); err != nil {
-			log.Println("AdminResetPasswordHandler clear token error:", err)
-		}
 		// crear sesión y responder
 		tokenSession, terr := utils.GenerateSecureToken(32)
 		if terr != nil {
@@ -989,7 +1114,6 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 			return
 		}
 		log.Printf("handleGoogleLogin: oauth redirect requested (client configured=%t)", clientID != "")
-		clearGoogleUsuarioFlowCookies(w, r)
 		state, _, challenge, err := beginGoogleOAuthFlow(w, r, false)
 		if err != nil {
 			log.Printf("handleGoogleLogin: no se pudo iniciar oauth: %v", err)
@@ -1303,6 +1427,9 @@ func resolveGoogleUsuarioFromCookies(r *http.Request, dbEmpresas *sql.DB, email 
 		}
 		return item, item.EmpresaID, invitationToken, true, nil
 	}
+	if empresaID <= 0 {
+		return nil, empresaID, invitationToken, false, errEmpresaUsuarioScopeRequired
+	}
 
 	item, err := resolveUniqueEmpresaUsuarioByEmail(dbEmpresas, email, empresaID)
 	if err != nil {
@@ -1328,10 +1455,10 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 	item, empresaID, invitationToken, consumeInvitation, err := resolveGoogleUsuarioFromCookies(r, dbEmpresas, email)
 	if err != nil {
 		switch {
+		case errors.Is(err, errEmpresaUsuarioScopeRequired):
+			redirectGoogleUsuarioError(w, r, "empresa_requerida", email, empresaID, invitationToken)
 		case errors.Is(err, sql.ErrNoRows):
 			redirectGoogleUsuarioError(w, r, "sin_invitacion", email, empresaID, invitationToken)
-		case errors.Is(err, errEmpresaUsuarioEmailAmbiguo):
-			redirectGoogleUsuarioError(w, r, "correo_ambiguo", email, empresaID, invitationToken)
 		case strings.Contains(strings.ToLower(err.Error()), "contrato"):
 			redirectGoogleUsuarioError(w, r, "contrato_requerido", email, empresaID, invitationToken)
 		case strings.Contains(strings.ToLower(err.Error()), "pendiente"):
@@ -1353,14 +1480,13 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 
 	if consumeInvitation {
 		acceptContract := googleUsuarioCookieValue(r, googleOAuthUsuarioAcceptContractCookieName) == "1"
-		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmpresas, dbSuper, item, acceptContract)
+		_, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmpresas, dbSuper, item, acceptContract)
 		if err != nil {
 			log.Printf("[usuarios_empresa] google login contract check failed empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 			redirectGoogleUsuarioError(w, r, "contrato_error", email, item.EmpresaID, invitationToken)
 			return
 		}
 		if !accepted {
-			_ = contract
 			redirectGoogleUsuarioError(w, r, "contrato_requerido", email, item.EmpresaID, invitationToken)
 			return
 		}

@@ -18207,6 +18207,12 @@ Archivos:
 - CHANGELOG.md
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
+
+2026-08-21: Endurecimiento de autenticación administrativa y empresarial.
+- Se tipan sesiones y se conserva identidad, empresa y rol del usuario operativo; las rutas globales y mutaciones administrativas quedan aisladas.
+- Se aplican PBKDF2 versionado, tokens de uso único, revocación de sesiones, throttle durable, reCAPTCHA fail-closed y contrato antes de sesión.
+- La evidencia real PCS valida invitación, correo, contrato, login empresarial, restricciones de rol, aislamiento de empresa y logout sin conservar secretos.
+- La invitación empresarial deja de imponer la vertical motel y usa texto neutral al renderizar configuraciones legadas.
 - web/administrar_empresa/propinas.html
 - web/administrar_empresa/reportes.html
 - web/administrar_empresa/reservas_hotel.html
@@ -43089,4 +43095,21 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica.html
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 - web/administrar_empresa/facturas_electronicas.html
+
+2026-08-23: feat: auditoria integral de eventos de Domotica por empresa
+- `InsertEmpresaControlElectricoEvento` conserva el evento operativo y crea su
+  espejo en `empresa_auditoria_eventos` con el mismo `empresa_id`, recurso,
+  actor, origen, estación/equipo/Raspberry y resultado. El espejo excluye IP,
+  respuesta del dispositivo, token y otros secretos.
+- La API registra de forma explícita configuraciones de Domotica, tarjetas,
+  controladores, equipos, fotos, escenas, reglas, lecturas, señales de sensor,
+  pruebas GPIO, operaciones de Raspberry, sincronizaciones, evaluaciones de
+  programación y desactivaciones. Los comandos ON/OFF, temporizadores y
+  ejecuciones programadas ya usan el mismo inserto central.
 - web/administrar_empresa/nomina_sueldos.html
+
+2026-08-23: feat: reporte filtrable de seguimiento de Domotica
+- La pestaña `Reportes` incorpora seguimiento de eventos por estación, equipo, Raspberry Pi, tipo de evento, resultado y fecha/hora, con resultado, actor y origen legibles para seguimiento operativo.
+- `action=eventos` conserva el wrapper y el `empresa_id` autorizado; valida cada identificador secundario en la empresa antes de usar una consulta SQL parametrizada sobre `empresa_control_electrico_eventos`.
+- No se exponen IP de Raspberry, tokens, respuestas del dispositivo ni secretos en el reporte.
+- Validación: pruebas Domotica de handlers/DB, sintaxis JavaScript embebida, `go vet`, revisión visual local y comprobación de aislamiento por empresa.

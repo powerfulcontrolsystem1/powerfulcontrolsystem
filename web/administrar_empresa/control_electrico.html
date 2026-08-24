@@ -890,6 +890,26 @@
       <div id="reportBreakdown" class="report-note"></div>
 	  <div class="form-row" style="margin-top:12px;"><div class="form-col"><label class="form-label" for="reportCategoryFilter">Categoria</label><select id="reportCategoryFilter" class="form-input"><option value="">Todas</option></select></div><div class="form-col"><label class="form-label" for="reportDeviceFilter">Equipo</label><select id="reportDeviceFilter" class="form-input"><option value="">Todos</option></select></div></div>
 	  <div id="reportDeviceConsumption" class="electric-events" aria-live="polite"></div>
+	  <div class="empresa-section-header empresa-section-header--spaced compact">
+		<div><h3>Seguimiento de eventos</h3><p>Filtra el historial operativo para revisar cada equipo, estación o controlador de esta empresa.</p></div>
+	  </div>
+	  <div class="form-row">
+		<div class="form-col"><label class="form-label" for="eventStationFilter">Estación</label><select id="eventStationFilter" class="form-input"><option value="">Todas</option></select></div>
+		<div class="form-col"><label class="form-label" for="eventDeviceFilter">Equipo</label><select id="eventDeviceFilter" class="form-input"><option value="">Todos</option></select></div>
+		<div class="form-col"><label class="form-label" for="eventRaspberryFilter">Raspberry Pi</label><select id="eventRaspberryFilter" class="form-input"><option value="">Todas</option></select></div>
+	  </div>
+	  <div class="form-row">
+		<div class="form-col"><label class="form-label" for="eventCommandFilter">Evento</label><select id="eventCommandFilter" class="form-input"><option value="">Todos</option></select></div>
+		<div class="form-col"><label class="form-label" for="eventResultFilter">Resultado</label><select id="eventResultFilter" class="form-input"><option value="">Todos</option><option value="ok">Correcto</option><option value="error">Con error</option></select></div>
+		<div class="form-col"><label class="form-label" for="eventFromFilter">Desde</label><input id="eventFromFilter" class="form-input" type="datetime-local"></div>
+		<div class="form-col"><label class="form-label" for="eventUntilFilter">Hasta</label><input id="eventUntilFilter" class="form-input" type="datetime-local"></div>
+	  </div>
+	  <div class="report-actions">
+		<button id="eventFilterApplyBtn" class="btn secondary" type="button">Aplicar filtros</button>
+		<button id="eventFilterClearBtn" class="btn secondary" type="button">Limpiar filtros</button>
+	  </div>
+	  <div id="eventReportSummary" class="report-note" aria-live="polite"></div>
+	  <div id="eventReportBox" class="electric-events" aria-live="polite"></div>
       <div class="report-actions">
         <button id="reportRefreshBtn" class="btn secondary" type="button">Actualizar reporte</button>
         <button id="reportPrintBtn" class="btn add" type="button">Imprimir reporte</button>
@@ -949,7 +969,7 @@
 
       var params = new URLSearchParams(window.location.search || '');
       var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
-      var state = { config: null, raspberryPis: [], estaciones: [], reles: [], eventos: [], lecturas: [], reglas: [], escenas: [], reporte: null };
+      var state = { config: null, raspberryPis: [], estaciones: [], reles: [], eventos: [], reportEvents: [], lecturas: [], reglas: [], escenas: [], reporte: null };
 
       function $(id) { return document.getElementById(id); }
 
@@ -1704,6 +1724,90 @@
 		renderDeviceConsumptionReport();
 	  }
 
+      function populateEventReportFilters() {
+        var fields = [
+          ['eventStationFilter', (state.estaciones || []).map(function (station) { return { value: station.estacion_id, label: station.estacion_nombre || station.estacion_codigo || ('Estación ' + station.estacion_id) }; })],
+          ['eventDeviceFilter', (state.reles || []).map(function (rele) { return { value: rele.id, label: rele.relay_name || rele.salida_codigo || ('Equipo #' + rele.id) }; })],
+          ['eventRaspberryFilter', (state.raspberryPis || []).map(function (pi) { return { value: pi.id, label: pi.nombre || pi.codigo || ('Raspberry Pi #' + pi.id) }; })]
+        ];
+        fields.forEach(function (entry) {
+          var select = $(entry[0]);
+          if (!select) return;
+          var previous = select.value;
+          select.innerHTML = '<option value="">Todas</option>' + entry[1].map(function (item) {
+            return '<option value="' + sanitize(item.value) + '">' + sanitize(item.label) + '</option>';
+          }).join('');
+          select.value = previous;
+        });
+        var commandSelect = $('eventCommandFilter');
+        if (commandSelect) {
+          var previousCommand = commandSelect.value;
+          var commands = Array.from(new Set((state.eventos || []).map(function (event) { return String(event.comando || '').trim(); }).filter(Boolean))).sort();
+          commandSelect.innerHTML = '<option value="">Todos</option>' + commands.map(function (command) {
+            return '<option value="' + sanitize(command) + '">' + sanitize(command.replace(/_/g, ' ')) + '</option>';
+          }).join('');
+          commandSelect.value = previousCommand;
+        }
+      }
+
+      function selectedEventReportFilters() {
+        return {
+          estacion_id: String($('eventStationFilter').value || ''),
+          rele_id: String($('eventDeviceFilter').value || ''),
+          raspberry_id: String($('eventRaspberryFilter').value || ''),
+          comando: String($('eventCommandFilter').value || ''),
+          resultado: String($('eventResultFilter').value || ''),
+          desde: String($('eventFromFilter').value || ''),
+          hasta: String($('eventUntilFilter').value || '')
+        };
+      }
+
+      function renderEventReport() {
+        var box = $('eventReportBox');
+        var summary = $('eventReportSummary');
+        if (!box || !summary) return;
+        var events = state.reportEvents || [];
+        var errors = events.filter(function (event) { return String(event.resultado || '').toLowerCase() === 'error'; }).length;
+        summary.textContent = events.length + ' evento(s) encontrados' + (errors ? ' · ' + errors + ' con error' : ' · sin errores en el resultado mostrado') + '.';
+        if (!events.length) {
+          box.innerHTML = '<p class="form-help">No hay eventos que coincidan con los filtros seleccionados.</p>';
+          return;
+        }
+        box.innerHTML = events.map(function (event) {
+          var rele = (state.reles || []).find(function (item) { return Number(item.id) === Number(event.rele_id); }) || {};
+          var station = (state.estaciones || []).find(function (item) { return Number(item.estacion_id) === Number(event.estacion_id); }) || {};
+          var pi = (state.raspberryPis || []).find(function (item) { return Number(item.id) === Number(event.raspberry_id); }) || {};
+          var deviceName = rele.relay_name || rele.salida_codigo || (event.rele_id ? ('Equipo #' + event.rele_id) : 'Evento de Domótica');
+          var stationName = station.estacion_nombre || station.estacion_codigo || (event.estacion_id ? ('Estación ' + event.estacion_id) : 'Sin estación');
+          var piName = pi.nombre || pi.codigo || (event.raspberry_id ? ('Raspberry Pi #' + event.raspberry_id) : 'Sin Raspberry asignada');
+          var isOK = String(event.resultado || '').toLowerCase() === 'ok';
+          var detail = [event.comando || 'evento', event.estado_objetivo ? ('objetivo: ' + event.estado_objetivo) : '', event.actor ? ('por ' + event.actor) : '', event.origen ? ('origen: ' + event.origen) : ''].filter(Boolean).join(' · ');
+          return '<div class="event-row">' +
+            '<small>' + sanitize(event.fecha_evento || '') + '</small>' +
+            '<div class="event-main"><strong>' + sanitize(deviceName) + '</strong><br><small>' + sanitize(stationName) + ' · ' + sanitize(piName) + '</small><br>' + sanitize(detail) + (event.error ? '<br><small>' + sanitize(event.error) + '</small>' : '') + '</div>' +
+            '<span class="status-chip ' + (isOK ? 'on' : 'warn') + '">' + sanitize(event.resultado || 'sin resultado') + '</span>' +
+          '</div>';
+        }).join('');
+      }
+
+      async function loadEventReport() {
+        var filters = selectedEventReportFilters();
+        var query = Object.keys(filters).filter(function (key) { return filters[key]; }).map(function (key) {
+          return encodeURIComponent(key) + '=' + encodeURIComponent(filters[key]);
+        }).join('&');
+        var endpoint = api('eventos') + '&limit=200' + (query ? '&' + query : '');
+        state.reportEvents = await requestJSON(endpoint);
+        if (!Array.isArray(state.reportEvents)) state.reportEvents = [];
+        renderEventReport();
+      }
+
+      function clearEventReportFilters() {
+        ['eventStationFilter', 'eventDeviceFilter', 'eventRaspberryFilter', 'eventCommandFilter', 'eventResultFilter', 'eventFromFilter', 'eventUntilFilter'].forEach(function (id) {
+          var field = $(id);
+          if (field) field.value = '';
+        });
+      }
+
       async function loadReport() {
         try {
           var data = await requestJSON(api('reportes'));
@@ -1726,6 +1830,7 @@
           state.eventos = Array.isArray(data.eventos) ? data.eventos : [];
           state.lecturas = Array.isArray(data.lecturas) ? data.lecturas : [];
 		  populateReportFilters();
+		  populateEventReportFilters();
           state.reglas = Array.isArray(data.reglas) ? data.reglas : [];
           state.escenas = await requestJSON(api('escenas')).catch(function () { return []; });
           applyConfig(state.config);
@@ -1739,6 +1844,7 @@
           renderScenes();
           renderEvents();
           loadReport();
+		  loadEventReport().catch(function () { state.reportEvents = []; renderEventReport(); });
           showMessage('', '');
         } catch (err) {
           showMessage(err.message || 'No se pudo cargar domotica.', 'error');
@@ -2108,9 +2214,17 @@
             showMessage('', '');
           } else if (ev.target.id === 'reportRefreshBtn') {
             await loadReport();
+			await loadEventReport();
             showMessage('Reporte actualizado.', 'success');
           } else if (ev.target.id === 'reportPrintBtn') {
             window.print();
+		  } else if (ev.target.id === 'eventFilterApplyBtn') {
+			await loadEventReport();
+			showMessage('Seguimiento de eventos actualizado.', 'success');
+		  } else if (ev.target.id === 'eventFilterClearBtn') {
+			clearEventReportFilters();
+			await loadEventReport();
+			showMessage('Filtros de seguimiento restablecidos.', 'success');
           } else if (raspberryCard && ev.target.classList.contains('raspberry-edit')) {
             var editID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             var pi = state.raspberryPis.find(function (item) { return Number(item.id) === editID; });

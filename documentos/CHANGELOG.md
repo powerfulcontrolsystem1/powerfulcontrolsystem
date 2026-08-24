@@ -19,6 +19,13 @@
   vigente, despliegue del candidato y acuse de una venta real siguen pendientes;
   estado NO-GO.
 
+## [2026-08-21] Login y sesiones multiempresa
+
+- [Seguridad] Sesiones tipadas, aislamiento obligatorio por `empresa_id`, PBKDF2 versionado, tokens atómicos, revocación de sesiones y limitación durable de intentos administrativos.
+- [Acceso] El login empresarial exige empresa o invitación; el contrato vigente se valida antes de emitir sesión y la recuperación no enumera cuentas.
+- [OAuth] Se acota el presupuesto de cabeceras para el flujo Google y se mantiene state/PKCE.
+- [Correo] La invitación empresarial usa texto neutral para todas las verticales y normaliza la plantilla legada de motel.
+
 ## [2026-08-13] Domótica 1.4, SSH cifrado, escenas y Victron VE.Direct
 - [Corrección] La cola interpreta fechas RFC3339 como `TIMESTAMPTZ`; botones, temporizadores, escenas y recuperación ya no quedan pendientes por desfase UTC/local.
 - [Raspberry] El agente usa el `boot_id` del kernel, se reemplaza y reinicia al actualizar y recupera las salidas previamente confirmadas mediante la cola empresarial.
