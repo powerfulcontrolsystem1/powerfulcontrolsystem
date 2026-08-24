@@ -42948,4 +42948,15 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica.html
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 - web/administrar_empresa/facturas_electronicas.html
+
+2026-08-23: feat: auditoria integral de eventos de Domotica por empresa
+- `InsertEmpresaControlElectricoEvento` conserva el evento operativo y crea su
+  espejo en `empresa_auditoria_eventos` con el mismo `empresa_id`, recurso,
+  actor, origen, estación/equipo/Raspberry y resultado. El espejo excluye IP,
+  respuesta del dispositivo, token y otros secretos.
+- La API registra de forma explícita configuraciones de Domotica, tarjetas,
+  controladores, equipos, fotos, escenas, reglas, lecturas, señales de sensor,
+  pruebas GPIO, operaciones de Raspberry, sincronizaciones, evaluaciones de
+  programación y desactivaciones. Los comandos ON/OFF, temporizadores y
+  ejecuciones programadas ya usan el mismo inserto central.
 - web/administrar_empresa/nomina_sueldos.html

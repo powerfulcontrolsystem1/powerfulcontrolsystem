@@ -39,6 +39,41 @@ type controlElectricoCommandPayload struct {
 	Operacion      string `json:"operacion,omitempty"`
 }
 
+// registrarEventoControlElectrico deja una traza operativa por empresa para
+// cambios de configuración, telemetría y acciones que no pasan por el
+// despachador de relés. InsertEmpresaControlElectricoEvento crea además el
+// espejo en la auditoría empresarial sin incluir secretos de conexión.
+func registrarEventoControlElectrico(dbEmp *sql.DB, empresaID, estacionID, releID, raspberryID int64, gpioPin int, comando, estadoObjetivo, resultado, actor, origen string, metadata map[string]interface{}) {
+	if dbEmp == nil || empresaID <= 0 {
+		return
+	}
+	metadataJSON := "{}"
+	if len(metadata) > 0 {
+		if raw, err := json.Marshal(metadata); err == nil {
+			metadataJSON = string(raw)
+		}
+	}
+	if _, err := dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
+		EmpresaID: empresaID, EstacionID: estacionID, ReleID: releID, RaspberryID: raspberryID, GPIOPin: gpioPin,
+		Comando: comando, EstadoObjetivo: estadoObjetivo, Resultado: resultado, Actor: actor, Origen: origen, MetadataJSON: metadataJSON,
+	}); err != nil {
+		log.Printf("[control_electrico] registrar evento empresa_id=%d comando=%s error: %v", empresaID, comando, err)
+	}
+}
+
+func resultadoEventoControlElectrico(result controlElectricoDispatchResult) string {
+	if !result.OK {
+		if result.Skipped {
+			return "omitido"
+		}
+		return "error"
+	}
+	if result.Pending {
+		return "pendiente"
+	}
+	return "ok"
+}
+
 type controlElectricoStationCardUIPayload struct {
 	MostrarBotonDomotica bool `json:"mostrar_boton_domotica"`
 }
@@ -518,6 +553,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "control_electrico", "configuracion_tarjetas", "empresa_estacion_prefs", id, http.StatusOK, map[string]interface{}{
 					"mostrar_boton_domotica": payload.MostrarBotonDomotica,
 				}, "acceso Domotica en tarjetas de estaciones actualizado")
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, 0, 0, "configuracion_tarjetas", "actualizada", "ok", strings.TrimSpace(adminEmailFromRequest(r)), "api_station_card_ui", map[string]interface{}{"mostrar_boton_domotica": payload.MostrarBotonDomotica})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mostrar_boton_domotica": payload.MostrarBotonDomotica})
 				return
 			case "instalar_ssh":
@@ -559,6 +595,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				} else {
 					log.Printf("[control_electrico] reload config for primary raspberry empresa_id=%d error: %v", empresaID, err)
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, 0, 0, "configuracion_domotica", "actualizada", "ok", payload.UsuarioCreador, "api_config", map[string]interface{}{"habilitado": payload.Habilitado, "auto_sync_estaciones": payload.AutoSyncEstaciones, "activation_delay_seconds": payload.ActivationDelaySec, "disconnect_alert_enabled": payload.DisconnectAlertEnabled})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "config": cfg})
 				return
 
@@ -576,6 +613,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, id, 0, "raspberry_configurada", payload.Estado, "ok", payload.UsuarioCreador, "api_raspberry_pi", map[string]interface{}{"tunnel_enabled": payload.TunnelEnabled, "tipo_controlador": payload.TipoControlador})
 				rows, _ := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "raspberry_pis": rows})
 				return
@@ -592,6 +630,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, 0, 0, "escena_configurada", payload.Estado, "ok", payload.UsuarioCreador, "api_escena", map[string]interface{}{"escena_id": id})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 			case "ejecutar_escena":
@@ -620,6 +659,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, payload.EstacionID, id, payload.RaspberryID, payload.GPIOPin, "equipo_configurado", payload.UltimoEstado, "ok", payload.UsuarioCreador, "api_rele", map[string]interface{}{"programacion_habilitada": payload.ProgramacionHabilitada, "programacion_inicio": payload.ProgramacionInicio, "programacion_fin": payload.ProgramacionFin, "categoria": payload.Categoria})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 
@@ -630,6 +670,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, releID, 0, 0, "foto_equipo_actualizada", "actualizada", "ok", strings.TrimSpace(adminEmailFromRequest(r)), "api_rele_foto", map[string]interface{}{"imagen_cargada": strings.TrimSpace(imageURL) != ""})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "rele_id": releID, "image_url": imageURL})
 				return
 
@@ -683,6 +724,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					return
 				}
 				result := controlElectricoTestRaspberryGPIO(dbEmp, empresaID, payload.RaspberryID, payload.GPIOPin, strings.TrimSpace(adminEmailFromRequest(r)))
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, payload.RaspberryID, payload.GPIOPin, "prueba_gpio", "on", resultadoEventoControlElectrico(result), strings.TrimSpace(adminEmailFromRequest(r)), "api_probar_gpio", map[string]interface{}{"pulso_segundos": 1})
 				status := http.StatusOK
 				if !result.OK && !result.Skipped {
 					if !controlElectricoTestableGPIO(payload.GPIOPin) {
@@ -703,6 +745,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					return
 				}
 				result := controlElectricoRaspberryOperation(dbEmp, empresaID, payload.RaspberryID, payload.Operacion, strings.TrimSpace(adminEmailFromRequest(r)))
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, payload.RaspberryID, 0, "operacion_raspberry", strings.ToLower(strings.TrimSpace(payload.Operacion)), resultadoEventoControlElectrico(result), strings.TrimSpace(adminEmailFromRequest(r)), "api_raspberry_operacion", nil)
 				status := http.StatusOK
 				if !result.OK && !result.Skipped {
 					status = http.StatusBadGateway
@@ -727,6 +770,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 						"resultado":   result,
 					})
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, 0, 0, "sincronizacion_manual", "evaluada", "ok", actor, "api_sincronizar", map[string]interface{}{"estaciones_procesadas": len(estaciones)})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "results": results})
 				return
 			case "ejecutar_programacion":
@@ -736,6 +780,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudo evaluar la programacion de domotica", http.StatusInternalServerError)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, 0, 0, "programacion_evaluada", "ejecutada", "ok", strings.TrimSpace(adminEmailFromRequest(r)), "api_ejecutar_programacion", map[string]interface{}{"comandos_ejecutados": executed})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "comandos_ejecutados": executed})
 				return
 			case "lectura":
@@ -762,6 +807,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudo guardar lectura de domotica", http.StatusInternalServerError)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, payload.EstacionID, payload.ReleID, 0, 0, "lectura_telemetria", payload.Estado, "ok", strings.TrimSpace(adminEmailFromRequest(r)), payload.Origen, map[string]interface{}{"lectura_id": id, "consumo_w": payload.ConsumoW, "consumo_kwh": payload.ConsumoKWh})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 				return
 			case "regla":
@@ -778,6 +824,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, payload.EstacionID, payload.ReleID, payload.RaspberryID, payload.EntradaGPIOPin, "regla_sensor_configurada", payload.Accion, "ok", payload.UsuarioCreador, "api_regla", map[string]interface{}{"regla_id": id, "temporizador_segundos": payload.TemporizadorSegundos, "alarma_habilitada": payload.AlarmaHabilitada})
 				reglas, _ := dbpkg.ListEmpresaControlElectricoReglas(dbEmp, empresaID, true)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "reglas": reglas})
 				return
@@ -792,11 +839,14 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "JSON invalido", http.StatusBadRequest)
 					return
 				}
-				results, err := evaluarControlElectricoReglas(dbEmp, empresaID, payload.SensorCodigo, firstNonEmpty(payload.Valor, payload.Estado), strings.TrimSpace(adminEmailFromRequest(r)), payload.MetadataJSON)
+				valor := firstNonEmpty(payload.Valor, payload.Estado)
+				actor := strings.TrimSpace(adminEmailFromRequest(r))
+				results, err := evaluarControlElectricoReglas(dbEmp, empresaID, payload.SensorCodigo, valor, actor, payload.MetadataJSON)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, 0, 0, "sensor_input", valor, "recibido", actor, "api_sensor_evento", map[string]interface{}{"reglas_evaluadas": len(results)})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "resultados": results})
 				return
 			default:
@@ -820,6 +870,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudo desactivar Raspberry Pi", http.StatusInternalServerError)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, raspberryID, 0, "raspberry_desactivada", "inactivo", "ok", strings.TrimSpace(adminEmailFromRequest(r)), "api_raspberry_pi_delete", nil)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
 			}
@@ -833,6 +884,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudo desactivar la escena", http.StatusInternalServerError)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, 0, 0, "escena_desactivada", "inactivo", "ok", strings.TrimSpace(adminEmailFromRequest(r)), "api_escena_delete", map[string]interface{}{"escena_id": escenaID})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
 			}
@@ -847,6 +899,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "No se pudo desactivar regla", http.StatusInternalServerError)
 					return
 				}
+				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, 0, 0, "regla_sensor_desactivada", "inactivo", "ok", strings.TrimSpace(adminEmailFromRequest(r)), "api_regla_delete", map[string]interface{}{"regla_id": reglaID})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
 			}
@@ -860,6 +913,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				http.Error(w, "No se pudo desactivar aparato", http.StatusInternalServerError)
 				return
 			}
+			registrarEventoControlElectrico(dbEmp, empresaID, 0, releID, 0, 0, "equipo_desactivado", "inactivo", "ok", strings.TrimSpace(adminEmailFromRequest(r)), "api_rele_delete", nil)
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 			return
 		}

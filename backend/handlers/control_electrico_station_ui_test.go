@@ -161,6 +161,42 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 	}
 }
 
+func TestDomoticaEventsMirrorIntoCompanyAuditWithTenantScope(t *testing.T) {
+	dbSource, err := os.ReadFile(filepath.Join("..", "db", "control_electrico.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{
+		"func createEmpresaControlElectricoAuditMirror",
+		"CreateEmpresaAuditoriaEvento",
+		"EmpresaID:      ev.EmpresaID",
+		"domotica_evento_id",
+		"empresa_control_electrico_eventos",
+	} {
+		if !strings.Contains(string(dbSource), marker) {
+			t.Fatalf("el espejo de auditoria Domotica no contiene %q", marker)
+		}
+	}
+	handlerSource, err := os.ReadFile("control_electrico.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{
+		"func registrarEventoControlElectrico",
+		"configuracion_domotica",
+		"equipo_configurado",
+		"regla_sensor_configurada",
+		"sensor_input",
+		"lectura_telemetria",
+		"prueba_gpio",
+		"operacion_raspberry",
+	} {
+		if !strings.Contains(string(handlerSource), marker) {
+			t.Fatalf("la trazabilidad operativa Domotica no contiene %q", marker)
+		}
+	}
+}
+
 func TestSuperAdminMobileStartsWithCompanySelector(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("..", "..", "web", "super_administrador.html"))
 	if err != nil {

@@ -3,8 +3,10 @@ package db
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/mail"
 	"strings"
 	"sync"
@@ -1198,13 +1200,68 @@ func SetEmpresaControlElectricoReglaEstadoContext(ctx context.Context, dbConn *s
 	return err
 }
 
-// InsertEmpresaControlElectricoEvento registra una accion electrica.
+// InsertEmpresaControlElectricoEvento registra una accion eléctrica y su espejo
+// de auditoría empresarial. Ambos registros conservan siempre el empresa_id del
+// evento, por lo que una empresa nunca puede consultar la actividad de otra.
 func InsertEmpresaControlElectricoEvento(dbConn *sql.DB, ev EmpresaControlElectricoEvento) (int64, error) {
 	if ev.EmpresaID <= 0 {
 		return 0, errors.New("empresa_id invalido")
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_eventos (empresa_id, estacion_id, rele_id, raspberry_id, gpio_pin, comando, estado_objetivo, resultado, http_status, raspberry_ip, response_body, error, fecha_evento, actor, origen, metadata_json) VALUES (?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)`,
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_eventos (empresa_id, estacion_id, rele_id, raspberry_id, gpio_pin, comando, estado_objetivo, resultado, http_status, raspberry_ip, response_body, error, fecha_evento, actor, origen, metadata_json) VALUES (?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)`,
 		ev.EmpresaID, ev.EstacionID, ev.ReleID, ev.RaspberryID, ev.GPIOPin, strings.TrimSpace(ev.Comando), strings.TrimSpace(ev.EstadoObjetivo), strings.TrimSpace(ev.Resultado), ev.HTTPStatus, strings.TrimSpace(ev.RaspberryIP), truncateControlElectricoText(ev.ResponseBody, 1200), truncateControlElectricoText(ev.Error, 800), strings.TrimSpace(ev.Actor), strings.TrimSpace(ev.Origen), strings.TrimSpace(ev.MetadataJSON))
+	if err != nil {
+		return 0, err
+	}
+	if err := createEmpresaControlElectricoAuditMirror(dbConn, id, ev); err != nil {
+		// La trazabilidad eléctrica primaria no debe fallar por una indisponibilidad
+		// puntual de la auditoría general; el error queda observable en el runtime.
+		log.Printf("[control_electrico] audit mirror empresa_id=%d evento_id=%d error: %v", ev.EmpresaID, id, err)
+	}
+	return id, nil
+}
+
+func createEmpresaControlElectricoAuditMirror(dbConn *sql.DB, eventID int64, ev EmpresaControlElectricoEvento) error {
+	resultado := "ok"
+	if strings.EqualFold(strings.TrimSpace(ev.Resultado), "error") || strings.TrimSpace(ev.Error) != "" {
+		resultado = "error"
+	}
+	status := int64(ev.HTTPStatus)
+	if status <= 0 {
+		if resultado == "error" {
+			status = 502
+		} else {
+			status = 200
+		}
+	}
+	metadata, err := json.Marshal(map[string]interface{}{
+		"domotica_evento_id": eventID,
+		"estacion_id":        ev.EstacionID,
+		"rele_id":            ev.ReleID,
+		"raspberry_id":       ev.RaspberryID,
+		"gpio_pin":           ev.GPIOPin,
+		"estado_objetivo":    strings.TrimSpace(ev.EstadoObjetivo),
+		"resultado_domotica": strings.TrimSpace(ev.Resultado),
+		"origen_domotica":    strings.TrimSpace(ev.Origen),
+	})
+	if err != nil {
+		return err
+	}
+	_, err = CreateEmpresaAuditoriaEvento(dbConn, EmpresaAuditoriaEvento{
+		EmpresaID:      ev.EmpresaID,
+		Modulo:         "control_electrico",
+		Accion:         firstNonEmpty(strings.TrimSpace(ev.Comando), "evento_domotica"),
+		Recurso:        "empresa_control_electrico_eventos",
+		RecursoID:      eventID,
+		MetodoHTTP:     "EVENT",
+		Endpoint:       "domotica:" + firstNonEmpty(strings.TrimSpace(ev.Origen), "interno"),
+		Resultado:      resultado,
+		CodigoHTTP:     status,
+		MetadataJSON:   string(metadata),
+		UsuarioCreador: firstNonEmpty(strings.TrimSpace(ev.Actor), "sistema"),
+		Estado:         "activo",
+		Observaciones:  "evento operativo de Domótica registrado",
+	})
+	return err
 }
 
 // ListEmpresaControlElectricoEventos lista los eventos recientes.
