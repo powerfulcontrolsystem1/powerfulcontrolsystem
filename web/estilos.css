@@ -8577,6 +8577,7 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   flex-wrap:wrap;
   margin-bottom:10px;
 }
+.empresa-section-header--spaced{margin-top:18px}
 .empresa-section-header > h2{
   margin:0;
   font-size:0.9rem;
