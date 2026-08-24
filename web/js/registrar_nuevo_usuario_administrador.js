@@ -110,6 +110,15 @@
     return String(value || '').trim();
   }
 
+  function passwordPolicyError(password) {
+    if (String(password || '').length < 8) return 'La contraseña debe tener mínimo 8 caracteres.';
+    if (!/[A-ZÁÉÍÓÚÑ]/.test(password)) return 'La contraseña debe incluir una letra mayúscula.';
+    if (!/[a-záéíóúñ]/.test(password)) return 'La contraseña debe incluir una letra minúscula.';
+    if (!/[0-9]/.test(password)) return 'La contraseña debe incluir un número.';
+    if (/\s/.test(password)) return 'La contraseña no debe contener espacios.';
+    return '';
+  }
+
   function hasCountry(code) {
     for (var index = 0; index < countries.length; index += 1) {
       if (countries[index].code === code) {
@@ -342,8 +351,9 @@
       showMessage('Debes completar todos los campos del registro.', true);
       return;
     }
-    if (password.length < 8) {
-      showMessage('La contraseña debe tener mínimo 8 caracteres.', true);
+    var passwordError = passwordPolicyError(password);
+    if (passwordError) {
+	  showMessage(passwordError, true);
       return;
     }
     if (password !== passwordConfirm) {

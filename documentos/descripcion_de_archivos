@@ -13284,3 +13284,8 @@ backend/db/repository_helpers.go | Helper interno para generación compartida de
 - `backend/db/facturacion_artefactos.go`: migración, contrato y repositorio
   multiempresa para XML firmado, acuse de proveedor y representación PDF en
   almacenamiento privado con verificación SHA-256.
+- `backend/db/admin_login_throttle.go`: persistencia durable de intentos y bloqueo temporal del login administrativo.
+- `backend/db/admin_login_throttle_migration.go`: migración PostgreSQL versionada del throttle administrativo.
+- `backend/db/session_principal_migration.go`: migración de identidad tipada, empresa y rol en sesiones.
+- `backend/handlers/super_email_templates_login_test.go`: contrato que mantiene neutral la invitación global de usuarios y normaliza la plantilla legada.
+- `documentos/evidencia_login_produccion_2026-08-21.md`: alcance, pruebas reales y bloqueos del candidato de autenticación.

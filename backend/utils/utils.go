@@ -1002,6 +1002,48 @@ func allowSuperControlRoute(path, method, role string) bool {
 	}
 }
 
+func enforceMaintenanceAccess(dbSuper *sql.DB, w http.ResponseWriter, r *http.Request) bool {
+	if !getCachedMaintenanceActive(dbSuper) {
+		return true
+	}
+	path := r.URL.Path
+	isAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
+	isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || path == "/estilos.css" || path == "/menu.js" || path == "/manifest.webmanifest" || path == "/sw.js"
+	if !isAllowed && !isStatic {
+		http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
+		return false
+	}
+	return true
+}
+
+func validateSessionPrincipalAccess(w http.ResponseWriter, path string, sess *dbpkg.Session) (string, bool) {
+	principalType := strings.ToLower(strings.TrimSpace(sess.PrincipalType))
+	if principalType == "" {
+		principalType = "admin"
+	}
+	if principalType == "empresa_usuario" {
+		if sess.PrincipalID <= 0 || sess.EmpresaID <= 0 || strings.TrimSpace(sess.PrincipalRole) == "" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return "", false
+		}
+		if path == "/super_administrador.html" || strings.HasPrefix(path, "/super/") {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return "", false
+		}
+	} else if principalType != "admin" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return "", false
+	}
+	return principalType, true
+}
+
+func withSessionPrincipalContext(ctx context.Context, sess *dbpkg.Session, principalType string) context.Context {
+	ctx = context.WithValue(ctx, "sessionPrincipalType", principalType)
+	ctx = context.WithValue(ctx, "sessionPrincipalID", sess.PrincipalID)
+	ctx = context.WithValue(ctx, "sessionEmpresaID", sess.EmpresaID)
+	return context.WithValue(ctx, "sessionPrincipalRole", strings.TrimSpace(sess.PrincipalRole))
+}
+
 // AuthMiddleware protege rutas usando la tabla sesiones y administradores en la BD superadministrador.
 // Permite un conjunto público de rutas (login/callback/activos). Para rutas que comienzan con /super/
 // exige rol 'super_administrador'. Añade `adminEmail` en el contexto de la petición.
@@ -1009,15 +1051,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
-		// Verificación de Modo Mantenimiento
-		if getCachedMaintenanceActive(dbSuper) {
-			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
-			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
-			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || path == "/estilos.css" || path == "/menu.js" || path == "/manifest.webmanifest" || path == "/sw.js"
-			if !isMntAllowed && !isStatic {
-				http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
-				return
-			}
+		if !enforceMaintenanceAccess(dbSuper, w, r) {
+			return
 		}
 
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
@@ -1168,6 +1203,10 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
+		principalType, principalOK := validateSessionPrincipalAccess(w, path, sess)
+		if !principalOK {
+			return
+		}
 
 		admin, err := getCachedAdminByEmailFull(dbSuper, sess.AdminEmail)
 		if err != nil {
@@ -1193,6 +1232,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 
 		// Propagar información del admin en el contexto
 		ctx := context.WithValue(r.Context(), "adminEmail", admin.Email)
+		ctx = withSessionPrincipalContext(ctx, sess, principalType)
 		r = r.WithContext(ctx)
 		// Añadir cabecera informativa
 		r.Header.Set("X-Admin-Email", admin.Email)

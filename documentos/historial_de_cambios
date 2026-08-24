@@ -18106,6 +18106,12 @@ Archivos modificados:
 - web/administrar_empresa/facturas_electronicas.html
 - web/administrar_empresa/finanzas.html
 - web/administrar_empresa/nomina_sueldos.html
+
+2026-08-21: Endurecimiento de autenticación administrativa y empresarial.
+- Se tipan sesiones y se conserva identidad, empresa y rol del usuario operativo; las rutas globales y mutaciones administrativas quedan aisladas.
+- Se aplican PBKDF2 versionado, tokens de uso único, revocación de sesiones, throttle durable, reCAPTCHA fail-closed y contrato antes de sesión.
+- La evidencia real PCS valida invitación, correo, contrato, login empresarial, restricciones de rol, aislamiento de empresa y logout sin conservar secretos.
+- La invitación empresarial deja de imponer la vertical motel y usa texto neutral al renderizar configuraciones legadas.
 - web/administrar_empresa/propinas.html
 - web/administrar_empresa/reportes.html
 - web/administrar_empresa/reservas_hotel.html

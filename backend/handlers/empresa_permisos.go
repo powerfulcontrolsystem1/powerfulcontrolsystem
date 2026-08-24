@@ -1300,7 +1300,7 @@ func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		empresaID := extractEmpresaIDForPermissions(r)
 		if empresaID <= 0 {
-			next.ServeHTTP(w, r)
+			http.Error(w, "empresa_id es obligatorio para este acceso de usuario", http.StatusBadRequest)
 			return
 		}
 		if err := validateEmpresaIDConsistency(r, empresaID); err != nil {
@@ -1684,6 +1684,12 @@ func extractEmpresaIDFromJSONBody(r *http.Request) int64 {
 func validateEmpresaIDConsistency(r *http.Request, empresaID int64) error {
 	if r == nil || empresaID <= 0 {
 		return nil
+	}
+	if principalType, _ := r.Context().Value("sessionPrincipalType").(string); strings.EqualFold(strings.TrimSpace(principalType), "empresa_usuario") {
+		sessionEmpresaID, _ := r.Context().Value("sessionEmpresaID").(int64)
+		if sessionEmpresaID <= 0 || sessionEmpresaID != empresaID {
+			return fmt.Errorf("empresa_id no coincide con la empresa de la sesion")
+		}
 	}
 	if r.URL != nil {
 		if err := validateEmpresaIDValues(r.URL.Query()["empresa_id"], empresaID, "query"); err != nil {

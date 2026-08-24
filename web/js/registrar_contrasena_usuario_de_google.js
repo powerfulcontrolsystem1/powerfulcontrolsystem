@@ -8,6 +8,15 @@
   var submitBtn = document.getElementById('googlePasswordSetupBtn');
   var skipLink = document.getElementById('googlePasswordSkipLink');
 
+  function passwordPolicyError(password) {
+    if (String(password || '').length < 8) return 'La contraseña debe tener mínimo 8 caracteres.';
+    if (!/[A-ZÁÉÍÓÚÑ]/.test(password)) return 'La contraseña debe incluir una letra mayúscula.';
+    if (!/[a-záéíóúñ]/.test(password)) return 'La contraseña debe incluir una letra minúscula.';
+    if (!/[0-9]/.test(password)) return 'La contraseña debe incluir un número.';
+    if (/\s/.test(password)) return 'La contraseña no debe contener espacios.';
+    return '';
+  }
+
   function setPasswordVisibility(toggleBtn, input, isVisible) {
     if (!toggleBtn || !input) {
       return;
@@ -129,8 +138,9 @@
         showMessage('Debes escribir y confirmar la nueva contraseña.', true);
         return;
       }
-      if (password.length < 8) {
-        showMessage('La contraseña debe tener mínimo 8 caracteres.', true);
+	  var passwordError = passwordPolicyError(password);
+	  if (passwordError) {
+		showMessage(passwordError, true);
         return;
       }
       if (password !== passwordConfirm) {

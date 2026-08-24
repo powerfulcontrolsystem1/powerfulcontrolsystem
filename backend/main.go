@@ -1584,7 +1584,7 @@ func main() {
 	http.HandleFunc("/api/user/configuracion", handlers.UserConfiguracionHandler(dbSuper))
 
 	// Endpoints CRUD para tipos de empresas
-	http.HandleFunc("/super/api/tipos_empresas", handlers.WithSuperAuditoria(dbSuper, "tipos_empresas", handlers.TiposEmpresasHandler(dbSuper)))
+	http.HandleFunc("/super/api/tipos_empresas", handlers.WithAdminReadSuperWriteAuditoria(dbSuper, "tipos_empresas", handlers.TiposEmpresasHandler(dbSuper)))
 	http.HandleFunc("/super/api/tipos_empresas/preconfiguracion", handlers.SuperTipoEmpresaPreconfiguracionHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresListHandler(dbSuper)))
 	http.HandleFunc("/super/api/servidores/toggle", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresToggleHandler(dbSuper)))
@@ -1596,10 +1596,10 @@ func main() {
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
-	http.HandleFunc("/super/api/empresas", handlers.WithSuperAuditoria(dbSuper, "selector_empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas", handlers.WithAdminAuditoria(dbSuper, "selector_empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/empresas_estado", handlers.WithSuperAuditoria(dbSuper, "super_empresas_estado", handlers.SuperEmpresasEstadoHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/super/api/empresas/compartidos", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas/compartidos", handlers.WithAdminAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.WithAdminAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/email_corporativo", handlers.WithSuperAuditoria(dbSuper, "super_email_corporativo", handlers.SuperEmailCorporativoHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/api/internal/email_corporativo/autologin", handlers.EmpresaEmailCorporativoAutologinHandler(dbSuper))
 	// Endpoints para asesores comerciales y comisiones de licencias.
@@ -1842,7 +1842,7 @@ func main() {
 	http.HandleFunc("/super/api/administradores/solicitar_recuperacion", handlers.AdminRequestPasswordRecoveryHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/restablecer_password", handlers.AdminResetPasswordHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
-	http.HandleFunc("/super/api/licencias", handlers.WithSuperAuditoria(dbSuper, "licencias", handlers.LicenciasHandler(dbSuper)))
+	http.HandleFunc("/super/api/licencias", handlers.WithAdminAuditoria(dbSuper, "licencias", handlers.LicenciasHandler(dbSuper)))
 	http.HandleFunc("/super/api/licencias/ventas_resumen", handlers.WithSuperAuditoria(dbSuper, "super_licencias_ventas_resumen", handlers.SuperLicenciasVentasResumenHandler(dbSuper)))
 	http.HandleFunc("/super/api/licencias/configuracion", handlers.WithSuperAuditoria(dbSuper, "super_config_licencias", handlers.SuperLicenciasConfiguracionHandler(dbSuper)))
 	http.HandleFunc("/super/api/licencias/codigos_descuento", handlers.WithSuperAuditoria(dbSuper, "licencias_codigos_descuento", handlers.SuperLicenciasCodigosDescuentoHandler(dbSuper)))
