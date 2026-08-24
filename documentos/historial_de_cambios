@@ -43119,6 +43119,11 @@ Archivos modificados:
 - La auditoria estructural volvio a su linea base de 450 funciones mayores de
   100 lineas, sin duplicados nuevos. El preflight profesional completo, la suite
   Go y `git diff --check` aprobaron localmente.
+- La siguiente etapa remota alcanzo `gosec` y revelo dos falsos positivos
+  concretos en el cifrado DIAN: una huella de migracion y SQL con columna tomada
+  de un catalogo cerrado. Se documentaron las excepciones puntuales `G101` y
+  `G202`; `gosec v2.22.7` sobre el paquete afectado y esas reglas concluyo con
+  cero hallazgos.
 - No se desplego, no se aplicaron migraciones y no se emitio ningun documento
   fiscal real durante esta correccion de CI. El candidato permanece NO-GO hasta
   que aprueben CI y revision, se pruebe la migracion sobre un clon vigente, se
