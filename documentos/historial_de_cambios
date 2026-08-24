@@ -42878,6 +42878,15 @@ acumulativa.
   Raspberry del equipo está desconectada; también aplica al temporizador antes
   de abrirlo y antes de enviar su orden.
 
+2026-08-23: Configuración DIAN separada por familia documental.
+- La migración versionada `20260823-001-dian-documentos-configuracion-v1`
+  incorpora `empresa_dian_documentos_configuracion` con clave única por
+  empresa y tipo de documento. Rango, consecutivo, resolución, ambiente y
+  modo de operación ya no pueden confundirse con los de factura de venta.
+- La tabla inicia inactiva y no altera configuraciones ni documentos existentes.
+  Los adaptadores siguen bloqueados hasta que cada familia complete generación,
+  firma, transporte y acuse DIAN.
+
 2026-08-23: Documento soporte DIAN: cálculo CUDS separado y verificable.
 - El backend incorpora el cálculo CUDS-SHA384 de documento soporte como una
   función independiente del CUFE de factura de venta. La regresión usa un

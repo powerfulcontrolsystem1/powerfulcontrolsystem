@@ -186,6 +186,9 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260821-002-facturacion-artefactos-v1", Description: "tenant-scoped private fiscal XML, provider response and PDF metadata", Body: empresaFacturacionArtefactosFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaFacturacionArtefactosTx(ctx, tx)
 			}},
+			{Version: "20260823-001-dian-documentos-configuracion-v1", Description: "per-document DIAN numbering and operation configuration", Body: empresaDIANDocumentosConfiguracionFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaDIANDocumentosConfiguracionTx(ctx, tx)
+			}},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

@@ -1567,6 +1567,16 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 
 ### Tablas de documentos transaccionales canonicos
 
+Actualizacion 2026-08-23 (configuracion DIAN por familia documental):
+- La migracion `20260823-001-dian-documentos-configuracion-v1` crea
+  `empresa_dian_documentos_configuracion`, aislada por
+  `(empresa_id,tipo_documento)`. Guarda ambiente, estado, modo de operacion,
+  TestSet, prefijo, resolucion, vigencia, rango y consecutivo de cada familia.
+- La configuracion base `empresa_dian_configuracion` no se reutiliza como rango
+  de documento soporte, nomina, equivalentes o RADIAN. La nueva tabla inicia
+  inactiva y no habilita ningun envio hasta que el adaptador y sus validaciones
+  tecnicas correspondientes esten terminados.
+
 Actualizacion 2026-08-21 (precision fiscal y consecutivos):
 - `empresa_facturacion_documentos.monto_total` se migra por
   `pcs-migrate` a `NUMERIC(18,2) NOT NULL DEFAULT 0`; la migracion falla

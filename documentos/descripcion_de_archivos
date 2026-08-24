@@ -13284,3 +13284,9 @@ backend/db/repository_helpers.go | Helper interno para generación compartida de
 - `backend/db/facturacion_artefactos.go`: migración, contrato y repositorio
   multiempresa para XML firmado, acuse de proveedor y representación PDF en
   almacenamiento privado con verificación SHA-256.
+2026-08-23
+- `backend/db/dian_documentos_configuracion.go`: migración versionada y modelo
+  multiempresa para numeración, ambiente y modo de operación DIAN por familia
+  documental, separado de la factura de venta.
+- `backend/db/dian_documentos_configuracion_test.go`: regresiones de
+  normalización y validación de rangos de la configuración documental DIAN.
