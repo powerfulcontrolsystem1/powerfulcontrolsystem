@@ -86,6 +86,18 @@ func TestDIANUBLVentaConservaTiposImplementados(t *testing.T) {
 	}
 }
 
+func TestConfiguracionDIANPorDocumentoNoHabilitaFamiliasSinAdaptador(t *testing.T) {
+	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "configurando"); err != nil {
+		t.Fatalf("documento soporte debe permitir preparacion separada: %v", err)
+	}
+	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "activo"); err == nil {
+		t.Fatal("documento soporte no debe activarse sin adaptador propio")
+	}
+	if err := facturacionValidarConfiguracionDIANDocumento("factura_electronica", "configurando"); err == nil {
+		t.Fatal("factura no debe duplicar su configuracion DIAN existente")
+	}
+}
+
 func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *testing.T) {
 	got := facturacionFiltrarDocumentosDianOperativos([]string{
 		"factura_electronica", "documento_soporte", "nota_credito", "nomina_electronica", "nota_debito", "factura_electronica", "eventos_radian_recepcion",

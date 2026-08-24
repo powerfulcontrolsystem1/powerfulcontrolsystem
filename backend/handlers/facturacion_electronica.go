@@ -308,6 +308,19 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			}
 
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "configuracion_documentos_dian" {
+				if err := dbpkg.EmpresaDIANDocumentosConfiguracionSchemaReady(dbEmp); err != nil {
+					http.Error(w, "La configuracion DIAN por documento aun no esta disponible", http.StatusServiceUnavailable)
+					return
+				}
+				items, err := dbpkg.ListEmpresaDIANDocumentosConfiguracionContext(r.Context(), dbEmp, empresaID)
+				if err != nil {
+					http.Error(w, "No se pudo consultar la configuracion DIAN por documento", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "items": items})
+				return
+			}
 			if action == "artefactos" {
 				tipoDocumento := normalizeFacturacionDocumentoElectronicoTipo(r.URL.Query().Get("tipo_documento"))
 				if tipoDocumento == "" {
@@ -555,6 +568,46 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 
 		case http.MethodPost, http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "configuracion_documentos_dian" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.EmpresaDIANDocumentosConfiguracionSchemaReady(dbEmp); err != nil {
+					http.Error(w, "La configuracion DIAN por documento aun no esta disponible", http.StatusServiceUnavailable)
+					return
+				}
+				var payload dbpkg.EmpresaDIANDocumentoConfiguracion
+				decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
+				decoder.DisallowUnknownFields()
+				if err := decoder.Decode(&payload); err != nil {
+					http.Error(w, "Configuracion DIAN por documento invalida", http.StatusBadRequest)
+					return
+				}
+				if err := decoder.Decode(&struct{}{}); err != io.EOF {
+					http.Error(w, "Configuracion DIAN por documento invalida", http.StatusBadRequest)
+					return
+				}
+				if err := facturacionValidarConfiguracionDIANDocumento(payload.TipoDocumento, payload.Estado); err != nil {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.UpsertEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, payload)
+				if err != nil {
+					http.Error(w, "No se pudo guardar la configuracion DIAN por documento", http.StatusBadRequest)
+					return
+				}
+				item, err := dbpkg.GetEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, empresaID, payload.TipoDocumento)
+				if err != nil {
+					http.Error(w, "La configuracion DIAN fue guardada pero no se pudo consultar", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "empresa_id": empresaID, "item": item})
+				return
+			}
 			if action == "procesar_reintentos" {
 				empresaID, err := parseInt64QueryOptional(r, "empresa_id")
 				if err != nil {
@@ -2092,6 +2145,26 @@ func facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipo string) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// facturacionValidarConfiguracionDIANDocumento permits only preparation of a
+// separate configuration. It deliberately refuses to mark a non-UBL family as
+// active until its own generator, signature, transport and acknowledgement are
+// available. Invoice/credit/debit continue using their established config.
+func facturacionValidarConfiguracionDIANDocumento(tipo, estado string) error {
+	normalized := normalizeFacturacionDocumentoElectronicoTipo(tipo)
+	if !facturacionDocumentoElectronicoPermitido(normalized) {
+		return fmt.Errorf("tipo_documento DIAN no reconocido")
+	}
+	if facturacionDocumentoElectronicoDIANUBLVentaSoportado(normalized) {
+		return fmt.Errorf("la configuracion de factura y notas de venta usa su configuracion DIAN existente")
+	}
+	switch strings.ToLower(strings.TrimSpace(estado)) {
+	case "", "inactivo", "configurando":
+		return nil
+	default:
+		return fmt.Errorf("el documento DIAN aun no puede activarse: falta adaptador, firma, transporte y acuse propios")
 	}
 }
 

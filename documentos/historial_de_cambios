@@ -42886,6 +42886,10 @@ acumulativa.
 - La tabla inicia inactiva y no altera configuraciones ni documentos existentes.
   Los adaptadores siguen bloqueados hasta que cada familia complete generación,
   firma, transporte y acuse DIAN.
+- Se expone `action=configuracion_documentos_dian` dentro del endpoint de
+  facturación, con wrapper empresarial existente, `empresa_id` desde contexto y
+  auditoría. Solo permite preparar estados `inactivo` o `configurando`; rechaza
+  activar una familia que no dispone aún de adaptador DIAN propio.
 
 2026-08-23: Documento soporte DIAN: cálculo CUDS separado y verificable.
 - El backend incorpora el cálculo CUDS-SHA384 de documento soporte como una

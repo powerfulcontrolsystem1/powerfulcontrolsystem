@@ -12,6 +12,22 @@ import (
 
 const empresaDIANDocumentosConfiguracionFingerprint = "empresa-dian-documentos-configuracion:v1:tenant-document-type-numbering"
 
+// EmpresaDIANDocumentosConfiguracionSchemaReady confirms that pcs-migrate ran
+// before an API tries to read or change document-family configuration.
+func EmpresaDIANDocumentosConfiguracionSchemaReady(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	var table sql.NullString
+	if err := QueryRowCompat(dbConn, `SELECT to_regclass(?)`, "empresa_dian_documentos_configuracion").Scan(&table); err != nil {
+		return fmt.Errorf("verify DIAN document configuration table: %w", err)
+	}
+	if !table.Valid || strings.TrimSpace(table.String) == "" {
+		return fmt.Errorf("DIAN document configuration table is missing; run pcs-migrate before starting the API")
+	}
+	return nil
+}
+
 // EmpresaDIANDocumentoConfiguracion keeps each DIAN document family separate
 // from the invoice range. A DIAN authorization for invoices must never be
 // reused for purchase support, payroll, equivalent documents, or RADIAN.
