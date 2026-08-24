@@ -120,6 +120,24 @@ type facturacionOperacionPayload struct {
 	DescripcionCorreccion     string  `json:"descripcion_correccion"`
 }
 
+func decodeFacturacionOperacionPayload(reader io.Reader, payload *facturacionOperacionPayload) error {
+	if reader == nil || payload == nil {
+		return nil
+	}
+	decoder := json.NewDecoder(reader)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(payload); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return fmt.Errorf("JSON contiene datos adicionales")
+	}
+	return nil
+}
+
 type facturaEmailResultado struct {
 	Intentado             bool   `json:"intentado"`
 	Enviado               bool   `json:"enviado"`
@@ -1167,7 +1185,10 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			if !facturacionActionIsPaisConfig(action) && facturacionActionRequiresFiscalIntegration(action) {
 				var payload facturacionOperacionPayload
 				if r.Body != nil {
-					_ = json.NewDecoder(r.Body).Decode(&payload)
+					if err := decodeFacturacionOperacionPayload(http.MaxBytesReader(w, r.Body, 64<<10), &payload); err != nil {
+						http.Error(w, "JSON de operación de facturación inválido", http.StatusBadRequest)
+						return
+					}
 				}
 				if payload.EmpresaID <= 0 {
 					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {

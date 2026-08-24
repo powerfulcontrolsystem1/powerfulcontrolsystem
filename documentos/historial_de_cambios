@@ -1,3 +1,7 @@
+2026-08-23: Entrada JSON fiscal limitada y estricta.
+- Backend: las acciones electrónicas de `/api/empresa/facturacion_electronica` limitan el cuerpo a 64 KiB, rechazan JSON malformado, campos desconocidos y objetos concatenados; antes el error de decodificación se descartaba y la operación podía continuar con un payload parcial.
+- Compatibilidad: el cuerpo vacío continúa permitido para las acciones históricas que reciben los identificadores por parámetros de consulta. La regresión cubre payload válido, campo desconocido, JSON adicional y cuerpo vacío.
+
 2026-08-23: Catálogo DIAN sin estados ambiguos.
 - Backend: todas las familias sin adaptador especializado se publican como `bloqueado_contrato`, `disponible_emision=false` y con una explicación visible; únicamente factura electrónica, nota crédito y nota débito conservan estado `operativo`.
 - Alcance: incluye contingencia, soporte y ajustes, nómina y ajustes, todos los documentos equivalentes/ajustes y RADIAN. Una regresión recorre el catálogo completo para impedir que una familia vuelva a aparecer como operativa por error.

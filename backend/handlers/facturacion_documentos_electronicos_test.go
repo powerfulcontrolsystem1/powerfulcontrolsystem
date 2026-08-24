@@ -18,6 +18,25 @@ func TestFacturacionSafeDispatchJSONRemovesRawFiscalPayload(t *testing.T) {
 	}
 }
 
+func TestDecodeFacturacionOperacionPayloadIsStrict(t *testing.T) {
+	var payload facturacionOperacionPayload
+	if err := decodeFacturacionOperacionPayload(strings.NewReader(`{"empresa_id":12,"tipo_documento":"factura_electronica"}`), &payload); err != nil {
+		t.Fatalf("payload válido rechazado: %v", err)
+	}
+	if payload.EmpresaID != 12 || payload.TipoDocumento != "factura_electronica" {
+		t.Fatalf("payload válido no se decodificó: %+v", payload)
+	}
+	if err := decodeFacturacionOperacionPayload(strings.NewReader(`{"empresa_id":12,"campo_desconocido":true}`), &payload); err == nil {
+		t.Fatal("un campo desconocido debe ser rechazado")
+	}
+	if err := decodeFacturacionOperacionPayload(strings.NewReader(`{"empresa_id":12}{"empresa_id":13}`), &payload); err == nil {
+		t.Fatal("dos objetos JSON deben ser rechazados")
+	}
+	if err := decodeFacturacionOperacionPayload(strings.NewReader(""), &payload); err != nil {
+		t.Fatalf("el cuerpo vacío con parámetros de consulta debe seguir permitido: %v", err)
+	}
+}
+
 func TestFacturaElectronicaRepresentationPDFIsRealPDF(t *testing.T) {
 	pdf := buildFacturaElectronicaRepresentationPDF(dbpkg.EmpresaDocumentoFacturacion{
 		EmpresaID: 12, TipoDocumento: "factura_electronica", DocumentoCodigo: "FAC-1", NumeroLegal: "1PCS4",
