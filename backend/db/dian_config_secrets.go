@@ -9,7 +9,7 @@ import (
 	"github.com/you/pos-backend/secure"
 )
 
-const empresaDIANConfigSecretsFingerprint = "empresa-dian-config-secrets:v1:purpose-bound-encryption"
+const empresaDIANConfigSecretsFingerprint = "empresa-dian-config-secrets:v1:purpose-bound-encryption" // #nosec G101 -- non-secret versioned fingerprint, not a credential.
 
 var empresaDIANConfigSecretColumns = []string{
 	"software_id",
@@ -143,7 +143,7 @@ func applyEmpresaDIANConfigSecretsTx(ctx context.Context, tx *sql.Tx) error {
 			if encrypted == plain {
 				continue
 			}
-			// #nosec G201 -- field comes only from empresaDIANConfigSecretColumns.
+			// #nosec G202 -- field comes only from empresaDIANConfigSecretColumns; values remain bound parameters.
 			query := "UPDATE empresa_dian_configuracion SET " + field + " = $1 WHERE id = $2 AND empresa_id = $3 AND COALESCE(" + field + ", '') = $4"
 			result, err := tx.ExecContext(ctx, query, encrypted, item.id, item.empresaID, plain)
 			if err != nil {
