@@ -1,3 +1,7 @@
+2026-08-23: Catálogo DIAN sin estados ambiguos.
+- Backend: todas las familias sin adaptador especializado se publican como `bloqueado_contrato`, `disponible_emision=false` y con una explicación visible; únicamente factura electrónica, nota crédito y nota débito conservan estado `operativo`.
+- Alcance: incluye contingencia, soporte y ajustes, nómina y ajustes, todos los documentos equivalentes/ajustes y RADIAN. Una regresión recorre el catálogo completo para impedir que una familia vuelva a aparecer como operativa por error.
+
 2026-08-23: Prevalidación segura de documento soporte DIAN.
 - Módulo afectado: Contabilidad Colombia avanzada / documento soporte.
 - Backend: `GET /api/empresa/contabilidad_colombia_avanzada?action=documento_soporte_preflight&empresa_id=&documento_soporte_id=` consulta exclusivamente el borrador de su `empresa_id`, evalúa los datos contables y la configuración DIAN separada, y responde bloqueos sin crear XML, consumir consecutivo, firmar ni transmitir.

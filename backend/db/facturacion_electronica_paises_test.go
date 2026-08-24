@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -146,6 +147,28 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 	}
 	if !foundRadian {
 		t.Fatalf("missing RADIAN events in DIAN catalog")
+	}
+}
+
+func TestCatalogoDianSoloDeclaraOperativasFamiliasConAdaptador(t *testing.T) {
+	operativos := map[string]bool{
+		"factura_electronica": true,
+		"nota_credito":        true,
+		"nota_debito":         true,
+	}
+	for _, item := range ListFacturacionDianDocumentosElectronicos() {
+		if operativos[item.Codigo] {
+			if !item.DisponibleEmision || item.EstadoImplementacion != "operativo" {
+				t.Fatalf("documento con adaptador no está operativo: %#v", item)
+			}
+			continue
+		}
+		if item.DisponibleEmision || item.EstadoImplementacion != "bloqueado_contrato" {
+			t.Fatalf("familia sin adaptador se presentó como operativa: %#v", item)
+		}
+		if strings.TrimSpace(item.Observacion) == "" {
+			t.Fatalf("familia bloqueada sin explicación visible: %#v", item)
+		}
 	}
 }
 
