@@ -184,6 +184,27 @@ func TestDIANFrontendDisablesFamiliesWithoutDedicatedAdapter(t *testing.T) {
 	}
 }
 
+func TestContabilidadManualFormsDoNotOfferForgedDIANStates(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "contabilidad_colombia_avanzada.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read Colombia accounting page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`value="Borrador local - sin envío DIAN" readonly`,
+		`CUNE y aceptación DIAN solo se registrarán desde el adaptador técnico`,
+		`Un CUDS, firma o aceptación DIAN no se puede declarar manualmente`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("manual accounting UI missing fiscal-safety marker %q", marker)
+		}
+	}
+	if strings.Contains(page, `estado_dian:els.nomEstado.value`) || strings.Contains(page, `estado_dian:els.dsEstado.value`) {
+		t.Fatal("manual accounting form can still send a DIAN state")
+	}
+}
+
 func TestFacturasElectronicasExportButtonsHaveAccessibleLabels(t *testing.T) {
 	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturas_electronicas.html")
 	raw, err := os.ReadFile(path)

@@ -34,3 +34,16 @@ func TestNormalizeEmpresaCarteraCXPEstado(t *testing.T) {
 		t.Fatalf("estado anulado debe conservarse, got=%s", got)
 	}
 }
+
+func TestManualElectronicDocumentsCannotClaimDIANAcceptance(t *testing.T) {
+	nomina := &EmpresaNominaElectronica{EstadoDIAN: "enviado", CUNE: "CUNE-FALSO", RespuestaDIAN: "aceptado", JSONPayload: `{"ok":true}`}
+	normalizeEmpresaNominaElectronicaDraft(nomina)
+	if nomina.EstadoDIAN != "borrador" || nomina.CUNE != "" || nomina.RespuestaDIAN != "" || nomina.JSONPayload != "" {
+		t.Fatalf("nomina manual no quedo como borrador seguro: %+v", nomina)
+	}
+	soporte := &EmpresaDocumentoSoporteElectronico{EstadoDIAN: "validado", CUDS: "CUDS-FALSO", RespuestaDIAN: "aceptado", JSONPayload: `{"ok":true}`}
+	normalizeEmpresaDocumentoSoporteDraft(soporte)
+	if soporte.EstadoDIAN != "borrador" || soporte.CUDS != "" || soporte.RespuestaDIAN != "" || soporte.JSONPayload != "" {
+		t.Fatalf("soporte manual no quedo como borrador seguro: %+v", soporte)
+	}
+}

@@ -42897,6 +42897,13 @@ acumulativa.
   vector público del ejemplo técnico DIAN de operación con residente.
 - Esta base no habilita todavía la emisión: faltan el mapeo completo de tercero
   no obligado, los datos UBL propios, firma y validación DIAN del adaptador.
+
+2026-08-23: Estados DIAN manuales cerrados en nómina y documento soporte.
+- Los formularios contables ya no ofrecen ni envían estados `validado`,
+  `enviado` o `rechazado` como si fueran resultado DIAN. El backend fuerza todo
+  alta manual a `borrador` y limpia CUNE/CUDS, respuesta y payload fiscal.
+- Solo el futuro adaptador técnico, tras firma y respuesta verificable de DIAN,
+  podrá registrar identificadores y estados fiscales finales.
   El bloqueo de producción se conserva hasta completar esos contratos.
 
 2026-08-23: Venta directa: aislamiento obligatorio del carrito fiscal seleccionado.

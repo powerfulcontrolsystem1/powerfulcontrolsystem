@@ -703,7 +703,7 @@ func CreateEmpresaNominaElectronica(dbConn *sql.DB, x EmpresaNominaElectronica) 
 		return 0, errors.New("empleado, documento y periodo son requeridos")
 	}
 	x.TipoDocumento = firstContabilidadValue(x.TipoDocumento, "CC")
-	x.EstadoDIAN = firstContabilidadValue(x.EstadoDIAN, "borrador")
+	normalizeEmpresaNominaElectronicaDraft(&x)
 	if x.Total == 0 {
 		x.Total = x.Devengados - x.Deducciones
 	}
@@ -766,7 +766,7 @@ func CreateEmpresaDocumentoSoporte(dbConn *sql.DB, x EmpresaDocumentoSoporteElec
 		return 0, errors.New("proveedor, documento y concepto son requeridos")
 	}
 	x.TipoDocumento = firstContabilidadValue(x.TipoDocumento, "NIT")
-	x.EstadoDIAN = firstContabilidadValue(x.EstadoDIAN, "borrador")
+	normalizeEmpresaDocumentoSoporteDraft(&x)
 	if x.Total == 0 {
 		x.Total = x.Subtotal + x.IVA - x.Retenciones
 	}
@@ -801,6 +801,31 @@ func ListEmpresaDocumentosSoporte(dbConn *sql.DB, empresaID int64, periodo strin
 		out = append(out, x)
 	}
 	return out, rows.Err()
+}
+
+// normalizeEmpresaNominaElectronicaDraft keeps user-entered accounting data
+// from impersonating a DIAN response. CUNE, provider reply and state are only
+// written later by the dedicated DIAN adapter after a signed submission.
+func normalizeEmpresaNominaElectronicaDraft(x *EmpresaNominaElectronica) {
+	if x == nil {
+		return
+	}
+	x.EstadoDIAN = "borrador"
+	x.CUNE = ""
+	x.RespuestaDIAN = ""
+	x.JSONPayload = ""
+}
+
+// normalizeEmpresaDocumentoSoporteDraft applies the same fail-closed rule to
+// purchase support. A manual CUDS or "enviado" label is never fiscal proof.
+func normalizeEmpresaDocumentoSoporteDraft(x *EmpresaDocumentoSoporteElectronico) {
+	if x == nil {
+		return
+	}
+	x.EstadoDIAN = "borrador"
+	x.CUDS = ""
+	x.RespuestaDIAN = ""
+	x.JSONPayload = ""
 }
 
 func CreateEmpresaActivoFijo(dbConn *sql.DB, x EmpresaActivoFijo) (int64, error) {
