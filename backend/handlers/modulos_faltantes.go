@@ -9165,10 +9165,18 @@ func dianNotePrefix(documentID, fallback string) string {
 }
 
 func dianDocumentProfileID(rootName string) string {
-	// El Schematron DIAN vigente exige el literal exacto para Invoice,
-	// CreditNote y DebitNote; la familia documental se identifica en los
-	// demás campos UBL y no se concatena al ProfileID.
-	return "DIAN 2.1"
+	// El Schematron DIAN vigente exige un literal distinto por familia UBL.
+	// No se debe abreviar a "DIAN 2.1": FAD03/CAD03 lo rechazan.
+	switch strings.TrimSpace(rootName) {
+	case "Invoice":
+		return "DIAN 2.1: Factura Electrónica de Venta"
+	case "CreditNote":
+		return "DIAN 2.1: Nota Crédito de Factura Electrónica de Venta"
+	case "DebitNote":
+		return "DIAN 2.1: Nota Débito de Factura Electrónica de Venta"
+	default:
+		return ""
+	}
 }
 
 func dianCompanyIDSchemeID(nit, dv string) string {
@@ -9371,7 +9379,7 @@ func dianPaymentMeansXML(issueDate string) string {
 
 func dianLineXML(lineName, quantityTag, currency, taxable, tax, percent, quantity string) string {
 	return fmt.Sprintf(
-		`<cac:%s><cbc:ID>1</cbc:ID><cbc:%s unitCode="EA">%s</cbc:%s><cbc:LineExtensionAmount currencyID="%s">%s</cbc:LineExtensionAmount>%s<cac:Item><cbc:Description>Servicio de habilitacion DIAN</cbc:Description><cac:SellersItemIdentification><cbc:ID>PCS-DIAN-001</cbc:ID></cac:SellersItemIdentification><cac:StandardItemIdentification><cbc:ID schemeID="999" schemeName="EAN13">7700000000019</cbc:ID></cac:StandardItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%s</cbc:PriceAmount><cbc:BaseQuantity unitCode="EA">%s</cbc:BaseQuantity></cac:Price></cac:%s>`,
+		`<cac:%s><cbc:ID>1</cbc:ID><cbc:%s unitCode="EA">%s</cbc:%s><cbc:LineExtensionAmount currencyID="%s">%s</cbc:LineExtensionAmount>%s<cac:Item><cbc:Description>Servicio de habilitacion DIAN</cbc:Description><cac:SellersItemIdentification><cbc:ID>PCS-DIAN-001</cbc:ID></cac:SellersItemIdentification><cac:StandardItemIdentification><cbc:ID schemeID="999" schemeName="Estándar de adopción del contribuyente">7700000000019</cbc:ID></cac:StandardItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%s</cbc:PriceAmount><cbc:BaseQuantity unitCode="EA">%s</cbc:BaseQuantity></cac:Price></cac:%s>`,
 		lineName, quantityTag, escapeXML(quantity), quantityTag, escapeXML(currency), escapeXML(taxable), dianTaxTotalXML(currency, taxable, tax, percent), escapeXML(currency), escapeXML(taxable), escapeXML(quantity), lineName,
 	)
 }
@@ -9725,7 +9733,7 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 			if ublVersion != "2.1" && ublVersion != "UBL 2.1" {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-001", "error", "UBLVersionID", "UBLVersionID debe ser UBL 2.1", "ubl_2_1")
 			}
-			if profileID != "" && profileID != expectedProfileID && !strings.EqualFold(profileID, "DIAN 2.1") {
+			if profileID != "" && profileID != expectedProfileID {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-PROFILE", "error", "ProfileID", "ProfileID debe ser "+expectedProfileID, "ubl_2_1")
 			}
 			if profileExecutionID != "" && profileExecutionID != dianExpectedProfileExecutionID(cfg) {

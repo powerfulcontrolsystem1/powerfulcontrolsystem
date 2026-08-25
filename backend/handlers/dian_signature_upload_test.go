@@ -861,7 +861,7 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 		t.Fatalf("expected DIAN extensions and invoice line, got %s", xmlPayload)
 	}
 	for _, expected := range []string{
-		"<cbc:ProfileID>DIAN 2.1</cbc:ProfileID>",
+		"<cbc:ProfileID>DIAN 2.1: Factura Electrónica de Venta</cbc:ProfileID>",
 		"<cbc:PrepaidAmount",
 		"<cac:PaymentMeans>",
 		"<cbc:AdditionalAccountID>2</cbc:AdditionalAccountID>",
@@ -949,8 +949,8 @@ func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 		expectedCUDE string
 		expectedID   string
 	}{
-		{docType: "nota_credito", expectedRoot: "<CreditNote ", expectedLine: "<cac:CreditNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1</cbc:ProfileID>"},
-		{docType: "nota_debito", expectedRoot: "<DebitNote ", expectedLine: "<cac:DebitNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1</cbc:ProfileID>"},
+		{docType: "nota_credito", expectedRoot: "<CreditNote ", expectedLine: "<cac:CreditNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1: Nota Crédito de Factura Electrónica de Venta</cbc:ProfileID>"},
+		{docType: "nota_debito", expectedRoot: "<DebitNote ", expectedLine: "<cac:DebitNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1: Nota Débito de Factura Electrónica de Venta</cbc:ProfileID>"},
 	} {
 		result, status, err := generateDIANUBLBase(cfg, 1, map[string]interface{}{
 			"documento_codigo": "SETP99",
@@ -973,6 +973,22 @@ func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 		if strings.Contains(xmlPayload, "<cac:InvoiceLine>") || strings.Contains(xmlPayload, "PrePaidAmount") {
 			t.Fatalf("%s must not use InvoiceLine: %s", tc.docType, xmlPayload)
 		}
+	}
+}
+
+func TestDIANDocumentProfileIDUsesOfficialFamilyLiterals(t *testing.T) {
+	cases := map[string]string{
+		"Invoice":    "DIAN 2.1: Factura Electrónica de Venta",
+		"CreditNote": "DIAN 2.1: Nota Crédito de Factura Electrónica de Venta",
+		"DebitNote":  "DIAN 2.1: Nota Débito de Factura Electrónica de Venta",
+	}
+	for root, expected := range cases {
+		if got := dianDocumentProfileID(root); got != expected {
+			t.Fatalf("%s ProfileID=%q; esperado %q", root, got, expected)
+		}
+	}
+	if got := dianDocumentProfileID("Unknown"); got != "" {
+		t.Fatalf("familia UBL desconocida no debe inventar ProfileID: %q", got)
 	}
 }
 

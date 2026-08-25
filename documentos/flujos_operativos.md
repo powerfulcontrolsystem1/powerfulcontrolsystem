@@ -19,6 +19,10 @@ afecte dinero, documentos, licencias o seguridad.
 5. El envio vuelve a pasar por el adaptador DIAN normal. Toda respuesta se
    conserva en el historial; si DIAN no entrega TrackId, se usa una referencia
    interna de auditoria que no se puede reconsultar como `GetStatusZip`.
+6. Antes de firmar, cada familia UBL usa su `ProfileID` oficial completo y cada
+   linea informa `StandardItemIdentification`. Si no existe UNSPSC, GTIN o
+   partida arancelaria configurada, PCS usa el codigo comercial ya persistido
+   con el estandar `999`; nunca inventa una clasificacion externa.
 
 ## Cliente movil POS v1
 

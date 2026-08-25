@@ -653,8 +653,8 @@ func generateDIANUBLDesdeFuenteFiscal(cfg map[string]interface{}, empresaID int6
 		escapeXML(documentoCodigo), escapeXML(emisorNIT), escapeXML(dianNormalizeCustomerDocumentNumber(snapshot.Cliente.NumeroDocumento, snapshot.Cliente.TipoDocumento)),
 		escapeXML(issueDate), escapeXML(fmt.Sprintf("%.2f", total)), escapeXML(strings.ToLower(cuFE)), escapeXML(qrURL),
 	)
-	header := fmt.Sprintf(`<cbc:UBLVersionID>UBL 2.1</cbc:UBLVersionID><cbc:CustomizationID>01</cbc:CustomizationID><cbc:ProfileID>DIAN 2.1</cbc:ProfileID><cbc:ProfileExecutionID>%s</cbc:ProfileExecutionID><cbc:ID>%s</cbc:ID><cbc:UUID schemeID="%s" schemeName="CUFE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate><cbc:IssueTime>%s</cbc:IssueTime><cbc:DueDate>%s</cbc:DueDate><cbc:InvoiceTypeCode>01</cbc:InvoiceTypeCode><cbc:DocumentCurrencyCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listID="ISO 4217 Alpha">%s</cbc:DocumentCurrencyCode><cbc:LineCountNumeric>%d</cbc:LineCountNumeric>`,
-		escapeXML(profileExecutionID), escapeXML(documentoCodigo), escapeXML(profileExecutionID), escapeXML(strings.ToLower(cuFE)), escapeXML(issueDate), escapeXML(issueTime), escapeXML(issueDate), escapeXML(moneda), len(snapshot.Lineas))
+	header := fmt.Sprintf(`<cbc:UBLVersionID>UBL 2.1</cbc:UBLVersionID><cbc:CustomizationID>01</cbc:CustomizationID><cbc:ProfileID>%s</cbc:ProfileID><cbc:ProfileExecutionID>%s</cbc:ProfileExecutionID><cbc:ID>%s</cbc:ID><cbc:UUID schemeID="%s" schemeName="CUFE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate><cbc:IssueTime>%s</cbc:IssueTime><cbc:DueDate>%s</cbc:DueDate><cbc:InvoiceTypeCode>01</cbc:InvoiceTypeCode><cbc:DocumentCurrencyCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listID="ISO 4217 Alpha">%s</cbc:DocumentCurrencyCode><cbc:LineCountNumeric>%d</cbc:LineCountNumeric>`,
+		escapeXML(dianDocumentProfileID("Invoice")), escapeXML(profileExecutionID), escapeXML(documentoCodigo), escapeXML(profileExecutionID), escapeXML(strings.ToLower(cuFE)), escapeXML(issueDate), escapeXML(issueTime), escapeXML(issueDate), escapeXML(moneda), len(snapshot.Lineas))
 	supplierParty, err := dianFuenteFiscalSupplierPartyXML(snapshot.Emisor, prefijo)
 	if err != nil {
 		return nil, http.StatusUnprocessableEntity, err
@@ -1087,8 +1087,8 @@ func dianFuenteFiscalAdjustmentLinesXML(lines []facturacionFuenteFiscalLinea, cu
 		if itemID == "" {
 			return "", fmt.Errorf("linea %d sin codigo de producto o servicio", line.Numero)
 		}
-		out.WriteString(fmt.Sprintf(`<cac:%s><cbc:ID>%d</cbc:ID><cbc:%s unitCode="%s">%.6f</cbc:%s><cbc:LineExtensionAmount currencyID="%s">%.2f</cbc:LineExtensionAmount><cbc:FreeOfChargeIndicator>false</cbc:FreeOfChargeIndicator>%s%s<cac:Item><cbc:Description>%s</cbc:Description><cac:SellersItemIdentification><cbc:ID>%s</cbc:ID></cac:SellersItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%.2f</cbc:PriceAmount><cbc:BaseQuantity unitCode="%s">1.000000</cbc:BaseQuantity></cac:Price></cac:%s>`,
-			lineName, line.Numero, quantityName, escapeXML(unit), line.Cantidad, quantityName, escapeXML(currency), line.BaseGravable, allowance, tax, escapeXML(line.Descripcion), escapeXML(itemID), escapeXML(currency), line.PrecioUnitario, escapeXML(unit), lineName))
+		out.WriteString(fmt.Sprintf(`<cac:%s><cbc:ID>%d</cbc:ID><cbc:%s unitCode="%s">%.6f</cbc:%s><cbc:LineExtensionAmount currencyID="%s">%.2f</cbc:LineExtensionAmount><cbc:FreeOfChargeIndicator>false</cbc:FreeOfChargeIndicator>%s%s<cac:Item><cbc:Description>%s</cbc:Description><cac:SellersItemIdentification><cbc:ID>%s</cbc:ID></cac:SellersItemIdentification><cac:StandardItemIdentification><cbc:ID schemeID="999" schemeName="Estándar de adopción del contribuyente">%s</cbc:ID></cac:StandardItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%.2f</cbc:PriceAmount><cbc:BaseQuantity unitCode="%s">1.000000</cbc:BaseQuantity></cac:Price></cac:%s>`,
+			lineName, line.Numero, quantityName, escapeXML(unit), line.Cantidad, quantityName, escapeXML(currency), line.BaseGravable, allowance, tax, escapeXML(line.Descripcion), escapeXML(itemID), escapeXML(itemID), escapeXML(currency), line.PrecioUnitario, escapeXML(unit), lineName))
 	}
 	return out.String(), nil
 }

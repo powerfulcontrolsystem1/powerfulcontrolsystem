@@ -43332,3 +43332,12 @@ Archivos modificados:
   Nginx.
 - Validación local: pruebas enfocadas de autenticación/CSP, contratos de recursos
   frontend y sintaxis/ejecución del helper JavaScript.
+2026-08-25: Correccion del rechazo real DIAN FAD03 y la notificacion FAZ09.
+- El reenvio productivo de `1PCS8` alcanzo el validador DIAN y demostro que
+  `ProfileID=DIAN 2.1` era insuficiente. Invoice, CreditNote y DebitNote ahora
+  generan el literal oficial completo de su familia documental.
+- Las lineas de la fuente fiscal inmutable ahora incluyen
+  `StandardItemIdentification` con `schemeID=999` y el mismo codigo comercial
+  ya trazado como identificacion del vendedor. No se fabrica un codigo UNSPSC,
+  GTIN o partida arancelaria que el producto no tenga configurado.
+- La validacion local ya no tolera el ProfileID abreviado que DIAN rechaza.
