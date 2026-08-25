@@ -1388,29 +1388,33 @@
         setDianRutPdfMessage("Primero carga el PDF del RUT de esta empresa.", true);
         return;
       }
-      setInputValue("dian_nit", fields.nit);
-      setInputValue("dian_dv", fields.dv || fields.digito_verificacion);
-      setInputValue("dian_razon_social", fields.razon_social);
-      setInputValue("adv_tipo_documento_emisor", fields.tipo_documento_emisor || "NIT");
-      setInputValue("adv_nit", fields.nit);
-      setInputValue("adv_digito_verificacion", fields.dv || fields.digito_verificacion);
-      setInputValue("adv_razon_social", fields.razon_social);
-      setInputValue("adv_nombre_comercial", fields.nombre_comercial);
-      setInputValue("adv_tipo_persona_fiscal", fields.tipo_persona_fiscal);
-      setInputValue("adv_regimen_tributario_colombia", fields.regimen_tributario_colombia);
-      setInputValue("adv_regimen_fiscal", fields.regimen_tributario_colombia);
-      setInputValue("adv_iva_responsabilidad", fields.iva_responsabilidad);
-      setInputValue("adv_responsabilidad_tributaria", fields.responsabilidad_tributaria);
-      setInputValue("adv_responsabilidades_rut_codigos", responsabilidadesRUTCodesFromJSON(fields.responsabilidades_rut_json).join(", "));
-      setInputValue("adv_email_facturacion", fields.email_facturacion);
-      setInputValue("adv_telefono_facturacion", fields.telefono_facturacion);
-      setInputValue("adv_direccion_fiscal", fields.direccion_fiscal);
-      setInputValue("adv_departamento", fields.departamento);
-      setInputValue("adv_departamento_codigo_dane", fields.departamento_codigo_dane);
-      setInputValue("adv_municipio", fields.municipio);
-      setInputValue("adv_municipio_codigo_dane", fields.municipio_codigo_dane);
-      setInputValue("adv_pais_codigo", fields.pais_codigo || "CO");
-      setInputValue("adv_codigo_postal", fields.codigo_postal);
+      function setReviewedValue(id, value) {
+        if (!txt(value)) return;
+        setInputValue(id, value);
+      }
+      setReviewedValue("dian_nit", fields.nit);
+      setReviewedValue("dian_dv", fields.dv || fields.digito_verificacion);
+      setReviewedValue("dian_razon_social", fields.razon_social);
+      setReviewedValue("adv_tipo_documento_emisor", fields.tipo_documento_emisor || (fields.nit ? "NIT" : ""));
+      setReviewedValue("adv_nit", fields.nit);
+      setReviewedValue("adv_digito_verificacion", fields.dv || fields.digito_verificacion);
+      setReviewedValue("adv_razon_social", fields.razon_social);
+      setReviewedValue("adv_nombre_comercial", fields.nombre_comercial);
+      setReviewedValue("adv_tipo_persona_fiscal", fields.tipo_persona_fiscal);
+      setReviewedValue("adv_regimen_tributario_colombia", fields.regimen_tributario_colombia);
+      setReviewedValue("adv_regimen_fiscal", fields.regimen_tributario_colombia);
+      setReviewedValue("adv_iva_responsabilidad", fields.iva_responsabilidad);
+      setReviewedValue("adv_responsabilidad_tributaria", fields.responsabilidad_tributaria);
+      setReviewedValue("adv_responsabilidades_rut_codigos", responsabilidadesRUTCodesFromJSON(fields.responsabilidades_rut_json).join(", "));
+      setReviewedValue("adv_email_facturacion", fields.email_facturacion);
+      setReviewedValue("adv_telefono_facturacion", fields.telefono_facturacion);
+      setReviewedValue("adv_direccion_fiscal", fields.direccion_fiscal);
+      setReviewedValue("adv_departamento", fields.departamento);
+      setReviewedValue("adv_departamento_codigo_dane", fields.departamento_codigo_dane);
+      setReviewedValue("adv_municipio", fields.municipio);
+      setReviewedValue("adv_municipio_codigo_dane", fields.municipio_codigo_dane);
+      setReviewedValue("adv_pais_codigo", fields.pais_codigo || "CO");
+      setReviewedValue("adv_codigo_postal", fields.codigo_postal);
       renderDianSetupProgress();
       setDianRutPdfMessage("Datos aplicados en pantalla. Revisa y guarda por separado DIAN Colombia y Configuracion avanzada; todavia no se ha modificado la empresa.", false);
     }
