@@ -4918,6 +4918,13 @@
 
 - Licencias: la sección empresarial enlaza el checkout existente y muestra un historial aislado por empresa con descargas de comprobante y factura electrónica cuando ya esté emitida.
 - Seguridad: la API documental de licencias valida el contexto empresarial, no expone payloads de pasarela y registra las descargas en auditoría.
+
+# 2026-08-25 - reCAPTCHA operativo y respuestas seguras de autenticación
+
+- La política CSP permite los orígenes exactos de Google necesarios para
+  reCAPTCHA tanto en contenido estático como en respuestas del backend.
+- Login, registro y recuperación comparten un normalizador que reemplaza HTML de
+  gateways HTTP 5xx por un mensaje seguro y legible.
 # 2026-07-16 - Probes operativos publicos
 
 - Se restauran `/health` y `/ready` como probes publicos de solo lectura. El

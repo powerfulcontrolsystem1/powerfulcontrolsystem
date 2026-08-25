@@ -395,12 +395,13 @@
   }
 
   function readResponsePayload(response) {
-    var contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
-    if (contentType.indexOf("application/json") >= 0) {
-      return response.json();
-    }
-    return response.text().then(function (text) {
-      return { message: text || ("HTTP " + response.status) };
+    return window.PCSAuthResponse.read(response).then(function (parsed) {
+      if (parsed.json) {
+        return parsed.json;
+      }
+      return {
+        message: window.PCSAuthResponse.getMessage(parsed, "HTTP " + response.status)
+      };
     });
   }
 

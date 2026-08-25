@@ -477,6 +477,8 @@
 	- agrega regresion para los alias de confirmacion usados por el flujo de invitacion.
 - `web/js/login_usuario.js`:
 	- valida localmente contrasena y confirmacion antes de enviar el formulario `Crear contrasena y entrar`.
+- `web/js/auth_response.js`:
+	- normaliza respuestas HTTP de los flujos públicos de autenticación, conserva mensajes JSON controlados y evita presentar HTML crudo de proxies o gateways ante fallos 5xx.
 
 2026-06-23 - Panel empresa, carrito y consola de recuperacion
 - `scripts/consola_de_recuperacion.ps1`:

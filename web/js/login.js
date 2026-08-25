@@ -257,18 +257,7 @@
   }
 
   function getResponseMessage(response, fallback) {
-    if (response && response.json) {
-      if (response.json.message) {
-        return String(response.json.message);
-      }
-      if (response.json.error) {
-        return String(response.json.error);
-      }
-    }
-    if (response && response.text) {
-      return String(response.text);
-    }
-    return fallback;
+    return window.PCSAuthResponse.getMessage(response, fallback);
   }
 
   async function postJson(url, body) {
@@ -298,12 +287,7 @@
       throw e;
     }
     clearTimeout(tid);
-    var txt = await res.text();
-    try {
-      return {ok: res.ok, status: res.status, json: JSON.parse(txt)};
-    } catch (e) {
-      return {ok: res.ok, status: res.status, text: txt};
-    }
+    return window.PCSAuthResponse.read(res);
   }
 
   function persistThemePreference(theme) {

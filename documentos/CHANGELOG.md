@@ -3547,3 +3547,12 @@
 - El consumo de tunel en Super Administrador reconoce timestamps con zona
   `-05` y refleja correctamente Raspberry conectadas durante los ultimos 90
   segundos.
+
+## 2026-08-25 - Recuperación operativa de reCAPTCHA y errores seguros de login
+
+- Se recupera y recifra de forma versionada la credencial reCAPTCHA sin
+  publicarla en código, registros ni documentación.
+- Las CSP estática y dinámica permiten únicamente los orígenes oficiales exactos
+  requeridos para cargar, ejecutar y enmarcar Google reCAPTCHA.
+- Los flujos públicos de autenticación dejan de presentar páginas HTML de Nginx
+  cuando un upstream devuelve 5xx y muestran un mensaje operativo controlado.
