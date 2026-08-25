@@ -23,6 +23,10 @@ afecte dinero, documentos, licencias o seguridad.
    linea informa `StandardItemIdentification`. Si no existe UNSPSC, GTIN o
    partida arancelaria configurada, PCS usa el codigo comercial ya persistido
    con el estandar `999`; nunca inventa una clasificacion externa.
+7. Si una respuesta rechazada dejo un XML firmado con un formato anterior, el
+   reenvio manual puede regenerarlo desde la misma fuente fiscal inmutable. El
+   XML anterior permanece vigente hasta que el nuevo supere el preflight; el
+   worker no puede ejecutar esta migracion ni alterar la fuente comercial.
 
 ## Cliente movil POS v1
 
