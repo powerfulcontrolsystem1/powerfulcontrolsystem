@@ -434,26 +434,29 @@ func TestBuildDIANGetStatusZipEnvelope(t *testing.T) {
 	}
 }
 
-func TestDIANSyntheticSyncHistoryIDIsNeverReconsultable(t *testing.T) {
-	if !dianIsSyntheticSyncHistoryID("sync:FV-123") {
-		t.Fatal("expected sync history key to be synthetic")
+func TestDIANSyntheticHistoryIDIsNeverReconsultable(t *testing.T) {
+	for _, trackID := range []string{"sync:FV-123", "audit:sendbillsync:FV-123", "AUDIT:SENDBILLASYNC:FV-123"} {
+		if !dianIsSyntheticHistoryID(trackID) {
+			t.Fatalf("expected %q to be a synthetic history key", trackID)
+		}
 	}
-	if dianIsSyntheticSyncHistoryID("TRACK-123") {
+	if dianIsSyntheticHistoryID("TRACK-123") {
 		t.Fatal("a DIAN TrackId must remain reconsultable")
 	}
 }
 
-func TestDIANHistoryTrackIDPersistsEverySynchronousOutcome(t *testing.T) {
-	for _, operation := range []string{"SendBillSync", "sendbillsync"} {
-		if got := dianHistoryTrackID(operation, "FV-123", ""); got != "sync:FV-123" {
-			t.Fatalf("synchronous DIAN response must have audit key, got %q", got)
+func TestDIANHistoryTrackIDPersistsEverySendOutcome(t *testing.T) {
+	for _, operation := range []string{"SendBillSync", "sendbillsync", "SendBillAsync", "SendTestSetAsync"} {
+		expected := "audit:" + strings.ToLower(operation) + ":FV-123"
+		if got := dianHistoryTrackID(operation, "FV-123", ""); got != expected {
+			t.Fatalf("DIAN response without TrackId must have audit key %q, got %q", expected, got)
 		}
 	}
 	if got := dianHistoryTrackID("SendBillSync", "FV-123", "TRACK-REAL"); got != "TRACK-REAL" {
 		t.Fatalf("real TrackId must win, got %q", got)
 	}
-	if got := dianHistoryTrackID("SendTestSetAsync", "FV-123", ""); got != "" {
-		t.Fatalf("async response without TrackId must remain incomplete, got %q", got)
+	if got := dianHistoryTrackID("SendBillSync", "", ""); got != "" {
+		t.Fatalf("response without document identity cannot be persisted, got %q", got)
 	}
 }
 
