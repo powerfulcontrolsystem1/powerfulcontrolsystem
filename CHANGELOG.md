@@ -4972,3 +4972,4 @@
   monedas, estaciones y slugs; duplicaciones exactas bajan de 35 a 27.
 - Consolida JSON, credenciales, IP pública, códigos operativos, unidades y
   contexto IA; duplicaciones bajan de 27 a 18 y descartes de 776 a 773.
+- 2026-08-25: `UBL DIAN ProfileID e identificacion estandar del item` corrige el rechazo real FAD03 usando los literales completos por Invoice, CreditNote y DebitNote. Cada linea comercial conserva el codigo del vendedor y agrega `StandardItemIdentification` con el estandar 999 de adopcion del contribuyente, eliminando la notificacion FAZ09 sin inventar UNSPSC o GTIN.
