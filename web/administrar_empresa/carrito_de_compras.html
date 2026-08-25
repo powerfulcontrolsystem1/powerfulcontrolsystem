@@ -11247,9 +11247,8 @@
       if (state.directSaleMode) {
         url.searchParams.set('modo', 'venta_directa');
         url.searchParams.set('perm_page', 'linkVentaDirecta');
-        if (state.selectedCarritoCode) {
-          url.searchParams.set('carrito_codigo', state.selectedCarritoCode);
-        }
+        // Carga tambien VENTA-DIRECTA-<empresa> para reconciliar carritos
+        // heredados antes de intentar crear el canonico terminado en -0.
       } else if (state.stationMode) {
         url.searchParams.set('perm_page', 'linkEstaciones');
         if (state.stationID > 0) {

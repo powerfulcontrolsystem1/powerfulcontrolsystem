@@ -1,3 +1,17 @@
+2026-08-25: Venta directa recupera carritos heredados antes de facturar.
+- La validacion visual autenticada posterior al release DIAN reprodujo que la
+  ruta `modo=venta_directa` filtraba exclusivamente el codigo canonico
+  `VENTA-DIRECTA-<empresa>-0`. Una empresa con el carrito heredado
+  `VENTA-DIRECTA-<empresa>` quedaba fuera del listado y el frontend intentaba
+  crear otra fila llamada `Venta directa`, chocando con la unicidad empresarial.
+- La carga enfocada deja de enviar ese filtro por codigo en venta directa y
+  permite que el reconciliador existente encuentre el carrito heredado antes de
+  crear uno nuevo. Se conserva `empresa_id`, la licencia y el permiso
+  `linkVentaDirecta`; no se relajan endpoints ni aislamiento multiempresa.
+- Se agrega una regresion de contrato frontend para impedir que el filtro vuelva
+  a bloquear la reconciliacion. La emision fiscal real no forma parte de esta
+  correccion y continua requiriendo confirmacion y acuse DIAN.
+
 2026-08-24: Fuente fiscal real, secretos DIAN y cierre preventivo para candidato de producción.
 - La factura comercial Colombia deja de usar la línea única de habilitación. Al
   pagar el carrito se conserva un artefacto privado e inmutable
