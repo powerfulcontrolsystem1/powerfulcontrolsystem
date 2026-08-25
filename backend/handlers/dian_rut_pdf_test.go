@@ -133,6 +133,9 @@ func TestFacturacionElectronicaHTMLSeparatesRUTFromFormulario1876(t *testing.T) 
 		`id="dianNumeracionPdfInput"`,
 		`Formulario 1876`,
 		`el PDF no quedo almacenado`,
+		`function setReviewedValue(id, value)`,
+		`if (!txt(value)) return;`,
+		`setReviewedValue("adv_email_facturacion", fields.email_facturacion)`,
 	} {
 		if !strings.Contains(html, required) {
 			t.Fatalf("facturacion electronica HTML missing %q", required)
