@@ -1,6 +1,10 @@
 package db
 
-import "testing"
+import (
+	"os"
+	"strings"
+	"testing"
+)
 
 func TestEmpresaCarteraCXPEdadRango(t *testing.T) {
 	cases := []struct {
@@ -32,5 +36,44 @@ func TestNormalizeEmpresaCarteraCXPEstado(t *testing.T) {
 	}
 	if got := normalizeEmpresaCarteraCXPEstado("anulado", 100, "2026-06-12"); got != "anulado" {
 		t.Fatalf("estado anulado debe conservarse, got=%s", got)
+	}
+}
+
+func TestManualElectronicDocumentsCannotClaimDIANAcceptance(t *testing.T) {
+	nomina := &EmpresaNominaElectronica{EstadoDIAN: "enviado", CUNE: "CUNE-FALSO", RespuestaDIAN: "aceptado", JSONPayload: `{"ok":true}`}
+	normalizeEmpresaNominaElectronicaDraft(nomina)
+	if nomina.EstadoDIAN != "borrador" || nomina.CUNE != "" || nomina.RespuestaDIAN != "" || nomina.JSONPayload != "" {
+		t.Fatalf("nomina manual no quedo como borrador seguro: %+v", nomina)
+	}
+	soporte := &EmpresaDocumentoSoporteElectronico{EstadoDIAN: "validado", CUDS: "CUDS-FALSO", RespuestaDIAN: "aceptado", JSONPayload: `{"ok":true}`}
+	normalizeEmpresaDocumentoSoporteDraft(soporte)
+	if soporte.EstadoDIAN != "borrador" || soporte.CUDS != "" || soporte.RespuestaDIAN != "" || soporte.JSONPayload != "" {
+		t.Fatalf("soporte manual no quedo como borrador seguro: %+v", soporte)
+	}
+}
+
+func TestGetEmpresaDocumentoSoporteByIDContextIsTenantScoped(t *testing.T) {
+	raw, err := os.ReadFile("contabilidad_colombia_avanzada.go")
+	if err != nil {
+		t.Fatalf("read document-support data access: %v", err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func GetEmpresaDocumentoSoporteByIDContext")
+	end := strings.Index(source[start:], "\nfunc normalizeEmpresaNominaElectronicaDraft")
+	if start < 0 || end < 0 || !strings.Contains(source[start:start+end], "WHERE empresa_id = ? AND id = ?") {
+		t.Fatal("document-support lookup must filter by empresa_id and id")
+	}
+}
+
+func TestGetEmpresaNominaElectronicaByIDContextIsTenantScoped(t *testing.T) {
+	raw, err := os.ReadFile("contabilidad_colombia_avanzada.go")
+	if err != nil {
+		t.Fatalf("read payroll data access: %v", err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func GetEmpresaNominaElectronicaByIDContext")
+	end := strings.Index(source[start:], "\nfunc CreateEmpresaDocumentoSoporte")
+	if start < 0 || end < 0 || !strings.Contains(source[start:start+end], "WHERE empresa_id = ? AND id = ?") {
+		t.Fatal("payroll lookup must filter by empresa_id and id")
 	}
 }

@@ -13284,6 +13284,33 @@ backend/db/repository_helpers.go | Helper interno para generación compartida de
 - `backend/db/facturacion_artefactos.go`: migración, contrato y repositorio
   multiempresa para XML firmado, acuse de proveedor y representación PDF en
   almacenamiento privado con verificación SHA-256.
+2026-08-23
+- `backend/db/dian_documentos_configuracion.go`: migración versionada y modelo
+  multiempresa para numeración, ambiente y modo de operación DIAN por familia
+  documental, separado de la factura de venta.
+- `backend/db/dian_documentos_configuracion_test.go`: regresiones de
+  normalización y validación de rangos de la configuración documental DIAN.
+backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciales DIAN persistidas y migra valores heredados sin exponerlos.
+2026-08-24 - Candidato DIAN con fuente fiscal real y validación reproducible
+- `backend/db/dian_config_secrets_test.go`: regresiones de cifrado por empresa/campo, ausencia de texto plano y migración de secretos DIAN.
+- `backend/db/facturacion_artefactos.go`: amplía el repositorio privado con `fuente_fiscal_json` inmutable e idempotente por SHA-256.
+- `backend/db/facturacion_fuente_fiscal_test.go`: prueba PostgreSQL opcional de inmutabilidad y aislamiento del artefacto fiscal.
+- `backend/db/facturacion_dane_codes.go`: migración append-only y validación de códigos DANE para emisor y clientes.
+- `backend/db/facturacion_dane_codes_test.go`: catálogo de migración, normalización y prueba PostgreSQL opcional sin inferencia de datos.
+- `backend/handlers/facturacion_fuente_fiscal.go`: captura y carga multiempresa del snapshot real; genera UBL comercial multilínea sin defaults fiscales inventados.
+- `backend/handlers/facturacion_fuente_fiscal_test.go`: contratos de determinismo, conciliación, aislamiento, DANE, UBL multilínea, firma y ausencia de marcadores ficticios.
+- `backend/handlers/dian_acuse_security_test.go`: acuses negados/rechazados no pueden interpretarse como aceptación por coincidencia parcial.
+- `backend/handlers/dian_permissions_security_test.go`: acciones DIAN con efecto exigen permiso efectivo de aprobación.
+- `backend/handlers/dian_response_sanitizer_test.go`: saneamiento recursivo de XML, claves, tokens y respuestas crudas antes de persistir trazas.
+- `backend/handlers/dian_security_regression_test.go`: fronteras de tenant, rutas directas bloqueadas y respuestas de configuración sin secretos.
+- `scripts/validar_dian_firma.ps1`: verificación independiente XMLDSig usando la biblioteca criptográfica de Windows.
+- `scripts/check_inline_js.js`: comprobación sintáctica sin dependencias de todos los scripts inline indicados.
+- `scripts/validar_dian_xsd.ps1`: carga explícita del XSD XMLDSig de la caja UBL y código de salida fallido cuando hay errores de esquema.
+2026-08-24 - Validador reproducible Schematron DIAN
+- `scripts/validar_dian_schematron.ps1`: ejecuta el XSL oficial compilado con
+  un Saxon externo indicado explícitamente, conserva el reporte y falla si el
+  procesador retorna error o publica mensajes `Fatal:`. No descarga ni agrega
+  dependencias al runtime del proyecto.
 - `backend/db/admin_login_throttle.go`: persistencia durable de intentos y bloqueo temporal del login administrativo.
 - `backend/db/admin_login_throttle_migration.go`: migración PostgreSQL versionada del throttle administrativo.
 - `backend/db/session_principal_migration.go`: migración de identidad tipada, empresa y rol en sesiones.

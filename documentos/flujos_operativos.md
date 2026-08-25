@@ -829,14 +829,16 @@ afecte dinero, documentos, licencias o seguridad.
    `action=validar_credenciales` y luego `action=pruebas_dian`.
 9. La pagina `Facturacion electronica > Pasar test DIAN` muestra estado de
    ambiente, rango, TestSetId y credenciales; desde alli se guarda el objetivo
-   del set que aparece en el portal DIAN, incluyendo totales requeridos y
-   minimos aceptados por facturas, notas debito y notas credito. La barra
+   del set que aparece en el portal DIAN para la factura electronica. Las notas
+   debito y credito no se incluyen mientras sus adaptadores esten bloqueados.
+   La barra
    `Avance de validacion DIAN` muestra un porcentaje operativo 0-100% por
    hitos, pero no reemplaza el acuse final de DIAN.
 10. `Ejecutar set automatico` usa los valores guardados para generar el lote
-   completo; los botones `Enviar factura`, `Enviar nota debito` y `Enviar nota
-   credito` permiten probar un documento a la vez y ver si fue recibido,
-   aceptado, rechazado o queda pendiente.
+   de factura electronica. Los controles de nota debito y nota credito deben
+   permanecer indisponibles hasta disponer de fuente de ajuste y adaptadores
+   DIAN propios. El resultado de factura permite ver si fue recibido, aceptado,
+   rechazado o queda pendiente.
    No existe preset numerico: cada empresa debe guardar el objetivo exacto que
    muestre su portal DIAN. Sin objetivo persistido, el envio automatico queda bloqueado.
 11. El resultado visual debe mostrar resumen por estado, aceptados por tipo,
@@ -1438,25 +1440,28 @@ afecte dinero, documentos, licencias o seguridad.
 3. En `Centro de habilitacion DIAN` se pulsa `Consultar clave tecnica DIAN` para
    ejecutar `GetNumberingRange` y guardar la clave tecnica del rango.
 4. Se valida configuracion, firma digital, certificado, software ID/PIN, NIT/DV,
-   ambiente, prefijo, rango y cliente antes de emitir.
-5. La factura se genera con UBL 2.1, `DianExtensions`, `SoftwareSecurityCode`,
-   CUFE/CUDE, QR, parties, impuestos, totales y lineas. El backend bloquea XML
-   incompleto en preflight.
-6. El envio oficial usa DIAN SOAP/WCF con WS-Security y firma RSA-SHA256. No
-   modificar canonicacion/firma sin prueba real DIAN.
+   ambiente, prefijo, rango, emisor, cliente y sus codigos DANE antes de emitir.
+5. Solo la factura comercial se genera con UBL 2.1 desde una
+   `fuente_fiscal_json` inmutable del carrito pagado, con `DianExtensions`,
+   `SoftwareSecurityCode`, CUFE, QR, parties, impuestos, totales y lineas
+   reales. El backend bloquea XML incompleto en preflight.
+6. El envio oficial usa DIAN SOAP/WCF con WS-Security y firma RSA-SHA256 desde
+   el despachador interno; las acciones directas de firma/envio estan cerradas.
+   No modificar canonicacion/firma sin prueba real DIAN.
 7. Un acuse aceptado deja `estado_envio=aceptado`. `Regla 90` por documento ya
    procesado queda como pendiente de consulta del acuse original; no equivale por
    si sola a aceptacion.
-8. Un rechazo deja el documento en cola/reintentos y crea alerta en el buzon del
-   administrador de la empresa. La consola DIAN muestra el error en rojo con
-   guia de solucion.
-9. En produccion PCS, el portal DIAN confirmo `1PCS2` y `1PCS3` como `Aprobado
-   con notificacion`; el siguiente consecutivo esperado despues de esa prueba es
-   `1PCS4`.
-10. `Aprobado con notificacion` cuenta como documento aprobado; la notificacion
-    se conserva como observacion y se corrigen datos maestros si aplica.
+8. Un rechazo deja la factura en cola/reintentos y crea alerta en el buzon del
+   administrador. El reintento reutiliza el XML solo si la fuente fiscal
+   inmutable del mismo documento sigue disponible y valida.
+9. Los registros `1PCS2` y `1PCS3` son evidencia historica de portal; no
+   certifican la configuracion ni el candidato actual. El consecutivo vigente
+   debe leerse de la configuracion y portal actuales, nunca inferirse de ellos.
+10. `Aprobado con notificacion` cuenta como documento aprobado solo cuando el
+    acuse/portal pertenece al XML y folio actual; la notificacion se conserva
+    como observacion y se corrigen datos maestros si aplica.
 11. Antes de reenviar un mismo prefijo/folio, consultar historial DIAN, cola de
-    reintentos, CUFE/TrackId o portal DIAN para evitar duplicados y `Regla 90`.
+    reintentos, CUFE/TrackId o portal para evitar duplicados y `Regla 90`.
 
 ### Errores DIAN que el usuario puede resolver
 
@@ -1475,6 +1480,23 @@ afecte dinero, documentos, licencias o seguridad.
    correccion posterior.
 8. Firma o resolucion vencida: renovar, cargar en PCS, asociar en DIAN y volver a
    probar.
+
+### Factura electrónica comercial Colombia con fuente real (2026-08-24)
+
+1. Completar emisor y cliente con documento, responsabilidad tributaria,
+   dirección, departamento/municipio y códigos DANE coherentes.
+2. Confirmar que cada línea del carrito tenga descripción, unidad convertible a
+   código DIAN, código de impuesto y porcentaje explícitos; no se inventa el
+   tratamiento de una línea al 0 %.
+3. Al pagar, PCS persiste primero el comprobante y su `fuente_fiscal_json`
+   inmutable antes de reutilizar o limpiar el carrito.
+4. La factura carga la fuente por `empresa_id` y documento, concilia líneas,
+   impuestos y total, reserva el folio, genera UBL, firma, guarda XML y solo
+   entonces transmite por el flujo canónico.
+5. Una respuesta de transporte sin acuse concluyente queda pendiente; solo el
+   acuse oficial permite marcar aceptada y enviar XML/PDF al cliente.
+6. Nota crédito/débito, soporte, nómina, equivalentes, contingencia y RADIAN
+   permanecen bloqueados mientras no tengan fuente y adaptador específicos.
 ## Domotica: provisionar Raspberry desde su navegador
 
 1. El administrador abre PCS en la Raspberry, entra a Domotica y registra el
@@ -1505,3 +1527,14 @@ afecte dinero, documentos, licencias o seguridad.
 11. Una entrada GPIO autenticada puede encender/apagar el aparato destino,
     iniciar su temporizador o respetar su agenda; todo ON reserva la cola única
     de la empresa.
+### Preflight fiscal antes de pagar una factura Colombia
+
+- Si el pago solicita factura electrónica (manual o automática), el backend
+  reconstruye en memoria la misma fuente fiscal a partir del carrito, cliente y
+  emisor reales antes de cerrar la venta.
+- Datos maestros incompletos, códigos DANE inválidos, líneas sin código/unidad o
+  totales/impuestos no conciliados responden `409` sin pagar, reservar consecutivo,
+  firmar ni transmitir.
+- Descuentos y devoluciones globales no distribuidos se rechazan para factura;
+  deben aplicarse por línea o usarse únicamente con comprobante de pago.
+- Una fuente con bloqueantes nunca se persiste como artefacto inmutable.

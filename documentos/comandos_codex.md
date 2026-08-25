@@ -793,26 +793,35 @@ Flujo API equivalente al carrito:
 6. Si no autoemite FE, llamar `/api/empresa/facturacion_electronica?action=facturar_desde_venta&empresa_id=12` con `tipo_documento=comprobante_pago`, `documento_codigo` y `cliente_id=22`.
 7. Revisar `integracion_fiscal.cola_reintentos`, numero legal y reglas DIAN.
 
-Resultado de referencia 2026-06-17: factura `FV-FE-MENTA-20260617151719`,
+Resultado historico de referencia 2026-06-17: factura `FV-FE-MENTA-20260617151719`,
 numero legal `1PCS1`, enviada a DIAN y rechazada por `FAK61`, `FAB05c` y
 `FAD06`. El error de rango/prefijo de la resolucion anterior ya no aparecio.
 
-Revalidacion 2026-06-18: despues de asociar la numeracion en portal DIAN
+Revalidacion historica 2026-06-18: despues de asociar la numeracion en portal DIAN
 produccion y consultar `GetNumberingRange`, PCS emitio factura `1PCS2` por
 producto `menta`. Luego el usuario confirmo en portal DIAN produccion que
 `1PCS2` aparece como `Aprobado con notificacion`. Si un reenvio devuelve
 `Regla: 90, Documento procesado anteriormente`, tratar esa regla como pendiente
 de consulta del acuse original y revisar portal/CUFE antes de reenviar.
 
-Resultado real 2026-06-18: prueba viva en VPS emitio `1PCS3` contra DIAN
+Resultado historico real 2026-06-18: prueba viva en VPS emitio `1PCS3` contra DIAN
 produccion por SOAP/WCF `SendBillSync`; DIAN respondio HTTP 200 con
 `estado_dian=aceptado`, `acuse_estado=aceptado`, CUFE registrado y notificacion
 `RUT01` informativa.
 
-Confirmacion portal DIAN 2026-06-18: el usuario encontro en produccion, consulta
+Confirmacion historica de portal DIAN 2026-06-18: el usuario encontro en produccion, consulta
 de documentos recibidos, las facturas `1PCS3` del 18-06-2026 y `1PCS2` del
 17-06-2026 como `Aprobado con notificacion`, valor `$ 100`. Despues de esa
-prueba los contadores quedaron en siguiente consecutivo `1PCS4`.
+prueba los contadores quedaron entonces en siguiente consecutivo `1PCS4`. No
+usar ese numero para una emision actual.
+
+Auditoria real 2026-08-24: PCS supero preflight de credenciales/firma y
+`GetNumberingRange` confirmo resolucion `18764111318575`, prefijo `1PCS`, rango
+`1-100000` y siguiente visible 12. El diagnostico quedo
+`pre_envio_validable`; alcance HTTP no equivale a aceptacion SOAP. Una
+reconsulta historica devolvio codigo DIAN 66 y expuso que el binario publicado
+degradaba el estado global; se restauro a `enviado` y el candidato restringe
+esa mutacion al historial individual.
 
 Cuando el usuario pida probar `powerfulcontrolsystem.com`, DIAN, carrito o una
 venta real de la empresa Powerful Control System, no iniciar probando en local
@@ -839,12 +848,15 @@ Para facturacion electronica DIAN de PCS, el cierre minimo es:
 - Verificar diagnostico oficial y configuracion DIAN sin mostrar secretos.
 - Crear o reutilizar venta de producto `menta` y cliente natural/empresa segun
   lo pedido.
-- Emitir con `/api/empresa/facturacion_electronica?action=emitir&empresa_id=12`
-  o reintentar con `action=reenviar_dian`.
+- Emitir una factura exclusivamente desde una venta pagada que haya capturado
+  `fuente_fiscal_json` inmutable. No usar formularios/actions de XML, firma o
+  envio libres. Un reintento debe reutilizar el XML del mismo documento y
+  volver a validar su fuente.
 - Revisar `integracion_fiscal.estado_envio`, `numero_legal`, `cola_reintentos`
   y reglas DIAN (`FAB05c`, `FAD06`, etc.).
-- Si DIAN responde HTTP 200 con `StatusCode=99`, la conexion funciono y el
-  rechazo es normativo/configuracion/XML, no caida de red.
+- Interpretar el cuerpo funcional aunque HTTP sea 200. `ok=false`, `StatusCode`
+  de rechazo o `Fault` son fallos; una prueba HEAD/HTTP solo demuestra alcance
+  de red, no credenciales, SOAP ni aceptacion fiscal.
 - Si el rechazo incluye `FAB05c`, verificar primero la asociacion del rango en
   `https://catalogo-vpfe.dian.gov.co/User/Login`.
 - Si incluye `FAD06`, volver a consultar clave tecnica DIAN y revisar CUFE,
@@ -854,6 +866,9 @@ Para facturacion electronica DIAN de PCS, el cierre minimo es:
   aprobado, continuar con el siguiente consecutivo y no reenviar el mismo folio.
 - `Aprobado con notificacion` en DIAN cuenta como documento aprobado; documentar
   la notificacion (`RUT01`, etc.) y corregir datos maestros si aplica.
+- Nota credito/debito, soporte, nomina, equivalentes y RADIAN permanecen
+  bloqueados con HTTP 422 hasta tener fuentes y adaptadores especificos. No
+  consumir consecutivos ni transmitir fixtures para simular compatibilidad.
 
 Usar navegador interno o Chrome solo para validar pantallas y flujo visible:
 login, seleccionar empresa, carrito, cliente, totales, factura/impresion. Para

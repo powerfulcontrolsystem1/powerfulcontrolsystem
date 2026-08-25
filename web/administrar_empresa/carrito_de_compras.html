@@ -422,9 +422,17 @@
               <label class="form-label" for="quickClienteDepartamento">Departamento</label>
               <input id="quickClienteDepartamento" class="form-input" autocomplete="off" placeholder="Ej: Atlantico">
             </div>
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteDepartamentoDANE">DANE departamento</label>
+              <input id="quickClienteDepartamentoDANE" class="form-input" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="08">
+            </div>
             <div class="form-col">
               <label class="form-label" for="quickClienteMunicipio">Municipio</label>
               <input id="quickClienteMunicipio" class="form-input" autocomplete="off" placeholder="Ej: Barranquilla">
+            </div>
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteMunicipioDANE">DANE municipio</label>
+              <input id="quickClienteMunicipioDANE" class="form-input" autocomplete="off" inputmode="numeric" maxlength="5" placeholder="08001">
             </div>
             <div class="form-col maxw-180">
               <label class="form-label" for="quickClienteCodigoPostal">Codigo postal</label>
@@ -8459,7 +8467,9 @@
       setValue('quickClienteDireccion', normalize(cliente.direccion));
       setValue('quickClientePais', normalize(cliente.pais) || 'CO');
       setValue('quickClienteDepartamento', normalize(cliente.departamento));
+      setValue('quickClienteDepartamentoDANE', normalize(cliente.departamento_codigo_dane));
       setValue('quickClienteMunicipio', normalize(cliente.municipio));
+      setValue('quickClienteMunicipioDANE', normalize(cliente.municipio_codigo_dane));
       setValue('quickClienteCodigoPostal', normalize(cliente.codigo_postal));
       setValue('quickClienteObservaciones', normalize(cliente.observaciones));
       syncQuickClienteFiscalDefaults('tipo_documento');
@@ -8645,14 +8655,16 @@
         direccion: normalize(document.getElementById('quickClienteDireccion').value),
         pais: normalize(document.getElementById('quickClientePais').value) || 'CO',
         departamento: normalize(document.getElementById('quickClienteDepartamento').value),
+        departamento_codigo_dane: normalize(document.getElementById('quickClienteDepartamentoDANE').value),
         municipio: normalize(document.getElementById('quickClienteMunicipio').value),
+        municipio_codigo_dane: normalize(document.getElementById('quickClienteMunicipioDANE').value),
         codigo_postal: normalize(document.getElementById('quickClienteCodigoPostal').value),
         observaciones: normalize(document.getElementById('quickClienteObservaciones').value) || 'Creado desde el boton Clientes del carrito'
       };
     }
 
     function resetQuickClienteFormAfterSave() {
-      ['quickClienteDocumento', 'quickClienteDV', 'quickClienteNombreComercial', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
+      ['quickClienteDocumento', 'quickClienteDV', 'quickClienteNombreComercial', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClienteDepartamento', 'quickClienteDepartamentoDANE', 'quickClienteMunicipio', 'quickClienteMunicipioDANE', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.value = '';
       });
@@ -12040,7 +12052,7 @@
         }
       });
     }
-    ['quickClienteTipoPersona', 'quickClienteTipoDoc', 'quickClienteDocumento', 'quickClienteDV', 'quickClienteNombre', 'quickClienteNombreComercial', 'quickClienteRegimenFiscal', 'quickClienteResponsabilidad', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClientePais', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones', 'quickClienteCupoCredito', 'quickClienteMaxCreditosActivos'].forEach(function(id) {
+    ['quickClienteTipoPersona', 'quickClienteTipoDoc', 'quickClienteDocumento', 'quickClienteDV', 'quickClienteNombre', 'quickClienteNombreComercial', 'quickClienteRegimenFiscal', 'quickClienteResponsabilidad', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClientePais', 'quickClienteDepartamento', 'quickClienteDepartamentoDANE', 'quickClienteMunicipio', 'quickClienteMunicipioDANE', 'quickClienteCodigoPostal', 'quickClienteObservaciones', 'quickClienteCupoCredito', 'quickClienteMaxCreditosActivos'].forEach(function(id) {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('keydown', function(e) {

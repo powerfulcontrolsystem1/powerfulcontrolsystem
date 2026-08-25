@@ -1,3 +1,27 @@
+## [2026-08-24] Factura DIAN desde fuente fiscal real
+
+- [Contrato] La emisión comercial queda limitada a factura electrónica de venta;
+  nota crédito/débito y las demás familias fallan cerrado hasta tener fuente y
+  adaptador propios.
+- [Datos] Se persiste un snapshot fiscal privado e inmutable y se agregan códigos
+  DANE de emisor/cliente sin inferir valores existentes.
+- [UBL] Las líneas, partes, pago, impuestos y totales nacen de la venta real; los
+  descuentos de línea no se duplican como descuento global.
+- [Seguridad] Secretos DIAN cifrados por empresa/campo y rutas libres de
+  firma/envío bloqueadas.
+- [UX/seguridad] El centro DIAN deja deshabilitada toda emisión fiscal manual,
+  no convierte la activación local en evidencia falsa de envío/acuse y distingue
+  un servidor alcanzable de una validación SOAP o fiscal exitosa.
+- [QA] Go, vet, JavaScript, PostgreSQL 17.11 aislado, XSD oficial y XMLDSig
+  aprobaron. Schematron oficial queda pendiente por falta de un procesador XSLT
+  3 compatible. La auditoría autenticada de PCS confirmó ambiente productivo,
+  credenciales/firma configuradas, `GetNumberingRange` y alcance de red; también
+  confirmó que la versión publicada aún no contiene esta reparación y que una
+  reconsulta histórica puede degradar el estado global. Ese dato se restauró y
+  el candidato restringe la actualización al historial individual. Clon del
+  esquema vigente, despliegue del candidato y acuse de una venta real siguen
+  pendientes; estado NO-GO.
+
 ## [2026-08-21] Login y sesiones multiempresa
 
 - [Seguridad] Sesiones tipadas, aislamiento obligatorio por `empresa_id`, PBKDF2 versionado, tokens atómicos, revocación de sesiones y limitación durable de intentos administrativos.

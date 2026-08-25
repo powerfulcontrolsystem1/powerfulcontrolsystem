@@ -18,6 +18,25 @@ func TestFacturacionSafeDispatchJSONRemovesRawFiscalPayload(t *testing.T) {
 	}
 }
 
+func TestDecodeFacturacionOperacionPayloadIsStrict(t *testing.T) {
+	var payload facturacionOperacionPayload
+	if err := decodeFacturacionOperacionPayload(strings.NewReader(`{"empresa_id":12,"tipo_documento":"factura_electronica"}`), &payload); err != nil {
+		t.Fatalf("payload válido rechazado: %v", err)
+	}
+	if payload.EmpresaID != 12 || payload.TipoDocumento != "factura_electronica" {
+		t.Fatalf("payload válido no se decodificó: %+v", payload)
+	}
+	if err := decodeFacturacionOperacionPayload(strings.NewReader(`{"empresa_id":12,"campo_desconocido":true}`), &payload); err == nil {
+		t.Fatal("un campo desconocido debe ser rechazado")
+	}
+	if err := decodeFacturacionOperacionPayload(strings.NewReader(`{"empresa_id":12}{"empresa_id":13}`), &payload); err == nil {
+		t.Fatal("dos objetos JSON deben ser rechazados")
+	}
+	if err := decodeFacturacionOperacionPayload(strings.NewReader(""), &payload); err != nil {
+		t.Fatalf("el cuerpo vacío con parámetros de consulta debe seguir permitido: %v", err)
+	}
+}
+
 func TestFacturaElectronicaRepresentationPDFIsRealPDF(t *testing.T) {
 	pdf := buildFacturaElectronicaRepresentationPDF(dbpkg.EmpresaDocumentoFacturacion{
 		EmpresaID: 12, TipoDocumento: "factura_electronica", DocumentoCodigo: "FAC-1", NumeroLegal: "1PCS4",
@@ -86,6 +105,18 @@ func TestDIANUBLVentaConservaTiposImplementados(t *testing.T) {
 	}
 }
 
+func TestConfiguracionDIANPorDocumentoNoHabilitaFamiliasSinAdaptador(t *testing.T) {
+	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "configurando"); err != nil {
+		t.Fatalf("documento soporte debe permitir preparacion separada: %v", err)
+	}
+	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "activo"); err == nil {
+		t.Fatal("documento soporte no debe activarse sin adaptador propio")
+	}
+	if err := facturacionValidarConfiguracionDIANDocumento("factura_electronica", "configurando"); err == nil {
+		t.Fatal("factura no debe duplicar su configuracion DIAN existente")
+	}
+}
+
 func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *testing.T) {
 	got := facturacionFiltrarDocumentosDianOperativos([]string{
 		"factura_electronica", "documento_soporte", "nota_credito", "nomina_electronica", "nota_debito", "factura_electronica", "eventos_radian_recepcion",
@@ -101,30 +132,121 @@ func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *t
 	}
 }
 
-func TestResolveFacturacionTransitionForDocumentosElectronicosNuevos(t *testing.T) {
+func TestBuildDIANCUDSDocumentoSoporteCoincideConEjemploOficial(t *testing.T) {
+	// Vector tomado del ejemplo público DIAN de operación con residente. No se
+	// usan credenciales ni datos de una empresa PCS.
+	got := buildDIANCUDSDocumentoSoporte(
+		"DS236000000", "2022-02-18", "13:34:59-05:00",
+		"3899000.00", "322430.00", "4152176.00",
+		"1020", "800197268", "12345", "2",
+	)
+	const want = "C96A728F4453822BFC69B94253880D21D29DD1A9424444DA07610799C203506D33FA4F16830DBD6EE0FEBB4711BFA23A"
+	if got != want {
+		t.Fatalf("CUDS=%s, want %s", got, want)
+	}
+}
+
+func TestDocumentoSoportePreflightFailsClosed(t *testing.T) {
+	documento := &dbpkg.EmpresaDocumentoSoporteElectronico{
+		ID:              7,
+		EmpresaID:       12,
+		Documento:       "DS-7",
+		NombreProveedor: "Proveedor de prueba",
+		FechaDocumento:  "2026-08-23",
+		Concepto:        "Servicio de prueba",
+		ProveedorID:     1,
+		Subtotal:        100,
+		IVA:             19,
+		Total:           119,
+	}
+	configuracion := &dbpkg.EmpresaDIANDocumentoConfiguracion{
+		Estado:       "configurando",
+		TipoAmbiente: "habilitacion",
+		Prefijo:      "DS",
+		RangoDesde:   1,
+		RangoHasta:   10,
+		TestSetID:    "test-set",
+	}
+	resultado := buildDocumentoSoporteDIANPreflight(documento, configuracion)
+	if resultado.PuedeEmitir || resultado.Estado != "bloqueado_adaptador_dian" {
+		t.Fatalf("la prevalidacion debe cerrar la emision hasta tener adaptador propio: %+v", resultado)
+	}
+	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "adaptador DIAN propio") {
+		t.Fatalf("faltó el bloqueo explicito del adaptador: %+v", resultado.Bloqueos)
+	}
+
+	documento.Total = 118
+	resultado = buildDocumentoSoporteDIANPreflight(documento, configuracion)
+	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "no cuadran") {
+		t.Fatalf("la prevalidacion debe detectar totales inconsistentes: %+v", resultado.Bloqueos)
+	}
+}
+
+func TestNominaElectronicaPreflightFailsClosed(t *testing.T) {
+	nomina := &dbpkg.EmpresaNominaElectronica{
+		ID:          8,
+		EmpresaID:   12,
+		Documento:   "123456",
+		Nombre:      "Empleado de prueba",
+		Periodo:     "2026-08",
+		FechaPago:   "2026-08-23",
+		EmpleadoID:  1,
+		Devengados:  1000,
+		Deducciones: 100,
+		Total:       900,
+		SalarioBase: 1000,
+	}
+	configuracion := &dbpkg.EmpresaDIANDocumentoConfiguracion{
+		Estado:       "configurando",
+		TipoAmbiente: "habilitacion",
+		Prefijo:      "NE",
+		RangoDesde:   1,
+		RangoHasta:   10,
+		TestSetID:    "test-set",
+	}
+	resultado := buildNominaElectronicaDIANPreflight(nomina, configuracion)
+	if resultado.PuedeEmitir || resultado.Estado != "bloqueado_adaptador_dian" {
+		t.Fatalf("la prevalidacion debe cerrar la emisión hasta tener adaptador propio: %+v", resultado)
+	}
+	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "NominaIndividual") {
+		t.Fatalf("faltó el bloqueo explícito del adaptador de nómina: %+v", resultado.Bloqueos)
+	}
+
+	nomina.Total = 899
+	resultado = buildNominaElectronicaDIANPreflight(nomina, configuracion)
+	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "no cuadran") {
+		t.Fatalf("la prevalidacion debe detectar totales inconsistentes: %+v", resultado.Bloqueos)
+	}
+}
+
+func TestResolveFacturacionTransitionFailsClosedForDocumentosSinAdaptador(t *testing.T) {
 	cases := []struct {
 		name          string
 		action        string
 		tipoDocumento string
-		wantAccion    string
-		wantEstado    string
-		wantEvento    string
+		bloqueado     bool
 	}{
-		{name: "nota debito", action: "nota_debito", tipoDocumento: "nota_debito", wantAccion: "nota_debito", wantEstado: "emitida", wantEvento: "nota_debito_emitida"},
-		{name: "documento soporte", action: "documento_soporte", tipoDocumento: "documento_soporte", wantAccion: "documento_soporte", wantEstado: "emitida", wantEvento: "documento_soporte_emitido"},
-		{name: "nomina electronica", action: "nomina_electronica", tipoDocumento: "nomina_electronica", wantAccion: "nomina_electronica", wantEstado: "emitida", wantEvento: "nomina_electronica_emitida"},
-		{name: "pos electronico", action: "documento_equivalente_pos", tipoDocumento: "documento_equivalente_pos", wantAccion: "documento_equivalente_pos", wantEstado: "emitida", wantEvento: "documento_equivalente_pos_emitido"},
-		{name: "eventos radian", action: "eventos_radian_recepcion", tipoDocumento: "eventos_radian_recepcion", wantAccion: "eventos_radian_recepcion", wantEstado: "emitida", wantEvento: "eventos_radian_recepcion_emitido"},
-		{name: "nota ajuste soporte", action: "emitir_nota_ajuste_documento_soporte", tipoDocumento: "nota_ajuste_documento_soporte", wantAccion: "nota_ajuste_documento_soporte", wantEstado: "emitida", wantEvento: "nota_ajuste_documento_soporte_emitido"},
-		{name: "documento equivalente peajes", action: "documento_equivalente_peajes", tipoDocumento: "documento_equivalente_peajes", wantAccion: "documento_equivalente_peajes", wantEstado: "emitida", wantEvento: "documento_equivalente_peajes_emitido"},
+		{name: "nota debito", action: "nota_debito", tipoDocumento: "nota_debito"},
+		{name: "documento soporte", action: "documento_soporte", tipoDocumento: "documento_soporte", bloqueado: true},
+		{name: "nomina electronica", action: "nomina_electronica", tipoDocumento: "nomina_electronica", bloqueado: true},
+		{name: "pos electronico", action: "documento_equivalente_pos", tipoDocumento: "documento_equivalente_pos", bloqueado: true},
+		{name: "eventos radian", action: "eventos_radian_recepcion", tipoDocumento: "eventos_radian_recepcion", bloqueado: true},
+		{name: "nota ajuste soporte", action: "emitir_nota_ajuste_documento_soporte", tipoDocumento: "nota_ajuste_documento_soporte", bloqueado: true},
+		{name: "documento equivalente peajes", action: "documento_equivalente_peajes", tipoDocumento: "documento_equivalente_peajes", bloqueado: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := resolveFacturacionTransitionForDocument(tc.action, "borrador", tc.tipoDocumento)
+			if tc.bloqueado {
+				if err == nil || !strings.Contains(err.Error(), "no dispone aun de un adaptador DIAN") {
+					t.Fatalf("se esperaba bloqueo DIAN para %s, transition=%#v err=%v", tc.tipoDocumento, got, err)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("resolve transition returned error: %v", err)
 			}
-			if got.Accion != tc.wantAccion || got.EstadoNuevo != tc.wantEstado || got.Evento != tc.wantEvento {
+			if got.Accion != "nota_debito" || got.EstadoNuevo != "emitida" || got.Evento != "nota_debito_emitida" {
 				t.Fatalf("unexpected transition: %#v", got)
 			}
 		})

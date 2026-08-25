@@ -631,7 +631,7 @@ Actualizacion 2026-05-21 (alerta visual configurable de carrito)
 Actualizacion 2026-05-20 (catalogo DIAN Colombia documentos electronicos)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `facturacion_electronica_pais` con `pais_codigo='CO'` y `UNIQUE(empresa_id, pais_codigo)`.
-- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version`. Desde la version `2026-08-21`, `documentos_soportados` solo activa factura electronica, nota credito y nota debito; soporte, nomina, equivalentes, contingencia y RADIAN permanecen catalogados sin emision.
+- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version`. Desde la version `2026-08-24`, `documentos_soportados` solo activa factura electronica; nota credito, nota debito, soporte, nomina, equivalentes, contingencia y RADIAN permanecen catalogados sin emision hasta disponer de fuente/adaptador propios.
 - `empresa_facturacion_documentos` y `facturacion_electronica_reintentos` aceptan los nuevos codigos canonicos como `tipo_documento`, siempre aislados por `empresa_id`.
 - Las obligaciones de contador se registran como configuracion/catalogo, no como documentos UBL de venta.
 
@@ -1567,6 +1567,19 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 
 ### Tablas de documentos transaccionales canonicos
 
+Actualizacion 2026-08-23 (configuracion DIAN por familia documental):
+- La migracion `20260823-001-dian-documentos-configuracion-v1` crea
+  `empresa_dian_documentos_configuracion`, aislada por
+  `(empresa_id,tipo_documento)`. Guarda ambiente, estado, modo de operacion,
+  TestSet, prefijo, resolucion, vigencia, rango y consecutivo de cada familia.
+- La configuracion base `empresa_dian_configuracion` no se reutiliza como rango
+  de documento soporte, nomina, equivalentes o RADIAN. La nueva tabla inicia
+  inactiva y no habilita ningun envio hasta que el adaptador y sus validaciones
+  tecnicas correspondientes esten terminados.
+- No se reescriben filas fiscales históricas durante el despliegue. Cualquier
+  estado legado de nómina o documento soporte requiere conciliación y evidencia
+  antes de corregirse; los formularios nuevos sí quedan forzados a borrador.
+
 Actualizacion 2026-08-21 (precision fiscal y consecutivos):
 - `empresa_facturacion_documentos.monto_total` se migra por
   `pcs-migrate` a `NUMERIC(18,2) NOT NULL DEFAULT 0`; la migracion falla
@@ -1584,7 +1597,10 @@ Actualizacion 2026-08-21 (precision fiscal y consecutivos):
   - periodo_contable, monto_total, moneda
   - numero_legal, codigo_validacion, pais_codigo, ambiente_fe
   - fecha_documento, entidad_relacionada_id
-  - uso operativo actual: soporta `factura_electronica`, `nota_credito` y `comprobante_pago`
+  - uso operativo actual: `factura_electronica` se emite desde fuente fiscal
+    inmutable y `comprobante_pago` conserva el origen comercial; `nota_credito`
+    y `nota_debito` se mantienen para consulta/legado pero su emision DIAN esta
+    bloqueada hasta contar con fuente de ajuste y adaptador propios.
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 - empresa_compras_documentos:
   - empresa_id, proveedor_id, tipo_documento, documento_codigo
@@ -2449,3 +2465,20 @@ reconciliación operativa explícita.
   la misma empresa, estado objetivo `on/off` y orden determinista.
 - Migraciones: `20260813-002-domotica-ssh-credentials-v1` y
   `20260813-003-domotica-scenes-v1`.
+
+## 2026-08-24 - Fuente fiscal inmutable y códigos DANE
+
+- `empresa_facturacion_artefactos.tipo_artefacto` admite
+  `fuente_fiscal_json`. Para cada `(empresa_id, tipo_documento,
+  documento_codigo)` solo puede existir una fuente; repetir el mismo SHA-256 es
+  idempotente y cambiarlo devuelve `ErrEmpresaFacturacionFuenteFiscalInmutable`.
+  El JSON y su archivo permanecen privados por empresa.
+- La migración `20260823-003-facturacion-fuente-fiscal-v1` amplía el catálogo
+  del artefacto sin reescribir documentos históricos.
+- La migración `20260824-001-facturacion-dane-codes-v1` agrega
+  `departamento_codigo_dane` y `municipio_codigo_dane` a
+  `empresa_configuracion_avanzada` y `clientes`. Las columnas existentes quedan
+  nulas: el despliegue no deduce una ubicación fiscal a partir del nombre.
+- `empresa_dian_configuracion` conserva secretos cifrados con propósito por
+  `empresa_id` y campo. La API no expone valores descifrados; certificado y
+  llave privada se referencian en almacenamiento privado del tenant.

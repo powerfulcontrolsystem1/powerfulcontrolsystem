@@ -1,6 +1,22 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-08-21.
+Estado: vigente. Ultima actualizacion: 2026-08-24.
+
+## Actualizacion 2026-08-24 - candidato DIAN desde fuente fiscal real
+
+- La única familia comercial habilitada por el candidato es factura electrónica
+  de venta. Nota crédito y nota débito quedan visibles pero bloqueadas hasta
+  implementar una fuente inmutable de ajuste y referencia a la factura original.
+- La factura se construye desde el carrito pagado, su cliente y la configuración
+  fiscal del emisor cargados por servidor y aislados por `empresa_id`; no acepta
+  líneas, partes, direcciones ni identificadores suministrados libremente.
+- Emisor y adquiriente deben tener país `CO` y códigos DANE coherentes de 2 y 5
+  dígitos. La migración agrega esos campos sin inferir Bogotá ni alterar maestros
+  existentes.
+- El candidato aprobó PostgreSQL 17.11 aislado, XSD UBL 2.1, XMLDSig y
+  Schematron DIAN sobre una factura multilínea firmada. Permanece `NO-GO` hasta
+  validar el migrador sobre un clon del esquema vigente, autenticación visual de
+  PCS, acuse DIAN, despliegue y emisión controlada.
 
 ## Actualizacion 2026-08-21 - trabajo autorizado por temas especificos
 
@@ -16,9 +32,9 @@ Estado: vigente. Ultima actualizacion: 2026-08-21.
   migrador `pcs-migrate`.
 - La auditoria real del 2026-08-21 comprobo que produccion aun publicaba como
   operativas siete familias aunque el generador solo implementaba
-  Invoice/CreditNote/DebitNote. El candidato vigente corrige el contrato: solo
-  factura, nota credito y nota debito permiten emision; soporte, nomina,
-  equivalentes y RADIAN fallan cerrado con 422 hasta tener adaptador propio.
+  Invoice/CreditNote/DebitNote. Ese candidato fue endurecido el 2026-08-24: solo
+  factura permite emisión comercial; notas, soporte, nómina, equivalentes y
+  RADIAN fallan cerrado con 422 hasta tener fuente y adaptador propios.
 - En la consulta documental, `comprobante_pago` y su factura asociada son dos
   piezas distintas. La UI no debe renombrar ni contabilizar el comprobante
   `CP-*` como una segunda factura fiscal.

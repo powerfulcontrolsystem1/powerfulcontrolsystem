@@ -203,11 +203,11 @@
         <div class="form-row">
           <div class="form-col"><label class="form-label">Ambiente DIAN</label><select id="dian_tipo_ambiente" class="form-input"><option value="habilitacion">Habilitación</option><option value="produccion">Producción</option></select></div>
           <div class="form-col"><label class="form-label">URL DIAN / proveedor</label><input id="dian_url" class="form-input" placeholder="https://vpfe-hab.dian.gov.co"></div>
-          <div class="form-col"><label class="form-label">TestSetId</label><input id="dian_test_set_id" class="form-input" placeholder="Obligatorio en habilitación"></div>
+          <div class="form-col"><label class="form-label" for="dian_test_set_id">TestSetId</label><input id="dian_test_set_id" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_test_set_id_estado"><div id="dian_test_set_id_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
         </div>
         <div class="form-row">
-          <div class="form-col"><label class="form-label">Software ID</label><input id="dian_software_id" class="form-input" placeholder="ID entregado por DIAN"></div>
-          <div class="form-col"><label class="form-label">Software PIN</label><input id="dian_software_pin" class="form-input" type="password" autocomplete="new-password" placeholder="PIN entregado por DIAN"></div>
+          <div class="form-col"><label class="form-label" for="dian_software_id">Software ID</label><input id="dian_software_id" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_software_id_estado"><div id="dian_software_id_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_software_pin">Software PIN</label><input id="dian_software_pin" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_software_pin_estado"><div id="dian_software_pin_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
           <div class="form-col"><div class="form-help" style="margin-top:28px;"><label><input id="dian_usar_software_compartido" type="checkbox"> Usar software compartido SaaS</label></div></div>
         </div>
         <div class="form-row">
@@ -226,10 +226,10 @@
           <div class="form-col"><div id="feDianResolutionExpiryText" class="form-help">Resoluci&oacute;n sin verificar.</div></div>
         </div>
         <div class="form-row">
-          <div class="form-col"><label class="form-label">Llave t&eacute;cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" placeholder="Llave t&eacute;cnica del rango de numeraci&oacute;n"></div>
-          <div class="form-col"><label class="form-label">Token proveedor/API (opcional en DIAN oficial)</label><input id="dian_token_emisor_ref" class="form-input" placeholder="Solo si usa proveedor/API bearer: env:DIAN_TOKEN_EMPRESA_1"></div>
-          <div class="form-col"><label class="form-label">Certificado X.509</label><input id="dian_certificado_url" class="form-input" placeholder="Se completa al cargar P12/PFX o PEM con certificado"></div>
-          <div class="form-col"><label class="form-label">Llave privada</label><input id="dian_certificado_clave_ref" class="form-input" placeholder="Se completa al cargar firma"></div>
+          <div class="form-col"><label class="form-label" for="dian_llave_tecnica">Llave t&eacute;cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_llave_tecnica_estado"><div id="dian_llave_tecnica_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_token_emisor_ref">Token proveedor/API (opcional en DIAN oficial)</label><input id="dian_token_emisor_ref" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor o referencia PCS_DIAN_*" aria-describedby="dian_token_emisor_ref_estado"><div id="dian_token_emisor_ref_estado" class="form-help dian-secret-status" role="status">No configurado (opcional).</div></div>
+          <div class="form-col"><label class="form-label" for="dian_certificado_url">Certificado X.509</label><input id="dian_certificado_url" class="form-input" type="password" readonly placeholder="Se administra únicamente con Cargar firma" aria-describedby="dian_certificado_url_estado"><div id="dian_certificado_url_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_certificado_clave_ref">Llave privada</label><input id="dian_certificado_clave_ref" class="form-input" type="password" readonly placeholder="Se administra únicamente con Cargar firma" aria-describedby="dian_certificado_clave_ref_estado"><div id="dian_certificado_clave_ref_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
         </div>
         <div class="form-row"><div class="form-col"><label class="form-label">Observaciones DIAN</label><textarea id="dian_observaciones" class="form-textarea" placeholder="Notas internas de habilitación, producción o soporte"></textarea></div></div>
         <div class="form-actions">
@@ -537,8 +537,16 @@
             <input id="adv_departamento" class="form-input" placeholder="Antioquia">
           </div>
           <div class="form-col">
+            <label class="form-label">Código DANE departamento</label>
+            <input id="adv_departamento_codigo_dane" class="form-input" inputmode="numeric" maxlength="2" placeholder="05">
+          </div>
+          <div class="form-col">
             <label class="form-label">Municipio</label>
             <input id="adv_municipio" class="form-input" placeholder="Medellín">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Código DANE municipio</label>
+            <input id="adv_municipio_codigo_dane" class="form-input" inputmode="numeric" maxlength="5" placeholder="05001">
           </div>
         </div>
 
@@ -793,7 +801,7 @@
     }
 
     function isSensitiveDianResultKey(key) {
-      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|llave_tecnica|software_pin|certificado_clave/i.test(String(key || ""));
+      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|llave_tecnica|software_id|software_pin|test_set_id|certificado_url|certificado_clave/i.test(String(key || ""));
     }
 
     function sanitizeDianResultValue(value, key) {
@@ -991,7 +999,9 @@
       document.getElementById("adv_telefono_facturacion").value = txt(cfg.telefono_facturacion);
       document.getElementById("adv_direccion_fiscal").value = txt(cfg.direccion_fiscal);
       document.getElementById("adv_departamento").value = txt(cfg.departamento);
+      document.getElementById("adv_departamento_codigo_dane").value = txt(cfg.departamento_codigo_dane);
       document.getElementById("adv_municipio").value = txt(cfg.municipio);
+      document.getElementById("adv_municipio_codigo_dane").value = txt(cfg.municipio_codigo_dane);
       document.getElementById("adv_pais_codigo").value = txt(cfg.pais_codigo) || "CO";
       document.getElementById("adv_codigo_postal").value = txt(cfg.codigo_postal);
       document.getElementById("adv_ambiente_fe").value = txt(cfg.ambiente_fe) || "habilitacion";
@@ -1034,7 +1044,9 @@
         telefono_facturacion: txt(document.getElementById("adv_telefono_facturacion").value),
         direccion_fiscal: txt(document.getElementById("adv_direccion_fiscal").value),
         departamento: txt(document.getElementById("adv_departamento").value),
+        departamento_codigo_dane: txt(document.getElementById("adv_departamento_codigo_dane").value),
         municipio: txt(document.getElementById("adv_municipio").value),
+        municipio_codigo_dane: txt(document.getElementById("adv_municipio_codigo_dane").value),
         pais_codigo: txt(document.getElementById("adv_pais_codigo").value) || "CO",
         codigo_postal: txt(document.getElementById("adv_codigo_postal").value),
         ambiente_fe: txt(document.getElementById("adv_ambiente_fe").value) || "habilitacion",
@@ -1335,6 +1347,10 @@
       return Number.isFinite(n) ? n : 0;
     }
 
+    function dianSecretConfigured(field, inputID) {
+      return !!(state.dianConfig && asBool(state.dianConfig[field + "_configurado"])) || !!dianFieldValue(inputID);
+    }
+
     function dianSetupChecks() {
       var ambiente = dianFieldValue("dian_tipo_ambiente").toLowerCase();
       var softwareCompartido = !!(document.getElementById("dian_usar_software_compartido") && document.getElementById("dian_usar_software_compartido").checked);
@@ -1348,17 +1364,17 @@
         { group: "Identidad fiscal", label: "Razón social", done: !!dianFieldValue("dian_razon_social") },
         { group: "Ambiente y conexión", label: "Ambiente DIAN", done: !!dianFieldValue("dian_tipo_ambiente") },
         { group: "Ambiente y conexión", label: "URL DIAN / proveedor", done: !!dianFieldValue("dian_url") },
-        { group: "Ambiente y conexión", label: "TestSetId de habilitación", done: !testSetRequired || !!dianFieldValue("dian_test_set_id") },
-        { group: "Software", label: "Software ID", done: !!dianFieldValue("dian_software_id") },
-        { group: "Software", label: "Software PIN o software compartido SaaS", done: softwareCompartido || !!dianFieldValue("dian_software_pin") },
+        { group: "Ambiente y conexión", label: "TestSetId de habilitación", done: !testSetRequired || dianSecretConfigured("test_set_id", "dian_test_set_id") },
+        { group: "Software", label: "Software ID", done: dianSecretConfigured("software_id", "dian_software_id") },
+        { group: "Software", label: "Software PIN o software compartido SaaS", done: softwareCompartido || dianSecretConfigured("software_pin", "dian_software_pin") },
         { group: "Numeración", label: "Prefijo", done: !!dianFieldValue("dian_prefijo") },
         { group: "Numeración", label: "Resolución", done: !!dianFieldValue("dian_resolucion_numero") },
         { group: "Numeración", label: "Fechas de resolución", done: !!dianFieldValue("dian_resolucion_fecha_desde") && !!dianFieldValue("dian_resolucion_fecha_hasta") },
         { group: "Numeración", label: "Rango autorizado", done: rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde },
         { group: "Numeración", label: "Consecutivo actual válido", done: consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta) },
-        { group: "Llave y firma", label: "Llave técnica DIAN", done: !!dianFieldValue("dian_llave_tecnica") },
-        { group: "Llave y firma", label: "Certificado X.509", done: !!dianFieldValue("dian_certificado_url") },
-        { group: "Llave y firma", label: "Referencia de llave privada", done: !!dianFieldValue("dian_certificado_clave_ref") }
+        { group: "Llave y firma", label: "Llave técnica DIAN", done: dianSecretConfigured("llave_tecnica", "dian_llave_tecnica") },
+        { group: "Llave y firma", label: "Certificado X.509", done: dianSecretConfigured("certificado_url", "dian_certificado_url") },
+        { group: "Llave y firma", label: "Referencia de llave privada", done: dianSecretConfigured("certificado_clave_ref", "dian_certificado_clave_ref") }
       ];
       if (!testSetRequired) {
         checks = checks.map(function(item) {
@@ -1455,9 +1471,9 @@
         dian_razon_social: !dianFieldValue("dian_razon_social"),
         dian_tipo_ambiente: !dianFieldValue("dian_tipo_ambiente"),
         dian_url: !dianFieldValue("dian_url"),
-        dian_test_set_id: ambiente !== "produccion" && !dianFieldValue("dian_test_set_id"),
-        dian_software_id: !dianFieldValue("dian_software_id"),
-        dian_software_pin: !softwareCompartido && !dianFieldValue("dian_software_pin"),
+        dian_test_set_id: ambiente !== "produccion" && !dianSecretConfigured("test_set_id", "dian_test_set_id"),
+        dian_software_id: !dianSecretConfigured("software_id", "dian_software_id"),
+        dian_software_pin: !softwareCompartido && !dianSecretConfigured("software_pin", "dian_software_pin"),
         dian_prefijo: !dianFieldValue("dian_prefijo"),
         dian_resolucion_numero: !dianFieldValue("dian_resolucion_numero"),
         dian_consecutivo_actual: !(consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta)),
@@ -1465,9 +1481,9 @@
         dian_resolucion_fecha_hasta: !dianFieldValue("dian_resolucion_fecha_hasta"),
         dian_rango_desde: !(rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde),
         dian_rango_hasta: !(rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde),
-        dian_llave_tecnica: !dianFieldValue("dian_llave_tecnica"),
-        dian_certificado_url: !dianFieldValue("dian_certificado_url"),
-        dian_certificado_clave_ref: !dianFieldValue("dian_certificado_clave_ref")
+        dian_llave_tecnica: !dianSecretConfigured("llave_tecnica", "dian_llave_tecnica"),
+        dian_certificado_url: !dianSecretConfigured("certificado_url", "dian_certificado_url"),
+        dian_certificado_clave_ref: !dianSecretConfigured("certificado_clave_ref", "dian_certificado_clave_ref")
       };
       Object.keys(dianRequired).forEach(function(id) {
         markFieldRequired(id);
@@ -1523,13 +1539,17 @@
         "dian_usar_software_compartido", "dian_prefijo", "dian_resolucion_numero",
         "dian_consecutivo_actual", "dian_resolucion_fecha_desde",
         "dian_resolucion_fecha_hasta", "dian_rango_desde", "dian_rango_hasta",
-        "dian_llave_tecnica", "dian_certificado_url", "dian_certificado_clave_ref"
+        "dian_llave_tecnica", "dian_token_emisor_ref", "dian_certificado_url", "dian_certificado_clave_ref"
       ];
       ids.forEach(function(id) {
         var el = document.getElementById(id);
         if (!el) return;
-        el.addEventListener("input", renderDianSetupProgress);
-        el.addEventListener("change", renderDianSetupProgress);
+        var refresh = function() {
+          if (dianSecretInputFields[id]) renderDianSecretInputState(id, dianSecretInputFields[id], state.dianConfig);
+          renderDianSetupProgress();
+        };
+        el.addEventListener("input", refresh);
+        el.addEventListener("change", refresh);
       });
       renderDianSetupProgress();
     }
@@ -1827,8 +1847,73 @@
       return s === "1" || s === "true" || s === "si" || s === "yes" || s === "activo";
     }
 
-    function setDianConfigFormData(cfg) {
+    var dianSecretInputFields = {
+      dian_test_set_id: "test_set_id",
+      dian_software_id: "software_id",
+      dian_software_pin: "software_pin",
+      dian_llave_tecnica: "llave_tecnica",
+      dian_token_emisor_ref: "token_emisor_ref",
+      dian_certificado_url: "certificado_url",
+      dian_certificado_clave_ref: "certificado_clave_ref"
+    };
+
+    function renderDianSecretInputState(inputID, field, cfg) {
+      var el = document.getElementById(inputID);
+      var status = document.getElementById(inputID + "_estado");
+      if (!el) return;
       cfg = cfg || {};
+      var configured = asBool(cfg[field + "_configurado"]);
+      var pending = !el.readOnly && !!txt(el.value);
+      el.setAttribute("data-server-configured", configured ? "true" : "false");
+      if (el.readOnly) {
+        el.placeholder = configured ? "Configurado; referencia no visible" : "Se administra únicamente con Cargar firma";
+      } else if (configured) {
+        el.placeholder = "Configurado; escribe solo para reemplazar";
+      } else {
+        el.placeholder = inputID === "dian_token_emisor_ref" ? "Nuevo valor o referencia PCS_DIAN_*" : "Nuevo valor; el guardado no se vuelve a mostrar";
+      }
+      if (!status) return;
+      status.setAttribute("data-configured", configured ? "true" : "false");
+      if (pending) {
+        status.textContent = configured ? "Configurado; hay un reemplazo pendiente de guardar." : "Nuevo valor pendiente de guardar.";
+      } else if (configured) {
+        status.textContent = "Configurado; el valor no se muestra por seguridad.";
+      } else if (inputID === "dian_token_emisor_ref") {
+        status.textContent = "No configurado (opcional).";
+      } else {
+        status.textContent = "No configurado.";
+      }
+    }
+
+    function resetDianSecretInputs(cfg) {
+      Object.keys(dianSecretInputFields).forEach(function(inputID) {
+        var el = document.getElementById(inputID);
+        if (el) el.value = "";
+        renderDianSecretInputState(inputID, dianSecretInputFields[inputID], cfg);
+      });
+    }
+
+    function dianConfigForUI(raw) {
+      var blocked = {
+        software_id: true,
+        software_pin: true,
+        software_id_compartido_ref: true,
+        software_pin_compartido_ref: true,
+        test_set_id: true,
+        llave_tecnica: true,
+        token_emisor_ref: true,
+        certificado_url: true,
+        certificado_clave_ref: true
+      };
+      var safe = {};
+      Object.keys(raw || {}).forEach(function(key) {
+        if (!blocked[key]) safe[key] = raw[key];
+      });
+      return safe;
+    }
+
+    function setDianConfigFormData(cfg) {
+      cfg = dianConfigForUI(cfg);
       state.dianConfig = cfg && cfg.id ? cfg : null;
       var set = function(id, value) {
         var el = document.getElementById(id);
@@ -1851,9 +1936,6 @@
       set("dian_razon_social", cfg.razon_social || document.getElementById("adv_razon_social") && document.getElementById("adv_razon_social").value || document.getElementById("razon_social") && document.getElementById("razon_social").value);
       set("dian_tipo_ambiente", cfg.tipo_ambiente || document.getElementById("adv_ambiente_fe") && document.getElementById("adv_ambiente_fe").value || "habilitacion");
       set("dian_url", cfg.url_dian || "https://vpfe-hab.dian.gov.co");
-      set("dian_test_set_id", cfg.test_set_id);
-      set("dian_software_id", cfg.software_id);
-      set("dian_software_pin", cfg.software_pin);
       set("dian_prefijo", cfg.prefijo || document.getElementById("adv_prefijo_factura") && document.getElementById("adv_prefijo_factura").value || document.getElementById("prefijo_factura") && document.getElementById("prefijo_factura").value);
       set("dian_resolucion_numero", cfg.resolucion_numero || document.getElementById("adv_resolucion_numero") && document.getElementById("adv_resolucion_numero").value || document.getElementById("resolucion_numero") && document.getElementById("resolucion_numero").value);
       set("dian_resolucion_fecha_desde", asDateValue(cfg.resolucion_fecha_desde || document.getElementById("adv_resolucion_fecha_desde") && document.getElementById("adv_resolucion_fecha_desde").value));
@@ -1862,10 +1944,7 @@
       set("dian_rango_hasta", cfg.rango_hasta || document.getElementById("adv_consecutivo_hasta") && document.getElementById("adv_consecutivo_hasta").value);
       set("dian_consecutivo_actual", cfg.consecutivo_actual || document.getElementById("adv_proximo_consecutivo") && document.getElementById("adv_proximo_consecutivo").value || 1);
       set("dian_resolucion_alerta_dias", cfg.resolucion_alerta_dias || 30);
-      set("dian_llave_tecnica", cfg.llave_tecnica);
-      set("dian_token_emisor_ref", cfg.token_emisor_ref);
-      set("dian_certificado_url", cfg.certificado_url);
-      set("dian_certificado_clave_ref", cfg.certificado_clave_ref);
+      resetDianSecretInputs(cfg);
       set("dian_observaciones", cfg.observaciones);
       renderFirmaLastUpload(cfg);
       var shared = document.getElementById("dian_usar_software_compartido");
@@ -1889,13 +1968,10 @@
         digito_verificacion: txt(document.getElementById("dian_dv").value),
         razon_social: txt(document.getElementById("dian_razon_social").value),
         tipo_ambiente: txt(document.getElementById("dian_tipo_ambiente").value) || "habilitacion",
-        software_id: txt(document.getElementById("dian_software_id").value),
-        software_pin: txt(document.getElementById("dian_software_pin").value),
         usar_software_compartido: !!document.getElementById("dian_usar_software_compartido").checked,
         modo_operacion_descripcion: hiddenValue("dian_modo_operacion_descripcion"),
         modo_operacion_fecha_inicio: hiddenValue("dian_modo_operacion_fecha_inicio"),
         modo_operacion_fecha_termino: hiddenValue("dian_modo_operacion_fecha_termino"),
-        test_set_id: txt(document.getElementById("dian_test_set_id").value),
         prefijo: txt(document.getElementById("dian_prefijo").value),
         resolucion_numero: txt(document.getElementById("dian_resolucion_numero").value),
         resolucion_fecha_desde: txt(document.getElementById("dian_resolucion_fecha_desde").value),
@@ -1912,14 +1988,20 @@
         set_facturas_aceptadas_requeridas: hiddenNumber("dian_set_facturas_aceptadas_requeridas"),
         set_notas_debito_aceptadas_requeridas: hiddenNumber("dian_set_notas_debito_aceptadas_requeridas"),
         set_notas_credito_aceptadas_requeridas: hiddenNumber("dian_set_notas_credito_aceptadas_requeridas"),
-        llave_tecnica: txt(document.getElementById("dian_llave_tecnica").value),
         url_dian: txt(document.getElementById("dian_url").value),
-        token_emisor_ref: txt(document.getElementById("dian_token_emisor_ref").value),
-        certificado_url: txt(document.getElementById("dian_certificado_url").value),
-        certificado_clave_ref: txt(document.getElementById("dian_certificado_clave_ref").value),
         observaciones: txt(document.getElementById("dian_observaciones").value),
         estado: "activo"
       };
+      [
+        { field: "software_id", inputID: "dian_software_id" },
+        { field: "software_pin", inputID: "dian_software_pin" },
+        { field: "test_set_id", inputID: "dian_test_set_id" },
+        { field: "llave_tecnica", inputID: "dian_llave_tecnica" },
+        { field: "token_emisor_ref", inputID: "dian_token_emisor_ref" }
+      ].forEach(function(secret) {
+        var value = dianFieldValue(secret.inputID);
+        if (value) payload[secret.field] = value;
+      });
       if (id > 0) payload.id = id;
       return payload;
     }
@@ -2035,8 +2117,8 @@
             setMsg("Selecciona un archivo de firma .pem, .key, .p12 o .pfx.", true);
             return;
           }
-          var oldKeyRef = txt(document.getElementById("dian_certificado_clave_ref") && document.getElementById("dian_certificado_clave_ref").value);
-          if (oldKeyRef) {
+          var hasStoredPrivateKey = !!(state.dianConfig && asBool(state.dianConfig.certificado_clave_ref_configurado));
+          if (hasStoredPrivateKey) {
             var reemplazar = confirm("Ya existe una firma electronica registrada para esta empresa. Por seguridad, PCS no descarga la llave privada anterior desde el navegador. Si continuas, la nueva firma se cargara y la anterior se eliminara de la carpeta segura de la empresa. Deseas continuar?");
             if (!reemplazar) {
               setMsg("Carga cancelada. La firma anterior se conserva.", false);

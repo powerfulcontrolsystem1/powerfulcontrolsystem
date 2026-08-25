@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -703,7 +704,7 @@ func CreateEmpresaNominaElectronica(dbConn *sql.DB, x EmpresaNominaElectronica) 
 		return 0, errors.New("empleado, documento y periodo son requeridos")
 	}
 	x.TipoDocumento = firstContabilidadValue(x.TipoDocumento, "CC")
-	x.EstadoDIAN = firstContabilidadValue(x.EstadoDIAN, "borrador")
+	normalizeEmpresaNominaElectronicaDraft(&x)
 	if x.Total == 0 {
 		x.Total = x.Devengados - x.Deducciones
 	}
@@ -761,12 +762,41 @@ func ListEmpresaNominaElectronica(dbConn *sql.DB, empresaID int64, periodo strin
 	return out, rows.Err()
 }
 
+// GetEmpresaNominaElectronicaByIDContext resolves a payroll draft only inside
+// its tenant. DIAN preflight must never disclose employee data across empresas.
+func GetEmpresaNominaElectronicaByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, nominaID int64) (*EmpresaNominaElectronica, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || nominaID <= 0 {
+		return nil, errors.New("empresa_id y nomina_id son obligatorios")
+	}
+	var item EmpresaNominaElectronica
+	err := QueryRowCompatContext(ctx, dbConn, `SELECT
+		id, empresa_id, empleado_id, tipo_documento, documento, nombre, periodo, fecha_pago, salario_base,
+		devengados, deducciones, total, COALESCE(cune,''), estado_dian, COALESCE(respuesta_dian,''),
+		COALESCE(json_payload,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''),
+		COALESCE(usuario_creador,'')
+	FROM empresa_contabilidad_nomina_electronica
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, nominaID).Scan(
+		&item.ID, &item.EmpresaID, &item.EmpleadoID, &item.TipoDocumento, &item.Documento,
+		&item.Nombre, &item.Periodo, &item.FechaPago, &item.SalarioBase, &item.Devengados,
+		&item.Deducciones, &item.Total, &item.CUNE, &item.EstadoDIAN, &item.RespuestaDIAN,
+		&item.JSONPayload, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 func CreateEmpresaDocumentoSoporte(dbConn *sql.DB, x EmpresaDocumentoSoporteElectronico) (int64, error) {
 	if x.EmpresaID <= 0 || strings.TrimSpace(x.Documento) == "" || strings.TrimSpace(x.NombreProveedor) == "" || strings.TrimSpace(x.Concepto) == "" {
 		return 0, errors.New("proveedor, documento y concepto son requeridos")
 	}
 	x.TipoDocumento = firstContabilidadValue(x.TipoDocumento, "NIT")
-	x.EstadoDIAN = firstContabilidadValue(x.EstadoDIAN, "borrador")
+	normalizeEmpresaDocumentoSoporteDraft(&x)
 	if x.Total == 0 {
 		x.Total = x.Subtotal + x.IVA - x.Retenciones
 	}
@@ -801,6 +831,62 @@ func ListEmpresaDocumentosSoporte(dbConn *sql.DB, empresaID int64, periodo strin
 		out = append(out, x)
 	}
 	return out, rows.Err()
+}
+
+// GetEmpresaDocumentoSoporteByIDContext resolves a purchase-support draft only
+// inside its tenant. It is intentionally separate from the list helper so a
+// DIAN preflight cannot inspect a document from another empresa.
+func GetEmpresaDocumentoSoporteByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, documentoSoporteID int64) (*EmpresaDocumentoSoporteElectronico, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || documentoSoporteID <= 0 {
+		return nil, errors.New("empresa_id y documento_soporte_id son obligatorios")
+	}
+	var item EmpresaDocumentoSoporteElectronico
+	err := QueryRowCompatContext(ctx, dbConn, `SELECT
+		id, empresa_id, proveedor_id, tipo_documento, documento, nombre_proveedor, fecha_documento, periodo,
+		concepto, subtotal, iva, retenciones, total, COALESCE(cuds,''), estado_dian,
+		COALESCE(respuesta_dian,''), COALESCE(json_payload,''), COALESCE(fecha_creacion,''),
+		COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	FROM empresa_contabilidad_documentos_soporte
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, documentoSoporteID).Scan(
+		&item.ID, &item.EmpresaID, &item.ProveedorID, &item.TipoDocumento, &item.Documento,
+		&item.NombreProveedor, &item.FechaDocumento, &item.Periodo, &item.Concepto,
+		&item.Subtotal, &item.IVA, &item.Retenciones, &item.Total, &item.CUDS,
+		&item.EstadoDIAN, &item.RespuestaDIAN, &item.JSONPayload, &item.FechaCreacion,
+		&item.FechaActualizacion, &item.UsuarioCreador,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// normalizeEmpresaNominaElectronicaDraft keeps user-entered accounting data
+// from impersonating a DIAN response. CUNE, provider reply and state are only
+// written later by the dedicated DIAN adapter after a signed submission.
+func normalizeEmpresaNominaElectronicaDraft(x *EmpresaNominaElectronica) {
+	if x == nil {
+		return
+	}
+	x.EstadoDIAN = "borrador"
+	x.CUNE = ""
+	x.RespuestaDIAN = ""
+	x.JSONPayload = ""
+}
+
+// normalizeEmpresaDocumentoSoporteDraft applies the same fail-closed rule to
+// purchase support. A manual CUDS or "enviado" label is never fiscal proof.
+func normalizeEmpresaDocumentoSoporteDraft(x *EmpresaDocumentoSoporteElectronico) {
+	if x == nil {
+		return
+	}
+	x.EstadoDIAN = "borrador"
+	x.CUDS = ""
+	x.RespuestaDIAN = ""
+	x.JSONPayload = ""
 }
 
 func CreateEmpresaActivoFijo(dbConn *sql.DB, x EmpresaActivoFijo) (int64, error) {
