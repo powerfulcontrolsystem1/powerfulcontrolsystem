@@ -3222,40 +3222,62 @@ func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fec
 	return err
 }
 
-// SetConfigValue inserta o actualiza una configuración en la tabla configuraciones
-func SetConfigValue(dbConn *sql.DB, key, value string, encrypted bool) error {
+// ConfigValueWrite representa una escritura de configuracion que debe aplicarse
+// junto con las demas entradas de la misma operacion.
+type ConfigValueWrite struct {
+	Key       string
+	Value     string
+	Encrypted bool
+}
+
+func setConfigValueTx(tx *sql.Tx, entry ConfigValueWrite, nowExpr string) error {
+	key := strings.TrimSpace(entry.Key)
+	if key == "" {
+		return errors.New("config key is required")
+	}
 	enc := 0
-	if encrypted {
+	if entry.Encrypted {
 		enc = 1
 	}
-	// Preferimos mantener fecha_creacion en la fila original.
-	// Si existe la clave hacemos UPDATE y seteamos fecha_actualizacion,
-	// si no existe hacemos INSERT con fecha_creacion y fecha_actualizacion.
+	var existing string
+	err := queryRowTxSQLCompat(tx, "SELECT config_key FROM configuraciones WHERE config_key = ? LIMIT 1", key).Scan(&existing)
+	if errors.Is(err, sql.ErrNoRows) {
+		_, err = execTxSQLCompat(tx, "INSERT INTO configuraciones (config_key, value, encrypted, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, "+nowExpr+", "+nowExpr+")", key, entry.Value, enc)
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	_, err = execTxSQLCompat(tx, "UPDATE configuraciones SET value = ?, encrypted = ?, fecha_actualizacion = "+nowExpr+" WHERE config_key = ?", entry.Value, enc, key)
+	return err
+}
+
+// SetConfigValuesAtomic aplica una configuracion compuesta en una sola
+// transaccion para impedir estados parciales visibles por otros requests.
+func SetConfigValuesAtomic(dbConn *sql.DB, entries []ConfigValueWrite) error {
+	if dbConn == nil {
+		return errors.New("configuration database is unavailable")
+	}
+	if len(entries) == 0 {
+		return nil
+	}
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer rollbackTransaction(tx)
 	nowExpr := sqlNowExpr()
-
-	var existing string
-	err = queryRowTxSQLCompat(tx, "SELECT config_key FROM configuraciones WHERE config_key = ? LIMIT 1", key).Scan(&existing)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			_, err = execTxSQLCompat(tx, "INSERT INTO configuraciones (config_key, value, encrypted, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, "+nowExpr+", "+nowExpr+")", key, value, enc)
-			if err != nil {
-				return err
-			}
-			return tx.Commit()
+	for _, entry := range entries {
+		if err := setConfigValueTx(tx, entry, nowExpr); err != nil {
+			return err
 		}
-		return err
-	}
-
-	_, err = execTxSQLCompat(tx, "UPDATE configuraciones SET value = ?, encrypted = ?, fecha_actualizacion = "+nowExpr+" WHERE config_key = ?", value, enc, key)
-	if err != nil {
-		return err
 	}
 	return tx.Commit()
+}
+
+// SetConfigValue inserta o actualiza una configuración en la tabla configuraciones.
+func SetConfigValue(dbConn *sql.DB, key, value string, encrypted bool) error {
+	return SetConfigValuesAtomic(dbConn, []ConfigValueWrite{{Key: key, Value: value, Encrypted: encrypted}})
 }
 
 // GetConfigEntry devuelve el valor almacenado, si está cifrado, la fecha de creación y la fecha de última actualización.

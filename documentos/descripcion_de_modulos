@@ -4890,3 +4890,11 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - `internal/platform/valueutil` concentra utilidades puras reutilizadas por DB, handlers, worker y herramientas sin dependencias externas ni estado empresarial.
 - `internal/platform/httpguard` unifica el contrato GET/HEAD de health checks de API y worker.
 - `internal/platform/runtimeconfig` pasa a ser la fuente canónica para variables de entorno, flags desactivados y reescritura de DSN PostgreSQL por túnel.
+
+2026-08-25: Autenticación administrativa - guard de reCAPTCHA
+- Login, registro y recuperación conservan el mismo endpoint y contrato público,
+  pero una configuración incompleta ya no puede activarse desde Super
+  administración.
+- El backend comprueba que la clave pública y la clave privada sean utilizables
+  y persiste la configuración compuesta atómicamente; la interfaz distingue una
+  clave cifrada almacenada de una clave realmente descifrable.
