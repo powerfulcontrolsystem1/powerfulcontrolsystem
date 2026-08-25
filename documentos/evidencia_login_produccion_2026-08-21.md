@@ -163,3 +163,18 @@ recuperación controlada siguiente.
   `frame-src` tanto en la CSP estática como en la dinámica. También centraliza
   la lectura segura de respuestas de autenticación para no mostrar HTML de
   gateways en login, registro o recuperación.
+
+## Regresión OAuth detectada en prueba real 2026-08-25
+
+- El inicio real `GET /auth/google/login` devolvió 502 mientras todos los
+  contenedores permanecían saludables. El frontend Nginx registró
+  `upstream sent too big header` y el backend confirmó que había producido el
+  redirect válido al proveedor.
+- La respuesta directa del backend medía 4302 bytes: seis cookies de state/PKCE
+  y redirección, más las políticas CSP normal y report-only. La regresión
+  anterior medía solo el handler y no incluía las cabeceras del middleware.
+- El candidato usa para `/auth/google/*` una CSP compacta que bloquea todo
+  contenido activo. Estas rutas solo redirigen o devuelven texto, de modo que no
+  requieren los orígenes de la aplicación. La prueba de presupuesto ahora
+  envuelve el handler con el middleware real y exige menos de 3072 bytes para
+  conservar margen frente al límite de 4096 del proxy.
