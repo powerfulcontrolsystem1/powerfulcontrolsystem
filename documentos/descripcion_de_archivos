@@ -13329,3 +13329,6 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
 - `backend/db/session_principal_migration.go`: migración de identidad tipada, empresa y rol en sesiones.
 - `backend/handlers/super_email_templates_login_test.go`: contrato que mantiene neutral la invitación global de usuarios y normaliza la plantilla legada.
 - `documentos/evidencia_login_produccion_2026-08-21.md`: alcance, pruebas reales y bloqueos del candidato de autenticación.
+- `backend/handlers/recaptcha_config_guard_test.go`: regresiones que impiden
+  activar reCAPTCHA con claves ausentes o ilegibles y verifican que Super
+  administración muestre la recuperación requerida.

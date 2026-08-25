@@ -2,6 +2,18 @@
 
 Estado: vigente. Ultima actualizacion: 2026-08-25.
 
+## Actualizacion 2026-08-25 - disponibilidad del login y reCAPTCHA
+
+- Login, registro y recuperación administrativos comparten el guard público de
+  reCAPTCHA; una activación incompleta puede bloquear los tres flujos antes de
+  validar credenciales.
+- El incidente HTTP 503 se recuperó desactivando únicamente la configuración
+  ilegible. El throttle durable continuó activo y salud/readiness permanecieron
+  en HTTP 200.
+- El candidato de reparación valida que las claves sean utilizables antes de
+  activar y persiste toda la configuración en una transacción. La clave privada
+  válida debe reingresarse y probarse antes de volver a habilitar reCAPTCHA.
+
 ## Actualizacion 2026-08-25 - nota credito de anulacion total trazable
 
 - `nota_credito` dispone de una unica ruta comercial: anular totalmente una
