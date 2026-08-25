@@ -687,9 +687,11 @@ decisiones en cada tarea.
   implementar y probar el adaptador y fuente específicos.
 - Antes de producción ejecutar migraciones, pruebas PostgreSQL con
   `PCS_TEST_POSTGRES_DSN`, `go test ./...`, `go vet ./...`, validación XSD,
-  XMLDSig independiente y Schematron DIAN aprobaron sobre la factura de
-  regresión; PostgreSQL 17.11 aislado también aprobó. Todavía se exige clon del
-  esquema vigente y un acuse oficial controlado.
+  XMLDSig independiente y Schematron DIAN sobre la factura de regresión. A la
+  fecha del candidato, XSD y XMLDSig aprobaron; PostgreSQL y Schematron siguen
+  pendientes de un DSN aislado y de un procesador XSLT 3 compatible con la
+  herramienta oficial. También se exige clon del esquema vigente y un acuse
+  oficial controlado.
 - La ultima carga de firma conserva metadatos seguros
   (`certificado_ultima_carga_en`, archivo original, formato, titular, emisor,
   serial y estado de clave). La clave del P12/PFX nunca debe guardarse ni

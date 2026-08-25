@@ -133,18 +133,19 @@
         <div class="dian-status-item"><span class="dian-status-label">TestSetId</span><span id="feDianStatusTestSet" class="dian-status-value">Cargando</span></div>
         <div class="dian-status-item"><span class="dian-status-label">Rango</span><span id="feDianStatusRango" class="dian-status-value">Cargando</span></div>
       </div>
-      <div class="dian-progress-panel" aria-label="Porcentaje del proceso DIAN">
+      <div class="dian-progress-panel" aria-label="Porcentaje de validaciones DIAN de la sesion actual">
         <div class="dian-progress-head">
           <div>
-            <h3>Avance de validacion DIAN</h3>
+            <h3>Validaciones de la sesion actual</h3>
             <p id="feDianProgressStage">Cargando estado del proceso.</p>
           </div>
           <div id="feDianProgressPercent" class="dian-progress-percent">0%</div>
         </div>
-        <div class="dian-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Avance de validacion DIAN">
+        <div class="dian-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Validaciones DIAN ejecutadas en esta sesion">
           <div id="feDianProgressFill" class="dian-progress-fill"></div>
         </div>
         <div id="feDianProgressMilestones" class="dian-progress-milestones"></div>
+        <p class="form-help">El 100 % solo resume las comprobaciones ejecutadas en esta sesion; no certifica por si solo que todas las familias documentales esten listas para produccion.</p>
       </div>
       <div class="form-actions">
         <button id="btnDianRecargarConfig" type="button" class="btn secondary">Recargar configuracion</button>
@@ -513,6 +514,7 @@
     function isSensitiveDianKey(key) {
       key = String(key || "");
       if (/^certificado_/.test(key) && !/^certificado_(vencimiento|alerta_dias|alerta_email|alerta_ultimo_envio)/.test(key)) return true;
+      if (/^(raw_response|raw_xml|request_resumen|respuesta_envio_json|respuesta_acuse_json|xml|xml_firmado|xml_ubl_base)$/i.test(key)) return true;
       return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|llave_tecnica|software_pin/i.test(key);
     }
 
@@ -692,11 +694,13 @@
     function hasDianAcuseFinal(cfg, result) {
       cfg = cfg || state.dianConfig || {};
       result = result || state.ultimoResultado || {};
-      const estado = lowerValue(cfg.estado_dian || cfg.estado);
       const resumen = result.resumen || {};
+      const detalles = Array.isArray(result.detalles) ? result.detalles : [];
       if (result.habilitacion_aprobada === true) return true;
-      if (estado === "habilitacion_aprobada" || estado === "aceptado") return true;
-      if (Number(resumen.aceptado || 0) > 0) return true;
+      if (Number(resumen.aceptado || 0) > 0 && detalles.some(function(row) {
+        return lowerValue(row.acuse_estado || row.estado_dian) === "aceptado" &&
+          !!txt(row.documento_codigo);
+      })) return true;
       return false;
     }
 
@@ -715,7 +719,7 @@
       const result = state.ultimoResultado || {};
       const productionReady = hasDianProduccionLocal(cfg);
       const acuseReady = hasDianAcuseFinal(cfg, result);
-      const validationReady = state.dianValidationOk || hasDianEnvioReal(result) || acuseReady;
+      const validationReady = state.dianValidationOk;
       const steps = [
         { key: "base", label: "Configuracion base", weight: 15, done: hasDianBaseConfig(cfg) },
         { key: "firma", label: "Firma digital", weight: 15, done: hasDianFirma(cfg) },
@@ -733,7 +737,7 @@
       const firstPending = steps.find(function(step) { return !step.done; });
       const stage = firstPending
         ? "Siguiente paso: " + firstPending.label + "."
-        : "Evidencia DIAN registrada. La factura comercial debe salir de una venta pagada validada.";
+        : "Validaciones de esta sesion completas. La salida a produccion exige una venta pagada aceptada y las familias no implementadas siguen bloqueadas.";
       const percentEl = document.getElementById("feDianProgressPercent");
       const fillEl = document.getElementById("feDianProgressFill");
       const stageEl = document.getElementById("feDianProgressStage");
@@ -921,10 +925,16 @@
       try {
         res = await fetch(url, options || {});
         const data = await readJSONResponse(res);
+        const rejected = !!(data && data.ok === false);
         addDianConsoleEntry(label, {
           url: url,
           respuesta: data
-        }, { httpStatus: res.status, durationMs: Date.now() - started, ok: res.ok && !(data && data.ok === false) });
+        }, {
+          httpStatus: res.status,
+          durationMs: Date.now() - started,
+          ok: res.ok && !rejected,
+          error: !res.ok || rejected
+        });
         return data;
       } catch (err) {
         addDianConsoleEntry(label, {

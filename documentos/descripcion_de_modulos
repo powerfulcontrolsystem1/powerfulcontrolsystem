@@ -4,9 +4,11 @@
   `empresa_id`; el UBL no acepta defaults ni datos comerciales del request.
 - Nota credito/debito, soporte, nomina, equivalentes, contingencia y RADIAN se
   muestran bloqueados hasta implementar su contrato documental propio.
-- Estado: candidato local con PostgreSQL 17.11 aislado, XSD, XMLDSig y
-  Schematron aprobados; NO-GO hasta completar clon del esquema vigente, prueba
-  visual autenticada, acuse DIAN, despliegue y emision real controlada.
+- Estado: candidato local con XSD y XMLDSig independientes aprobados. Las
+  pruebas PostgreSQL aisladas y Schematron DIAN siguen pendientes de un DSN y
+  procesador XSLT 3 compatibles; NO-GO hasta completar esas puertas, clon del
+  esquema vigente, prueba visual autenticada, acuse DIAN, despliegue y emision
+  real controlada.
 
 2026-08-21: Cierre especifico de facturacion electronica Colombia.
 - Backend/worker: la conectividad GET es de solo lectura; reintentos manuales
@@ -1769,7 +1771,11 @@
 - La configuracion principal de facturacion electronica conserva perfiles separados por `empresa_id + pais_codigo` para Colombia, Ecuador, Panama, Costa Rica, Argentina y Venezuela.
 - Colombia muestra configuracion DIAN propia dentro de la pagina principal y envia las pruebas, diagnostico, cola y emision documental manual a `facturacion_electronica_pruebas_dian.html`.
 - En esa revision se documento un set numerico hoy historico. Desde 2026-08-21 no existe set base local: gobierna exclusivamente el objetivo asignado y guardado por empresa desde el portal DIAN.
-- Los documentos con emision DIAN operativa son `factura_electronica`, `nota_credito` y `nota_debito`. `documento_soporte`, `nomina_electronica`, documentos equivalentes y RADIAN se muestran como catalogados/bloqueados hasta disponer de adaptadores conformes a sus anexos tecnicos propios; el backend responde 422 antes de generar XML, consumir consecutivo o persistir una emision.
+- En esa revision los documentos operativos eran factura, nota credito y nota
+  debito. Ese alcance fue sustituido el 2026-08-24: solo
+  `factura_electronica` puede emitirse; nota credito/debito, soporte, nomina,
+  equivalentes y RADIAN quedan catalogados/bloqueados con HTTP 422 antes de
+  generar XML, consumir consecutivo o persistir una emision.
 - Esa revision no adjuntaba XML/PDF. Desde 2026-08-21 Colombia produccion exige aceptacion DIAN y artefactos XML/PDF privados e integros antes de enviar el correo fiscal.
 
 2026-05-17: Estaciones con primer clic solo activa.

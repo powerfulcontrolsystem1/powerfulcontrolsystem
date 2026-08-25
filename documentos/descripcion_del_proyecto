@@ -4,13 +4,19 @@ e inmutable del carrito pagado, cliente y emisor de la empresa. No se fabrican
 productos, direcciones, clientes ni codigos territoriales; pais Colombia y codigos
 DANE coherentes son obligatorios. Nota credito/debito y las demas familias siguen
 visibles pero bloqueadas hasta tener fuente/adaptador documental propio. Es un
-candidato local NO-GO: PostgreSQL 17.11 aislado, XSD, XMLDSig y Schematron
-aprobaron; faltan clon del esquema vigente, prueba autenticada, acuse DIAN,
-despliegue y emision real controlada.
+candidato local NO-GO: XSD y XMLDSig independientes aprobaron; faltan pruebas
+PostgreSQL aisladas, Schematron DIAN con procesador XSLT 3, clon del esquema
+vigente, prueba autenticada, acuse DIAN, despliegue y emision real controlada.
 
 Revision diagramas tecnicos 2026-07-07: el super administrador incorpora el grupo `Diagramas tecnicos` con una pagina propia para cada diagrama del sistema: modulos, ERD, multiempresa, arquitectura, ventas POS, facturacion DIAN, inventario, roles/permisos, API/endpoints, despliegue, seguridad, auditoria/logs, reportes, integraciones y agentes automaticos. La fuente interna para Codex queda en `documentos/diagramas/diagramas_sistema_pcs.md`, `documentos/diagramas/diagramas_sistema_pcs_manifest.json` y `web/js/super_diagramas_data.js`, en formato texto/Mermaid y sin dependencias externas.
 
-Revision DIAN produccion PCS 2026-06-18: la facturacion electronica Colombia de Powerful Control System quedo validada en produccion DIAN. El portal DIAN muestra las facturas `1PCS2` y `1PCS3` como `Aprobado con notificacion`, `1PCS3` tambien tuvo acuse SOAP/WCF aceptado, y el siguiente consecutivo operativo quedo en `1PCS4`. `Regla 90, Documento procesado anteriormente` no se considera aceptacion automatica: requiere acuse original, portal DIAN, CUFE/TrackId o evidencia oficial equivalente antes de cerrar el documento. La ayuda `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` queda adaptada a PCS con control diario de consecutivos, lectura de `RUT01` y pasos para no reenviar folios aprobados.
+Revision historica DIAN PCS 2026-06-18: el portal DIAN registraba las facturas
+`1PCS2` y `1PCS3` como `Aprobado con notificacion`, y `1PCS3` contaba con acuse
+SOAP/WCF. Esa evidencia no certifica la configuracion ni el candidato actual;
+el consecutivo vigente debe consultarse en la empresa y portal actuales. `Regla
+90, Documento procesado anteriormente` no se considera aceptacion automatica:
+requiere acuse original, portal DIAN, CUFE/TrackId o evidencia oficial
+equivalente antes de cerrar el documento.
 
 Revision snapshot completo VPS 2026-06-10: el modulo super `Docker VPS` permite
 crear una copia restaurable de la infraestructura en `backup/vps_snapshots`.
@@ -584,11 +590,26 @@ Actualizacion operativa 2026-05-05:
 - Propinas: modulo por empresa para activar/desactivar porcentaje de propina en facturas, definir distribucion `por_usuario` o `universal`, enlazar movimientos al usuario creado y consultar reporte de acumulados y movimientos.
 - Comisiones por servicio: modulo por empresa para activar/desactivar porcentaje de comision de servicios de lavado, registrar movimientos automaticos al cerrar carrito, enlazarlos al usuario/lavador creado y consultar reporte por lavador.
 - Compras: modulo dedicado con endpoint `/api/empresa/compras/documentos` y vista `administrar_empresa/compras.html` para crear, consultar y transicionar documentos (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) con trazabilidad contable.
-- Facturacion electronica: configuracion por pais y ciclo documental con emision DIAN disponible para `factura_electronica`, `nota_credito` y `nota_debito`, validacion normativa, trazabilidad por `numero_legal` + CUFE/CUDE oficial, cola fiscal, artefactos privados XML/PDF, consulta, correo e impresion. Documento soporte, nomina electronica, documentos equivalentes y RADIAN se conservan en el catalogo, pero la emision queda bloqueada hasta implementar el adaptador de su anexo tecnico especifico; nunca se convierten por defecto en una factura de venta.
+- Facturacion electronica: configuracion por pais y ciclo documental. En el
+  candidato Colombia solo `factura_electronica` puede emitirse por DIAN, desde
+  una fuente fiscal inmutable de carrito, con validacion normativa, trazabilidad
+  por `numero_legal` + CUFE oficial, cola fiscal y artefactos privados XML/PDF.
+  Nota credito/debito, soporte, nomina, equivalentes y RADIAN se conservan en el
+  catalogo pero la emision queda bloqueada hasta implementar el contrato y
+  adaptador especificos; nunca se convierten por defecto en una factura de
+  venta.
 - AIU construccion: modulo empresarial `/api/empresa/aiu_construccion` y vista `administrar_empresa/aiu_construccion.html` para arquitectos, constructoras y contratistas. Maneja contratos de obra por empresa con responsable, centro de costo, modalidad, riesgo, avance, capitulos/conceptos, porcentajes de Administracion, Imprevistos y Utilidad, modelo AIU no sumado o sumado al total, base de IVA configurable, retenciones, anticipo, garantia, neto a cobrar, flujo de aprobacion/ejecucion/cierre, alertas, reporterias y generacion de factura electronica AIU conectada con `empresa_facturacion_documentos`, `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`. La licencia/rol usa la clave `aiu_construccion`.
 - Documentos de venta por empresa: la configuracion avanzada empresarial define `modo_documento_venta` para decidir si una venta cerrada genera `factura_electronica` o `comprobante_pago`; ambos documentos quedan en `empresa_facturacion_documentos`, manteniendo el mismo flujo de cobro y aislamiento por `empresa_id`.
 - Impresoras del sistema: modulo empresarial en `/api/empresa/impresoras` para administrar multiples impresoras por `empresa_id`, definir impresora predeterminada, activar/inactivar, asignar por funcionalidad operativa, por producto especifico, por categoria de producto o por todos los productos y resolver destino de impresion con `/api/empresa/impresoras/resolver` bajo prioridad `receta -> producto -> categoria de producto -> todos los productos -> funcionalidad -> predeterminada`; incluye gestion en `administrar_empresa/configuracion_impresora.html` e integracion de resolucion en flujos de carrito, finanzas y reportes.
-- Facturacion electronica DIAN Colombia (base operativa): endpoint `/api/empresa/facturacion_electronica/dian` con CRUD por `empresa_id`, onboarding guiado (`action=guia_onboarding`), checklist de habilitacion (`action=checklist`), validacion (`action=validar`), validacion de secretos (`action=validar_credenciales`), carga de firma por empresa (`action=subir_firma`), utilidades de prueba (`action=generar_cufe_demo`, `action=generar_xml_demo`), preparacion tecnica base (`action=generar_xml_ubl_base`, `action=firmar_xml_xades_base`, `action=diagnostico_oficial`) y envio automatizado del set de habilitacion (`action=enviar_set_pruebas`) para distribuir y procesar lotes de facturas/notas con resumen por estado; soporta modelo SaaS multiempresa con software compartido (`Software ID/PIN`) y credenciales tributarias por empresa (`NIT`, token y certificado de firma), dejando explicita la separacion actual entre esta fase base y el transporte SOAP/WSDL oficial pendiente.
+- Facturacion electronica DIAN Colombia (candidato controlado): endpoint
+  `/api/empresa/facturacion_electronica/dian` con configuracion por
+  `empresa_id`, onboarding, checklist, validacion de secretos, carga de firma,
+  diagnostico, fixtures de habilitacion y set real para factura. El despacho
+  SOAP/WCF, firma y envio comerciales solo se ejecutan desde el flujo interno
+  despues de fuente fiscal inmutable, permiso, consecutivo y preflight; las
+  acciones directas estan bloqueadas. El modelo SaaS puede compartir Software
+  ID/PIN, pero mantiene NIT, credenciales cifradas, firma y trazabilidad por
+  empresa.
 - Gestion comercial extendida: cotizaciones, pedidos de venta y devoluciones de venta con CRUD empresarial en `/api/empresa/ventas/cotizaciones`, `/api/empresa/ventas/pedidos` y `/api/empresa/ventas/devoluciones`, incluyendo maquina de estados documental (`action=estado`, `action=transiciones`, `action=transicionar`), conversion automatica (`action=convertir_pedido`, `action=convertir_documento_final`) y monitoreo de embudo comercial con SLA (`action=embudo`).
 - Contabilidad operativa extendida: plan de cuentas y cartera empresarial (CxC/CxP) en `/api/empresa/finanzas/plan_cuentas`, `/api/empresa/finanzas/cuentas_cobrar` y `/api/empresa/finanzas/cuentas_pagar`.
 - Contabilidad Colombia avanzada: suite empresarial en `/api/empresa/contabilidad_colombia_avanzada` para informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP y libros oficiales. Reutiliza el modulo `contabilidad_colombia` para generar libros y exogena desde comprobantes contabilizados, sin duplicar PUC, terceros ni asientos.

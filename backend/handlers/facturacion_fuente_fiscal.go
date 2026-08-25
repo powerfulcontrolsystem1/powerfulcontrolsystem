@@ -834,6 +834,9 @@ func dianFuenteFiscalCustomerPartyXML(part facturacionFuenteFiscalParte) (string
 		person = dianPersonNameXML(part.NombreRazonSocial)
 	}
 	taxLevelListName := "04"
+	if accountID == "2" {
+		taxLevelListName = "49"
+	}
 	return fmt.Sprintf(`<cac:AccountingCustomerParty><cbc:AdditionalAccountID>%s</cbc:AdditionalAccountID><cac:Party>%s<cac:PartyName><cbc:Name>%s</cbc:Name></cac:PartyName><cac:PhysicalLocation><cac:Address>%s</cac:Address></cac:PhysicalLocation><cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID %s>%s</cbc:CompanyID><cbc:TaxLevelCode listName="%s">%s</cbc:TaxLevelCode><cac:RegistrationAddress>%s</cac:RegistrationAddress><cac:TaxScheme><cbc:ID>01</cbc:ID><cbc:Name>IVA</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme><cac:PartyLegalEntity><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID %s>%s</cbc:CompanyID></cac:PartyLegalEntity>%s%s</cac:Party></cac:AccountingCustomerParty>`,
 		escapeXML(accountID), dianCustomerPartyIdentificationXML(document, schemeName), escapeXML(part.NombreRazonSocial), address, escapeXML(part.NombreRazonSocial), companyAttrs, escapeXML(document), escapeXML(taxLevelListName), escapeXML(part.ResponsabilidadTributaria), address, escapeXML(part.NombreRazonSocial), companyAttrs, escapeXML(document), contact, person), nil
 }
@@ -892,7 +895,7 @@ func dianFuenteFiscalLinesXML(lines []facturacionFuenteFiscalLinea, currency str
 		if itemID == "" {
 			return "", fmt.Errorf("linea %d sin codigo de producto o servicio", line.Numero)
 		}
-		out.WriteString(fmt.Sprintf(`<cac:InvoiceLine><cbc:ID>%d</cbc:ID><cbc:InvoicedQuantity unitCode="%s">%.6f</cbc:InvoicedQuantity><cbc:LineExtensionAmount currencyID="%s">%.2f</cbc:LineExtensionAmount>%s%s<cac:Item><cbc:Description>%s</cbc:Description><cac:SellersItemIdentification><cbc:ID>%s</cbc:ID></cac:SellersItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%.2f</cbc:PriceAmount><cbc:BaseQuantity unitCode="%s">1.000000</cbc:BaseQuantity></cac:Price></cac:InvoiceLine>`,
+		out.WriteString(fmt.Sprintf(`<cac:InvoiceLine><cbc:ID>%d</cbc:ID><cbc:InvoicedQuantity unitCode="%s">%.6f</cbc:InvoicedQuantity><cbc:LineExtensionAmount currencyID="%s">%.2f</cbc:LineExtensionAmount><cbc:FreeOfChargeIndicator>false</cbc:FreeOfChargeIndicator>%s%s<cac:Item><cbc:Description>%s</cbc:Description><cac:SellersItemIdentification><cbc:ID>%s</cbc:ID></cac:SellersItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%.2f</cbc:PriceAmount><cbc:BaseQuantity unitCode="%s">1.000000</cbc:BaseQuantity></cac:Price></cac:InvoiceLine>`,
 			line.Numero, escapeXML(unit), line.Cantidad, escapeXML(currency), line.BaseGravable, allowance, tax, escapeXML(line.Descripcion), escapeXML(itemID), escapeXML(currency), line.PrecioUnitario, escapeXML(unit)))
 	}
 	return out.String(), nil

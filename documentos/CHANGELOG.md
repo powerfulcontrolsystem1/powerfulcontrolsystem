@@ -12,12 +12,15 @@
 - [UX/seguridad] El centro DIAN deja deshabilitada toda emisión fiscal manual,
   no convierte la activación local en evidencia falsa de envío/acuse y distingue
   un servidor alcanzable de una validación SOAP o fiscal exitosa.
-- [QA] Go, vet, JavaScript, PostgreSQL 17.11 aislado, XSD oficial, XMLDSig y
-  Schematron DIAN aprobados. La auditoría autenticada de PCS confirmó ambiente
-  productivo, credenciales/firma configuradas y conexión de red; también confirmó
-  que la versión publicada aún no contiene esta reparación. Clon del esquema
-  vigente, despliegue del candidato y acuse de una venta real siguen pendientes;
-  estado NO-GO.
+- [QA] Go, vet, JavaScript, PostgreSQL 17.11 aislado, XSD oficial y XMLDSig
+  aprobaron. Schematron oficial queda pendiente por falta de un procesador XSLT
+  3 compatible. La auditoría autenticada de PCS confirmó ambiente productivo,
+  credenciales/firma configuradas, `GetNumberingRange` y alcance de red; también
+  confirmó que la versión publicada aún no contiene esta reparación y que una
+  reconsulta histórica puede degradar el estado global. Ese dato se restauró y
+  el candidato restringe la actualización al historial individual. Clon del
+  esquema vigente, despliegue del candidato y acuse de una venta real siguen
+  pendientes; estado NO-GO.
 
 ## [2026-08-21] Login y sesiones multiempresa
 

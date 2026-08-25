@@ -1597,7 +1597,10 @@ Actualizacion 2026-08-21 (precision fiscal y consecutivos):
   - periodo_contable, monto_total, moneda
   - numero_legal, codigo_validacion, pais_codigo, ambiente_fe
   - fecha_documento, entidad_relacionada_id
-  - uso operativo actual: soporta `factura_electronica`, `nota_credito` y `comprobante_pago`
+  - uso operativo actual: `factura_electronica` se emite desde fuente fiscal
+    inmutable y `comprobante_pago` conserva el origen comercial; `nota_credito`
+    y `nota_debito` se mantienen para consulta/legado pero su emision DIAN esta
+    bloqueada hasta contar con fuente de ajuste y adaptador propios.
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 - empresa_compras_documentos:
   - empresa_id, proveedor_id, tipo_documento, documento_codigo

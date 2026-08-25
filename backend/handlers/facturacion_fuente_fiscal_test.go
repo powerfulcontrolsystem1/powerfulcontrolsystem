@@ -156,7 +156,7 @@ func TestGenerateDIANUBLDesdeFuenteFiscalUsesRealMultiLineData(t *testing.T) {
 			t.Fatalf("guardar XML de QA: %v", err)
 		}
 	}
-	for _, expected := range []string{"<cbc:ProfileID>DIAN 2.1</cbc:ProfileID>", "<cbc:LineCountNumeric>2</cbc:LineCountNumeric>", "Cafe colombiano", "Pan artesanal", "SKU-CAFE", "SKU-PAN", "25175", "Carrera 5 6-7", "Calle 10 20-30", `<cbc:TaxLevelCode listName="05">O-13</cbc:TaxLevelCode>`, `<cbc:TaxLevelCode listName="04">R-99-PN</cbc:TaxLevelCode>`} {
+	for _, expected := range []string{"<cbc:ProfileID>DIAN 2.1</cbc:ProfileID>", "<cbc:LineCountNumeric>2</cbc:LineCountNumeric>", "Cafe colombiano", "Pan artesanal", "SKU-CAFE", "SKU-PAN", "25175", "Carrera 5 6-7", "Calle 10 20-30", `<cbc:TaxLevelCode listName="05">O-13</cbc:TaxLevelCode>`, `<cbc:TaxLevelCode listName="49">R-99-PN</cbc:TaxLevelCode>`, `<cbc:FreeOfChargeIndicator>false</cbc:FreeOfChargeIndicator>`} {
 		if !strings.Contains(xml, expected) {
 			t.Fatalf("UBL real no contiene %q", expected)
 		}

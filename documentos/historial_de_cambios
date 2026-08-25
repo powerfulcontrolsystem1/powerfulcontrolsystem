@@ -43134,3 +43134,23 @@ Archivos modificados:
 - `action=eventos` conserva el wrapper y el `empresa_id` autorizado; valida cada identificador secundario en la empresa antes de usar una consulta SQL parametrizada sobre `empresa_control_electrico_eventos`.
 - No se exponen IP de Raspberry, tokens, respuestas del dispositivo ni secretos en el reporte.
 - Validación: pruebas Domotica de handlers/DB, sintaxis JavaScript embebida, `go vet`, revisión visual local y comprobación de aislamiento por empresa.
+
+2026-08-24: fix: acotar evidencia visual y reconsulta historica DIAN.
+- La verificacion autenticada y visual de Powerful Control System confirmo
+  preflight de credenciales/firma, diagnostico `pre_envio_validable` y el rango
+  oficial `1PCS 1-100000`; la conectividad observada se registra solo como
+  alcance de red, no como aceptacion SOAP o fiscal.
+- Un `GetStatusZip` real sobre un TrackId historico devolvio codigo DIAN 66. El
+  binario publicado cambio incorrectamente el estado global a `rechazado`; se
+  restauro a `enviado` sin borrar el rechazo individual ni su auditoria.
+- El candidato conserva la reconsulta exclusivamente en
+  `empresa_dian_track_historial`. Una prueba de contrato impide llamadas a la
+  actualizacion global desde `consultarDIANStatusZipSOAP`.
+- La barra del centro DIAN ya no hereda aceptacion global ni considera un envio
+  como validacion de credenciales. El 100 % se etiqueta como comprobaciones de
+  la sesion y no como disponibilidad productiva de todas las familias.
+- La consola visual clasifica `HTTP 200` con `ok=false` como error funcional y
+  oculta XML/UBL, respuestas SOAP y resúmenes fiscales crudos.
+- Sin despliegue ni nueva emision fiscal. Nota credito/debito, documento soporte,
+  nomina, equivalentes y RADIAN siguen bloqueados hasta implementar y validar
+  sus fuentes y adaptadores especificos.

@@ -2604,6 +2604,13 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	if endpoint := strings.TrimSpace(apiBaseURL); endpoint != "" {
 		docPayload["url_dian"] = endpoint
 	}
+	// Todo XML que se firme o reintente debe conservar una fuente fiscal privada,
+	// inmutable y perteneciente al mismo comprobante. Esto impide que un XML
+	// heredado (anterior al flujo trazable) vuelva a enviarse a DIAN.
+	fuenteFiscal, fuenteErr := loadFacturacionFuenteFiscalParaDocumento(context.Background(), dbEmp, doc)
+	if fuenteErr != nil {
+		return facturacionProveedorDispatchResult{FinalFailure: true, Success: false, Error: "fuente fiscal real no disponible: " + fuenteErr.Error()}
+	}
 	xmlFirmado := ""
 	xmlNuevo := false
 	if storedXML, loadErr := loadFacturacionFiscalArtifact(context.Background(), dbEmp, doc, "xml_firmado"); loadErr == nil {
@@ -2612,15 +2619,14 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 			fechaEmision = storedFecha
 			docPayload["fecha_emision"] = storedFecha
 		}
+		if _, _, sourceErr := prepareDIANUBLDesdeFuenteFiscal(dianCfg, doc.EmpresaID, docPayload, fuenteFiscal); sourceErr != nil {
+			return facturacionProveedorDispatchResult{Success: false, Error: "fuente fiscal no valida para reintentar XML firmado: " + sourceErr.Error()}
+		}
 	} else if !errors.Is(loadErr, sql.ErrNoRows) {
 		return facturacionProveedorDispatchResult{Success: false, Error: "leer XML fiscal persistido: " + loadErr.Error()}
 	}
 	if xmlFirmado == "" {
 		xmlNuevo = true
-		fuenteFiscal, fuenteErr := loadFacturacionFuenteFiscalParaDocumento(context.Background(), dbEmp, doc)
-		if fuenteErr != nil {
-			return facturacionProveedorDispatchResult{FinalFailure: true, Success: false, Error: "fuente fiscal real no disponible: " + fuenteErr.Error()}
-		}
 		ublResp, _, err := generateDIANUBLBase(dianCfg, doc.EmpresaID, docPayload, fuenteFiscal)
 		if err != nil {
 			return facturacionProveedorDispatchResult{Success: false, Error: "generar XML UBL DIAN: " + err.Error()}

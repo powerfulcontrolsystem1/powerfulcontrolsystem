@@ -218,6 +218,8 @@ func TestDIANFrontendProgressRequiresIndependentEvidence(t *testing.T) {
 		`const validationReady = state.dianValidationOk || acuseReady || productionReady;`,
 		`done: hasDianEnvioReal(result) || acuseReady || productionReady`,
 		`estado === "habilitacion_aprobada" || estado === "produccion_local_activa"`,
+		`const validationReady = state.dianValidationOk || hasDianEnvioReal(result)`,
+		`if (estado === "habilitacion_aprobada" || estado === "aceptado") return true;`,
 	} {
 		if strings.Contains(page, forbidden) {
 			t.Fatalf("local production activation must not forge DIAN evidence: found %q", forbidden)
@@ -225,6 +227,35 @@ func TestDIANFrontendProgressRequiresIndependentEvidence(t *testing.T) {
 	}
 	if !strings.Contains(page, "Servidor DIAN/proveedor alcanzable. Esta prueba no valida SOAP, credenciales ni aceptación fiscal.") {
 		t.Fatal("connection probe must distinguish reachability from DIAN validation")
+	}
+	if !strings.Contains(page, "El 100 % solo resume las comprobaciones ejecutadas en esta sesion") {
+		t.Fatal("progress must explicitly deny production-readiness semantics")
+	}
+}
+
+func TestDIANHistoricalTrackRequeryCannotMutateGlobalConfiguration(t *testing.T) {
+	path := filepath.Join("modulos_faltantes.go")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read DIAN backend: %v", err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func consultarDIANStatusZipSOAP(")
+	end := strings.Index(source, "func consultarDIANNumberingRange(")
+	if start < 0 || end <= start {
+		t.Fatal("could not isolate consultarDIANStatusZipSOAP source")
+	}
+	body := source[start:end]
+	if !strings.Contains(body, "upsertDIANTrackHistory(") {
+		t.Fatal("GetStatusZip must persist the individual TrackId history")
+	}
+	for _, forbidden := range []string{
+		"updateDIANConfigFields(",
+		"empresa_dian_configuracion",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("historical GetStatusZip must not mutate global DIAN configuration; found %q", forbidden)
+		}
 	}
 }
 
