@@ -39,6 +39,7 @@
     .dian-readable-detail summary{cursor:pointer;font-weight:850;color:var(--text)}
     .dian-readable-detail pre{margin:8px 0 0;max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)}
     .dian-capture-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-capture-actions{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
     .dian-ai-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;border:1px solid color-mix(in srgb,#38bdf8 45%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 12%,var(--surface));color:var(--text);font-weight:950;font-size:.78rem;letter-spacing:.02em}
     .dian-capture-guide{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
     .dian-capture-step{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;min-height:112px}
@@ -172,6 +173,24 @@
         <input type="hidden" id="dian_set_facturas_aceptadas_requeridas">
         <input type="hidden" id="dian_set_notas_debito_aceptadas_requeridas">
         <input type="hidden" id="dian_set_notas_credito_aceptadas_requeridas">
+        <div class="dian-capture-panel" id="dianRutPanel">
+          <div class="dian-capture-head">
+            <div>
+              <h3>Registro &Uacute;nico Tributario (RUT) de la empresa</h3>
+              <p class="form-help">Carga el Formulario 001 de esta empresa para detectar identidad fiscal, ubicaci&oacute;n, c&oacute;digos DANE y responsabilidades. El PDF se procesa temporalmente: solo se guardan los datos que revises, apliques y confirmes en los formularios.</p>
+            </div>
+            <span class="dian-chip">RUT por empresa</span>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dianRutPdfInput">PDF del RUT</label><input id="dianRutPdfInput" type="file" accept="application/pdf,.pdf" class="form-input"></div>
+            <div class="form-col dian-capture-actions">
+              <button id="btnDianRutPdf" type="button" class="btn secondary" data-ai-button="true">Cargar RUT con IA GPT-5.5</button>
+              <button id="btnDianRutAplicar" type="button" class="btn" disabled>Aplicar datos revisados</button>
+            </div>
+          </div>
+          <div id="dianRutPdfMsg" class="form-help"></div>
+          <div id="dianRutPdfResultado" class="dian-readable-result is-empty"></div>
+        </div>
         <div class="dian-capture-panel" id="dianNumeracion1876Panel">
           <div class="dian-capture-head">
             <div>
@@ -518,6 +537,44 @@
 
         <div class="form-row">
           <div class="form-col">
+            <label class="form-label" for="adv_tipo_persona_fiscal">Tipo de persona fiscal</label>
+            <select id="adv_tipo_persona_fiscal" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="persona_natural">Persona natural</option>
+              <option value="persona_juridica">Persona jurídica</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_regimen_tributario_colombia">Régimen tributario Colombia</label>
+            <select id="adv_regimen_tributario_colombia" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="ordinario">Renta régimen ordinario</option>
+              <option value="simple">Régimen Simple de Tributación</option>
+              <option value="especial">Régimen Tributario Especial</option>
+              <option value="ingresos_patrimonio">Ingresos y patrimonio</option>
+              <option value="no_declarante_pn">Persona natural no obligada a declarar</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_iva_responsabilidad">Responsabilidad IVA</label>
+            <select id="adv_iva_responsabilidad" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="responsable_iva">Responsable de IVA</option>
+              <option value="no_responsable_iva">No responsable de IVA</option>
+              <option value="pj_no_responsable_iva_simple">Persona jurídica no responsable por SIMPLE</option>
+              <option value="bienes_exentos">Productor/exportador de bienes exentos</option>
+              <option value="servicios_exterior">Servicios desde el exterior</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_responsabilidades_rut_codigos">Códigos de responsabilidades RUT</label>
+            <input id="adv_responsabilidades_rut_codigos" class="form-input" inputmode="numeric" placeholder="49, 52">
+            <p class="form-help">Códigos visibles en el campo 53 del RUT, separados por coma.</p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
             <label class="form-label">Correo facturación</label>
             <input id="adv_email_facturacion" type="email" class="form-input" placeholder="facturacion@empresa.com">
           </div>
@@ -680,6 +737,7 @@
       catalog: [],
       dianConfig: null,
       dianCatalogo: null,
+      dianRutImport: null,
       dianNumeracionImport: null,
     };
 
@@ -757,6 +815,10 @@
         adv_nombre_comercial: "Nombre de marca visible en factura o comprobantes, si difiere de la razon social.",
         adv_regimen_fiscal: "Regimen tributario del emisor, por ejemplo Responsable de IVA o SIMPLE.",
         adv_responsabilidad_tributaria: "Codigo o descripcion de responsabilidad tributaria exigida por la normativa aplicable.",
+        adv_tipo_persona_fiscal: "Clasificacion de la empresa como persona natural o juridica segun el RUT.",
+        adv_regimen_tributario_colombia: "Regimen de renta visible o verificable en el RUT. Si el PDF no lo determina, revisalo con el contador.",
+        adv_iva_responsabilidad: "Responsabilidad frente al IVA segun los codigos del campo 53 del RUT.",
+        adv_responsabilidades_rut_codigos: "Codigos numericos visibles en el campo 53 del RUT, separados por coma.",
         adv_email_facturacion: "Correo usado como contacto de facturacion en la configuracion avanzada.",
         adv_telefono_facturacion: "Telefono fiscal o administrativo del emisor.",
         adv_direccion_fiscal: "Direccion principal que se imprime o usa como direccion fiscal del emisor.",
@@ -874,6 +936,29 @@
         return JSON.stringify(parsed);
       } catch (_) {
         return null;
+      }
+    }
+
+    function responsabilidadesRUTCodesFromInput(raw) {
+      var seen = {};
+      return txt(raw).split(/[\s,;]+/).map(function(code) {
+        var digits = String(code || "").replace(/\D+/g, "");
+        if (digits.length === 1) digits = "0" + digits;
+        return digits;
+      }).filter(function(code) {
+        if (code.length !== 2 || seen[code]) return false;
+        seen[code] = true;
+        return true;
+      }).sort();
+    }
+
+    function responsabilidadesRUTCodesFromJSON(raw) {
+      if (Array.isArray(raw)) return responsabilidadesRUTCodesFromInput(raw.join(","));
+      try {
+        var parsed = JSON.parse(txt(raw) || "[]");
+        return Array.isArray(parsed) ? responsabilidadesRUTCodesFromInput(parsed.join(",")) : [];
+      } catch (_) {
+        return responsabilidadesRUTCodesFromInput(raw);
       }
     }
 
@@ -995,6 +1080,10 @@
       document.getElementById("adv_nombre_comercial").value = txt(cfg.nombre_comercial);
       document.getElementById("adv_regimen_fiscal").value = txt(cfg.regimen_fiscal);
       document.getElementById("adv_responsabilidad_tributaria").value = txt(cfg.responsabilidad_tributaria);
+      document.getElementById("adv_tipo_persona_fiscal").value = txt(cfg.tipo_persona_fiscal);
+      document.getElementById("adv_regimen_tributario_colombia").value = txt(cfg.regimen_tributario_colombia);
+      document.getElementById("adv_iva_responsabilidad").value = txt(cfg.iva_responsabilidad);
+      document.getElementById("adv_responsabilidades_rut_codigos").value = responsabilidadesRUTCodesFromJSON(cfg.responsabilidades_rut_json).join(", ");
       document.getElementById("adv_email_facturacion").value = txt(cfg.email_facturacion);
       document.getElementById("adv_telefono_facturacion").value = txt(cfg.telefono_facturacion);
       document.getElementById("adv_direccion_fiscal").value = txt(cfg.direccion_fiscal);
@@ -1040,6 +1129,10 @@
         nombre_comercial: txt(document.getElementById("adv_nombre_comercial").value),
         regimen_fiscal: txt(document.getElementById("adv_regimen_fiscal").value),
         responsabilidad_tributaria: txt(document.getElementById("adv_responsabilidad_tributaria").value),
+        tipo_persona_fiscal: txt(document.getElementById("adv_tipo_persona_fiscal").value),
+        regimen_tributario_colombia: txt(document.getElementById("adv_regimen_tributario_colombia").value),
+        iva_responsabilidad: txt(document.getElementById("adv_iva_responsabilidad").value),
+        responsabilidades_rut_json: JSON.stringify(responsabilidadesRUTCodesFromInput(document.getElementById("adv_responsabilidades_rut_codigos").value)),
         email_facturacion: txt(document.getElementById("adv_email_facturacion").value),
         telefono_facturacion: txt(document.getElementById("adv_telefono_facturacion").value),
         direccion_fiscal: txt(document.getElementById("adv_direccion_fiscal").value),
@@ -1242,6 +1335,110 @@
     function dianFieldValue(id) {
       var el = document.getElementById(id);
       return el ? txt(el.value) : "";
+    }
+
+    function setDianRutPdfMessage(text, isError) {
+      var el = document.getElementById("dianRutPdfMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function renderDianRutPdfResult(data) {
+      var box = document.getElementById("dianRutPdfResultado");
+      var applyBtn = document.getElementById("btnDianRutAplicar");
+      if (!box) return;
+      var fields = data && (data.campos_detectados || data.valores_configuracion);
+      state.dianRutImport = fields || null;
+      if (applyBtn) applyBtn.disabled = !fields;
+      if (!fields) {
+        box.innerHTML = "";
+        box.classList.add("is-empty");
+        return;
+      }
+      var responsibilities = responsabilidadesRUTCodesFromJSON(fields.responsabilidades_rut_json);
+      var rows = [
+        ["NIT", fields.nit],
+        ["DV", fields.dv || fields.digito_verificacion],
+        ["Nombre legal", fields.razon_social],
+        ["Tipo de persona", fields.tipo_persona_fiscal === "persona_natural" ? "Persona natural" : (fields.tipo_persona_fiscal === "persona_juridica" ? "Persona juridica" : fields.tipo_persona_fiscal)],
+        ["Ubicacion", [fields.departamento, fields.municipio].filter(Boolean).join(" / ")],
+        ["Codigos DANE", [fields.departamento_codigo_dane, fields.municipio_codigo_dane].filter(Boolean).join(" / ")],
+        ["Responsabilidades RUT", responsibilities.join(", ")],
+        ["Responsabilidad FE", fields.responsabilidad_tributaria],
+        ["Concepto del RUT", fields.concepto],
+        ["Fecha del documento", fields.fecha_generacion]
+      ];
+      var html = '<div class="dian-readable-grid">';
+      rows.forEach(function(row) {
+        if (!txt(row[1])) return;
+        html += '<div><strong>' + escapeHTML(row[0]) + '</strong><span>' + escapeHTML(row[1]) + '</span></div>';
+      });
+      html += "</div>";
+      if (Array.isArray(data.advertencias) && data.advertencias.length) {
+        html += '<p class="form-help error">' + escapeHTML(data.advertencias.join(" ")) + "</p>";
+      }
+      box.classList.remove("is-empty");
+      box.innerHTML = html;
+    }
+
+    function applyDianRutPdfValues() {
+      var fields = state.dianRutImport || {};
+      if (!Object.keys(fields).length) {
+        setDianRutPdfMessage("Primero carga el PDF del RUT de esta empresa.", true);
+        return;
+      }
+      setInputValue("dian_nit", fields.nit);
+      setInputValue("dian_dv", fields.dv || fields.digito_verificacion);
+      setInputValue("dian_razon_social", fields.razon_social);
+      setInputValue("adv_tipo_documento_emisor", fields.tipo_documento_emisor || "NIT");
+      setInputValue("adv_nit", fields.nit);
+      setInputValue("adv_digito_verificacion", fields.dv || fields.digito_verificacion);
+      setInputValue("adv_razon_social", fields.razon_social);
+      setInputValue("adv_nombre_comercial", fields.nombre_comercial);
+      setInputValue("adv_tipo_persona_fiscal", fields.tipo_persona_fiscal);
+      setInputValue("adv_regimen_tributario_colombia", fields.regimen_tributario_colombia);
+      setInputValue("adv_regimen_fiscal", fields.regimen_tributario_colombia);
+      setInputValue("adv_iva_responsabilidad", fields.iva_responsabilidad);
+      setInputValue("adv_responsabilidad_tributaria", fields.responsabilidad_tributaria);
+      setInputValue("adv_responsabilidades_rut_codigos", responsabilidadesRUTCodesFromJSON(fields.responsabilidades_rut_json).join(", "));
+      setInputValue("adv_email_facturacion", fields.email_facturacion);
+      setInputValue("adv_telefono_facturacion", fields.telefono_facturacion);
+      setInputValue("adv_direccion_fiscal", fields.direccion_fiscal);
+      setInputValue("adv_departamento", fields.departamento);
+      setInputValue("adv_departamento_codigo_dane", fields.departamento_codigo_dane);
+      setInputValue("adv_municipio", fields.municipio);
+      setInputValue("adv_municipio_codigo_dane", fields.municipio_codigo_dane);
+      setInputValue("adv_pais_codigo", fields.pais_codigo || "CO");
+      setInputValue("adv_codigo_postal", fields.codigo_postal);
+      renderDianSetupProgress();
+      setDianRutPdfMessage("Datos aplicados en pantalla. Revisa y guarda por separado DIAN Colombia y Configuracion avanzada; todavia no se ha modificado la empresa.", false);
+    }
+
+    async function uploadDianRutPdf() {
+      var input = document.getElementById("dianRutPdfInput");
+      if (!input || !input.files || !input.files.length) {
+        setDianRutPdfMessage("Selecciona el PDF del RUT de esta empresa.", true);
+        return null;
+      }
+      var file = input.files[0];
+      if (!/\.pdf$/i.test(file.name || "")) {
+        setDianRutPdfMessage("Solo se permite PDF.", true);
+        return null;
+      }
+      if (file.size > 12 * 1024 * 1024) {
+        setDianRutPdfMessage("El PDF supera el limite de 12 MB.", true);
+        return null;
+      }
+      var formData = new FormData();
+      formData.append("archivo", file);
+      formData.append("empresa_id", String(state.empresaID || ""));
+      var url = "/api/empresa/facturacion_electronica/dian?action=importar_rut_pdf_ia&empresa_id=" + encodeURIComponent(state.empresaID || "");
+      var res = await fetch(url, { method: "POST", credentials: "same-origin", body: formData });
+      var data = await readJSONResponse(res);
+      renderDianRutPdfResult(data);
+      setDianRutPdfMessage("RUT leido. Revisa los valores detectados antes de aplicarlos; el PDF no quedo almacenado.", false);
+      return data;
     }
 
     function setDianNumeracionPdfMessage(text, isError) {
@@ -2510,6 +2707,26 @@
           setDianConfigMessage(err && err.message ? err.message : "No se pudo guardar DIAN Colombia", true);
         });
       });
+    }
+
+    var btnDianRutPdf = document.getElementById("btnDianRutPdf");
+    if (btnDianRutPdf) {
+      btnDianRutPdf.addEventListener("click", function() {
+        btnDianRutPdf.disabled = true;
+        btnDianRutPdf.textContent = "Leyendo RUT con IA...";
+        uploadDianRutPdf().catch(function(err) {
+          renderDianRutPdfResult(null);
+          setDianRutPdfMessage(err && err.message ? err.message : "No se pudo leer el RUT PDF.", true);
+        }).finally(function() {
+          btnDianRutPdf.disabled = false;
+          btnDianRutPdf.textContent = "Cargar RUT con IA GPT-5.5";
+        });
+      });
+    }
+
+    var btnDianRutAplicar = document.getElementById("btnDianRutAplicar");
+    if (btnDianRutAplicar) {
+      btnDianRutAplicar.addEventListener("click", applyDianRutPdfValues);
     }
 
     var btnDianNumeracionPdf = document.getElementById("btnDianNumeracionPdf");

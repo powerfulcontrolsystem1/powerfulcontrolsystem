@@ -1,3 +1,16 @@
+2026-08-25
+- `backend/handlers/dian_rut_pdf_test.go`: cubre la normalizacion revisable del
+  RUT DIAN, calculo/contraste de DV, codigos DANE, responsabilidades fiscales,
+  rechazo de archivos con extension PDF pero contenido invalido y contrato
+  frontend que separa RUT de Formulario 1876.
+- `backend/handlers/modulos_faltantes.go`: agrega la accion empresarial
+  `importar_rut_pdf_ia`, valida firma real `%PDF-` y limite de 12 MB, envia el
+  documento temporal a GPT-5.5 y devuelve solo campos fiscales saneados para
+  revision; el PDF no se almacena ni los datos se aplican automaticamente.
+- `web/administrar_empresa/facturacion_electronica.html`: incorpora el boton
+  `Cargar RUT con IA GPT-5.5` por empresa, previsualizacion, aplicacion local y
+  campos avanzados visibles de persona, regimen, IVA y responsabilidades RUT.
+
 2026-08-14
 - `scripts/rs.ps1`: acepta `-VpsPort` y lo reenvía al proceso aislado de
   `sync_to_vps.ps1`, para que un worktree limpio pueda usar el puerto SSH

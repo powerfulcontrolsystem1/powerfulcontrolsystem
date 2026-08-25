@@ -1,5 +1,13 @@
 # Mapa de modulos
 
+Actualizacion 2026-08-25 - Facturacion electronica Colombia: la pagina
+`web/administrar_empresa/facturacion_electronica.html` separa el Formulario 001
+RUT del Formulario 1876 de numeracion. La accion
+`importar_rut_pdf_ia` vive en el endpoint DIAN empresarial ya protegido,
+procesa el PDF temporalmente y propone campos para
+`empresa_configuracion_avanzada`; no almacena el archivo ni guarda/emite por
+si sola.
+
 Actualizacion 2026-08-21 - Facturacion electronica Colombia: no existe preset
 numerico para el set DIAN; el envio automatico exige el objetivo exacto del
 portal guardado por empresa. `pcs-worker` procesa reintentos y consulta TrackId

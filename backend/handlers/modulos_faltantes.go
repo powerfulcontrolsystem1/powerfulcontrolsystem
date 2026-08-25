@@ -7317,6 +7317,19 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 
+		case "importar_rut_pdf_ia", "leer_rut_pdf_ia", "extraer_rut_pdf_ia":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			response, status, err := importDIANRUTPDFIA(dbEmp, dbSuper, r)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
 		case "importar_numeracion_pdf_ia", "importar_formulario_1876_ia", "leer_numeracion_pdf_ia":
 			if r.Method != http.MethodPost && r.Method != http.MethodPut {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -13382,6 +13395,14 @@ type dianNumeracionPDFUpload struct {
 }
 
 func readDIANNumeracionPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int, error) {
+	return readDIANPDFUpload(r, "formulario_1876.pdf", "pdf de autorizacion DIAN es obligatorio", "solo se permite cargar PDF de autorizacion DIAN")
+}
+
+func readDIANRUTPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int, error) {
+	return readDIANPDFUpload(r, "rut.pdf", "PDF del RUT es obligatorio", "solo se permite cargar el RUT en PDF")
+}
+
+func readDIANPDFUpload(r *http.Request, defaultFileName, requiredMessage, typeMessage string) (dianNumeracionPDFUpload, int, error) {
 	const maxPDFBytes int64 = 12 << 20
 	if err := r.ParseMultipartForm(maxPDFBytes + (1 << 20)); err != nil {
 		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("payload multipart invalido")
@@ -13399,16 +13420,16 @@ func readDIANNumeracionPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int,
 		file, header, err = r.FormFile("file")
 	}
 	if err != nil {
-		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("pdf de autorizacion DIAN es obligatorio")
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("%s", requiredMessage)
 	}
 	defer file.Close()
 
-	fileName := "formulario_1876.pdf"
+	fileName := defaultFileName
 	if header != nil && strings.TrimSpace(header.Filename) != "" {
 		fileName = filepath.Base(header.Filename)
 	}
 	if !strings.EqualFold(filepath.Ext(fileName), ".pdf") {
-		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("solo se permite cargar PDF de autorizacion DIAN")
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("%s", typeMessage)
 	}
 	if header != nil && header.Size > maxPDFBytes {
 		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
@@ -13422,7 +13443,245 @@ func readDIANNumeracionPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int,
 	if written > maxPDFBytes {
 		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
 	}
+	if buf.Len() < 5 || !bytes.HasPrefix(buf.Bytes(), []byte("%PDF-")) || http.DetectContentType(buf.Bytes()) != "application/pdf" {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("el archivo cargado no es un PDF valido")
+	}
 	return dianNumeracionPDFUpload{EmpresaID: empresaID, FileName: fileName, Bytes: buf.Bytes()}, http.StatusOK, nil
+}
+
+func importDIANRUTPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
+	upload, status, err := readDIANRUTPDFUpload(r)
+	if err != nil {
+		return nil, status, err
+	}
+	if !isSuperAIEnabled(dbSuper) {
+		return nil, http.StatusServiceUnavailable, fmt.Errorf("la IA esta desactivada desde configuracion avanzada")
+	}
+	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.5"]
+	if !ok {
+		return nil, http.StatusServiceUnavailable, fmt.Errorf("el modelo openai:gpt-5.5 no esta disponible en el catalogo de IA")
+	}
+	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
+	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
+	pregunta := "Extrae los datos fiscales visibles del Registro Unico Tributario DIAN adjunto. Responde solo JSON valido."
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, dianRUTIASystemPrompt(), att, nil, nil)
+	if err != nil {
+		return nil, http.StatusBadGateway, err
+	}
+	fields, warnings, err := parseDIANRUTAIResponse(respuesta)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	if len(fields) == 0 {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("la IA no detecto datos fiscales del RUT en el PDF")
+	}
+	_, _ = dbpkg.RegisterEmpresaAIConsulta(dbEmp, dbpkg.EmpresaAIConsulta{
+		EmpresaID:        upload.EmpresaID,
+		Provider:         model.Provider,
+		ModelID:          model.ID,
+		Pregunta:         "extraccion_rut_dian_pdf",
+		Respuesta:        "extraccion_rut_completada_requiere_revision",
+		PromptTokens:     promptTokens,
+		CompletionTokens: completionTokens,
+		TotalTokens:      promptTokens + completionTokens,
+		UsuarioCreador:   adminEmailFromRequest(r),
+		Estado:           "activo",
+		Observaciones:    "Extraccion revisable de datos fiscales desde RUT DIAN",
+	})
+	return map[string]interface{}{
+		"ok":                    true,
+		"empresa_id":            upload.EmpresaID,
+		"archivo_nombre":        upload.FileName,
+		"metodo_extraccion":     "ia_gpt_5_5",
+		"modelo_ia":             model.ID,
+		"campos_detectados":     fields,
+		"valores_configuracion": fields,
+		"advertencias":          warnings,
+		"archivo_almacenado":    false,
+		"requiere_revision":     true,
+	}, http.StatusOK, nil
+}
+
+func dianRUTIASystemPrompt() string {
+	return `Eres un extractor profesional de documentos tributarios DIAN Colombia.
+Lee exclusivamente el PDF Formulario 001 del Registro Unico Tributario (RUT) adjunto.
+Devuelve exclusivamente JSON valido con estas claves:
+{
+  "numero_formulario": "",
+  "concepto": "",
+  "fecha_generacion": "YYYY-MM-DD",
+  "nit": "",
+  "dv": "",
+  "tipo_contribuyente": "persona_natural|persona_juridica|",
+  "tipo_documento_identidad": "",
+  "numero_documento_identidad": "",
+  "razon_social": "",
+  "nombre_comercial": "",
+  "pais_codigo": "CO",
+  "departamento": "",
+  "departamento_codigo_dane": "",
+  "municipio": "",
+  "municipio_codigo_dane": "",
+  "direccion_fiscal": "",
+  "codigo_postal": "",
+  "email_facturacion": "",
+  "telefono_facturacion": "",
+  "actividad_economica_principal": "",
+  "responsabilidades_rut": []
+}
+Reglas: usa solo datos visibles; no inventes ni completes campos por conocimiento externo. Para persona natural arma razon_social en orden nombres y luego apellidos. Toma el NIT del campo 5 y su DV del campo 6. Usa los codigos geograficos del bloque UBICACION: departamento de 2 digitos y municipio de 5 digitos; si el municipio aparece con 3 digitos, antepone el codigo de departamento. Responsabilidades_rut contiene solo codigos numericos visibles del campo 53. No confundas el numero de formulario, telefonos, fechas, actividad economica ni cedula con el NIT.`
+}
+
+func parseDIANRUTAIResponse(raw string) (map[string]interface{}, []string, error) {
+	candidate := extractJSONCandidate(raw)
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(candidate), &data); err != nil {
+		return nil, nil, fmt.Errorf("respuesta IA invalida para RUT DIAN")
+	}
+	fields := map[string]interface{}{}
+	dianRUTCopyTextFields(data, fields)
+	warnings := dianRUTApplyIdentity(data, fields)
+	dianRUTApplyLocation(data, fields)
+	dianRUTApplyResponsibilities(data, fields)
+	warnings = append(warnings, dianRUTMissingWarnings(fields)...)
+	warnings = append(warnings, "El PDF se proceso temporalmente y no fue almacenado. Revise los datos antes de aplicar y guardar.")
+	return fields, warnings, nil
+}
+
+func dianRUTCopyTextFields(data, fields map[string]interface{}) {
+	definitions := []struct {
+		dst string
+		max int
+	}{
+		{"numero_formulario", 32}, {"concepto", 120}, {"fecha_generacion", 10},
+		{"razon_social", 180}, {"nombre_comercial", 180}, {"departamento", 100},
+		{"municipio", 100}, {"direccion_fiscal", 220}, {"codigo_postal", 16},
+		{"email_facturacion", 180}, {"telefono_facturacion", 40}, {"actividad_economica_principal", 16},
+	}
+	for _, definition := range definitions {
+		value := strings.Join(strings.Fields(strings.TrimSpace(genericStringValue(data[definition.dst]))), " ")
+		if value == "" {
+			continue
+		}
+		if len(value) > definition.max {
+			value = value[:definition.max]
+		}
+		fields[definition.dst] = value
+	}
+}
+
+func dianRUTApplyIdentity(data, fields map[string]interface{}) []string {
+	warnings := []string{}
+
+	nit := onlyDigits(genericStringValue(data["nit"]))
+	if len(nit) >= 6 && len(nit) <= 15 {
+		fields["nit"] = nit
+		fields["tipo_documento_emisor"] = "NIT"
+	}
+	dv := onlyDigits(genericStringValue(data["dv"]))
+	if len(dv) == 1 {
+		fields["dv"] = dv
+		fields["digito_verificacion"] = dv
+	}
+	if nit != "" && dv != "" {
+		if expected, valid := calculateColombianNITDV(nit); !valid || strconv.Itoa(expected) != dv {
+			warnings = append(warnings, "El DV detectado no coincide con el calculado para el NIT; reviselo antes de aplicar.")
+		}
+	}
+
+	tipoPersona := strings.ToLower(strings.TrimSpace(genericStringValue(data["tipo_contribuyente"])))
+	switch tipoPersona {
+	case "persona_natural", "persona_juridica":
+		fields["tipo_persona_fiscal"] = tipoPersona
+	}
+	return warnings
+}
+
+func dianRUTApplyLocation(data, fields map[string]interface{}) {
+	departmentCode := onlyDigits(genericStringValue(data["departamento_codigo_dane"]))
+	if len(departmentCode) == 1 {
+		departmentCode = "0" + departmentCode
+	}
+	if len(departmentCode) == 2 {
+		fields["departamento_codigo_dane"] = departmentCode
+	}
+	municipalityCode := onlyDigits(genericStringValue(data["municipio_codigo_dane"]))
+	if len(municipalityCode) == 3 && len(departmentCode) == 2 {
+		municipalityCode = departmentCode + municipalityCode
+	}
+	if len(municipalityCode) == 5 && strings.HasPrefix(municipalityCode, departmentCode) {
+		fields["municipio_codigo_dane"] = municipalityCode
+	}
+	fields["pais_codigo"] = "CO"
+}
+
+func dianRUTApplyResponsibilities(data, fields map[string]interface{}) {
+	responsibilities := []string{}
+	seen := map[string]bool{}
+	var rawResponsibilities []interface{}
+	if list, ok := data["responsabilidades_rut"].([]interface{}); ok {
+		rawResponsibilities = list
+	}
+	for _, item := range rawResponsibilities {
+		code := onlyDigits(genericStringValue(item))
+		if len(code) == 1 {
+			code = "0" + code
+		}
+		if len(code) != 2 || seen[code] {
+			continue
+		}
+		seen[code] = true
+		responsibilities = append(responsibilities, code)
+	}
+	sort.Strings(responsibilities)
+	if encoded, err := json.Marshal(responsibilities); err == nil {
+		fields["responsabilidades_rut_json"] = string(encoded)
+	}
+	if seen["48"] {
+		fields["iva_responsabilidad"] = "responsable_iva"
+	} else if seen["49"] {
+		fields["iva_responsabilidad"] = "no_responsable_iva"
+	} else if seen["53"] {
+		fields["iva_responsabilidad"] = "pj_no_responsable_iva_simple"
+	}
+	if seen["47"] {
+		fields["regimen_tributario_colombia"] = "simple"
+	} else if seen["04"] {
+		fields["regimen_tributario_colombia"] = "especial"
+	} else if seen["05"] {
+		fields["regimen_tributario_colombia"] = "ordinario"
+	}
+	fields["inc_responsabilidad"] = "no_aplica"
+	taxLevels := []string{}
+	for _, mapping := range []struct{ code, level string }{{"13", "O-13"}, {"15", "O-15"}, {"23", "O-23"}, {"47", "O-47"}} {
+		if seen[mapping.code] {
+			taxLevels = append(taxLevels, mapping.level)
+		}
+	}
+	if len(taxLevels) == 0 {
+		taxLevels = append(taxLevels, "R-99-PN")
+	}
+	fields["responsabilidad_tributaria"] = strings.Join(taxLevels, ";")
+}
+
+func dianRUTMissingWarnings(fields map[string]interface{}) []string {
+	required := map[string]string{
+		"nit":                        "NIT",
+		"dv":                         "DV",
+		"razon_social":               "nombre legal",
+		"tipo_persona_fiscal":        "tipo de contribuyente",
+		"direccion_fiscal":           "direccion fiscal",
+		"departamento_codigo_dane":   "codigo DANE del departamento",
+		"municipio_codigo_dane":      "codigo DANE del municipio",
+		"responsabilidades_rut_json": "responsabilidades del campo 53",
+	}
+	warnings := []string{}
+	for key, label := range required {
+		if value, ok := fields[key]; !ok || strings.TrimSpace(genericStringValue(value)) == "" || genericStringValue(value) == "[]" {
+			warnings = append(warnings, "No se detecto "+label+".")
+		}
+	}
+	return warnings
 }
 
 func importDIANNumeracionPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
