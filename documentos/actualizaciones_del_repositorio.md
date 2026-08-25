@@ -17038,3 +17038,11 @@ Archivos modificados:
 - backend/handlers/modulos_faltantes.go
 - documentos/historial_de_cambios
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-08-25 05:15:43 - Mensaje: fix: reactivar cola DIAN terminal solo por reenvio manual; Commit: fe5b8e25; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/facturacion_reintento_manual_test.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
