@@ -18,6 +18,10 @@ Estado: vigente. Ultima actualizacion: 2026-08-25.
 - Los clientes de login, registro y recuperación no muestran cuerpos HTML de un
   proxy ante HTTP 5xx: presentan un mensaje operativo genérico y conservan el
   detalle JSON controlado para los errores funcionales.
+- Las respuestas `/auth/google/*` usan una CSP compacta `deny-all`: son
+  redirecciones o errores de texto y no necesitan la política extensa de las
+  páginas. Esto conserva margen bajo el buffer de cabeceras del proxy después
+  de agregar cookies state/PKCE y evita convertir el redirect válido en 502.
 
 ## Actualizacion 2026-08-25 - nota credito de anulacion total trazable
 

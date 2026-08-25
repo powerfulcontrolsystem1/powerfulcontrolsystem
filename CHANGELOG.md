@@ -4925,6 +4925,8 @@
   reCAPTCHA tanto en contenido estático como en respuestas del backend.
 - Login, registro y recuperación comparten un normalizador que reemplaza HTML de
   gateways HTTP 5xx por un mensaje seguro y legible.
+- Las redirecciones OAuth Google conservan state/PKCE y usan una CSP compacta
+  `deny-all`, evitando 502 por cabeceras mayores al buffer de Nginx.
 # 2026-07-16 - Probes operativos publicos
 
 - Se restauran `/health` y `/ready` como probes publicos de solo lectura. El

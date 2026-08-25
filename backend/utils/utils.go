@@ -641,6 +641,18 @@ func securityContentSecurityPolicy() string {
 	return securityContentSecurityPolicyWithInline(true)
 }
 
+const googleOAuthResponseCSP = "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+
+func securityContentSecurityPolicyForRequest(r *http.Request) string {
+	if r != nil && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/auth/google/") {
+		// OAuth only emits redirects or plain-text errors. A compact deny-all
+		// policy preserves browser protections without exceeding the default
+		// reverse-proxy response-header buffer once state/PKCE cookies are added.
+		return googleOAuthResponseCSP
+	}
+	return securityContentSecurityPolicy()
+}
+
 func securityStrictReportOnlyEnabled() bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("PCS_CSP_REPORT_ONLY_STRICT"))) {
 	case "1", "true", "yes", "on":
@@ -657,10 +669,10 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self), payment=(self)")
-		csp := securityContentSecurityPolicy()
+		csp := securityContentSecurityPolicyForRequest(r)
 		w.Header().Set("Content-Security-Policy", csp)
 		reportOnlyCSP := csp
-		if securityStrictReportOnlyEnabled() {
+		if csp != googleOAuthResponseCSP && securityStrictReportOnlyEnabled() {
 			reportOnlyCSP = securityContentSecurityPolicyWithInline(false)
 		}
 		w.Header().Set("Content-Security-Policy-Report-Only", reportOnlyCSP)
