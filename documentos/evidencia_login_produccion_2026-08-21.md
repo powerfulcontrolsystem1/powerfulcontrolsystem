@@ -213,16 +213,20 @@ conservan aqui correos completos de QA, contrasenas, cookies ni tokens.
   mismo mensaje generico, evitando enumeracion. Para la cuenta real, Mailu envio
   el mensaje, Gmail lo recibio y el enlace abrio el formulario de nueva clave.
   Un token sintetico invalido fue rechazado visualmente sin cambiar datos.
-- No se envio el cambio final de contrasena de la cuenta QA: esa mutacion de
-  credencial requiere confirmacion especifica en el momento de ejecutarla. El
-  enlace, formulario, entrega, token valido y rechazo de token invalido si
-  quedaron comprobados.
+- Con confirmacion especifica del usuario se completo el cambio final de
+  contrasena de la cuenta QA. La aplicacion abrio el selector de empresas al
+  finalizar, se cerro la sesion, la visita al selector protegido regreso al
+  login y un nuevo acceso con la clave restablecida volvio a abrir el selector.
+  La clave temporal, el token y las cookies no se conservaron en esta evidencia.
 - La configuracion global 2FA aparece desactivada en la interfaz de Super
   Administracion. Por diseno no se muestra ni exige OTP mientras ese switch este
   apagado; por tanto, no corresponde declarar una prueba TOTP real habilitada.
 
 Con la configuracion publicada actual, registro, confirmacion, login por clave,
 contrato, sesion, logout, proteccion de rutas, recuperacion y Google OAuth quedan
-aptos para operacion. El unico cierre opcional restante es autorizar el cambio
-final de clave y la eliminacion posterior de la cuenta sintetica QA, y activar
-2FA si el negocio decide exigirlo antes del lanzamiento.
+aptos para operacion. El cierre operativo restante es retirar la cuenta
+sintetica QA ya autorizada. El intento desde el panel revelo un 403 correcto del
+middleware porque el CRUD de administradores no enviaba el encabezado CSRF; el
+candidato local corrige `POST` y `DELETE`, pero requiere integracion y despliegue
+antes de repetir la eliminacion. 2FA continua siendo una decision de negocio y
+no un fallo del flujo mientras la configuracion global permanezca desactivada.
