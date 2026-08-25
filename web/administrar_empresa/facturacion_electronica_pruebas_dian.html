@@ -652,21 +652,41 @@
       return txt(value).toLowerCase();
     }
 
+    function dianFieldConfigured(cfg, field) {
+      cfg = cfg || {};
+      if (txt(cfg[field])) return true;
+      const flag = cfg[field + "_configurado"];
+      return flag === true || Number(flag || 0) === 1 || lowerValue(flag) === "true";
+    }
+
+    function dianConfiguredLabel(cfg, field, emptyText) {
+      const value = txt((cfg || {})[field]);
+      if (value) return value;
+      return dianFieldConfigured(cfg, field) ? "Configurado (oculto)" : (emptyText || "No configurado");
+    }
+
+    function dianOperationalStatus(cfg) {
+      cfg = cfg || {};
+      if (hasDianProduccionLocal(cfg)) return "Produccion local activa";
+      return txt(cfg.estado_dian || cfg.estado) || "No configurado";
+    }
+
     function hasDianBaseConfig(cfg) {
       cfg = cfg || {};
-      const softwareReady = txt(cfg.software_id) && (txt(cfg.software_pin) || txt(cfg.software_pin_compartido_ref));
+      const softwareReady = (dianFieldConfigured(cfg, "software_id") || dianFieldConfigured(cfg, "software_id_compartido_ref")) &&
+        (dianFieldConfigured(cfg, "software_pin") || dianFieldConfigured(cfg, "software_pin_compartido_ref"));
       const rangeReady = txt(cfg.prefijo) && txt(cfg.resolucion_numero) && Number(cfg.rango_desde || 0) > 0 && Number(cfg.rango_hasta || 0) > 0;
-      return !!(cfg.id && txt(cfg.nit) && txt(cfg.url_dian) && softwareReady && rangeReady && txt(cfg.llave_tecnica));
+      return !!(cfg.id && txt(cfg.nit) && txt(cfg.url_dian) && softwareReady && rangeReady && dianFieldConfigured(cfg, "llave_tecnica"));
     }
 
     function hasDianFirma(cfg) {
       cfg = cfg || {};
-      return !!(txt(cfg.certificado_url) && txt(cfg.certificado_clave_ref));
+      return dianFieldConfigured(cfg, "certificado_url") && dianFieldConfigured(cfg, "certificado_clave_ref");
     }
 
     function hasDianTestSet(cfg) {
       cfg = cfg || {};
-      return !!txt(cfg.test_set_id || (document.getElementById("feDianTestSetId") || {}).value);
+      return dianFieldConfigured(cfg, "test_set_id") || !!txt((document.getElementById("feDianTestSetId") || {}).value);
     }
 
     function hasDianObjetivo() {
@@ -685,10 +705,15 @@
       result = result || state.ultimoResultado || {};
       const resumen = result.resumen || {};
       const detalles = Array.isArray(result.detalles) ? result.detalles : [];
+      const historial = Array.isArray(state.dianTrackHistory) ? state.dianTrackHistory : [];
       return !!(Number(result.procesados || 0) > 0 ||
         Number(resumen.enviado || 0) > 0 ||
         Number(resumen.aceptado || 0) > 0 ||
-        detalles.some(function(row) { return txt(row.track_id) || txt(row.zip_key) || lowerValue(row.estado_dian) === "enviado"; }));
+        detalles.some(function(row) { return txt(row.track_id) || txt(row.zip_key) || lowerValue(row.estado_dian) === "enviado"; }) ||
+        historial.some(function(row) {
+          const estado = lowerValue(row.acuse_estado || row.estado_dian);
+          return !!txt(row.documento_codigo) && ["enviado", "aceptado", "rechazado"].indexOf(estado) >= 0;
+        }));
     }
 
     function hasDianAcuseFinal(cfg, result) {
@@ -696,12 +721,15 @@
       result = result || state.ultimoResultado || {};
       const resumen = result.resumen || {};
       const detalles = Array.isArray(result.detalles) ? result.detalles : [];
+      const historial = Array.isArray(state.dianTrackHistory) ? state.dianTrackHistory : [];
       if (result.habilitacion_aprobada === true) return true;
       if (Number(resumen.aceptado || 0) > 0 && detalles.some(function(row) {
         return lowerValue(row.acuse_estado || row.estado_dian) === "aceptado" &&
           !!txt(row.documento_codigo);
       })) return true;
-      return false;
+      return historial.some(function(row) {
+        return lowerValue(row.acuse_estado || row.estado_dian) === "aceptado" && !!txt(row.documento_codigo);
+      });
     }
 
     function hasDianProduccionLocal(cfg) {
@@ -825,14 +853,13 @@
       box.innerHTML =
         '<div class="dian-portal-head">' +
           '<div><h3>Resumen portal DIAN</h3><p>Datos guardados para comparar con el set de pruebas de factura electronica.</p></div>' +
-          '<label class="dian-portal-sensitive-toggle"><input id="feDianPortalMostrarSensibles" type="checkbox"> Mostrar PIN y clave tecnica</label>' +
         '</div>' +
         '<div class="dian-portal-sections">' +
           '<section class="dian-portal-section"><h4>Contribuyente y set</h4><dl class="dian-portal-kv">' +
             portalKV("UserName", cfg.razon_social || cfg.nombre_comercial || cfg.nit) +
             portalKV("Tipo", cfg.tipo_persona || cfg.tipo_contribuyente || cfg.tipo_documento_emisor || "Persona Natural") +
-            portalKV("Estado set", cfg.estado_dian || cfg.estado || "En proceso") +
-            portalKV("TestSetId", cfg.test_set_id) +
+            portalKV("Estado operativo", dianOperationalStatus(cfg)) +
+            portalKV("TestSetId", dianConfiguredLabel(cfg, "test_set_id")) +
             portalKV("Modo", cfg.modo_operacion_descripcion || "Set SW Propio") +
             '<dt>Inicio</dt><dd>' + escapeHTML(portalDateValue(cfg.modo_operacion_fecha_inicio)) + '</dd>' +
             '<dt>Termino</dt><dd>' + escapeHTML(portalDateValue(cfg.modo_operacion_fecha_termino)) + '</dd>' +
@@ -847,10 +874,10 @@
             portalKV("Consecutivo actual", cfg.consecutivo_actual) +
           '</dl></section>' +
           '<section class="dian-portal-section"><h4>Informacion del software</h4><dl class="dian-portal-kv">' +
-            portalKV("Identificacion", cfg.software_id) +
+            portalKV("Identificacion", dianConfiguredLabel(cfg, "software_id")) +
             portalKV("Nombre", softwareNombre) +
-            portalKV("Clave tecnica", cfg.llave_tecnica, true) +
-            portalKV("PIN", cfg.software_pin, true) +
+            portalKV("Clave tecnica", dianConfiguredLabel(cfg, "llave_tecnica")) +
+            portalKV("PIN", dianConfiguredLabel(cfg, "software_pin")) +
             portalKV("URL", cfg.url_dian) +
           '</dl></section>' +
           '<section class="dian-portal-section"><h4>Documentos requeridos</h4><div class="dian-portal-metric-grid">' +
@@ -865,9 +892,6 @@
             portalMetric("Notas credito", cfg.set_notas_credito_aceptadas_requeridas) +
           '</div></section>' +
         '</div>';
-      const toggle = document.getElementById("feDianPortalMostrarSensibles");
-      if (toggle) toggle.addEventListener("change", updatePortalSensitiveVisibility);
-      updatePortalSensitiveVisibility();
     }
 
     function asDateTimeLocal(raw) {
@@ -956,8 +980,8 @@
       cfg = cfg || {};
       state.dianConfig = cfg;
       setStatusValue("feDianStatusAmbiente", cfg.tipo_ambiente);
-      setStatusValue("feDianStatusEstado", cfg.estado_dian || cfg.estado);
-      setStatusValue("feDianStatusTestSet", cfg.test_set_id);
+      setStatusValue("feDianStatusEstado", dianOperationalStatus(cfg));
+      setStatusValue("feDianStatusTestSet", dianConfiguredLabel(cfg, "test_set_id"));
       const rango = cfg.rango_desde || cfg.rango_hasta
         ? [cfg.prefijo || "SETP", cfg.rango_desde || "?", "-", cfg.rango_hasta || "?", " sig.", cfg.consecutivo_actual || cfg.rango_desde || "?"].join(" ")
         : "";
@@ -1213,6 +1237,7 @@
       state.dianTrackHistory = items;
       if (!items.length) {
         box.innerHTML = '<div class="dian-track-empty">Aun no hay TrackId/ZipKey guardados para esta empresa.</div>';
+        updateDianProgress();
         return;
       }
       box.innerHTML = '<div class="dian-track-table-wrap"><table class="dian-result-table"><thead><tr>' +
@@ -1233,6 +1258,7 @@
             '<td><button type="button" class="btn secondary dian-track-reconsultar" data-track="' + escapeHTML(track) + '"' + (reconsultable ? '' : ' disabled title="El acuse síncrono ya fue recibido; DIAN no entregó TrackId para GetStatusZip."') + '>Reconsultar</button></td>' +
           '</tr>';
         }).join("") + '</tbody></table></div>';
+      updateDianProgress();
     }
 
     async function loadDianTrackHistory() {

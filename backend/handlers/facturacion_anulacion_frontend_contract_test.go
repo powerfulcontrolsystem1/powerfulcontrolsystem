@@ -53,6 +53,61 @@ func TestFacturacionDIANProgressDoesNotTreatTransportEnvironmentAsActivation(t *
 	}
 }
 
+func TestFacturacionDIANFrontendUsesSanitizedCredentialPresence(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica_pruebas_dian.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read DIAN page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`function dianFieldConfigured(cfg, field)`,
+		`field + "_configurado"`,
+		`dianFieldConfigured(cfg, "certificado_url")`,
+		`dianFieldConfigured(cfg, "test_set_id")`,
+		`dianConfiguredLabel(cfg, "software_id")`,
+		`const historial = Array.isArray(state.dianTrackHistory)`,
+		`updateDianProgress();`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("DIAN sanitized-state UI missing marker %q", marker)
+		}
+	}
+	if strings.Contains(page, `Mostrar PIN y clave tecnica`) {
+		t.Fatal("DIAN page must not offer to reveal write-only secrets")
+	}
+}
+
+func TestCarritoSurfacesNestedElectronicInvoiceResult(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "carrito_de_compras.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read carrito frontend: %v", err)
+	}
+	page := string(raw)
+	for _, expected := range []string{
+		"documentoVenta.factura_electronica",
+		"Aviso factura electrónica:",
+		"setStationPaymentPersistentMessage(successMsg, Boolean(facturaWarning))",
+	} {
+		if !strings.Contains(page, expected) {
+			t.Fatalf("carrito must surface fiscal result and warning; missing %q", expected)
+		}
+	}
+}
+
+func TestDIANCatalogShowsCreditNoteTotalCancellationAsPartial(t *testing.T) {
+	page := readDIANFrontendContractPage(t)
+	for _, expected := range []string{
+		`doc.disponible_anulacion_total === true`,
+		`partial ? "Parcial"`,
+	} {
+		if !strings.Contains(page, expected) {
+			t.Fatalf("DIAN catalog must distinguish total credit-note cancellation; missing %q", expected)
+		}
+	}
+}
+
 func TestDIANConfigSaveCannotSelfActivateProduction(t *testing.T) {
 	payload := map[string]interface{}{
 		"tipo_ambiente":           "produccion",
@@ -80,6 +135,35 @@ func TestDIANConfigSaveCannotSelfActivateProduction(t *testing.T) {
 	prepareDIANConfigSaveActivation(payload)
 	if _, exists := payload["produccion_local_activa"]; exists {
 		t.Fatal("partial DIAN config save must preserve the existing production activation")
+	}
+}
+
+func TestDIANConfigUpdateDoesNotReapplyCreateDefaults(t *testing.T) {
+	payload := map[string]interface{}{
+		"razon_social": "Edicion RUT revisada",
+	}
+	prepareDIANConfigSaveActivation(payload)
+	prepareDIANConfigPersistenceDefaults(payload, false, "actor@example.test")
+
+	for _, field := range []string{"estado_dian", "tipo_ambiente", "url_dian", "codigo", "usuario_creador", "estado", "resolucion_alerta_dias"} {
+		if value, exists := payload[field]; exists {
+			t.Fatalf("una edicion DIAN no debe inventar %s=%#v ni sobrescribir el valor persistido", field, value)
+		}
+	}
+
+	createPayload := map[string]interface{}{
+		"nit":          "900000000",
+		"razon_social": "Empresa nueva",
+	}
+	prepareDIANConfigPersistenceDefaults(createPayload, true, "actor@example.test")
+	if got := genericStringValue(createPayload["estado_dian"]); got != "pendiente" {
+		t.Fatalf("estado inicial=%q, want pendiente", got)
+	}
+	if got := genericStringValue(createPayload["tipo_ambiente"]); got != "habilitacion" {
+		t.Fatalf("ambiente inicial=%q, want habilitacion", got)
+	}
+	if got := genericStringValue(createPayload["codigo"]); !strings.HasPrefix(got, "DIAN-") {
+		t.Fatalf("codigo inicial=%q, want prefijo DIAN-", got)
 	}
 }
 

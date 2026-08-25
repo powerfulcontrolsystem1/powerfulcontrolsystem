@@ -1,3 +1,43 @@
+2026-08-25: Nota credito DIAN para anulacion total desde fuente aceptada.
+- `anular_factura_nota_credito` deja de depender del UBL sintetico. Exige una
+  factura emitida con CUFE oficial, recupera su artefacto fiscal inmutable y
+  deriva una fuente separada para la nota con lineas, impuestos, partes, numero
+  legal y fecha fiscal originales.
+- El generador produce `CreditNote` multilínea con consecutivo interno,
+  `CustomizationID=20`, `CreditNoteTypeCode=91`, CUDE SHA-384,
+  `DiscrepancyResponse` y `BillingReference`. La fuente queda aislada por
+  `empresa_id` e inmutable por SHA-256.
+- El dispatcher admite esa nota especializada, pero el endpoint generico sigue
+  aceptando solamente factura; nota credito parcial/libre y nota debito no se
+  abren. La factura original solo cambia a anulada tras acuse DIAN aceptado.
+- El catalogo informa `operativo_anulacion_total` sin habilitar el check de
+  emision generica. QA: regresiones Go, preflight preventivo, XSD oficial UBL
+  2.1 CreditNote y firma XMLDSig correctos. Falta despliegue y acuse DIAN real.
+
+2026-08-25: Acuse sincronico DIAN, IVA cero y aviso fiscal visible en venta directa.
+- La prueba real autorizada en Powerful Control System emitio la venta minima
+  `1PCS8` por COP 119 y llego al servicio `SendBillSync`; la respuesta DIAN
+  quedaba enmascarada porque el historial exigia `TrackId`, aunque una respuesta
+  sincronica final puede no traer una clave consultable.
+- Todo resultado de `SendBillSync` sin `TrackId` conserva ahora un identificador
+  de auditoria `sync:<documento>`. Sigue siendo no reconsultable mediante
+  `GetStatusZip`, pero permite persistir el acuse real aceptado, rechazado o
+  pendiente sin sustituirlo por un error local.
+- La fuente fiscal interpreta IVA/`01` al 0 % como exento y lo reporta con
+  porcentaje cero; una linea expresamente excluida omite `TaxTotal`. Otros
+  tributos al 0 % continúan bloqueados para no inferir tratamientos fiscales.
+- El pago publica el resultado de factura electronica tambien en el nivel
+  superior de la respuesta. El carrito acepta el contrato nuevo y el anidado
+  historico, muestra numero interno/legal y hace visible cualquier aviso DIAN en
+  el cierre, en vez de informar solamente el comprobante comercial.
+- El Centro DIAN deriva el estado operativo de la activacion local real y usa
+  exclusivamente banderas saneadas de presencia para secretos; no ofrece
+  revelar PIN ni clave tecnica.
+- QA local: `go test ./... -count=1`, `go vet ./...`, regresiones de fuente
+  fiscal/historial/contrato frontend y sintaxis de scripts inline correctos. La
+  correccion aun requiere despliegue y reintento visual de `1PCS8`; este registro
+  no declara aceptacion DIAN ni cierre de produccion.
+
 2026-08-25: Carga revisable del RUT DIAN por empresa.
 - Se confirmo que el modulo solo tenia un cargador para el Formulario 1876 de
   autorizacion de numeracion. Se agrega un panel distinto para el Formulario
@@ -43199,3 +43239,28 @@ Archivos modificados:
   contrato del pipeline impiden recuperar un tag local mutable.
 - La promocion fallida no ejecuto una emision fiscal ni modifico los
   contenedores productivos.
+
+2026-08-25: fix: cerrar factura DIAN real y nota credito total trazable
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/facturacion_electronica.go
+- backend/db/facturacion_electronica_paises_test.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/facturacion_anulacion_frontend_contract_test.go
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/facturacion_fuente_fiscal.go
+- backend/handlers/facturacion_fuente_fiscal_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/arquitectura/inventario_bootstrap_ensure.md
+- documentos/contexto_general_del_sistema.md
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html

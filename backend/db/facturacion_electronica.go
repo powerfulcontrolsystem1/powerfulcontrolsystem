@@ -66,17 +66,18 @@ type FacturacionEcuadorFuenteNormativa struct {
 
 // FacturacionDianDocumentoCatalogItem describe documentos y eventos del SFE Colombia.
 type FacturacionDianDocumentoCatalogItem struct {
-	Codigo               string `json:"codigo"`
-	Titulo               string `json:"titulo"`
-	Categoria            string `json:"categoria"`
-	Alcance              string `json:"alcance"`
-	ModuloSugerido       string `json:"modulo_sugerido"`
-	EstadoImplementacion string `json:"estado_implementacion"`
-	RequiereNumeracion   bool   `json:"requiere_numeracion"`
-	RequiereFirma        bool   `json:"requiere_firma"`
-	EsEvento             bool   `json:"es_evento"`
-	DisponibleEmision    bool   `json:"disponible_emision"`
-	Observacion          string `json:"observacion"`
+	Codigo                   string `json:"codigo"`
+	Titulo                   string `json:"titulo"`
+	Categoria                string `json:"categoria"`
+	Alcance                  string `json:"alcance"`
+	ModuloSugerido           string `json:"modulo_sugerido"`
+	EstadoImplementacion     string `json:"estado_implementacion"`
+	RequiereNumeracion       bool   `json:"requiere_numeracion"`
+	RequiereFirma            bool   `json:"requiere_firma"`
+	EsEvento                 bool   `json:"es_evento"`
+	DisponibleEmision        bool   `json:"disponible_emision"`
+	DisponibleAnulacionTotal bool   `json:"disponible_anulacion_total,omitempty"`
+	Observacion              string `json:"observacion"`
 }
 
 // FacturacionDianObligacionContableItem lista obligaciones que suelen preparar contadores.
@@ -580,7 +581,7 @@ func DefaultFacturacionDianDocumentosSoportados() []string {
 func ListFacturacionDianDocumentosElectronicos() []FacturacionDianDocumentoCatalogItem {
 	return []FacturacionDianDocumentoCatalogItem{
 		{Codigo: "factura_electronica", Titulo: "Factura electronica de venta", Categoria: "Venta", Alcance: "Venta de bienes o servicios validada previamente por DIAN.", ModuloSugerido: "ventas_simple/carritos", EstadoImplementacion: "operativo", RequiereNumeracion: true, RequiereFirma: true, DisponibleEmision: true},
-		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emision bloqueada: falta una fuente fiscal inmutable de ajuste con lineas y referencia a una factura DIAN aceptada; no se reutiliza el UBL sintetico de habilitacion."},
+		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "operativo_anulacion_total", RequiereFirma: true, DisponibleAnulacionTotal: true, Observacion: "Anulacion total operativa desde una factura DIAN aceptada: deriva lineas, impuestos, CUFE y fecha de su fuente fiscal inmutable. La emision generica o parcial permanece bloqueada."},
 		{Codigo: "nota_debito", Titulo: "Nota debito electronica", Categoria: "Ajustes de venta", Alcance: "Aumenta o corrige valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emision bloqueada: falta una fuente fiscal inmutable de ajuste con lineas y referencia a una factura DIAN aceptada; no se reutiliza el UBL sintetico de habilitacion."},
 		{Codigo: "factura_talonario_contingencia", Titulo: "Reporte de factura de talonario o papel por contingencia", Categoria: "Contingencia", Alcance: "Reporte para validacion posterior cuando hubo inconveniente tecnologico del facturador.", ModuloSugerido: "facturacion_electronica/offline", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere flujo de contingencia, reporte y validación DIAN propios."},
 		{Codigo: "documento_soporte", Titulo: "Documento soporte en adquisiciones a no obligados", Categoria: "Compras", Alcance: "Soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.", ModuloSugerido: "compras", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emision bloqueada: requiere adaptador propio del Anexo Tecnico Documento Soporte 1.0 y datos del vendedor no obligado."},

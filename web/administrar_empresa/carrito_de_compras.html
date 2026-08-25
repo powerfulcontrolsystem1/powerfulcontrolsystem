@@ -7207,7 +7207,9 @@
         await ensureOk(res);
         const payResp = await res.json().catch(function() { return null; });
         const documentoVenta = payResp && payResp.documento_venta && typeof payResp.documento_venta === 'object' ? payResp.documento_venta : null;
-        const facturaElectronica = payResp && payResp.factura_electronica && typeof payResp.factura_electronica === 'object' ? payResp.factura_electronica : null;
+        const facturaElectronicaDirecta = payResp && payResp.factura_electronica && typeof payResp.factura_electronica === 'object' ? payResp.factura_electronica : null;
+        const facturaElectronicaAnidada = documentoVenta && documentoVenta.factura_electronica && typeof documentoVenta.factura_electronica === 'object' ? documentoVenta.factura_electronica : null;
+        const facturaElectronica = facturaElectronicaDirecta || facturaElectronicaAnidada;
         const creditoVenta = payResp && payResp.credito_venta && typeof payResp.credito_venta === 'object' ? payResp.credito_venta : null;
         pay.creditoVenta = creditoVenta;
         pay.propinaResultado = payResp && payResp.propina && typeof payResp.propina === 'object' ? payResp.propina : null;
@@ -7240,7 +7242,11 @@
         if (facturaElectronica && normalize(facturaElectronica.documento_codigo)) {
           successMsg += ' Factura electrónica: ' + normalize(facturaElectronica.documento_codigo) + '.';
         }
-        setStationPaymentPersistentMessage(successMsg, false);
+        const facturaWarning = normalize(facturaElectronica && facturaElectronica.warning);
+        if (facturaWarning) {
+          successMsg += ' Aviso factura electrónica: ' + facturaWarning + '.';
+        }
+        setStationPaymentPersistentMessage(successMsg, Boolean(facturaWarning));
         printTargets = preparePaymentPrintTargets();
         try {
           await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot, printTargets && printTargets.receipt, facturaElectronica || documentoVenta);

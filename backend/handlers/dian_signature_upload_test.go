@@ -443,6 +443,20 @@ func TestDIANSyntheticSyncHistoryIDIsNeverReconsultable(t *testing.T) {
 	}
 }
 
+func TestDIANHistoryTrackIDPersistsEverySynchronousOutcome(t *testing.T) {
+	for _, operation := range []string{"SendBillSync", "sendbillsync"} {
+		if got := dianHistoryTrackID(operation, "FV-123", ""); got != "sync:FV-123" {
+			t.Fatalf("synchronous DIAN response must have audit key, got %q", got)
+		}
+	}
+	if got := dianHistoryTrackID("SendBillSync", "FV-123", "TRACK-REAL"); got != "TRACK-REAL" {
+		t.Fatalf("real TrackId must win, got %q", got)
+	}
+	if got := dianHistoryTrackID("SendTestSetAsync", "FV-123", ""); got != "" {
+		t.Fatalf("async response without TrackId must remain incomplete, got %q", got)
+	}
+}
+
 func TestValidateDIANCredentialRefsDoesNotRequireTokenForOfficialSOAP(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
 	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{})

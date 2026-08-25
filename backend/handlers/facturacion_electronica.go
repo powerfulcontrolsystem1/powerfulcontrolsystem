@@ -1133,7 +1133,8 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if locErr != nil {
 					colombiaLoc = time.FixedZone("COT", -5*60*60)
 				}
-				nowCode := time.Now().In(colombiaLoc).Format("20060102150405")
+				nowLocal := time.Now().In(colombiaLoc)
+				nowCode := nowLocal.Format("20060102150405")
 				notaCodigo := "NC-" + strings.TrimSpace(factura.DocumentoCodigo) + "-" + nowCode
 				usuario := strings.TrimSpace(adminEmailFromRequest(r))
 				observaciones := fmt.Sprintf("%s%s\nAnulacion total de factura %s. Numero legal original: %s. CUFE/CUDE original: %s. Motivo: %s", facturacionNotaCreditoFacturaOrigenMarker, factura.DocumentoCodigo, factura.DocumentoCodigo, factura.NumeroLegal, factura.CodigoValidacion, motivo)
@@ -1149,6 +1150,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					Moneda:               factura.Moneda,
 					PaisCodigo:           factura.PaisCodigo,
 					AmbienteFE:           factura.AmbienteFE,
+					FechaDocumento:       nowLocal.Format("2006-01-02"),
 					EntidadRelacionadaID: factura.EntidadRelacionadaID,
 					UsuarioCreador:       usuario,
 					Observaciones:        observaciones,
@@ -1161,6 +1163,14 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				nota, err = asegurarNumeroLegalNotaCredito(dbEmp, *nota)
 				if err != nil {
 					http.Error(w, "No se pudo asignar el consecutivo interno de la nota credito", http.StatusInternalServerError)
+					return
+				}
+				if _, _, err := ensureFacturacionFuenteFiscalNotaCreditoTotal(r.Context(), dbEmp, *nota, *factura); err != nil {
+					log.Printf("[facturacion_electronica] fuente nota credito empresa_id=%d factura=%s nota=%s error=%v", factura.EmpresaID, factura.DocumentoCodigo, nota.DocumentoCodigo, err)
+					writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{
+						"ok": false, "codigo": "fuente_fiscal_nota_credito_invalida",
+						"error": "No se pudo preparar la fuente fiscal inmutable de la nota credito desde la factura aceptada.",
+					})
 					return
 				}
 				notaOperacion := facturacionBuildOperacionPayloadFromDocumento(*nota)
@@ -1269,7 +1279,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "tipo_documento electronico no soportado", http.StatusBadRequest)
 					return
 				}
-				if !facturacionDocumentoElectronicoDIANComercialSoportado(documentoTipo) {
+				if !facturacionDocumentoElectronicoDIANCreacionGenericaSoportada(documentoTipo) {
 					writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{
 						"ok":             false,
 						"codigo":         "tipo_documento_dian_no_implementado",
@@ -2251,10 +2261,23 @@ func facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipo string) bool {
 }
 
 // facturacionDocumentoElectronicoDIANComercialSoportado is stricter than the
-// habilitation UBL fixture catalog. Only invoices currently have an immutable
-// server-side source with real parties, totals and lines. Notes stay closed
-// until their own adjustment source and accepted-document reference exist.
+// habilitation UBL fixture catalog. Invoices use the immutable paid-cart source;
+// credit notes are admitted only after the total-cancellation flow derives a
+// separate immutable adjustment source from an accepted invoice. Generic or
+// partial notes and every other family remain closed.
 func facturacionDocumentoElectronicoDIANComercialSoportado(tipo string) bool {
+	switch normalizeFacturacionDocumentoElectronicoTipo(tipo) {
+	case "factura_electronica", "nota_credito":
+		return true
+	default:
+		return false
+	}
+}
+
+// The generic mutation endpoint still accepts only invoices. Credit notes are
+// emitted exclusively by the total-cancellation workflow, which resolves an
+// accepted invoice and derives its immutable adjustment source server-side.
+func facturacionDocumentoElectronicoDIANCreacionGenericaSoportada(tipo string) bool {
 	return normalizeFacturacionDocumentoElectronicoTipo(tipo) == "factura_electronica"
 }
 
@@ -2619,7 +2642,7 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 			fechaEmision = storedFecha
 			docPayload["fecha_emision"] = storedFecha
 		}
-		if _, _, sourceErr := prepareDIANUBLDesdeFuenteFiscal(dianCfg, doc.EmpresaID, docPayload, fuenteFiscal); sourceErr != nil {
+		if _, _, sourceErr := generateDIANUBLBase(dianCfg, doc.EmpresaID, docPayload, fuenteFiscal); sourceErr != nil {
 			return facturacionProveedorDispatchResult{Success: false, Error: "fuente fiscal no valida para reintentar XML firmado: " + sourceErr.Error()}
 		}
 	} else if !errors.Is(loadErr, sql.ErrNoRows) {

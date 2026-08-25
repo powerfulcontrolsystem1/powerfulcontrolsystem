@@ -28,17 +28,26 @@ const (
 // build an electronic sale document. It intentionally preserves missing master
 // data as empty values plus blockers; it must never manufacture fiscal data.
 type facturacionFuenteFiscalSnapshot struct {
-	Esquema     string                           `json:"esquema"`
-	Version     int                              `json:"version"`
-	EmpresaID   int64                            `json:"empresa_id"`
-	Documento   facturacionFuenteFiscalDocumento `json:"documento"`
-	Carrito     facturacionFuenteFiscalCarrito   `json:"carrito"`
-	Emisor      facturacionFuenteFiscalParte     `json:"emisor"`
-	Cliente     facturacionFuenteFiscalParte     `json:"cliente"`
-	Lineas      []facturacionFuenteFiscalLinea   `json:"lineas"`
-	Totales     facturacionFuenteFiscalTotales   `json:"totales"`
-	Pago        facturacionFuenteFiscalPago      `json:"pago"`
-	Bloqueantes []string                         `json:"bloqueantes"`
+	Esquema     string                             `json:"esquema"`
+	Version     int                                `json:"version"`
+	EmpresaID   int64                              `json:"empresa_id"`
+	Documento   facturacionFuenteFiscalDocumento   `json:"documento"`
+	Referencia  *facturacionFuenteFiscalReferencia `json:"referencia,omitempty"`
+	Carrito     facturacionFuenteFiscalCarrito     `json:"carrito"`
+	Emisor      facturacionFuenteFiscalParte       `json:"emisor"`
+	Cliente     facturacionFuenteFiscalParte       `json:"cliente"`
+	Lineas      []facturacionFuenteFiscalLinea     `json:"lineas"`
+	Totales     facturacionFuenteFiscalTotales     `json:"totales"`
+	Pago        facturacionFuenteFiscalPago        `json:"pago"`
+	Bloqueantes []string                           `json:"bloqueantes"`
+}
+
+type facturacionFuenteFiscalReferencia struct {
+	TipoDocumento    string `json:"tipo_documento"`
+	DocumentoCodigo  string `json:"documento_codigo"`
+	NumeroLegal      string `json:"numero_legal"`
+	CodigoValidacion string `json:"codigo_validacion"`
+	FechaEmision     string `json:"fecha_emision"`
 }
 
 type facturacionFuenteFiscalDocumento struct {
@@ -233,7 +242,11 @@ func facturacionFuenteFiscalAgregarLineas(snapshot *facturacionFuenteFiscalSnaps
 			Cantidad: item.Cantidad, PrecioUnitario: item.PrecioUnitario, DescuentoPorcentaje: item.DescuentoPorcentaje,
 			ValorDescuento: item.ValorDescuento, BaseGravable: item.BaseGravable, ImpuestoCodigo: strings.TrimSpace(item.ImpuestoCodigo),
 			ImpuestoPorcentaje: item.ImpuestoPorcentaje, ValorImpuesto: item.ValorImpuesto, SubtotalLinea: item.SubtotalLinea,
-			TotalLinea: item.TotalLinea, TratamientoTributario: "",
+			TotalLinea: item.TotalLinea,
+		}
+		_, _, tratamiento, _, tratamientoOK := dianFuenteFiscalTaxTreatment(linea.ImpuestoCodigo, linea.ImpuestoPorcentaje)
+		if tratamientoOK {
+			linea.TratamientoTributario = tratamiento
 		}
 		snapshot.Lineas = append(snapshot.Lineas, linea)
 		snapshot.Totales.BrutoLineas += item.Cantidad * item.PrecioUnitario
@@ -268,8 +281,11 @@ func facturacionFuenteFiscalAgregarLineas(snapshot *facturacionFuenteFiscalSnaps
 		if linea.ImpuestoPorcentaje > 0 && linea.ImpuestoCodigo == "" {
 			snapshot.Bloqueantes = append(snapshot.Bloqueantes, fmt.Sprintf("lineas.%d.impuesto_codigo_faltante", linea.Numero))
 		}
-		if linea.ImpuestoPorcentaje == 0 {
+		if !tratamientoOK {
 			snapshot.Bloqueantes = append(snapshot.Bloqueantes, fmt.Sprintf("lineas.%d.tratamiento_tributario_faltante", linea.Numero))
+		}
+		if (tratamiento == "exento" || tratamiento == "excluido") && !facturacionFuenteFiscalClose(linea.ValorImpuesto, 0) {
+			snapshot.Bloqueantes = append(snapshot.Bloqueantes, fmt.Sprintf("lineas.%d.impuesto_no_conciliado", linea.Numero))
 		}
 	}
 	return nil
@@ -432,8 +448,16 @@ func marshalFacturacionFuenteFiscal(snapshot *facturacionFuenteFiscalSnapshot) (
 	if snapshot == nil || snapshot.EmpresaID <= 0 || snapshot.Esquema != facturacionFuenteFiscalEsquema || snapshot.Version != facturacionFuenteFiscalVersion {
 		return nil, fmt.Errorf("fuente fiscal invalida")
 	}
-	if snapshot.Documento.TipoOrigen != "comprobante_pago" || strings.TrimSpace(snapshot.Documento.CodigoOrigen) == "" {
+	tipoOrigen := normalizeFacturacionDocumentoElectronicoTipo(snapshot.Documento.TipoOrigen)
+	if strings.TrimSpace(snapshot.Documento.CodigoOrigen) == "" || (tipoOrigen != "comprobante_pago" && tipoOrigen != "nota_credito") {
 		return nil, fmt.Errorf("origen de fuente fiscal invalido")
+	}
+	if tipoOrigen == "nota_credito" {
+		if snapshot.Referencia == nil || normalizeFacturacionDocumentoElectronicoTipo(snapshot.Referencia.TipoDocumento) != "factura_electronica" ||
+			strings.TrimSpace(snapshot.Referencia.NumeroLegal) == "" || !facturacionCodigoSHA384Valido(snapshot.Referencia.CodigoValidacion) ||
+			strings.TrimSpace(snapshot.Referencia.FechaEmision) == "" {
+			return nil, fmt.Errorf("referencia fiscal de nota credito invalida")
+		}
 	}
 	if !facturacionFuenteFiscalNumerosValidos(snapshot.Documento.MontoTotal, snapshot.Totales.TotalDocumentoOrigen) {
 		return nil, fmt.Errorf("fuente fiscal contiene totales no finitos")
@@ -527,6 +551,8 @@ func loadFacturacionFuenteFiscalParaDocumento(ctx context.Context, dbEmp *sql.DB
 			return nil, fmt.Errorf("fuente fiscal no corresponde a la factura solicitada")
 		}
 		return snapshot, nil
+	case "nota_credito":
+		return loadFacturacionFuenteFiscalSnapshot(ctx, dbEmp, doc.EmpresaID, tipo, codigo)
 	default:
 		return nil, fmt.Errorf("tipo documental sin fuente fiscal de venta")
 	}
@@ -564,6 +590,9 @@ type dianFuenteFiscalUBLContext struct {
 // parties. The older payload generator remains limited to explicit DIAN
 // habilitation fixtures and must not be used by the commercial dispatcher.
 func generateDIANUBLDesdeFuenteFiscal(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}, snapshot *facturacionFuenteFiscalSnapshot) (map[string]interface{}, int, error) {
+	if normalizeFacturacionDocumentoElectronicoTipo(genericStringValue(payload["documento_tipo"])) == "nota_credito" {
+		return generateDIANUBLNotaCreditoDesdeFuenteFiscal(cfg, empresaID, payload, snapshot)
+	}
 	prepared, status, err := prepareDIANUBLDesdeFuenteFiscal(cfg, empresaID, payload, snapshot)
 	if err != nil {
 		return nil, status, err
@@ -652,6 +681,118 @@ func generateDIANUBLDesdeFuenteFiscal(cfg map[string]interface{}, empresaID int6
 		"ok": true, "empresa_id": empresaID, "documento_codigo": documentoCodigo, "documento_tipo": documentoTipo,
 		"ubl_version": "UBL 2.1", "profile_execution_id": profileExecutionID, "customization_id": "01",
 		"uuid_scheme": "CUFE-SHA384", "uuid": strings.ToLower(cuFE), "software_security_code": "[calculado]",
+		"xml_ubl_base": xmlPayload, "estado_preparacion": "pre_envio_validable",
+		"fuente_fiscal": map[string]interface{}{"tipo": snapshot.Documento.TipoOrigen, "codigo": snapshot.Documento.CodigoOrigen, "lineas": len(snapshot.Lineas)},
+	}, http.StatusOK, nil
+}
+
+func validateDIANFuenteFiscalNotaCredito(empresaID int64, payload map[string]interface{}, snapshot *facturacionFuenteFiscalSnapshot) (string, error) {
+	if snapshot == nil || snapshot.EmpresaID != empresaID || snapshot.Esquema != facturacionFuenteFiscalEsquema || snapshot.Version != facturacionFuenteFiscalVersion {
+		return "", fmt.Errorf("fuente fiscal inmutable de nota credito invalida o de otra empresa")
+	}
+	if len(snapshot.Bloqueantes) > 0 || snapshot.Referencia == nil || normalizeFacturacionDocumentoElectronicoTipo(snapshot.Documento.TipoOrigen) != "nota_credito" ||
+		normalizeFacturacionDocumentoElectronicoTipo(snapshot.Documento.TipoDestino) != "nota_credito" || normalizeFacturacionDocumentoElectronicoTipo(snapshot.Referencia.TipoDocumento) != "factura_electronica" {
+		return "", fmt.Errorf("fuente fiscal de nota credito o referencia de factura incompleta")
+	}
+	if !strings.EqualFold(strings.TrimSpace(snapshot.Documento.CodigoDestino), strings.TrimSpace(genericStringValue(payload["documento_codigo"]))) {
+		return "", fmt.Errorf("fuente fiscal no corresponde a la nota credito solicitada")
+	}
+	numeroLegal := strings.ReplaceAll(strings.TrimSpace(genericStringValue(payload["numero_legal"])), " ", "")
+	if numeroLegal == "" || len(snapshot.Lineas) == 0 || snapshot.Totales.TotalDocumentoOrigen <= 0 {
+		return "", fmt.Errorf("numero legal, lineas y total son obligatorios para nota credito")
+	}
+	if !facturacionCodigoSHA384Valido(snapshot.Referencia.CodigoValidacion) || strings.TrimSpace(snapshot.Referencia.NumeroLegal) == "" || strings.TrimSpace(snapshot.Referencia.FechaEmision) == "" {
+		return "", fmt.Errorf("CUFE, numero o fecha de factura original invalidos")
+	}
+	if !strings.EqualFold(snapshot.Emisor.PaisCodigo, "CO") || !strings.EqualFold(snapshot.Cliente.PaisCodigo, "CO") ||
+		!facturacionFuenteFiscalDANEDepartamentoValido(snapshot.Emisor.DepartamentoCodigoDANE) ||
+		!facturacionFuenteFiscalDANEMunicipioValido(snapshot.Emisor.MunicipioCodigoDANE, snapshot.Emisor.DepartamentoCodigoDANE) ||
+		!facturacionFuenteFiscalDANEDepartamentoValido(snapshot.Cliente.DepartamentoCodigoDANE) ||
+		!facturacionFuenteFiscalDANEMunicipioValido(snapshot.Cliente.MunicipioCodigoDANE, snapshot.Cliente.DepartamentoCodigoDANE) {
+		return "", fmt.Errorf("fuente fiscal de nota credito con pais o codigos DANE invalidos")
+	}
+	return numeroLegal, nil
+}
+
+func generateDIANUBLNotaCreditoDesdeFuenteFiscal(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}, snapshot *facturacionFuenteFiscalSnapshot) (map[string]interface{}, int, error) {
+	numeroLegal, err := validateDIANFuenteFiscalNotaCredito(empresaID, payload, snapshot)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	emisorNIT := dianOnlyDigits(snapshot.Emisor.NumeroDocumento)
+	if cfgNIT := dianOnlyDigits(genericStringValue(cfg["nit"])); cfgNIT == "" || cfgNIT != emisorNIT {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("NIT DIAN no coincide con el emisor de la nota credito")
+	}
+	softwareID, softwarePIN, _, credErr := resolveDIANSoftwareCredentials(cfg, nil, empresaID)
+	if credErr != nil || strings.TrimSpace(softwareID) == "" || strings.TrimSpace(softwarePIN) == "" {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("credenciales de software DIAN no disponibles")
+	}
+	fechaEmision := strings.TrimSpace(genericStringValue(payload["fecha_emision"]))
+	if fechaEmision == "" {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("fecha de emision firmada es obligatoria")
+	}
+	issueDate, issueTime := dianIssuepcs_ts(fechaEmision)
+	moneda := strings.ToUpper(strings.TrimSpace(snapshot.Documento.Moneda))
+	if moneda == "" {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("moneda de nota credito obligatoria")
+	}
+	profileExecutionID := "2"
+	if chooseDIANAmbiente(cfg) == "produccion" {
+		profileExecutionID = "1"
+	}
+	taxGroups, taxByCode, err := dianFuenteFiscalTaxGroups(snapshot.Lineas)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	lineExtension := facturacionFuenteFiscalRound(snapshot.Totales.BaseGravableLineas)
+	total := facturacionFuenteFiscalRound(snapshot.Totales.TotalDocumentoOrigen)
+	if !facturacionFuenteFiscalClose(lineExtension+snapshot.Totales.ImpuestoLineas, total) {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("base mas impuestos no concilia con el total de la nota credito")
+	}
+	clienteDocumento := dianNormalizeCustomerDocumentNumber(snapshot.Cliente.NumeroDocumento, snapshot.Cliente.TipoDocumento)
+	cude := buildDIANCUFEFacturaVenta(numeroLegal, issueDate, issueTime,
+		fmt.Sprintf("%.2f", lineExtension), fmt.Sprintf("%.2f", taxByCode["01"]), fmt.Sprintf("%.2f", taxByCode["04"]),
+		fmt.Sprintf("%.2f", taxByCode["03"]), fmt.Sprintf("%.2f", total), emisorNIT, clienteDocumento, softwarePIN, profileExecutionID)
+	softwareSecurityCode := buildDIANSHA384Hex(softwareID, softwarePIN, numeroLegal)
+	qrURL := "https://catalogo-vpfe-hab.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(cude)
+	if profileExecutionID == "1" {
+		qrURL = "https://catalogo-vpfe.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(cude)
+	}
+	dianExtensions := fmt.Sprintf(`<ext:UBLExtensions><ext:UBLExtension><ext:ExtensionContent><sts:DianExtensions><sts:InvoiceSource><cbc:IdentificationCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listSchemeURI="urn:oasis:names:specification:ubl:codelist:gc:CountryIdentificationCode-2.1">CO</cbc:IdentificationCode></sts:InvoiceSource><sts:SoftwareProvider><sts:ProviderID schemeAgencyID="195" schemeAgencyName="%s" schemeID="%s" schemeName="31">%s</sts:ProviderID><sts:SoftwareID schemeAgencyID="195" schemeAgencyName="%s">%s</sts:SoftwareID></sts:SoftwareProvider><sts:SoftwareSecurityCode schemeAgencyID="195" schemeAgencyName="%s">%s</sts:SoftwareSecurityCode><sts:AuthorizationProvider><sts:AuthorizationProviderID schemeAgencyID="195" schemeAgencyName="%s" schemeID="4" schemeName="31">800197268</sts:AuthorizationProviderID></sts:AuthorizationProvider><sts:QRCode>NroNota=%s&#10;NitFacturador=%s&#10;NitAdquiriente=%s&#10;FechaNota=%s&#10;ValorTotalNota=%s&#10;CUDE=%s&#10;URL=%s</sts:QRCode></sts:DianExtensions></ext:ExtensionContent></ext:UBLExtension><ext:UBLExtension><ext:ExtensionContent></ext:ExtensionContent></ext:UBLExtension></ext:UBLExtensions>`,
+		escapeXML(dianAgencyName), escapeXML(dianCompanyIDSchemeID(emisorNIT, snapshot.Emisor.DigitoVerificacion)), escapeXML(emisorNIT),
+		escapeXML(dianAgencyName), escapeXML(softwareID), escapeXML(dianAgencyName), escapeXML(softwareSecurityCode), escapeXML(dianAgencyName),
+		escapeXML(numeroLegal), escapeXML(emisorNIT), escapeXML(clienteDocumento), escapeXML(issueDate), escapeXML(fmt.Sprintf("%.2f", total)), escapeXML(strings.ToLower(cude)), escapeXML(qrURL))
+	header := fmt.Sprintf(`<cbc:UBLVersionID>UBL 2.1</cbc:UBLVersionID><cbc:CustomizationID>20</cbc:CustomizationID><cbc:ProfileID>%s</cbc:ProfileID><cbc:ProfileExecutionID>%s</cbc:ProfileExecutionID><cbc:ID>%s</cbc:ID><cbc:UUID schemeID="%s" schemeName="CUDE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate><cbc:IssueTime>%s</cbc:IssueTime><cbc:CreditNoteTypeCode>91</cbc:CreditNoteTypeCode><cbc:Note>Anulacion total de factura electronica</cbc:Note><cbc:DocumentCurrencyCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listID="ISO 4217 Alpha">%s</cbc:DocumentCurrencyCode><cbc:LineCountNumeric>%d</cbc:LineCountNumeric>`,
+		escapeXML(dianDocumentProfileID("CreditNote")), escapeXML(profileExecutionID), escapeXML(numeroLegal), escapeXML(profileExecutionID), escapeXML(strings.ToLower(cude)), escapeXML(issueDate), escapeXML(issueTime), escapeXML(moneda), len(snapshot.Lineas))
+	correctionCode := dianFirstNonBlank(genericStringValue(payload["codigo_correccion"]), "2")
+	correctionDescription := dianFirstNonBlank(genericStringValue(payload["descripcion_correccion"]), "Anulacion de factura electronica")
+	referenceDate, _ := dianIssuepcs_ts(snapshot.Referencia.FechaEmision)
+	references := fmt.Sprintf(`<cac:DiscrepancyResponse><cbc:ReferenceID>%s</cbc:ReferenceID><cbc:ResponseCode>%s</cbc:ResponseCode><cbc:Description>%s</cbc:Description></cac:DiscrepancyResponse><cac:BillingReference><cac:InvoiceDocumentReference><cbc:ID>%s</cbc:ID><cbc:UUID schemeName="CUFE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate></cac:InvoiceDocumentReference></cac:BillingReference>`,
+		escapeXML(snapshot.Referencia.NumeroLegal), escapeXML(correctionCode), escapeXML(correctionDescription), escapeXML(snapshot.Referencia.NumeroLegal), escapeXML(strings.ToLower(snapshot.Referencia.CodigoValidacion)), escapeXML(referenceDate))
+	prefix := dianNotePrefix(numeroLegal, "NC")
+	supplierParty, err := dianFuenteFiscalSupplierPartyXML(snapshot.Emisor, prefix)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	customerParty, err := dianFuenteFiscalCustomerPartyXML(snapshot.Cliente)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	paymentMeans, err := dianFuenteFiscalPaymentMeansXML(snapshot.Pago, issueDate)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	linesXML, err := dianFuenteFiscalAdjustmentLinesXML(snapshot.Lineas, moneda, "CreditNoteLine", "CreditedQuantity")
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	xmlPayload := `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` +
+		`<CreditNote xmlns="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2" xmlns:sts="dian:gov:co:facturaelectronica:Structures-2-1" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2 http://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-CreditNote-2.1.xsd">` +
+		dianExtensions + header + references + supplierParty + customerParty + paymentMeans + dianFuenteFiscalTaxTotalsXML(taxGroups, moneda) + dianFuenteFiscalMonetaryTotalXML(snapshot, moneda) + linesXML + `</CreditNote>`
+	return map[string]interface{}{
+		"ok": true, "empresa_id": empresaID, "documento_codigo": numeroLegal, "documento_tipo": "nota_credito",
+		"ubl_version": "UBL 2.1", "profile_execution_id": profileExecutionID, "customization_id": "20",
+		"uuid_scheme": "CUDE-SHA384", "uuid": strings.ToLower(cude), "software_security_code": "[calculado]",
 		"xml_ubl_base": xmlPayload, "estado_preparacion": "pre_envio_validable",
 		"fuente_fiscal": map[string]interface{}{"tipo": snapshot.Documento.TipoOrigen, "codigo": snapshot.Documento.CodigoOrigen, "lineas": len(snapshot.Lineas)},
 	}, http.StatusOK, nil
@@ -754,13 +895,51 @@ func dianFuenteFiscalTaxCode(raw string) (string, string, bool) {
 	}
 }
 
+// dianFuenteFiscalTaxTreatment interprets the existing item tax code without
+// manufacturing a tax rate. DIAN reports exempt IVA items with Percent=0 and
+// omits TaxTotal for excluded items. A zero IVA rate is therefore explicit
+// enough to mean exempt, while excluded items must use an explicit code.
+func dianFuenteFiscalTaxTreatment(raw string, percentage float64) (code, name, treatment string, reportTax bool, ok bool) {
+	normalized := strings.ToUpper(strings.TrimSpace(raw))
+	if percentage < 0 {
+		return "", "", "", false, false
+	}
+	switch normalized {
+	case "EXCLUIDO", "IVA_EXCLUIDO":
+		if !facturacionFuenteFiscalClose(percentage, 0) {
+			return "", "", "", false, false
+		}
+		return "", "", "excluido", false, true
+	case "EXENTO", "IVA_EXENTO":
+		if !facturacionFuenteFiscalClose(percentage, 0) {
+			return "", "", "", false, false
+		}
+		return "01", "IVA", "exento", true, true
+	}
+
+	code, name, ok = dianFuenteFiscalTaxCode(normalized)
+	if !ok {
+		return "", "", "", false, false
+	}
+	if facturacionFuenteFiscalClose(percentage, 0) {
+		if code != "01" {
+			return "", "", "", false, false
+		}
+		return code, name, "exento", true, true
+	}
+	return code, name, "gravado", true, true
+}
+
 func dianFuenteFiscalTaxGroups(lines []facturacionFuenteFiscalLinea) ([]dianFuenteFiscalTaxGroup, map[string]float64, error) {
 	groups := map[string]*dianFuenteFiscalTaxGroup{}
 	byCode := map[string]float64{"01": 0, "04": 0, "03": 0}
 	for _, line := range lines {
-		code, name, ok := dianFuenteFiscalTaxCode(line.ImpuestoCodigo)
-		if !ok || line.ImpuestoPorcentaje <= 0 {
+		code, name, _, reportTax, ok := dianFuenteFiscalTaxTreatment(line.ImpuestoCodigo, line.ImpuestoPorcentaje)
+		if !ok {
 			return nil, nil, fmt.Errorf("linea %d sin codigo y porcentaje tributario DIAN soportado", line.Numero)
+		}
+		if !reportTax {
+			continue
 		}
 		key := fmt.Sprintf("%s|%.6f", code, line.ImpuestoPorcentaje)
 		group := groups[key]
@@ -876,27 +1055,40 @@ func dianFuenteFiscalUnitCode(raw string) (string, bool) {
 }
 
 func dianFuenteFiscalLinesXML(lines []facturacionFuenteFiscalLinea, currency string) (string, error) {
+	return dianFuenteFiscalAdjustmentLinesXML(lines, currency, "InvoiceLine", "InvoicedQuantity")
+}
+
+func dianFuenteFiscalAdjustmentLinesXML(lines []facturacionFuenteFiscalLinea, currency, lineName, quantityName string) (string, error) {
+	if lineName != "InvoiceLine" && lineName != "CreditNoteLine" && lineName != "DebitNoteLine" {
+		return "", fmt.Errorf("tipo de linea UBL no soportado")
+	}
+	if quantityName != "InvoicedQuantity" && quantityName != "CreditedQuantity" && quantityName != "DebitedQuantity" {
+		return "", fmt.Errorf("tipo de cantidad UBL no soportado")
+	}
 	var out strings.Builder
 	for _, line := range lines {
 		unit, ok := dianFuenteFiscalUnitCode(line.UnidadMedida)
 		if !ok {
 			return "", fmt.Errorf("linea %d con unidad de medida DIAN no soportada", line.Numero)
 		}
-		code, taxName, ok := dianFuenteFiscalTaxCode(line.ImpuestoCodigo)
-		if !ok || line.ImpuestoPorcentaje <= 0 {
+		code, taxName, _, reportTax, ok := dianFuenteFiscalTaxTreatment(line.ImpuestoCodigo, line.ImpuestoPorcentaje)
+		if !ok {
 			return "", fmt.Errorf("linea %d con tratamiento tributario incompleto", line.Numero)
 		}
 		allowance := ""
 		if line.ValorDescuento > 0 {
 			allowance = fmt.Sprintf(`<cac:AllowanceCharge><cbc:ID>1</cbc:ID><cbc:ChargeIndicator>false</cbc:ChargeIndicator><cbc:AllowanceChargeReason>Descuento comercial</cbc:AllowanceChargeReason><cbc:MultiplierFactorNumeric>%.6f</cbc:MultiplierFactorNumeric><cbc:Amount currencyID="%s">%.2f</cbc:Amount><cbc:BaseAmount currencyID="%s">%.2f</cbc:BaseAmount></cac:AllowanceCharge>`, line.DescuentoPorcentaje, escapeXML(currency), line.ValorDescuento, escapeXML(currency), facturacionFuenteFiscalRound(line.Cantidad*line.PrecioUnitario))
 		}
-		tax := fmt.Sprintf(`<cac:TaxTotal><cbc:TaxAmount currencyID="%s">%.2f</cbc:TaxAmount><cac:TaxSubtotal><cbc:TaxableAmount currencyID="%s">%.2f</cbc:TaxableAmount><cbc:TaxAmount currencyID="%s">%.2f</cbc:TaxAmount><cac:TaxCategory><cbc:Percent>%.2f</cbc:Percent><cac:TaxScheme><cbc:ID>%s</cbc:ID><cbc:Name>%s</cbc:Name></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal></cac:TaxTotal>`, escapeXML(currency), line.ValorImpuesto, escapeXML(currency), line.BaseGravable, escapeXML(currency), line.ValorImpuesto, line.ImpuestoPorcentaje, escapeXML(code), escapeXML(taxName))
+		tax := ""
+		if reportTax {
+			tax = fmt.Sprintf(`<cac:TaxTotal><cbc:TaxAmount currencyID="%s">%.2f</cbc:TaxAmount><cac:TaxSubtotal><cbc:TaxableAmount currencyID="%s">%.2f</cbc:TaxableAmount><cbc:TaxAmount currencyID="%s">%.2f</cbc:TaxAmount><cac:TaxCategory><cbc:Percent>%.2f</cbc:Percent><cac:TaxScheme><cbc:ID>%s</cbc:ID><cbc:Name>%s</cbc:Name></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal></cac:TaxTotal>`, escapeXML(currency), line.ValorImpuesto, escapeXML(currency), line.BaseGravable, escapeXML(currency), line.ValorImpuesto, line.ImpuestoPorcentaje, escapeXML(code), escapeXML(taxName))
+		}
 		itemID := strings.TrimSpace(line.CodigoItem)
 		if itemID == "" {
 			return "", fmt.Errorf("linea %d sin codigo de producto o servicio", line.Numero)
 		}
-		out.WriteString(fmt.Sprintf(`<cac:InvoiceLine><cbc:ID>%d</cbc:ID><cbc:InvoicedQuantity unitCode="%s">%.6f</cbc:InvoicedQuantity><cbc:LineExtensionAmount currencyID="%s">%.2f</cbc:LineExtensionAmount><cbc:FreeOfChargeIndicator>false</cbc:FreeOfChargeIndicator>%s%s<cac:Item><cbc:Description>%s</cbc:Description><cac:SellersItemIdentification><cbc:ID>%s</cbc:ID></cac:SellersItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%.2f</cbc:PriceAmount><cbc:BaseQuantity unitCode="%s">1.000000</cbc:BaseQuantity></cac:Price></cac:InvoiceLine>`,
-			line.Numero, escapeXML(unit), line.Cantidad, escapeXML(currency), line.BaseGravable, allowance, tax, escapeXML(line.Descripcion), escapeXML(itemID), escapeXML(currency), line.PrecioUnitario, escapeXML(unit)))
+		out.WriteString(fmt.Sprintf(`<cac:%s><cbc:ID>%d</cbc:ID><cbc:%s unitCode="%s">%.6f</cbc:%s><cbc:LineExtensionAmount currencyID="%s">%.2f</cbc:LineExtensionAmount><cbc:FreeOfChargeIndicator>false</cbc:FreeOfChargeIndicator>%s%s<cac:Item><cbc:Description>%s</cbc:Description><cac:SellersItemIdentification><cbc:ID>%s</cbc:ID></cac:SellersItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%.2f</cbc:PriceAmount><cbc:BaseQuantity unitCode="%s">1.000000</cbc:BaseQuantity></cac:Price></cac:%s>`,
+			lineName, line.Numero, quantityName, escapeXML(unit), line.Cantidad, quantityName, escapeXML(currency), line.BaseGravable, allowance, tax, escapeXML(line.Descripcion), escapeXML(itemID), escapeXML(currency), line.PrecioUnitario, escapeXML(unit), lineName))
 	}
 	return out.String(), nil
 }
@@ -917,6 +1109,75 @@ func dianFuenteFiscalMonetaryTotalXML(snapshot *facturacionFuenteFiscalSnapshot,
 	// se repiten aqui como descuento de cabecera porque se restarian dos veces.
 	return fmt.Sprintf(`<cac:LegalMonetaryTotal><cbc:LineExtensionAmount currencyID="%s">%.2f</cbc:LineExtensionAmount><cbc:TaxExclusiveAmount currencyID="%s">%.2f</cbc:TaxExclusiveAmount><cbc:TaxInclusiveAmount currencyID="%s">%.2f</cbc:TaxInclusiveAmount><cbc:AllowanceTotalAmount currencyID="%s">0.00</cbc:AllowanceTotalAmount><cbc:ChargeTotalAmount currencyID="%s">0.00</cbc:ChargeTotalAmount><cbc:PrepaidAmount currencyID="%s">0.00</cbc:PrepaidAmount><cbc:PayableAmount currencyID="%s">%.2f</cbc:PayableAmount></cac:LegalMonetaryTotal>`,
 		escapeXML(currency), lineExtension, escapeXML(currency), lineExtension, escapeXML(currency), taxInclusive, escapeXML(currency), escapeXML(currency), escapeXML(currency), escapeXML(currency), snapshot.Totales.TotalDocumentoOrigen)
+}
+
+func buildFacturacionFuenteFiscalNotaCreditoTotal(original *facturacionFuenteFiscalSnapshot, nota, factura dbpkg.EmpresaDocumentoFacturacion, fechaReferencia string) (*facturacionFuenteFiscalSnapshot, error) {
+	if original == nil || original.EmpresaID <= 0 || original.EmpresaID != nota.EmpresaID || original.EmpresaID != factura.EmpresaID {
+		return nil, fmt.Errorf("fuente fiscal y documentos de nota credito no pertenecen a la misma empresa")
+	}
+	if normalizeFacturacionDocumentoElectronicoTipo(nota.TipoDocumento) != "nota_credito" || normalizeFacturacionDocumentoElectronicoTipo(factura.TipoDocumento) != "factura_electronica" {
+		return nil, fmt.Errorf("tipos documentales invalidos para nota credito")
+	}
+	if !strings.EqualFold(strings.TrimSpace(original.Documento.CodigoDestino), strings.TrimSpace(factura.DocumentoCodigo)) ||
+		strings.TrimSpace(nota.DocumentoCodigo) == "" || strings.TrimSpace(nota.NumeroLegal) == "" || strings.TrimSpace(factura.NumeroLegal) == "" ||
+		!facturacionCodigoSHA384Valido(factura.CodigoValidacion) || strings.TrimSpace(fechaReferencia) == "" {
+		return nil, fmt.Errorf("factura aceptada o referencia fiscal incompleta para nota credito")
+	}
+	if !facturacionFuenteFiscalClose(nota.MontoTotal, original.Totales.TotalDocumentoOrigen) || !facturacionFuenteFiscalClose(factura.MontoTotal, original.Totales.TotalDocumentoOrigen) {
+		return nil, fmt.Errorf("total de nota credito no coincide con la fuente fiscal de la factura")
+	}
+
+	snapshot := *original
+	snapshot.Lineas = append([]facturacionFuenteFiscalLinea(nil), original.Lineas...)
+	snapshot.Bloqueantes = append([]string(nil), original.Bloqueantes...)
+	snapshot.Documento = facturacionFuenteFiscalDocumento{
+		TipoOrigen: "nota_credito", CodigoOrigen: strings.TrimSpace(nota.DocumentoCodigo),
+		TipoDestino: "nota_credito", CodigoDestino: strings.TrimSpace(nota.DocumentoCodigo),
+		Fecha: strings.TrimSpace(nota.FechaDocumento), Moneda: strings.ToUpper(strings.TrimSpace(nota.Moneda)),
+		MontoTotal: nota.MontoTotal,
+	}
+	if snapshot.Documento.Fecha == "" {
+		snapshot.Documento.Fecha = facturacionNowLocal()
+	}
+	if snapshot.Documento.Moneda == "" {
+		snapshot.Documento.Moneda = strings.ToUpper(strings.TrimSpace(original.Documento.Moneda))
+	}
+	snapshot.Referencia = &facturacionFuenteFiscalReferencia{
+		TipoDocumento: "factura_electronica", DocumentoCodigo: strings.TrimSpace(factura.DocumentoCodigo),
+		NumeroLegal: strings.TrimSpace(factura.NumeroLegal), CodigoValidacion: strings.ToLower(strings.TrimSpace(factura.CodigoValidacion)),
+		FechaEmision: strings.TrimSpace(fechaReferencia),
+	}
+	return &snapshot, nil
+}
+
+func ensureFacturacionFuenteFiscalNotaCreditoTotal(ctx context.Context, dbEmp *sql.DB, nota, factura dbpkg.EmpresaDocumentoFacturacion) (*facturacionFuenteFiscalSnapshot, *dbpkg.EmpresaFacturacionArtefacto, error) {
+	if existing, err := loadFacturacionFuenteFiscalSnapshot(ctx, dbEmp, nota.EmpresaID, "nota_credito", nota.DocumentoCodigo); err == nil {
+		artifact, artifactErr := dbpkg.GetEmpresaFacturacionArtefactoByTypeContext(ctx, dbEmp, nota.EmpresaID, "nota_credito", nota.DocumentoCodigo, dbpkg.EmpresaFacturacionArtefactoTipoFuenteFiscalJSON)
+		return existing, artifact, artifactErr
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return nil, nil, err
+	}
+	original, err := loadFacturacionFuenteFiscalParaDocumento(ctx, dbEmp, factura)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cargar fuente fiscal de factura original: %w", err)
+	}
+	fechaReferencia := strings.TrimSpace(factura.FechaDocumento)
+	if xmlFirmado, xmlErr := loadFacturacionFiscalArtifact(ctx, dbEmp, factura, "xml_firmado"); xmlErr == nil {
+		if fechaXML := facturacionDIANFechaEmisionDesdeXML(string(xmlFirmado)); len(fechaXML) >= 10 {
+			fechaReferencia = fechaXML[:10]
+		}
+	} else if !errors.Is(xmlErr, sql.ErrNoRows) {
+		return nil, nil, fmt.Errorf("leer XML de factura original: %w", xmlErr)
+	}
+	snapshot, err := buildFacturacionFuenteFiscalNotaCreditoTotal(original, nota, factura, fechaReferencia)
+	if err != nil {
+		return nil, nil, err
+	}
+	artifact, err := saveFacturacionFuenteFiscalSnapshot(ctx, dbEmp, nota, snapshot)
+	if err != nil {
+		return nil, nil, err
+	}
+	return snapshot, artifact, nil
 }
 
 func ensureFacturacionFuenteFiscalDesdeCarrito(ctx context.Context, dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, cfg *dbpkg.EmpresaConfiguracionAvanzada, doc dbpkg.EmpresaDocumentoFacturacion) (*facturacionFuenteFiscalSnapshot, *dbpkg.EmpresaFacturacionArtefacto, error) {

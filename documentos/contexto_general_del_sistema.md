@@ -1,6 +1,23 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-08-24.
+Estado: vigente. Ultima actualizacion: 2026-08-25.
+
+## Actualizacion 2026-08-25 - nota credito de anulacion total trazable
+
+- `nota_credito` dispone de una unica ruta comercial: anular totalmente una
+  factura electronica DIAN aceptada. El servidor deriva otra
+  `fuente_fiscal_json` inmutable con las mismas lineas, impuestos y partes, mas
+  numero legal, CUFE y fecha fiscal de la factura original.
+- El UBL `CreditNote` usa consecutivo interno de nota, `CustomizationID=20`,
+  `CreditNoteTypeCode=91`, CUDE SHA-384, `DiscrepancyResponse` y
+  `BillingReference`. La factura solo cambia a anulada despues del acuse DIAN
+  aceptado.
+- La emision generica/parcial de nota credito y toda nota debito continúan
+  bloqueadas. Documento soporte, nomina, equivalentes, contingencia y RADIAN
+  tampoco cambian de estado en esta actualizacion.
+- QA local: fuente derivada multilínea, preflight, XSD UBL 2.1 de CreditNote y
+  firma XMLDSig correctos. Falta despliegue y prueba DIAN real antes de declarar
+  la nota operativa en produccion.
 
 ## Actualizacion 2026-08-24 - candidato DIAN desde fuente fiscal real
 

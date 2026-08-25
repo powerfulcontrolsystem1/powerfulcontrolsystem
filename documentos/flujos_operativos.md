@@ -1458,6 +1458,9 @@ afecte dinero, documentos, licencias o seguridad.
 7. Un acuse aceptado deja `estado_envio=aceptado`. `Regla 90` por documento ya
    procesado queda como pendiente de consulta del acuse original; no equivale por
    si sola a aceptacion.
+   Una respuesta sincronica `SendBillSync` sin `TrackId` usa solamente la
+   referencia interna `sync:<documento>` para persistir historial. Esa referencia
+   no es un TrackId DIAN y nunca se consulta con `GetStatusZip`.
 8. Un rechazo deja la factura en cola/reintentos y crea alerta en el buzon del
    administrador. El reintento reutiliza el XML solo si la fuente fiscal
    inmutable del mismo documento sigue disponible y valida.
@@ -1469,6 +1472,25 @@ afecte dinero, documentos, licencias o seguridad.
     como observacion y se corrigen datos maestros si aplica.
 11. Antes de reenviar un mismo prefijo/folio, consultar historial DIAN, cola de
     reintentos, CUFE/TrackId o portal para evitar duplicados y `Regla 90`.
+12. Al pagar, la respuesta y la interfaz deben mostrar por separado el
+    comprobante comercial y la factura electronica. Una advertencia/rechazo DIAN
+    no se oculta detras del mensaje de pago exitoso.
+
+### Anulacion total mediante nota credito DIAN
+
+1. Seleccionar una factura electronica emitida y confirmar que su integracion
+   fiscal esta aceptada y conserva CUFE oficial, XML firmado y fuente fiscal.
+2. Ejecutar `anular_factura_nota_credito` con motivo de al menos 10 caracteres.
+   No se admiten lineas, impuestos ni referencia fiscal libres del navegador.
+3. PCS reserva un consecutivo interno de nota, deriva una fuente fiscal separada
+   con las lineas de la factura y referencia su numero legal, CUFE y fecha fiscal.
+4. El `CreditNote` usa código de correccion 2 para anulacion total, CUDE propio y
+   se firma/envia por el despachador DIAN. Un fallo queda en cola sin anular la
+   factura original.
+5. Solo cuando el acuse DIAN de la nota es aceptado, PCS cambia la factura a
+   `anulada`. Reintentos y reconciliacion aplican la misma regla idempotente.
+6. Nota credito parcial/libre y nota debito permanecen bloqueadas hasta tener una
+   fuente de ajuste estructurada proveniente de una operacion empresarial real.
 
 ### Errores DIAN que el usuario puede resolver
 
