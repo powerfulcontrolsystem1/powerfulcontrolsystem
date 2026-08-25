@@ -731,6 +731,25 @@ El endpoint `action=importar_numeracion_pdf` queda como respaldo tecnico local
 para pruebas automatizadas cuando IA no este disponible, pero el flujo visual
 principal debe usar IA y permitir digitacion manual en los campos existentes.
 
+### RUT DIAN por empresa
+
+El Formulario 001 RUT se carga desde el control independiente `RUT por empresa`
+en `facturacion_electronica.html`. No usar el boton del Formulario 1876: ese
+documento solo corresponde a autorizacion de numeracion.
+
+La accion empresarial es
+`POST /api/empresa/facturacion_electronica/dian?action=importar_rut_pdf_ia` con
+multipart `archivo` y `empresa_id`. El wrapper autenticado conserva el tenant
+canonico aunque el multipart sea manipulado. Solo acepta PDF real de hasta
+12 MB, lo procesa temporalmente con GPT-5.5 y devuelve valores revisables; no
+almacena el archivo, no guarda automaticamente la extraccion y no emite ni
+transmite documentos DIAN.
+
+En la interfaz, revisar la previsualizacion, pulsar `Aplicar datos revisados` y
+confirmar por separado `Guardar DIAN Colombia` y `Guardar configuracion
+avanzada`. No completar regimen de renta ni responsabilidades ausentes por
+inferencia: deben corresponder a los campos visibles del RUT vigente.
+
 ### Pruebas visuales con navegador desde Codex
 
 Cuando el usuario pida "prueba visualmente", Codex debe intentar primero la

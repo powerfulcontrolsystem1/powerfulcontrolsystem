@@ -1,3 +1,20 @@
+2026-08-25: Carga revisable del RUT DIAN por empresa.
+- Se confirmo que el modulo solo tenia un cargador para el Formulario 1876 de
+  autorizacion de numeracion. Se agrega un panel distinto para el Formulario
+  001 RUT, evitando que ambos documentos se procesen bajo el mismo contrato.
+- `/api/empresa/facturacion_electronica/dian?action=importar_rut_pdf_ia`
+  permanece bajo `WithEmpresaFacturacionPermissions`: el `empresa_id` efectivo
+  procede del contexto autenticado y el multipart no puede cambiar el tenant.
+- La carga acepta exclusivamente un PDF real de hasta 12 MB. GPT-5.5 propone
+  NIT/DV, nombre legal, direccion, departamento/municipio y codigos DANE,
+  responsabilidad IVA y codigos del campo 53; el backend contrasta DV,
+  normaliza listas/codigos y no confia valores libres de la IA.
+- El archivo no se almacena. `Aplicar datos revisados` solo modifica los
+  formularios visibles y exige guardar posteriormente la configuracion DIAN y
+  avanzada; no activa emision, no consume consecutivos y no contacta la DIAN.
+- QA enfocado: parser/normalizacion RUT, PDF falso, multipart empresarial,
+  separacion frontend RUT/1876 y sintaxis del script inline.
+
 2026-08-25: Venta directa recupera carritos heredados antes de facturar.
 - La validacion visual autenticada posterior al release DIAN reprodujo que la
   ruta `modo=venta_directa` filtraba exclusivamente el codigo canonico

@@ -1,3 +1,18 @@
+2026-08-25: RUT DIAN separado y revisable por empresa.
+- Modulos afectados: `facturacion_electronica`, `configuracion_avanzada`,
+  `IA empresarial` y `seguridad_multiempresa`.
+- La configuracion DIAN Colombia muestra un control independiente para el
+  Formulario 001 RUT; no reutiliza ni confunde el importador de autorizacion de
+  numeracion Formulario 1876.
+- El backend resuelve la empresa desde el wrapper de facturacion, limita la
+  carga a PDF real de 12 MB, extrae NIT/DV, nombre legal, ubicacion, codigos
+  DANE y responsabilidades con GPT-5.5, y normaliza los valores fiscales antes
+  de devolverlos.
+- El PDF se procesa temporalmente y no se conserva. La extraccion solo llena
+  controles en pantalla; el administrador debe revisar y guardar por separado
+  DIAN Colombia y Configuracion avanzada. No emite, firma ni transmite ningun
+  documento fiscal.
+
 2026-08-24: Facturacion electronica Colombia, alcance comercial verificable.
 - Factura electronica de venta es la unica familia disponible para emision.
 - La fuente fiscal privada conserva lineas, partes, pago y totales reales por

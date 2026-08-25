@@ -754,6 +754,13 @@ afecte dinero, documentos, licencias o seguridad.
 3. En Colombia, la configuracion operativa de PCS usa la modalidad DIAN
    `Software propio`; el tutorial no debe sugerir proveedor tecnologico ni
    solucion gratuita como modalidad de PCS.
+4. El Formulario 001 RUT y el Formulario 1876 de numeracion tienen controles
+   separados. Cada empresa carga su propio RUT desde la tarjeta Colombia; el
+   backend usa el `empresa_id` autenticado, valida PDF real y devuelve NIT/DV,
+   nombre legal, ubicacion DANE y responsabilidades para revision.
+5. `Aplicar datos revisados` solo llena los formularios visibles. Los cambios
+   se persisten al guardar DIAN Colombia y Configuracion avanzada; el PDF del
+   RUT no se almacena y la carga no firma, emite ni transmite documentos.
 
 ## Configurar empresa
 
