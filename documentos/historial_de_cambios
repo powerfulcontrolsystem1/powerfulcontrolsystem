@@ -1,3 +1,14 @@
+2026-08-25: Auditoria DIAN para respuestas de envio sin TrackId.
+- La prueba productiva de `1PCS8` demostro que DIAN puede responder a un envio
+  sin `TrackId` y que la persistencia anterior ocultaba ese resultado bajo un
+  error local. Ahora cualquier operacion de envio conserva esa respuesta con
+  una clave `audit:<operacion>:<documento>` no reconsultable; un TrackId oficial
+  siempre prevalece.
+- Backend y centro DIAN reconocen tanto las referencias historicas `sync:` como
+  las nuevas `audit:` y bloquean `GetStatusZip` para ambas. QA: regresion Go y
+  sintaxis JavaScript enfocada; queda pendiente desplegar y repetir el envio
+  real para observar el rechazo o aceptacion exactos de DIAN.
+
 2026-08-25: Nota credito DIAN para anulacion total desde fuente aceptada.
 - `anular_factura_nota_credito` deja de depender del UBL sintetico. Exige una
   factura emitida con CUFE oficial, recupera su artefacto fiscal inmutable y
@@ -43263,4 +43274,13 @@ Archivos modificados:
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-08-25: fix: auditar toda respuesta DIAN sin TrackId
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/historial_de_cambios
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html

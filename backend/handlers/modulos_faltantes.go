@@ -11278,19 +11278,26 @@ func upsertDIANTrackHistory(dbEmp *sql.DB, empresaID int64, data map[string]inte
 	return err
 }
 
-func dianIsSyntheticSyncHistoryID(trackID string) bool {
-	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(trackID)), "sync:")
+func dianIsSyntheticHistoryID(trackID string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(trackID))
+	return strings.HasPrefix(normalized, "sync:") || strings.HasPrefix(normalized, "audit:")
 }
 
 func dianHistoryTrackID(operation, documentoCodigo, responseTrackID string) string {
 	if trackID := strings.TrimSpace(responseTrackID); trackID != "" {
 		return trackID
 	}
-	if strings.EqualFold(strings.TrimSpace(operation), "SendBillSync") && strings.TrimSpace(documentoCodigo) != "" {
-		// SendBillSync is final and synchronous, including rejected responses.
-		// It does not promise a TrackId, so use a non-reconsultable audit key for
-		// every outcome instead of losing the actual DIAN response in persistence.
-		return "sync:" + strings.TrimSpace(documentoCodigo)
+	documentoCodigo = strings.TrimSpace(documentoCodigo)
+	if documentoCodigo != "" {
+		// DIAN can return a definitive rejection without TrackId for synchronous
+		// and asynchronous send operations. Preserve every such response under a
+		// deterministic, non-reconsultable audit key instead of masking it with a
+		// local persistence error. A real TrackId always takes precedence above.
+		operation = strings.TrimSpace(operation)
+		if operation == "" {
+			operation = "send"
+		}
+		return "audit:" + strings.ToLower(operation) + ":" + documentoCodigo
 	}
 	return ""
 }
@@ -11349,7 +11356,7 @@ func listDIANTrackHistory(dbEmp *sql.DB, empresaID int64, limit int) ([]map[stri
 			"fecha_ultimo_acuse":  fechaUltimoAcuse,
 			"fecha_creacion":      fechaCreacion,
 			"fecha_actualizacion": fechaActualizacion,
-			"reconsultable":       trackID != "" && !dianIsSyntheticSyncHistoryID(trackID),
+			"reconsultable":       trackID != "" && !dianIsSyntheticHistoryID(trackID),
 		})
 	}
 	return items, rows.Err()
@@ -11540,8 +11547,8 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 	if trackID == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("track_id es obligatorio para GetStatusZip")
 	}
-	if dianIsSyntheticSyncHistoryID(trackID) {
-		return nil, http.StatusBadRequest, fmt.Errorf("el acuse sincronico no tiene TrackId DIAN para GetStatusZip")
+	if dianIsSyntheticHistoryID(trackID) {
+		return nil, http.StatusBadRequest, fmt.Errorf("la respuesta auditada no tiene TrackId DIAN para GetStatusZip")
 	}
 	soapEndpoint := normalizeDIANSOAPEndpoint(endpoint)
 	envelope := buildDIANGetStatusZipEnvelope(soapEndpoint, trackID)

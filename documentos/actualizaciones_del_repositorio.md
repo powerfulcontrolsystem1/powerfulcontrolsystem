@@ -17030,3 +17030,11 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/facturacion_electronica.html
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-08-25 04:37:26 - Mensaje: fix: auditar toda respuesta DIAN sin TrackId; Commit: 61223d66; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
