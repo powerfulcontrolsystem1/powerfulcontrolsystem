@@ -1,3 +1,13 @@
+## [2026-08-25] Venta directa compatible con carrito heredado
+
+- [Correccion] La carga inicial de Venta directa incluye el carrito historico
+  `VENTA-DIRECTA-<empresa>` antes de intentar crear el codigo canonico terminado
+  en `-0`, evitando el choque por nombre unico y la pantalla operativa vacia.
+- [Seguridad] Se mantienen el `empresa_id`, permiso y licencia efectivos; el
+  cambio solo corrige la reconciliacion dentro de la empresa seleccionada.
+- [QA] Una regresion de contrato fija el comportamiento observado durante la
+  preparacion visual de una factura DIAN real con Powerful Control System.
+
 ## [2026-08-24] Factura DIAN desde fuente fiscal real
 
 - [Contrato] La emisión comercial queda limitada a factura electrónica de venta;
