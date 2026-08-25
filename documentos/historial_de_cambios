@@ -43158,3 +43158,13 @@ Archivos modificados:
   permitia notas en el adaptador comercial, marcan los folios 2026-06 como
   historicos y fijan la evidencia real 2026-08-24 sin convertir alcance HTTP en
   aceptacion fiscal.
+
+2026-08-25: fix: fijar init-container de permisos al digest inmutable de API.
+- La primera promocion del candidato DIAN a staging se detuvo sin afectar
+  produccion porque `upload-permissions` aun resolvia el tag local inexistente
+  `pcs-backend:staging`.
+- `docker-compose.release.yml` fija ahora ese servicio auxiliar al mismo
+  `PCS_API_IMAGE_DIGEST` ya construido y escaneado. Una regresion Go y el
+  contrato del pipeline impiden recuperar un tag local mutable.
+- La promocion fallida no ejecuto una emision fiscal ni modifico los
+  contenedores productivos.

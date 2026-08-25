@@ -193,14 +193,15 @@ No subas `deploy/.env.platform` al repositorio: contiene secretos operativos.
 # Release inmutable
 
 El despliegue productivo debe superponer `docker-compose.release.yml` y fijar
-API, migrador y worker mediante referencias completas `@sha256`:
+API, migrador, worker y frontend mediante referencias completas `@sha256`.
+El init-container `upload-permissions` reutiliza obligatoriamente el mismo
+digest de API; nunca puede caer en un tag local mutable:
 
 ```bash
 docker compose -f deploy/docker-compose.platform.yml \
   -f deploy/docker-compose.release.yml config
 ```
 
-Antes de promover, `scripts/immutable_release_check.ps1` valida
-`PCS_API_IMAGE_DIGEST`, `PCS_MIGRATE_IMAGE_DIGEST` y
-`PCS_WORKER_IMAGE_DIGEST`. Los tags locales del Compose base son solo para
-construccion, desarrollo y preparacion del primer artefacto.
+Antes de promover, `scripts/immutable_release_check.ps1` valida los cuatro
+digests PCS. Los tags locales del Compose base son solo para construccion,
+desarrollo y preparacion del primer artefacto.
