@@ -4,6 +4,22 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Reenvio manual DIAN de una cola terminal
+
+1. El usuario autorizado pulsa `Reenviar DIAN` sobre el documento de la
+   empresa activa; esa accion explicita es la unica que puede reabrir una cola
+   `fallido_terminal`. El worker y la emision automatica la mantienen cerrada.
+2. El backend toma el bloqueo advisory del mismo `empresa_id`, tipo y codigo de
+   documento antes de revisar o modificar la cola, evitando envios concurrentes.
+3. Si el documento, la cola o el historial ya conservan TrackId, CUFE/CUDE o
+   codigo de validacion, el reenvio se bloquea y se debe consultar el acuse para
+   no duplicar un documento fiscal.
+4. Sin evidencia fiscal, PCS reinicia el lote de intentos y registra en
+   observaciones la reactivacion, los intentos agotados y el error anterior.
+5. El envio vuelve a pasar por el adaptador DIAN normal. Toda respuesta se
+   conserva en el historial; si DIAN no entrega TrackId, se usa una referencia
+   interna de auditoria que no se puede reconsultar como `GetStatusZip`.
+
 ## Cliente movil POS v1
 
 1. La app Android/iPhone obtiene una sesion de dispositivo y usa Bearer en

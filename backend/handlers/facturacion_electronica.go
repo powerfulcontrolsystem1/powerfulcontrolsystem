@@ -933,7 +933,8 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if strings.TrimSpace(payload.ClienteDireccion) != "" {
 					merged.ClienteDireccion = payload.ClienteDireccion
 				}
-				resultado, retryItem, err := processFacturacionIntegracionForDocumentoContext(r.Context(), dbEmp, merged, *doc, "emitir", strings.TrimSpace(adminEmailFromRequest(r)), dbSuper)
+				manualRetryCtx := context.WithValue(r.Context(), facturacionManualTerminalRetryContextKey{}, true)
+				resultado, retryItem, err := processFacturacionIntegracionForDocumentoContext(manualRetryCtx, dbEmp, merged, *doc, "emitir", strings.TrimSpace(adminEmailFromRequest(r)), dbSuper)
 				if err != nil {
 					http.Error(w, "No se pudo reintentar envio DIAN", http.StatusInternalServerError)
 					return
@@ -3127,6 +3128,53 @@ func facturacionDocumentoAdvisoryLockKey(empresaID int64, tipoDocumento, documen
 
 type facturacionDocumentLockContextKey struct{}
 
+// facturacionManualTerminalRetryContextKey solo se activa desde la accion
+// empresarial explicita de reenvio. El worker y las emisiones automaticas no
+// deben revivir una cola terminal por su cuenta.
+type facturacionManualTerminalRetryContextKey struct{}
+
+func facturacionManualTerminalRetryAllowed(ctx context.Context) bool {
+	if ctx == nil {
+		return false
+	}
+	allowed, _ := ctx.Value(facturacionManualTerminalRetryContextKey{}).(bool)
+	return allowed
+}
+
+func facturacionPrepareManualTerminalRetry(retry *dbpkg.FacturacionElectronicaRetryItem, doc dbpkg.EmpresaDocumentoFacturacion, usuario string) (*dbpkg.FacturacionElectronicaRetryItem, bool, error) {
+	if retry == nil || normalizeFacturacionEstadoEnvio(retry.EstadoEnvio) != "fallido_terminal" {
+		return retry, false, nil
+	}
+	if strings.TrimSpace(retry.ReferenciaExterna) != "" ||
+		strings.TrimSpace(retry.CodigoValidacion) != "" ||
+		strings.TrimSpace(doc.CodigoValidacion) != "" {
+		return retry, false, fmt.Errorf("el documento tiene referencia fiscal; consulta el acuse antes de reenviar")
+	}
+
+	reactivated := *retry
+	previousAttempts := reactivated.Intentos
+	previousError := facturacionTruncate(reactivated.UltimoError, 240)
+	reactivated.EstadoEnvio = "fallido"
+	reactivated.Intentos = 0
+	reactivated.ProximoIntento = ""
+	reactivated.FechaUltimoIntento = ""
+	reactivated.UltimoError = ""
+	reactivated.RespuestaProveedor = ""
+	reactivated.ContingenciaActiva = false
+	reactivated.FechaContingencia = ""
+	reactivated.ReferenciaExterna = ""
+	reactivated.Estado = "activo"
+	if strings.TrimSpace(usuario) != "" {
+		reactivated.UsuarioCreador = strings.TrimSpace(usuario)
+	}
+	auditLine := fmt.Sprintf("[%s] reactivacion manual DIAN; intentos previos=%d", facturacionNowLocal(), previousAttempts)
+	if previousError != "" {
+		auditLine += "; error previo=" + previousError
+	}
+	reactivated.Observaciones = strings.TrimSpace(strings.TrimSpace(reactivated.Observaciones) + "\n" + auditLine)
+	return &reactivated, true, nil
+}
+
 func acquireFacturacionDocumentAdvisoryLock(ctx context.Context, dbEmp *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (context.Context, func(), bool, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -3289,6 +3337,27 @@ func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp
 		resultado.ConexionEstado = "online"
 		resultado.ConexionMensaje = "documento ya aceptado; no se reenvio"
 		return resultado, retryActual, nil
+	}
+	if retryActual != nil && normalizeFacturacionEstadoEnvio(retryActual.EstadoEnvio) == "fallido_terminal" {
+		if facturacionManualTerminalRetryAllowed(ctx) {
+			reactivated, changed, reactivateErr := facturacionPrepareManualTerminalRetry(retryActual, doc, usuario)
+			if reactivateErr != nil {
+				resultado.Aplica = true
+				resultado.EstadoEnvio = "fallido_terminal"
+				resultado.Intentos = retryActual.Intentos
+				resultado.MaxIntentos = retryActual.MaxIntentos
+				resultado.Error = reactivateErr.Error()
+				resultado.ConexionMensaje = "reenvio bloqueado hasta consultar la referencia fiscal existente"
+				return resultado, retryActual, nil
+			}
+			if changed {
+				retryActual, retryErr = dbpkg.UpsertFacturacionElectronicaRetryContext(ctx, dbEmp, *reactivated)
+				if retryErr != nil {
+					resultado.Error = "no se pudo reactivar la cola fiscal para reenvio manual"
+					return resultado, nil, retryErr
+				}
+			}
+		}
 	}
 	if retryActual != nil && normalizeFacturacionEstadoEnvio(retryActual.EstadoEnvio) == "fallido_terminal" {
 		resultado.Aplica = true
