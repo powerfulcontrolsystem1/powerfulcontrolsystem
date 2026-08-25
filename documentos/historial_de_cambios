@@ -43332,6 +43332,15 @@ Archivos modificados:
   Nginx.
 - Validación local: pruebas enfocadas de autenticación/CSP, contratos de recursos
   frontend y sintaxis/ejecución del helper JavaScript.
+
+2026-08-25: fix: preservar margen de cabeceras en OAuth Google
+- La prueba real detectó que `/auth/google/login` volvió a 502: el backend emitía
+  un redirect correcto de 4302 bytes, pero Nginx no podía leer la cabecera
+  completa después de ampliar la CSP para reCAPTCHA.
+- Las rutas `/auth/google/*` aplican ahora una CSP compacta `deny-all`, adecuada
+  para redirects y errores de texto, sin reducir la política de las páginas.
+- La regresión de presupuesto incluye SecurityHeadersMiddleware y reserva margen
+  bajo 3072 bytes para state, PKCE y cookies de redirección.
 2026-08-25: Correccion del rechazo real DIAN FAD03 y la notificacion FAZ09.
 - El reenvio productivo de `1PCS8` alcanzo el validador DIAN y demostro que
   `ProfileID=DIAN 2.1` era insuficiente. Invoice, CreditNote y DebitNote ahora

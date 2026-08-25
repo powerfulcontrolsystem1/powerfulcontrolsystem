@@ -5,7 +5,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/you/pos-backend/utils"
 )
+
+const oauthReverseProxyHeaderBudget = 3072
 
 func responseHeaderBytes(header http.Header) int {
 	total := 0
@@ -22,7 +26,7 @@ func TestGoogleAdminLoginHeadersFitReverseProxyBudget(t *testing.T) {
 	req.Header.Set("X-Forwarded-Proto", "https")
 	rr := httptest.NewRecorder()
 
-	HandleGoogleLogin("client-id", "https://powerfulcontrolsystem.com/auth/google/callback").ServeHTTP(rr, req)
+	utils.SecurityHeadersMiddleware(HandleGoogleLogin("client-id", "https://powerfulcontrolsystem.com/auth/google/callback")).ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusFound {
 		t.Fatalf("status = %d, want %d", rr.Code, http.StatusFound)
@@ -33,8 +37,8 @@ func TestGoogleAdminLoginHeadersFitReverseProxyBudget(t *testing.T) {
 	if got := len(rr.Header().Values("Set-Cookie")); got > 5 {
 		t.Fatalf("Set-Cookie count = %d, want <= 5 to avoid proxy 502", got)
 	}
-	if got := responseHeaderBytes(rr.Header()); got >= 4096 {
-		t.Fatalf("OAuth response headers = %d bytes, want < 4096", got)
+	if got := responseHeaderBytes(rr.Header()); got >= oauthReverseProxyHeaderBudget {
+		t.Fatalf("OAuth response headers = %d bytes, want < %d to preserve reverse-proxy headroom", got, oauthReverseProxyHeaderBudget)
 	}
 }
 
@@ -43,12 +47,12 @@ func TestGoogleEmpresaLoginHeadersFitReverseProxyBudget(t *testing.T) {
 	req.Header.Set("X-Forwarded-Proto", "https")
 	rr := httptest.NewRecorder()
 
-	HandleGoogleUsuarioLogin("client-id", "https://powerfulcontrolsystem.com/auth/google/callback").ServeHTTP(rr, req)
+	utils.SecurityHeadersMiddleware(HandleGoogleUsuarioLogin("client-id", "https://powerfulcontrolsystem.com/auth/google/callback")).ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusFound {
 		t.Fatalf("status = %d, want %d", rr.Code, http.StatusFound)
 	}
-	if got := responseHeaderBytes(rr.Header()); got >= 4096 {
-		t.Fatalf("enterprise OAuth response headers = %d bytes, want < 4096", got)
+	if got := responseHeaderBytes(rr.Header()); got >= oauthReverseProxyHeaderBudget {
+		t.Fatalf("enterprise OAuth response headers = %d bytes, want < %d to preserve reverse-proxy headroom", got, oauthReverseProxyHeaderBudget)
 	}
 }

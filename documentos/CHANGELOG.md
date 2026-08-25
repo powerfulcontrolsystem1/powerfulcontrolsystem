@@ -3556,3 +3556,5 @@
   requeridos para cargar, ejecutar y enmarcar Google reCAPTCHA.
 - Los flujos públicos de autenticación dejan de presentar páginas HTML de Nginx
   cuando un upstream devuelve 5xx y muestran un mensaje operativo controlado.
+- OAuth Google usa una CSP de respuesta compacta y bloqueante para mantener el
+  redirect state/PKCE dentro del presupuesto de cabeceras del proxy.

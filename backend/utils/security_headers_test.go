@@ -110,6 +110,22 @@ func TestSecurityHeadersAllowGoogleRecaptchaWithoutWildcardOrigins(t *testing.T)
 	}
 }
 
+func TestSecurityHeadersUseCompactDenyAllPolicyForGoogleOAuth(t *testing.T) {
+	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusFound) }))
+	for _, path := range []string{"/auth/google/login", "/auth/google/usuario/login", "/auth/google/callback"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		for _, header := range []string{"Content-Security-Policy", "Content-Security-Policy-Report-Only"} {
+			if got := rec.Header().Get(header); got != googleOAuthResponseCSP {
+				t.Fatalf("%s %s = %q, want compact OAuth policy %q", path, header, got, googleOAuthResponseCSP)
+			}
+		}
+		if strings.Contains(rec.Header().Get("Content-Security-Policy"), "unsafe-inline") {
+			t.Fatalf("%s OAuth CSP must deny inline content", path)
+		}
+	}
+}
+
 func TestCSPOriginRejectsWildcardPathAndCredentials(t *testing.T) {
 	t.Parallel()
 	for _, raw := range []string{"https://*.example.test", "https://example.test/path", "https://user:pass@example.test", "javascript:alert(1)"} {
