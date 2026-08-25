@@ -39,6 +39,7 @@
     .dian-readable-detail summary{cursor:pointer;font-weight:850;color:var(--text)}
     .dian-readable-detail pre{margin:8px 0 0;max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)}
     .dian-capture-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-capture-actions{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
     .dian-ai-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;border:1px solid color-mix(in srgb,#38bdf8 45%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 12%,var(--surface));color:var(--text);font-weight:950;font-size:.78rem;letter-spacing:.02em}
     .dian-capture-guide{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
     .dian-capture-step{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;min-height:112px}
@@ -182,7 +183,7 @@
           </div>
           <div class="form-row">
             <div class="form-col"><label class="form-label" for="dianRutPdfInput">PDF del RUT</label><input id="dianRutPdfInput" type="file" accept="application/pdf,.pdf" class="form-input"></div>
-            <div class="form-col" style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
+            <div class="form-col dian-capture-actions">
               <button id="btnDianRutPdf" type="button" class="btn secondary" data-ai-button="true">Cargar RUT con IA GPT-5.5</button>
               <button id="btnDianRutAplicar" type="button" class="btn" disabled>Aplicar datos revisados</button>
             </div>
