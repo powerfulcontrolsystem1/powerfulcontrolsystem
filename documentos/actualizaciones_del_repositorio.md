@@ -17006,3 +17006,27 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 - web/administrar_empresa/facturas_electronicas.html
 - web/administrar_empresa/nomina_sueldos.html
+
+2026-08-25 04:13:51 - Mensaje: fix: cerrar factura DIAN real y nota credito total trazable; Commit: 2c1401f8; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/facturacion_electronica.go
+- backend/db/facturacion_electronica_paises_test.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/facturacion_anulacion_frontend_contract_test.go
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/facturacion_fuente_fiscal.go
+- backend/handlers/facturacion_fuente_fiscal_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/arquitectura/inventario_bootstrap_ensure.md
+- documentos/contexto_general_del_sistema.md
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
