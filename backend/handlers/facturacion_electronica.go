@@ -3370,6 +3370,13 @@ func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp
 		return resultado, nil, retryErr
 	}
 	if retryActual != nil && (normalizeFacturacionEstadoEnvio(retryActual.EstadoEnvio) == "aceptado" || normalizeFacturacionEstadoEnvio(retryActual.EstadoEnvio) == "reconciliado") {
+		docAceptado, changed := facturacionDocumentoAceptadoDIAN(doc, retryActual.RespuestaProveedor)
+		if changed {
+			if _, updateErr := dbpkg.UpsertEmpresaDocumentoFacturacionContext(ctx, dbEmp, docAceptado); updateErr != nil {
+				resultado.Error = "el documento ya fue aceptado por DIAN, pero no se pudo finalizar su estado local"
+				return resultado, retryActual, updateErr
+			}
+		}
 		resultado.Aplica = true
 		resultado.EstadoEnvio = "aceptado"
 		resultado.Intentos = retryActual.Intentos
@@ -3502,12 +3509,9 @@ func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp
 			}
 			if estadoExito == "aceptado" {
 				codigoValidacion := facturacionCUFEOficialDesdeMap(dispatchMap)
-				if codigoValidacion != "" && !strings.EqualFold(strings.TrimSpace(doc.CodigoValidacion), codigoValidacion) {
+				if codigoValidacion != "" {
 					doc.CodigoValidacion = codigoValidacion
-					if _, updateErr := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, doc); updateErr != nil {
-						resultado.Error = "DIAN acepto el documento, pero no se pudo persistir su codigo de validacion"
-						return resultado, nil, updateErr
-					}
+					retryPayload.CodigoValidacion = codigoValidacion
 				}
 			}
 		}
@@ -3589,6 +3593,14 @@ func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp
 	}
 	if estadoPersistido := normalizeFacturacionEstadoEnvio(persistido.EstadoEnvio); estadoPersistido == "fallido" || estadoPersistido == "fallido_terminal" {
 		notificarFalloFacturacionElectronica(dbEmp, dbSuper, persistido, resultado, doc, usuario)
+	} else if estadoPersistido == "aceptado" || estadoPersistido == "reconciliado" {
+		docAceptado, changed := facturacionDocumentoAceptadoDIAN(doc, persistido.RespuestaProveedor)
+		if changed {
+			if _, updateErr := dbpkg.UpsertEmpresaDocumentoFacturacionContext(ctx, dbEmp, docAceptado); updateErr != nil {
+				resultado.Error = "DIAN acepto el documento, pero no se pudo finalizar su estado local"
+				return resultado, persistido, updateErr
+			}
+		}
 	}
 
 	resultado.EstadoEnvio = normalizeFacturacionEstadoEnvio(persistido.EstadoEnvio)
@@ -3773,6 +3785,32 @@ const facturacionNotaCreditoFacturaOrigenMarker = "FACTURA_ORIGEN=" // #nosec G1
 
 func facturacionIntegracionAceptada(resultado facturacionIntegracionResultado) bool {
 	return strings.EqualFold(strings.TrimSpace(resultado.EstadoEnvio), "aceptado")
+}
+
+// facturacionDocumentoAceptadoDIAN completa la transicion local que quedo
+// pendiente mientras no existia un acuse fiscal concluyente. Es deliberadamente
+// idempotente: una factura ya emitida o una nota credito ya finalizada no cambia
+// de estado ni pierde su ultimo evento.
+func facturacionDocumentoAceptadoDIAN(doc dbpkg.EmpresaDocumentoFacturacion, respuestaProveedor string) (dbpkg.EmpresaDocumentoFacturacion, bool) {
+	if !facturacionDocumentoElectronicoDIANComercialSoportado(doc.TipoDocumento) {
+		return doc, false
+	}
+
+	changed := false
+	if cufe := facturacionCUFEOficialDesdeRespuesta(respuestaProveedor); cufe != "" && !strings.EqualFold(strings.TrimSpace(doc.CodigoValidacion), cufe) {
+		doc.CodigoValidacion = cufe
+		changed = true
+	}
+	if !facturacionCodigoSHA384Valido(doc.CodigoValidacion) {
+		return doc, changed
+	}
+	if strings.EqualFold(strings.TrimSpace(doc.EstadoDocumento), "pendiente_emision") {
+		doc.EstadoAnterior = strings.TrimSpace(doc.EstadoDocumento)
+		doc.EstadoDocumento = "emitida"
+		doc.EventoUltimo = "integracion_fiscal_aceptada"
+		changed = true
+	}
+	return doc, changed
 }
 
 func facturacionCodigoSHA384Valido(value string) bool {

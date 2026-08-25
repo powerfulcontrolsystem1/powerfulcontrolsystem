@@ -1482,6 +1482,10 @@ afecte dinero, documentos, licencias o seguridad.
 7. Un acuse aceptado deja `estado_envio=aceptado`. `Regla 90` por documento ya
    procesado queda como pendiente de consulta del acuse original; no equivale por
    si sola a aceptacion.
+   Cuando el documento local estaba `pendiente_emision`, la aceptación con
+   CUFE/CUDE oficial completa de forma idempotente la transición a `emitida`.
+   Una reejecución sobre la cola ya aceptada solo repara esa sincronización local
+   y nunca vuelve a transmitir el XML.
    Una respuesta sincronica `SendBillSync` sin `TrackId` usa solamente la
    referencia interna `sync:<documento>` para persistir historial. Esa referencia
    no es un TrackId DIAN y nunca se consulta con `GetStatusZip`.
