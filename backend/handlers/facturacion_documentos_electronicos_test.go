@@ -404,3 +404,52 @@ func TestFacturacionDocumentoAdvisoryLockKeyAislaEmpresaYDocumento(t *testing.T)
 		t.Fatal("la clave documental debe aislar el folio")
 	}
 }
+
+func TestFacturacionDocumentoAceptadoDIANFinalizaPendienteConCUFE(t *testing.T) {
+	cufe := strings.Repeat("ab", 48)
+	doc, changed := facturacionDocumentoAceptadoDIAN(dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID:       12,
+		TipoDocumento:   "factura_electronica",
+		DocumentoCodigo: "FV-PCS-ACEPTADA",
+		EstadoDocumento: "pendiente_emision",
+		EventoUltimo:    "integracion_fiscal_pendiente",
+	}, `{"estado_dian":"aceptado","cufe":"`+cufe+`"}`)
+	if !changed {
+		t.Fatal("la aceptacion debe completar la transicion local pendiente")
+	}
+	if doc.EstadoDocumento != "emitida" || doc.EstadoAnterior != "pendiente_emision" {
+		t.Fatalf("transicion aceptada inesperada: anterior=%q nuevo=%q", doc.EstadoAnterior, doc.EstadoDocumento)
+	}
+	if doc.EventoUltimo != "integracion_fiscal_aceptada" {
+		t.Fatalf("evento final = %q", doc.EventoUltimo)
+	}
+	if doc.CodigoValidacion != cufe {
+		t.Fatalf("CUFE final = %q", doc.CodigoValidacion)
+	}
+}
+
+func TestFacturacionDocumentoAceptadoDIANEsIdempotenteYFailClosed(t *testing.T) {
+	cufe := strings.Repeat("cd", 48)
+	emitida := dbpkg.EmpresaDocumentoFacturacion{
+		TipoDocumento:    "factura_electronica",
+		EstadoDocumento:  "emitida",
+		EventoUltimo:     "factura_emitida",
+		CodigoValidacion: cufe,
+	}
+	got, changed := facturacionDocumentoAceptadoDIAN(emitida, `{"cufe":"`+cufe+`"}`)
+	if changed || got.EventoUltimo != emitida.EventoUltimo {
+		t.Fatal("una factura ya finalizada no debe reescribirse")
+	}
+
+	noSoportado := dbpkg.EmpresaDocumentoFacturacion{TipoDocumento: "nota_debito", EstadoDocumento: "pendiente_emision"}
+	got, changed = facturacionDocumentoAceptadoDIAN(noSoportado, `{"cufe":"`+cufe+`"}`)
+	if changed || got.EstadoDocumento != "pendiente_emision" {
+		t.Fatal("un flujo comercial no implementado debe permanecer cerrado")
+	}
+
+	sinCUFE := dbpkg.EmpresaDocumentoFacturacion{TipoDocumento: "factura_electronica", EstadoDocumento: "pendiente_emision"}
+	got, changed = facturacionDocumentoAceptadoDIAN(sinCUFE, `{"estado_dian":"aceptado"}`)
+	if changed || got.EstadoDocumento != "pendiente_emision" {
+		t.Fatal("un acuse sin CUFE/CUDE oficial no debe finalizar el documento")
+	}
+}
