@@ -43399,3 +43399,11 @@ Archivos modificados:
 - La transición exige una clave oficial SHA-384, es idempotente para documentos
   ya finalizados y mantiene cerradas nota débito y demás familias comerciales no
   implementadas.
+
+2026-08-25: Backfill idempotente de CUFE/CUDE en cola DIAN ya aceptada.
+- La verificación posterior al despliegue confirmó `1PCS8` como `emitida`, con
+  CUFE oficial, botón de reenvío oculto y anulación habilitada, conservando un
+  único intento y la hora original del acuse.
+- Para colas históricas aceptadas que guardaron el CUFE solo en el documento y
+  en la respuesta del proveedor, una nueva ejecución local completa
+  `codigo_validacion` sin transmitir XML ni modificar intentos, fecha o acuse.
