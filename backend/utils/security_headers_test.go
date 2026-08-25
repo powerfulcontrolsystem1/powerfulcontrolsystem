@@ -50,7 +50,7 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 			t.Fatalf("CSP keeps broad source %q: %q", forbidden, policy)
 		}
 	}
-	for _, expected := range []string{"form-action 'self'", "font-src 'self' data:", "https://onlyoffice.example.test", "https://nextcloud.example.test", "https://mail.powerfulcontrolsystem.com", "https://api.example.test", "https://images.example.test", "https://scripts.example.test", "https://styles.example.test", "https://fonts.example.test", "https://lh3.googleusercontent.com"} {
+	for _, expected := range []string{"form-action 'self'", "font-src 'self' data:", "https://onlyoffice.example.test", "https://nextcloud.example.test", "https://mail.powerfulcontrolsystem.com", "https://www.google.com", "https://www.gstatic.com", "https://api.example.test", "https://images.example.test", "https://scripts.example.test", "https://styles.example.test", "https://fonts.example.test", "https://lh3.googleusercontent.com"} {
 		if !strings.Contains(policy, expected) {
 			t.Fatalf("CSP missing explicit source %q: %q", expected, policy)
 		}
@@ -78,6 +78,34 @@ func TestSecurityHeadersCanEnableStrictReportOnlyCSPWithoutBlockingCompatibility
 	for _, expected := range []string{"default-src 'self'", "form-action 'self'", "script-src 'self'", "style-src 'self'"} {
 		if !strings.Contains(reportOnly, expected) {
 			t.Fatalf("strict report-only CSP missing %q: %q", expected, reportOnly)
+		}
+	}
+}
+
+func TestSecurityHeadersAllowGoogleRecaptchaWithoutWildcardOrigins(t *testing.T) {
+	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/login.html", nil))
+
+	for _, header := range []string{"Content-Security-Policy", "Content-Security-Policy-Report-Only"} {
+		policy := rec.Header().Get(header)
+		for _, directive := range []string{"script-src", "connect-src", "frame-src"} {
+			start := strings.Index(policy, directive+" ")
+			if start < 0 {
+				t.Fatalf("%s missing %s: %q", header, directive, policy)
+			}
+			section := policy[start:]
+			if end := strings.Index(section, ";"); end >= 0 {
+				section = section[:end]
+			}
+			for _, origin := range []string{"https://www.google.com", "https://www.gstatic.com"} {
+				if !strings.Contains(section, origin) {
+					t.Fatalf("%s %s missing reCAPTCHA origin %s: %q", header, directive, origin, section)
+				}
+			}
+		}
+		if strings.Contains(policy, "https://*.google.com") {
+			t.Fatalf("%s must not use a broad Google wildcard: %q", header, policy)
 		}
 	}
 }

@@ -7,12 +7,17 @@ Estado: vigente. Ultima actualizacion: 2026-08-25.
 - Login, registro y recuperación administrativos comparten el guard público de
   reCAPTCHA; una activación incompleta puede bloquear los tres flujos antes de
   validar credenciales.
-- El incidente HTTP 503 se recuperó desactivando únicamente la configuración
-  ilegible. El throttle durable continuó activo y salud/readiness permanecieron
-  en HTTP 200.
-- El candidato de reparación valida que las claves sean utilizables antes de
-  activar y persiste toda la configuración en una transacción. La clave privada
-  válida debe reingresarse y probarse antes de volver a habilitar reCAPTCHA.
+- La clave privada histórica se recuperó desde un respaldo autorizado, se validó
+  sin exponerla y se volvió a cifrar con la clave activa y formato versionado.
+  El throttle durable continuó activo y salud/readiness permanecieron en HTTP
+  200 durante la recuperación.
+- El candidato valida que las claves sean utilizables antes de activar y
+  persiste toda la configuración en una transacción. La CSP estática y la del
+  backend autorizan únicamente los orígenes exactos de Google requeridos por
+  reCAPTCHA; no se usan comodines de Google.
+- Los clientes de login, registro y recuperación no muestran cuerpos HTML de un
+  proxy ante HTTP 5xx: presentan un mensaje operativo genérico y conservan el
+  detalle JSON controlado para los errores funcionales.
 
 ## Actualizacion 2026-08-25 - nota credito de anulacion total trazable
 

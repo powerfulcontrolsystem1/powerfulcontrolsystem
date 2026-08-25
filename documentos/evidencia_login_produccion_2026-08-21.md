@@ -138,6 +138,28 @@ staging equivalente. Hasta entonces el estado es NO-GO para produccion general.
   cifrada ilegible, valida las credenciales antes de persistir `enabled=1` y
   aplica la configuración compuesta atómicamente.
 
-La clave privada válida de Google debe volver a ingresarse desde Super
-administración y probarse contra Google antes de reactivar reCAPTCHA. No se
-considera operativo solo porque exista un valor cifrado en la base de datos.
+La indicación anterior de volver a ingresar la clave queda sustituida por la
+recuperación controlada siguiente.
+
+## Recuperación de clave, despliegue y hallazgo CSP 2026-08-25
+
+- Un respaldo histórico autorizado contenía la clave de cifrado compatible con
+  el registro legado. La clave privada de reCAPTCHA se descifró solo en memoria,
+  se validó por longitud y formato sin imprimirla y se volvió a cifrar con la
+  clave activa en formato versionado. Se creó respaldo de reversión privado con
+  permisos exclusivos de `root`.
+- El despliegue de `main` ejecutó preflight completo, pruebas Go, migraciones,
+  reconstrucción de API/frontend/worker, comprobación Nginx y salud/readiness;
+  terminó correctamente.
+- Durante la sustitución del contenedor se observó una única respuesta 502 de
+  Nginx en el login. Los probes posteriores devolvieron salud/readiness 200 y el
+  login falso volvió a 401 o al throttle 429 esperado. La cuenta PCS autorizada
+  inició sesión visualmente y abrió el panel de Super administración.
+- Al reactivar reCAPTCHA, la interfaz detectó que la CSP de la página estática
+  bloqueaba `www.google.com` y `www.gstatic.com`. Se volvió a desactivar solo el
+  requisito mientras se prepara la corrección, sin borrar credenciales ni
+  debilitar el throttle.
+- El candidato añade esos dos orígenes exactos a `script-src`, `connect-src` y
+  `frame-src` tanto en la CSP estática como en la dinámica. También centraliza
+  la lectura segura de respuestas de autenticación para no mostrar HTML de
+  gateways en login, registro o recuperación.

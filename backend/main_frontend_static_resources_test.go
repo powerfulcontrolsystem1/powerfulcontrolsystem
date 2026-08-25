@@ -126,8 +126,10 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 		`Content-Security-Policy-Report-Only`,
 		`img-src 'self' data: blob: https://lh3.googleusercontent.com`,
 		`style-src 'self' https://unpkg.com https://fonts.googleapis.com`,
-		`script-src 'self' https://accounts.google.com`,
+		`script-src 'self' https://accounts.google.com https://www.google.com https://www.gstatic.com`,
 		`connect-src 'self' https://api.openai.com`,
+		`https://www.google.com`,
+		`https://www.gstatic.com`,
 	} {
 		if !strings.Contains(reportOnlyHeader, required) {
 			t.Fatalf("static strict report-only CSP is missing %q", required)
@@ -184,6 +186,42 @@ func TestMenuThemeObserverGuardsItsTarget(t *testing.T) {
 	} {
 		if !strings.Contains(script, required) {
 			t.Fatalf("menu theme observer must guard its target with %q", required)
+		}
+	}
+}
+
+func TestAuthenticationPagesUseSafeGatewayResponseHelper(t *testing.T) {
+	helperRaw, err := os.ReadFile(filepath.Join("..", "web", "js", "auth_response.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	helper := string(helperRaw)
+	for _, required := range []string{
+		"Number(response.status) >= 500",
+		"El servicio no está disponible en este momento.",
+		"/<\\/?(?:html|head|title|body|center|hr|script|style)\\b/i",
+		"global.PCSAuthResponse",
+	} {
+		if !strings.Contains(helper, required) {
+			t.Fatalf("safe authentication response helper missing %q", required)
+		}
+	}
+
+	pages := map[string]string{
+		"login.html": "login.js",
+		"registrar_nuevo_usuario_administrador.html": "registrar_nuevo_usuario_administrador.js",
+		"login_usuario.html":                         "login_usuario.js",
+	}
+	for page, flowScript := range pages {
+		raw, readErr := os.ReadFile(filepath.Join("..", "web", page))
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		content := string(raw)
+		helperIndex := strings.Index(content, "/js/auth_response.js")
+		flowIndex := strings.Index(content, "/js/"+flowScript)
+		if helperIndex < 0 || flowIndex < 0 || helperIndex > flowIndex {
+			t.Fatalf("%s must load auth_response.js before %s", page, flowScript)
 		}
 	}
 }
@@ -542,6 +580,8 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 		"https://cdn.jsdelivr.net",
 		"https://fonts.googleapis.com",
 		"https://fonts.gstatic.com",
+		"https://www.google.com",
+		"https://www.gstatic.com",
 	} {
 		if !strings.Contains(string(staticHeaders), origin) {
 			t.Fatalf("frontend CSP must allow the pinned visual resource origin %s", origin)

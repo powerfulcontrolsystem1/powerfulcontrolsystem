@@ -43320,3 +43320,15 @@ Archivos modificados:
 - backend/handlers/facturacion_reintento_manual_test.go
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
+
+2026-08-25: fix: restaurar reCAPTCHA y ocultar respuestas HTML de gateway en autenticacion
+- Se recuperó la credencial cifrada de reCAPTCHA desde un respaldo autorizado,
+  se validó sin exponerla y se recifró con la clave activa y formato versionado.
+- La CSP del backend y del frontend estático autoriza los orígenes exactos
+  `www.google.com` y `www.gstatic.com` en las directivas necesarias, sin
+  comodines de Google.
+- Login, registro administrativo, recuperación y acceso empresarial comparten
+  un lector seguro: HTTP 5xx muestra un aviso operativo y nunca el HTML crudo de
+  Nginx.
+- Validación local: pruebas enfocadas de autenticación/CSP, contratos de recursos
+  frontend y sintaxis/ejecución del helper JavaScript.
