@@ -2671,6 +2671,9 @@
         }
       }
 
+      let recaptchaUsableSecretPresent = false;
+      let recaptchaUnreadableStoredSecret = false;
+
       function refreshRecaptchaEnabledHint(){
     const enabledEl = document.getElementById('recaptchaEnabledToggle');
     const helpEl = document.getElementById('recaptchaEnabledHelp');
@@ -2710,6 +2713,8 @@
       }
       const data = await res.json();
       const service = data.service || {};
+      recaptchaUsableSecretPresent = !!service.secret_key_present;
+      recaptchaUnreadableStoredSecret = !!service.stored_secret_key && !recaptchaUsableSecretPresent;
       toggleEl.checked = !!service.requested_enabled;
       siteKeyEl.value = service.stored_site_key || service.site_key || '';
       if (providerEl) {
@@ -2728,9 +2733,13 @@
       const secretTS = service.secret_key_updated_at ? (' | Secret key actualizada: ' + service.secret_key_updated_at) : '';
       const providerTS = service.provider_updated_at ? (' | Tipo actualizado: ' + service.provider_updated_at) : '';
       envEl.innerText = 'Tipo: ' + (service.provider || 'google-recaptcha-v2') + providerTS + ' | Site key: ' + (service.site_key_present ? 'presente' : 'ausente') + siteTS + ' | Secret key: ' + (service.secret_key_present ? 'presente' : 'ausente') + secretTS + (service.dev_bypass ? ' | Bypass DEV activo' : '');
-      secretStatusEl.innerText = service.stored_secret_key || service.secret_key_present
-        ? 'La secret key ya está registrada. Si pegas otra aquí, reemplazas la actual.'
-        : 'Aún no hay secret key guardada.';
+      if (recaptchaUnreadableStoredSecret) {
+        secretStatusEl.innerText = 'La clave privada guardada no puede descifrarse. Debes pegar una nueva antes de activar reCAPTCHA.';
+      } else if (recaptchaUsableSecretPresent) {
+        secretStatusEl.innerText = 'La clave privada ya está registrada y puede leerse. Si pegas otra aquí, reemplazas la actual.';
+      } else {
+        secretStatusEl.innerText = 'Aún no hay una clave privada guardada y utilizable.';
+      }
       msgEl.innerText = service.message || '';
       saveBtn.disabled = false;
       setRecaptchaEditMode(false);
@@ -2748,6 +2757,14 @@
       site_key: document.getElementById('recaptchaSiteKey').value,
       secret_key: document.getElementById('recaptchaSecretKey').value
     };
+    payload.site_key = String(payload.site_key || '').trim();
+    payload.secret_key = String(payload.secret_key || '').trim();
+    if (payload.enabled && !payload.site_key) {
+      throw new Error('reCAPTCHA: agrega la clave pública del sitio antes de activarlo.');
+    }
+    if (payload.enabled && !payload.secret_key && (!recaptchaUsableSecretPresent || recaptchaUnreadableStoredSecret)) {
+      throw new Error('reCAPTCHA: pega una nueva clave privada válida antes de activarlo.');
+    }
     const res = await fetch('/super/api/config/recaptcha', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -2756,7 +2773,12 @@
     const raw = await res.text();
     if (!res.ok) {
       if (res.status === 401) throw new Error('reCAPTCHA: sesión expirada o sin permisos. Inicia sesión como super administrador.');
-      throw new Error('reCAPTCHA: ' + (raw || res.status));
+      let detail = raw;
+      try {
+        const parsed = JSON.parse(raw);
+        detail = parsed.message || parsed.error || raw;
+      } catch (error) {}
+      throw new Error('reCAPTCHA: ' + (detail || res.status));
     }
     }
 

@@ -42,6 +42,34 @@ type recaptchaSiteVerifyResponse struct {
 	ErrorCodes []string `json:"error-codes"`
 }
 
+type recaptchaConfigMutation struct {
+	Enabled   *bool   `json:"enabled"`
+	Provider  *string `json:"provider"`
+	SiteKey   *string `json:"site_key"`
+	SecretKey *string `json:"secret_key"`
+}
+
+func validateRecaptchaActivation(enabled bool, siteKey, secretKey string, secretReadErr error) error {
+	if !enabled {
+		return nil
+	}
+	if strings.TrimSpace(siteKey) == "" {
+		return errors.New("No se puede activar reCAPTCHA sin una clave publica del sitio.")
+	}
+	if secretReadErr != nil {
+		return errors.New("La clave privada guardada no puede leerse con la clave de cifrado activa. Ingresa una nueva clave privada antes de activar reCAPTCHA.")
+	}
+	if strings.TrimSpace(secretKey) == "" {
+		return errors.New("No se puede activar reCAPTCHA sin una clave privada valida.")
+	}
+	return nil
+}
+
+func appendRecaptchaConfigWrite(entries []dbpkg.ConfigValueWrite, key, value string, encrypted bool, actor string) []dbpkg.ConfigValueWrite {
+	entries = append(entries, dbpkg.ConfigValueWrite{Key: key, Value: value, Encrypted: encrypted})
+	return append(entries, dbpkg.ConfigValueWrite{Key: key + ".updated_by", Value: actor})
+}
+
 func parseTruthyConfigValue(raw string, defaultValue bool) bool {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "1", "true", "on", "activo", "enabled", "si", "yes":
@@ -247,12 +275,7 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			var payload struct {
-				Enabled   *bool   `json:"enabled"`
-				Provider  *string `json:"provider"`
-				SiteKey   *string `json:"site_key"`
-				SecretKey *string `json:"secret_key"`
-			}
+			var payload recaptchaConfigMutation
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
 				return
@@ -262,49 +285,61 @@ func RecaptchaConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
+			enabled, err := recaptchaFeatureRequested(dbSuper)
+			if err != nil {
+				http.Error(w, "no se pudo leer la configuracion de reCAPTCHA", http.StatusInternalServerError)
+				return
+			}
+			if payload.Enabled != nil {
+				enabled = *payload.Enabled
+			}
+			siteKey := recaptchaSiteKey(dbSuper)
+			if payload.SiteKey != nil {
+				siteKey = strings.TrimSpace(*payload.SiteKey)
+			}
+			secretKey, secretReadErr := getDecryptedConfigValue(dbSuper, superRecaptchaSecretKeyConfigKey)
+			if envSecret := recaptchaEnvValue("GOOGLE_RECAPTCHA_SECRET_KEY", "RECAPTCHA_SECRET_KEY"); strings.TrimSpace(secretKey) == "" && envSecret != "" {
+				secretKey = envSecret
+				secretReadErr = nil
+			}
+			newSecret := ""
+			if payload.SecretKey != nil {
+				newSecret = strings.TrimSpace(*payload.SecretKey)
+				if newSecret != "" {
+					secretKey = newSecret
+					secretReadErr = nil
+				}
+			}
+			if err := validateRecaptchaActivation(enabled, siteKey, secretKey, secretReadErr); err != nil {
+				writeJSON(w, http.StatusUnprocessableEntity, map[string]interface{}{"ok": false, "message": err.Error()})
+				return
+			}
+
+			entries := make([]dbpkg.ConfigValueWrite, 0, 8)
 			if payload.Enabled != nil {
 				value := "0"
-				if *payload.Enabled {
+				if enabled {
 					value = "1"
 				}
-				if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaEnabledConfigKey, value, false); err != nil {
-					http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
-					return
-				}
+				entries = appendRecaptchaConfigWrite(entries, superRecaptchaEnabledConfigKey, value, false, adminEmail)
 			}
 			if payload.SiteKey != nil {
-				siteKey := strings.TrimSpace(*payload.SiteKey)
-				if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaSiteKeyConfigKey, siteKey, false); err != nil {
-					http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
-					return
-				}
+				entries = appendRecaptchaConfigWrite(entries, superRecaptchaSiteKeyConfigKey, siteKey, false, adminEmail)
 			}
 			if payload.Provider != nil {
-				provider := normalizeRecaptchaProvider(strings.TrimSpace(*payload.Provider))
-				if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaProviderConfigKey, provider, false); err != nil {
-					http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
+				entries = appendRecaptchaConfigWrite(entries, superRecaptchaProviderConfigKey, normalizeRecaptchaProvider(*payload.Provider), false, adminEmail)
+			}
+			if newSecret != "" {
+				encryptedValue, err := utils.EncryptString(newSecret)
+				if err != nil {
+					http.Error(w, "no se pudo cifrar la clave de reCAPTCHA", http.StatusInternalServerError)
 					return
 				}
+				entries = appendRecaptchaConfigWrite(entries, superRecaptchaSecretKeyConfigKey, encryptedValue, true, adminEmail)
 			}
-			if payload.SecretKey != nil {
-				secretKey := strings.TrimSpace(*payload.SecretKey)
-				if secretKey != "" {
-					encryptedValue, err := utils.EncryptString(secretKey)
-					if err != nil {
-						http.Error(w, "no se pudo cifrar la clave de reCAPTCHA", http.StatusInternalServerError)
-						return
-					}
-					if err := dbpkg.SetConfigValue(dbSuper, superRecaptchaSecretKeyConfigKey, encryptedValue, true); err != nil {
-						http.Error(w, "no se pudo guardar la clave de reCAPTCHA", http.StatusInternalServerError)
-						return
-					}
-				}
-			}
-			for _, key := range []string{superRecaptchaEnabledConfigKey, superRecaptchaProviderConfigKey, superRecaptchaSiteKeyConfigKey, superRecaptchaSecretKeyConfigKey} {
-				if err := dbpkg.SetConfigValue(dbSuper, key+".updated_by", adminEmail, false); err != nil {
-					http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
-					return
-				}
+			if err := dbpkg.SetConfigValuesAtomic(dbSuper, entries); err != nil {
+				http.Error(w, "no se pudo guardar la configuracion de reCAPTCHA", http.StatusInternalServerError)
+				return
 			}
 
 			writeJSON(w, http.StatusOK, map[string]interface{}{

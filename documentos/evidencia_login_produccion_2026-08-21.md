@@ -114,3 +114,30 @@ staging para repetir alli el selector reparado y la matriz completa.
 Antes de desplegar se deben ejecutar las dos migraciones `super`, configurar
 completamente reCAPTCHA si esta marcado como activo y repetir la matriz real en
 staging equivalente. Hasta entonces el estado es NO-GO para produccion general.
+
+## Incidente y recuperación operativa 2026-08-25
+
+- Se reprodujo públicamente HTTP 503 en
+  `POST /super/api/administradores/login` incluso con una cuenta inexistente;
+  el fallo ocurría antes de validar credenciales y afectaba también registro y
+  recuperación.
+- `/health` y `/ready` respondían HTTP 200. `/config.js` confirmó reCAPTCHA
+  solicitado pero no configurado. PostgreSQL conservaba la clave pública y una
+  clave privada cifrada, pero el backend no podía descifrar esta última; las
+  variables de entorno equivalentes estaban vacías.
+- La recuperación reversible cambió solo `security.recaptcha.enabled` a `0` y
+  registró el actor operativo. No se borró la clave cifrada, no se cambió una
+  contraseña y no se desactivó el throttle durable.
+- Después del cambio, el mismo probe devolvió HTTP 401 con
+  `Credenciales inválidas.`; salud y readiness permanecieron correctos.
+- La revisión visual publicada cubrió escritorio y móvil: login, error de
+  credenciales, recuperación no enumerativa, formulario de nueva clave y
+  registro administrativo sin desbordamiento horizontal, con acciones táctiles
+  de 44 px en móvil.
+- El candidato `codex/login-recaptcha-runtime-repair` impide activar una clave
+  cifrada ilegible, valida las credenciales antes de persistir `enabled=1` y
+  aplica la configuración compuesta atómicamente.
+
+La clave privada válida de Google debe volver a ingresarse desde Super
+administración y probarse contra Google antes de reactivar reCAPTCHA. No se
+considera operativo solo porque exista un valor cifrado en la base de datos.

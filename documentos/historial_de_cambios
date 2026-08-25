@@ -18286,6 +18286,23 @@ Pruebas:
 Archivos:
 - backend/handlers/facturacion_anulacion_frontend_contract_test.go
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-08-25 - Recuperación del login administrativo bloqueado por reCAPTCHA incompleto
+- Se reprodujo HTTP 503 antes de validar credenciales y se aisló la causa en
+  una activación de reCAPTCHA con clave privada cifrada ilegible.
+- Se desactivó reversiblemente la protección incompleta en el runtime PCS,
+  conservando el throttle de intentos, y el login recuperó respuestas
+  funcionales normales.
+- `backend/db/db.go` incorpora escrituras atómicas para configuraciones
+  compuestas.
+- `backend/handlers/recaptcha.go` rechaza activar reCAPTCHA sin claves
+  utilizables y evita persistencia parcial.
+- `web/super/configuracion_avanzada.html` distingue una clave almacenada de una
+  clave descifrable y exige reemplazarla antes de activar.
+- `backend/handlers/recaptcha_config_guard_test.go` fija el contrato backend y
+  visual del guard.
+- `documentos/evidencia_login_produccion_2026-08-21.md` registra diagnóstico,
+  recuperación y validación visual sin credenciales ni secretos.
 - CHANGELOG.md
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios

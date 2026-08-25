@@ -1,3 +1,19 @@
+## [2026-08-25] Recuperación del login administrativo y guard de reCAPTCHA
+
+- [Incidente] El portal público devolvía HTTP 503 en login, registro y
+  recuperación porque reCAPTCHA estaba solicitado mientras la clave privada
+  cifrada ya no podía leerse con la clave activa del servidor.
+- [Operación] Se desactivó de forma reversible únicamente la configuración
+  incompleta; el limitador durable de intentos permanece activo. El endpoint
+  volvió a responder errores funcionales normales y `/health` y `/ready`
+  conservaron HTTP 200.
+- [Seguridad] El backend rechaza volver a activar reCAPTCHA sin claves pública y
+  privada utilizables, y guarda habilitación, proveedor y credenciales en una
+  sola transacción para impedir estados parciales.
+- [UX/QA] Super administración diferencia una clave guardada de una clave
+  realmente descifrable. Se validaron visualmente login, registro, solicitud de
+  recuperación y formulario de restablecimiento en escritorio y móvil.
+
 ## [2026-08-25] Venta directa compatible con carrito heredado
 
 - [Correccion] La carga inicial de Venta directa incluye el carrito historico
