@@ -7823,17 +7823,14 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		return
 	}
 	prepareDIANConfigSaveActivation(payload)
-	applyGenericDefaultValues(payload, cfgDIAN.DefaultValues)
-	ensureGenericCode(payload, cfgDIAN.CodeColumn, cfgDIAN.CodePrefix)
-	if hasAllowedColumn(cfgDIAN.AllowedColumns, "usuario_creador") && isEmptyGenericValue(payload["usuario_creador"]) {
-		payload["usuario_creador"] = adminEmailFromRequest(r)
+	id := resolveIDFromPayloadOrQuery(payload, r)
+	if id <= 0 {
+		if current, currentErr := getEmpresaDIANConfig(dbEmp, empresaID); currentErr == nil {
+			id = anyToInt64(current["id"])
+		}
 	}
-	if hasAllowedColumn(cfgDIAN.AllowedColumns, "estado") && isEmptyGenericValue(payload["estado"]) {
-		payload["estado"] = "activo"
-	}
-	if anyToInt64(payload["resolucion_alerta_dias"]) <= 0 {
-		payload["resolucion_alerta_dias"] = dianResolutionAlertDays
-	}
+	creating := id <= 0
+	prepareDIANConfigPersistenceDefaults(payload, creating, adminEmailFromRequest(r))
 	// Certificate material can only be changed by the tenant-scoped upload
 	// flow. Empty write-only fields preserve the current encrypted value.
 	delete(payload, "certificado_url")
@@ -7843,24 +7840,20 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 			delete(payload, field)
 		}
 	}
-	if err := validateGenericRequiredCreate(payload, cfgDIAN.RequiredOnCreate); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	id := resolveIDFromPayloadOrQuery(payload, r)
-	if id <= 0 {
-		if current, err := getEmpresaDIANConfig(dbEmp, empresaID); err == nil {
-			id = anyToInt64(current["id"])
+	if creating {
+		if err := validateGenericRequiredCreate(payload, cfgDIAN.RequiredOnCreate); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 	}
+
 	storagePayload, err := encryptDIANConfigPayloadForStorage(empresaID, payload)
 	if err != nil {
 		http.Error(w, "No se pudo cifrar la configuracion sensible DIAN", http.StatusBadRequest)
 		return
 	}
 	status := http.StatusOK
-	if id <= 0 {
+	if creating {
 		id, err = dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, storagePayload, cfgDIAN.AllowedColumns)
 		status = http.StatusCreated
 	} else {
@@ -7895,6 +7888,27 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		resp["configuracion_pais_warning"] = "La configuracion DIAN se guardo, pero no se pudo sincronizar la configuracion fiscal por pais."
 	}
 	writeJSON(w, status, resp)
+}
+
+func prepareDIANConfigPersistenceDefaults(payload map[string]interface{}, creating bool, actorEmail string) {
+	if payload == nil {
+		return
+	}
+	if creating {
+		applyGenericDefaultValues(payload, cfgDIAN.DefaultValues)
+		ensureGenericCode(payload, cfgDIAN.CodeColumn, cfgDIAN.CodePrefix)
+		if hasAllowedColumn(cfgDIAN.AllowedColumns, "usuario_creador") && isEmptyGenericValue(payload["usuario_creador"]) {
+			payload["usuario_creador"] = strings.TrimSpace(actorEmail)
+		}
+		if hasAllowedColumn(cfgDIAN.AllowedColumns, "estado") && isEmptyGenericValue(payload["estado"]) {
+			payload["estado"] = "activo"
+		}
+	}
+	if _, supplied := payload["resolucion_alerta_dias"]; creating || supplied {
+		if anyToInt64(payload["resolucion_alerta_dias"]) <= 0 {
+			payload["resolucion_alerta_dias"] = dianResolutionAlertDays
+		}
+	}
 }
 
 func prepareDIANConfigSaveActivation(payload map[string]interface{}) {
@@ -11268,6 +11282,19 @@ func dianIsSyntheticSyncHistoryID(trackID string) bool {
 	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(trackID)), "sync:")
 }
 
+func dianHistoryTrackID(operation, documentoCodigo, responseTrackID string) string {
+	if trackID := strings.TrimSpace(responseTrackID); trackID != "" {
+		return trackID
+	}
+	if strings.EqualFold(strings.TrimSpace(operation), "SendBillSync") && strings.TrimSpace(documentoCodigo) != "" {
+		// SendBillSync is final and synchronous, including rejected responses.
+		// It does not promise a TrackId, so use a non-reconsultable audit key for
+		// every outcome instead of losing the actual DIAN response in persistence.
+		return "sync:" + strings.TrimSpace(documentoCodigo)
+	}
+	return ""
+}
+
 func listDIANTrackHistory(dbEmp *sql.DB, empresaID int64, limit int) ([]map[string]interface{}, error) {
 	if limit <= 0 {
 		limit = 80
@@ -11454,13 +11481,7 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 		contingenciaActiva = true
 	}
 
-	historyTrackID := genericStringValue(responseMap["track_id"])
-	if historyTrackID == "" && operation == "SendBillSync" && acuseEstado == "aceptado" && documentoCodigo != "" {
-		// SendBillSync returns the official final response inline instead of a
-		// TrackId. Persist a clearly synthetic key for audit continuity, but never
-		// send it to GetStatusZip or represent it as a DIAN identifier.
-		historyTrackID = "sync:" + documentoCodigo
-	}
+	historyTrackID := dianHistoryTrackID(operation, documentoCodigo, genericStringValue(responseMap["track_id"]))
 	if dbEmp != nil {
 		if err := upsertDIANTrackHistory(dbEmp, empresaID, map[string]interface{}{
 			"documento_codigo":     documentoCodigo,

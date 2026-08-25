@@ -1543,7 +1543,6 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 				dispatchControlElectricoEstacionAsync(dbEmp, carritoPagado, false, usuarioOperacion, "pagar_estacion")
-
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"ok":                         true,
 					"estado":                     "inactivo",
@@ -1606,6 +1605,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					},
 					"credito_venta":        creditoVenta,
 					"documento_venta":      documentoVenta,
+					"factura_electronica":  carritoFacturaElectronicaResponse(documentoVenta),
 					"modo_documento_venta": modoDocumentoVenta,
 				})
 				return
@@ -3864,6 +3864,13 @@ func registrarDocumentoVentaDesdeCarritoPagadoContext(ctx context.Context, dbEmp
 		"factura_electronica":           facturaElectronica,
 		"fuente_fiscal":                 fuenteFiscalRespuesta,
 	}, nil
+}
+
+func carritoFacturaElectronicaResponse(documentoVenta map[string]interface{}) interface{} {
+	if documentoVenta == nil {
+		return nil
+	}
+	return documentoVenta["factura_electronica"]
 }
 
 func anularDocumentosVentaDesdeCarrito(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, motivo, usuario string) []map[string]interface{} {

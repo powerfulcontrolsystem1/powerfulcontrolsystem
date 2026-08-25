@@ -3,6 +3,19 @@
 Fecha: 2026-04-18
 Estado: vigente
 
+Actualizacion 2026-08-25:
+
+- `nota_credito` solo se emite mediante `anular_factura_nota_credito` sobre una
+  factura aceptada con CUFE oficial y fuente fiscal inmutable. El servidor
+  deriva y sella una fuente separada para la nota; no acepta lineas, partes,
+  impuestos ni referencia fiscal libres del cliente.
+- La fuente de la nota conserva el numero legal, CUFE y fecha fiscal de la
+  factura. El UBL `CreditNote` usa CUDE, `DiscrepancyResponse`,
+  `BillingReference` y todas las lineas reales. La factura original permanece
+  emitida hasta que DIAN acepte la nota.
+- `nota_credito` generica/parcial y `nota_debito` siguen en HTTP 422. El catalogo
+  publica la anulacion total como capacidad parcial, no como emision generica.
+
 Actualizacion 2026-08-24:
 
 - El candidato actual habilita para emision comercial DIAN exclusivamente
@@ -415,9 +428,11 @@ Orden de prioridad:
   corrida Schematron oficial permanece pendiente por falta de un procesador
   XSLT 3 compatible en el entorno actual, y la aceptacion fiscal final depende
   siempre del acuse DIAN/proveedor.
-- solo `factura_electronica` tiene ruta candidata de emision comercial. Notas,
-  documento soporte, nomina, equivalentes POS y RADIAN siguen bloqueados de
-  forma segura; catalogarlos no significa que funcionen en produccion.
+- `factura_electronica` tiene emision comercial y `nota_credito` solo la ruta
+  especializada de anulacion total descrita en la actualizacion 2026-08-25.
+  Nota debito, documento soporte, nomina, equivalentes POS y RADIAN siguen
+  bloqueados de forma segura; catalogarlos no significa que funcionen en
+  produccion.
 - el XML firmado, el acuse del proveedor y la representacion PDF se persisten en almacenamiento privado por empresa y pueden descargarse desde la bandeja de facturas; el XML y PDF se adjuntan al correo posterior a la aceptacion.
 
 ## Errores de contrato esperados

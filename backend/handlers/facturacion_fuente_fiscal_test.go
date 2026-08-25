@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"bytes"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -174,6 +176,94 @@ func TestGenerateDIANUBLDesdeFuenteFiscalUsesRealMultiLineData(t *testing.T) {
 	}
 }
 
+func TestGenerateDIANUBLNotaCreditoTotalUsesAcceptedInvoiceSource(t *testing.T) {
+	carrito, items, cfgMaestro, cliente, docOrigen := facturacionFuenteFiscalFixture()
+	original, err := buildFacturacionFuenteFiscalSnapshot(carrito, items, cfgMaestro, cliente, docOrigen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	factura := dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID: 12, TipoDocumento: "factura_electronica", DocumentoCodigo: original.Documento.CodigoDestino,
+		NumeroLegal: "FV100", CodigoValidacion: strings.Repeat("a", 96), MontoTotal: 238, Moneda: "COP",
+	}
+	nota := dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID: 12, TipoDocumento: "nota_credito", DocumentoCodigo: "NC-FV100-1",
+		NumeroLegal: "NC12000000001", MontoTotal: 238, Moneda: "COP", FechaDocumento: "2026-08-25",
+	}
+	snapshot, err := buildFacturacionFuenteFiscalNotaCreditoTotal(original, nota, factura, "2026-08-24")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := marshalFacturacionFuenteFiscal(snapshot); err != nil {
+		t.Fatalf("fuente fiscal de nota no serializa: %v", err)
+	}
+	cfg := testDIANValidConfig(t, "")
+	cfg["nit"] = "900123456"
+	cfg["digito_verificacion"] = "8"
+	cfg["url_dian"] = "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc"
+	fechaNota := facturacionDIANFechaEmisionFirmada(time.Now())
+	result, status, err := generateDIANUBLBase(cfg, 12, map[string]interface{}{
+		"documento_tipo": "nota_credito", "documento_codigo": nota.DocumentoCodigo,
+		"numero_legal": nota.NumeroLegal, "fecha_emision": fechaNota, "total": "238.00",
+		"codigo_correccion": "2", "descripcion_correccion": "Anulacion de factura electronica",
+	}, snapshot)
+	if err != nil || status != http.StatusOK {
+		t.Fatalf("generacion de nota real fallo status=%d err=%v", status, err)
+	}
+	xml := genericStringValue(result["xml_ubl_base"])
+	for _, expected := range []string{
+		"<CreditNote ", "<cbc:CustomizationID>20</cbc:CustomizationID>", "<cbc:CreditNoteTypeCode>91</cbc:CreditNoteTypeCode>",
+		"<cbc:ResponseCode>2</cbc:ResponseCode>", "<cbc:ID>FV100</cbc:ID>", strings.Repeat("a", 96),
+		"Cafe colombiano", "Pan artesanal", "<cbc:CreditedQuantity", `schemeName="CUDE-SHA384"`,
+	} {
+		if !strings.Contains(xml, expected) {
+			t.Fatalf("nota credito UBL no contiene %q", expected)
+		}
+	}
+	if strings.Count(xml, "<cac:CreditNoteLine>") != 2 || strings.Contains(xml, "<cac:InvoiceLine>") {
+		t.Fatalf("lineas de nota credito incorrectas: %s", xml)
+	}
+	if got := genericStringValue(result["uuid"]); !facturacionCodigoSHA384Valido(got) || got == factura.CodigoValidacion {
+		t.Fatalf("CUDE de nota invalido o reutilizado: %q", got)
+	}
+	signed, signStatus, signErr := signDIANXMLXAdESBase(cfg, 12, map[string]interface{}{"xml_ubl_base": xml, "documento_codigo": nota.NumeroLegal})
+	if signErr != nil || signStatus != http.StatusOK {
+		t.Fatalf("firma de nota credito fallo status=%d err=%v", signStatus, signErr)
+	}
+	preflight := validateDIANDocumentPreflight(cfg, 12, map[string]interface{}{
+		"documento_tipo": "nota_credito", "documento_codigo": nota.DocumentoCodigo, "numero_legal": nota.NumeroLegal,
+		"fecha_emision": fechaNota, "total": "238.00", "impuesto_total": "38.00", "moneda": "COP",
+		"cliente_nombre": snapshot.Cliente.NombreRazonSocial, "cliente_nit": snapshot.Cliente.NumeroDocumento,
+	}, genericStringValue(signed["xml_firmado"]), "envio_real")
+	if parseTruthy(genericStringValue(preflight["bloqueado"])) {
+		t.Fatalf("preflight de nota credito real quedo bloqueado: %#v", preflight)
+	}
+	if outputPath := strings.TrimSpace(os.Getenv("PCS_TEST_DIAN_NOTE_XML_OUTPUT")); outputPath != "" {
+		if err := os.WriteFile(outputPath, []byte(genericStringValue(signed["xml_firmado"])), 0o600); err != nil {
+			t.Fatalf("guardar XML de nota para QA: %v", err)
+		}
+	}
+}
+
+func TestBuildFacturacionFuenteFiscalNotaCreditoRejectsMissingOfficialReference(t *testing.T) {
+	carrito, items, cfg, cliente, docOrigen := facturacionFuenteFiscalFixture()
+	original, err := buildFacturacionFuenteFiscalSnapshot(carrito, items, cfg, cliente, docOrigen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	factura := dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID: 12, TipoDocumento: "factura_electronica", DocumentoCodigo: original.Documento.CodigoDestino,
+		NumeroLegal: "FV100", MontoTotal: 238, Moneda: "COP",
+	}
+	nota := dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID: 12, TipoDocumento: "nota_credito", DocumentoCodigo: "NC-FV100-1",
+		NumeroLegal: "NC12000000001", MontoTotal: 238, Moneda: "COP",
+	}
+	if _, err := buildFacturacionFuenteFiscalNotaCreditoTotal(original, nota, factura, "2026-08-24"); err == nil {
+		t.Fatal("una nota credito sin CUFE oficial debe permanecer bloqueada")
+	}
+}
+
 func TestDIANFuenteFiscalMonetaryTotalDoesNotDoubleSubtractLineDiscounts(t *testing.T) {
 	snapshot := &facturacionFuenteFiscalSnapshot{Totales: facturacionFuenteFiscalTotales{
 		BaseGravableLineas: 90, DescuentoLineas: 10, ImpuestoLineas: 17.10, TotalDocumentoOrigen: 107.10,
@@ -200,6 +290,65 @@ func TestDIANFuenteFiscalLineDiscountUsesPercentageAndRealItemCode(t *testing.T)
 		if !strings.Contains(xml, expected) {
 			t.Fatalf("linea UBL no contiene %q: %s", expected, xml)
 		}
+	}
+}
+
+func TestDIANFuenteFiscalSupportsExemptIVALineAtZeroPercent(t *testing.T) {
+	carrito, items, cfg, cliente, doc := facturacionFuenteFiscalFixture()
+	carrito.Subtotal = 100
+	carrito.ImpuestoTotal = 0
+	carrito.Total = 100
+	doc.MontoTotal = 100
+	items = []dbpkg.CarritoCompraItem{{
+		ID: 9, EmpresaID: 12, CarritoID: 77, TipoItem: "producto", ReferenciaID: 101,
+		CodigoItem: "SKU-EXENTO", Descripcion: "Producto exento", UnidadMedida: "EA",
+		Cantidad: 1, PrecioUnitario: 100, ImpuestoCodigo: "IVA", ImpuestoPorcentaje: 0,
+		BaseGravable: 100, ValorImpuesto: 0, SubtotalLinea: 100, TotalLinea: 100,
+	}}
+	snapshot, err := buildFacturacionFuenteFiscalSnapshot(carrito, items, cfg, cliente, doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snapshot.Bloqueantes) != 0 || snapshot.Lineas[0].TratamientoTributario != "exento" {
+		t.Fatalf("linea exenta debe quedar completa: %+v", snapshot)
+	}
+	groups, _, err := dianFuenteFiscalTaxGroups(snapshot.Lineas)
+	if err != nil || len(groups) != 1 || groups[0].Codigo != "01" || groups[0].Porcentaje != 0 {
+		t.Fatalf("grupo IVA exento inesperado groups=%+v err=%v", groups, err)
+	}
+	xml, err := dianFuenteFiscalLinesXML(snapshot.Lineas, "COP")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range []string{"<cbc:TaxAmount currencyID=\"COP\">0.00</cbc:TaxAmount>", "<cbc:Percent>0.00</cbc:Percent>", "<cbc:ID>01</cbc:ID>"} {
+		if !strings.Contains(xml, expected) {
+			t.Fatalf("linea exenta no contiene %q: %s", expected, xml)
+		}
+	}
+}
+
+func TestDIANFuenteFiscalOmitsTaxTotalForExcludedLine(t *testing.T) {
+	line := facturacionFuenteFiscalLinea{
+		Numero: 1, CodigoItem: "SKU-EXCLUIDO", Descripcion: "Producto excluido", UnidadMedida: "EA",
+		Cantidad: 1, PrecioUnitario: 100, BaseGravable: 100, TotalLinea: 100,
+		ImpuestoCodigo: "EXCLUIDO", ImpuestoPorcentaje: 0, TratamientoTributario: "excluido",
+	}
+	groups, _, err := dianFuenteFiscalTaxGroups([]facturacionFuenteFiscalLinea{line})
+	if err != nil || len(groups) != 0 {
+		t.Fatalf("linea excluida no debe crear grupos tributarios groups=%+v err=%v", groups, err)
+	}
+	xml, err := dianFuenteFiscalLinesXML([]facturacionFuenteFiscalLinea{line}, "COP")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(xml, "<cac:TaxTotal>") {
+		t.Fatalf("linea excluida no debe reportar TaxTotal: %s", xml)
+	}
+}
+
+func TestDIANFuenteFiscalRejectsZeroPercentForNonIVATax(t *testing.T) {
+	if _, _, _, _, ok := dianFuenteFiscalTaxTreatment("INC", 0); ok {
+		t.Fatal("INC en cero no debe convertirse silenciosamente en exento")
 	}
 }
 

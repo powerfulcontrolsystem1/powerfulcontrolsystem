@@ -105,6 +105,21 @@ func TestDIANUBLVentaConservaTiposImplementados(t *testing.T) {
 	}
 }
 
+func TestNotaCreditoComercialOnlyUsesTotalCancellationWorkflow(t *testing.T) {
+	if !facturacionDocumentoElectronicoDIANComercialSoportado("nota_credito") {
+		t.Fatal("nota credito total con fuente de ajuste debe llegar al dispatcher DIAN")
+	}
+	if facturacionDocumentoElectronicoDIANCreacionGenericaSoportada("nota_credito") {
+		t.Fatal("el endpoint generico no debe fabricar notas credito sin factura aceptada")
+	}
+	if !facturacionDocumentoElectronicoDIANCreacionGenericaSoportada("factura_electronica") {
+		t.Fatal("factura electronica debe conservar su creacion canonica")
+	}
+	if facturacionDocumentoElectronicoDIANComercialSoportado("nota_debito") {
+		t.Fatal("nota debito debe seguir bloqueada hasta tener ajuste estructurado real")
+	}
+}
+
 func TestConfiguracionDIANPorDocumentoNoHabilitaFamiliasSinAdaptador(t *testing.T) {
 	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "configurando"); err != nil {
 		t.Fatalf("documento soporte debe permitir preparacion separada: %v", err)

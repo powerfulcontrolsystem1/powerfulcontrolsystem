@@ -1946,8 +1946,9 @@
         var found = item.codes.map(function(code) { return catalog[code]; }).filter(Boolean);
         var allFound = found.length === item.codes.length;
         var allOperational = allFound && found.every(isDianEssentialOperational);
+        var partial = allFound && found.some(function(doc) { return doc && doc.disponible_anulacion_total === true; });
 		var blocked = allFound && found.some(function(doc) { return txt(doc && doc.estado_implementacion).toLowerCase() === "bloqueado_contrato"; });
-		var status = allOperational ? "Operativo" : (blocked ? "Bloqueado" : (allFound ? "Catalogado" : "Pendiente"));
+		var status = allOperational ? "Operativo" : (partial ? "Parcial" : (blocked ? "Bloqueado" : (allFound ? "Catalogado" : "Pendiente")));
         var card = document.createElement("div");
         card.className = "dian-essential-card";
         var title = document.createElement("strong");

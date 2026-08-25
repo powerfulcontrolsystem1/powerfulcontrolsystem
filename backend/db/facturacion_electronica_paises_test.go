@@ -153,6 +153,12 @@ func TestCatalogoDianSoloDeclaraOperativasFamiliasConAdaptador(t *testing.T) {
 		"factura_electronica": true,
 	}
 	for _, item := range ListFacturacionDianDocumentosElectronicos() {
+		if item.Codigo == "nota_credito" {
+			if item.DisponibleEmision || !item.DisponibleAnulacionTotal || item.EstadoImplementacion != "operativo_anulacion_total" {
+				t.Fatalf("nota credito debe limitarse a anulacion total trazable: %#v", item)
+			}
+			continue
+		}
 		if operativos[item.Codigo] {
 			if !item.DisponibleEmision || item.EstadoImplementacion != "operativo" {
 				t.Fatalf("documento con adaptador no está operativo: %#v", item)
