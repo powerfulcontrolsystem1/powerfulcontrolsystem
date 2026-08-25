@@ -43362,3 +43362,13 @@ Archivos modificados:
 - El worker, la emision automatica, un documento con CUFE/TrackId, una familia
   desconocida o un XML malformado permanecen cerrados; no se hace una
   regeneracion automatica ni se relaja el aislamiento por empresa.
+
+2026-08-25: fix: regenerar XML DIAN obsoleto solo en reenvio manual
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/facturacion_xml_legacy_rebuild_test.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
