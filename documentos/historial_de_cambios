@@ -43381,6 +43381,12 @@ Archivos modificados:
 - backend/handlers/facturacion_xml_legacy_rebuild_test.go
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
+2026-08-25 - Cierre real E2E del login publicado
+- Se repitieron registro administrativo, confirmacion de correo de un solo uso, primer login con contrato, logout, ruta protegida, duplicado, credencial incorrecta, recuperacion no enumerativa y token invalido en la interfaz publica.
+- Mailu entrego los mensajes reales desde soporte@powerfulcontrolsystem.com a la misma bandeja PCS mediante un alias QA; no se documentaron correo completo, clave, cookie ni token.
+- Google OAuth quedo publicado sin 502: HTTP 302 hacia Google, presupuesto de cabeceras dentro del margen del proxy y retorno visual al panel Super Admin.
+- La interfaz confirmo que 2FA global esta desactivado; no se atribuye una prueba OTP real mientras esa configuracion permanezca apagada.
+- `rs -SkipChangeLog -FullPreflight` paso preflight, reconstruccion Docker, migraciones, salud y Nginx. El cambio final de clave y la eliminacion de la cuenta sintetica quedan sujetos a confirmacion especifica.
 
 2026-08-25: Cierre local idempotente tras aceptación DIAN real.
 - La prueba productiva de `1PCS8` obtuvo acuse `aceptado` y CUFE oficial, pero

@@ -178,3 +178,51 @@ recuperación controlada siguiente.
   requieren los orígenes de la aplicación. La prueba de presupuesto ahora
   envuelve el handler con el middleware real y exige menos de 3072 bytes para
   conservar margen frente al límite de 4096 del proxy.
+
+## Cierre real de autenticacion publicado - 2026-08-25
+
+La evidencia de esta seccion sustituye las compuertas de despliegue y repeticion
+real que figuran como pendientes en las secciones historicas anteriores. No se
+conservan aqui correos completos de QA, contrasenas, cookies ni tokens.
+
+- El PR `#202` fue aprobado, paso Preflight, auditorias, Docker, secretos,
+  dependencias, SBOM y Trivy, y quedo fusionado en `main` como `8a168bf4`.
+- `rs -SkipChangeLog -FullPreflight` termino correctamente. El VPS reconstruyo
+  backend, frontend y worker, ejecuto migraciones y comprobaciones Nginx; API,
+  frontend, PostgreSQL y Mailu quedaron saludables. La limpieza segura asociada
+  recupero 3 GB sin tocar volumenes ni bases de datos.
+- El inicio publico de Google devuelve HTTP 302 hacia `accounts.google.com` con
+  1993 caracteres de cabeceras, seis cookies y CSP normal/report-only de 98
+  caracteres cada una. Ya no reproduce el 502 por cabecera excesiva.
+- La prueba visual de Google mostro el selector de cuentas, uso la cuenta PCS
+  autorizada y regreso al panel de Super Administracion. El alcance solicitado
+  fue exclusivamente `openid email profile` y se conservo state/PKCE.
+- Se registro desde la interfaz una cuenta administrativa QA nueva mediante un
+  alias en la misma bandeja PCS. reCAPTCHA v3 acepto la operacion y el correo
+  llego desde `soporte@powerfulcontrolsystem.com` con identidad visual del
+  sistema.
+- El enlace confirmo la cuenta una sola vez. Un segundo uso devolvio el estado
+  visible de enlace invalido, expirado o ya utilizado. El primer login por clave
+  exigio aceptar el contrato vigente y despues abrio el selector de empresas.
+- El logout redirigio al login, revoco la sesion y una visita posterior al
+  selector protegido regreso al acceso. Una clave incorrecta fue rechazada con
+  `Credenciales inválidas.` sin mostrar HTML de proxy.
+- El registro con el correo principal ya existente fue rechazado de forma
+  explicita, sin crear un duplicado ni sobrescribir la cuenta PCS.
+- La recuperacion de la cuenta QA y la de un correo inexistente mostraron el
+  mismo mensaje generico, evitando enumeracion. Para la cuenta real, Mailu envio
+  el mensaje, Gmail lo recibio y el enlace abrio el formulario de nueva clave.
+  Un token sintetico invalido fue rechazado visualmente sin cambiar datos.
+- No se envio el cambio final de contrasena de la cuenta QA: esa mutacion de
+  credencial requiere confirmacion especifica en el momento de ejecutarla. El
+  enlace, formulario, entrega, token valido y rechazo de token invalido si
+  quedaron comprobados.
+- La configuracion global 2FA aparece desactivada en la interfaz de Super
+  Administracion. Por diseno no se muestra ni exige OTP mientras ese switch este
+  apagado; por tanto, no corresponde declarar una prueba TOTP real habilitada.
+
+Con la configuracion publicada actual, registro, confirmacion, login por clave,
+contrato, sesion, logout, proteccion de rutas, recuperacion y Google OAuth quedan
+aptos para operacion. El unico cierre opcional restante es autorizar el cambio
+final de clave y la eliminacion posterior de la cuenta sintetica QA, y activar
+2FA si el negocio decide exigirlo antes del lanzamiento.
