@@ -1,3 +1,13 @@
+2026-08-25: Reenvio DIAN manual desde una cola terminal sin evidencia fiscal.
+- La prueba real de `1PCS8` demostro que el boton visible devolvia el error
+  historico cuando la cola ya estaba en `fallido_terminal` 5/5: el backend no
+  contactaba de nuevo a DIAN. La accion manual ahora reactiva esa cola dentro
+  del bloqueo advisory del mismo documento y empresa, reinicia su lote de
+  intentos y registra el error e intentos previos en observaciones.
+- El worker y las emisiones automaticas no pueden reactivar terminales. Si
+  existe TrackId, CUFE/CUDE o codigo de validacion, el reenvio permanece
+  bloqueado hasta consultar el acuse para evitar duplicar un documento fiscal.
+
 2026-08-25: Auditoria DIAN para respuestas de envio sin TrackId.
 - La prueba productiva de `1PCS8` demostro que DIAN puede responder a un envio
   sin `TrackId` y que la persistencia anterior ocultaba ese resultado bajo un
@@ -43301,3 +43311,12 @@ Archivos modificados:
 - backend/handlers/modulos_faltantes.go
 - documentos/historial_de_cambios
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-08-25: fix: reactivar cola DIAN terminal solo por reenvio manual
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/facturacion_reintento_manual_test.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
