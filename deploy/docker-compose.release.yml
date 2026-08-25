@@ -1,4 +1,8 @@
 services:
+  upload-permissions:
+    build: null
+    image: ${PCS_API_IMAGE_DIGEST:?Defina PCS_API_IMAGE_DIGEST con referencia @sha256}
+
   migrate:
     build: null
     image: ${PCS_MIGRATE_IMAGE_DIGEST:?Defina PCS_MIGRATE_IMAGE_DIGEST con referencia @sha256}

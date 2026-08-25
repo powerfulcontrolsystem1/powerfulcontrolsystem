@@ -252,6 +252,31 @@ func TestStagingDigestPromotionRequiresAllExactImagesBeforeRecreate(t *testing.T
 	}
 }
 
+func TestImmutableReleasePinsUploadPermissionsToAPIImage(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.release.yml"))
+	if err != nil {
+		t.Fatalf("read immutable release compose: %v", err)
+	}
+	compose := string(raw)
+	uploadPermissions := strings.Index(compose, "  upload-permissions:")
+	migrate := strings.Index(compose, "  migrate:")
+	if uploadPermissions < 0 || migrate <= uploadPermissions {
+		t.Fatal("immutable release compose must declare upload-permissions before migrate")
+	}
+	block := compose[uploadPermissions:migrate]
+	for _, required := range []string{
+		"build: null",
+		"image: ${PCS_API_IMAGE_DIGEST:",
+	} {
+		if !strings.Contains(block, required) {
+			t.Fatalf("upload-permissions must use the immutable API image; missing %q", required)
+		}
+	}
+	if strings.Contains(block, "pcs-backend:") {
+		t.Fatal("upload-permissions must not fall back to a mutable local backend tag")
+	}
+}
+
 func TestStagingUploadPermissionsUsesOnlyStagingNameAndVolume(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.staging.yml"))
 	if err != nil {

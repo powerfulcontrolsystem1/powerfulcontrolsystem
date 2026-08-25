@@ -13,6 +13,7 @@ const requirements = [
   ["scripts/sync_to_vps.ps1", "exit $script:SyncExitCode"],
   ["deploy/scripts/vps-compose-sidecar-up.sh", "up -d --build --remove-orphans"],
   ["deploy/docker-compose.release.yml", "PCS_FRONTEND_IMAGE_DIGEST"],
+  ["deploy/docker-compose.release.yml", "upload-permissions:"],
   [".github/workflows/release-candidate.yml", "packages: write"],
   [".github/workflows/release-candidate.yml", "docker build --target api"],
   [".github/workflows/release-candidate.yml", "security-artifacts/release-images.env"],
