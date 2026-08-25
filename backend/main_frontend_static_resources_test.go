@@ -458,6 +458,28 @@ func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	}
 }
 
+func TestSuperAdministradoresMutationsIncludeCSRF(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "web", "super", "administradores.html"))
+	if err != nil {
+		t.Fatalf("read super administradores page: %v", err)
+	}
+	content := string(page)
+	for _, required := range []string{
+		"adminFetch",
+		"readCookieValue('pcs_csrf')",
+		"X-CSRF-Token",
+		"method: 'DELETE'",
+		"method:'POST'",
+	} {
+		if !strings.Contains(content, required) {
+			t.Fatalf("super administradores mutations must include CSRF support; missing %q", required)
+		}
+	}
+	if strings.Contains(content, "await fetch('/super/api/administradores") {
+		t.Fatal("super administradores mutations must use the CSRF-aware request helper")
+	}
+}
+
 func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T) {
 	contextScript, err := os.ReadFile(filepath.Join("..", "web", "js", "empresa_submenu_context.js"))
 	if err != nil {

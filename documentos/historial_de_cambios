@@ -1,3 +1,17 @@
+2026-08-25: Cierre real del restablecimiento de clave administrativo.
+- Con autorizacion especifica se completo el formulario real de nueva clave de
+  la cuenta QA confirmada. El resultado visible abrio el selector de empresas.
+- Se cerro la sesion, se comprobo que la ruta privada regresara al login y se
+  ingreso de nuevo con la clave restablecida; el selector protegido volvio a
+  abrirse correctamente.
+- La cuenta aparecio activa y con invitacion aceptada en el panel global. No se
+  registraron correo completo, clave temporal, token, cookies ni otros secretos.
+- La limpieza autorizada descubrio que el CRUD de administradores no enviaba el
+  token CSRF en `POST` y `DELETE`; el servidor rechazaba correctamente la
+  mutacion con 403. La pagina incorpora un helper de peticiones del mismo origen
+  que lee la cookie publica `pcs_csrf` y la replica en `X-CSRF-Token`, manteniendo
+  intacta la validacion del servidor y la sesion `HttpOnly`.
+
 2026-08-25: Reenvio DIAN manual desde una cola terminal sin evidencia fiscal.
 - La prueba real de `1PCS8` demostro que el boton visible devolvia el error
   historico cuando la cola ya estaba en `fallido_terminal` 5/5: el backend no
