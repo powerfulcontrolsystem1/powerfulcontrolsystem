@@ -3371,6 +3371,13 @@ func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp
 	}
 	if retryActual != nil && (normalizeFacturacionEstadoEnvio(retryActual.EstadoEnvio) == "aceptado" || normalizeFacturacionEstadoEnvio(retryActual.EstadoEnvio) == "reconciliado") {
 		docAceptado, changed := facturacionDocumentoAceptadoDIAN(doc, retryActual.RespuestaProveedor)
+		if retryAceptado, retryChanged := facturacionRetryAceptadoConCodigoValidacion(retryActual, docAceptado.CodigoValidacion); retryChanged {
+			retryActual, retryErr = dbpkg.UpsertFacturacionElectronicaRetryContext(ctx, dbEmp, retryAceptado)
+			if retryErr != nil {
+				resultado.Error = "el documento ya fue aceptado por DIAN, pero no se pudo completar su CUFE/CUDE en la cola fiscal"
+				return resultado, nil, retryErr
+			}
+		}
 		if changed {
 			if _, updateErr := dbpkg.UpsertEmpresaDocumentoFacturacionContext(ctx, dbEmp, docAceptado); updateErr != nil {
 				resultado.Error = "el documento ya fue aceptado por DIAN, pero no se pudo finalizar su estado local"
@@ -3811,6 +3818,23 @@ func facturacionDocumentoAceptadoDIAN(doc dbpkg.EmpresaDocumentoFacturacion, res
 		changed = true
 	}
 	return doc, changed
+}
+
+func facturacionRetryAceptadoConCodigoValidacion(retry *dbpkg.FacturacionElectronicaRetryItem, codigoValidacion string) (dbpkg.FacturacionElectronicaRetryItem, bool) {
+	if retry == nil {
+		return dbpkg.FacturacionElectronicaRetryItem{}, false
+	}
+	estado := normalizeFacturacionEstadoEnvio(retry.EstadoEnvio)
+	if (estado != "aceptado" && estado != "reconciliado") || !facturacionCodigoSHA384Valido(codigoValidacion) {
+		return *retry, false
+	}
+	codigoValidacion = strings.ToLower(strings.TrimSpace(codigoValidacion))
+	if strings.EqualFold(strings.TrimSpace(retry.CodigoValidacion), codigoValidacion) {
+		return *retry, false
+	}
+	updated := *retry
+	updated.CodigoValidacion = codigoValidacion
+	return updated, true
 }
 
 func facturacionCodigoSHA384Valido(value string) bool {

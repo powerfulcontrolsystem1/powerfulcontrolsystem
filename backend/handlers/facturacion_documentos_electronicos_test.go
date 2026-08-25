@@ -453,3 +453,29 @@ func TestFacturacionDocumentoAceptadoDIANEsIdempotenteYFailClosed(t *testing.T) 
 		t.Fatal("un acuse sin CUFE/CUDE oficial no debe finalizar el documento")
 	}
 }
+
+func TestFacturacionRetryAceptadoBackfillCUFEPreservaTrazabilidad(t *testing.T) {
+	cufe := strings.Repeat("ef", 48)
+	original := dbpkg.FacturacionElectronicaRetryItem{
+		ID:                 91,
+		EmpresaID:          12,
+		EstadoEnvio:        "aceptado",
+		Intentos:           1,
+		FechaUltimoIntento: "2026-08-25 11:51:50",
+		RespuestaProveedor: `{"estado_dian":"aceptado"}`,
+	}
+	got, changed := facturacionRetryAceptadoConCodigoValidacion(&original, strings.ToUpper(cufe))
+	if !changed || got.CodigoValidacion != cufe {
+		t.Fatalf("backfill CUFE inesperado: changed=%v codigo=%q", changed, got.CodigoValidacion)
+	}
+	if got.Intentos != original.Intentos || got.FechaUltimoIntento != original.FechaUltimoIntento || got.RespuestaProveedor != original.RespuestaProveedor {
+		t.Fatal("el backfill no debe alterar intentos, fecha ni acuse")
+	}
+	if _, changed = facturacionRetryAceptadoConCodigoValidacion(&got, cufe); changed {
+		t.Fatal("el backfill debe ser idempotente")
+	}
+	original.EstadoEnvio = "fallido"
+	if _, changed = facturacionRetryAceptadoConCodigoValidacion(&original, cufe); changed {
+		t.Fatal("una cola no aceptada no debe recibir codigo por esta ruta")
+	}
+}
