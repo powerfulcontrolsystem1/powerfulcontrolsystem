@@ -43361,3 +43361,23 @@ Archivos modificados:
 - backend/handlers/modulos_faltantes.go
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
+2026-08-25: Regeneracion segura del XML firmado rechazado y obsoleto.
+- Tras desplegar los literales oficiales, `1PCS8` quedo bloqueada por el
+  preflight porque conservaba el XML firmado de la prueba rechazada, con el
+  ProfileID abreviado y sin identificacion estandar de linea.
+- Un reenvio manual autorizado puede detectar ese formato legado, regenerar
+  UBL, fecha y firma desde la misma fuente fiscal inmutable y reemplazar el
+  artefacto solo si el XML nuevo supera la validacion preventiva.
+- El worker, la emision automatica, un documento con CUFE/TrackId, una familia
+  desconocida o un XML malformado permanecen cerrados; no se hace una
+  regeneracion automatica ni se relaja el aislamiento por empresa.
+
+2026-08-25: fix: regenerar XML DIAN obsoleto solo en reenvio manual
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/facturacion_xml_legacy_rebuild_test.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios

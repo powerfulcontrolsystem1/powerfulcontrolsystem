@@ -331,7 +331,7 @@ func TestFacturacionColombiaProduccionBloqueaProveedorManual(t *testing.T) {
 		DocumentoCodigo: "FV-TEST",
 		PaisCodigo:      "CO",
 		AmbienteFE:      "produccion",
-	}, "emitir")
+	}, "emitir", false)
 	if result.Success {
 		t.Fatalf("manual provider must not dispatch as success for Colombia production")
 	}

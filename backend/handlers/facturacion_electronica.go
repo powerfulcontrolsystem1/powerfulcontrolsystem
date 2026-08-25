@@ -2577,7 +2577,26 @@ func dispatchFacturacionProveedorHTTP(url string, payload map[string]interface{}
 	}
 }
 
-func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion, apiBaseURL string) facturacionProveedorDispatchResult {
+func facturacionDIANLegacySignedXMLNeedsManualRegeneration(xmlPayload, documentoTipo string) bool {
+	xmlPayload = strings.TrimSpace(xmlPayload)
+	if xmlPayload == "" {
+		return false
+	}
+	expectedRoot, _, _, _, _, _, _, _ := dianDocumentKind(documentoTipo)
+	if expectedRoot == "" {
+		return false
+	}
+	values, actualRoot, err := parseDIANXMLTextValues(xmlPayload)
+	if err != nil || actualRoot != expectedRoot {
+		return false
+	}
+	if dianXMLFirst(values, "ProfileID") != dianDocumentProfileID(expectedRoot) {
+		return true
+	}
+	return !strings.Contains(xmlPayload, "<cac:StandardItemIdentification>")
+}
+
+func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion, apiBaseURL string, allowLegacySignedXMLRegeneration bool) facturacionProveedorDispatchResult {
 	if dbEmp == nil || doc.EmpresaID <= 0 {
 		return facturacionProveedorDispatchResult{Success: false, Error: "conexion o empresa invalida para DIAN oficial"}
 	}
@@ -2637,14 +2656,33 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	}
 	xmlFirmado := ""
 	xmlNuevo := false
+	legacyXMLRegenerated := false
 	if storedXML, loadErr := loadFacturacionFiscalArtifact(context.Background(), dbEmp, doc, "xml_firmado"); loadErr == nil {
 		xmlFirmado = strings.TrimSpace(string(storedXML))
-		if storedFecha := facturacionDIANFechaEmisionDesdeXML(xmlFirmado); storedFecha != "" {
-			fechaEmision = storedFecha
-			docPayload["fecha_emision"] = storedFecha
-		}
 		if _, _, sourceErr := generateDIANUBLBase(dianCfg, doc.EmpresaID, docPayload, fuenteFiscal); sourceErr != nil {
 			return facturacionProveedorDispatchResult{Success: false, Error: "fuente fiscal no valida para reintentar XML firmado: " + sourceErr.Error()}
+		}
+		if allowLegacySignedXMLRegeneration && facturacionDIANLegacySignedXMLNeedsManualRegeneration(xmlFirmado, documentoTipo) {
+			// Solo la accion manual autorizada puede reemplazar un XML rechazado y
+			// obsoleto. La fuente fiscal sigue siendo la misma e inmutable; se
+			// renuevan fecha, UBL y firma para superar el preflight vigente.
+			fechaEmision = facturacionDIANFechaEmisionFirmada(time.Now())
+			docPayload["fecha_emision"] = fechaEmision
+			ublResp, _, generateErr := generateDIANUBLBase(dianCfg, doc.EmpresaID, docPayload, fuenteFiscal)
+			if generateErr != nil {
+				return facturacionProveedorDispatchResult{Success: false, Error: "regenerar XML UBL DIAN obsoleto: " + generateErr.Error()}
+			}
+			docPayload["xml_ubl_base"] = genericStringValue(ublResp["xml_ubl_base"])
+			signResp, _, signErr := signDIANXMLXAdESBase(dianCfg, doc.EmpresaID, docPayload)
+			if signErr != nil {
+				return facturacionProveedorDispatchResult{Success: false, Error: "firmar XML DIAN regenerado: " + signErr.Error()}
+			}
+			xmlFirmado = genericStringValue(signResp["xml_firmado"])
+			xmlNuevo = true
+			legacyXMLRegenerated = true
+		} else if storedFecha := facturacionDIANFechaEmisionDesdeXML(xmlFirmado); storedFecha != "" {
+			fechaEmision = storedFecha
+			docPayload["fecha_emision"] = storedFecha
 		}
 	} else if !errors.Is(loadErr, sql.ErrNoRows) {
 		return facturacionProveedorDispatchResult{Success: false, Error: "leer XML fiscal persistido: " + loadErr.Error()}
@@ -2702,6 +2740,9 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	}
 	safeJSON := facturacionSafeDispatchJSON(envioResp)
 	artifactWarning := ""
+	if legacyXMLRegenerated {
+		artifactWarning = "XML firmado obsoleto regenerado desde la fuente fiscal inmutable por reenvio manual."
+	}
 	providerContent := []byte(strings.TrimSpace(genericStringValue(envioResp["raw_response"])))
 	providerExtension := ".xml"
 	providerMime := "application/xml"
@@ -2813,7 +2854,7 @@ func dispatchFacturacionDIANAcusePendiente(dbEmp *sql.DB, doc dbpkg.EmpresaDocum
 	return facturacionProveedorDispatchResult{Success: true, Pending: true, ReferenciaExterna: trackID, RespuestaJSON: safeJSON, ArtifactWarning: artifactWarning}
 }
 
-func dispatchFacturacionProveedor(dbEmp *sql.DB, cfg *dbpkg.FacturacionElectronicaPaisConfig, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion string) facturacionProveedorDispatchResult {
+func dispatchFacturacionProveedor(dbEmp *sql.DB, cfg *dbpkg.FacturacionElectronicaPaisConfig, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion string, allowLegacySignedXMLRegeneration bool) facturacionProveedorDispatchResult {
 	proveedor := "manual"
 	ambiente := "sandbox"
 	apiBaseURL := ""
@@ -2849,7 +2890,7 @@ func dispatchFacturacionProveedor(dbEmp *sql.DB, cfg *dbpkg.FacturacionElectroni
 	}
 
 	if paisCodigo == "CO" && (proveedor == "dian" || strings.Contains(strings.ToLower(apiBaseURL), "dian.gov.co")) {
-		return dispatchFacturacionDIANOficial(dbEmp, payload, doc, accion, apiBaseURL)
+		return dispatchFacturacionDIANOficial(dbEmp, payload, doc, accion, apiBaseURL, allowLegacySignedXMLRegeneration)
 	}
 
 	referenciaLocal := fmt.Sprintf("%s-%d-%s", strings.ToUpper(proveedor), doc.EmpresaID, strings.ToUpper(strings.TrimSpace(doc.DocumentoCodigo)))
@@ -3438,7 +3479,7 @@ func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp
 	if paisCodigo == "CO" && normalizeFacturacionEstadoEnvio(retryPayload.EstadoEnvio) == "pendiente" && strings.TrimSpace(retryPayload.ReferenciaExterna) != "" {
 		dispatch = dispatchFacturacionDIANAcusePendiente(dbEmp, doc, payload, strings.TrimSpace(retryPayload.ReferenciaExterna))
 	} else {
-		dispatch = dispatchFacturacionProveedor(dbEmp, cfg, payload, doc, accion)
+		dispatch = dispatchFacturacionProveedor(dbEmp, cfg, payload, doc, accion, facturacionManualTerminalRetryAllowed(ctx))
 	}
 	now := facturacionNowLocal()
 	retryPayload.Intentos = retryPayload.Intentos + 1

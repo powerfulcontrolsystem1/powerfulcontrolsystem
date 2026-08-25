@@ -17056,3 +17056,12 @@ Archivos modificados:
 - backend/handlers/modulos_faltantes.go
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
+
+2026-08-25 06:16:06 - Mensaje: fix: regenerar XML DIAN obsoleto solo en reenvio manual; Commit: c61d8214; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/facturacion_xml_legacy_rebuild_test.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
