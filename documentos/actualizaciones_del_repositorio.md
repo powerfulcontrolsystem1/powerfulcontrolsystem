@@ -17046,3 +17046,13 @@ Archivos modificados:
 - backend/handlers/facturacion_reintento_manual_test.go
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
+
+2026-08-25 05:47:07 - Mensaje: fix: usar literales DIAN oficiales e identificar lineas UBL; Commit: 6be6f0e4; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/facturacion_fuente_fiscal.go
+- backend/handlers/facturacion_fuente_fiscal_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios

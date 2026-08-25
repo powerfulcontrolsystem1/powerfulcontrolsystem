@@ -43341,3 +43341,14 @@ Archivos modificados:
   ya trazado como identificacion del vendedor. No se fabrica un codigo UNSPSC,
   GTIN o partida arancelaria que el producto no tenga configurado.
 - La validacion local ya no tolera el ProfileID abreviado que DIAN rechaza.
+
+2026-08-25: fix: usar literales DIAN oficiales e identificar lineas UBL
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/facturacion_fuente_fiscal.go
+- backend/handlers/facturacion_fuente_fiscal_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
