@@ -11,6 +11,12 @@
   mutacion con 403. La pagina incorpora un helper de peticiones del mismo origen
   que lee la cookie publica `pcs_csrf` y la replica en `X-CSRF-Token`, manteniendo
   intacta la validacion del servidor y la sesion `HttpOnly`.
+- La correccion paso CI, se fusiono como `87ff0894` y se desplego con el flujo
+  oficial. La cuenta QA sintetica desaparecio del panel global sin afectar la
+  cuenta principal; su sesion abierta fue rechazada y redirigida al login.
+- El borrado administrativo revoca ahora todas las sesiones activas del objetivo
+  antes de eliminarlo e invalida la cache de autorizacion despues. Si la
+  revocacion falla, el registro no se borra y el servidor devuelve error.
 
 2026-08-25: Reenvio DIAN manual desde una cola terminal sin evidencia fiscal.
 - La prueba real de `1PCS8` demostro que el boton visible devolvia el error

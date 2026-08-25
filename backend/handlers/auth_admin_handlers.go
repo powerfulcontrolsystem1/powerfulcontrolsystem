@@ -2012,10 +2012,16 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 			}
+			if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, targetAdmin.Email); err != nil {
+				log.Println("AdministradoresHandler revoke sessions before delete error:", err)
+				http.Error(w, "no se pudieron revocar las sesiones del administrador", http.StatusInternalServerError)
+				return
+			}
 			if err := dbpkg.DeleteAdministrador(dbSuper, id); err != nil {
 				http.Error(w, "no se pudo eliminar el administrador", http.StatusInternalServerError)
 				return
 			}
+			utils.InvalidateAuthCacheForAdmin(targetAdmin.Email)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		default:

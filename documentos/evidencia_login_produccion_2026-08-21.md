@@ -224,9 +224,10 @@ conservan aqui correos completos de QA, contrasenas, cookies ni tokens.
 
 Con la configuracion publicada actual, registro, confirmacion, login por clave,
 contrato, sesion, logout, proteccion de rutas, recuperacion y Google OAuth quedan
-aptos para operacion. El cierre operativo restante es retirar la cuenta
-sintetica QA ya autorizada. El intento desde el panel revelo un 403 correcto del
-middleware porque el CRUD de administradores no enviaba el encabezado CSRF; el
-candidato local corrige `POST` y `DELETE`, pero requiere integracion y despliegue
-antes de repetir la eliminacion. 2FA continua siendo una decision de negocio y
-no un fallo del flujo mientras la configuracion global permanezca desactivada.
+aptos para operacion. La correccion CSRF paso CI, se integro como `87ff0894` y el
+despliegue oficial termino con contenedores, migraciones, Nginx, salud y readiness
+correctos. La cuenta sintetica QA se elimino desde el panel publicado; desaparecio
+del catalogo global, la cuenta principal permanecio intacta y la sesion QA que
+seguia abierta fue redirigida al login al volver a solicitar una ruta protegida.
+2FA continua siendo una decision de negocio y no un fallo del flujo mientras la
+configuracion global permanezca desactivada.
