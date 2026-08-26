@@ -1,3 +1,11 @@
+2026-08-26: Carga unica del menu de Compras.
+- El E2E visual exacto de PSI-000 observo que `compras_menu.html` iniciaba una
+  navegacion del iframe a `compras.html` antes de resolver la empresa y luego la
+  cancelaba para agregar `empresa_id`.
+- El destino inicial pasa de `src` a `data-src`; el controlador empresarial
+  compartido realiza la unica navegacion despues de resolver el tenant. Una
+  regresion conserva este contrato.
+
 2026-08-26: Soportes de compras IA sin generacion demo en produccion.
 - La revision visual final de PSI-000 detecto que el encabezado aun exponia
   `Cargar demo`, una accion que insertaba un soporte y una extraccion ficticios

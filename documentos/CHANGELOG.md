@@ -41,6 +41,8 @@
 - [Rendimiento/UX] El menu de Productos difiere la URL inicial de su iframe
   hasta resolver `empresa_id`; evita la primera navegacion sin tenant y su
   cancelacion inmediata, por lo que el catalogo se carga una sola vez.
+- [Rendimiento/UX] El menu de Compras aplica el mismo destino diferido; la
+  gestion de compras deja de iniciar y cancelar una carga previa sin tenant.
 - [Arquitectura] `bodega.html` queda como compatibilidad por redireccion y el
   carrito abre directamente `administrar_productos.html?view=bodegas`; se
   retira el CRUD heredado para mantener una sola implementacion de bodegas,

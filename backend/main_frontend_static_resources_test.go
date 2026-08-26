@@ -542,6 +542,33 @@ func TestProductosMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing
 	}
 }
 
+func TestComprasMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing.T) {
+	menu, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "compras_menu.html"))
+	if err != nil {
+		t.Fatalf("read purchases menu: %v", err)
+	}
+	content := string(menu)
+	framePattern := regexp.MustCompile(`<iframe[^>]+id="comprasContentFrame"[^>]*>`)
+	frame := framePattern.FindString(content)
+	if frame == "" {
+		t.Fatal("purchases menu must keep the purchases content frame")
+	}
+	if strings.Contains(frame, ` src=`) {
+		t.Fatal("purchases content frame must not navigate before empresa_id is resolved")
+	}
+	if !strings.Contains(frame, ` data-src="/administrar_empresa/compras.html"`) {
+		t.Fatal("purchases content frame must declare its deferred tenant-aware destination")
+	}
+
+	sharedScript, err := os.ReadFile(filepath.Join("..", "web", "js", "administrar_empresa.js"))
+	if err != nil {
+		t.Fatalf("read shared company controller: %v", err)
+	}
+	if !strings.Contains(string(sharedScript), `frame.getAttribute("data-src")`) {
+		t.Fatal("shared company controller must resolve deferred frame destinations")
+	}
+}
+
 func TestBodegasLegacyRoutesDelegateToUnifiedInventoryView(t *testing.T) {
 	root := filepath.Join("..", "web", "administrar_empresa")
 	for _, rel := range []string{"bodega.html", filepath.Join("productos", "bodegas.html")} {
