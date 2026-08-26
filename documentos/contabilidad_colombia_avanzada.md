@@ -1,6 +1,6 @@
 # Suite Contable Colombia Avanzada
 
-Fecha: 2026-05-05
+Fecha de actualización: 2026-08-26
 
 El módulo `contabilidad_colombia_avanzada` complementa `contabilidad_colombia` con los submódulos que suelen requerir los sistemas contables colombianos profesionales.
 
@@ -8,7 +8,10 @@ El módulo `contabilidad_colombia_avanzada` complementa `contabilidad_colombia` 
 
 - Información exógena DIAN / medios magnéticos: formatos configurables por año gravable, registros por tercero, validaciones básicas y generación desde comprobantes contables.
 - Nómina electrónica DIAN: documentos por empleado y periodo con devengados, deducciones, total, estado DIAN, CUNE y payload preparado.
-- Documento soporte electrónico: compras a proveedores no obligados a facturar con subtotal, IVA, retenciones, total, estado DIAN y CUDS.
+- Documento soporte electrónico: borradores estructurados de compras a
+  vendedores no obligados a facturar, preflight no emisor y adaptador dedicado
+  del Anexo técnico DIAN 1.1. El CUDS, la firma, el acuse y el estado fiscal no
+  pueden escribirse desde el formulario.
 - Activos fijos: control por código, categoría, fecha de compra, costo, valor residual, vida útil, depreciación mensual, depreciación acumulada y valor en libros.
 - Cartera y cuentas por pagar: cuentas por cobrar y por pagar con vencimiento, saldo, estado, tercero y origen.
 - Libros oficiales: libro diario, mayor/auxiliar, balance de prueba y resúmenes base desde comprobantes contabilizados.
@@ -21,6 +24,8 @@ El módulo `contabilidad_colombia_avanzada` complementa `contabilidad_colombia` 
 - Página administrativa: `web/administrar_empresa/contabilidad_colombia_avanzada.html`.
 - Base de datos: `backend/db/contabilidad_colombia_avanzada.go`.
 - Handler: `backend/handlers/contabilidad_colombia_avanzada.go`.
+- Adaptador DIAN: `backend/handlers/dian_documento_soporte.go`.
+- Interfaz especializada: `web/js/documento_soporte_dian.js`.
 
 ## Acciones API
 
@@ -31,6 +36,8 @@ GET:
 - `exogena_registros`
 - `nomina_electronica`
 - `documentos_soporte`
+- `documento_soporte_preflight` (solo lectura: no reserva número, no genera XML
+  y no transmite)
 - `activos_fijos`
 - `cartera_cxp`
 - `libros`
@@ -51,6 +58,37 @@ POST/PUT:
 
 Todas las tablas incluyen `empresa_id` y todas las consultas filtran por empresa. El módulo no duplica la lógica de PUC, terceros ni comprobantes; usa el núcleo `contabilidad_colombia` para generar libros y registros de exógena desde asientos contabilizados.
 
-## Notas de cumplimiento
+## Documento soporte DIAN 1.1
 
-Los formatos DIAN se manejan como configurables por año gravable para permitir ajustes normativos sin recompilar el sistema. La transmisión real a servicios DIAN debe conectarse con el módulo existente de facturación electrónica y firma cuando se habilite el proveedor tecnológico o el ambiente de pruebas correspondiente.
+- `empresa_contabilidad_documentos_soporte` conserva vendedor, ubicación,
+  pago, líneas, importes `NUMERIC(18,2)`, número legal, instantánea de
+  numeración y espejo del resultado DIAN por empresa.
+- El servidor valida y recalcula todas las líneas. Acepta exactamente los 1.093
+  códigos de unidad UN/ECE Revision 4 incorporados en la caja de herramientas
+  DIAN 1.1; el navegador solo sugiere las unidades más comunes.
+- La configuración de numeración vive separada en
+  `empresa_dian_documentos_configuracion` con
+  `tipo_documento=documento_soporte`. El prefijo es opcional y, si existe,
+  admite hasta cuatro caracteres alfanuméricos; autorización, vigencia, rango y
+  consecutivo se validan antes de activar o reservar.
+- La reserva usa bloqueo de fila y es idempotente por borrador. Nunca reduce un
+  consecutivo consumido ni mezcla rangos de factura de venta.
+- La emisión real solo se ofrece tras preflight verde y confirmación escrita
+  exacta. Genera `InvoiceTypeCode=05`, CUDS SHA-384, `CustomizationID` 10/11,
+  firma XAdES y `SendBillSync`; conserva XML, respuesta y representación en el
+  almacenamiento fiscal privado existente.
+- Si falla el espejo contable antes del despacho, la operación se detiene sin
+  transmitir. Una advertencia de persistencia posterior al despacho se devuelve
+  separada en `advertencias_persistencia` y nunca se convierte en un error HTTP
+  que invite a reenviar a ciegas el mismo XML.
+- Un borrador, configuración incompleta o vendedor/adquirente fiscalmente
+  inválido permanece bloqueado sin consumir consecutivo ni transmitir XML.
+
+## Notas de cumplimiento y operación
+
+Los formatos de información exógena siguen siendo configurables por año
+gravable. Documento soporte usa el transporte y la firma empresarial del módulo
+de facturación electrónica, pero su numeración y su fuente fiscal son propias.
+Que el adaptador esté implementado no sustituye la configuración DIAN de cada
+empresa ni constituye evidencia de aceptación: producción solo se confirma con
+despliegue verificado y acuse real del documento emitido.

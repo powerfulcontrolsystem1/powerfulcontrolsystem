@@ -1,3 +1,29 @@
+2026-08-26: Documento soporte DIAN 1.1 desde fuente contable estructurada.
+- Modulos afectados: `contabilidad_colombia_avanzada`,
+  `facturacion_electronica`, `DIAN Colombia`, `permisos` y
+  `seguridad_multiempresa`.
+- El formulario crea solo borradores con vendedor, ubicación, pago y líneas;
+  el servidor recalcula importes y elimina número, CUDS, respuesta y estado
+  fiscal suministrados por el navegador.
+- El preflight es de solo lectura. La emisión dedicada requiere configuración
+  separada válida, fuente sellada, confirmación escrita y reserva atómica por
+  `(empresa_id,documento_soporte_id)` antes de generar CUDS, firmar XAdES y usar
+  `SendBillSync`.
+- La numeración admite prefijo opcional de hasta cuatro caracteres y no puede
+  retroceder. La autorización usa 14 dígitos, vigencia completa y rango máximo
+  999999999. La caja DIAN 1.1 aporta el catálogo exacto de 1.093 unidades
+  UN/ECE Revision 4 validado en backend.
+- XML, acuse y representación usan el almacenamiento fiscal privado existente;
+  el espejo contable solo acepta CUDS SHA-384 del XML firmado o del acuse.
+- La emisión libre del Centro DIAN permanece deshabilitada. Nota de ajuste de
+  soporte, nómina, equivalentes, contingencia y RADIAN siguen bloqueados.
+- QA local: pruebas enfocadas, XSD/Schematron oficial, catálogo unidad por
+  unidad y preflight profesional correctos. Una prueba real requiere primero
+  un borrador de compra genuino y configuración propia de la empresa; no se
+  fabrican datos fiscales para forzarla. Esta actualización sustituye solo las
+  afirmaciones históricas que listaban documento soporte entre las familias sin
+  adaptador.
+
 2026-08-26: Facturacion electronica - reconciliacion local de acuses aceptados.
 - Nueva accion `reconciliar_aceptados_local` para reparar exclusivamente el
   documento y la cola locales desde un acuse DIAN ya aceptado/reconciliado.

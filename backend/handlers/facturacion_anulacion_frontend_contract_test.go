@@ -248,7 +248,7 @@ func TestFacturasElectronicasNoCuentaComprobanteComoFacturaFiscal(t *testing.T) 
 	}
 }
 
-func TestDIANFrontendDisablesFamiliesWithoutDedicatedAdapter(t *testing.T) {
+func TestDIANFrontendDisablesFreeFormAndFamiliesWithoutDedicatedAdapter(t *testing.T) {
 	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica_pruebas_dian.html")
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -257,6 +257,8 @@ func TestDIANFrontendDisablesFamiliesWithoutDedicatedAdapter(t *testing.T) {
 	page := string(raw)
 	for _, marker := range []string{
 		`value="documento_soporte" disabled`,
+		`Documento soporte (usar borrador contable estructurado)`,
+		`La emisión se realiza desde el borrador contable estructurado, con preflight y confirmación`,
 		`value="nomina_electronica" disabled`,
 		`value="documento_equivalente_pos" disabled`,
 		`value="eventos_radian_recepcion" disabled`,
@@ -540,7 +542,8 @@ func TestContabilidadManualFormsDoNotOfferForgedDIANStates(t *testing.T) {
 	for _, marker := range []string{
 		`value="Borrador local - sin envío DIAN" readonly`,
 		`CUNE y aceptación DIAN solo se registrarán desde el adaptador técnico`,
-		`Un CUDS, firma o aceptación DIAN no se puede declarar manualmente`,
+		`El servidor recalcula los importes y elimina cualquier CUDS, respuesta o estado DIAN escrito desde el navegador.`,
+		`Guardar no consume consecutivo, no genera XML y no transmite a DIAN.`,
 	} {
 		if !strings.Contains(page, marker) {
 			t.Fatalf("manual accounting UI missing fiscal-safety marker %q", marker)
@@ -552,21 +555,65 @@ func TestContabilidadManualFormsDoNotOfferForgedDIANStates(t *testing.T) {
 }
 
 func TestContabilidadDocumentoSoportePreflightIsVisibleAndNonEmitting(t *testing.T) {
-	path := filepath.Join("..", "..", "web", "administrar_empresa", "contabilidad_colombia_avanzada.html")
-	raw, err := os.ReadFile(path)
+	htmlPath := filepath.Join("..", "..", "web", "administrar_empresa", "contabilidad_colombia_avanzada.html")
+	jsPath := filepath.Join("..", "..", "web", "js", "documento_soporte_dian.js")
+	html, err := os.ReadFile(htmlPath)
 	if err != nil {
 		t.Fatalf("read Colombia accounting page: %v", err)
 	}
-	page := string(raw)
+	js, err := os.ReadFile(jsPath)
+	if err != nil {
+		t.Fatalf("read document-support frontend: %v", err)
+	}
+	page := string(html) + "\n" + string(js)
 	for _, marker := range []string{
+		`<script src="/js/documento_soporte_dian.js"></script>`,
 		`id="soportePreflight"`,
 		`data-ds-preflight`,
 		`documento_soporte_preflight`,
-		`La revisión no genera XML, no consume consecutivo y no envía información.`,
-		`No se emitió ni transmitió ningún documento.`,
+		`No se generó XML, no se consumió consecutivo y no se transmitió información.`,
+		`Preflight completado con bloqueos; no hubo emisión.`,
 	} {
 		if !strings.Contains(page, marker) {
 			t.Fatalf("document-support preflight UI missing safety marker %q", marker)
+		}
+	}
+}
+
+func TestContabilidadDocumentoSoporteEmissionRequiresTypedConfirmation(t *testing.T) {
+	htmlPath := filepath.Join("..", "..", "web", "administrar_empresa", "contabilidad_colombia_avanzada.html")
+	jsPath := filepath.Join("..", "..", "web", "js", "documento_soporte_dian.js")
+	html, err := os.ReadFile(htmlPath)
+	if err != nil {
+		t.Fatalf("read Colombia accounting page: %v", err)
+	}
+	js, err := os.ReadFile(jsPath)
+	if err != nil {
+		t.Fatalf("read document-support frontend: %v", err)
+	}
+	page := string(html) + "\n" + string(js)
+	for _, marker := range []string{
+		`var CONFIRMACION_DIAN = "EMITIR DOCUMENTO SOPORTE DIAN"`,
+		`id="btnConfirmarSoporteEmision" class="btn" type="button" disabled`,
+		`els.dsEmitConfirmacion.value !== CONFIRMACION_DIAN`,
+		`facturacionAPI("emitir_documento_soporte")`,
+		`confirmar_emision: true, mensaje_confirmacion_dian: CONFIRMACION_DIAN`,
+		`out.puede_emitir ?`,
+		`tipo_documento: "documento_soporte"`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("document-support emission guard missing %q", marker)
+		}
+	}
+	start := strings.Index(string(js), "function draftPayload()")
+	end := strings.Index(string(js), "function validateDraft(")
+	if start < 0 || end <= start {
+		t.Fatal("could not isolate document-support draft payload")
+	}
+	draft := string(js)[start:end]
+	for _, forbidden := range []string{"estado_dian", "cuds:", "respuesta_dian", "numero_legal", "subtotal:", "retenciones:", "total_neto_contable:"} {
+		if strings.Contains(draft, forbidden) {
+			t.Fatalf("browser draft must not forge server or DIAN field %q", forbidden)
 		}
 	}
 }

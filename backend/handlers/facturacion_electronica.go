@@ -318,7 +318,7 @@ func buildFacturaElectronicaRepresentationPDF(doc dbpkg.EmpresaDocumentoFacturac
 		"Cliente: " + facturacionFirstNonBlank(payload.ClienteNombre, "No registrado"),
 		"Identificacion cliente: " + facturacionFirstNonBlank(payload.ClienteNumeroDocumento, "No registrada"),
 		fmt.Sprintf("Total: %.2f %s", doc.MontoTotal, facturacionFirstNonBlank(doc.Moneda, "COP")),
-		"CUFE/CUDE: " + facturacionFirstNonBlank(doc.CodigoValidacion, "Pendiente de acuse"),
+		"CUFE/CUDE/CUDS: " + facturacionFirstNonBlank(doc.CodigoValidacion, "Pendiente de acuse"),
 		"Estado fiscal: aceptado/enviado segun acuse conservado por PCS",
 	}
 	y := 735
@@ -638,6 +638,10 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 
 		case http.MethodPost, http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "emitir_documento_soporte" {
+				handleEmitirDocumentoSoporte(w, r, dbEmp, dbSuper)
+				return
+			}
 			if action == "configuracion_documentos_dian" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
@@ -665,6 +669,23 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				}
 				payload.EmpresaID = empresaID
 				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				if normalizeFacturacionDocumentoElectronicoTipo(payload.TipoDocumento) == "documento_soporte" {
+					existing, existingErr := dbpkg.GetEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, empresaID, "documento_soporte")
+					if existingErr != nil && !errors.Is(existingErr, sql.ErrNoRows) {
+						http.Error(w, "No se pudo comprobar el consecutivo DIAN vigente", http.StatusInternalServerError)
+						return
+					}
+					if existing != nil && existing.ConsecutivoActual > payload.ConsecutivoActual {
+						payload.ConsecutivoActual = existing.ConsecutivoActual
+					}
+					switch strings.ToLower(strings.TrimSpace(payload.Estado)) {
+					case "habilitacion", "activo":
+						if err := dbpkg.ValidateEmpresaDocumentoSoporteConfigForEmission(payload, time.Now()); err != nil {
+							http.Error(w, err.Error(), http.StatusConflict)
+							return
+						}
+					}
+				}
 				id, err := dbpkg.UpsertEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, payload)
 				if err != nil {
 					http.Error(w, "No se pudo guardar la configuracion DIAN por documento", http.StatusBadRequest)
@@ -2306,6 +2327,18 @@ func facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipo string) bool {
 	}
 }
 
+// facturacionDocumentoElectronicoDIANTransporteSoportado lists only document
+// families with a complete production generator and DIAN transport adapter.
+// Documento soporte uses Invoice UBL 2.1 but a distinct Annex 1.1 profile.
+func facturacionDocumentoElectronicoDIANTransporteSoportado(tipo string) bool {
+	switch normalizeFacturacionDocumentoElectronicoTipo(tipo) {
+	case "factura_electronica", "nota_credito", "nota_debito", "documento_soporte":
+		return true
+	default:
+		return false
+	}
+}
+
 // facturacionDocumentoElectronicoDIANComercialSoportado is stricter than the
 // habilitation UBL fixture catalog. Invoices use the immutable paid-cart source;
 // credit notes are admitted only after the total-cancellation flow derives a
@@ -2313,7 +2346,7 @@ func facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipo string) bool {
 // partial notes and every other family remain closed.
 func facturacionDocumentoElectronicoDIANComercialSoportado(tipo string) bool {
 	switch normalizeFacturacionDocumentoElectronicoTipo(tipo) {
-	case "factura_electronica", "nota_credito":
+	case "factura_electronica", "nota_credito", "documento_soporte":
 		return true
 	default:
 		return false
@@ -2337,7 +2370,7 @@ func facturacionMarcarDisponibilidadFuenteFiscal(items []dbpkg.EmpresaDocumentoF
 		case "factura_electronica":
 			tipoFuente = "comprobante_pago"
 			codigoFuente = buildVentaDocumentoCodigoFromBase(codigoFuente, "comprobante_pago")
-		case "nota_credito", "comprobante_pago":
+		case "nota_credito", "comprobante_pago", "documento_soporte":
 		default:
 			item.FuenteFiscalDisponible = false
 			continue
@@ -2367,6 +2400,9 @@ func facturacionValidarConfiguracionDIANDocumento(tipo, estado string) error {
 	}
 	if facturacionDocumentoElectronicoDIANUBLVentaSoportado(normalized) {
 		return fmt.Errorf("la configuracion de factura y notas de venta usa su configuracion DIAN existente")
+	}
+	if normalized == "documento_soporte" {
+		return nil
 	}
 	switch strings.ToLower(strings.TrimSpace(estado)) {
 	case "", "inactivo", "configurando":
@@ -2664,6 +2700,13 @@ func facturacionDIANLegacySignedXMLNeedsManualRegeneration(xmlPayload, documento
 		return false
 	}
 	expectedRoot, _, _, _, _, _, _, _ := dianDocumentKind(documentoTipo)
+	profileKind := expectedRoot
+	if normalizeFacturacionDocumentoElectronicoTipo(documentoTipo) == "documento_soporte" {
+		// Documento soporte usa el elemento UBL Invoice, aunque su familia
+		// logica se conserve separada para ProfileID, CUDS y transporte.
+		expectedRoot = "Invoice"
+		profileKind = "DocumentoSoporte"
+	}
 	if expectedRoot == "" {
 		return false
 	}
@@ -2671,10 +2714,53 @@ func facturacionDIANLegacySignedXMLNeedsManualRegeneration(xmlPayload, documento
 	if err != nil || actualRoot != expectedRoot {
 		return false
 	}
-	if dianXMLFirst(values, "ProfileID") != dianDocumentProfileID(expectedRoot) {
+	if dianXMLFirst(values, "ProfileID") != dianDocumentProfileID(profileKind) {
 		return true
 	}
 	return !strings.Contains(xmlPayload, "<cac:StandardItemIdentification>")
+}
+
+func prepareFacturacionDIANDispatchSource(dbEmp *sql.DB, doc dbpkg.EmpresaDocumentoFacturacion, payload facturacionOperacionPayload, documentoTipo string, dianCfg map[string]interface{}) (facturacionOperacionPayload, map[string]interface{}, *facturacionFuenteFiscalSnapshot, *dbpkg.EmpresaDocumentoSoporteElectronico, error) {
+	fuenteFiscal, err := loadFacturacionFuenteFiscalParaDocumento(context.Background(), dbEmp, doc)
+	if err != nil {
+		return payload, dianCfg, nil, nil, fmt.Errorf("fuente fiscal real no disponible: %w", err)
+	}
+	if documentoTipo != "documento_soporte" {
+		return payload, dianCfg, fuenteFiscal, nil, nil
+	}
+	soporteContable, soporteConfig, err := loadDocumentoSoporteParaDispatch(context.Background(), dbEmp, doc)
+	if err != nil {
+		return payload, dianCfg, nil, nil, fmt.Errorf("trazabilidad de documento soporte no disponible: %w", err)
+	}
+	payload.ClienteNombre = fuenteFiscal.Cliente.NombreRazonSocial
+	payload.ClienteNumeroDocumento = fuenteFiscal.Cliente.NumeroDocumento
+	payload.ClienteTipoDocumento = fuenteFiscal.Cliente.TipoDocumento
+	payload.ClienteEmail = fuenteFiscal.Cliente.Email
+	payload.ClienteTelefono = fuenteFiscal.Cliente.Telefono
+	payload.ClienteDireccion = fuenteFiscal.Cliente.Direccion
+	return payload, documentoSoporteMergeDIANConfig(dianCfg, soporteConfig), fuenteFiscal, soporteContable, nil
+}
+
+func updateDocumentoSoporteDispatchMirror(dbEmp *sql.DB, doc dbpkg.EmpresaDocumentoFacturacion, soporte *dbpkg.EmpresaDocumentoSoporteElectronico, estado string, ok bool, envioResp map[string]interface{}, xmlFirmado, safeJSON string) error {
+	if soporte == nil {
+		return nil
+	}
+	cuds := facturacionCUFEOficialDesdeMap(envioResp)
+	if cuds == "" {
+		cuds = facturacionCodigoValidacionDesdeXML(xmlFirmado)
+	}
+	mirrorState := documentoSoporteEstadoDIANMirror(estado)
+	if !ok && estado == "" {
+		mirrorState = "fallido"
+	}
+	return dbpkg.UpdateEmpresaDocumentoSoporteDIANResultContext(context.Background(), dbEmp, doc.EmpresaID, soporte.ID, mirrorState, cuds, safeJSON, true)
+}
+
+func facturacionDIANDispatchTotals(doc dbpkg.EmpresaDocumentoFacturacion, payload facturacionOperacionPayload, soporte *dbpkg.EmpresaDocumentoSoporteElectronico) (float64, float64) {
+	if soporte != nil {
+		return soporte.Total, soporte.IVA
+	}
+	return firstPositiveFloat64(doc.MontoTotal, payload.MontoTotal, payload.TotalNeto), firstPositiveFloat64(payload.Impuestos, payload.IVA)
 }
 
 func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion, apiBaseURL string, allowLegacySignedXMLRegeneration bool) facturacionProveedorDispatchResult {
@@ -2690,8 +2776,11 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	if documentoTipo == "" {
 		documentoTipo = "factura_electronica"
 	}
-	total := firstPositiveFloat64(doc.MontoTotal, payload.MontoTotal, payload.TotalNeto)
-	impuesto := firstPositiveFloat64(payload.Impuestos, payload.IVA)
+	payload, dianCfg, fuenteFiscal, soporteContable, sourceErr := prepareFacturacionDIANDispatchSource(dbEmp, doc, payload, documentoTipo, dianCfg)
+	if sourceErr != nil {
+		return facturacionProveedorDispatchResult{FinalFailure: true, Success: false, Error: sourceErr.Error()}
+	}
+	total, impuesto := facturacionDIANDispatchTotals(doc, payload, soporteContable)
 	// DIAN valida que la fecha de generacion del UBL coincida con la fecha de la
 	// firma XAdES. Una venta pendiente puede reenviarse en un dia posterior a su
 	// registro comercial; usar esa fecha historica aqui provoca FAD09e. La fecha
@@ -2725,15 +2814,15 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 		"usar_soap_dian":              true,
 		"accion_facturacion":          strings.ToLower(strings.TrimSpace(accion)),
 	}
-	if endpoint := strings.TrimSpace(apiBaseURL); endpoint != "" {
-		docPayload["url_dian"] = endpoint
+	if documentoTipo == "documento_soporte" {
+		docPayload["soap_operacion"] = "SendBillSync"
 	}
-	// Todo XML que se firme o reintente debe conservar una fuente fiscal privada,
-	// inmutable y perteneciente al mismo comprobante. Esto impide que un XML
-	// heredado (anterior al flujo trazable) vuelva a enviarse a DIAN.
-	fuenteFiscal, fuenteErr := loadFacturacionFuenteFiscalParaDocumento(context.Background(), dbEmp, doc)
-	if fuenteErr != nil {
-		return facturacionProveedorDispatchResult{FinalFailure: true, Success: false, Error: "fuente fiscal real no disponible: " + fuenteErr.Error()}
+	effectiveEndpoint := strings.TrimSpace(apiBaseURL)
+	if documentoTipo == "documento_soporte" {
+		effectiveEndpoint = strings.TrimSpace(genericStringValue(dianCfg["url_dian"]))
+	}
+	if endpoint := effectiveEndpoint; endpoint != "" {
+		docPayload["url_dian"] = endpoint
 	}
 	xmlFirmado := ""
 	xmlNuevo := false
@@ -2812,7 +2901,10 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 		"prefijo":                strings.TrimSpace(genericStringValue(dianCfg["prefijo"])),
 		"usar_soap_dian":         true,
 	}
-	if endpoint := strings.TrimSpace(apiBaseURL); endpoint != "" {
+	if documentoTipo == "documento_soporte" {
+		envioPayload["soap_operacion"] = "SendBillSync"
+	}
+	if endpoint := effectiveEndpoint; endpoint != "" {
 		envioPayload["url_dian"] = endpoint
 	}
 	envioResp, _, err := sendDIANDocumentoReal(dbEmp, dianCfg, doc.EmpresaID, envioPayload)
@@ -2842,6 +2934,9 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 	estado := strings.ToLower(strings.TrimSpace(genericStringValue(envioResp["estado_dian"])))
 	trackID := strings.TrimSpace(genericStringValue(envioResp["track_id"]))
 	ok := parseTruthy(genericStringValue(envioResp["ok"])) || trackID != "" || estado == "enviado" || estado == "aceptado"
+	if updateErr := updateDocumentoSoporteDispatchMirror(dbEmp, doc, soporteContable, estado, ok, envioResp, xmlFirmado, safeJSON); updateErr != nil {
+		return facturacionProveedorDispatchResult{Success: false, Error: "DIAN respondio, pero no se pudo actualizar el documento soporte contable", RespuestaJSON: safeJSON}
+	}
 	if !ok {
 		errMsg := dianFirstNonBlank(genericStringValue(envioResp["acuse_mensaje"]), genericStringValue(envioResp["error"]), genericStringValue(envioResp["mensaje_recepcion"]), "DIAN no acepto el documento")
 		if facturacionDianDocumentoProcesadoAnteriormente(errMsg) {
@@ -2888,10 +2983,31 @@ func facturacionDIANFechaEmisionDesdeXML(xmlFirmado string) string {
 	return issueDate + "T" + strings.TrimPrefix(issueTime, "T")
 }
 
+func facturacionCodigoValidacionDesdeXML(xmlFirmado string) string {
+	values, _, err := parseDIANXMLTextValues(xmlFirmado)
+	if err != nil {
+		return ""
+	}
+	value := strings.TrimSpace(dianXMLFirst(values, "UUID"))
+	if !facturacionCodigoSHA384Valido(value) {
+		return ""
+	}
+	return strings.ToLower(value)
+}
+
 func dispatchFacturacionDIANAcusePendiente(dbEmp *sql.DB, doc dbpkg.EmpresaDocumentoFacturacion, payload facturacionOperacionPayload, trackID string) facturacionProveedorDispatchResult {
 	dianCfg, err := getEmpresaDIANConfig(dbEmp, doc.EmpresaID)
 	if err != nil || len(dianCfg) == 0 {
 		return facturacionProveedorDispatchResult{Error: "configuracion DIAN no disponible para consultar acuse"}
+	}
+	var soporteContable *dbpkg.EmpresaDocumentoSoporteElectronico
+	if normalizeFacturacionDocumentoElectronicoTipo(doc.TipoDocumento) == "documento_soporte" {
+		var soporteConfig *dbpkg.EmpresaDocumentoSoporteConfiguracionSnapshot
+		soporteContable, soporteConfig, err = loadDocumentoSoporteParaDispatch(context.Background(), dbEmp, doc)
+		if err != nil {
+			return facturacionProveedorDispatchResult{Error: "trazabilidad de documento soporte no disponible: " + err.Error()}
+		}
+		dianCfg = documentoSoporteMergeDIANConfig(dianCfg, soporteConfig)
 	}
 	endpoint := normalizeDIANSOAPEndpoint(dianConfiguredEndpoint(dianCfg, nil))
 	if endpoint == "" {
@@ -2915,6 +3031,12 @@ func dispatchFacturacionDIANAcusePendiente(dbEmp *sql.DB, doc dbpkg.EmpresaDocum
 	}
 	estado := strings.ToLower(strings.TrimSpace(genericStringValue(response["estado_dian"])))
 	acuse := strings.ToLower(strings.TrimSpace(genericStringValue(response["acuse_estado"])))
+	if soporteContable != nil {
+		soporteEstado := documentoSoporteEstadoDIANMirror(dianFirstNonBlank(estado, acuse))
+		if updateErr := dbpkg.UpdateEmpresaDocumentoSoporteDIANResultContext(context.Background(), dbEmp, doc.EmpresaID, soporteContable.ID, soporteEstado, facturacionCUFEOficialDesdeMap(response), safeJSON, true); updateErr != nil {
+			return facturacionProveedorDispatchResult{Error: "acuse DIAN recibido, pero no se pudo actualizar el documento soporte", ReferenciaExterna: trackID}
+		}
+	}
 	if estado == "aceptado" || acuse == "aceptado" {
 		if cufe := facturacionCUFEOficialDesdeMap(response); cufe != "" {
 			doc.CodigoValidacion = cufe
@@ -3946,6 +4068,7 @@ func facturacionCUFEOficialDesdeMap(respuesta map[string]interface{}) string {
 	candidatos := []string{
 		genericStringValue(respuesta["cufe"]),
 		genericStringValue(respuesta["cude"]),
+		genericStringValue(respuesta["cuds"]),
 		genericStringValue(respuesta["codigo_validacion"]),
 		genericStringValue(respuesta["xml_document_key"]),
 	}
@@ -3953,6 +4076,7 @@ func facturacionCUFEOficialDesdeMap(respuesta map[string]interface{}) string {
 		candidatos = append(candidatos,
 			genericStringValue(respuestaDIAN["cufe"]),
 			genericStringValue(respuestaDIAN["cude"]),
+			genericStringValue(respuestaDIAN["cuds"]),
 			genericStringValue(respuestaDIAN["xml_document_key"]),
 			genericStringValue(respuestaDIAN["document_key"]),
 		)

@@ -68,7 +68,7 @@ func TestNormalizeFacturacionDocumentoElectronicoTipoIncluyeDocumentosSiigoDian(
 }
 
 func TestDIANUBLVentaNoConvierteFamiliasDistintasEnFactura(t *testing.T) {
-	for _, tipo := range []string{"documento_soporte", "nomina_electronica", "documento_equivalente_pos", "eventos_radian_recepcion"} {
+	for _, tipo := range []string{"nomina_electronica", "documento_equivalente_pos", "eventos_radian_recepcion"} {
 		t.Run(tipo, func(t *testing.T) {
 			if facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipo) {
 				t.Fatalf("%s no pertenece al anexo UBL de factura de venta", tipo)
@@ -85,6 +85,36 @@ func TestDIANUBLVentaNoConvierteFamiliasDistintasEnFactura(t *testing.T) {
 				t.Fatalf("se esperaba bloqueo 422 para %s, status=%d err=%v", tipo, status, err)
 			}
 		})
+	}
+}
+
+func TestDocumentoSoporteUsaAdaptadorPropioYNoElUBLDeVenta(t *testing.T) {
+	if facturacionDocumentoElectronicoDIANUBLVentaSoportado("documento_soporte") {
+		t.Fatal("documento soporte no puede usar el generador UBL comercial de factura")
+	}
+	if !facturacionDocumentoElectronicoDIANTransporteSoportado("documento_soporte") || !facturacionDocumentoElectronicoDIANComercialSoportado("documento_soporte") {
+		t.Fatal("documento soporte debe llegar a su adaptador comercial dedicado")
+	}
+	root, line, customization, scheme, typeCode, total, _, _ := dianDocumentKind("documento_soporte")
+	if root != "DocumentoSoporte" || line != "InvoiceLine" || customization != "10" || scheme != "CUDS-SHA384" || typeCode != "05" || total != "LegalMonetaryTotal" {
+		t.Fatalf("contrato DIAN de documento soporte inesperado: %q %q %q %q %q %q", root, line, customization, scheme, typeCode, total)
+	}
+	_, status, err := generateDIANUBLBase(map[string]interface{}{"pais_codigo": "CO"}, 12, map[string]interface{}{
+		"documento_tipo": "documento_soporte", "documento_codigo": "NO-ENVIAR-1",
+	}, nil)
+	if err == nil || status != 422 || !strings.Contains(err.Error(), "fuente fiscal") {
+		t.Fatalf("el adaptador debe exigir fuente fiscal inmutable, status=%d err=%v", status, err)
+	}
+}
+
+func TestDocumentoSoporteDetectaXMLFirmadoLegacyConRaizInvoice(t *testing.T) {
+	legacy := `<Invoice xmlns:cac="urn:test"><ProfileID>DIAN 2.1: Factura Electrónica de Venta</ProfileID><cac:InvoiceLine/></Invoice>`
+	if !facturacionDIANLegacySignedXMLNeedsManualRegeneration(legacy, "documento_soporte") {
+		t.Fatal("un XML Invoice con perfil de factura no debe tratarse como documento soporte vigente")
+	}
+	current := `<Invoice xmlns:cac="urn:test"><ProfileID>` + dianDocumentProfileID("DocumentoSoporte") + `</ProfileID><cac:StandardItemIdentification></cac:StandardItemIdentification></Invoice>`
+	if facturacionDIANLegacySignedXMLNeedsManualRegeneration(current, "documento_soporte") {
+		t.Fatal("un documento soporte con perfil y detalle fiscal vigentes no debe regenerarse")
 	}
 }
 
@@ -120,12 +150,15 @@ func TestNotaCreditoComercialOnlyUsesTotalCancellationWorkflow(t *testing.T) {
 	}
 }
 
-func TestConfiguracionDIANPorDocumentoNoHabilitaFamiliasSinAdaptador(t *testing.T) {
+func TestConfiguracionDIANPorDocumentoHabilitaSoloFamiliasConAdaptador(t *testing.T) {
 	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "configurando"); err != nil {
 		t.Fatalf("documento soporte debe permitir preparacion separada: %v", err)
 	}
-	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "activo"); err == nil {
-		t.Fatal("documento soporte no debe activarse sin adaptador propio")
+	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "activo"); err != nil {
+		t.Fatalf("documento soporte debe permitir activacion con su adaptador propio: %v", err)
+	}
+	if err := facturacionValidarConfiguracionDIANDocumento("nomina_electronica", "activo"); err == nil {
+		t.Fatal("nomina debe seguir bloqueada sin adaptador propio")
 	}
 	if err := facturacionValidarConfiguracionDIANDocumento("factura_electronica", "configurando"); err == nil {
 		t.Fatal("factura no debe duplicar su configuracion DIAN existente")
@@ -136,7 +169,7 @@ func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *t
 	got := facturacionFiltrarDocumentosDianOperativos([]string{
 		"factura_electronica", "documento_soporte", "nota_credito", "nomina_electronica", "nota_debito", "factura_electronica", "eventos_radian_recepcion",
 	})
-	want := []string{"factura_electronica"}
+	want := []string{"factura_electronica", "documento_soporte"}
 	if len(got) != len(want) {
 		t.Fatalf("documentos operativos=%v, want %v", got, want)
 	}
@@ -177,40 +210,73 @@ func TestBuildDIANCUDSDocumentoSoporteCoincideConEjemploOficial(t *testing.T) {
 	}
 }
 
-func TestDocumentoSoportePreflightFailsClosed(t *testing.T) {
-	documento := &dbpkg.EmpresaDocumentoSoporteElectronico{
-		ID:              7,
-		EmpresaID:       12,
-		Documento:       "DS-7",
-		NombreProveedor: "Proveedor de prueba",
-		FechaDocumento:  "2026-08-23",
-		Concepto:        "Servicio de prueba",
-		ProveedorID:     1,
-		Subtotal:        100,
-		IVA:             19,
-		Total:           119,
+func TestBuildDIANCUDSDocumentoSoporteConservaIdentificacionExtranjeraAlfanumerica(t *testing.T) {
+	got := buildDIANCUDSDocumentoSoporte(
+		"DS1", "2026-08-26", "10:15:30-05:00", "100.00", "19.00", "119.00",
+		"P123456", "800197268", "12345", "2",
+	)
+	want := buildDIANSHA384Hex(
+		"DS1", "2026-08-26", "10:15:30-05:00", "100.00", "01", "19.00", "119.00",
+		"P123456", "800197268", "12345", "2",
+	)
+	withoutLetter := buildDIANCUDSDocumentoSoporte(
+		"DS1", "2026-08-26", "10:15:30-05:00", "100.00", "19.00", "119.00",
+		"123456", "800197268", "12345", "2",
+	)
+	if got != want || got == withoutLetter {
+		t.Fatalf("el CUDS debe conservar exactamente P123456: got=%s want=%s sin_letra=%s", got, want, withoutLetter)
 	}
-	configuracion := &dbpkg.EmpresaDIANDocumentoConfiguracion{
-		Estado:       "configurando",
-		TipoAmbiente: "habilitacion",
-		Prefijo:      "DS",
-		RangoDesde:   1,
-		RangoHasta:   10,
-		TestSetID:    "test-set",
-	}
-	resultado := buildDocumentoSoporteDIANPreflight(documento, configuracion)
-	if resultado.PuedeEmitir || resultado.Estado != "bloqueado_adaptador_dian" {
-		t.Fatalf("la prevalidacion debe cerrar la emision hasta tener adaptador propio: %+v", resultado)
-	}
-	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "adaptador DIAN propio") {
-		t.Fatalf("faltó el bloqueo explicito del adaptador: %+v", resultado.Bloqueos)
+}
+
+func TestDocumentoSoportePreflightListoSinTestSetYFallaConTotalesAlterados(t *testing.T) {
+	documento, configuracion, empresa, principal := documentoSoportePreflightFixture()
+	resultado := buildDocumentoSoporteDIANPreflight(documento, configuracion, empresa, principal)
+	if !resultado.PuedeEmitir || resultado.Estado != "listo_para_emision" || len(resultado.Bloqueos) != 0 {
+		t.Fatalf("preflight completo debe quedar listo sin TestSet para anexo 1.1: %+v", resultado)
 	}
 
 	documento.Total = 118
-	resultado = buildDocumentoSoporteDIANPreflight(documento, configuracion)
-	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "no cuadran") {
+	resultado = buildDocumentoSoporteDIANPreflight(documento, configuracion, empresa, principal)
+	if resultado.PuedeEmitir || !strings.Contains(strings.Join(resultado.Bloqueos, " "), "no cuadran") {
 		t.Fatalf("la prevalidacion debe detectar totales inconsistentes: %+v", resultado.Bloqueos)
 	}
+}
+
+func documentoSoportePreflightFixture() (*dbpkg.EmpresaDocumentoSoporteElectronico, *dbpkg.EmpresaDIANDocumentoConfiguracion, *dbpkg.EmpresaConfiguracionAvanzada, map[string]interface{}) {
+	documento := &dbpkg.EmpresaDocumentoSoporteElectronico{
+		ID: 7, EmpresaID: 12, ProveedorID: 1, TipoDocumento: "NIT", Documento: "1020", VendedorDigitoVerificacion: "2",
+		VendedorTipoPersona: "juridica", VendedorResidencia: "residente", NombreProveedor: "Proveedor real de prueba",
+		VendedorDireccion: "Calle 1 2-3", VendedorPaisCodigo: "CO", VendedorDepartamento: "Cundinamarca",
+		VendedorDepartamentoCodigoDANE: "25", VendedorMunicipio: "Chia", VendedorMunicipioCodigoDANE: "25175",
+		VendedorCodigoPostal: "250001", VendedorResponsabilidadTributaria: "O-23", VendedorEmail: "proveedor@example.test",
+		FechaDocumento: "2026-08-26", Periodo: "2026-08", Concepto: "Servicio de prueba", Moneda: "COP",
+		FormaPagoCodigo: "1", MedioPagoCodigo: "10",
+		LineasJSON: `[{
+			"numero":1,"codigo":"SERV-1","descripcion":"Servicio de prueba","unidad_medida":"94",
+			"cantidad":1,"precio_unitario":100,"descuento_porcentaje":0,"valor_descuento":0,
+			"base_gravable":100,"iva_porcentaje":19,"iva_valor":19,
+			"reteiva_porcentaje":15,"reteiva_valor":2.85,"reterenta_porcentaje":11,"reterenta_valor":11,
+			"subtotal_linea":100,"total_linea":119,"total_neto_contable_linea":105.15
+		}]`,
+		Subtotal: 100, IVA: 19, Retenciones: 13.85, Total: 119, TotalNetoContable: 105.15, EstadoDIAN: "borrador",
+	}
+	configuracion := &dbpkg.EmpresaDIANDocumentoConfiguracion{
+		EmpresaID: 12, TipoDocumento: "documento_soporte", Estado: "habilitacion", TipoAmbiente: "habilitacion",
+		Prefijo: "DS", ResolucionNumero: "18764000000001", ResolucionFechaDesde: "2026-01-01", ResolucionFechaHasta: "2027-12-31",
+		RangoDesde: 1, RangoHasta: 1000, ConsecutivoActual: 1,
+	}
+	empresa := &dbpkg.EmpresaConfiguracionAvanzada{
+		EmpresaID: 12, TipoDocumentoEmisor: "NIT", NIT: "800197268", DigitoVerificacion: "4", TipoPersonaFiscal: "juridica",
+		RazonSocial: "Adquirente real SAS", ResponsabilidadTributaria: "O-15", EmailFacturacion: "facturacion@example.test",
+		DireccionFiscal: "Carrera 1 2-3", PaisCodigo: "CO", Departamento: "Cundinamarca", DepartamentoCodigoDANE: "25",
+		Municipio: "Chia", MunicipioCodigoDANE: "25175", CodigoPostal: "250001",
+	}
+	principal := map[string]interface{}{
+		"nit": "800197268", "digito_verificacion": "4", "razon_social": "Adquirente real SAS", "tipo_ambiente": "habilitacion",
+		"url_dian": "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc", "certificado_url": "secret://certificado",
+		"certificado_clave_ref": "secret://clave", "software_id": "software-id-prueba", "software_pin": "12345",
+	}
+	return documento, configuracion, empresa, principal
 }
 
 func TestNominaElectronicaPreflightFailsClosed(t *testing.T) {
@@ -256,9 +322,11 @@ func TestResolveFacturacionTransitionFailsClosedForDocumentosSinAdaptador(t *tes
 		action        string
 		tipoDocumento string
 		bloqueado     bool
+		wantAction    string
+		wantEvent     string
 	}{
-		{name: "nota debito", action: "nota_debito", tipoDocumento: "nota_debito"},
-		{name: "documento soporte", action: "documento_soporte", tipoDocumento: "documento_soporte", bloqueado: true},
+		{name: "nota debito", action: "nota_debito", tipoDocumento: "nota_debito", wantAction: "nota_debito", wantEvent: "nota_debito_emitida"},
+		{name: "documento soporte", action: "documento_soporte", tipoDocumento: "documento_soporte", wantAction: "documento_soporte", wantEvent: "documento_soporte_emitido"},
 		{name: "nomina electronica", action: "nomina_electronica", tipoDocumento: "nomina_electronica", bloqueado: true},
 		{name: "pos electronico", action: "documento_equivalente_pos", tipoDocumento: "documento_equivalente_pos", bloqueado: true},
 		{name: "eventos radian", action: "eventos_radian_recepcion", tipoDocumento: "eventos_radian_recepcion", bloqueado: true},
@@ -277,7 +345,7 @@ func TestResolveFacturacionTransitionFailsClosedForDocumentosSinAdaptador(t *tes
 			if err != nil {
 				t.Fatalf("resolve transition returned error: %v", err)
 			}
-			if got.Accion != "nota_debito" || got.EstadoNuevo != "emitida" || got.Evento != "nota_debito_emitida" {
+			if got.Accion != tc.wantAction || got.EstadoNuevo != "emitida" || got.Evento != tc.wantEvent {
 				t.Fatalf("unexpected transition: %#v", got)
 			}
 		})

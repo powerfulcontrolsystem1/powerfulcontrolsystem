@@ -30,7 +30,7 @@ func resolveFacturacionTransitionForDocument(actionRaw, estadoActualRaw, tipoDoc
 	if tipoDocumento == "" {
 		tipoDocumento = "factura_electronica"
 	}
-	if !facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipoDocumento) {
+	if !facturacionDocumentoElectronicoDIANTransporteSoportado(tipoDocumento) {
 		return documentoTransition{}, fmt.Errorf("%s no dispone aun de un adaptador DIAN conforme a su anexo tecnico; no se puede declarar emitida", tipoDocumento)
 	}
 	if tipoDocumento == "factura_electronica" && normalizeDocumentoState(actionRaw) == "anular" {

@@ -9080,7 +9080,7 @@ func buildDIANCUDSDocumentoSoporte(documentoCodigo, issueDate, issueTime, lineEx
 		"01",
 		dianFormatDecimal(tax01, 0),
 		dianFormatDecimal(payableAmount, 0),
-		dianOnlyDigits(vendedorNoObligadoDocumento),
+		strings.TrimSpace(vendedorNoObligadoDocumento),
 		dianOnlyDigits(adquirenteNIT),
 		strings.TrimSpace(softwarePIN),
 		strings.TrimSpace(profileExecutionID),
@@ -9141,6 +9141,8 @@ func dianIssuepcs_ts(raw string) (string, string) {
 
 func dianDocumentKind(raw string) (rootName, lineName, customizationID, uuidSchemeName, typeCode, totalTag, quantityTag, correctionCode string) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "documento_soporte", "documento_soporte_electronico", "soporte_compras":
+		return "DocumentoSoporte", "InvoiceLine", "10", "CUDS-SHA384", "05", "LegalMonetaryTotal", "InvoicedQuantity", ""
 	case "nota_credito", "credit_note", "creditnote", "credito", "credit":
 		return "CreditNote", "CreditNoteLine", "20", "CUDE-SHA384", "91", "LegalMonetaryTotal", "CreditedQuantity", "1"
 	case "nota_debito", "debit_note", "debitnote", "debito", "debit":
@@ -9175,6 +9177,8 @@ func dianDocumentProfileID(rootName string) string {
 	// El Schematron DIAN vigente exige un literal distinto por familia UBL.
 	// No se debe abreviar a "DIAN 2.1": FAD03/CAD03 lo rechazan.
 	switch strings.TrimSpace(rootName) {
+	case "DocumentoSoporte":
+		return "DIAN 2.1: documento soporte en adquisiciones efectuadas a no obligados a facturar."
 	case "Invoice":
 		return "DIAN 2.1: Factura Electrónica de Venta"
 	case "CreditNote":
@@ -9544,12 +9548,12 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 	checks := map[string]interface{}{}
 	source := "sistema_preflight_dian"
 	documentoTipoPreflight := dianFirstNonBlank(genericStringValue(payload["documento_tipo"]), "factura")
-	if !facturacionDocumentoElectronicoDIANUBLVentaSoportado(documentoTipoPreflight) {
+	if !facturacionDocumentoElectronicoDIANTransporteSoportado(documentoTipoPreflight) {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-TIPO-001", "error", "documento_tipo", facturacionDocumentoElectronicoBloqueoMotivo(documentoTipoPreflight), "anexo_tecnico_especifico_pendiente")
 	}
 	checks["tipo_documento"] = map[string]interface{}{
 		"codigo":    normalizeFacturacionDocumentoElectronicoTipo(documentoTipoPreflight),
-		"soportado": facturacionDocumentoElectronicoDIANUBLVentaSoportado(documentoTipoPreflight),
+		"soportado": facturacionDocumentoElectronicoDIANTransporteSoportado(documentoTipoPreflight),
 	}
 
 	if empresaID <= 0 {
@@ -9558,7 +9562,7 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 	if len(cfg) == 0 {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-PRE-CONFIG", "error", "configuracion", "no existe configuracion DIAN para la empresa", source)
 	} else {
-		missing := missingDIANFields(cfg, empresaID)
+		missing := missingDIANFieldsForDocument(cfg, documentoTipoPreflight, empresaID)
 		checks["configuracion_minima"] = map[string]interface{}{"ok": len(missing) == 0, "faltantes": missing}
 		for _, field := range missing {
 			dianAppendValidationIssue(&issues, &warnings, "DIAN-CFG-FALTANTE", "error", field, "campo DIAN obligatorio no configurado: "+field, "configuracion_dian")
@@ -9582,7 +9586,7 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 	if ambiente != "habilitacion" && ambiente != "produccion" {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-AMB-001", "error", "tipo_ambiente", "ambiente DIAN debe ser habilitacion o produccion", source)
 	}
-	if ambiente == "habilitacion" && strings.TrimSpace(genericStringValue(cfg["test_set_id"])) == "" && !parseTruthy(dianPayloadString(payload, "simular")) {
+	if normalizeFacturacionDocumentoElectronicoTipo(documentoTipoPreflight) != "documento_soporte" && ambiente == "habilitacion" && strings.TrimSpace(genericStringValue(cfg["test_set_id"])) == "" && !parseTruthy(dianPayloadString(payload, "simular")) {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-SET-001", "error", "test_set_id", "en habilitacion real debe existir TestSetId asignado por DIAN", "habilitacion_dian")
 	}
 
@@ -9746,20 +9750,24 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 			if profileExecutionID != "" && profileExecutionID != dianExpectedProfileExecutionID(cfg) {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-002", "error", "ProfileExecutionID", "ProfileExecutionID no coincide con el ambiente DIAN configurado", "ubl_2_1")
 			}
-			if xmlCustomizationID != "" && expectedCustomizationID != "" && xmlCustomizationID != expectedCustomizationID {
+			customizationValid := xmlCustomizationID == expectedCustomizationID
+			if normalizeFacturacionDocumentoElectronicoTipo(documentoTipoPreflight) == "documento_soporte" {
+				customizationValid = xmlCustomizationID == "10" || xmlCustomizationID == "11"
+			}
+			if xmlCustomizationID != "" && expectedCustomizationID != "" && !customizationValid {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-CUSTOM", "error", "CustomizationID", "CustomizationID no corresponde al tipo de documento DIAN", "ubl_2_1")
 			}
 			if documentoCodigo != "" && xmlID != "" && xmlID != documentoCodigo {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-003", "error", "ID", "ID del XML no coincide con documento_codigo", "ubl_2_1")
 			}
 			if xmlUUID == "" {
-				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-004", "error", "UUID", "CUFE/CUDE UUID es obligatorio en el XML", "ubl_2_1")
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-004", "error", "UUID", "CUFE/CUDE/CUDS UUID es obligatorio en el XML", "ubl_2_1")
 			}
 			if xmlUUID != "" && expectedUUIDScheme != "" && !strings.Contains(xmlPayload, `schemeName="`+expectedUUIDScheme+`"`) {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-UUID-SCHEME", "error", "UUID", "UUID debe usar "+expectedUUIDScheme+" segun el tipo de documento", "ubl_2_1")
 			}
 			if root == "Invoice" && expectedTypeCode != "" && xmlInvoiceType != expectedTypeCode {
-				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TIPO-FE", "error", "InvoiceTypeCode", "factura electronica de venta debe usar InvoiceTypeCode "+expectedTypeCode, "anexo_tecnico_dian")
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TIPO-FE", "error", "InvoiceTypeCode", "el documento debe usar InvoiceTypeCode "+expectedTypeCode, "anexo_tecnico_dian")
 			}
 			if root == "CreditNote" && expectedTypeCode != "" && xmlCreditType != expectedTypeCode {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TIPO-NC", "error", "CreditNoteTypeCode", "nota credito debe usar CreditNoteTypeCode "+expectedTypeCode, "anexo_tecnico_dian")
@@ -11933,7 +11941,7 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
 	}
 	documentoTipo := genericStringDefault(payload["documento_tipo"], "factura")
-	if !facturacionDocumentoElectronicoDIANUBLVentaSoportado(documentoTipo) {
+	if !facturacionDocumentoElectronicoDIANTransporteSoportado(documentoTipo) {
 		return nil, http.StatusUnprocessableEntity, fmt.Errorf("%s", facturacionDocumentoElectronicoBloqueoMotivo(documentoTipo))
 	}
 
@@ -15325,6 +15333,26 @@ func missingDIANFields(cfg map[string]interface{}, empresaIDs ...int64) []string
 	}
 
 	return missing
+}
+
+func missingDIANFieldsForDocument(cfg map[string]interface{}, documentType string, empresaIDs ...int64) []string {
+	missing := missingDIANFields(cfg, empresaIDs...)
+	if normalizeFacturacionDocumentoElectronicoTipo(documentType) != "documento_soporte" {
+		return missing
+	}
+	out := make([]string, 0, len(missing))
+	for _, field := range missing {
+		switch field {
+		case "llave_tecnica", "test_set_id", "prefijo":
+			// Annex 1.1 calculates CUDS with Software-PIN and uses
+			// SendBillSync in both environments; it has no TestSet gate and
+			// the authorized prefix is optional (0..1, maximum four chars).
+			continue
+		default:
+			out = append(out, field)
+		}
+	}
+	return out
 }
 
 func chooseDIANAmbiente(cfg map[string]interface{}) string {

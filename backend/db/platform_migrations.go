@@ -201,6 +201,9 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260826-001-productos-inventario-v1", Description: "warehouse receipt ownership and tenant product listing index", Body: empresaProductosInventarioSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaProductosInventarioSchemaTx(ctx, tx)
 			}},
+			{Version: "20260826-002-dian-documento-soporte-v1", Description: "structured purchase-support source, exact amounts and atomic DIAN numbering", Body: empresaDIANDocumentoSoporteFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaDIANDocumentoSoporteTx(ctx, tx)
+			}},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

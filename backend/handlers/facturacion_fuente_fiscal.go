@@ -55,6 +55,7 @@ type facturacionFuenteFiscalDocumento struct {
 	CodigoOrigen  string  `json:"codigo_origen"`
 	TipoDestino   string  `json:"tipo_destino"`
 	CodigoDestino string  `json:"codigo_destino"`
+	NumeroLegal   string  `json:"numero_legal,omitempty"`
 	Fecha         string  `json:"fecha"`
 	Moneda        string  `json:"moneda"`
 	MontoTotal    float64 `json:"monto_total"`
@@ -74,6 +75,7 @@ type facturacionFuenteFiscalCarrito struct {
 
 type facturacionFuenteFiscalParte struct {
 	ID                        int64  `json:"id,omitempty"`
+	ResidenciaFiscal          string `json:"residencia_fiscal,omitempty"`
 	TipoDocumento             string `json:"tipo_documento"`
 	NumeroDocumento           string `json:"numero_documento"`
 	DigitoVerificacion        string `json:"digito_verificacion"`
@@ -111,8 +113,13 @@ type facturacionFuenteFiscalLinea struct {
 	ImpuestoCodigo        string  `json:"impuesto_codigo"`
 	ImpuestoPorcentaje    float64 `json:"impuesto_porcentaje"`
 	ValorImpuesto         float64 `json:"valor_impuesto"`
+	ReteIVAPorcentaje     float64 `json:"reteiva_porcentaje,omitempty"`
+	ReteIVAValor          float64 `json:"reteiva_valor,omitempty"`
+	ReteRentaPorcentaje   float64 `json:"reterenta_porcentaje,omitempty"`
+	ReteRentaValor        float64 `json:"reterenta_valor,omitempty"`
 	SubtotalLinea         float64 `json:"subtotal_linea"`
 	TotalLinea            float64 `json:"total_linea"`
+	TotalNetoContable     float64 `json:"total_neto_contable,omitempty"`
 	TratamientoTributario string  `json:"tratamiento_tributario"`
 }
 
@@ -121,7 +128,9 @@ type facturacionFuenteFiscalTotales struct {
 	DescuentoLineas      float64 `json:"descuento_lineas"`
 	BaseGravableLineas   float64 `json:"base_gravable_lineas"`
 	ImpuestoLineas       float64 `json:"impuesto_lineas"`
+	RetencionesLineas    float64 `json:"retenciones_lineas,omitempty"`
 	TotalLineas          float64 `json:"total_lineas"`
+	TotalNetoContable    float64 `json:"total_neto_contable,omitempty"`
 	SubtotalCarrito      float64 `json:"subtotal_carrito"`
 	DescuentoCarrito     float64 `json:"descuento_carrito"`
 	ImpuestoCarrito      float64 `json:"impuesto_carrito"`
@@ -130,8 +139,11 @@ type facturacionFuenteFiscalTotales struct {
 }
 
 type facturacionFuenteFiscalPago struct {
-	Metodo     string `json:"metodo"`
-	Referencia string `json:"referencia"`
+	Metodo           string `json:"metodo"`
+	Referencia       string `json:"referencia"`
+	FormaCodigo      string `json:"forma_codigo,omitempty"`
+	MedioCodigo      string `json:"medio_codigo,omitempty"`
+	FechaVencimiento string `json:"fecha_vencimiento,omitempty"`
 }
 
 func buildFacturacionFuenteFiscalSnapshot(carrito *dbpkg.CarritoCompra, items []dbpkg.CarritoCompraItem, cfg *dbpkg.EmpresaConfiguracionAvanzada, cliente *dbpkg.Cliente, doc dbpkg.EmpresaDocumentoFacturacion) (*facturacionFuenteFiscalSnapshot, error) {
@@ -449,7 +461,7 @@ func marshalFacturacionFuenteFiscal(snapshot *facturacionFuenteFiscalSnapshot) (
 		return nil, fmt.Errorf("fuente fiscal invalida")
 	}
 	tipoOrigen := normalizeFacturacionDocumentoElectronicoTipo(snapshot.Documento.TipoOrigen)
-	if strings.TrimSpace(snapshot.Documento.CodigoOrigen) == "" || (tipoOrigen != "comprobante_pago" && tipoOrigen != "nota_credito") {
+	if strings.TrimSpace(snapshot.Documento.CodigoOrigen) == "" || (tipoOrigen != "comprobante_pago" && tipoOrigen != "nota_credito" && tipoOrigen != "documento_soporte") {
 		return nil, fmt.Errorf("origen de fuente fiscal invalido")
 	}
 	if tipoOrigen == "nota_credito" {
@@ -553,6 +565,8 @@ func loadFacturacionFuenteFiscalParaDocumento(ctx context.Context, dbEmp *sql.DB
 		return snapshot, nil
 	case "nota_credito":
 		return loadFacturacionFuenteFiscalSnapshot(ctx, dbEmp, doc.EmpresaID, tipo, codigo)
+	case "documento_soporte":
+		return loadFacturacionFuenteFiscalSnapshot(ctx, dbEmp, doc.EmpresaID, tipo, codigo)
 	default:
 		return nil, fmt.Errorf("tipo documental sin fuente fiscal de venta")
 	}
@@ -590,7 +604,11 @@ type dianFuenteFiscalUBLContext struct {
 // parties. The older payload generator remains limited to explicit DIAN
 // habilitation fixtures and must not be used by the commercial dispatcher.
 func generateDIANUBLDesdeFuenteFiscal(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}, snapshot *facturacionFuenteFiscalSnapshot) (map[string]interface{}, int, error) {
-	if normalizeFacturacionDocumentoElectronicoTipo(genericStringValue(payload["documento_tipo"])) == "nota_credito" {
+	documentType := normalizeFacturacionDocumentoElectronicoTipo(genericStringValue(payload["documento_tipo"]))
+	if documentType == "documento_soporte" {
+		return generateDIANUBLDocumentoSoporteDesdeFuenteFiscal(cfg, empresaID, payload, snapshot)
+	}
+	if documentType == "nota_credito" {
 		return generateDIANUBLNotaCreditoDesdeFuenteFiscal(cfg, empresaID, payload, snapshot)
 	}
 	prepared, status, err := prepareDIANUBLDesdeFuenteFiscal(cfg, empresaID, payload, snapshot)
