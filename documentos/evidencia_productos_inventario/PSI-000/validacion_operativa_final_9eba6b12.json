@@ -2,7 +2,8 @@
   "schema_version": 1,
   "fecha": "2026-08-26",
   "alcance": "Productos, Servicios, Compras e Inventario",
-  "candidato_funcional": "5eb4a0129ab7558c0d11141139063ff28394c9bf",
+  "candidato_funcional": "9eba6b12729baa1735f25dc0c38659292a88d19d",
+  "pull_request_cierre": 215,
   "empresa_qa": {
     "empresa_id": 12,
     "entorno": "staging",
@@ -137,16 +138,31 @@
     "productos_y_compras_estado_separado_por_frame": true,
     "compras_carga_inicial_diferida": true,
     "overflow_horizontal_escritorio": false,
-    "overflow_horizontal_movil": false
+    "overflow_horizontal_movil": false,
+    "compras_ia_anidada": {
+      "documento_antes_px": {
+        "scroll_width": 966,
+        "client_width": 791
+      },
+      "documento_despues_px": {
+        "scroll_width": 791,
+        "client_width": 791
+      },
+      "overflow_global_despues": false,
+      "tabla_scroll_interno_px": {
+        "scroll_width": 920,
+        "client_width": 728
+      }
+    }
   },
   "qa_automatizada": {
     "ci_profesional": {
-      "run_id": 32972430778,
-      "sha": "5eb4a0129ab7558c0d11141139063ff28394c9bf",
+      "run_id": 32974327264,
+      "sha": "9eba6b12729baa1735f25dc0c38659292a88d19d",
       "resultado": "success"
     },
     "e2e_visual": {
-      "run_id": 32972077549,
+      "run_id": 32974846684,
       "resultado": "success",
       "paginas": 32,
       "rutas": 16,
@@ -154,6 +170,13 @@
       "clics_seguros": 28,
       "acciones_riesgosas_omitidas": 270,
       "paginas_con_hallazgos": 0
+    },
+    "release_candidate": {
+      "run_id": 32975347367,
+      "sha": "9eba6b12729baa1735f25dc0c38659292a88d19d",
+      "resultado": "success",
+      "imagenes_inmutables_publicadas": true,
+      "compose_validado_por_digest": true
     },
     "preflight_local": {
       "modo": "Full Strict",

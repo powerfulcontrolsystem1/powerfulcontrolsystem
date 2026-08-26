@@ -11,11 +11,14 @@ una factura real.
 
 - `REPORTE_FINAL.md`: dictamen, alcance, gates, riesgos y condiciones exactas
   para promover el candidato.
-- `validacion_operativa_final_5eb4a012.json`: resultado estructurado y
+- `validacion_operativa_final_9eba6b12.json`: resultado estructurado y
   sanitizado de las pruebas reales, multiempresa, IA, impresion y rendimiento.
-- `github-e2e-32972077549/`: reporte y 32 capturas del barrido autenticado final
-  sobre `5eb4a012`, con 16 rutas en escritorio y movil, 1.404 botones, 28 clics
+- `github-e2e-32974846684/`: reporte y 32 capturas del barrido autenticado final
+  sobre `9eba6b12`, con 16 rutas en escritorio y movil, 1.404 botones, 28 clics
   seguros y cero paginas con hallazgos.
+- `compras_ia_anidada_sin_overflow_desktop_9eba6b12.jpg`: captura manual del
+  flujo operativo completo Administrar empresa -> Compras -> Soportes con IA,
+  despues de eliminar el overflow global y conservar el scroll de la tabla.
 - `productos_menu_operativo_desktop_20f4628e.png` y
   `bodegas_unificadas_*_20f4628e.png`: comprobacion manual exacta de navegacion
   unica, redireccion heredada y vista canonica de bodegas.
@@ -35,6 +38,8 @@ una factura real.
   aprobacion y recepciones reales de QA antes/despues.
 - `github-e2e-32940533286/`: primera evidencia automatizada conservada para
   comparar la ampliacion posterior de 14 a 34 paginas.
+- `github-e2e-32972077549/`: barrido final anterior sobre `5eb4a012`, conservado
+  para trazar la correccion visual anidada posterior.
 
 La observacion de papel fisico se registra por separado porque una cola tomada
 y un documento renderizado no demuestran por si solos que la impresora produjo

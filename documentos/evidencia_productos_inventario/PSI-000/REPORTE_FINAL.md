@@ -2,8 +2,8 @@
 
 - Fecha: 2026-08-26
 - Empresa autorizada de QA: Powerful Control System (`empresa_id=12`)
-- Candidato funcional probado: `5eb4a0129ab7558c0d11141139063ff28394c9bf`
-- PR: `#212`
+- Candidato funcional probado: `9eba6b12729baa1735f25dc0c38659292a88d19d`
+- PR de cierre: `#215` (continuacion del endurecimiento integrado por `#212`)
 
 ## Veredicto
 
@@ -48,7 +48,7 @@ papel en cada dispositivo real.
 
 Los valores detallados, sin credenciales, cookies, tokens, identificadores
 fiscales, nombres de proveedores ni hashes privados, estan en
-`validacion_operativa_final_5eb4a012.json`.
+`validacion_operativa_final_9eba6b12.json`.
 
 ## Correcciones de produccion incluidas
 
@@ -72,6 +72,10 @@ fiscales, nombres de proveedores ni hashes privados, estan en
 - Los iframes de Productos y Compras difieren su primera carga hasta conocer la
   empresa; cada submenu conserva su ultima pagina en una clave propia y no
   restaura vistas del otro modulo.
+- Soportes de Compras IA permite que paneles y celdas encojan dentro de los dos
+  niveles de iframe. En el flujo operativo anidado, el documento paso de
+  `966/791 px` a `791/791 px`; la tabla ancha conserva su desplazamiento interno
+  (`920/728 px`) sin ensanchar la aplicacion.
 - Las tablas del centro de impresion conservan scroll interno y no ensanchan el
   documento en escritorio ni movil.
 
@@ -81,19 +85,22 @@ fiscales, nombres de proveedores ni hashes privados, estan en
   auditorias, sintaxis de 74 JavaScript y duplicados estructurales en cero.
 - Prueba de la migracion normalizada contra PostgreSQL real: `PASS` dentro de
   transaccion temporal, sin alterar datos empresariales.
-- Staging exacto `5eb4a012`: cinco servicios saludables, `/health=200`,
+- Staging exacto `9eba6b12`: cinco servicios saludables, `/health=200`,
   `/ready=200`, cinco migraciones aplicadas, tres indices normalizados y cero
   grupos historicos duplicados.
-- GitHub Professional CI `32972430778`: `success` para el SHA funcional exacto;
+- GitHub Professional CI `32974327264`: `success` para el SHA funcional exacto;
   aprobaron preflight/auditorias y seguridad, dependencias, contenedores y SBOM.
-- GitHub E2E Visual QA `32972077549`: `success`; el reporte descargado confirma
+- GitHub E2E Visual QA `32974846684`: `success`; el reporte descargado confirma
   32 paginas, 1.404 botones, 28 clics seguros, cero hallazgos y 20/20 formatos
   imprimibles correctos.
+- Release Candidate inmutable `32975347367`: `success` para `9eba6b12`; las
+  imagenes exactas aprobaron construccion, escaneo, SBOM, publicacion por digest
+  y validacion del compose de entrega.
 - Matriz automatizada de roles: seis roles sin paginas o APIs faltantes.
 
 ## Alcance visual conservado
 
-El subdirectorio `github-e2e-32972077549` conserva el reporte, las 32 capturas y
+El subdirectorio `github-e2e-32974846684` conserva el reporte, las 32 capturas y
 las matrices del SHA funcional exacto. Incluye Productos, categorias,
 proveedores, bodegas, Kardex/historial, Inventario avanzado, Compras, Compras
 avanzadas, soportes de compra con IA, configuracion de impresoras, recetas,
@@ -101,7 +108,8 @@ codigos de barras y carta publica, en escritorio y movil.
 
 Las capturas manuales complementarias documentan el contenido inferior de los
 flujos extensos, las reglas por funcion/producto, la ausencia de semilla demo y
-la vista unificada de bodegas.
+la vista unificada de bodegas. `compras_ia_anidada_sin_overflow_desktop_9eba6b12.jpg`
+documenta el flujo real completo dentro de Administrar empresa y Compras.
 
 ## Condiciones del GO
 

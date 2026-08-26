@@ -13369,9 +13369,12 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
 - `documentos/evidencia_productos_inventario/PSI-000/REPORTE_FINAL.md`: cierre
   integrado del candidato, matriz de cobertura, gates ejecutados y condiciones
   operativas que separan preparacion, merge, despliegue y papel fisico.
-- `documentos/evidencia_productos_inventario/PSI-000/validacion_operativa_final_5eb4a012.json`:
+- `documentos/evidencia_productos_inventario/PSI-000/validacion_operativa_final_9eba6b12.json`:
   evidencia estructurada y sanitizada de catalogos, inventario, multiempresa,
   factura con IA, impresion, carga unica, staging, CI y E2E visual.
-- `documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/`:
+- `documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/`:
   reporte y capturas finales de 16 rutas en escritorio y movil ejecutadas sobre
-  el SHA funcional `5eb4a012`.
+  el SHA funcional `9eba6b12`.
+- `documentos/evidencia_productos_inventario/PSI-000/compras_ia_anidada_sin_overflow_desktop_9eba6b12.jpg`:
+  evidencia visual manual del flujo anidado de soportes IA sin overflow global
+  y con desplazamiento horizontal contenido en su tabla.
