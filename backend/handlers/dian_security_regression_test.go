@@ -91,6 +91,22 @@ func TestDIANFreeFormXMLActionsFailClosedBeforeDBOrBodyParsing(t *testing.T) {
 	}
 }
 
+func TestDIANUnknownGETCannotFallBackToUnsanitizedGenericCRUD(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/facturacion_electronica/dian?action=listar_crudo&empresa_id=12", nil)
+	req = requestWithTenantContext(req, TenantContext{EmpresaID: 12})
+	rec := httptest.NewRecorder()
+
+	// DB nil demuestra que la accion desconocida se rechaza antes de intentar el
+	// listado generico que devolveria columnas sensibles sin saneamiento.
+	EmpresaDIANColombiaHandler(nil, nil).ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d body=%q, want %d", rec.Code, rec.Body.String(), http.StatusBadRequest)
+	}
+	if !strings.Contains(rec.Body.String(), "accion DIAN no soportada") {
+		t.Fatalf("respuesta inesperada: %q", rec.Body.String())
+	}
+}
+
 func TestSanitizeDIANConfigForResponseRemovesSecretsAndReportsPresence(t *testing.T) {
 	cfg := map[string]interface{}{
 		"id":         int64(7),

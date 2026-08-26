@@ -1,3 +1,25 @@
+2026-08-25: Cierre seguro de facturacion electronica Colombia.
+- Modulos afectados: `facturacion_electronica`, `carritos`, `permisos`,
+  `nomina`, `correo_fiscal` y `seguridad_multiempresa`.
+- La factura solo se crea desde una venta pagada y demuestra su fuente fiscal
+  inmutable antes de reservar numeracion. El endpoint generico no fabrica
+  facturas, notas ni otras familias desde payload libre.
+- La nota credito total nace de una factura aceptada con CUFE, se serializa por
+  documento origen, inicia pendiente y solo anula la factura cuando documento y
+  cola conservan el mismo CUDE oficial y acuse aceptado.
+- Acciones de envio, reintento, credenciales, rangos, firma e importacion fiscal
+  exigen aprobacion efectiva; la anulacion conserva `facturacion:D`. Las
+  consultas de vencimiento sin notificacion usan lectura y toda accion GET DIAN
+  desconocida falla antes de exponer el CRUD interno.
+- La bandeja exige CUFE oficial para habilitar anulacion y permite consultar
+  artefactos privados de factura y nota credito. Tambien verifica la existencia
+  de la fuente inmutable y mantiene en solo lectura los documentos historicos
+  que no la conservan.
+- La reconciliacion repara estado y CUFE/CUDE locales de una cola ya aceptada o
+  reconciliada antes de cualquier despacho, sin aumentar intentos ni volver a
+  transmitir. Nomina solo prepara el lote; no llama el adaptador de factura ni
+  transmite a DIAN.
+
 2026-08-25: RUT DIAN separado y revisable por empresa.
 - Modulos afectados: `facturacion_electronica`, `configuracion_avanzada`,
   `IA empresarial` y `seguridad_multiempresa`.

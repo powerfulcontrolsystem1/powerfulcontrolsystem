@@ -174,15 +174,14 @@ afecte dinero, documentos, licencias o seguridad.
    pagos y generar PILA cuando aplique.
 5. En `Nomina electronica DIAN`, usar `Preparar lote DIAN`; PCS arma el resumen
    por empleado y muestra requisitos pendientes.
-6. Si no hay pendientes, usar `Enviar nomina electronica a DIAN`; la pantalla
-   vuelve a preparar el lote y llama el flujo fiscal existente de facturacion
-   electronica con `tipo_documento=nomina_electronica`.
-7. El envio conserva `empresa_id`, permisos existentes y configuracion DIAN de
-   la empresa; si DIAN/proveedor rechaza o no hay conectividad, la respuesta se
-   muestra en el panel de nomina y queda disponible para reintentos del modulo
-   fiscal.
-8. El tutorial vive en el mismo submenu y explica preparacion, envio, acuse,
-   ajustes y archivo documental.
+6. `Preparar lote DIAN` es solo un preflight documental: no genera XML, no
+   reserva numeracion y no transmite informacion. El envio permanece bloqueado
+   tanto en la interfaz como en el endpoint fiscal generico.
+7. La nomina no reutiliza el adaptador de factura de venta. Para habilitarla se
+   requiere una fuente inmutable por empleado, UBL `NominaIndividual`, CUNE,
+   firma, transporte y acuse propios, todos aislados por `empresa_id`.
+8. El tutorial vive en el mismo submenu y explica preparacion, revision,
+   pendientes y archivo documental sin presentar el preflight como envio DIAN.
 
 ## Snapshot completo VPS desde super administrador
 
@@ -1373,9 +1372,9 @@ afecte dinero, documentos, licencias o seguridad.
    pago de nomina electronica.
 9. `POST /api/empresa/nomina?action=preparar_nomina_electronica` prepara el lote
    por empleado con devengados, deducciones, neto, IBC, sede y centro de costo.
-   El envio real a DIAN sigue dependiendo de firma, CUNE, numeracion,
-   credenciales y transporte documental configurados por empresa en facturacion
-   electronica.
+   La salida es solo de revision y no llama el endpoint fiscal generico. El
+   envio real permanece bloqueado hasta implementar fuente, `NominaIndividual`,
+   CUNE, firma, transporte y acuse propios por empresa.
 10. La pagina `web/administrar_empresa/nomina_tutorial.html` debe abrirse desde
    el boton `Tutorial` de nomina y conservar `empresa_id`; explica el orden
    recomendado: parametros legales, configuracion, empleados, novedades,
@@ -1519,6 +1518,12 @@ afecte dinero, documentos, licencias o seguridad.
    `anulada`. Reintentos y reconciliacion aplican la misma regla idempotente.
 6. Nota credito parcial/libre y nota debito permanecen bloqueadas hasta tener una
    fuente de ajuste estructurada proveniente de una operacion empresarial real.
+7. La bandeja habilita la anulacion solo si la factura conserva CUFE oficial y
+   `fuente_fiscal_disponible=true`. Un documento historico sin snapshot queda en
+   consulta; no se reconstruyen lineas, impuestos o cliente por suposicion.
+8. `reconciliar_estados` repara primero los datos locales de una cola ya
+   aceptada/reconciliada. Esa ruta no vuelve a transmitir el XML ni aumenta sus
+   intentos; una cola sin aceptacion permanece pendiente del flujo normal.
 
 ### Errores DIAN que el usuario puede resolver
 

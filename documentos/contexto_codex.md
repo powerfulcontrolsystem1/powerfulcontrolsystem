@@ -170,8 +170,9 @@ decisiones en cada tarea.
   nomina electronica DIAN y tutorial.
 - Las subpaginas reutilizan `nomina_sueldos.html?seccion=...` para no duplicar
   reglas ni APIs; la vista antigua sin `seccion` conserva pantalla completa.
-- El boton historico `Enviar nomina electronica a DIAN` prepara el lote, pero el
-  endpoint fiscal bloquea `tipo_documento=nomina_electronica` con 422 hasta que
+- El boton historico de envio aparece como `Envio DIAN no disponible` y queda
+  deshabilitado. `Preparar lote DIAN` es solo preflight; no genera XML ni llama
+  el endpoint fiscal. `tipo_documento=nomina_electronica` sigue en 422 hasta que
   exista un adaptador conforme al anexo tecnico de nomina. No se permite usar el
   generador de factura de venta como sustituto.
 
@@ -261,16 +262,15 @@ decisiones en cada tarea.
   (`empresa_id=12`) con sesion real o login API autorizado por el usuario.
 - El flujo rapido reproducible es: autenticar, verificar configuracion DIAN,
   crear venta/factura de una `menta`, emitir o reenviar por
-  `/api/empresa/facturacion_electronica?action=emitir|reenviar_dian&empresa_id=12`
+  `/api/empresa/facturacion_electronica?action=facturar_desde_venta|reenviar_dian&empresa_id=12`
   y revisar `integracion_fiscal`, `cola_reintentos` y acuse DIAN saneado.
 - No imprimir contrasenas, PIN, certificado, llave tecnica ni token. Se puede
   mostrar numero legal, prefijo, resolucion, ambiente, codigo de regla DIAN y
   estado `aceptado/rechazado/contingencia`.
-- La resolucion vigente de PCS registrada el 2026-06-16 usa prefijo `PCS`,
-  rango `1-1000000` y ambiente produccion. DIAN rechazo las pruebas `PCS1/PCS2`
-  despues de llegar a `SendBillSync` por `FAB05c` (Software ID no corresponde
-  al rango de numeracion) y `FAD06` (CUFE no calculado correctamente); ya no
-  hay rechazo por guion/rango tras normalizar el numero legal a `PCS1`, `PCS2`.
+- La configuracion productiva vigente usa prefijo `1PCS`, rango `1-100000` y
+  ambiente produccion. Los folios `PCS1/PCS2` quedan como evidencia historica
+  rechazada; la evidencia actual `1PCS8` tiene acuse aceptado, CUFE oficial y un
+  unico intento.
 - Actualizacion 2026-06-17: la nueva Autorizacion de Numeracion DIAN Formulario
   1876 `18764111318575` para PCS usa prefijo `1PCS`, rango `1-100000`, fecha
   inicial `2026-06-17`, vigencia 24 meses y fecha final `2028-06-17`. El PDF de

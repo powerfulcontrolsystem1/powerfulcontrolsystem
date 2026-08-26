@@ -3543,6 +3543,19 @@ func registrarFacturaElectronicaDesdeDocumentoVentaContext(ctx context.Context, 
 		}, nil
 	}
 
+	// La fuente fiscal debe existir y corresponder a esta factura antes de
+	// reservar numeracion. Un comprobante ordinario puede haberse pagado sin
+	// datos suficientes para DIAN; convertirlo despues no debe consumir un folio.
+	fuenteFiscal, fuenteErr := loadFacturacionFuenteFiscalParaDocumento(ctx, dbEmp, dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID: ventaDoc.EmpresaID, TipoDocumento: "factura_electronica", DocumentoCodigo: documentoCodigo,
+	})
+	if fuenteErr != nil {
+		return nil, fmt.Errorf("fuente fiscal inmutable no disponible para facturar la venta: %w", fuenteErr)
+	}
+	if fuenteFiscal == nil || len(fuenteFiscal.Bloqueantes) > 0 {
+		return nil, fmt.Errorf("la fuente fiscal inmutable de la venta tiene bloqueantes y no permite reservar numeracion")
+	}
+
 	periodoContable := strings.TrimSpace(ventaDoc.PeriodoContable)
 	if periodoContable == "" {
 		periodoContable = time.Now().Format("2006-01")
@@ -3594,6 +3607,8 @@ func registrarFacturaElectronicaDesdeDocumentoVentaContext(ctx context.Context, 
 	}
 
 	integracionFiscal := map[string]interface{}{}
+	var resultadoIntegracion facturacionIntegracionResultado
+	integracionEvaluada := false
 	if strings.EqualFold(strings.TrimSpace(docPersistido.EstadoDocumento), "emitida") {
 		payloadOperacion := facturacionOperacionPayload{
 			EmpresaID:       ventaDoc.EmpresaID,
@@ -3608,7 +3623,7 @@ func registrarFacturaElectronicaDesdeDocumentoVentaContext(ctx context.Context, 
 			PeriodoContable: periodoContable,
 			Observaciones:   observacionBase,
 		}
-		resultadoIntegracion, retryItem, integErr := processFacturacionIntegracionForDocumentoContext(
+		resultado, retryItem, integErr := processFacturacionIntegracionForDocumentoContext(
 			ctx,
 			dbEmp,
 			payloadOperacion,
@@ -3617,6 +3632,8 @@ func registrarFacturaElectronicaDesdeDocumentoVentaContext(ctx context.Context, 
 			strings.TrimSpace(usuario),
 			dbSuper,
 		)
+		resultadoIntegracion = resultado
+		integracionEvaluada = true
 		if integErr != nil {
 			integracionFiscal["error"] = integErr.Error()
 		}
@@ -3660,7 +3677,15 @@ func registrarFacturaElectronicaDesdeDocumentoVentaContext(ctx context.Context, 
 	}
 	var envioCorreoFactura interface{} = map[string]interface{}{"intentado": false}
 	if cfg.EnviarFacturaElectronicaVenta || facturacionAutoEmailClienteEnabled(dbEmp, ventaDoc.EmpresaID, strings.TrimSpace(docPersistido.PaisCodigo)) {
-		envioCorreoFactura = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payloadCorreo, *docPersistido)
+		correoFiscalPermitido := strings.EqualFold(strings.TrimSpace(docPersistido.EstadoDocumento), "emitida")
+		if strings.EqualFold(strings.TrimSpace(docPersistido.PaisCodigo), "CO") && strings.EqualFold(strings.TrimSpace(docPersistido.AmbienteFE), "produccion") {
+			correoFiscalPermitido = correoFiscalPermitido && integracionEvaluada && facturaElectronicaVentaIntegracionConfirmada(resultadoIntegracion)
+		}
+		if correoFiscalPermitido {
+			envioCorreoFactura = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payloadCorreo, *docPersistido)
+		} else {
+			envioCorreoFactura = facturaEmailResultado{Intentado: false, Enviado: false, Error: "correo fiscal pendiente hasta recibir aceptacion DIAN"}
+		}
 	} else {
 		envioCorreoFactura = facturaEmailAutoDisabledResultado(payloadCorreo)
 	}

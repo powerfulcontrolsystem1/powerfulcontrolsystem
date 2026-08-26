@@ -7802,6 +7802,13 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 		}
+		if r.Method == http.MethodGet {
+			// La configuracion DIAN contiene secretos descifrados para uso interno.
+			// Ninguna accion GET desconocida puede caer en el CRUD generico, porque
+			// ese listado no aplica el saneamiento write-only de este handler.
+			http.Error(w, "accion DIAN no soportada", http.StatusBadRequest)
+			return
+		}
 		if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
 			http.Error(w, "accion DIAN no soportada", http.StatusBadRequest)
 			return

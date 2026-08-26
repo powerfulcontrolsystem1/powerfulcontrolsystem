@@ -1,3 +1,16 @@
+2026-08-25: Nota de cierre seguro DIAN Colombia.
+- `/api/empresa/facturacion_electronica` conserva
+  `WithEmpresaFacturacionPermissions`: la factura desde venta, el reenvio y el
+  procesamiento fiscal requieren `A`; la anulacion total mediante nota credito
+  requiere `D` y valida factura/CUFE/fuente del mismo `empresa_id`.
+- En `/api/empresa/facturacion_electronica/dian`, guardar configuracion,
+  validar credenciales, consultar rango, subir firma, enviar set y acciones de
+  importacion fiscal requieren `A`. Un chequeo de vencimiento con
+  `notificar=0` usa `R`; si puede notificar exige `A`.
+- Un tipo documental catalogado no concede permiso ni capacidad de emision. El
+  endpoint generico permanece cerrado para payload fiscal libre y los GET DIAN
+  desconocidos responden 400 antes del CRUD interno.
+
 2026-07-09: Infraestructura del panel super.
 - `/super/api/servidores`, `/super/api/servidores/probar` y
   `/super/api/servidores/toggle` exigen sesion con rol
@@ -2027,9 +2040,9 @@ Regla de lectura comun (R):
 | `/api/empresa/clientes` | `WithEmpresaClientesPermissions` | SA, AE, SS, CJ | - | modulo clientes sin `D` por politica actual |
 | `/api/empresa/proveedores` | `WithEmpresaComprasPermissions` | SA, AE, SS, CO | - | `action=emitir_orden|recepcionar_compra|contabilizar_compra|aprobar` exige `A` |
 | `/api/empresa/soportes_compras_ia` | `WithEmpresaSoportesComprasIAPermissions` | SA, AE, SS, CO, CT | - | captura foto/PDF/XML de compras y gastos; `dashboard|soportes|eventos|retencion_preview|cuarentena_preview` usa `R`, `extraer_ia|editar_revision|restaurar` usa `U`, `aprobar|rechazar|contabilizar` exige `A` y `eliminar|purgar` exige `D`; purgar requiere retencion, motivo y codigo exacto y puede reanudar `purga_pendiente` |
-| `/api/empresa/facturacion_electronica` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | `action=emitir|emitir_factura|emitir_documento` exige `A`; `action=anular_factura_nota_credito` exige `D` y solo opera sobre una factura aceptada del mismo `empresa_id`, derivando fuente fiscal de anulación total; nota crédito genérica/parcial y nota débito permanecen en HTTP 422 |
+| `/api/empresa/facturacion_electronica` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | `action=facturar_desde_venta|reenviar_dian|procesar_reintentos|reconciliar_estados` exige `A`; la emision generica permanece bloqueada aunque el rol tenga `A`; `action=anular_factura_nota_credito` exige `D` y solo opera sobre una factura aceptada del mismo `empresa_id`, derivando fuente fiscal de anulacion total; nota credito generica/parcial y nota debito permanecen en HTTP 422 |
 | `/api/empresa/facturacion_electronica/pais_detectado` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | consulta/actualizacion bajo politica facturacion |
-| `/api/empresa/facturacion_electronica/dian` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | incluye `action=guia_onboarding|validar_credenciales|subir_firma|checklist|validar|generar_cufe_demo|generar_xml_demo|generar_xml_ubl_base|firmar_xml_real|firmar_xml_xades_base|validar_documento_dian|diagnostico_oficial|enviar_documento_real|consultar_acuse_real|reconexion_dian|pruebas_dian|enviar_set_pruebas|activar_produccion_local`; firma/envio directos estan bloqueados para uso comercial y solo el despachador interno puede invocarlos tras fuente fiscal inmutable, permiso efectivo y preflight; opera por `empresa_id` con secretos cifrados por empresa |
+| `/api/empresa/facturacion_electronica/dian` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | las consultas diagnosticas conocidas usan `R`; configuracion, credenciales, rango, firma, imports, set de pruebas y acciones fiscales con efecto exigen `A`; vencimientos con `notificar=0` usan `R` y con notificacion usan `A`; firma/envio directos siguen bloqueados para uso comercial y los GET desconocidos fallan antes del CRUD; opera por `empresa_id` con secretos cifrados por empresa |
 | `/api/empresa/finanzas/movimientos` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | `action=cerrar|reabrir|aprobar|procesar_asientos|procesar` exige `A` |
 | `/api/empresa/finanzas/configuracion` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | configuracion financiera |
 | `/api/empresa/finanzas/periodos` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | cierre/reapertura de periodos en `A` |

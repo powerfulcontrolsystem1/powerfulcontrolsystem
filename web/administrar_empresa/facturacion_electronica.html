@@ -2216,7 +2216,7 @@
       var item = Array.isArray(data) && data.length ? data[0] : null;
       setDianConfigFormData(item || {});
       if (item && item.id) {
-        verificarDianFirmaVencimiento(true).catch(function() {});
+        verificarDianFirmaVencimiento(false).catch(function() {});
         verificarDianResolucionVencimiento(true).catch(function() {});
       } else {
         renderFirmaExpiry({ configurado: false });

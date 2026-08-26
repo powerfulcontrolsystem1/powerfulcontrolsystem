@@ -24,14 +24,16 @@ publicado aun declaraba siete familias como operativas. El candidato corrige el
 contrato: solo factura, nota credito y nota debito pueden usar el adaptador UBL
 de venta; las demas familias se bloquean antes de cualquier efecto fiscal.
 
-Actualizacion 2026-08-25: la auditoria posterior corrigio ese alcance: solo
-`factura_electronica` tiene adaptador comercial candidato. Nota credito/debito,
-soporte, nomina, equivalentes y RADIAN permanecen bloqueados hasta contar con
-fuente y adaptador propios. En PCS se validaron credenciales, diagnostico
-`pre_envio_validable` y `GetNumberingRange` (`1PCS`, `1-100000`, siguiente 12).
-Un TrackId historico devolvio codigo 66; el binario desplegado degrado el estado
-global y se restauro inmediatamente a `enviado`. El candidato limita esa
-reconsulta al historial individual.
+Actualizacion 2026-08-25: la auditoria posterior corrigio ese alcance. La
+factura de venta dispone de adaptador comercial y la nota credito dispone solo
+de la ruta especializada de anulacion total derivada de una factura aceptada.
+Factura libre, nota credito parcial/libre, nota debito, soporte, nomina,
+equivalentes y RADIAN permanecen bloqueados. En PCS se validaron credenciales,
+diagnostico `pre_envio_validable`, `GetNumberingRange` y la factura real `1PCS8`
+con acuse aceptado, CUFE oficial y un unico intento. El candidato adicional
+exige fuente antes de numerar, serializa la anulacion, espera CUDE/acuse
+coincidentes, cierra GET desconocidos y reserva permiso `A` para acciones
+fiscales con efectos.
 
 ## Sintomas cubiertos
 

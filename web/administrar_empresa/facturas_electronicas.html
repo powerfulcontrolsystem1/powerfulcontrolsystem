@@ -285,6 +285,10 @@
         return String(value || "").trim();
       }
 
+      function isOfficialDIANDocumentKey(value) {
+        return /^[0-9a-f]{96}$/i.test(normalize(value));
+      }
+
       function documentCustomerLabel(item) {
         item = item || {};
         var explicit = normalize(item.cliente_nombre) || normalize(item.cliente_email);
@@ -841,6 +845,8 @@
         if (tipo !== "factura_electronica") return false;
         if (estado !== "emitida") return false;
         if (normalize(item && item.estado).toLowerCase() === "inactivo") return false;
+        if (!isOfficialDIANDocumentKey(item && item.codigo_validacion)) return false;
+        if (item && item.fuente_fiscal_disponible !== true) return false;
         return true;
       }
 
@@ -862,7 +868,14 @@
         }
         if (tipo === "factura_electronica") {
           if (canCancelInvoice(item)) return { enabled: true, visible: true, reason: "Anular factura electronica con nota credito." };
-          return { enabled: false, visible: true, reason: estadoDoc === "anulada" ? "Factura ya anulada." : "Solo se anulan facturas electronicas emitidas." };
+          if (estadoDoc === "anulada") return { enabled: false, visible: true, reason: "Factura ya anulada." };
+          if (estadoDoc === "emitida" && !isOfficialDIANDocumentKey(item && item.codigo_validacion)) {
+            return { enabled: false, visible: true, reason: "La factura aún no tiene un CUFE oficial DIAN para relacionar la nota crédito." };
+          }
+          if (estadoDoc === "emitida" && item && item.fuente_fiscal_disponible !== true) {
+            return { enabled: false, visible: true, reason: "Documento histórico sin fuente fiscal inmutable; no se puede fabricar una nota crédito segura." };
+          }
+          return { enabled: false, visible: true, reason: "Solo se anulan facturas electronicas emitidas y aceptadas por DIAN." };
         }
         if (tipo === "comprobante_pago") {
           if (canCancelSale(item)) return { enabled: true, visible: true, reason: "Anular venta simple." };
@@ -1207,7 +1220,8 @@
           var retryInfo = retryDIANAvailability(item);
           var retryActionHTML = retryInfo.visible === false ? '' :
             '<button type="button" class="btn fe-only-action" data-action="reenviar_dian" data-key="' + escapeHtml(key) + '"' + (retryInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(retryInfo.reason) + '"><img class="icon" src="/img/invoice.svg" alt="">Reenviar DIAN</button>';
-          var artifactActionHTML = normalize(item.tipo_documento).toLowerCase() === "factura_electronica"
+          var artifactType = normalize(item.tipo_documento).toLowerCase();
+          var artifactActionHTML = (artifactType === "factura_electronica" || artifactType === "nota_credito")
             ? '<button type="button" class="btn secondary fe-only-action" data-action="artefactos" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/invoice.svg" alt="">Archivos fiscales</button>'
             : '';
           return '<tr data-key="' + escapeHtml(key) + '">' +
