@@ -60,6 +60,7 @@ var empresaComprobanteAllowedExt = map[string]bool{
 	".gif":  true,
 	".webp": true,
 	".pdf":  true,
+	".xml":  true,
 	".txt":  true,
 	".csv":  true,
 	".doc":  true,

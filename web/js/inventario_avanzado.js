@@ -4,6 +4,10 @@
   var qs = new URLSearchParams(window.location.search);
   var empresaId = qs.get("empresa_id") || localStorage.getItem("empresa_id") || "";
   var api = "/api/empresa/inventario_avanzado";
+  var productos = [];
+  var bodegas = [];
+  var lotes = [];
+  var seriales = [];
 
   function el(id){ return document.getElementById(id); }
   function val(id){ var n = el(id); return n ? n.value.trim() : ""; }
@@ -42,6 +46,65 @@
       return data || {};
     });
   }
+
+  function replaceSelectOptions(selector, placeholder, rows, labelFor, allowed){
+    document.querySelectorAll(selector).forEach(function(node){
+      var current = node.value;
+      node.innerHTML = "";
+      var empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = placeholder;
+      node.appendChild(empty);
+      (rows || []).forEach(function(row){
+        if (allowed && !allowed(row)) return;
+        var option = document.createElement("option");
+        option.value = String(row.id || "");
+        option.textContent = labelFor(row);
+        node.appendChild(option);
+      });
+      if (current && Array.prototype.some.call(node.options, function(option){ return option.value === current; })) {
+        node.value = current;
+      }
+    });
+  }
+
+  function loadProductos(){
+    return fetch("/api/empresa/productos?empresa_id=" + encodeURIComponent(empresaId) + "&estado=activo&limit=500")
+      .then(readJSONResponse).then(function(rows){
+        productos = Array.isArray(rows) ? rows : [];
+        replaceSelectOptions(".iav-product-select", "Seleccione producto activo", productos, function(p){
+          return (p.nombre || "Producto") + " (" + (p.sku || p.codigo_barras || ("ID-" + p.id)) + ")";
+        });
+      });
+  }
+
+  function loadBodegas(){
+    return fetch("/api/empresa/bodegas?empresa_id=" + encodeURIComponent(empresaId))
+      .then(readJSONResponse).then(function(rows){
+        bodegas = Array.isArray(rows) ? rows : [];
+        replaceSelectOptions(".iav-bodega-select", "Seleccione bodega activa", bodegas, function(b){
+          return (b.nombre || "Bodega") + " (" + (b.codigo || ("ID-" + b.id)) + ")";
+        }, function(b){ return String(b.estado || "activo").toLowerCase() === "activo"; });
+      });
+  }
+
+  function loadLotes(){
+    return fetch(url("lotes", {estado:"activo"})).then(readJSONResponse).then(function(rows){
+      lotes = Array.isArray(rows) ? rows : [];
+      replaceSelectOptions(".iav-lote-select", "Seleccione lote activo", lotes, function(lote){
+        return (lote.lote_codigo || ("Lote #" + lote.id)) + " - " + (lote.producto_nombre || ("Producto #" + lote.producto_id)) + " / " + (lote.bodega_nombre || ("Bodega #" + lote.bodega_id)) + " (libre " + (lote.cantidad_libre || 0) + ")";
+      }, function(lote){ return Number(lote.cantidad_libre || 0) > 0; });
+    });
+  }
+
+  function loadSeriales(){
+    return fetch(url("seriales")).then(readJSONResponse).then(function(rows){
+      seriales = Array.isArray(rows) ? rows : [];
+      replaceSelectOptions(".iav-serial-select", "Sin serial", seriales, function(serial){
+        return (serial.serial || ("Serial #" + serial.id)) + " - " + (serial.producto_nombre || ("Producto #" + serial.producto_id));
+      }, function(serial){ return String(serial.estado_inventario || "").toLowerCase() === "disponible"; });
+    });
+  }
   function post(action, payload){
     payload = payload || {};
     payload.action = action;
@@ -55,14 +118,15 @@
       setMsg("Selecciona una empresa para operar inventario avanzado.", "error");
       return Promise.resolve();
     }
-    return fetch(url("dashboard")).then(readJSONResponse).then(function(d){
+    var dashboard = fetch(url("dashboard")).then(readJSONResponse);
+    return Promise.all([dashboard, loadProductos(), loadBodegas(), loadLotes(), loadSeriales(), loadReservas()]).then(function(values){
+      var d = values[0] || {};
       el("kpiLotes").textContent = d.lotes_activos || 0;
       el("kpiReservas").textContent = d.reservas_activas || 0;
       el("kpiVencer").textContent = (d.lotes_por_vencer || 0) + "/" + (d.lotes_vencidos || 0);
       el("kpiValor").textContent = money(d.valor_disponible || 0);
       renderLotes(d.ultimos_lotes || []);
       renderValor(d.valorizacion || []);
-      return loadReservas();
     }).catch(function(err){ setMsg(err.message || "No se pudo cargar inventario avanzado", "error"); });
   }
 
@@ -94,6 +158,9 @@
     return fetch(url("reservas")).then(readJSONResponse).then(function(rows){
       var body = el("reservasBody");
       body.innerHTML = "";
+      var confirmSelect = el("confirmReservaID");
+      var currentReserva = confirmSelect.value;
+      confirmSelect.innerHTML = '<option value="">Seleccione reserva activa</option>';
       (rows || []).forEach(function(x){
         var tr = document.createElement("tr");
         tr.innerHTML = "<td></td><td></td><td></td><td></td><td></td><td></td><td></td>";
@@ -106,7 +173,14 @@
         tr.children[6].textContent = x.estado || "";
         tr.addEventListener("click", function(){ el("confirmReservaID").value = x.id || ""; });
         body.appendChild(tr);
+        if (String(x.estado || "").toLowerCase() === "activa") {
+          var option = document.createElement("option");
+          option.value = String(x.id || "");
+          option.textContent = "#" + x.id + " - " + (x.producto_nombre || ("Producto #" + x.producto_id)) + " / " + (x.cliente_nombre || "Sin cliente");
+          confirmSelect.appendChild(option);
+        }
       });
+      if (currentReserva && Array.prototype.some.call(confirmSelect.options, function(option){ return option.value === currentReserva; })) confirmSelect.value = currentReserva;
     });
   }
 
@@ -128,6 +202,10 @@
   }
 
   function saveLote(){
+    if (!num("loteProducto") || !num("loteBodega") || !val("loteCodigo") || num("loteCantidad") <= 0) {
+      setMsg("Selecciona producto y bodega, e indica lote y cantidad mayor a cero.", "error");
+      return Promise.resolve();
+    }
     return post("lote", {lote:{
       producto_id:num("loteProducto"),
       bodega_id:num("loteBodega"),
@@ -142,13 +220,20 @@
       ubicacion_interna:val("loteUbicacion")
     }}).then(function(r){
       setMsg("Lote guardado #" + r.id, "success");
-      el("serialLote").value = r.id;
-      el("resLote").value = r.id;
-      return loadAll();
+      return loadAll().then(function(){
+        el("serialLote").value = r.id;
+        el("resLote").value = r.id;
+        applyLoteSelection("serialLote", "serialProducto", "serialBodega");
+        applyLoteSelection("resLote", "resProducto", "resBodega");
+      });
     }).catch(function(err){ setMsg(err.message, "error"); });
   }
 
   function saveSerial(){
+    if (!num("serialProducto") || !num("serialBodega") || !val("serialCodigo")) {
+      setMsg("Selecciona producto y bodega, e indica el serial.", "error");
+      return Promise.resolve();
+    }
     return post("serial", {serial:{
       lote_id:num("serialLote"),
       producto_id:num("serialProducto"),
@@ -159,12 +244,18 @@
       garantia_hasta:val("serialGarantia")
     }}).then(function(r){
       setMsg("Serial guardado #" + r.id, "success");
-      el("resSerial").value = r.id;
-      return loadAll();
+      return loadAll().then(function(){
+        el("resSerial").value = r.id;
+        applySerialSelection();
+      });
     }).catch(function(err){ setMsg(err.message, "error"); });
   }
 
   function saveReserva(){
+    if (!num("resProducto") || !num("resBodega") || num("resCantidad") <= 0 || !val("resRef")) {
+      setMsg("Selecciona producto y bodega, e indica cantidad y referencia.", "error");
+      return Promise.resolve();
+    }
     return post("reserva", {reserva:{
       producto_id:num("resProducto"),
       bodega_id:num("resBodega"),
@@ -177,23 +268,45 @@
       fecha_expira:val("resExpira")
     }}).then(function(r){
       setMsg("Reserva creada #" + r.id, "success");
-      el("confirmReservaID").value = r.id;
-      return loadAll();
+      return loadAll().then(function(){ el("confirmReservaID").value = r.id; });
     }).catch(function(err){ setMsg(err.message, "error"); });
   }
 
   function confirmReserva(){
+    if (!num("confirmReservaID")) {
+      setMsg("Selecciona una reserva activa para confirmar la salida.", "error");
+      return Promise.resolve();
+    }
     return post("confirmar_reserva", {reserva_id:num("confirmReservaID")}).then(function(){
       setMsg("Reserva confirmada y salida registrada", "success");
       return loadAll();
     }).catch(function(err){ setMsg(err.message, "error"); });
   }
 
-  function seed(){
-    return post("seed_demo", {}).then(function(r){
-      setMsg("Demo cargada #" + r.id, "success");
-      return loadAll();
-    }).catch(function(err){ setMsg(err.message, "error"); });
+  function loteByID(id){
+    for (var i = 0; i < lotes.length; i += 1) if (Number(lotes[i].id) === Number(id || 0)) return lotes[i];
+    return null;
+  }
+
+  function serialByID(id){
+    for (var i = 0; i < seriales.length; i += 1) if (Number(seriales[i].id) === Number(id || 0)) return seriales[i];
+    return null;
+  }
+
+  function applyLoteSelection(loteSelectID, productoSelectID, bodegaSelectID){
+    var lote = loteByID(val(loteSelectID));
+    if (!lote) return;
+    el(productoSelectID).value = String(lote.producto_id || "");
+    el(bodegaSelectID).value = String(lote.bodega_id || "");
+  }
+
+  function applySerialSelection(){
+    var serial = serialByID(val("resSerial"));
+    if (!serial) return;
+    el("resProducto").value = String(serial.producto_id || "");
+    el("resBodega").value = String(serial.bodega_id || "");
+    if (serial.lote_id) el("resLote").value = String(serial.lote_id);
+    el("resCantidad").value = "1";
   }
 
   document.querySelectorAll(".iav-tab").forEach(function(btn){
@@ -205,10 +318,13 @@
       if (panel) panel.classList.add("is-active");
     });
   });
-  [["btnRefresh",loadAll],["btnSeed",seed],["btnSaveLote",saveLote],["btnSaveSerial",saveSerial],["btnSaveReserva",saveReserva],["btnConfirmReserva",confirmReserva]].forEach(function(pair){
+  [["btnRefresh",loadAll],["btnSaveLote",saveLote],["btnSaveSerial",saveSerial],["btnSaveReserva",saveReserva],["btnConfirmReserva",confirmReserva]].forEach(function(pair){
     var node = el(pair[0]);
     if (node) node.addEventListener("click", pair[1]);
   });
+  el("serialLote").addEventListener("change", function(){ applyLoteSelection("serialLote", "serialProducto", "serialBodega"); });
+  el("resLote").addEventListener("change", function(){ applyLoteSelection("resLote", "resProducto", "resBodega"); });
+  el("resSerial").addEventListener("change", applySerialSelection);
 
   el("loteCodigo").value = "LOT-" + Date.now().toString().slice(-6);
   el("serialCodigo").value = "SER-" + Date.now().toString().slice(-6);

@@ -151,3 +151,32 @@ func TestPrivateMigrationInventoryQueryScopesTenant(t *testing.T) {
 		t.Fatal("unknown category must be rejected")
 	}
 }
+
+func TestComprobanteCompraXMLSeGuardaComoAdjuntoPrivadoSeguro(t *testing.T) {
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", t.TempDir())
+	if !privateCategoryAllowsExtension("finanzas", ".xml") {
+		t.Fatal("el almacenamiento de comprobantes debe aceptar la factura XML anunciada por Compras")
+	}
+	xml := `<?xml version="1.0" encoding="UTF-8"?><FacturaCompra><Total>3094.00</Total></FacturaCompra>`
+	name, path, _, err := saveEmpresaPrivateUpload(12, "finanzas", ".xml", strings.NewReader(xml), 1024)
+	if err != nil {
+		t.Fatalf("guardar XML de compra: %v", err)
+	}
+	if filepath.Ext(name) != ".xml" {
+		t.Fatalf("extension almacenada=%q, want .xml", filepath.Ext(name))
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("el XML privado no quedo almacenado: %v", err)
+	}
+	for name, invalid := range map[string]string{
+		"texto sin XML":   "factura de compra",
+		"XML mal formado": `<FacturaCompra><Total>3094.00</FacturaCompra>`,
+		"DTD":             `<?xml version="1.0"?><!DOCTYPE factura [<!ENTITY x "dato">]><FacturaCompra>&x;</FacturaCompra>`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, _, _, err := saveEmpresaPrivateUpload(12, "finanzas", ".xml", strings.NewReader(invalid), 2048); err == nil {
+				t.Fatal("el almacenamiento privado acepto contenido XML inseguro o invalido")
+			}
+		})
+	}
+}

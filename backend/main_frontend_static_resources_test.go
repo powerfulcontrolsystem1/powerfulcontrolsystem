@@ -501,6 +501,87 @@ func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T
 	}
 }
 
+func TestProductosMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing.T) {
+	menu, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "administrar_productos_menu.html"))
+	if err != nil {
+		t.Fatalf("read products menu: %v", err)
+	}
+	content := string(menu)
+	framePattern := regexp.MustCompile(`<iframe[^>]+id="productosContentFrame"[^>]*>`)
+	frame := framePattern.FindString(content)
+	if frame == "" {
+		t.Fatal("products menu must keep the products content frame")
+	}
+	if strings.Contains(frame, ` src=`) {
+		t.Fatal("products content frame must not navigate before empresa_id is resolved")
+	}
+	if !strings.Contains(frame, ` data-src="/administrar_empresa/administrar_productos.html?view=productos`) {
+		t.Fatal("products content frame must declare its deferred tenant-aware destination")
+	}
+
+	script, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "administrar_productos_menu.js"))
+	if err != nil {
+		t.Fatalf("read products menu script: %v", err)
+	}
+	scriptContent := string(script)
+	for _, required := range []string{"frame.getAttribute('data-src')", "withEmpresaAndVersion(deferredSrc)", "frame.setAttribute('data-src'"} {
+		if !strings.Contains(scriptContent, required) {
+			t.Fatalf("products menu must prepare one deferred tenant-aware frame destination; missing %q", required)
+		}
+	}
+	if strings.Contains(scriptContent, "frame.setAttribute('src'") {
+		t.Fatal("products menu script must leave the only frame navigation to the shared company controller")
+	}
+
+	sharedScript, err := os.ReadFile(filepath.Join("..", "web", "js", "administrar_empresa.js"))
+	if err != nil {
+		t.Fatalf("read shared company controller: %v", err)
+	}
+	if !strings.Contains(string(sharedScript), `frame.getAttribute("data-src")`) {
+		t.Fatal("shared company controller must resolve deferred frame destinations")
+	}
+}
+
+func TestBodegasLegacyRoutesDelegateToUnifiedInventoryView(t *testing.T) {
+	root := filepath.Join("..", "web", "administrar_empresa")
+	for _, rel := range []string{"bodega.html", filepath.Join("productos", "bodegas.html")} {
+		page, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("read legacy warehouses page %s: %v", rel, err)
+		}
+		content := string(page)
+		if !strings.Contains(content, "/administrar_empresa/productos/bodegas.js") {
+			t.Fatalf("legacy warehouses page %s must delegate to the unified redirect", rel)
+		}
+		for _, duplicate := range []string{"function renderBodegas", "/api/empresa/bodegas", "id=\"bodegaForm\""} {
+			if strings.Contains(content, duplicate) {
+				t.Fatalf("legacy warehouses page %s must not keep duplicate CRUD code %q", rel, duplicate)
+			}
+		}
+	}
+
+	redirect, err := os.ReadFile(filepath.Join(root, "productos", "bodegas.js"))
+	if err != nil {
+		t.Fatalf("read unified warehouses redirect: %v", err)
+	}
+	redirectContent := string(redirect)
+	if !strings.Contains(redirectContent, "'/administrar_empresa/administrar_productos.html'") || !strings.Contains(redirectContent, "target.searchParams.set('view', 'bodegas')") {
+		t.Fatal("warehouses compatibility redirect must target the unified inventory view")
+	}
+
+	cart, err := os.ReadFile(filepath.Join(root, "carrito_de_compras.html"))
+	if err != nil {
+		t.Fatalf("read cart page: %v", err)
+	}
+	cartContent := string(cart)
+	if strings.Contains(cartContent, "/administrar_empresa/bodega.html") {
+		t.Fatal("cart must not route new warehouse navigation through the legacy CRUD")
+	}
+	if !strings.Contains(cartContent, "/administrar_empresa/administrar_productos.html?view=bodegas&empresa_id=") {
+		t.Fatal("cart must open the unified warehouses and inventory view")
+	}
+}
+
 func TestEmpresaPagesWithMutatingFetchInstallCSRFSynchronizer(t *testing.T) {
 	root := filepath.Join("..", "web", "administrar_empresa")
 	mutatingFetch := regexp.MustCompile(`(?s)fetch\s*\(.{0,800}?method\s*:\s*["'](?:POST|PUT|PATCH|DELETE)["']`)

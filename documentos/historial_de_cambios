@@ -1,3 +1,84 @@
+2026-08-26: Soportes de compras IA sin generacion demo en produccion.
+- La revision visual final de PSI-000 detecto que el encabezado aun exponia
+  `Cargar demo`, una accion que insertaba un soporte y una extraccion ficticios
+  dentro de la empresa activa.
+- Se retiraron el boton, el helper JavaScript, la accion HTTP, su clasificacion
+  de permiso y la funcion de semilla. Una regresion estructural impide
+  reintroducir cualquiera de esas cinco superficies productivas.
+
+2026-08-26: Unicidad normalizada de categorias de producto y proveedores.
+- La prueba real PSI-000 demostro que un proveedor o una categoria con el mismo
+  nombre y distinto uso de mayusculas podia superar los indices exactos
+  heredados. Los registros de prueba se eliminaron y los conteos originales se
+  restauraron antes de corregir el esquema.
+- La migracion `20260826-004-catalogos-nombre-unico-v1` verifica que no existan
+  grupos repetidos por `(empresa_id, LOWER(BTRIM(nombre)))` en ambos catalogos y
+  solo entonces crea los dos indices. Una colision historica detiene la
+  migracion completa para exigir reconciliacion explicita.
+- La unicidad sigue siendo por empresa y los clasificadores existentes
+  convierten la carrera PostgreSQL en HTTP 409 sin filtrar detalles internos.
+
+2026-08-26: Reintento efectivo del login en el E2E visual profesional.
+- El barrido final de Productos e Inventario encontro un timeout transitorio al
+  cargar `login.html`; la ruta publica respondia 200 y el flujo manual seguia
+  autenticado, pero la excepcion de `page.goto` salia del bucle antes del segundo
+  intento ya previsto.
+- `tools/qa_e2e_buttons.cjs` contiene ahora toda la navegacion, captura de
+  credenciales, envio y comprobacion de `/me` dentro del intento reintentable.
+  Si ambos intentos fallan, conserva la causa tecnica sin registrar usuario,
+  contrasena, cookies ni cabeceras privadas.
+
+2026-08-26: Endurecimiento productivo de Productos, Compras e Inventario.
+- Proveedores permite varios registros sin codigo opcional al persistir el valor
+  vacio como `NULL`, manteniendo la unicidad de los codigos informados.
+- Servicios aplica el mismo contrato para codigo opcional, rechaza duracion,
+  costo, precio o impuesto fuera de rango y devuelve 404 seguro cuando el ID no
+  pertenece a la empresa activa.
+- Producto, servicio, bodega, categoria o proveedor ajeno al tenant se rechaza con un
+  error 404 publico seguro; la transaccion no muta datos ni filtra la existencia
+  de IDs de otra empresa. El `empresa_id` manipulado en query/cuerpo conserva el
+  rechazo previo de la frontera de permisos.
+- Productos rechaza costos, precios, impuestos, stock inicial y umbrales de
+  inventario invalidos antes de abrir una transaccion.
+- Inventario avanzado reemplaza IDs manuales por selectores de catalogos
+  empresariales; Inventario y Compras avanzados retiran la creacion demo de UI,
+  JavaScript, API y repositorio productivos.
+- Compras avanzadas prepara entre 1 y 500 productos unicos y recibe hasta 500
+  items de una requisicion en una sola mutacion atomica e idempotente,
+  manteniendo validacion multiempresa de cada referencia, pendientes, costos,
+  lotes, existencias, Kardex y estado total/parcial.
+- El comprobante privado de Compras acepta XML bien formado, rechaza DTD y
+  contenido que no sea XML, alineado con la carga automatica por GPT-5.5 y con
+  la lista visible de formatos.
+- Catalogos, reservas y cola de impresion propagan fallos de `RowsAffected`; los
+  listados de inventario y productos propagan errores tardios de iteracion.
+- Categorias, productos, proveedores y servicios clasifican las restricciones
+  unicas conocidas como conflicto HTTP 409 sin devolver SQL ni nombres de
+  restricciones; errores desconocidos conservan el cierre seguro en 500.
+- Bodegas convierte `sql.ErrNoRows` de actualizar, cambiar estado y eliminar en
+  el mismo 404 publico usado para recursos ajenos, sin revelar si el ID existe
+  bajo otro `empresa_id`.
+- La tendencia de Kardex normaliza `time.Time`, texto RFC3339, fecha ISO y bytes
+  devueltos por PostgreSQL antes de completar el rango diario; formatos
+  inesperados fallan cerrados en vez de asociar movimientos al dia equivocado.
+- Compras resuelve hasta 20 saltos de una cadena de soportes duplicados dentro
+  del listado autenticado de la empresa, detecta ciclos/faltantes y reutiliza la
+  extraccion verificable del original sin una segunda llamada a IA.
+- El centro de impresion acota cada `.form` y `.table-wrap` a la columna de
+  `.empresa-config-grid`; las tablas extensas mantienen scroll local y dejan de
+  ampliar el documento a 1.581 px en una ventana de 1.366 px.
+- El menu de Productos conserva la URL del iframe en `data-src` y solo asigna
+  `src` despues de resolver y anexar el `empresa_id`; elimina la carga inicial
+  sin tenant que el navegador cancelaba al iniciar la vista empresarial.
+- La ruta historica `bodega.html` deja de mantener un CRUD paralelo y delega en
+  la vista unificada `administrar_productos.html?view=bodegas`; el acceso desde
+  el carrito usa ya la ruta canonica y los marcadores antiguos siguen entrando
+  mediante una redireccion que conserva los parametros de empresa.
+- QA enfocada: Go `./db ./handlers`, sintaxis JavaScript y contratos de UI,
+  ownership, idempotencia, almacenamiento privado y contrato responsive de
+  impresoras aprobados localmente. La validacion desplegada del SHA final se
+  registra en la evidencia PSI-000.
+
 2026-08-26: Documento soporte electrónico DIAN 1.1 preparado para producción.
 - Se implementa el flujo dedicado desde `empresa_contabilidad_documentos_soporte`:
   borrador estructurado, preflight sin efectos, confirmación escrita, reserva
@@ -43501,3 +43582,61 @@ Archivos modificados:
 - La reconciliacion completa estado y CUFE/CUDE de documento/cola cuando el
   acuse almacenado ya es aceptado o reconciliado. La reparacion ocurre antes de
   cualquier despacho, conserva intentos y no retransmite XML.
+
+2026-08-26: Correccion visual real de carga IA duplicada en Compras.
+- La prueba autenticada en la empresa PCS detecto que una factura XML ya
+  radicada creaba correctamente un soporte marcado como duplicado, pero la
+  pantalla intentaba extraerlo otra vez y dejaba el formulario vacio ante el
+  conflicto de estado.
+- Compras resuelve ahora `duplicado_soporte_id` unicamente contra el listado
+  autenticado de la misma empresa, limita la cadena a 20 saltos y falla cerrado
+  si falta el original o existe un ciclo.
+- Cuando el original ya contiene una extraccion verificable, la reutiliza sin
+  consumir otra llamada IA. Un soporte nuevo o sin datos sigue pasando por la
+  extraccion normal y el usuario debe revisar los campos antes de guardar.
+- Se agrego una regresion de contrato frontend; la validacion visual desplegada
+  y el cierre integral se registran con la evidencia PSI-000 del SHA final.
+
+2026-08-26: Conflictos profesionales de unicidad en Productos e Inventario.
+- La prueba visual real de Categorias confirmo que un codigo repetido no creaba
+  una segunda fila, pero el handler convertia el rechazo PostgreSQL en HTTP 500
+  y la pantalla solo podia mostrar un aviso interno generico.
+- Categorias, productos, proveedores y servicios clasifican ahora solamente sus
+  restricciones empresariales conocidas como HTTP 409, con mensajes publicos
+  acotados. No se publican SQLSTATE, nombres de constraints ni detalles del
+  motor; cualquier error no reconocido conserva el tratamiento interno 500.
+- La regresion cubre PostgreSQL y el formato compatible usado por pruebas,
+  incluidos codigo/nombre de categoria/proveedor, SKU/barras y codigo de
+  servicio.
+
+2026-08-26: Correccion del agregado diario visible del Kardex.
+- En staging, 39 movimientos y el balance real por bodega se mostraban
+  correctamente, pero la tendencia de siete dias publicaba ceros. PostgreSQL
+  entregaba la columna `DATE` con representacion temporal y la clave no
+  coincidia con el texto `YYYY-MM-DD` usado para completar la serie.
+- La capa de datos normaliza `time.Time`, texto y bytes al formato ISO antes de
+  agregar la fila. Una fecha invalida produce error en vez de ocultar actividad.
+- La regresion cubre la representacion PostgreSQL y los formatos de
+  compatibilidad de pruebas; el resultado desplegado se repetira en PSI-000.
+
+2026-08-26: Ownership seguro en las mutaciones de bodegas.
+- Actualizar, cambiar estado o borrar una bodega que no pertenezca a la empresa
+  autenticada devuelve el mismo HTTP 404 que una bodega inexistente.
+- El helper comun evita repetir la clasificacion y mantiene como error interno
+  cualquier fallo distinto de `sql.ErrNoRows`.
+- La regresion valida el estado y el mensaje publico sin revelar IDs, SQL o la
+  existencia de datos de otra empresa.
+
+2026-08-26: Unicidad concurrente del catalogo de servicios por empresa.
+- La prueba real en PCS detecto que dos servicios con el mismo nombre podian
+  coexistir cuando ambos omitian el codigo opcional; el registro sintetico de la
+  prueba fue retirado inmediatamente.
+- La migracion versionada `20260826-003-servicios-nombre-unico-v1` crea el indice
+  funcional por `empresa_id` y nombre sin espacios exteriores ni diferencias de
+  mayusculas. PostgreSQL resuelve la concurrencia y los codigos vacios siguen
+  almacenados como `NULL`.
+- La migracion inspecciona grupos historicos antes del DDL y falla cerrado con un
+  conteo no sensible si necesitan conciliacion; nunca renombra, elimina ni
+  desactiva catalogos existentes automaticamente.
+- El handler reconoce la nueva restriccion y responde HTTP 409 sin publicar el
+  nombre del indice, SQLSTATE ni detalles internos de PostgreSQL.

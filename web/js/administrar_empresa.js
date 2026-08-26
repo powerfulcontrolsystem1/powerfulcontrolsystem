@@ -105,7 +105,7 @@ try {
   var notificationList = document.getElementById("adminNotificationList");
   var notificationRefresh = document.getElementById("adminNotificationRefresh");
   var frameTargetName = frame ? String(frame.getAttribute("name") || frame.name || frame.id || "").trim() : "";
-  var initialFrameSrc = frame ? normalizeHref(frame.getAttribute("src") || frame.src || "") : "";
+  var initialFrameSrc = frame ? normalizeHref(frame.getAttribute("src") || frame.getAttribute("data-src") || frame.src || "") : "";
   var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
   var companySelectorLink = document.querySelector("a.select-company");
   var permsEvidence = document.getElementById("menuPermsEvidence");

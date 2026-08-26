@@ -13355,3 +13355,14 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
 - `backend/handlers/recaptcha_config_guard_test.go`: regresiones que impiden
   activar reCAPTCHA con claves ausentes o ilegibles y verifican que Super
   administración muestre la recuperación requerida.
+
+2026-08-26 - Evidencia y regresiones de Productos, Servicios e Inventario
+- `backend/handlers/productos_ownership_error_test.go`: comprueba que las
+  referencias empresariales ajenas, incluidos servicios, produzcan 404 publico
+  sin revelar IDs ni convertir errores internos en falsos recursos ausentes.
+- `backend/handlers/testdata/qa_factura_compra.xml`: factura XML sintetica,
+  marcada sin validez comercial, usada exclusivamente para validar la carga IA
+  y el almacenamiento privado de comprobantes.
+- `documentos/evidencia_productos_inventario/PSI-000/`: evidencias visuales y
+  artefactos reproducibles de CI/staging del candidato PSI-000; su manifiesto
+  documenta origen, SHA y alcance de cada grupo de archivos.

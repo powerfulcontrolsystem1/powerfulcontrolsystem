@@ -2121,7 +2121,7 @@ func resolveSoportesComprasIAPermissionAction(r *http.Request) string {
 		return permActionUpdate
 	case "eliminar", "purgar":
 		return permActionDelete
-	case "radicar", "seed_demo":
+	case "radicar":
 		return permActionCreate
 	}
 	return defaultPermissionActionFromMethod(r.Method)

@@ -1,3 +1,57 @@
+## [2026-08-26] Productos e inventario preparados como candidato productivo
+
+- [Multiempresa] Las referencias hijas ajenas se rechazan como recurso no
+  disponible sin 500, filtrado de IDs ni mutaciones; la inconsistencia de
+  `empresa_id` entre URL, cabecera y cuerpo sigue bloqueada antes del handler.
+- [Productos/Servicios] Valores economicos, impuestos, stock y duraciones fuera
+  de rango se rechazan; los codigos opcionales vacios se persisten como `NULL`
+  para permitir varios catalogos validos por empresa.
+- [Inventario] Lotes, seriales y reservas usan selectores descriptivos; tanto
+  Inventario como Compras avanzados dejan de exponer generacion demo en capas
+  productivas.
+- [Compras] Una recepcion puede agrupar varios items pendientes en la misma
+  transaccion/documento, con stock, costo, lote, Kardex y estados atomicos.
+- [IA/archivos] El XML aceptado y extraido por GPT-5.5 tambien puede conservarse
+  como comprobante privado bien formado, sin DTD, y descargable como attachment.
+- [Observabilidad] Operaciones de catalogo, reservas e impresoras ya no descartan
+  errores de `RowsAffected`; los listados propagan `rows.Err()`.
+- [Catalogos] Categorias, productos, proveedores y servicios duplicados devuelven
+  HTTP 409 con un mensaje publico estable; las restricciones y mensajes internos
+  de PostgreSQL no se exponen al navegador.
+- [Catalogos] Categorias y proveedores comparan ademas el nombre normalizado por
+  empresa, de modo que cambios de mayusculas o espacios externos no creen el
+  mismo registro logico; una migracion con colisiones historicas falla cerrada.
+- [Servicios] El nombre normalizado es unico dentro de cada empresa mediante un
+  indice PostgreSQL versionado; conserva codigos opcionales `NULL`, bloquea
+  carreras concurrentes y falla cerrado si una instalacion historica requiere
+  reconciliar duplicados antes de migrar.
+- [Bodegas] Actualizar, cambiar estado o eliminar una bodega inexistente o ajena
+  devuelve 404 seguro en vez de convertir `sql.ErrNoRows` en un error 500.
+- [Kardex] La tendencia diaria normaliza fechas PostgreSQL antes de completar el
+  rango solicitado, evitando mostrar siete dias en cero cuando existen movimientos.
+- [IA/Compras] Si una factura repetida apunta a una cadena de soportes duplicados,
+  la carga automatica resuelve el original del mismo tenant y reutiliza su
+  extraccion verificable sin consumir otra llamada de IA.
+- [IA/Compras] La pantalla y la API de soportes dejan de crear registros demo
+  dentro de empresas reales; solo permanecen radicacion, revision, aprobacion,
+  contabilizacion, papelera, retencion y auditoria operativas.
+- [Impresion/UX] Los formularios y tablas de impresoras quedan acotados a su
+  columna: las tablas anchas conservan desplazamiento interno sin extender la
+  pagina en escritorio ni movil.
+- [Rendimiento/UX] El menu de Productos difiere la URL inicial de su iframe
+  hasta resolver `empresa_id`; evita la primera navegacion sin tenant y su
+  cancelacion inmediata, por lo que el catalogo se carga una sola vez.
+- [Arquitectura] `bodega.html` queda como compatibilidad por redireccion y el
+  carrito abre directamente `administrar_productos.html?view=bodegas`; se
+  retira el CRUD heredado para mantener una sola implementacion de bodegas,
+  stock, traslados y Kardex.
+- [QA] Se agregan regresiones de ownership, proveedor sin codigo, recepcion
+  multiitem, formatos privados, idempotencia y ancho del centro de impresion;
+  los gates exactos del candidato final quedan documentados en PSI-000.
+- [QA/E2E] El login visual reintenta el flujo completo tras una navegacion,
+  interaccion o comprobacion de sesion transitoria; el segundo intento deja de
+  quedar anulado por una excepcion de `page.goto`.
+
 ## [2026-08-26] Documento soporte DIAN 1.1 dedicado
 
 - [Fuente fiscal] Las compras a no obligados nacen de un borrador estructurado;

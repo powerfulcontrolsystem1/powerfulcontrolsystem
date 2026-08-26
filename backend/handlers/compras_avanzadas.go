@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -115,13 +116,6 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			usuario := strings.TrimSpace(adminEmailFromRequest(r))
 			switch action {
-			case "seed_demo":
-				id, err := dbpkg.SeedEmpresaComprasAvanzadasDemo(dbEmp, payload.EmpresaID, usuario)
-				if err != nil {
-					http.Error(w, "No se pudo crear demo de compras avanzadas", http.StatusInternalServerError)
-					return
-				}
-				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
 			case "requisicion":
 				payload.Requisicion.EmpresaID = payload.EmpresaID
 				if payload.Requisicion.UsuarioCreador == "" {
@@ -129,6 +123,9 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				id, err := dbpkg.CreateEmpresaCompraRequisicion(dbEmp, payload.Requisicion)
 				if err != nil {
+					if writeCompraCatalogError(w, err) {
+						return
+					}
 					http.Error(w, "No se pudo guardar la requisicion", http.StatusBadRequest)
 					return
 				}
@@ -136,6 +133,9 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "cotizacion":
 				payload.Cotizacion.EmpresaID = payload.EmpresaID
 				if err := completarProveedorCompraAvanzada(dbEmp, payload.EmpresaID, payload.Cotizacion.ProveedorID, &payload.Cotizacion.ProveedorNombre); err != nil {
+					if writeCompraCatalogError(w, err) {
+						return
+					}
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
@@ -144,6 +144,9 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				id, err := dbpkg.CreateEmpresaCompraCotizacion(dbEmp, payload.Cotizacion)
 				if err != nil {
+					if writeCompraCatalogError(w, err) {
+						return
+					}
 					http.Error(w, "No se pudo guardar la cotizacion", http.StatusBadRequest)
 					return
 				}
@@ -155,6 +158,9 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				id, err := dbpkg.ResolverEmpresaCompraAprobacion(dbEmp, payload.Aprobacion)
 				if err != nil {
+					if writeCompraCatalogError(w, err) {
+						return
+					}
 					http.Error(w, "No se pudo registrar la aprobacion", http.StatusBadRequest)
 					return
 				}
@@ -162,6 +168,9 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "recepcion":
 				payload.Recepcion.EmpresaID = payload.EmpresaID
 				if err := completarProveedorCompraAvanzada(dbEmp, payload.EmpresaID, payload.Recepcion.ProveedorID, &payload.Recepcion.ProveedorNombre); err != nil {
+					if writeCompraCatalogError(w, err) {
+						return
+					}
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
@@ -187,9 +196,26 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
+func writeCompraCatalogError(w http.ResponseWriter, err error) bool {
+	if writeInventarioEntidadNoDisponible(w, err) {
+		return true
+	}
+	if errors.Is(err, dbpkg.ErrProductosDatosInvalidos) {
+		http.Error(w, productosPublicError(err, "Datos de compra inválidos."), http.StatusBadRequest)
+		return true
+	}
+	return false
+}
+
 func compraRecepcionPublicError(err error) (string, int) {
 	if err == nil {
 		return "", http.StatusOK
+	}
+	if errors.Is(err, dbpkg.ErrInventarioEntidadNoDisponible) {
+		return "Producto, servicio, bodega, categoria o proveedor no disponible para la empresa activa.", http.StatusNotFound
+	}
+	if errors.Is(err, dbpkg.ErrProductosDatosInvalidos) {
+		return productosPublicError(err, "Datos de recepcion inválidos."), http.StatusBadRequest
 	}
 	message := strings.TrimSpace(err.Error())
 	lower := strings.ToLower(message)
@@ -230,5 +256,5 @@ func completarProveedorCompraAvanzada(dbEmp *sql.DB, empresaID, proveedorID int6
 			return nil
 		}
 	}
-	return errors.New("proveedor no encontrado o inactivo para esta empresa")
+	return fmt.Errorf("%w: proveedor", dbpkg.ErrInventarioEntidadNoDisponible)
 }

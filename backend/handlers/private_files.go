@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -165,6 +166,58 @@ func validatePrivateFileContent(path, extension string) error {
 	}
 	if !privateExtensionMatchesContent(strings.ToLower(extension), detected) {
 		return errors.New("el contenido no coincide con la extension permitida")
+	}
+	if extension == ".xml" {
+		if err := validatePrivateXML(path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validatePrivateXML(path string) error {
+	file, err := os.Open(path) // #nosec G304 -- caller supplies a path created under a private tenant root.
+	if err != nil {
+		return err
+	}
+	defer func() { _ = file.Close() }()
+
+	decoder := xml.NewDecoder(file)
+	depth := 0
+	rootSeen := false
+	rootComplete := false
+	for {
+		token, err := decoder.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return errors.New("contenido XML invalido")
+		}
+		switch value := token.(type) {
+		case xml.StartElement:
+			if depth == 0 {
+				if rootSeen {
+					return errors.New("contenido XML invalido")
+				}
+				rootSeen = true
+			}
+			depth++
+		case xml.EndElement:
+			depth--
+			if depth == 0 {
+				rootComplete = true
+			}
+		case xml.Directive:
+			return errors.New("directivas XML no permitidas")
+		case xml.CharData:
+			if depth == 0 && strings.TrimSpace(string(value)) != "" {
+				return errors.New("contenido XML invalido")
+			}
+		}
+	}
+	if !rootSeen || !rootComplete || depth != 0 {
+		return errors.New("contenido XML invalido")
 	}
 	return nil
 }

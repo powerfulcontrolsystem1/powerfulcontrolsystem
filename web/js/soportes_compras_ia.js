@@ -523,18 +523,6 @@
     }).finally(function () { setBusy(false); });
   }
 
-  function seedDemo() {
-    setBusy(true, "Cargando soporte de demostracion...");
-    api("seed_demo", { method: "POST", body: "{}" }).then(function () {
-      msg("Soporte demo creado.");
-      return load();
-    }).catch(function (e) {
-      msg(e.message, true);
-    }).finally(function () {
-      setBusy(false);
-    });
-  }
-
   function retentionPreview() {
     var days = Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90)));
     setValue("retencionDias", days);
@@ -643,7 +631,6 @@
   });
   el("btnLimpiar").addEventListener("click", function () { el("formSoporte").reset(); });
   el("captureRefresh").addEventListener("click", load);
-  el("captureSeed").addEventListener("click", seedDemo);
   el("captureExport").addEventListener("click", exportCSV);
   el("btnRetencionPreview").addEventListener("click", retentionPreview);
   el("btnCuarentenaPreview").addEventListener("click", quarantinePreview);

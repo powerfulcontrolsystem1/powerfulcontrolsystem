@@ -1361,7 +1361,11 @@ func ActualizarEmpresaImpresoraTrabajoEstado(dbConn *sql.DB, empresaID, trabajoI
 	if err != nil {
 		return err
 	}
-	if affected, _ := res.RowsAffected(); affected == 0 {
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
 		return fmt.Errorf("trabajo de impresion no encontrado o no asignado al agente")
 	}
 	return nil
@@ -1386,7 +1390,11 @@ func ReintentarEmpresaImpresoraTrabajo(dbConn *sql.DB, empresaID, trabajoID int6
 	if err != nil {
 		return err
 	}
-	if affected, _ := res.RowsAffected(); affected == 0 {
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
 		return fmt.Errorf("trabajo de impresion no encontrado o no reintentable")
 	}
 	return nil

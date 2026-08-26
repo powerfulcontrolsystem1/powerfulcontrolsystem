@@ -8,6 +8,9 @@
   var productos = [];
   var bodegas = [];
   var detalleItems = [];
+  var requisicionItemsDraft = [];
+  var recepcionItemsDraft = [];
+  var recepcionDraftRequisicionID = 0;
   var pageMutationKey = String(Date.now()) + "-" + Math.random().toString(36).slice(2);
 
   function el(id){ return document.getElementById(id); }
@@ -216,6 +219,12 @@
   }
 
   function loadDetalle(id){
+    id = Number(id || 0);
+    if (recepcionDraftRequisicionID && recepcionDraftRequisicionID !== id) {
+      recepcionItemsDraft = [];
+      renderReceptionDraft();
+    }
+    recepcionDraftRequisicionID = id;
     return fetch(url("detalle", {id:id})).then(readResponse).then(function(d){
       el("cotReqID").value = d.id || "";
       el("aprReqID").value = d.id || "";
@@ -286,17 +295,171 @@
     el("recCosto").value = selected ? Number(selected.costo_estimado || 0) : "";
   }
 
-  function saveRequisicion(){
-    var items = [];
-    [["1"],["2"]].forEach(function(s){
-      var idx = s[0];
-      var product = productById(val("itemNombre" + idx));
-      if (product) {
-        items.push({producto_id:Number(product.id),producto_nombre:product.nombre || "",cantidad_solicitada:num("itemCant"+idx),costo_estimado:num("itemCosto"+idx) || Number(product.costo || 0),unidad:product.unidad_medida || "und",proveedor_sugerido:providerNameFromSelect("itemProv"+idx)});
-      }
+  function currentReceptionItem(){
+    var itemID = num("recItemID");
+    var selected = null;
+    for (var i = 0; i < detalleItems.length; i += 1) {
+      if (Number(detalleItems[i].id) === itemID) { selected = detalleItems[i]; break; }
+    }
+    if (!selected || num("recRecibida") <= 0) return null;
+    return {
+      requisicion_item_id: itemID,
+      producto_id: Number(selected.producto_id || 0),
+      producto_nombre: String(selected.producto_nombre || ""),
+      cantidad_ordenada: Number(selected.cantidad_solicitada || 0),
+      cantidad_recibida: num("recRecibida"),
+      costo_unitario: num("recCosto"),
+      lote: val("recLote"),
+      estado_calidad: "aprobado"
+    };
+  }
+
+  function renderReceptionDraft(){
+    var body = el("recItemsDraftBody");
+    if (!body) return;
+    body.innerHTML = "";
+    if (!recepcionItemsDraft.length) {
+      body.innerHTML = '<tr><td colspan="5">Aun no hay items preparados.</td></tr>';
+      return;
+    }
+    recepcionItemsDraft.forEach(function(item){
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td></td><td></td><td></td><td></td><td><button class='btn secondary small' type='button'>Quitar</button></td>";
+      tr.children[0].textContent = item.producto_nombre || ("Item #" + item.requisicion_item_id);
+      tr.children[1].textContent = item.cantidad_recibida;
+      tr.children[2].textContent = money(item.costo_unitario);
+      tr.children[3].textContent = item.lote || "Sin lote";
+      tr.querySelector("button").addEventListener("click", function(){
+        recepcionItemsDraft = recepcionItemsDraft.filter(function(x){ return x.requisicion_item_id !== item.requisicion_item_id; });
+        renderReceptionDraft();
+      });
+      body.appendChild(tr);
     });
-    if (!items.length || items.some(function(item){ return item.cantidad_solicitada <= 0; })) {
-      setMsg("Selecciona al menos un producto y una cantidad mayor a cero.", "error");
+  }
+
+  function selectNextReceptionItem(){
+    var selectedIDs = {};
+    recepcionItemsDraft.forEach(function(item){ selectedIDs[item.requisicion_item_id] = true; });
+    var node = el("recItemID");
+    for (var i = 1; i < node.options.length; i += 1) {
+      if (!selectedIDs[Number(node.options[i].value || 0)]) {
+        node.selectedIndex = i;
+        fillReceptionItem();
+        el("recLote").value = "";
+        return;
+      }
+    }
+    node.selectedIndex = 0;
+    fillReceptionItem();
+    el("recLote").value = "";
+  }
+
+  function visibleRequisitionItems(){
+    var items = [];
+    var seen = {};
+    for (var n = 1; n <= 2; n += 1) {
+      var product = productById(val("itemNombre" + n));
+      if (!product) continue;
+      var productID = Number(product.id || 0);
+      if (seen[productID]) return {items:[], error:"No repitas el mismo producto en las dos filas de captura."};
+      seen[productID] = true;
+      var cantidad = num("itemCant" + n);
+      if (cantidad <= 0) return {items:[], error:"Cada producto seleccionado debe tener una cantidad mayor a cero."};
+      items.push({
+        producto_id: productID,
+        producto_nombre: product.nombre || "",
+        cantidad_solicitada: cantidad,
+        costo_estimado: num("itemCosto" + n) || Number(product.costo || 0),
+        unidad: product.unidad_medida || "und",
+        proveedor_sugerido: providerNameFromSelect("itemProv" + n)
+      });
+    }
+    return {items:items, error:""};
+  }
+
+  function mergeRequisitionItems(items){
+    (items || []).forEach(function(item){
+      requisicionItemsDraft = requisicionItemsDraft.filter(function(current){ return current.producto_id !== item.producto_id; });
+      requisicionItemsDraft.push(item);
+    });
+  }
+
+  function clearRequisitionInputs(){
+    for (var n = 1; n <= 2; n += 1) {
+      el("itemNombre" + n).value = "";
+      el("itemCant" + n).value = "";
+      el("itemCosto" + n).value = "";
+      el("itemProv" + n).value = "";
+    }
+  }
+
+  function renderRequisitionDraft(){
+    var body = el("reqItemsDraftBody");
+    if (!body) return;
+    body.innerHTML = "";
+    if (!requisicionItemsDraft.length) {
+      body.innerHTML = '<tr><td colspan="5">Aun no hay productos preparados.</td></tr>';
+      return;
+    }
+    requisicionItemsDraft.forEach(function(item){
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td></td><td></td><td></td><td></td><td><button class='btn secondary small' type='button'>Quitar</button></td>";
+      tr.children[0].textContent = item.producto_nombre || ("Producto #" + item.producto_id);
+      tr.children[1].textContent = item.cantidad_solicitada;
+      tr.children[2].textContent = money(item.costo_estimado);
+      tr.children[3].textContent = item.proveedor_sugerido || "Sin sugerencia";
+      tr.querySelector("button").addEventListener("click", function(){
+        requisicionItemsDraft = requisicionItemsDraft.filter(function(current){ return current.producto_id !== item.producto_id; });
+        renderRequisitionDraft();
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  function addRequisitionItems(){
+    var capture = visibleRequisitionItems();
+    if (capture.error || !capture.items.length) {
+      setMsg(capture.error || "Selecciona al menos un producto para añadirlo.", "error");
+      return;
+    }
+    mergeRequisitionItems(capture.items);
+    renderRequisitionDraft();
+    clearRequisitionInputs();
+    setMsg("Productos añadidos. Puedes preparar más antes de guardar la requisicion.", "success");
+  }
+
+  function addReceptionItem(){
+    var item = currentReceptionItem();
+    if (!item) {
+      setMsg("Selecciona un item pendiente y una cantidad recibida mayor a cero.", "error");
+      return;
+    }
+    var pending = null;
+    for (var i = 0; i < detalleItems.length; i += 1) {
+      if (Number(detalleItems[i].id) === item.requisicion_item_id) { pending = detalleItems[i]; break; }
+    }
+    var maxPending = pending ? Math.max(0, Number(pending.cantidad_solicitada || 0) - Number(pending.cantidad_recibida || 0)) : 0;
+    if (item.cantidad_recibida > maxPending + 0.000001) {
+      setMsg("La cantidad recibida no puede superar el pendiente del item.", "error");
+      return;
+    }
+    recepcionItemsDraft = recepcionItemsDraft.filter(function(x){ return x.requisicion_item_id !== item.requisicion_item_id; });
+    recepcionItemsDraft.push(item);
+    renderReceptionDraft();
+    setMsg("Item agregado a la recepcion. Puedes añadir otro antes de confirmar.", "success");
+    selectNextReceptionItem();
+  }
+
+  function saveRequisicion(){
+    var capture = visibleRequisitionItems();
+    if (capture.error) {
+      setMsg(capture.error, "error");
+      return Promise.resolve();
+    }
+    mergeRequisitionItems(capture.items);
+    var items = requisicionItemsDraft.slice();
+    if (!items.length) {
+      setMsg("Agrega al menos un producto y una cantidad mayor a cero.", "error");
       return Promise.resolve();
     }
     return post("requisicion", {requisicion:{
@@ -312,6 +475,9 @@
       items: items
     }}, val("reqCodigo")).then(function(r){
       setMsg("Requisicion guardada #" + r.id, "success");
+      requisicionItemsDraft = [];
+      renderRequisitionDraft();
+      clearRequisitionInputs();
       el("cotReqID").value = r.id;
       el("aprReqID").value = r.id;
       el("recReqID").value = r.id;
@@ -366,8 +532,17 @@
       setMsg("Selecciona un proveedor creado para guardar la recepcion.", "error");
       return Promise.resolve();
     }
-    if (!num("recReqID") || !num("recItemID") || !num("recBodega") || num("recRecibida") <= 0) {
-      setMsg("Selecciona requisicion, item, bodega y una cantidad recibida mayor a cero.", "error");
+    if (!num("recReqID") || !num("recBodega")) {
+      setMsg("Selecciona requisicion y bodega para registrar la recepcion.", "error");
+      return Promise.resolve();
+    }
+    var items = recepcionItemsDraft.slice();
+    if (!items.length) {
+      var currentItem = currentReceptionItem();
+      if (currentItem) items.push(currentItem);
+    }
+    if (!items.length) {
+      setMsg("Agrega al menos un item pendiente a la recepcion.", "error");
       return Promise.resolve();
     }
     return post("recepcion", {recepcion:{
@@ -378,25 +553,12 @@
       proveedor_nombre:proveedorNombre,
       documento:val("recDocumento"),
       fecha_recepcion:val("recFecha") || today(),
-      items:[{
-        requisicion_item_id:num("recItemID"),
-        producto_nombre:val("recProducto"),
-        cantidad_ordenada:num("recOrdenada"),
-        cantidad_recibida:num("recRecibida"),
-        costo_unitario:num("recCosto"),
-        lote:val("recLote"),
-        estado_calidad:"aprobado"
-      }]
+      items:items
     }}, String(num("recReqID")) + "." + val("recDocumento")).then(function(r){
       setMsg("Recepcion guardada #" + r.id, "success");
+      recepcionItemsDraft = [];
+      renderReceptionDraft();
       return loadDetalle(num("recReqID")).then(loadDashboard);
-    }).catch(function(err){ setMsg(err.message, "error"); });
-  }
-
-  function seed(){
-    return post("seed_demo", {}, pageMutationKey).then(function(r){
-      setMsg("Demo cargada #" + r.id, "success");
-      return loadDashboard().then(function(){ return loadDetalle(r.id); });
     }).catch(function(err){ setMsg(err.message, "error"); });
   }
 
@@ -409,13 +571,15 @@
       if (panel) panel.classList.add("is-active");
     });
   });
-  [["btnRefresh",loadDashboard],["btnSaveReq",saveRequisicion],["btnSaveCot",saveCotizacion],["btnSaveApr",saveAprobacion],["btnSaveRec",saveRecepcion]].forEach(function(pair){
+  [["btnRefresh",loadDashboard],["btnAddReqItems",addRequisitionItems],["btnSaveReq",saveRequisicion],["btnSaveCot",saveCotizacion],["btnSaveApr",saveAprobacion],["btnAddRecItem",addReceptionItem],["btnSaveRec",saveRecepcion]].forEach(function(pair){
     var node = el(pair[0]);
     if (node) node.addEventListener("click", pair[1]);
   });
 
   ["reqFecha","cotFecha","recFecha"].forEach(function(id){ if (el(id)) el(id).value = today(); });
   el("recItemID").addEventListener("change", fillReceptionItem);
+  renderRequisitionDraft();
+  renderReceptionDraft();
   ["1","2"].forEach(function(idx){
     el("itemNombre" + idx).addEventListener("change", function(){
       var product = productById(val("itemNombre" + idx));

@@ -91,13 +91,6 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			usuario := strings.TrimSpace(adminEmailFromRequest(r))
 			switch action {
-			case "seed_demo":
-				id, err := dbpkg.SeedEmpresaInventarioAvanzadoDemo(dbEmp, payload.EmpresaID, usuario)
-				if err != nil {
-					http.Error(w, "No se pudo crear demo de inventario avanzado", http.StatusInternalServerError)
-					return
-				}
-				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
 			case "lote":
 				payload.Lote.EmpresaID = payload.EmpresaID
 				if payload.Lote.UsuarioCreador == "" {
@@ -166,7 +159,7 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 // relaciones internas por un endpoint empresarial. El detalle queda limitado
 // al log operativo y el request id, cuando ya fue asignado por middleware.
 func writeInventarioAvanzadoError(w http.ResponseWriter, r *http.Request, operation string, err error, status int, message string) {
-	requestID := strings.TrimSpace(r.Header.Get("X-Request-ID"))
+	requestID := resolveAuditoriaRequestID(r)
 	log.Printf("[inventario_avanzado] operation=%s request_id=%s error_type=%T", operation, requestID, err)
 	if requestID != "" {
 		message += " Referencia: " + requestID

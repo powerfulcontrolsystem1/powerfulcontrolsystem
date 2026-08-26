@@ -688,7 +688,8 @@ por permisos empresariales y siempre filtrado por `empresa_id`.
   - Preferencia: `empresa_estacion_prefs.clave='estaciones_config'`, campo `cajero_auto_venta_directa`
 - Inventario y compras / Bodegas y traslados:
   - Vista actual: `web/administrar_empresa/administrar_productos.html?view=bodegas`
-  - Compatibilidad: `web/administrar_empresa/productos/bodegas.html`
+  - Compatibilidad por redireccion: `web/administrar_empresa/bodega.html` y
+    `web/administrar_empresa/productos/bodegas.html`; no conservan CRUD propio.
 Actualizacion 2026-07-09: RustDesk operativo multiempresa.
 - Servicio VPS: `deploy/docker-compose.platform.yml` contiene el perfil `rustdesk` con `pcs-rustdesk-hbbs` y `pcs-rustdesk-hbbr`; comparten el directorio persistente `/var/lib/rustdesk-server` para conservar la identidad del servidor.
 - Panel super: `web/super/configuracion_avanzada.html`, `/super/api/config/rustdesk`, `/super/api/servidores` y `/super/api/soporte_remoto` administran configuracion, estado, prueba y trazabilidad global bajo rol super.
