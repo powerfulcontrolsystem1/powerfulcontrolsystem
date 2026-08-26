@@ -2827,6 +2827,28 @@ func normalizeInventarioTendenciaFecha(raw interface{}) (string, error) {
 	return "", fmt.Errorf("fecha diaria de inventario invalida")
 }
 
+func completarInventarioTendencia(seriesByDate map[string]InventarioTendenciaDia, desde, hasta string) ([]InventarioTendenciaDia, error) {
+	fechaInicio, err := time.Parse("2006-01-02", desde)
+	if err != nil {
+		return nil, err
+	}
+	fechaFin, err := time.Parse("2006-01-02", hasta)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]InventarioTendenciaDia, 0, int(fechaFin.Sub(fechaInicio).Hours()/24)+1)
+	for cursor := fechaInicio; !cursor.After(fechaFin); cursor = cursor.AddDate(0, 0, 1) {
+		fecha := cursor.Format("2006-01-02")
+		if row, ok := seriesByDate[fecha]; ok {
+			out = append(out, row)
+			continue
+		}
+		out = append(out, InventarioTendenciaDia{Fecha: fecha})
+	}
+	return out, nil
+}
+
 func GetInventarioTendenciaByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, desde, hasta string, dias int) ([]InventarioTendenciaDia, error) {
 	desde = strings.TrimSpace(desde)
 	hasta = strings.TrimSpace(hasta)
@@ -2907,26 +2929,7 @@ func GetInventarioTendenciaByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, 
 		return nil, err
 	}
 
-	fechaInicio, err := time.Parse("2006-01-02", desde)
-	if err != nil {
-		return nil, err
-	}
-	fechaFin, err := time.Parse("2006-01-02", hasta)
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]InventarioTendenciaDia, 0, int(fechaFin.Sub(fechaInicio).Hours()/24)+1)
-	for cursor := fechaInicio; !cursor.After(fechaFin); cursor = cursor.AddDate(0, 0, 1) {
-		fecha := cursor.Format("2006-01-02")
-		if row, ok := seriesByDate[fecha]; ok {
-			out = append(out, row)
-			continue
-		}
-		out = append(out, InventarioTendenciaDia{Fecha: fecha})
-	}
-
-	return out, nil
+	return completarInventarioTendencia(seriesByDate, desde, hasta)
 }
 
 // GetInventarioBalanceBodegasByEmpresa devuelve balance de entradas/salidas por bodega en un rango.
