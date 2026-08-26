@@ -173,7 +173,8 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				id, err := dbpkg.CreateEmpresaCompraRecepcion(dbEmp, payload.Recepcion)
 				if err != nil {
-					http.Error(w, "No se pudo guardar la recepcion", http.StatusBadRequest)
+					message, status := compraRecepcionPublicError(err)
+					http.Error(w, message, status)
 					return
 				}
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
@@ -184,6 +185,35 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+func compraRecepcionPublicError(err error) (string, int) {
+	if err == nil {
+		return "", http.StatusOK
+	}
+	message := strings.TrimSpace(err.Error())
+	lower := strings.ToLower(message)
+	for _, safeFragment := range []string{
+		"bodega_id es obligatorio",
+		"no pertenece a la empresa",
+		"no pertenece a la requisicion",
+		"no esta habilitada para recepcion",
+		"no esta seleccionada para recepcion",
+		"no corresponde a la cotizacion seleccionada",
+		"documento de recepcion ya fue registrado",
+		"cantidad recibida excede",
+		"item y cantidad recibida",
+		"recepcion debe incluir al menos un item",
+	} {
+		if strings.Contains(lower, safeFragment) {
+			status := http.StatusBadRequest
+			if strings.Contains(lower, "ya fue registrado") || strings.Contains(lower, "excede") || strings.Contains(lower, "no esta habilitada") {
+				status = http.StatusConflict
+			}
+			return message, status
+		}
+	}
+	return "No se pudo guardar la recepcion", http.StatusBadRequest
 }
 
 func completarProveedorCompraAvanzada(dbEmp *sql.DB, empresaID, proveedorID int64, proveedorNombre *string) error {

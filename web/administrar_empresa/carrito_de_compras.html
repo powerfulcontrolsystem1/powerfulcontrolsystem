@@ -4999,11 +4999,11 @@
       return shouldUseWholeMoney() ? Math.round(n) : Math.round(n * 100) / 100;
     }
 
-    async function resolvePrinterForServiceOrder(itemPayload) {
+    async function resolvePrinterOperation(funcionalidad, itemPayload) {
       if (!state.empresaID) return null;
       const params = new URLSearchParams();
       params.set('empresa_id', String(state.empresaID));
-      params.set('funcionalidad', 'orden_servicio');
+      params.set('funcionalidad', normalize(funcionalidad) || 'general');
       const tipoItem = normalize(itemPayload && itemPayload.tipo_item).toLowerCase();
       const referenciaID = Number((itemPayload && itemPayload.referencia_id) || 0);
       if (tipoItem === 'producto' && Number.isFinite(referenciaID) && referenciaID > 0) {
@@ -5041,7 +5041,7 @@
       const precio = Number(itemPayload.precio_unitario || 0);
       const totalLinea = cantidad * precio;
       const now = new Date();
-      const printerResolution = await resolvePrinterForServiceOrder(itemPayload);
+      const printerResolution = await resolvePrinterOperation('orden_servicio', itemPayload);
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
       const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
@@ -5110,24 +5110,6 @@
         printWindow.print();
         printWindow.close();
       }, 250);
-    }
-
-    async function resolvePrinterForTicketCobro() {
-      if (!state.empresaID) return null;
-      const params = new URLSearchParams();
-      params.set('empresa_id', String(state.empresaID));
-      params.set('funcionalidad', 'ticket_cobro');
-      try {
-        const res = await fetch('/api/empresa/impresoras/resolver?' + params.toString(), {
-          credentials: 'same-origin'
-        });
-        if (!res.ok) return null;
-        const out = await res.json();
-        if (!out || out.ok !== true) return null;
-        return out.resolucion || null;
-      } catch (_) {
-        return null;
-      }
     }
 
     function openReservedPrintWindow(title, features) {
@@ -5271,24 +5253,6 @@
       };
     }
 
-    async function resolvePrinterForCashDrawer(drawerConfig) {
-      if (!state.empresaID) return null;
-      const params = new URLSearchParams();
-      params.set('empresa_id', String(state.empresaID));
-      params.set('funcionalidad', normalize(drawerConfig && drawerConfig.printerFunction) || 'cajon_monedero');
-      try {
-        const res = await fetch('/api/empresa/impresoras/resolver?' + params.toString(), {
-          credentials: 'same-origin'
-        });
-        if (!res.ok) return null;
-        const out = await res.json();
-        if (!out || out.ok !== true) return null;
-        return out.resolucion || null;
-      } catch (_) {
-        return null;
-      }
-    }
-
     async function openCashDrawerIfEnabled(trigger, carrito, pay) {
       const drawer = getCashDrawerConfig();
       if (!drawer.cajaActiva || !drawer.enabled) return false;
@@ -5300,7 +5264,7 @@
         return true;
       }
 
-      const printerResolution = await resolvePrinterForCashDrawer(drawer);
+      const printerResolution = await resolvePrinterOperation(drawer.printerFunction || 'cajon_monedero');
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       if (!printerTarget) {
         setStationPaymentMessage('Pago registrado, pero no hay impresora configurada para abrir el cajon monedero. Asigna una impresora con funcionalidad ' + drawer.printerFunction + ' o abre el cajon manualmente.', true);
@@ -5790,7 +5754,7 @@
       const printItems = receiptPrintItems(cfg);
 
       const moneda = (carrito && carrito.moneda) || 'COP';
-      const printerResolution = await resolvePrinterForTicketCobro();
+      const printerResolution = await resolvePrinterOperation('ticket_cobro');
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
       const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
@@ -12569,7 +12533,7 @@
         { re: /imprimir/i, symbol: 'P', tone: 'slate' }
       ];
 
-      function normalize(value) {
+      function normalizeButtonText(value) {
         return String(value || '').trim();
       }
 
@@ -12584,7 +12548,7 @@
           button.getAttribute('aria-label'),
           button.getAttribute('title'),
           button.textContent
-        ].map(normalize).filter(Boolean).join(' ');
+        ].map(normalizeButtonText).filter(Boolean).join(' ');
       }
 
       function iconFor(button) {
@@ -12600,7 +12564,7 @@
         if (button.querySelector('.cart-btn-icon')) return false;
         if (button.closest('[data-cart-icons="off"]')) return false;
         if (button.matches('.cart-btn-icon, .cart-item-qty-step, .ai-chat-icon-btn, .ai-chat-minibar-btn, .pcs-field-help-button')) return false;
-        const label = normalize(button.textContent || button.getAttribute('aria-label') || button.getAttribute('title'));
+        const label = normalizeButtonText(button.textContent || button.getAttribute('aria-label') || button.getAttribute('title'));
         if (!label || label === '×' || label === 'x') return false;
         return Boolean(button.closest('body.carrito-flat-page'));
       }

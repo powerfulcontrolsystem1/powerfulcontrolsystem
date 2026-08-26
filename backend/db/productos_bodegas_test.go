@@ -82,9 +82,17 @@ func TestTransferirProductoEntreBodegasUsaSQLCompatPostgres(t *testing.T) {
 			t.Fatalf("TransferirProductoEntreBodegas debe usar wrappers SQLCompat en runtime PostgreSQL; encontro %s en: %s", forbidden, body)
 		}
 	}
-	for _, required := range []string{"queryRowTxSQLCompat", "execTxSQLCompat", "insertMovimientoTx"} {
+	for _, required := range []string{"queryRowTxSQLCompat", "decrementarExistenciaTx", "insertMovimientoTx"} {
 		if !strings.Contains(body, required) {
 			t.Fatalf("TransferirProductoEntreBodegas debe conservar %s en la transaccion: %s", required, body)
 		}
+	}
+	helperStart := strings.Index(src, "func decrementarExistenciaTx(")
+	if helperStart < 0 {
+		t.Fatal("no se encontro decrementarExistenciaTx")
+	}
+	helperEnd := strings.Index(src[helperStart:], "\nfunc ")
+	if helperEnd < 0 || !strings.Contains(src[helperStart:helperStart+helperEnd], "execTxSQLCompat") {
+		t.Fatal("decrementarExistenciaTx debe conservar SQLCompat para PostgreSQL")
 	}
 }

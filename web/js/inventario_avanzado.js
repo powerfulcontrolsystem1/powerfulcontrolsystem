@@ -11,6 +11,12 @@
   function today(){ return new Date().toISOString().slice(0,10); }
   function plusDays(days){ var d = new Date(); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
   function money(v){ return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(v)||0); }
+  function idempotencyKey(action, payload){
+    var data = payload || {};
+    var ref = (data.reserva && data.reserva.origen_ref) || (data.lote && data.lote.lote_codigo) ||
+      (data.serial && data.serial.serial) || data.reserva_id || (Date.now() + "-" + Math.random().toString(36).slice(2,12));
+    return ["pcs","inventory",empresaId,"advanced",action,String(ref)].join("-").replace(/[^A-Za-z0-9._-]/g,"-").slice(0,200);
+  }
   function setMsg(text, cls){
     var node = el("msg");
     if (!node) return;
@@ -23,12 +29,25 @@
     if (action) p.set("action", action);
     return api + "?" + p.toString();
   }
+  function readJSONResponse(response){
+    return response.text().then(function(text){
+      var data = null;
+      if (text) {
+        try { data = JSON.parse(text); } catch (_) { data = null; }
+      }
+      if (!response.ok) {
+        var message = data && typeof data.error === "string" ? data.error : "No se pudo completar la operación.";
+        throw new Error(message);
+      }
+      return data || {};
+    });
+  }
   function post(action, payload){
     payload = payload || {};
     payload.action = action;
     payload.empresa_id = Number(empresaId);
-    return fetch(url(action), {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
-      .then(function(r){ if(!r.ok){ return r.text().then(function(t){ throw new Error(t || "Error"); }); } return r.json(); });
+    return fetch(url(action), {method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":idempotencyKey(action,payload)},body:JSON.stringify(payload)})
+      .then(readJSONResponse);
   }
 
   function loadAll(){
@@ -36,7 +55,7 @@
       setMsg("Selecciona una empresa para operar inventario avanzado.", "error");
       return Promise.resolve();
     }
-    return fetch(url("dashboard")).then(function(r){ return r.json(); }).then(function(d){
+    return fetch(url("dashboard")).then(readJSONResponse).then(function(d){
       el("kpiLotes").textContent = d.lotes_activos || 0;
       el("kpiReservas").textContent = d.reservas_activas || 0;
       el("kpiVencer").textContent = (d.lotes_por_vencer || 0) + "/" + (d.lotes_vencidos || 0);
@@ -72,7 +91,7 @@
   }
 
   function loadReservas(){
-    return fetch(url("reservas")).then(function(r){ return r.json(); }).then(function(rows){
+    return fetch(url("reservas")).then(readJSONResponse).then(function(rows){
       var body = el("reservasBody");
       body.innerHTML = "";
       (rows || []).forEach(function(x){
