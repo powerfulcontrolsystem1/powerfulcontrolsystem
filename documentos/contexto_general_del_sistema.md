@@ -2,6 +2,28 @@
 
 Estado: vigente. Ultima actualizacion: 2026-08-25.
 
+## Actualizacion 2026-08-25 - cierre seguro integral DIAN
+
+- La factura electronica comercial solo nace de una venta pagada con fuente
+  fiscal privada e inmutable comprobada antes de reservar numeracion. La
+  emision generica desde payload libre queda cerrada.
+- La nota credito solo cubre anulacion total de una factura aceptada. Se
+  serializa por factura origen, inicia pendiente y exige que documento y cola
+  coincidan en CUDE oficial y acuse aceptado/reconciliado antes de anular.
+- El listado expone `fuente_fiscal_disponible` sin ruta ni contenido privado.
+  Los documentos historicos sin snapshot permanecen consultables, pero no
+  ofrecen una anulacion que obligaria a inventar datos fiscales.
+- Acciones fiscales con efectos requieren aprobacion; la anulacion conserva
+  permiso de borrado. GET DIAN desconocidos fallan antes del CRUD interno y el
+  correo productivo espera aceptacion oficial.
+- La reconciliacion completa estado y CUFE/CUDE locales de acuses ya aceptados
+  antes de cualquier despacho, sin retransmitir XML ni aumentar intentos.
+  Nomina, soporte, nota debito, equivalentes, contingencia y RADIAN siguen
+  bloqueados hasta sus fuentes y adaptadores propios.
+- Evidencia real: `1PCS8` conserva acuse aceptado, CUFE oficial y un intento; la
+  factura `1PCS7` y su nota credito total tambien fueron aceptadas por DIAN. La
+  evidencia de esas rutas no habilita por extension las familias bloqueadas.
+
 ## Actualizacion 2026-08-25 - disponibilidad del login y reCAPTCHA
 
 - Login, registro y recuperación administrativos comparten el guard público de
@@ -36,9 +58,9 @@ Estado: vigente. Ultima actualizacion: 2026-08-25.
 - La emision generica/parcial de nota credito y toda nota debito continúan
   bloqueadas. Documento soporte, nomina, equivalentes, contingencia y RADIAN
   tampoco cambian de estado en esta actualizacion.
-- QA local: fuente derivada multilínea, preflight, XSD UBL 2.1 de CreditNote y
-  firma XMLDSig correctos. Falta despliegue y prueba DIAN real antes de declarar
-  la nota operativa en produccion.
+- QA de esa iteracion: fuente derivada multilinea, preflight, XSD UBL 2.1 de
+  CreditNote y firma XMLDSig correctos. La prueba real posterior de `1PCS7` y su
+  nota total supero esa compuerta; el alcance sigue limitado a anulacion total.
 
 ## Actualizacion 2026-08-24 - candidato DIAN desde fuente fiscal real
 

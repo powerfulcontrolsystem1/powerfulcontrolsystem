@@ -1591,15 +1591,16 @@
 
     async function ejecutarOperacionFacturacion(action) {
       const payload = collectOperacionPayload(action);
-      const tiposOperativos = ["factura_electronica", "nota_credito", "nota_debito"];
-      if (tiposOperativos.indexOf(txt(payload.tipo_documento).toLowerCase()) === -1) {
+      const anulacionTotalPermitida = txt(action).toLowerCase() === "anular_factura_nota_credito" &&
+        txt(payload.tipo_documento).toLowerCase() === "factura_electronica";
+      if (!anulacionTotalPermitida) {
         setJSON("op_resultado", {
           ok: false,
-          codigo: "tipo_documento_dian_no_implementado",
+          codigo: "emision_fiscal_libre_bloqueada",
           tipo_documento: payload.tipo_documento,
           bloqueado: true
         });
-        setText("op_msg", "Este tipo documental requiere un adaptador DIAN propio. No se genero XML, no se consumio consecutivo y no se envio informacion fiscal.", true);
+        setText("op_msg", "La emision fiscal libre esta bloqueada. Las facturas nacen de una venta pagada y la unica operacion disponible aqui es la anulacion total mediante nota credito. No se consumio consecutivo ni se envio informacion fiscal.", true);
         return;
       }
       if (!payload.documento_codigo) {

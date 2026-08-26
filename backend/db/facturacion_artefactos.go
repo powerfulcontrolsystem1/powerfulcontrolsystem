@@ -30,6 +30,14 @@ type EmpresaFacturacionArtefacto struct {
 	FechaActualizacion string `json:"fecha_actualizacion"`
 }
 
+// EmpresaFacturacionFuenteFiscalRef exposes only the tenant-scoped business
+// key needed to tell whether a document has an immutable fiscal source. It does
+// not expose the private storage path, hash or source contents.
+type EmpresaFacturacionFuenteFiscalRef struct {
+	TipoDocumento   string
+	DocumentoCodigo string
+}
+
 func applyEmpresaFacturacionArtefactosTx(ctx context.Context, tx *sql.Tx) error {
 	if tx == nil {
 		return fmt.Errorf("migration transaction is required")
@@ -217,6 +225,29 @@ func ListEmpresaFacturacionArtefactosContext(ctx context.Context, dbConn *sql.DB
 			return nil, err
 		}
 		items = append(items, *item)
+	}
+	return items, rows.Err()
+}
+
+func ListEmpresaFacturacionFuenteFiscalRefsContext(ctx context.Context, dbConn *sql.DB, empresaID int64) ([]EmpresaFacturacionFuenteFiscalRef, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return nil, fmt.Errorf("conexion empresarial y empresa_id son obligatorios")
+	}
+	rows, err := querySQLCompatContext(ctx, dbConn, `SELECT tipo_documento, documento_codigo
+		FROM empresa_facturacion_artefactos
+		WHERE empresa_id = ? AND tipo_artefacto = ? AND estado = 'activo'
+		ORDER BY tipo_documento, documento_codigo`, empresaID, EmpresaFacturacionArtefactoTipoFuenteFiscalJSON)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EmpresaFacturacionFuenteFiscalRef, 0)
+	for rows.Next() {
+		var item EmpresaFacturacionFuenteFiscalRef
+		if err := rows.Scan(&item.TipoDocumento, &item.DocumentoCodigo); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
 	}
 	return items, rows.Err()
 }

@@ -170,7 +170,7 @@
         </a>
         <a class="nomina-subnav-card" data-nomina-nav="tutorial" href="/administrar_empresa/nomina_tutorial.html">
           <strong>Tutorial de nomina</strong>
-          <span>Guia paso a paso para preparar nomina y enviarla a DIAN con trazabilidad.</span>
+          <span>Guia paso a paso para preparar y revisar la nómina; el envío DIAN permanece bloqueado hasta disponer del adaptador propio.</span>
         </a>
       </div>
     </section>
@@ -768,12 +768,12 @@
         <div class="nomina-demo-panel">
           <div>
             <strong>Nomina electronica DIAN</strong>
-			<span id="nomCoDianResumen" class="form-help">Consulta liquidaciones y prepara el lote por empleado. El envio permanece bloqueado hasta implementar el adaptador DIAN de nomina, firma y CUNE.</span>
+            <span id="nomCoDianResumen" class="form-help">Consulta liquidaciones y prepara el lote por empleado. El envio permanece bloqueado hasta implementar el adaptador DIAN de nomina, firma y CUNE.</span>
           </div>
           <div class="form-actions" style="margin:0;">
             <button id="nomCoDianVerBtn" type="button" class="btn secondary">Ver estado DIAN</button>
             <button id="nomCoDianPrepararBtn" type="button" class="btn">Preparar lote DIAN</button>
-			<button id="nomCoDianEnviarBtn" type="button" class="btn primary" disabled title="Adaptador DIAN de nomina electronica pendiente">Envio DIAN no disponible</button>
+            <button id="nomCoDianEnviarBtn" type="button" class="btn primary" disabled title="Adaptador DIAN de nomina electronica pendiente">Envio DIAN no disponible</button>
           </div>
         </div>
         <div id="nomCoDianPanel" class="nomina-result-summary">Sin lote DIAN consultado.</div>
@@ -1954,7 +1954,7 @@
           const missing = items.filter(function (item) { return !item.ok; });
           list.innerHTML = missing.length
             ? missing.map(function (item) { return '<li>' + escapeNominaReadinessHTML(item.label) + '</li>'; }).join('')
-            : '<li>Listo para revisar y enviar nomina electronica segun configuracion DIAN.</li>';
+            : '<li>Listo para revisión documental. El envío DIAN aún no está habilitado.</li>';
         }
       }
 
@@ -2432,50 +2432,8 @@
         return data;
       }
 
-      function nominaDianDocumentoCodigo(desde, hasta) {
-        const base = (txt(desde) || txt(hasta) || new Date().toISOString().slice(0, 10)).slice(0, 7).replace(/[^0-9]/g, '');
-        return 'NE-' + (base || 'PERIODO') + '-' + String(state.empresaID || 0);
-      }
-
       async function enviarNominaElectronicaDian() {
-        const desde = txt(document.getElementById('calcDesde').value);
-        const hasta = txt(document.getElementById('calcHasta').value);
-        if (!desde || !hasta) {
-          throw new Error('Debes indicar periodo desde y hasta antes de enviar nomina electronica.');
-        }
-        if (!window.confirm('Esto enviara la nomina electronica a la DIAN usando la configuracion fiscal de esta empresa. Verifica periodo, empleados, liquidaciones y firma digital. Continuar?')) {
-          return;
-        }
-        msg('Preparando lote antes del envio DIAN...', 'success');
-        const lote = await cargarNominaDian(true);
-        const pendientes = Array.isArray(lote && lote.requisitos_pendientes) ? lote.requisitos_pendientes : [];
-        if (pendientes.length) {
-          throw new Error('No se envia a DIAN porque hay requisitos pendientes: ' + pendientes.slice(0, 3).join(' | '));
-        }
-        const codigo = nominaDianDocumentoCodigo(desde, hasta);
-        const payload = {
-          empresa_id: state.empresaID,
-          tipo_documento: 'nomina_electronica',
-          documento_codigo: codigo,
-          pais_codigo: 'CO',
-          monto_total: Number(lote && lote.total_neto || 0),
-          moneda: 'COP',
-          periodo_contable: desde.slice(0, 7),
-          observaciones: 'Documento soporte de pago de nomina electronica periodo ' + desde + ' a ' + hasta,
-          mensaje_confirmacion_dian: 'Envio solicitado desde modulo de nomina'
-        };
-        msg('Enviando nomina electronica a DIAN...', 'success');
-        const data = await requestJSON('/api/empresa/facturacion_electronica?action=nomina_electronica&empresa_id=' + encodeURIComponent(String(state.empresaID)), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const fiscal = data && data.integracion_fiscal ? data.integracion_fiscal : {};
-        renderNominaDian(Object.assign({}, lote || {}, {
-          estado: fiscal.estado_envio || data.estado_nuevo || 'enviado',
-          mensajes: ['Documento ' + codigo + ' enviado al flujo fiscal. Estado DIAN/proveedor: ' + (fiscal.estado_envio || 'registrado') + '.']
-        }));
-        msg('Nomina electronica enviada al flujo DIAN. Documento: ' + codigo + '.', fiscal.estado_envio === 'fallido' ? 'error' : 'success');
+        throw new Error('El envío DIAN de nómina electrónica no está disponible: falta el adaptador NominaIndividual, firma, transporte y acuse propios. Preparar el lote no genera XML ni transmite información.');
       }
 
       async function seedParametros() {

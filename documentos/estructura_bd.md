@@ -631,7 +631,7 @@ Actualizacion 2026-05-21 (alerta visual configurable de carrito)
 Actualizacion 2026-05-20 (catalogo DIAN Colombia documentos electronicos)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `facturacion_electronica_pais` con `pais_codigo='CO'` y `UNIQUE(empresa_id, pais_codigo)`.
-- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version`. Desde la version `2026-08-24`, `documentos_soportados` solo activa factura electronica; nota credito, nota debito, soporte, nomina, equivalentes, contingencia y RADIAN permanecen catalogados sin emision hasta disponer de fuente/adaptador propios.
+- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version`. Desde la version `2026-08-24`, `documentos_soportados` solo activa factura electronica; la nota credito se admite exclusivamente desde la anulacion total que deriva su propia fuente. Nota credito libre/parcial, nota debito, soporte, nomina, equivalentes, contingencia y RADIAN permanecen catalogados sin emision generica hasta disponer de fuente/adaptador propios.
 - `empresa_facturacion_documentos` y `facturacion_electronica_reintentos` aceptan los nuevos codigos canonicos como `tipo_documento`, siempre aislados por `empresa_id`.
 - Las obligaciones de contador se registran como configuracion/catalogo, no como documentos UBL de venta.
 

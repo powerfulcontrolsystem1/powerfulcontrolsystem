@@ -5,6 +5,27 @@ Estado: vigente
 
 Actualizacion 2026-08-25:
 
+- La factura comercial no admite emision libre: solo
+  `action=facturar_desde_venta` sobre una venta pagada puede crearla, y la fuente
+  fiscal inmutable debe validar antes de reservar numeracion.
+- La anulacion total toma un bloqueo transaccional sobre la factura origen,
+  reutiliza cualquier nota ya relacionada y crea una nueva como
+  `pendiente_emision`. La factura solo cambia a `anulada` si la nota esta
+  `emitida`, su CUDE SHA-384 coincide con el de la cola y el acuse esta
+  `aceptado` o `reconciliado`.
+- El correo fiscal colombiano de produccion espera documento emitido y
+  aceptacion DIAN. Una respuesta pendiente, fallida o rechazada nunca envia al
+  cliente una factura como definitiva.
+- Las acciones DIAN con efectos externos o fiscales exigen permiso `A`; la
+  anulacion total conserva permiso `D`. Los chequeos de vencimiento silenciosos
+  son lectura. Toda accion GET DIAN desconocida responde 400 antes del CRUD y
+  antes de cualquier posible exposicion de secretos descifrados.
+- El listado publica solo el booleano `fuente_fiscal_disponible`; nunca expone
+  ruta, hash ni contenido de la fuente. Una factura historica sin esa fuente no
+  ofrece anulacion aunque conserve un estado o codigo fiscal legado.
+- `reconciliar_estados` puede completar documento y cola desde un acuse ya
+  aceptado/reconciliado antes de cualquier despacho. Esta reparacion local no
+  incrementa intentos ni retransmite XML.
 - `nota_credito` solo se emite mediante `anular_factura_nota_credito` sobre una
   factura aceptada con CUFE oficial y fuente fiscal inmutable. El servidor
   deriva y sella una fuente separada para la nota; no acepta lineas, partes,

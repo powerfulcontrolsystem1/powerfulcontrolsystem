@@ -2219,7 +2219,30 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 	if action == "activar" || action == "desactivar" {
 		return permActionUpdate
 	}
-	if action == "procesar_reintentos" || action == "reconciliar_estados" || action == "firmar_xml_real" || action == "firmar_xml_xades_base" || action == "validar_documento_dian" || action == "enviar_documento_real" || action == "reconexion_dian" || action == "consultar_acuse_real" || action == "pruebas_dian" || action == "pruebas_habilitacion" || action == "enviar_set_pruebas" || action == "activar_produccion_local" || action == "subir_firma" {
+	if action == "configuracion_documentos_dian" {
+		if r.Method == http.MethodGet {
+			return permActionRead
+		}
+		return permActionApprove
+	}
+	if action == "vencimiento_certificado" || action == "verificar_vencimiento_certificado" || action == "alerta_certificado" ||
+		action == "vencimiento_resolucion" || action == "verificar_vencimiento_resolucion" || action == "alerta_resolucion" {
+		notificar := strings.TrimSpace(r.URL.Query().Get("notificar"))
+		if notificar == "" || parseTruthy(notificar) {
+			return permActionApprove
+		}
+		return permActionRead
+	}
+	if action == "procesar_reintentos" || action == "reconciliar_estados" ||
+		action == "facturar_desde_venta" || action == "reenviar_dian" || action == "reintentar_dian" || action == "enviar_dian" ||
+		action == "firmar_xml_real" || action == "firmar_xml_xades_base" || action == "validar_documento_dian" || action == "preflight_documento" || action == "validar_previo_envio" || action == "enviar_documento_real" ||
+		action == "reconexion_dian" || action == "consultar_acuse_real" || action == "consultar_rango_numeracion" || action == "get_numbering_range" || action == "consultar_clave_tecnica" ||
+		action == "validar_credenciales" || action == "validar_secretos" || action == "pruebas_dian" || action == "pruebas_habilitacion" || action == "test_habilitacion" ||
+		action == "enviar_set_pruebas" || action == "enviar_set_habilitacion" || action == "activar_produccion_local" || action == "pasar_a_produccion_local" || action == "subir_firma" || action == "upload_firma" ||
+		action == "analizar_captura_dian" || action == "leer_captura_dian" || action == "ocr_captura_dian" ||
+		action == "importar_rut_pdf_ia" || action == "leer_rut_pdf_ia" || action == "extraer_rut_pdf_ia" ||
+		action == "importar_numeracion_pdf_ia" || action == "importar_formulario_1876_ia" || action == "leer_numeracion_pdf_ia" ||
+		action == "importar_numeracion_pdf" || action == "importar_formulario_1876" || action == "leer_numeracion_pdf" {
 		return permActionApprove
 	}
 	if action == "" && strings.Contains(strings.ToLower(r.URL.Path), "/facturacion_electronica/dian") && (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {

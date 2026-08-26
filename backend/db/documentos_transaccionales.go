@@ -69,9 +69,10 @@ type EmpresaDocumentoCompra struct {
 // EmpresaDocumentoFacturacionListado representa un documento de facturación enriquecido con datos de cliente.
 type EmpresaDocumentoFacturacionListado struct {
 	EmpresaDocumentoFacturacion
-	ClienteNombre    string `json:"cliente_nombre,omitempty"`
-	ClienteEmail     string `json:"cliente_email,omitempty"`
-	ClienteDocumento string `json:"cliente_documento,omitempty"`
+	ClienteNombre          string `json:"cliente_nombre,omitempty"`
+	ClienteEmail           string `json:"cliente_email,omitempty"`
+	ClienteDocumento       string `json:"cliente_documento,omitempty"`
+	FuenteFiscalDisponible bool   `json:"fuente_fiscal_disponible"`
 }
 
 // EmpresaDocumentoFacturacionListFilter define los filtros para consultar documentos de facturación.

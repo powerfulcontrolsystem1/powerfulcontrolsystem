@@ -260,10 +260,151 @@ func TestDIANFrontendDisablesFamiliesWithoutDedicatedAdapter(t *testing.T) {
 		`value="nomina_electronica" disabled`,
 		`value="documento_equivalente_pos" disabled`,
 		`value="eventos_radian_recepcion" disabled`,
-		`codigo: "tipo_documento_dian_no_implementado"`,
+		`codigo: "emision_fiscal_libre_bloqueada"`,
 	} {
 		if !strings.Contains(page, marker) {
 			t.Fatalf("DIAN unsupported-family guard missing %q", marker)
+		}
+	}
+}
+
+func TestFacturasElectronicasOnlyCancelsWithOfficialCUFEAndShowsCreditNoteArtifacts(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturas_electronicas.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read invoice tray: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`function isOfficialDIANDocumentKey(value)`,
+		`!isOfficialDIANDocumentKey(item && item.codigo_validacion)`,
+		`item.fuente_fiscal_disponible !== true`,
+		`Documento histórico sin fuente fiscal inmutable`,
+		`artifactType === "factura_electronica" || artifactType === "nota_credito"`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("safe invoice/credit-note UI missing %q", marker)
+		}
+	}
+}
+
+func TestNominaFrontendCannotCallGenericFiscalEndpoint(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "nomina_sueldos.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read payroll page: %v", err)
+	}
+	page := string(raw)
+	if strings.Contains(page, `/api/empresa/facturacion_electronica?action=nomina_electronica`) {
+		t.Fatal("payroll UI still contains a dead generic DIAN submission path")
+	}
+	if !strings.Contains(page, `Adaptador DIAN de nomina electronica pendiente`) || !strings.Contains(page, `Preparar el lote no genera XML ni transmite información`) {
+		t.Fatal("payroll UI must explain the fail-closed preflight-only scope")
+	}
+}
+
+func TestPaidSaleFiscalSourceIsCheckedBeforeNumberReservationAndEmail(t *testing.T) {
+	path := filepath.Join("carritos_compras.go")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read cart backend: %v", err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func registrarFacturaElectronicaDesdeDocumentoVentaContext(")
+	if start < 0 {
+		t.Fatal("could not isolate paid-sale invoice function")
+	}
+	end := strings.Index(source[start:], "func registrarDocumentoVentaDesdeCarritoPagado(")
+	if end < 0 {
+		t.Fatal("could not isolate paid-sale invoice function")
+	}
+	body := source[start : start+end]
+	sourceCheck := strings.Index(body, "loadFacturacionFuenteFiscalParaDocumento(")
+	reserveNumber := strings.Index(body, "PrepareFacturacionDocumentoLegalContext(")
+	if sourceCheck < 0 || reserveNumber < 0 || sourceCheck > reserveNumber {
+		t.Fatal("immutable fiscal source must be checked before reserving a legal number")
+	}
+	for _, marker := range []string{
+		`correoFiscalPermitido := strings.EqualFold`,
+		`facturaElectronicaVentaIntegracionConfirmada(resultadoIntegracion)`,
+		`correo fiscal pendiente hasta recibir aceptacion DIAN`,
+	} {
+		if !strings.Contains(body, marker) {
+			t.Fatalf("accepted-only fiscal email gate missing %q", marker)
+		}
+	}
+}
+
+func TestCreditNoteCancellationIsSerializedResumableAndPendingUntilDIAN(t *testing.T) {
+	path := filepath.Join("facturacion_electronica.go")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read billing backend: %v", err)
+	}
+	source := string(raw)
+	for _, marker := range []string{
+		`releaseFacturaLock`,
+		`fuente_fiscal_factura_no_disponible`,
+		`EstadoDocumento:      "pendiente_emision"`,
+		`EventoUltimo:         "nota_credito_pendiente_dian"`,
+		`nota_credito_ya_existia`,
+		`facturacionNotaCreditoAceptadaParaAnulacion`,
+	} {
+		if !strings.Contains(source, marker) {
+			t.Fatalf("credit-note cancellation hardening missing %q", marker)
+		}
+	}
+}
+
+func TestGenericInvoiceEmissionBlocksBeforeNumberReservation(t *testing.T) {
+	path := filepath.Join("facturacion_electronica.go")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read billing backend: %v", err)
+	}
+	source := string(raw)
+	start := strings.Index(source, `if !facturacionDocumentoElectronicoDIANCreacionGenericaSoportada(documentoTipo) {`)
+	if start < 0 {
+		t.Fatal("generic fiscal guard missing")
+	}
+	reserve := strings.Index(source[start:], `PrepareFacturacionDocumentoLegalContext(`)
+	guardReturn := strings.Index(source[start:], `return`)
+	if reserve < 0 || guardReturn < 0 || guardReturn > reserve {
+		t.Fatal("generic invoice guard must return before legal-number reservation")
+	}
+	if !strings.Contains(source[start:start+reserve], `emision_factura_libre_bloqueada`) {
+		t.Fatal("generic invoice guard must expose an actionable fail-closed code")
+	}
+}
+
+func TestReconciliationRepairsAcceptedDocumentsWithoutResending(t *testing.T) {
+	path := filepath.Join("facturacion_electronica.go")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read billing backend: %v", err)
+	}
+	source := string(raw)
+	helperStart := strings.Index(source, "func reconciliarFacturacionAceptacionLocal(")
+	start := strings.Index(source, "func reconcileFacturacionEstados(")
+	if helperStart < 0 || start < 0 || helperStart > start {
+		t.Fatal("accepted-repair helper or reconciliation function missing")
+	}
+	body := source[start:]
+	accepted := strings.Index(body, `reconciliarFacturacionAceptacionLocal(`)
+	sentGuard := strings.Index(body, `if estadoRetry == "enviado"`)
+	dispatch := strings.Index(body, `processFacturacionIntegracionForDocumento(`)
+	if accepted < 0 || sentGuard < 0 || dispatch < 0 || accepted > dispatch || sentGuard > dispatch {
+		t.Fatal("accepted local repair must run before any integration dispatch")
+	}
+	reconciliationSource := source[helperStart:]
+	for _, marker := range []string{
+		`facturacionDocumentoAceptadoDIAN`,
+		`facturacionRetryAceptadoConCodigoValidacion`,
+		`reparaciones_locales`,
+		`documento_pendiente_sin_aceptacion`,
+	} {
+		if !strings.Contains(reconciliationSource, marker) {
+			t.Fatalf("safe accepted reconciliation missing %q", marker)
 		}
 	}
 }

@@ -1,5 +1,17 @@
 # Mapa de modulos
 
+Actualizacion 2026-08-25 - Cierre seguro del modulo DIAN: la factura comercial
+solo nace de una venta pagada con fuente fiscal inmutable validada antes de
+reservar consecutivo. La anulacion total bloquea la factura origen, reutiliza
+de forma idempotente su nota credito y solo finaliza cuando documento y cola
+coinciden en estado aceptado y CUDE oficial. Los GET DIAN desconocidos fallan
+antes del CRUD, las acciones fiscales sensibles exigen permiso efectivo y el
+correo de produccion espera la aceptacion oficial. Factura libre, nomina,
+soporte, nota debito, equivalentes, contingencia y RADIAN siguen cerrados.
+La bandeja recibe `fuente_fiscal_disponible` sin rutas privadas y no ofrece
+anulacion de documentos legados sin snapshot. La reconciliacion repara acuses
+aceptados localmente antes de cualquier posible despacho.
+
 Actualizacion 2026-08-25 - Nota credito DIAN: la accion
 `anular_factura_nota_credito` deriva una fuente fiscal privada e inmutable de
 una factura aceptada, genera `CreditNote` multilínea con CUDE y referencia
@@ -12,8 +24,9 @@ el contrato anidado; la UI presenta numero legal y avisos fiscales. Cuando
 `SendBillSync` responde sin `TrackId`, el historial usa una referencia de
 auditoria `sync:<documento>` que nunca se envia a `GetStatusZip`. La fuente
 fiscal distingue gravado, exento IVA 0 % y excluido. La evidencia real `1PCS8`
-continua pendiente de reintento despues del despliegue; no equivale a acuse
-aceptado.
+ya obtuvo acuse DIAN `aceptado`, CUFE oficial de 96 caracteres y cierre local
+idempotente con un solo intento; esa evidencia valida la factura de venta, no
+habilita por extension las otras familias documentales.
 
 Actualizacion 2026-08-25 - Facturacion electronica Colombia: la pagina
 `web/administrar_empresa/facturacion_electronica.html` separa el Formulario 001

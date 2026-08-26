@@ -1,3 +1,24 @@
+## [2026-08-25] Cierre seguro integral de facturacion DIAN
+
+- [Origen] La factura comercial solo nace de una venta pagada con fuente fiscal
+  inmutable comprobada antes de reservar consecutivo; el endpoint generico no
+  admite payload fiscal libre.
+- [Nota credito] La anulacion total se serializa por factura, reutiliza la nota
+  existente y solo finaliza con estado emitido, CUDE oficial y cola
+  aceptada/reconciliada coincidentes.
+- [Seguridad] Acciones fiscales con efectos exigen `A`, la anulacion conserva
+  `D`, los chequeos silenciosos de vencimiento usan `R` y los GET DIAN
+  desconocidos fallan antes del CRUD interno.
+- [UX] La bandeja exige CUFE oficial para anular y muestra artefactos de factura
+  y nota credito. Tambien exige la señal de fuente fiscal real, por lo que los
+  documentos historicos sin snapshot permanecen en consulta. Nomina solo
+  prepara el lote y no transmite por el adaptador de factura.
+- [Reconciliacion] Un acuse ya aceptado/reconciliado puede completar estado y
+  CUFE/CUDE locales antes de cualquier despacho, sin retransmitir ni incrementar
+  intentos.
+- [QA] Pruebas DIAN enfocadas, regresion Go completa y `go vet ./...` aprueban
+  localmente; despliegue y repeticion visual se registran por separado.
+
 ## [2026-08-25] Recuperación del login administrativo y guard de reCAPTCHA
 
 - [Incidente] El portal público devolvía HTTP 503 en login, registro y

@@ -112,8 +112,8 @@ func TestNotaCreditoComercialOnlyUsesTotalCancellationWorkflow(t *testing.T) {
 	if facturacionDocumentoElectronicoDIANCreacionGenericaSoportada("nota_credito") {
 		t.Fatal("el endpoint generico no debe fabricar notas credito sin factura aceptada")
 	}
-	if !facturacionDocumentoElectronicoDIANCreacionGenericaSoportada("factura_electronica") {
-		t.Fatal("factura electronica debe conservar su creacion canonica")
+	if facturacionDocumentoElectronicoDIANCreacionGenericaSoportada("factura_electronica") {
+		t.Fatal("la factura libre no puede reservar numeracion; debe nacer de una venta pagada")
 	}
 	if facturacionDocumentoElectronicoDIANComercialSoportado("nota_debito") {
 		t.Fatal("nota debito debe seguir bloqueada hasta tener ajuste estructurado real")
@@ -136,7 +136,7 @@ func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *t
 	got := facturacionFiltrarDocumentosDianOperativos([]string{
 		"factura_electronica", "documento_soporte", "nota_credito", "nomina_electronica", "nota_debito", "factura_electronica", "eventos_radian_recepcion",
 	})
-	want := []string{"factura_electronica", "nota_credito", "nota_debito"}
+	want := []string{"factura_electronica"}
 	if len(got) != len(want) {
 		t.Fatalf("documentos operativos=%v, want %v", got, want)
 	}
@@ -144,6 +144,22 @@ func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *t
 		if got[i] != want[i] {
 			t.Fatalf("documentos operativos=%v, want %v", got, want)
 		}
+	}
+}
+
+func TestFacturacionMarcarDisponibilidadFuenteFiscalNoHabilitaLegados(t *testing.T) {
+	items := []dbpkg.EmpresaDocumentoFacturacionListado{
+		{EmpresaDocumentoFacturacion: dbpkg.EmpresaDocumentoFacturacion{TipoDocumento: "factura_electronica", DocumentoCodigo: "FV-VENTA-1"}},
+		{EmpresaDocumentoFacturacion: dbpkg.EmpresaDocumentoFacturacion{TipoDocumento: "factura_electronica", DocumentoCodigo: "FV-LEGADA"}},
+		{EmpresaDocumentoFacturacion: dbpkg.EmpresaDocumentoFacturacion{TipoDocumento: "nota_credito", DocumentoCodigo: "NC-1"}},
+	}
+	fuentes := []dbpkg.EmpresaFacturacionFuenteFiscalRef{
+		{TipoDocumento: "comprobante_pago", DocumentoCodigo: "CP-VENTA-1"},
+		{TipoDocumento: "nota_credito", DocumentoCodigo: "NC-1"},
+	}
+	facturacionMarcarDisponibilidadFuenteFiscal(items, fuentes)
+	if !items[0].FuenteFiscalDisponible || items[1].FuenteFiscalDisponible || !items[2].FuenteFiscalDisponible {
+		t.Fatalf("disponibilidad inesperada: %#v", items)
 	}
 }
 
@@ -357,6 +373,74 @@ func TestAnulacionElectronicaSoloConfirmaConNotaCreditoAceptada(t *testing.T) {
 	}
 	if _, err := resolveFacturacionTransitionForDocument("anular", "emitida", "factura_electronica"); err == nil {
 		t.Fatal("la transicion local generica no debe anular una factura electronica")
+	}
+}
+
+func TestNotaCreditoAceptadaParaAnulacionExigeCUDEYColaCoincidentes(t *testing.T) {
+	cude := strings.Repeat("ab", 48)
+	nota := dbpkg.EmpresaDocumentoFacturacion{
+		TipoDocumento: "nota_credito", EstadoDocumento: "emitida", CodigoValidacion: cude,
+	}
+	retry := &dbpkg.FacturacionElectronicaRetryItem{EstadoEnvio: "aceptado", CodigoValidacion: cude}
+	if !facturacionNotaCreditoAceptadaParaAnulacion(nota, retry) {
+		t.Fatal("nota emitida con CUDE y acuse aceptado coincidentes debe poder finalizar la anulacion")
+	}
+
+	for name, mutate := range map[string]func(*dbpkg.EmpresaDocumentoFacturacion, *dbpkg.FacturacionElectronicaRetryItem){
+		"nota pendiente": func(n *dbpkg.EmpresaDocumentoFacturacion, _ *dbpkg.FacturacionElectronicaRetryItem) {
+			n.EstadoDocumento = "pendiente_emision"
+		},
+		"sin CUDE": func(n *dbpkg.EmpresaDocumentoFacturacion, _ *dbpkg.FacturacionElectronicaRetryItem) {
+			n.CodigoValidacion = ""
+		},
+		"cola fallida": func(_ *dbpkg.EmpresaDocumentoFacturacion, r *dbpkg.FacturacionElectronicaRetryItem) {
+			r.EstadoEnvio = "fallido"
+		},
+		"CUDE distinto": func(_ *dbpkg.EmpresaDocumentoFacturacion, r *dbpkg.FacturacionElectronicaRetryItem) {
+			r.CodigoValidacion = strings.Repeat("cd", 48)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			candidateNote := nota
+			candidateRetry := *retry
+			mutate(&candidateNote, &candidateRetry)
+			if facturacionNotaCreditoAceptadaParaAnulacion(candidateNote, &candidateRetry) {
+				t.Fatal("la anulacion debe permanecer cerrada")
+			}
+		})
+	}
+}
+
+func TestNotaCreditoFuenteParaAnulacionDebeCoincidirConFactura(t *testing.T) {
+	cufe := strings.Repeat("ef", 48)
+	nota := dbpkg.EmpresaDocumentoFacturacion{DocumentoCodigo: "NC-1"}
+	factura := dbpkg.EmpresaDocumentoFacturacion{DocumentoCodigo: "FV-1", NumeroLegal: "1PCS8", CodigoValidacion: cufe}
+	fuente := &facturacionFuenteFiscalSnapshot{
+		Documento: facturacionFuenteFiscalDocumento{TipoOrigen: "nota_credito", CodigoOrigen: nota.DocumentoCodigo},
+		Referencia: &facturacionFuenteFiscalReferencia{
+			TipoDocumento: "factura_electronica", DocumentoCodigo: factura.DocumentoCodigo,
+			NumeroLegal: factura.NumeroLegal, CodigoValidacion: factura.CodigoValidacion,
+		},
+	}
+	if !facturacionNotaCreditoFuenteValidaParaAnulacion(fuente, nota, factura) {
+		t.Fatal("la fuente derivada y coincidente debe permitir finalizar")
+	}
+
+	for name, mutate := range map[string]func(*facturacionFuenteFiscalSnapshot){
+		"sin referencia": func(s *facturacionFuenteFiscalSnapshot) { s.Referencia = nil },
+		"otra factura":   func(s *facturacionFuenteFiscalSnapshot) { s.Referencia.DocumentoCodigo = "FV-2" },
+		"otro CUFE":      func(s *facturacionFuenteFiscalSnapshot) { s.Referencia.CodigoValidacion = strings.Repeat("ab", 48) },
+		"otra nota":      func(s *facturacionFuenteFiscalSnapshot) { s.Documento.CodigoOrigen = "NC-2" },
+	} {
+		t.Run(name, func(t *testing.T) {
+			candidate := *fuente
+			reference := *fuente.Referencia
+			candidate.Referencia = &reference
+			mutate(&candidate)
+			if facturacionNotaCreditoFuenteValidaParaAnulacion(&candidate, nota, factura) {
+				t.Fatal("la fuente discordante debe bloquear la anulacion")
+			}
+		})
 	}
 }
 

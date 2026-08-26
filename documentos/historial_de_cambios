@@ -43427,3 +43427,33 @@ Archivos modificados:
 - Para colas históricas aceptadas que guardaron el CUFE solo en el documento y
   en la respuesta del proveedor, una nueva ejecución local completa
   `codigo_validacion` sin transmitir XML ni modificar intentos, fecha o acuse.
+
+2026-08-25: Cierre seguro integral del modulo de facturacion electronica.
+- La factura comercial generica queda bloqueada antes de reservar numeracion;
+  solo una venta pagada con fuente fiscal privada e inmutable puede crear la
+  factura mediante `facturar_desde_venta`.
+- La anulacion total usa bloqueo por factura origen, valida CUFE y fuente,
+  reutiliza una nota existente y crea una nueva como `pendiente_emision`. Solo
+  cambia la factura a `anulada` cuando nota y cola coinciden en CUDE SHA-384 y
+  acuse DIAN aceptado o reconciliado.
+- El correo fiscal colombiano de produccion espera la aceptacion DIAN. La
+  bandeja exige CUFE oficial para habilitar anulacion y permite descargar los
+  artefactos privados de factura y nota credito.
+- `facturar_desde_venta`, reenvios, procesamiento, credenciales, rango, firma,
+  set e importaciones fiscales exigen permiso `A`; la anulacion conserva `D` y
+  los chequeos de vencimiento silenciosos usan `R`. Los GET DIAN desconocidos
+  fallan antes del CRUD que trabaja con secretos descifrados.
+- Nomina electronica conserva solo preparacion/preflight; se retiro la llamada
+  muerta al endpoint fiscal generico y no genera XML, numeracion ni transmision.
+  Nota debito, soporte, equivalentes, contingencia y RADIAN siguen cerrados.
+- QA local: pruebas DIAN enfocadas, `go test ./... -count=1`, `go vet ./...` y
+  `git diff --check` aprobaron. Despliegue y validacion visual se registran por
+  separado cuando se ejecuten.
+- La auditoria productiva de solo lectura detecto que los documentos recientes
+  conservan la fuente inmutable, mientras varios folios historicos no pueden
+  demostrarla. El listado publica solo `fuente_fiscal_disponible` y evita
+  ofrecer una anulacion que el backend debe bloquear; no se fabricaron fuentes
+  retroactivas.
+- La reconciliacion completa estado y CUFE/CUDE de documento/cola cuando el
+  acuse almacenado ya es aceptado o reconciliado. La reparacion ocurre antes de
+  cualquier despacho, conserva intentos y no retransmite XML.
