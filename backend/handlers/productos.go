@@ -25,7 +25,7 @@ const productosImportMaxBytes int64 = 5 << 20
 func writeProductosInternalError(w http.ResponseWriter, r *http.Request, operation string, err error) {
 	requestID := ""
 	if r != nil {
-		requestID = strings.TrimSpace(r.Header.Get("X-Request-ID"))
+		requestID = resolveAuditoriaRequestID(r)
 	}
 	log.Printf("[productos_inventario] operation=%s request_id=%s error_type=%T", strings.TrimSpace(operation), requestID, err)
 	http.Error(w, "No se pudo completar la operación de productos e inventario.", http.StatusInternalServerError)

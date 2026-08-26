@@ -166,7 +166,7 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 // relaciones internas por un endpoint empresarial. El detalle queda limitado
 // al log operativo y el request id, cuando ya fue asignado por middleware.
 func writeInventarioAvanzadoError(w http.ResponseWriter, r *http.Request, operation string, err error, status int, message string) {
-	requestID := strings.TrimSpace(r.Header.Get("X-Request-ID"))
+	requestID := resolveAuditoriaRequestID(r)
 	log.Printf("[inventario_avanzado] operation=%s request_id=%s error_type=%T", operation, requestID, err)
 	if requestID != "" {
 		message += " Referencia: " + requestID

@@ -3907,7 +3907,7 @@ func CreateProveedor(dbConn *sql.DB, p Proveedor) (int64, error) {
 		empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion, catalogo_referencia,
 		precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+	) VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		p.EmpresaID,
 		strings.TrimSpace(p.Codigo),
 		strings.TrimSpace(p.Nombre),
@@ -4008,7 +4008,7 @@ func UpdateProveedor(dbConn *sql.DB, p Proveedor) error {
 
 	nowExpr := sqlNowExpr()
 	res, err := execSQLCompat(dbConn, `UPDATE proveedores
-		SET codigo = ?, nombre = ?, documento = ?, contacto = ?, telefono = ?, email = ?, direccion = ?,
+		SET codigo = NULLIF(?, ''), nombre = ?, documento = ?, contacto = ?, telefono = ?, email = ?, direccion = ?,
 			catalogo_referencia = ?, precio_base_referencial = ?, descuento_porcentaje = ?, plazo_pago_dias = ?, condicion_entrega = ?,
 			observaciones = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE id = ? AND empresa_id = ?`,

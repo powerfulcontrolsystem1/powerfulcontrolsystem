@@ -96,3 +96,37 @@ func TestTransferirProductoEntreBodegasUsaSQLCompatPostgres(t *testing.T) {
 		t.Fatal("decrementarExistenciaTx debe conservar SQLCompat para PostgreSQL")
 	}
 }
+
+func TestProveedorCodigoOpcionalNoBloqueaMultiplesProveedores(t *testing.T) {
+	raw, err := os.ReadFile("productos.go")
+	if err != nil {
+		t.Fatalf("read productos.go: %v", err)
+	}
+	src := string(raw)
+
+	createStart := strings.Index(src, "func CreateProveedor(")
+	if createStart < 0 {
+		t.Fatal("no se encontro CreateProveedor")
+	}
+	createEnd := strings.Index(src[createStart:], "// GetProveedoresByEmpresa")
+	if createEnd < 0 {
+		t.Fatal("no se encontro limite de CreateProveedor")
+	}
+	createBody := src[createStart : createStart+createEnd]
+	if !strings.Contains(createBody, "VALUES (?, NULLIF(?, ''), ?") {
+		t.Fatalf("CreateProveedor debe persistir codigo vacio como NULL para no colisionar con el indice unico: %s", createBody)
+	}
+
+	updateStart := strings.Index(src, "func UpdateProveedor(")
+	if updateStart < 0 {
+		t.Fatal("no se encontro UpdateProveedor")
+	}
+	updateEnd := strings.Index(src[updateStart:], "func validateProveedorCondiciones")
+	if updateEnd < 0 {
+		t.Fatal("no se encontro limite de UpdateProveedor")
+	}
+	updateBody := src[updateStart : updateStart+updateEnd]
+	if !strings.Contains(updateBody, "SET codigo = NULLIF(?, '')") {
+		t.Fatalf("UpdateProveedor debe normalizar codigo vacio a NULL: %s", updateBody)
+	}
+}
