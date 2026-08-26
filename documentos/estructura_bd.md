@@ -3,6 +3,21 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-08-26 (nomina electronica DIAN mensual)
+- La migracion empresarial
+  `20260826-005-dian-nomina-electronica-v2` endurece
+  `empresa_contabilidad_nomina_electronica`, crea
+  `empresa_nomina_dian_perfiles` y amplia las configuraciones de nomina/DIAN.
+- La unicidad fiscal queda por empresa y origen: liquidacion, trabajador/mes y
+  numero legal. Una colision o fila historica incompatible detiene la migracion
+  para conciliacion manual; no se corrige ni descarta de forma automatica.
+- Fuente y configuracion fiscal se sellan en JSON por documento. Los secretos
+  del software/certificado no se copian a esas instantaneas.
+- Los datos fiscales de nomina tambien se reflejan en
+  `empresa_facturacion_documentos`, `facturacion_electronica_reintentos` y
+  `empresa_facturacion_artefactos`, siempre con `empresa_id` y acceso cruzado de
+  Facturacion + Nomina.
+
 Actualizacion 2026-08-09 (tunel saliente de Domotica)
 - `empresa_control_electrico_raspberry_pis` agrega identidad unica, huellas de
   enrolamiento/dispositivo, estado/ultima actividad del tunel, version del
@@ -631,7 +646,13 @@ Actualizacion 2026-05-21 (alerta visual configurable de carrito)
 Actualizacion 2026-05-20 (catalogo DIAN Colombia documentos electronicos)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `facturacion_electronica_pais` con `pais_codigo='CO'` y `UNIQUE(empresa_id, pais_codigo)`.
-- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version`. Desde la version `2026-08-24`, `documentos_soportados` solo activa factura electronica; la nota credito se admite exclusivamente desde la anulacion total que deriva su propia fuente. Nota credito libre/parcial, nota debito, soporte, nomina, equivalentes, contingencia y RADIAN permanecen catalogados sin emision generica hasta disponer de fuente/adaptador propios.
+- `campos_pais_json` agrega/actualiza `documentos_soportados`,
+  `documentos_contadores_colombia` y `documentos_dian_catalogo_version`. Desde
+  2026-08-26 el filtro operativo admite factura, documento soporte ordinario y
+  nomina ordinaria, cada uno mediante su fuente/adaptador dedicado. La nota
+  credito se admite exclusivamente desde anulacion total. Nota credito
+  libre/parcial, nota debito, notas de ajuste, equivalentes, contingencia y
+  RADIAN permanecen catalogados sin emision generica.
 - `empresa_facturacion_documentos` y `facturacion_electronica_reintentos` aceptan los nuevos codigos canonicos como `tipo_documento`, siempre aislados por `empresa_id`.
 - Las obligaciones de contador se registran como configuracion/catalogo, no como documentos UBL de venta.
 
@@ -965,7 +986,11 @@ Actualizacion 2026-05-05 (carnets empresariales por empresa)
 Actualizacion 2026-05-05 (suite contable Colombia avanzada)
 - `empresa_contabilidad_exogena_formatos`: formatos DIAN/medios magneticos configurables por `empresa_id`, formato, version, año gravable, concepto, periodicidad, estado y ultima generacion.
 - `empresa_contabilidad_exogena_registros`: registros por tercero/formato para exogena, con documento, razon social, cuenta, base, IVA, retencion, total, validaciones y estado.
-- `empresa_contabilidad_nomina_electronica`: documentos de nomina electronica por empleado/documento y periodo, con salario, devengados, deducciones, total, CUNE, estado DIAN, respuesta y payload.
+- `empresa_contabilidad_nomina_electronica`: espejo de documentos de nomina
+  electronica por trabajador/mes. Ademas de salario, devengados, deducciones,
+  total, CUNE, estado y respuesta, conserva liquidacion origen, trabajador de
+  nomina, periodo `YYYY-MM`, numero/fecha legal, fuente/configuracion selladas e
+  intentos del transporte.
 - `empresa_contabilidad_documentos_soporte`: documentos soporte electronicos para compras a no obligados a facturar, con proveedor, periodo, subtotal, IVA, retenciones, total, CUDS, estado DIAN y payload.
 - `empresa_contabilidad_activos_fijos`: activos fijos por empresa con costo, valor residual, vida util, depreciacion mensual/acumulada, valor en libros y cuentas contables.
 - `empresa_contabilidad_cartera_cxp`: cuentas por cobrar y por pagar con tercero, documento, vencimiento, valor original, valor pagado, saldo, estado y referencia externa.
@@ -1605,8 +1630,9 @@ Actualizacion 2026-08-23 (configuracion DIAN por familia documental):
   TestSet, prefijo, resolucion, vigencia, rango y consecutivo de cada familia.
 - La configuracion base `empresa_dian_configuracion` no se reutiliza como rango
   de documento soporte, nomina, equivalentes o RADIAN. La nueva tabla inicia
-  inactiva. Documento soporte obtuvo adaptador propio el 2026-08-26; las demás
-  familias continúan sin habilitar envío hasta completar sus contratos.
+  inactiva. Documento soporte y nomina ordinaria obtuvieron adaptadores propios
+  el 2026-08-26; sus notas de ajuste y las demas familias continúan sin
+  habilitar envio hasta completar sus contratos.
 - No se reescriben filas fiscales históricas durante el despliegue. Cualquier
   estado legado de nómina o documento soporte requiere conciliación y evidencia
   antes de corregirse; los formularios nuevos sí quedan forzados a borrador.
@@ -1796,6 +1822,7 @@ Actualizacion 2026-08-21 (precision fiscal y consecutivos):
 - empresa_nomina_configuracion:
   - empresa_id (UNIQUE)
   - pais_codigo, moneda
+  - periodo_nomina_dian (codigo de periodicidad DIAN entre 0 y 6)
   - horas_ordinarias_semana, horas_ordinarias_dia, dias_nomina_mes, divisor_hora_ordinaria
   - hora_nocturna_desde, hora_nocturna_hasta
   - recargo_nocturno_porcentaje
@@ -1840,6 +1867,31 @@ Actualizacion 2026-08-21 (precision fiscal y consecutivos):
   - empresa_id, periodo, empleado_nomina_id, empleado_nombre, empleado_documento
   - ibc, salud_empleado, pension_empleado, salud_empleador, pension_empleador
   - arl, caja_compensacion, icbf, sena, total_aportes, estado
+- empresa_nomina_dian_perfiles:
+  - empresa_id, empleado_nomina_id (UNIQUE por empresa/empleado)
+  - tipo_documento_dian, primer_apellido, segundo_apellido, primer_nombre,
+    otros_nombres
+  - tipo_trabajador, subtipo_trabajador, alto_riesgo_pension,
+    salario_integral, tipo_contrato
+  - pais_codigo, departamento_codigo, municipio_codigo, direccion
+  - banco, tipo_cuenta, numero_cuenta, estado y auditoria
+- empresa_contabilidad_nomina_electronica (campos fiscales vigentes):
+  - empresa_id, empleado_id, empleado_nomina_id, liquidacion_id,
+    periodo_reporte
+  - documento, numero_legal, fecha_emision_legal, fecha_pago
+  - salario_base, devengados, deducciones, total con `NUMERIC(18,2)`
+  - cune, estado_dian, respuesta_dian, json_payload
+  - configuracion_dian_json, fuente_fiscal_json, fuente_fiscal_sellada
+  - intentos, fecha_ultimo_intento, usuario y fechas de auditoria
+  - indices unicos parciales por `(empresa_id, liquidacion_id)`,
+    `(empresa_id, empleado_nomina_id, periodo_reporte)` y
+    `(empresa_id, numero_legal)`
+- empresa_dian_configuracion (identidad de proveedor del software):
+  - software_proveedor_nit, software_proveedor_dv,
+    software_proveedor_razon_social
+  - software_proveedor_primer_apellido,
+    software_proveedor_segundo_apellido, software_proveedor_primer_nombre y
+    software_proveedor_otros_nombres
 
 ### Tabla de registro vehicular por empresa
 - empresa_vehiculos_registro:
@@ -2316,6 +2368,12 @@ Actualizacion 2026-08-21 (precision fiscal y consecutivos):
 - 2026-04-06: se fortalece `reservas_hotel` con politica automatica avanzada (expiracion + no_show) y reconversion operativa a carrito; el estado de reserva extiende valores operativos con `en_curso` y `no_show`.
 - 2026-04-06: se agrega `empresa_vehiculos_configuracion` para parametrizar validacion de placa/patente por pais y regex por `empresa_id`, junto con regla de duplicidad activa; se incorpora reporte operativo `operativo_vehiculos_permanencia` con exportacion PDF/XLS/CSV/JSON/TXT.
 - 2026-04-06: se agregan `empresa_asistencia_configuracion` y `empresa_asistencia_periodos_cerrados` para parametrizar tolerancias/turnos y bloquear ediciones por cierre de periodo en asistencia; se publica reporte operativo `operativo_asistencia_nomina_auditoria` para auditoria de nomina.
+- 2026-08-26: migracion
+  `20260826-005-dian-nomina-electronica-v2`; crea perfiles fiscales DIAN,
+  convierte importes historicos de nomina electronica a `NUMERIC(18,2)`, agrega
+  origen/mes/numero/fecha/fuente/configuracion/intentos, periodicidad DIAN e
+  identidad del proveedor del software, con comprobaciones e indices
+  fail-closed por empresa.
 - 2026-05-20: se documenta el alcance operativo de Nomina Colombia avanzada. No se agregan tablas nuevas en este cierre; se amplian conceptos seed, novedades aprobadas aplicadas a liquidacion y flujo demo profesional por empresa.
 - 2026-06-03: `empresa_nomina_empleados` y `empresa_nomina_liquidaciones` incorporan `sede_codigo`, `sede_nombre` y `centro_costo` para soportar nomina multi-sede, desprendibles y preparacion de documento soporte de pago de nomina electronica por empresa.
 - 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `pcs_superadministrador` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.

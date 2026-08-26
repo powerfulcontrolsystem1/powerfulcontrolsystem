@@ -152,6 +152,7 @@ func TestCatalogoDianSoloDeclaraOperativasFamiliasConAdaptador(t *testing.T) {
 	operativos := map[string]string{
 		"factura_electronica": "operativo",
 		"documento_soporte":   "operativo_anexo_1_1",
+		"nomina_electronica":  "operativo_anexo_nomina_1_0",
 	}
 	for _, item := range ListFacturacionDianDocumentosElectronicos() {
 		if item.Codigo == "nota_credito" {

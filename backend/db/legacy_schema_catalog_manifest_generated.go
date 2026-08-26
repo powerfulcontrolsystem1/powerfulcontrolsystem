@@ -5,7 +5,7 @@ package db
 // legacySchemaCatalogSourceFingerprint freezes the reviewed source bodies of
 // every Ensure* step executed by the compatibility catalog. Changing a legacy
 // step changes this value and must be accompanied by a new immutable migration.
-const legacySchemaCatalogSourceFingerprint = "c0:fe:c7:b6:9d:2b:d9:a2:af:1d:19:ea:17:07:27:c3:8e:0e:11:c2:a9:59:eb:24:59:55:e3:a8:4a:7f:2d:9e"
+const legacySchemaCatalogSourceFingerprint = "58:d9:b0:2c:ac:18:06:f2:ef:8e:6f:ad:dd:23:54:cd:85:06:b7:cd:0c:62:08:2c:ca:23:c1:9d:7e:59:6c:e8"
 
 var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureAdminEmpresaCompartidaSchema": "82:45:70:3b:a8:07:9e:54:f0:75:ab:fd:53:df:33:f0:4a:2f:3e:a5:9c:cd:1c:28:48:2c:69:45:41:2c:de:f7",
@@ -43,7 +43,7 @@ var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureEmpresaConfiguracionAvanzadaSchema": "33:7c:d0:6e:b0:1c:cb:74:4d:86:94:ea:c3:b6:0c:d1:67:91:96:5a:71:74:2a:3a:bd:d9:5c:50:64:cd:63:2d",
 	"EnsureEmpresaConfiguracionGeneralSchema": "2e:ca:31:ca:05:d8:de:29:bd:3a:43:45:d9:d2:b5:84:a1:d8:dc:75:d5:f0:70:54:fe:d2:b5:2b:9f:cd:2d:b4",
 	"EnsureEmpresaConfiguracionOperativaSchema": "80:b6:bc:b9:5a:c0:01:2e:b2:6d:5a:24:21:fb:65:88:bb:9e:40:61:83:d4:f8:fe:37:ed:e1:a0:42:8e:92:69",
-	"EnsureEmpresaContabilidadColombiaAvanzadaSchema": "9c:3e:69:b2:25:92:cc:1d:20:0a:b0:45:90:92:b0:1f:07:7c:e5:2d:fd:3d:c0:9c:64:ce:6b:bb:64:f0:cd:28",
+	"EnsureEmpresaContabilidadColombiaAvanzadaSchema": "bc:7f:30:12:36:9c:87:f8:0a:f0:91:bd:c5:18:d2:0a:20:83:aa:07:32:53:c1:64:57:93:aa:6c:5b:fa:5c:31",
 	"EnsureEmpresaContabilidadColombiaSchema": "2d:00:ea:ab:4e:d5:f6:6e:e2:d5:26:b5:3e:52:a0:d9:c0:8e:7b:2d:ec:40:d4:30:b2:67:7d:65:1a:4e:4f:0f",
 	"EnsureEmpresaControlElectricoSchema": "91:a6:78:54:34:09:e1:12:55:50:92:8c:00:8f:5d:63:06:9a:09:a1:29:00:be:43:32:7b:d3:69:31:12:9c:8f",
 	"EnsureEmpresaCorteCajaConfiguracionSchema": "cc:6d:9d:5f:43:68:32:eb:60:8b:4b:48:3c:ff:ad:2e:72:80:6c:6b:d0:0b:d1:8a:20:55:6d:42:af:6c:af:01",
@@ -72,7 +72,7 @@ var legacySchemaCatalogStepSourceFingerprints = map[string]string{
 	"EnsureEmpresaModulosFaltantesSchema": "0e:98:e3:ac:3f:57:df:cc:0e:3d:8f:7c:57:27:33:1c:f8:b8:ca:93:4a:12:83:03:ee:f7:a2:65:c5:05:7b:71",
 	"EnsureEmpresaNextcloudSchema": "97:0f:7e:c8:48:4d:dc:5a:20:ad:bb:a0:c4:0a:86:27:20:d8:54:84:6c:ef:25:b0:89:ba:56:38:c2:85:61:53",
 	"EnsureEmpresaNominaColombiaAvanzadaSchema": "47:97:de:b5:5a:29:03:bc:72:54:5a:a1:f0:2b:31:9f:36:81:f6:51:c6:29:b7:82:4f:85:d9:d6:87:43:57:0e",
-	"EnsureEmpresaNominaSchema": "8b:7c:38:b8:5d:b9:de:c0:f4:9c:6a:1f:2b:43:0d:e0:83:f5:95:d7:54:6e:f3:49:d8:80:98:11:6a:ce:f1:ab",
+	"EnsureEmpresaNominaSchema": "17:78:39:f5:bb:25:71:55:f7:95:2e:5b:72:c7:e0:e3:53:2f:db:85:29:d9:c0:2b:a1:ac:a2:de:c2:af:74:c2",
 	"EnsureEmpresaOdontologiaSchema": "d2:56:3b:49:2c:02:34:c4:e0:1d:2a:d1:be:c8:78:a7:68:cf:4d:3b:a4:d0:ff:4f:f0:99:80:b0:49:20:0a:91",
 	"EnsureEmpresaParqueaderoSchema": "a7:d2:99:23:a7:82:b7:2f:db:1d:a4:6c:87:84:ae:12:47:6c:ca:87:fa:24:25:a7:8b:d7:4c:cc:13:60:5c:2f",
 	"EnsureEmpresaPermisosFinosSchema": "a8:5f:43:ab:82:43:7b:24:4e:47:98:2b:c5:a8:b9:6b:ee:55:d6:73:80:d5:88:99:a0:77:4a:da:94:65:b3:e0",

@@ -1771,7 +1771,7 @@ func main() {
 	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/contabilidad_colombia", handlers.WithEmpresaContabilidadColombiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/contabilidad_colombia_avanzada", handlers.WithEmpresaContabilidadColombiaAvanzadaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaAvanzadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/contabilidad_colombia_avanzada", handlers.WithEmpresaContabilidadColombiaAvanzadaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaAvanzadaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/activos_fijos_niif_fiscal", handlers.WithEmpresaActivosFijosNIIFPermissions(dbEmpresas, dbSuper, handlers.EmpresaActivosFijosNIIFiscalHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/centros_costo", handlers.WithEmpresaCentrosCostoPermissions(dbEmpresas, dbSuper, handlers.EmpresaCentrosCostoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/cierre_fiscal", handlers.WithEmpresaCierreFiscalPermissions(dbEmpresas, dbSuper, handlers.EmpresaCierreFiscalHandler(dbEmpresas)))

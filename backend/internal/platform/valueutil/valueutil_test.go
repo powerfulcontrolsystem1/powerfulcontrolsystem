@@ -2,6 +2,8 @@ package valueutil
 
 import (
 	"math"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -20,6 +22,15 @@ func TestValueNormalizers(t *testing.T) {
 	}
 	if got := Truncate("área", 3); got != "áre" {
 		t.Fatalf("Truncate() = %q", got)
+	}
+	if got := TrimmedPrefix(" 2026-08-26T10:00:00 ", 10); got != "2026-08-26" {
+		t.Fatalf("TrimmedPrefix() = %q", got)
+	}
+	if got := UniqueSortedNonBlank([]string{" b ", "a", "b", ""}); !reflect.DeepEqual(got, []string{"a", "b"}) {
+		t.Fatalf("UniqueSortedNonBlank() = %#v", got)
+	}
+	if !IsHexLength(strings.Repeat("a", 96), 96) || IsHexLength(strings.Repeat("z", 96), 96) {
+		t.Fatal("IsHexLength() no aplico el contrato")
 	}
 	if got := NormalizeAllowed(" HOST ", "host", "viewer"); got != "host" {
 		t.Fatalf("NormalizeAllowed() = %q", got)

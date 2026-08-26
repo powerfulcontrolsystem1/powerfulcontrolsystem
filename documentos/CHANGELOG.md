@@ -1,3 +1,27 @@
+## [2026-08-26] Nomina electronica mensual DIAN dedicada
+
+- [Fuente fiscal] Consolida liquidaciones pagadas por trabajador/mes cerrado,
+  exige perfil DIAN y falla cerrado ante solapes, pagos ambiguos, diferencias o
+  conceptos horarios sin intervalos reales.
+- [Persistencia] Migracion empresarial versionada con importes exactos, perfil
+  fiscal, periodicidad, identidad del proveedor, reserva atomica e instantaneas
+  inmutables por empresa.
+- [DIAN] Genera `NominaIndividual`, CUNE SHA-384 y XAdES, valida XSD oficial y
+  transmite produccion con `SendNominaSync` sin reutilizar factura/rangos.
+- [Seguridad] Emision y reenvio cruzan aprobacion de Facturacion + Nomina;
+  listados, configuracion, cola y artefactos ocultan nomina sin permiso de
+  lectura adicional. El dashboard contable tampoco consulta ni devuelve
+  resumenes de nomina sin `nomina_sueldos:R`. Reenvio individual exige frase
+  exacta.
+- [Preflight] La identidad fiscal del empleador y del proveedor exige un DV de
+  un solo digito antes de reservar numeracion o generar el XML.
+- [UX] Perfil fiscal, configuracion de familia, preflight mensual y dialogo de
+  emision estan integrados en Nomina. El boton real solo se habilita con mes
+  cerrado, familia activa en produccion e integracion Colombia/DIAN productiva;
+  habilitacion automatica, ajuste y distribucion grafica dedicada siguen
+  bloqueados.
+- [Estado] Candidato local: XSD oficial verde, sin emision real ni despliegue.
+
 ## [2026-08-26] Confirmación visual fail-closed para anulación DIAN
 
 - [UX segura] El botón final de anulación inicia deshabilitado y solo se

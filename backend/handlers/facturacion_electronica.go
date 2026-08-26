@@ -121,6 +121,55 @@ type facturacionOperacionPayload struct {
 	DescripcionCorreccion     string  `json:"descripcion_correccion"`
 }
 
+const nominaElectronicaReenvioConfirmacion = "REENVIAR NOMINA ELECTRONICA DIAN"
+
+func validateNominaElectronicaManualRetryConfirmation(tipoDocumento, mensaje string) error {
+	documentType := normalizeFacturacionDocumentoElectronicoTipo(tipoDocumento)
+	if !facturacionDocumentoEsFamiliaNomina(documentType) {
+		return nil
+	}
+	if documentType != "nomina_electronica" {
+		return errors.New("la nota de ajuste de nómina electrónica aún no dispone de un adaptador DIAN seguro para retransmisión")
+	}
+	if strings.TrimSpace(mensaje) != nominaElectronicaReenvioConfirmacion {
+		return fmt.Errorf("la nómina electrónica exige la confirmación exacta %q antes de retransmitir", nominaElectronicaReenvioConfirmacion)
+	}
+	return nil
+}
+
+func facturacionDocumentoEsFamiliaNomina(tipoDocumento string) bool {
+	switch normalizeFacturacionDocumentoElectronicoTipo(tipoDocumento) {
+	case "nomina_electronica", "nota_ajuste_nomina_electronica":
+		return true
+	default:
+		return false
+	}
+}
+
+// facturacionNominaReadScope keeps payroll data behind both the electronic
+// invoicing read permission enforced by the outer route and the payroll read
+// permission. Generic listings silently omit payroll when only the second
+// permission is missing; an explicit payroll request fails closed.
+func facturacionNominaReadScope(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, requestedType string) (bool, bool) {
+	requestedType = strings.TrimSpace(requestedType)
+	if requestedType != "" && !facturacionDocumentoEsFamiliaNomina(requestedType) {
+		return true, true
+	}
+	allowed, status, message, err := inspectEmpresaAdditionalModulePermission(r, dbEmp, dbSuper, permModuleNominaSueldos, permActionRead, "linkNominaSueldos")
+	if err != nil {
+		tenant, _ := TenantContextFromRequest(r)
+		log.Printf("[authz] payroll read scope empresa_id=%d error: %v", tenant.EmpresaID, err)
+	}
+	if allowed {
+		return true, true
+	}
+	if requestedType == "" && status == http.StatusForbidden {
+		return false, true
+	}
+	http.Error(w, message, status)
+	return false, false
+}
+
 func decodeFacturacionOperacionPayload(reader io.Reader, payload *facturacionOperacionPayload) error {
 	if reader == nil || payload == nil {
 		return nil
@@ -382,6 +431,19 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "No se pudo consultar la configuracion DIAN por documento", http.StatusInternalServerError)
 					return
 				}
+				canReadNomina, proceed := facturacionNominaReadScope(w, r, dbEmp, dbSuper, "")
+				if !proceed {
+					return
+				}
+				if !canReadNomina {
+					filtered := make([]dbpkg.EmpresaDIANDocumentoConfiguracion, 0, len(items))
+					for _, item := range items {
+						if !facturacionDocumentoEsFamiliaNomina(item.TipoDocumento) {
+							filtered = append(filtered, item)
+						}
+					}
+					items = filtered
+				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "items": items})
 				return
 			}
@@ -389,6 +451,9 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				tipoDocumento := normalizeFacturacionDocumentoElectronicoTipo(r.URL.Query().Get("tipo_documento"))
 				if tipoDocumento == "" {
 					tipoDocumento = "factura_electronica"
+				}
+				if _, proceed := facturacionNominaReadScope(w, r, dbEmp, dbSuper, tipoDocumento); !proceed {
+					return
 				}
 				documentoCodigo := strings.TrimSpace(r.URL.Query().Get("documento_codigo"))
 				items, err := dbpkg.ListEmpresaFacturacionArtefactosContext(r.Context(), dbEmp, empresaID, tipoDocumento, documentoCodigo)
@@ -420,6 +485,9 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "artefacto fiscal no disponible", http.StatusNotFound)
 					return
 				}
+				if _, proceed := facturacionNominaReadScope(w, r, dbEmp, dbSuper, item.TipoDocumento); !proceed {
+					return
+				}
 				ext := ".bin"
 				switch item.TipoArtefacto {
 				case "xml_firmado":
@@ -443,6 +511,11 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				return
 			}
 			if action == "documentos" {
+				tipoDocumento := strings.TrimSpace(r.URL.Query().Get("tipo_documento"))
+				canReadNomina, proceed := facturacionNominaReadScope(w, r, dbEmp, dbSuper, tipoDocumento)
+				if !proceed {
+					return
+				}
 				limit, err := parseIntQueryOptional(r, "limit")
 				if err != nil {
 					http.Error(w, "limit invalido", http.StatusBadRequest)
@@ -469,19 +542,24 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					cajeroQuery = strings.TrimSpace(adminEmailFromRequest(r))
 				}
 
+				excludedTypes := make([]string, 0, 2)
+				if tipoDocumento == "" && !canReadNomina {
+					excludedTypes = append(excludedTypes, "nomina_electronica", "nota_ajuste_nomina_electronica")
+				}
 				items, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresaContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
-					EmpresaID:       empresaID,
-					TipoDocumento:   strings.TrimSpace(r.URL.Query().Get("tipo_documento")),
-					EstadoDocumento: strings.TrimSpace(r.URL.Query().Get("estado_documento")),
-					IncludeInactive: parseTruthy(r.URL.Query().Get("include_inactive")) || parseTruthy(r.URL.Query().Get("incluir_inactivas")),
-					ClienteQuery:    strings.TrimSpace(r.URL.Query().Get("cliente")),
-					DocumentoQuery:  strings.TrimSpace(r.URL.Query().Get("documento")),
-					CajeroQuery:     cajeroQuery,
-					FechaDesde:      fechaDesde,
-					FechaHasta:      fechaHasta,
-					Query:           strings.TrimSpace(r.URL.Query().Get("q")),
-					Limit:           limit,
-					Offset:          offset,
+					EmpresaID:             empresaID,
+					TipoDocumento:         tipoDocumento,
+					ExcluirTiposDocumento: excludedTypes,
+					EstadoDocumento:       strings.TrimSpace(r.URL.Query().Get("estado_documento")),
+					IncludeInactive:       parseTruthy(r.URL.Query().Get("include_inactive")) || parseTruthy(r.URL.Query().Get("incluir_inactivas")),
+					ClienteQuery:          strings.TrimSpace(r.URL.Query().Get("cliente")),
+					DocumentoQuery:        strings.TrimSpace(r.URL.Query().Get("documento")),
+					CajeroQuery:           cajeroQuery,
+					FechaDesde:            fechaDesde,
+					FechaHasta:            fechaHasta,
+					Query:                 strings.TrimSpace(r.URL.Query().Get("q")),
+					Limit:                 limit,
+					Offset:                offset,
 				})
 				if err != nil {
 					http.Error(w, "No se pudo listar documentos de facturacion", http.StatusInternalServerError)
@@ -502,6 +580,11 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			}
 
 			if action == "reintentos" {
+				tipoDocumento := strings.TrimSpace(r.URL.Query().Get("tipo_documento"))
+				canReadNomina, proceed := facturacionNominaReadScope(w, r, dbEmp, dbSuper, tipoDocumento)
+				if !proceed {
+					return
+				}
 				limit, err := parseIntQueryOptional(r, "limit")
 				if err != nil {
 					http.Error(w, "limit invalido", http.StatusBadRequest)
@@ -513,14 +596,19 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					return
 				}
 
+				excludedTypes := make([]string, 0, 2)
+				if tipoDocumento == "" && !canReadNomina {
+					excludedTypes = append(excludedTypes, "nomina_electronica", "nota_ajuste_nomina_electronica")
+				}
 				items, err := dbpkg.ListFacturacionElectronicaRetriesByEmpresaContext(r.Context(), dbEmp, empresaID, dbpkg.FacturacionElectronicaRetryFilter{
-					TipoDocumento:   strings.TrimSpace(r.URL.Query().Get("tipo_documento")),
-					EstadoEnvio:     strings.TrimSpace(r.URL.Query().Get("estado_envio")),
-					DocumentoQuery:  strings.TrimSpace(comprasFirstNonBlank(r.URL.Query().Get("q"), r.URL.Query().Get("documento"))),
-					SoloVencidos:    parseTruthy(comprasFirstNonBlank(r.URL.Query().Get("solo_vencidos"), r.URL.Query().Get("vencidos"))),
-					IncludeInactive: parseTruthy(r.URL.Query().Get("include_inactive")) || parseTruthy(r.URL.Query().Get("incluir_inactivas")),
-					Limit:           limit,
-					Offset:          offset,
+					TipoDocumento:         tipoDocumento,
+					ExcluirTiposDocumento: excludedTypes,
+					EstadoEnvio:           strings.TrimSpace(r.URL.Query().Get("estado_envio")),
+					DocumentoQuery:        strings.TrimSpace(comprasFirstNonBlank(r.URL.Query().Get("q"), r.URL.Query().Get("documento"))),
+					SoloVencidos:          parseTruthy(comprasFirstNonBlank(r.URL.Query().Get("solo_vencidos"), r.URL.Query().Get("vencidos"))),
+					IncludeInactive:       parseTruthy(r.URL.Query().Get("include_inactive")) || parseTruthy(r.URL.Query().Get("incluir_inactivas")),
+					Limit:                 limit,
+					Offset:                offset,
 				})
 				if err != nil {
 					http.Error(w, "No se pudo listar cola de reintentos FE", http.StatusInternalServerError)
@@ -642,6 +730,10 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				handleEmitirDocumentoSoporte(w, r, dbEmp, dbSuper)
 				return
 			}
+			if action == "emitir_nomina_electronica" {
+				handleEmitirNominaElectronica(w, r, dbEmp, dbSuper)
+				return
+			}
 			if action == "configuracion_documentos_dian" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
@@ -669,8 +761,12 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				}
 				payload.EmpresaID = empresaID
 				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-				if normalizeFacturacionDocumentoElectronicoTipo(payload.TipoDocumento) == "documento_soporte" {
-					existing, existingErr := dbpkg.GetEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, empresaID, "documento_soporte")
+				normalizedDocumentType := normalizeFacturacionDocumentoElectronicoTipo(payload.TipoDocumento)
+				if facturacionDocumentoEsFamiliaNomina(normalizedDocumentType) && !requireEmpresaAdditionalModulePermission(w, r, dbEmp, dbSuper, permModuleNominaSueldos, permActionApprove, "linkNominaSueldos") {
+					return
+				}
+				if normalizedDocumentType == "documento_soporte" || normalizedDocumentType == "nomina_electronica" {
+					existing, existingErr := dbpkg.GetEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, empresaID, normalizedDocumentType)
 					if existingErr != nil && !errors.Is(existingErr, sql.ErrNoRows) {
 						http.Error(w, "No se pudo comprobar el consecutivo DIAN vigente", http.StatusInternalServerError)
 						return
@@ -680,6 +776,13 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					}
 					switch strings.ToLower(strings.TrimSpace(payload.Estado)) {
 					case "habilitacion", "activo":
+						if normalizedDocumentType == "nomina_electronica" {
+							if err := dbpkg.ValidateEmpresaNominaElectronicaConfigForEmission(payload); err != nil {
+								http.Error(w, err.Error(), http.StatusConflict)
+								return
+							}
+							break
+						}
 						if err := dbpkg.ValidateEmpresaDocumentoSoporteConfigForEmission(payload, time.Now()); err != nil {
 							http.Error(w, err.Error(), http.StatusConflict)
 							return
@@ -710,7 +813,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "limit invalido", http.StatusBadRequest)
 					return
 				}
-				processed, err := processFacturacionRetryQueueContext(r.Context(), dbEmp, dbSuper, empresaID, limit, strings.TrimSpace(adminEmailFromRequest(r)))
+				processed, err := processFacturacionRetryQueueContextWithScope(r.Context(), dbEmp, dbSuper, empresaID, limit, strings.TrimSpace(adminEmailFromRequest(r)), false)
 				if err != nil {
 					http.Error(w, "No se pudo procesar cola de reintentos FE", http.StatusInternalServerError)
 					return
@@ -875,6 +978,16 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				if strings.TrimSpace(payload.TipoDocumento) == "" {
 					payload.TipoDocumento = strings.TrimSpace(r.URL.Query().Get("tipo_documento"))
 				}
+				if facturacionDocumentoEsFamiliaNomina(payload.TipoDocumento) {
+					if !requireEmpresaAdditionalModulePermission(w, r, dbEmp, dbSuper, permModuleNominaSueldos, permActionApprove, "linkNominaSueldos") {
+						return
+					}
+					writeJSON(w, http.StatusConflict, map[string]interface{}{
+						"ok": false, "bloqueado": true, "codigo": "distribucion_nomina_dedicada_requerida",
+						"error": "la nómina electrónica no puede enviarse con la representación gráfica de una factura; use el flujo dedicado de nómina",
+					})
+					return
+				}
 				doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
@@ -941,6 +1054,18 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					}
 					http.Error(w, "No se pudo consultar el documento", http.StatusInternalServerError)
 					return
+				}
+				if facturacionDocumentoEsFamiliaNomina(doc.TipoDocumento) {
+					if !requireEmpresaAdditionalModulePermission(w, r, dbEmp, dbSuper, permModuleNominaSueldos, permActionApprove, "linkNominaSueldos") {
+						return
+					}
+					if err := validateNominaElectronicaManualRetryConfirmation(doc.TipoDocumento, payload.MensajeConfirmacionDIAN); err != nil {
+						writeJSON(w, http.StatusConflict, map[string]interface{}{
+							"ok": false, "bloqueado": true, "codigo": "confirmacion_reenvio_nomina_requerida",
+							"error": err.Error(), "mensaje_confirmacion_requerido": nominaElectronicaReenvioConfirmacion,
+						})
+						return
+					}
 				}
 				merged := facturacionBuildOperacionPayloadFromDocumento(*doc)
 				if strings.TrimSpace(payload.ClienteNombre) != "" {
@@ -2332,7 +2457,7 @@ func facturacionDocumentoElectronicoDIANUBLVentaSoportado(tipo string) bool {
 // Documento soporte uses Invoice UBL 2.1 but a distinct Annex 1.1 profile.
 func facturacionDocumentoElectronicoDIANTransporteSoportado(tipo string) bool {
 	switch normalizeFacturacionDocumentoElectronicoTipo(tipo) {
-	case "factura_electronica", "nota_credito", "nota_debito", "documento_soporte":
+	case "factura_electronica", "nota_credito", "nota_debito", "documento_soporte", "nomina_electronica":
 		return true
 	default:
 		return false
@@ -2351,6 +2476,10 @@ func facturacionDocumentoElectronicoDIANComercialSoportado(tipo string) bool {
 	default:
 		return false
 	}
+}
+
+func facturacionDocumentoElectronicoDIANFinalizacionLocalSoportada(tipo string) bool {
+	return facturacionDocumentoElectronicoDIANComercialSoportado(tipo) || normalizeFacturacionDocumentoElectronicoTipo(tipo) == "nomina_electronica"
 }
 
 func facturacionMarcarDisponibilidadFuenteFiscal(items []dbpkg.EmpresaDocumentoFacturacionListado, fuentes []dbpkg.EmpresaFacturacionFuenteFiscalRef) {
@@ -2401,7 +2530,7 @@ func facturacionValidarConfiguracionDIANDocumento(tipo, estado string) error {
 	if facturacionDocumentoElectronicoDIANUBLVentaSoportado(normalized) {
 		return fmt.Errorf("la configuracion de factura y notas de venta usa su configuracion DIAN existente")
 	}
-	if normalized == "documento_soporte" {
+	if normalized == "documento_soporte" || normalized == "nomina_electronica" {
 		return nil
 	}
 	switch strings.ToLower(strings.TrimSpace(estado)) {
@@ -2768,11 +2897,14 @@ func dispatchFacturacionDIANOficial(dbEmp *sql.DB, payload facturacionOperacionP
 		return facturacionProveedorDispatchResult{Success: false, Error: "conexion o empresa invalida para DIAN oficial"}
 	}
 	completarClientePayloadFacturacion(dbEmp, doc.EmpresaID, &payload, doc)
+	documentoTipo := normalizeFacturacionDocumentoElectronicoTipo(facturacionFirstNonBlank(doc.TipoDocumento, payload.TipoDocumento))
+	if documentoTipo == "nomina_electronica" {
+		return dispatchNominaDIANOficial(dbEmp, payload, doc, apiBaseURL)
+	}
 	dianCfg, err := getEmpresaDIANConfig(dbEmp, doc.EmpresaID)
 	if err != nil || len(dianCfg) == 0 {
 		return facturacionProveedorDispatchResult{Success: false, Error: "configuracion DIAN Colombia no disponible"}
 	}
-	documentoTipo := normalizeFacturacionDocumentoElectronicoTipo(facturacionFirstNonBlank(doc.TipoDocumento, payload.TipoDocumento))
 	if documentoTipo == "" {
 		documentoTipo = "factura_electronica"
 	}
@@ -3001,6 +3133,7 @@ func dispatchFacturacionDIANAcusePendiente(dbEmp *sql.DB, doc dbpkg.EmpresaDocum
 		return facturacionProveedorDispatchResult{Error: "configuracion DIAN no disponible para consultar acuse"}
 	}
 	var soporteContable *dbpkg.EmpresaDocumentoSoporteElectronico
+	var nominaContable *dbpkg.EmpresaNominaElectronica
 	if normalizeFacturacionDocumentoElectronicoTipo(doc.TipoDocumento) == "documento_soporte" {
 		var soporteConfig *dbpkg.EmpresaDocumentoSoporteConfiguracionSnapshot
 		soporteContable, soporteConfig, err = loadDocumentoSoporteParaDispatch(context.Background(), dbEmp, doc)
@@ -3008,6 +3141,14 @@ func dispatchFacturacionDIANAcusePendiente(dbEmp *sql.DB, doc dbpkg.EmpresaDocum
 			return facturacionProveedorDispatchResult{Error: "trazabilidad de documento soporte no disponible: " + err.Error()}
 		}
 		dianCfg = documentoSoporteMergeDIANConfig(dianCfg, soporteConfig)
+	}
+	if normalizeFacturacionDocumentoElectronicoTipo(doc.TipoDocumento) == "nomina_electronica" {
+		var nominaConfig *dbpkg.EmpresaNominaDIANConfiguracionSnapshot
+		nominaContable, _, nominaConfig, err = loadNominaElectronicaParaDispatch(context.Background(), dbEmp, doc)
+		if err != nil {
+			return facturacionProveedorDispatchResult{Error: "trazabilidad de nómina electrónica no disponible: " + err.Error()}
+		}
+		dianCfg = nominaElectronicaMergeDIANConfig(dianCfg, nominaConfig)
 	}
 	endpoint := normalizeDIANSOAPEndpoint(dianConfiguredEndpoint(dianCfg, nil))
 	if endpoint == "" {
@@ -3037,13 +3178,21 @@ func dispatchFacturacionDIANAcusePendiente(dbEmp *sql.DB, doc dbpkg.EmpresaDocum
 			return facturacionProveedorDispatchResult{Error: "acuse DIAN recibido, pero no se pudo actualizar el documento soporte", ReferenciaExterna: trackID}
 		}
 	}
+	if nominaContable != nil {
+		nominaEstado := documentoSoporteEstadoDIANMirror(dianFirstNonBlank(estado, acuse))
+		if updateErr := dbpkg.UpdateEmpresaNominaDIANResultContext(context.Background(), dbEmp, doc.EmpresaID, nominaContable.ID, nominaEstado, facturacionCUFEOficialDesdeMap(response), safeJSON, true, false); updateErr != nil {
+			return facturacionProveedorDispatchResult{Error: "acuse DIAN recibido, pero no se pudo actualizar la nómina electrónica", ReferenciaExterna: trackID}
+		}
+	}
 	if estado == "aceptado" || acuse == "aceptado" {
 		if cufe := facturacionCUFEOficialDesdeMap(response); cufe != "" {
 			doc.CodigoValidacion = cufe
 		}
-		if pdf := buildFacturaElectronicaRepresentationPDF(doc, payload); len(pdf) > 0 {
-			if _, saveErr := saveFacturacionFiscalArtifact(context.Background(), dbEmp, doc, "representacion_pdf", ".pdf", "application/pdf", pdf); saveErr != nil && artifactWarning == "" {
-				artifactWarning = "No se pudo actualizar la representacion PDF: " + saveErr.Error()
+		if nominaContable == nil {
+			if pdf := buildFacturaElectronicaRepresentationPDF(doc, payload); len(pdf) > 0 {
+				if _, saveErr := saveFacturacionFiscalArtifact(context.Background(), dbEmp, doc, "representacion_pdf", ".pdf", "application/pdf", pdf); saveErr != nil && artifactWarning == "" {
+					artifactWarning = "No se pudo actualizar la representacion PDF: " + saveErr.Error()
+				}
 			}
 		}
 		return facturacionProveedorDispatchResult{Success: true, ReferenciaExterna: trackID, RespuestaJSON: safeJSON, ArtifactWarning: artifactWarning}
@@ -3076,7 +3225,7 @@ func dispatchFacturacionProveedor(dbEmp *sql.DB, cfg *dbpkg.FacturacionElectroni
 		paisCodigo = strings.ToUpper(strings.TrimSpace(cfg.PaisCodigo))
 	}
 
-	if paisCodigo == "CO" && !facturacionDocumentoElectronicoDIANComercialSoportado(doc.TipoDocumento) {
+	if paisCodigo == "CO" && !facturacionDocumentoElectronicoDIANComercialSoportado(doc.TipoDocumento) && normalizeFacturacionDocumentoElectronicoTipo(doc.TipoDocumento) != "nomina_electronica" {
 		return facturacionProveedorDispatchResult{
 			FinalFailure: true,
 			Error:        facturacionDocumentoElectronicoBloqueoMotivo(doc.TipoDocumento),
@@ -4002,7 +4151,7 @@ func facturacionIntegracionAceptada(resultado facturacionIntegracionResultado) b
 // idempotente: una factura ya emitida o una nota credito ya finalizada no cambia
 // de estado ni pierde su ultimo evento.
 func facturacionDocumentoAceptadoDIAN(doc dbpkg.EmpresaDocumentoFacturacion, respuestaProveedor string) (dbpkg.EmpresaDocumentoFacturacion, bool) {
-	if !facturacionDocumentoElectronicoDIANComercialSoportado(doc.TipoDocumento) {
+	if !facturacionDocumentoElectronicoDIANFinalizacionLocalSoportada(doc.TipoDocumento) {
 		return doc, false
 	}
 
@@ -4069,6 +4218,7 @@ func facturacionCUFEOficialDesdeMap(respuesta map[string]interface{}) string {
 		genericStringValue(respuesta["cufe"]),
 		genericStringValue(respuesta["cude"]),
 		genericStringValue(respuesta["cuds"]),
+		genericStringValue(respuesta["cune"]),
 		genericStringValue(respuesta["codigo_validacion"]),
 		genericStringValue(respuesta["xml_document_key"]),
 	}
@@ -4077,6 +4227,7 @@ func facturacionCUFEOficialDesdeMap(respuesta map[string]interface{}) string {
 			genericStringValue(respuestaDIAN["cufe"]),
 			genericStringValue(respuestaDIAN["cude"]),
 			genericStringValue(respuestaDIAN["cuds"]),
+			genericStringValue(respuestaDIAN["cune"]),
 			genericStringValue(respuestaDIAN["xml_document_key"]),
 			genericStringValue(respuestaDIAN["document_key"]),
 		)
@@ -4242,6 +4393,21 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 }
 
 func processFacturacionRetryQueueContext(ctx context.Context, dbEmp, dbSuper *sql.DB, empresaID int64, limit int, usuario string) (map[string]interface{}, error) {
+	return processFacturacionRetryQueueContextWithScope(ctx, dbEmp, dbSuper, empresaID, limit, usuario, true)
+}
+
+func facturacionRetryQueueDocumentAllowed(tipoDocumento string, includeNomina bool) bool {
+	return includeNomina || !facturacionDocumentoEsFamiliaNomina(tipoDocumento)
+}
+
+func facturacionRetryQueueExcludedTypes(includeNomina bool) []string {
+	if includeNomina {
+		return nil
+	}
+	return []string{"nomina_electronica", "nota_ajuste_nomina_electronica"}
+}
+
+func processFacturacionRetryQueueContextWithScope(ctx context.Context, dbEmp, dbSuper *sql.DB, empresaID int64, limit int, usuario string, includeNomina bool) (map[string]interface{}, error) {
 	if dbEmp == nil {
 		return nil, fmt.Errorf("base de datos de empresa no disponible")
 	}
@@ -4287,10 +4453,11 @@ func processFacturacionRetryQueueContext(ctx context.Context, dbEmp, dbSuper *sq
 	}()
 
 	items, err := dbpkg.ListFacturacionElectronicaRetriesByEmpresaContext(ctx, dbEmp, empresaID, dbpkg.FacturacionElectronicaRetryFilter{
-		SoloVencidos:    true,
-		IncludeInactive: false,
-		Limit:           limit,
-		Offset:          0,
+		ExcluirTiposDocumento: facturacionRetryQueueExcludedTypes(includeNomina),
+		SoloVencidos:          true,
+		IncludeInactive:       false,
+		Limit:                 limit,
+		Offset:                0,
 	})
 	if err != nil {
 		return nil, err
@@ -4312,6 +4479,9 @@ func processFacturacionRetryQueueContext(ctx context.Context, dbEmp, dbSuper *sq
 			"tipo_documento":   retryItem.TipoDocumento,
 			"documento_codigo": retryItem.DocumentoCodigo,
 			"estado_anterior":  retryItem.EstadoEnvio,
+		}
+		if !facturacionRetryQueueDocumentAllowed(retryItem.TipoDocumento, includeNomina) {
+			continue
 		}
 
 		doc, docErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, empresaID, retryItem.TipoDocumento, retryItem.DocumentoCodigo)

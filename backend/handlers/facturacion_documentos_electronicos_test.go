@@ -157,8 +157,8 @@ func TestConfiguracionDIANPorDocumentoHabilitaSoloFamiliasConAdaptador(t *testin
 	if err := facturacionValidarConfiguracionDIANDocumento("documento_soporte", "activo"); err != nil {
 		t.Fatalf("documento soporte debe permitir activacion con su adaptador propio: %v", err)
 	}
-	if err := facturacionValidarConfiguracionDIANDocumento("nomina_electronica", "activo"); err == nil {
-		t.Fatal("nomina debe seguir bloqueada sin adaptador propio")
+	if err := facturacionValidarConfiguracionDIANDocumento("nomina_electronica", "activo"); err != nil {
+		t.Fatalf("nomina debe permitir activacion con su adaptador NominaIndividual propio: %v", err)
 	}
 	if err := facturacionValidarConfiguracionDIANDocumento("factura_electronica", "configurando"); err == nil {
 		t.Fatal("factura no debe duplicar su configuracion DIAN existente")
@@ -169,7 +169,7 @@ func TestFacturacionFiltrarDocumentosDianOperativosSaneaConfiguracionLegacy(t *t
 	got := facturacionFiltrarDocumentosDianOperativos([]string{
 		"factura_electronica", "documento_soporte", "nota_credito", "nomina_electronica", "nota_debito", "factura_electronica", "eventos_radian_recepcion",
 	})
-	want := []string{"factura_electronica", "documento_soporte"}
+	want := []string{"factura_electronica", "documento_soporte", "nomina_electronica"}
 	if len(got) != len(want) {
 		t.Fatalf("documentos operativos=%v, want %v", got, want)
 	}
@@ -279,43 +279,6 @@ func documentoSoportePreflightFixture() (*dbpkg.EmpresaDocumentoSoporteElectroni
 	return documento, configuracion, empresa, principal
 }
 
-func TestNominaElectronicaPreflightFailsClosed(t *testing.T) {
-	nomina := &dbpkg.EmpresaNominaElectronica{
-		ID:          8,
-		EmpresaID:   12,
-		Documento:   "123456",
-		Nombre:      "Empleado de prueba",
-		Periodo:     "2026-08",
-		FechaPago:   "2026-08-23",
-		EmpleadoID:  1,
-		Devengados:  1000,
-		Deducciones: 100,
-		Total:       900,
-		SalarioBase: 1000,
-	}
-	configuracion := &dbpkg.EmpresaDIANDocumentoConfiguracion{
-		Estado:       "configurando",
-		TipoAmbiente: "habilitacion",
-		Prefijo:      "NE",
-		RangoDesde:   1,
-		RangoHasta:   10,
-		TestSetID:    "test-set",
-	}
-	resultado := buildNominaElectronicaDIANPreflight(nomina, configuracion)
-	if resultado.PuedeEmitir || resultado.Estado != "bloqueado_adaptador_dian" {
-		t.Fatalf("la prevalidacion debe cerrar la emisión hasta tener adaptador propio: %+v", resultado)
-	}
-	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "NominaIndividual") {
-		t.Fatalf("faltó el bloqueo explícito del adaptador de nómina: %+v", resultado.Bloqueos)
-	}
-
-	nomina.Total = 899
-	resultado = buildNominaElectronicaDIANPreflight(nomina, configuracion)
-	if !strings.Contains(strings.Join(resultado.Bloqueos, " "), "no cuadran") {
-		t.Fatalf("la prevalidacion debe detectar totales inconsistentes: %+v", resultado.Bloqueos)
-	}
-}
-
 func TestResolveFacturacionTransitionFailsClosedForDocumentosSinAdaptador(t *testing.T) {
 	cases := []struct {
 		name          string
@@ -337,7 +300,7 @@ func TestResolveFacturacionTransitionFailsClosedForDocumentosSinAdaptador(t *tes
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := resolveFacturacionTransitionForDocument(tc.action, "borrador", tc.tipoDocumento)
 			if tc.bloqueado {
-				if err == nil || !strings.Contains(err.Error(), "no dispone aun de un adaptador DIAN") {
+				if err == nil || (tc.tipoDocumento == "nomina_electronica" && !strings.Contains(err.Error(), "flujo dedicado action=emitir_nomina_electronica")) || (tc.tipoDocumento != "nomina_electronica" && !strings.Contains(err.Error(), "no dispone aun de un adaptador DIAN")) {
 					t.Fatalf("se esperaba bloqueo DIAN para %s, transition=%#v err=%v", tc.tipoDocumento, got, err)
 				}
 				return

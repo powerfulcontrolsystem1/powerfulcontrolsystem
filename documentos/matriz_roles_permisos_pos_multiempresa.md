@@ -1,3 +1,21 @@
+2026-08-26: Frontera compuesta para nomina electronica DIAN.
+- La ruta fiscal conserva `WithEmpresaFacturacionPermissions`; consultar datos
+  o artefactos de `nomina_electronica` exige ademas licencia/pagina y permiso
+  `nomina_sueldos:R`. Sin este segundo dominio, los listados generales excluyen
+  nomina y las consultas explicitas responden `403`.
+- `action=emitir_nomina_electronica`, configuracion de esa familia y reenvio
+  individual exigen `facturacion_electronica:A` y `nomina_sueldos:A`, ademas de
+  `linkNominaSueldos`. La frase de confirmacion no sustituye permisos.
+- El procesamiento manual general de cola omite nomina incluso con permiso
+  fiscal. El worker solo continua documentos ya autorizados/sellados; un
+  reenvio manual requiere accion individual y frase fuerte.
+- Un usuario de Recursos Humanos con Nomina pero sin Facturacion no puede
+  emitir; un cajero con Facturacion pero sin Nomina no puede ver totales, CUNE,
+  configuracion, cola ni artefactos de nomina.
+- El dashboard de Contabilidad conserva sus demas datos para el rol autorizado,
+  pero omite en backend el conteo y los documentos recientes de nomina si falta
+  `nomina_sueldos:R`; el KPI y la pestaña se ocultan como reflejo visual.
+
 2026-08-25: Nota de cierre seguro DIAN Colombia.
 - `/api/empresa/facturacion_electronica` conserva
   `WithEmpresaFacturacionPermissions`: la factura desde venta, el reenvio y el
@@ -2040,7 +2058,7 @@ Regla de lectura comun (R):
 | `/api/empresa/clientes` | `WithEmpresaClientesPermissions` | SA, AE, SS, CJ | - | modulo clientes sin `D` por politica actual |
 | `/api/empresa/proveedores` | `WithEmpresaComprasPermissions` | SA, AE, SS, CO | - | `action=emitir_orden|recepcionar_compra|contabilizar_compra|aprobar` exige `A` |
 | `/api/empresa/soportes_compras_ia` | `WithEmpresaSoportesComprasIAPermissions` | SA, AE, SS, CO, CT | - | captura foto/PDF/XML de compras y gastos; `dashboard|soportes|eventos|retencion_preview|cuarentena_preview` usa `R`, `extraer_ia|editar_revision|restaurar` usa `U`, `aprobar|rechazar|contabilizar` exige `A` y `eliminar|purgar` exige `D`; purgar requiere retencion, motivo y codigo exacto y puede reanudar `purga_pendiente` |
-| `/api/empresa/facturacion_electronica` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | `action=facturar_desde_venta|reenviar_dian|procesar_reintentos|reconciliar_estados|reconciliar_aceptados_local` exige `A`; el ultimo modo omite colas sin acuse antes de cualquier despacho; la emision generica permanece bloqueada aunque el rol tenga `A`; `action=anular_factura_nota_credito` exige `D` y solo opera sobre una factura aceptada del mismo `empresa_id`, derivando fuente fiscal de anulacion total; nota credito generica/parcial y nota debito permanecen en HTTP 422 |
+| `/api/empresa/facturacion_electronica` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | `action=facturar_desde_venta|reenviar_dian|procesar_reintentos|reconciliar_estados|reconciliar_aceptados_local|emitir_nomina_electronica` exige `A`; reconciliacion local omite colas sin acuse; la cola manual omite nomina. Emision/configuracion/reenvio de nomina exige ademas `nomina_sueldos:A` + `linkNominaSueldos` y frase fuerte; lectura/descarga exige `nomina_sueldos:R`. `action=anular_factura_nota_credito` exige `D`; nota credito libre/parcial, nota debito y ajustes siguen bloqueados |
 | `/api/empresa/facturacion_electronica/pais_detectado` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | consulta/actualizacion bajo politica facturacion |
 | `/api/empresa/facturacion_electronica/dian` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | las consultas diagnosticas conocidas usan `R`; configuracion, credenciales, rango, firma, imports, set de pruebas y acciones fiscales con efecto exigen `A`; vencimientos con `notificar=0` usan `R` y con notificacion usan `A`; firma/envio directos siguen bloqueados para uso comercial y los GET desconocidos fallan antes del CRUD; opera por `empresa_id` con secretos cifrados por empresa |
 | `/api/empresa/finanzas/movimientos` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | `action=cerrar|reabrir|aprobar|procesar_asientos|procesar` exige `A` |

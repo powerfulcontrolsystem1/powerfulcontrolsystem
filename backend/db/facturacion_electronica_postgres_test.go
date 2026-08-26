@@ -97,3 +97,30 @@ func TestFacturacionRetryDueQueryDoesNotRepeatExhaustedDocuments(t *testing.T) {
 		}
 	}
 }
+
+func TestFacturacionListingsCanExcludeSensitiveDocumentFamiliesBeforePagination(t *testing.T) {
+	t.Parallel()
+	for _, file := range []string{"documentos_transaccionales.go", "facturacion_electronica.go"} {
+		raw, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		source := string(raw)
+		for _, required := range []string{"ExcluirTiposDocumento []string", "tipo_documento <> ?"} {
+			if !strings.Contains(source, required) {
+				t.Fatalf("%s does not enforce sensitive-family exclusion at SQL level: missing %q", file, required)
+			}
+		}
+	}
+}
+
+func TestFacturacionPayrollEntityNeverJoinsCustomerIdentity(t *testing.T) {
+	t.Parallel()
+	raw, err := os.ReadFile("documentos_transaccionales.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "COALESCE(d.tipo_documento, '') NOT IN ('nomina_electronica', 'nota_ajuste_nomina_electronica')") {
+		t.Fatal("generic fiscal listing can still interpret a payroll employee id as a customer id")
+	}
+}

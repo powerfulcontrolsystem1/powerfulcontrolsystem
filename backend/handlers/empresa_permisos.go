@@ -1607,6 +1607,59 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 	}
 }
 
+func empresaPermissionSnapshotAllowsAdditionalModule(snapshot empresaPermissionSnapshot, module, action, pageKey string) (bool, string) {
+	module = strings.ToLower(strings.TrimSpace(module))
+	action = normalizePermissionAction(action, permActionRead)
+	pageKey = strings.TrimSpace(pageKey)
+	if !snapshot.CanAccess {
+		return false, "empresa fuera del alcance del usuario autenticado"
+	}
+	if module == "" || !isModuloPermitidoByLicencia(module, snapshot.AllowedModules) {
+		return false, "módulo adicional no habilitado por la licencia activa"
+	}
+	if !snapshot.RoleModuleActions[permissionModuleActionKey(module, action)] {
+		return false, "rol sin permiso para la acción del módulo adicional"
+	}
+	if pageKey != "" && !snapshot.AllowedPages[pageKey] {
+		return false, "rol sin acceso a la funcionalidad del módulo adicional"
+	}
+	return true, ""
+}
+
+func inspectEmpresaAdditionalModulePermission(r *http.Request, dbEmp, dbSuper *sql.DB, module, action, pageKey string) (bool, int, string, error) {
+	tenant, ok := TenantContextFromRequest(r)
+	if !ok || tenant.EmpresaID <= 0 || strings.TrimSpace(tenant.AdminEmail) == "" {
+		return false, http.StatusUnauthorized, "unauthenticated", nil
+	}
+	snapshot, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, strings.ToLower(strings.TrimSpace(tenant.AdminEmail)), tenant.EmpresaID)
+	if err != nil {
+		return false, http.StatusInternalServerError, "No se pudo validar el permiso adicional requerido", err
+	}
+	allowed, reason := empresaPermissionSnapshotAllowsAdditionalModule(snapshot, module, action, pageKey)
+	if !allowed {
+		return false, http.StatusForbidden, "forbidden: " + reason, nil
+	}
+	return true, http.StatusOK, "", nil
+}
+
+// requireEmpresaAdditionalModulePermission is used by operations that join two
+// security domains. Electronic payroll emission requires both the fiscal
+// approval already enforced by the outer route and payroll approval here.
+func requireEmpresaAdditionalModulePermission(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, module, action, pageKey string) bool {
+	allowed, status, message, err := inspectEmpresaAdditionalModulePermission(r, dbEmp, dbSuper, module, action, pageKey)
+	if err != nil {
+		tenant, _ := TenantContextFromRequest(r)
+		log.Printf("[authz] additional module=%s empresa_id=%d error: %v", module, tenant.EmpresaID, err)
+	}
+	if !allowed {
+		tenant, _ := TenantContextFromRequest(r)
+		log.Printf("[authz] additional module denied module=%s action=%s empresa_id=%d status=%d", module, action, tenant.EmpresaID, status)
+		http.Error(w, message, status)
+		return false
+	}
+	return true
+}
+
 func extractEmpresaIDForPermissions(r *http.Request) int64 {
 	if id, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && id > 0 {
 		return id
@@ -2234,7 +2287,7 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 		return permActionRead
 	}
 	if action == "procesar_reintentos" || action == "reconciliar_estados" || action == "reconciliar_aceptados_local" ||
-		action == "facturar_desde_venta" || action == "emitir_documento_soporte" || action == "reenviar_dian" || action == "reintentar_dian" || action == "enviar_dian" ||
+		action == "facturar_desde_venta" || action == "emitir_documento_soporte" || action == "emitir_nomina_electronica" || action == "reenviar_dian" || action == "reintentar_dian" || action == "enviar_dian" ||
 		action == "firmar_xml_real" || action == "firmar_xml_xades_base" || action == "validar_documento_dian" || action == "preflight_documento" || action == "validar_previo_envio" || action == "enviar_documento_real" ||
 		action == "reconexion_dian" || action == "consultar_acuse_real" || action == "consultar_rango_numeracion" || action == "get_numbering_range" || action == "consultar_clave_tecnica" ||
 		action == "validar_credenciales" || action == "validar_secretos" || action == "pruebas_dian" || action == "pruebas_habilitacion" || action == "test_habilitacion" ||
@@ -3918,7 +3971,7 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkTarifasMotel"
 	case path == "/api/empresa/hotel_tarjetas_acceso":
 		return "linkHotelTarjetasAcceso"
-	case path == "/api/empresa/nomina_sueldos":
+	case path == "/api/empresa/nomina" || path == "/api/empresa/nomina_sueldos":
 		return "linkNominaSueldos"
 	case path == "/api/empresa/horarios_trabajadores":
 		return "linkHorariosTrabajadores"

@@ -98,6 +98,18 @@ trazabilidad en `documentos/historial_de_cambios`.
 - El submenu de facturacion electronica permanece, pero las paginas internas se
   muestran segun pais detectado, licencia y permisos.
 - No guardar certificados, tokens o claves en documentacion ni logs.
+- Cada familia DIAN usa fuente, numeracion, XML, identificador, transporte y
+  representacion propios. Factura, documento soporte y nomina no pueden
+  reutilizar adaptadores entre si aunque compartan firma o cliente SOAP.
+- La nomina electronica ordinaria se consolida en un solo `NominaIndividual`
+  por empresa, trabajador y mes calendario cerrado desde liquidaciones/pagos
+  reales. No se inventan pagos, intervalos ni perfiles fiscales.
+- La emision/retransmision de nomina exige simultaneamente autorizacion de
+  Facturacion y Nomina. Sus datos y artefactos tampoco se exponen desde listados
+  fiscales genericos a usuarios sin lectura de Nomina.
+- `SendNominaSync` es exclusivo de produccion. Habilitacion de nomina requiere
+  su `SendTestSetAsync`/`TestSetId` verificado; el preflight local no sustituye
+  la habilitacion oficial.
 - Para Colombia, `GetNumberingRange` es parte obligatoria del flujo de
   produccion porque actualiza la clave tecnica usada para CUFE. La llave tecnica
   se trata como secreto y solo se guarda en base de datos.

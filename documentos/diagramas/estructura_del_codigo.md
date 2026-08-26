@@ -1,3 +1,37 @@
+## Actualizacion 2026-08-26 - Adaptador mensual de nomina electronica DIAN
+
+- `backend/db/dian_nomina_electronica.go` construye/valida la fuente mensual,
+  administra perfiles fiscales y reserva numero/fuente por
+  empresa-trabajador-mes.
+- `backend/db/dian_nomina_electronica_migration.go` es la autoridad versionada
+  del esquema; handlers y runtime solo verifican disponibilidad.
+- `backend/handlers/dian_nomina_electronica.go` genera
+  `NominaIndividual`, CUNE, XAdES y el despacho `SendNominaSync`; la ruta comun
+  solo lo invoca mediante `action=emitir_nomina_electronica`.
+- `backend/handlers/nomina_sueldos.go` expone perfil, candidatos y preflight sin
+  efectos. `web/administrar_empresa/nomina_sueldos.html` es la superficie
+  operativa dedicada.
+- `backend/handlers/empresa_permisos.go` y
+  `backend/handlers/facturacion_electronica.go` cruzan Facturacion + Nomina para
+  impedir exposicion o retransmision desde superficies genericas.
+
+```text
+liquidaciones + pagos + perfil + configuracion
+                  |
+                  v
+        fuente mensual validada (GET preflight)
+                  |
+        confirmacion + doble permiso
+                  |
+                  v
+ reserva/sellado -> NominaIndividual -> CUNE/XAdES/XSD -> SendNominaSync
+                  |                                      |
+                  +-> documento/artefactos privados <----+
+                                      |
+                                      v
+                              cola durable / worker
+```
+
 ## Actualizacion 2026-06-18 - DIAN produccion PCS validada
 
 - `backend/handlers/facturacion_electronica.go`

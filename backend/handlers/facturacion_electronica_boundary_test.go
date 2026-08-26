@@ -23,7 +23,8 @@ func TestFacturacionElectronicaMantieneFronteraDeEmpresaYAnulacionFiscal(t *test
 		"GetEmpresaDocumentoFacturacionByCodigoContext(r.Context(), dbEmp",
 		"UpsertEmpresaDocumentoFacturacionContext(r.Context(), dbEmp",
 		"UpdateEmpresaDocumentoFacturacionClienteContext(r.Context(), dbEmp",
-		"processFacturacionRetryQueueContext(r.Context(), dbEmp, dbSuper",
+		"processFacturacionRetryQueueContextWithScope(r.Context(), dbEmp, dbSuper",
+		"adminEmailFromRequest(r)), false)",
 		"pg_try_advisory_lock($1::bigint)",
 		"facturacionDocumentoAdvisoryLockKey(doc.EmpresaID, doc.TipoDocumento, doc.DocumentoCodigo)",
 		"el documento ya tiene una integracion fiscal en proceso",
@@ -36,6 +37,10 @@ func TestFacturacionElectronicaMantieneFronteraDeEmpresaYAnulacionFiscal(t *test
 		"XML fiscal firmado no disponible o con integridad invalida",
 		"representacion PDF fiscal no disponible o con integridad invalida",
 		"validateDIANDocumentPreflight(dianCfg, doc.EmpresaID, docPayload, xmlFirmado, \"envio_real\")",
+		"facturacionNominaReadScope(w, r, dbEmp, dbSuper",
+		"ExcluirTiposDocumento: excludedTypes",
+		"distribucion_nomina_dedicada_requerida",
+		"permModuleNominaSueldos, permActionApprove, \"linkNominaSueldos\"",
 	} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("missing fiscal tenant boundary %q", expected)

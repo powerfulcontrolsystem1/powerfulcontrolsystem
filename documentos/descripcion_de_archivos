@@ -1,4 +1,25 @@
 2026-08-26
+- `backend/db/dian_nomina_electronica.go`: fuente mensual canonica, perfil
+  fiscal DIAN, validaciones, reserva atomica/idempotente, snapshot y espejo de
+  resultado para `NominaIndividual` por empresa/trabajador/mes.
+- `backend/db/dian_nomina_electronica_migration.go`: migracion empresarial
+  `20260826-005-dian-nomina-electronica-v2` para importes exactos, perfiles,
+  origen/periodo/numeracion, fuente/configuracion selladas e identidad del
+  proveedor del software.
+- `backend/db/dian_nomina_electronica_test.go`: regresiones de fuente mensual,
+  configuracion, CUNE, idempotencia, migracion y PostgreSQL opcional.
+- `backend/handlers/dian_nomina_electronica.go`: generador
+  `NominaIndividual`, preflight, XAdES, `SendNominaSync`, artefactos, espejo y
+  emision con confirmacion/permiso compuesto.
+- `backend/handlers/dian_nomina_electronica_test.go`: contratos XML/CUNE/SOAP,
+  firma, preflight y validacion XSD oficial opcional.
+- `backend/handlers/facturacion_electronica.go` y
+  `backend/handlers/empresa_permisos.go`: privacidad de nomina en superficies
+  fiscales generales y reenvio manual con frase fuerte, sin afectar el worker.
+- `web/administrar_empresa/nomina_sueldos.html`: perfil fiscal, configuracion de
+  familia, candidatos mensuales, preflight y dialogo de emision.
+
+2026-08-26
 - `backend/db/dian_documento_soporte.go`: reserva atómica e idempotente de
   numeración por empresa/documento, snapshot de configuración sin secretos,
   validación de vigencia/rango y espejo seguro de estado/CUDS.
