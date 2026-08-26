@@ -47,7 +47,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaCobranzaSchema` | [backend/db/cobranza.go:151](../../backend/db/cobranza.go#L151) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCodigosDescuentoSchema` | [backend/db/codigos_descuento.go:97](../../backend/db/codigos_descuento.go#L97) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaComisionesServicioSchema` | [backend/db/comisiones_servicio.go:188](../../backend/db/comisiones_servicio.go#L188) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaComprasAvanzadasSchema` | [backend/db/compras_avanzadas.go:122](../../backend/db/compras_avanzadas.go#L122) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaComprasAvanzadasSchema` | [backend/db/compras_avanzadas.go:123](../../backend/db/compras_avanzadas.go#L123) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresasComprasSchema` | [backend/db/compras_y_proveedores.go:87](../../backend/db/compras_y_proveedores.go#L87) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaConfiguracionOperativaSchema` | [backend/db/configuracion_operativa.go:232](../../backend/db/configuracion_operativa.go#L232) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureConstructoraTipoEmpresaYLicencias` | [backend/db/constructora_bootstrap.go:70](../../backend/db/constructora_bootstrap.go#L70) | seed o provisionamiento idempotente | superadministrador o por confirmar |
@@ -121,8 +121,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaPortalContadorSchema` | [backend/db/portal_contador.go:109](../../backend/db/portal_contador.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPortalTercerosCertificadosSchema` | [backend/db/portal_terceros_certificados.go:98](../../backend/db/portal_terceros_certificados.go#L98) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaProduccionMRPSchema` | [backend/db/produccion_mrp.go:158](../../backend/db/produccion_mrp.go#L158) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaProductosSchema` | [backend/db/productos.go:502](../../backend/db/productos.go#L502) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaBodega1` | [backend/db/productos.go:1210](../../backend/db/productos.go#L1210) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureEmpresaProductosSchema` | [backend/db/productos.go:507](../../backend/db/productos.go#L507) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaBodega1` | [backend/db/productos.go:1215](../../backend/db/productos.go#L1215) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaPropiedadHorizontalSchema` | [backend/db/propiedad_horizontal.go:156](../../backend/db/propiedad_horizontal.go#L156) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPropinasSchema` | [backend/db/propinas.go:152](../../backend/db/propinas.go#L152) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaRappiSchema` | [backend/db/rappi.go:52](../../backend/db/rappi.go#L52) | DDL / indice / funcion | empresas o por confirmar |

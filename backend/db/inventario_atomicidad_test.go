@@ -17,18 +17,30 @@ func TestSalidasInventarioUsanDescuentoCondicional(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	source := string(body)
 	for _, operation := range []string{"TransferirProductoEntreBodegas", "RegistrarMovimientoInventario", "RegistrarCambioProducto"} {
-		start := strings.Index(string(body), "func "+operation)
+		start := strings.Index(source, "func "+operation)
 		if start < 0 {
 			t.Fatalf("%s missing", operation)
 		}
-		fragment := string(body)[start:]
+		fragment := source[start:]
 		if end := strings.Index(fragment, "\nfunc "); end >= 0 {
 			fragment = fragment[:end]
 		}
-		if !strings.Contains(fragment, "cantidad >= ?") || !strings.Contains(fragment, "RowsAffected") {
-			t.Fatalf("%s must use conditional stock decrement and verify the affected row", operation)
+		if !strings.Contains(fragment, "decrementarExistenciaTx") {
+			t.Fatalf("%s must use the canonical conditional stock decrement", operation)
 		}
+	}
+	start := strings.Index(source, "func decrementarExistenciaTx")
+	if start < 0 {
+		t.Fatal("decrementarExistenciaTx missing")
+	}
+	helper := source[start:]
+	if end := strings.Index(helper, "\nfunc "); end >= 0 {
+		helper = helper[:end]
+	}
+	if !strings.Contains(helper, "cantidad >= ?") || !strings.Contains(helper, "RowsAffected") {
+		t.Fatal("canonical stock decrement must be conditional and verify the affected row")
 	}
 }
 
@@ -46,17 +58,28 @@ func TestInventarioResumenCuentaCatalogosSinCargarListasCompletas(t *testing.T) 
 	if end := strings.Index(fragment, "\nfunc "); end >= 0 {
 		fragment = fragment[:end]
 	}
+	helperStart := strings.Index(source, "func getInventarioCatalogTotalsByEmpresa")
+	if helperStart < 0 {
+		t.Fatal("getInventarioCatalogTotalsByEmpresa missing")
+	}
+	helper := source[helperStart:]
+	if end := strings.Index(helper, "\nfunc "); end >= 0 {
+		helper = helper[:end]
+	}
+	if !strings.Contains(fragment, "getInventarioCatalogTotalsByEmpresa(dbConn, empresaID, &resumen)") {
+		t.Fatal("inventory summary must use the bounded catalog aggregate helper")
+	}
 	for _, table := range []string{"productos p", "bodegas b", "servicios s", "categorias_productos c"} {
-		if !strings.Contains(fragment, "FROM "+table+" WHERE") {
+		if !strings.Contains(helper, "FROM "+table+" WHERE") {
 			t.Errorf("inventory summary missing tenant-scoped count for %s", table)
 		}
 	}
 	for _, field := range []string{"ProductosTotal", "ProductosPorVencer", "BodegasTotal", "ServiciosTotal", "CategoriasTotal"} {
-		if !strings.Contains(fragment, "&resumen."+field) {
+		if !strings.Contains(helper, "&resumen."+field) {
 			t.Errorf("inventory summary does not scan %s", field)
 		}
 	}
-	if strings.Count(fragment, "empresa_id = ?") < 8 {
+	if strings.Count(fragment+helper, "empresa_id = ?") < 8 {
 		t.Fatalf("inventory summary must keep every catalog/stock aggregate tenant-scoped")
 	}
 }
@@ -112,7 +135,11 @@ func TestListadoProductosAcotaAgregadoDeStockPorEmpresa(t *testing.T) {
 			t.Errorf("scalable tenant product listing missing %q", required)
 		}
 	}
-	if !strings.Contains(source, "CREATE INDEX IF NOT EXISTS ix_productos_empresa_estado_id") {
+	migrationRaw, err := os.ReadFile("productos_inventario_migration.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(migrationRaw), "CREATE INDEX IF NOT EXISTS ix_productos_empresa_estado_id") {
 		t.Fatal("product listing requires tenant/state/id index")
 	}
 }

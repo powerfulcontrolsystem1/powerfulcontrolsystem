@@ -63,6 +63,23 @@ func TestEmpresaCatalogIncludesNextcloudSchemaMigration(t *testing.T) {
 	t.Fatal("nextcloud migration is missing from empresas catalog")
 }
 
+func TestEmpresaCatalogIncludesProductosInventarioMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260826-001-productos-inventario-v1" {
+			if migration.Body != empresaProductosInventarioSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("products and inventory migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("products and inventory migration is missing from empresas catalog")
+}
+
 func TestEmpresaCatalogIncludesNextcloudLegacyRepairMigration(t *testing.T) {
 	t.Parallel()
 	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
