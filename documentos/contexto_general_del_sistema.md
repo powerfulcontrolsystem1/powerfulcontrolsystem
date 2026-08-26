@@ -16,8 +16,9 @@ Estado: vigente. Ultima actualizacion: 2026-08-25.
 - Acciones fiscales con efectos requieren aprobacion; la anulacion conserva
   permiso de borrado. GET DIAN desconocidos fallan antes del CRUD interno y el
   correo productivo espera aceptacion oficial.
-- La reconciliacion completa estado y CUFE/CUDE locales de acuses ya aceptados
-  antes de cualquier despacho, sin retransmitir XML ni aumentar intentos.
+- La accion exclusiva `reconciliar_aceptados_local` completa estado y CUFE/CUDE
+  locales de acuses ya aceptados antes de cualquier despacho, omite el resto de
+  la cola y no retransmite XML ni aumenta intentos.
   Nomina, soporte, nota debito, equivalentes, contingencia y RADIAN siguen
   bloqueados hasta sus fuentes y adaptadores propios.
 - Evidencia real: `1PCS8` conserva acuse aceptado, CUFE oficial y un intento; la

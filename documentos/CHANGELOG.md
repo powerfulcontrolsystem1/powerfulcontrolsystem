@@ -1,3 +1,15 @@
+## [2026-08-26] Reconciliacion DIAN exclusiva de acuses aceptados
+
+- [Seguridad operativa] `action=reconciliar_aceptados_local` solo examina colas
+  `aceptado|reconciliado` y termina antes de cualquier consulta o despacho del
+  XML de documentos pendientes.
+- [Trazabilidad] La respuesta publica `solo_acuses_aceptados`,
+  `transmision_xml_habilitada=false`, reparaciones locales y documentos
+  omitidos. La accion exige permiso efectivo `A` y conserva el tenant canonico.
+- [Invariantes] La reparacion reutiliza el acuse persistido y no modifica
+  intentos, fecha del ultimo intento, fecha legal de emision ni respuesta del
+  proveedor; solo completa estado y CUFE/CUDE locales cuando corresponda.
+
 ## [2026-08-25] Cierre seguro integral de facturacion DIAN
 
 - [Origen] La factura comercial solo nace de una venta pagada con fuente fiscal

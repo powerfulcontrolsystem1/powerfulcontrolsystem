@@ -698,14 +698,15 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				return
 			}
 
-			if action == "reconciliar_estados" {
+			if action == "reconciliar_estados" || action == "reconciliar_aceptados_local" {
 				empresaID, err := parseInt64QueryOptional(r, "empresa_id")
 				if err != nil {
 					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
 					return
 				}
 				aplicar := parseTruthy(comprasFirstNonBlank(r.URL.Query().Get("aplicar"), r.URL.Query().Get("sync"), r.URL.Query().Get("apply")))
-				resumen, err := reconcileFacturacionEstados(dbEmp, empresaID, aplicar, strings.TrimSpace(adminEmailFromRequest(r)))
+				soloAcusesAceptados := action == "reconciliar_aceptados_local" || parseTruthy(r.URL.Query().Get("solo_acuses_aceptados"))
+				resumen, err := reconcileFacturacionEstados(dbEmp, empresaID, aplicar, soloAcusesAceptados, strings.TrimSpace(adminEmailFromRequest(r)))
 				if err != nil {
 					http.Error(w, "No se pudo reconciliar estados FE", http.StatusInternalServerError)
 					return
@@ -4317,7 +4318,7 @@ func RunFacturacionElectronicaRetriesScheduled(ctx context.Context, dbEmp, dbSup
 }
 
 func buildFacturacionReconciliacion(dbEmp *sql.DB, empresaID int64) (map[string]interface{}, error) {
-	return reconcileFacturacionEstados(dbEmp, empresaID, false, "")
+	return reconcileFacturacionEstados(dbEmp, empresaID, false, false, "")
 }
 
 func listFacturacionDocumentosForReconciliacion(dbEmp *sql.DB, empresaID int64) ([]dbpkg.EmpresaDocumentoFacturacionListado, error) {
@@ -4403,7 +4404,7 @@ func reconciliarFacturacionAceptacionLocal(dbEmp *sql.DB, doc dbpkg.EmpresaDocum
 	return resultado
 }
 
-func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar bool, usuario string) (map[string]interface{}, error) {
+func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar, soloAcusesAceptados bool, usuario string) (map[string]interface{}, error) {
 	if dbEmp == nil {
 		return nil, fmt.Errorf("base de datos de empresa no disponible")
 	}
@@ -4430,6 +4431,7 @@ func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar bool, u
 	contingencia := 0
 	erroresInternos := 0
 	reparacionesLocales := 0
+	omitidosNoAceptados := 0
 
 	for _, doc := range documentos {
 		tipo := strings.ToLower(strings.TrimSpace(doc.TipoDocumento))
@@ -4477,6 +4479,13 @@ func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar bool, u
 				reparacionesLocales++
 			}
 			erroresInternos += aceptada.ErroresInternos
+			continue
+		}
+		// El modo operativo de cierre local se limita a colas que ya contienen un
+		// acuse aceptado/reconciliado. Debe terminar antes de cualquier camino que
+		// consulte o despache nuevamente el XML de documentos pendientes.
+		if soloAcusesAceptados {
+			omitidosNoAceptados++
 			continue
 		}
 		// "enviado" ya tiene una transmisión registrada, pero todavía no un
@@ -4562,20 +4571,23 @@ func reconcileFacturacionEstados(dbEmp *sql.DB, empresaID int64, aplicar bool, u
 	}
 
 	return map[string]interface{}{
-		"ok":                        true,
-		"empresa_id":                empresaID,
-		"aplicar":                   aplicar,
-		"timestamp":                 facturacionNowLocal(),
-		"documentos_evaluados":      documentosEvaluados,
-		"documentos_conciliados":    conciliados,
-		"pendientes_reconciliacion": pendientes,
-		"documentos_no_aplica":      noAplica,
-		"procesados":                procesados,
-		"reparaciones_locales":      reparacionesLocales,
-		"enviados":                  enviados,
-		"fallidos":                  fallidos,
-		"contingencia":              contingencia,
-		"errores_internos":          erroresInternos,
-		"inconsistencias":           inconsistencias,
+		"ok":                         true,
+		"empresa_id":                 empresaID,
+		"aplicar":                    aplicar,
+		"solo_acuses_aceptados":      soloAcusesAceptados,
+		"transmision_xml_habilitada": aplicar && !soloAcusesAceptados,
+		"timestamp":                  facturacionNowLocal(),
+		"documentos_evaluados":       documentosEvaluados,
+		"documentos_conciliados":     conciliados,
+		"pendientes_reconciliacion":  pendientes,
+		"documentos_no_aplica":       noAplica,
+		"procesados":                 procesados,
+		"reparaciones_locales":       reparacionesLocales,
+		"omitidos_no_aceptados":      omitidosNoAceptados,
+		"enviados":                   enviados,
+		"fallidos":                   fallidos,
+		"contingencia":               contingencia,
+		"errores_internos":           erroresInternos,
+		"inconsistencias":            inconsistencias,
 	}, nil
 }

@@ -26,6 +26,7 @@ func TestDIANEffectfulActionsAlwaysRequireApprovalPermission(t *testing.T) {
 		{http.MethodPost, "/api/empresa/facturacion_electronica/dian", "consultar_rango_numeracion"},
 		{http.MethodPost, "/api/empresa/facturacion_electronica", "facturar_desde_venta"},
 		{http.MethodPut, "/api/empresa/facturacion_electronica", "reenviar_dian"},
+		{http.MethodPost, "/api/empresa/facturacion_electronica", "reconciliar_aceptados_local"},
 		{http.MethodPost, "/api/empresa/facturacion_electronica", "configuracion_documentos_dian"},
 	}
 	for _, tc := range tests {
