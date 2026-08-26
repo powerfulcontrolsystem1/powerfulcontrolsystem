@@ -460,6 +460,56 @@ func TestPurchaseAIFilePickerMatchesBackendAllowlist(t *testing.T) {
 	}
 }
 
+func TestPurchaseAISupportsDoNotExposeDemoSeeding(t *testing.T) {
+	pagePath := filepath.Join("..", "..", "web", "administrar_empresa", "soportes_compras_ia.html")
+	rawPage, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatalf("read %s: %v", pagePath, err)
+	}
+	page := string(rawPage)
+	if strings.Contains(page, `id="captureSeed"`) || strings.Contains(page, "Cargar demo") {
+		t.Error("production purchase-support UI must not expose demo-data creation")
+	}
+
+	jsPath := filepath.Join("..", "..", "web", "js", "soportes_compras_ia.js")
+	rawJS, err := os.ReadFile(jsPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", jsPath, err)
+	}
+	js := string(rawJS)
+	for _, forbidden := range []string{`seed_demo`, `seedDemo`, `captureSeed`} {
+		if strings.Contains(js, forbidden) {
+			t.Errorf("production purchase-support JavaScript must not retain %q", forbidden)
+		}
+	}
+
+	rawHandler, err := os.ReadFile("soportes_compras_ia.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := string(rawHandler)
+	if strings.Contains(handler, `case "seed_demo"`) || strings.Contains(handler, "seedSoporteComprasIADemo") {
+		t.Error("production purchase-support API must not expose demo-data creation")
+	}
+
+	rawPermissions, err := os.ReadFile("empresa_permisos.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	permissions := string(rawPermissions)
+	start := strings.Index(permissions, "func resolveSoportesComprasIAPermissionAction")
+	if start < 0 {
+		t.Fatal("purchase-support permission resolver is missing")
+	}
+	resolver := permissions[start:]
+	if end := strings.Index(resolver[1:], "\nfunc "); end >= 0 {
+		resolver = resolver[:end+1]
+	}
+	if strings.Contains(resolver, "seed_demo") {
+		t.Error("purchase-support permission resolver must not classify a removed demo action")
+	}
+}
+
 func TestInventoryProductionRoutesAreRegisteredOnce(t *testing.T) {
 	mainPath := filepath.Join("..", "main.go")
 	raw, err := os.ReadFile(mainPath)

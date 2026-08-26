@@ -1,3 +1,11 @@
+2026-08-26: Soportes de compras IA sin generacion demo en produccion.
+- La revision visual final de PSI-000 detecto que el encabezado aun exponia
+  `Cargar demo`, una accion que insertaba un soporte y una extraccion ficticios
+  dentro de la empresa activa.
+- Se retiraron el boton, el helper JavaScript, la accion HTTP, su clasificacion
+  de permiso y la funcion de semilla. Una regresion estructural impide
+  reintroducir cualquiera de esas cinco superficies productivas.
+
 2026-08-26: Unicidad normalizada de categorias de producto y proveedores.
 - La prueba real PSI-000 demostro que un proveedor o una categoria con el mismo
   nombre y distinto uso de mayusculas podia superar los indices exactos

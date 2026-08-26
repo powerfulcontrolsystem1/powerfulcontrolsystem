@@ -32,6 +32,9 @@
 - [IA/Compras] Si una factura repetida apunta a una cadena de soportes duplicados,
   la carga automatica resuelve el original del mismo tenant y reutiliza su
   extraccion verificable sin consumir otra llamada de IA.
+- [IA/Compras] La pantalla y la API de soportes dejan de crear registros demo
+  dentro de empresas reales; solo permanecen radicacion, revision, aprobacion,
+  contabilizacion, papelera, retencion y auditoria operativas.
 - [Impresion/UX] Los formularios y tablas de impresoras quedan acotados a su
   columna: las tablas anchas conservan desplazamiento interno sin extender la
   pagina en escritorio ni movil.
