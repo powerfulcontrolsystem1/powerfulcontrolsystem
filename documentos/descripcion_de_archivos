@@ -1,3 +1,24 @@
+2026-08-26
+- `backend/db/dian_documento_soporte.go`: reserva atómica e idempotente de
+  numeración por empresa/documento, snapshot de configuración sin secretos,
+  validación de vigencia/rango y espejo seguro de estado/CUDS.
+- `backend/db/dian_documento_soporte_migration.go`: migración inmutable de
+  importes exactos, vendedor, líneas, pago, numeración y fuente sellada para
+  documentos soporte históricos y nuevos.
+- `backend/db/dian_documento_soporte_unit_codes.go`: catálogo exacto de 1.093
+  códigos UN/ECE Rec. 20 Revision 4 usado por la caja DIAN 1.1 para cantidades.
+- `backend/db/dian_documento_soporte_test.go`: regresiones de configuración,
+  catálogo, CUDS y registro de la migración empresarial.
+- `backend/handlers/dian_documento_soporte.go`: fuente fiscal dedicada,
+  prevalidación, UBL 2.1 tipo 05, CUDS, partes, impuestos, retenciones,
+  `SendBillSync` y emisión con confirmación fuerte.
+- `backend/handlers/dian_documento_soporte_test.go`: contratos UBL residentes y
+  extranjeros, prefijo opcional, contactos, agrupación tributaria, XSD y
+  Schematron oficial opcional.
+- `web/js/documento_soporte_dian.js`: configuración independiente, captura de
+  borradores por líneas, cálculo visible, preflight, artefactos y diálogo de
+  confirmación para documento soporte.
+
 2026-08-25
 - `backend/handlers/dian_rut_pdf_test.go`: cubre la normalizacion revisable del
   RUT DIAN, calculo/contraste de DV, codigos DANE, responsabilidades fiscales,

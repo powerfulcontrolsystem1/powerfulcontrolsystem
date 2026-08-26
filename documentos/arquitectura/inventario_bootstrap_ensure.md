@@ -7,7 +7,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 ## Resumen
 
 - Funciones inventariadas: 147.
-- Huella del catalogo legado: `08ba2acc7a2654526cf86a7e313e55d1a0f466943595f923220de49981451ee6` (122 pasos).
+- Huella del catalogo legado: `c0fec7b69d2bd9a2af1d19ea170727c38e0e11c2a959eb245955e3a84a7f2d9e` (122 pasos).
 - DDL / indice / funcion: 118.
 - DDL catalogado de plataforma: 4.
 - compatibilidad PostgreSQL: 2.
@@ -52,7 +52,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaConfiguracionOperativaSchema` | [backend/db/configuracion_operativa.go:232](../../backend/db/configuracion_operativa.go#L232) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureConstructoraTipoEmpresaYLicencias` | [backend/db/constructora_bootstrap.go:70](../../backend/db/constructora_bootstrap.go#L70) | seed o provisionamiento idempotente | superadministrador o por confirmar |
 | `EnsureEmpresaContabilidadColombiaSchema` | [backend/db/contabilidad_colombia.go:164](../../backend/db/contabilidad_colombia.go#L164) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaContabilidadColombiaAvanzadaSchema` | [backend/db/contabilidad_colombia_avanzada.go:304](../../backend/db/contabilidad_colombia_avanzada.go#L304) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaContabilidadColombiaAvanzadaSchema` | [backend/db/contabilidad_colombia_avanzada.go:354](../../backend/db/contabilidad_colombia_avanzada.go#L354) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperContractSchema` | [backend/db/contrato_super.go:133](../../backend/db/contrato_super.go#L133) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureDefaultSuperContract` | [backend/db/contrato_super.go:231](../../backend/db/contrato_super.go#L231) | seed o provisionamiento idempotente | superadministrador o por confirmar |
 | `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:238](../../backend/db/control_electrico.go#L238) | DDL / indice / funcion | empresas o por confirmar |

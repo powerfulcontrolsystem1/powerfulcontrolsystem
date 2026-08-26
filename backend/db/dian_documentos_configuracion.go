@@ -165,6 +165,21 @@ func normalizeEmpresaDIANDocumentoConfiguracion(item *EmpresaDIANDocumentoConfig
 	if item.ResolucionFechaDesde != "" && item.ResolucionFechaHasta != "" && item.ResolucionFechaHasta < item.ResolucionFechaDesde {
 		return fmt.Errorf("rango de vigencia de resolucion invalido")
 	}
+	if item.TipoDocumento == "documento_soporte" {
+		if len(item.Prefijo) > 4 || !documentoSoportePrefixValid(item.Prefijo) {
+			return fmt.Errorf("el prefijo DIAN de documento soporte debe ser alfanumerico y tener maximo 4 caracteres; puede quedar vacio")
+		}
+		if item.ResolucionNumero != "" && (len(item.ResolucionNumero) != 14 || !documentoSoporteASCIIDigits(item.ResolucionNumero)) {
+			return fmt.Errorf("la autorizacion DIAN de documento soporte debe tener exactamente 14 digitos")
+		}
+		if item.RangoDesde > 999999999 || item.RangoHasta > 999999999 || item.ConsecutivoActual > 999999999 {
+			return fmt.Errorf("el rango y consecutivo DIAN de documento soporte no pueden superar 999999999")
+		}
+		hasNumbering := item.RangoDesde != 0 || item.RangoHasta != 0 || item.ConsecutivoActual != 0
+		if hasNumbering && (item.RangoDesde <= 0 || item.RangoHasta < item.RangoDesde || item.ConsecutivoActual < item.RangoDesde || item.ConsecutivoActual > item.RangoHasta) {
+			return fmt.Errorf("el consecutivo DIAN de documento soporte debe estar dentro del rango configurado")
+		}
+	}
 	if err := validateDIANDocumentoURLOverride(item.URLDIANOverride); err != nil {
 		return err
 	}
@@ -296,11 +311,18 @@ func UpsertEmpresaDIANDocumentoConfiguracionContext(ctx context.Context, dbConn 
 		resolucion_fecha_hasta = EXCLUDED.resolucion_fecha_hasta,
 		rango_desde = EXCLUDED.rango_desde,
 		rango_hasta = EXCLUDED.rango_hasta,
-		consecutivo_actual = EXCLUDED.consecutivo_actual,
+		consecutivo_actual = CASE
+			WHEN empresa_dian_documentos_configuracion.tipo_documento = 'documento_soporte'
+			 AND empresa_dian_documentos_configuracion.consecutivo_actual > EXCLUDED.consecutivo_actual
+			THEN empresa_dian_documentos_configuracion.consecutivo_actual
+			ELSE EXCLUDED.consecutivo_actual
+		END,
 		url_dian_override = EXCLUDED.url_dian_override,
 		observaciones = EXCLUDED.observaciones,
 		usuario_creador = EXCLUDED.usuario_creador,
 		fecha_actualizacion = CURRENT_TIMESTAMP
+	WHERE empresa_dian_documentos_configuracion.tipo_documento <> 'documento_soporte'
+	   OR GREATEST(empresa_dian_documentos_configuracion.consecutivo_actual, EXCLUDED.consecutivo_actual) <= EXCLUDED.rango_hasta
 	RETURNING id`,
 		item.EmpresaID, item.TipoDocumento, item.Estado, item.TipoAmbiente, item.ModoOperacionCodigo, item.TestSetID,
 		item.Prefijo, item.ResolucionNumero, item.ResolucionFechaDesde, item.ResolucionFechaHasta,

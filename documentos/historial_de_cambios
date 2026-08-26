@@ -79,6 +79,41 @@
   impresoras aprobados localmente. La validacion desplegada del SHA final se
   registra en la evidencia PSI-000.
 
+2026-08-26: Documento soporte electrónico DIAN 1.1 preparado para producción.
+- Se implementa el flujo dedicado desde `empresa_contabilidad_documentos_soporte`:
+  borrador estructurado, preflight sin efectos, confirmación escrita, reserva
+  atómica, fuente fiscal inmutable, `InvoiceTypeCode=05`, CUDS SHA-384, firma
+  XAdES, `SendBillSync`, acuse y artefactos privados.
+- La migración `20260826-002-dian-documento-soporte-v1` usa importes
+  `NUMERIC(18,2)`, conserva históricos como borradores y falla cerrada ante
+  datos incompatibles. No inventa CUDS, números ni identidad fiscal.
+- Configuración y consecutivo están aislados por `empresa_id` y tipo documental.
+  El prefijo es opcional, la autorización debe tener 14 dígitos y una
+  actualización concurrente no puede reducir el consecutivo ni acortar el
+  rango por debajo de éste.
+- El backend valida vendedor residente/no residente, NIT/DV, ubicación DANE,
+  pago, impuestos, retenciones y exactamente 1.093 códigos de unidad UN/ECE
+  Revision 4 de la caja oficial DIAN 1.1. El navegador no puede declarar
+  importes calculados ni estados DIAN.
+- El catálogo general publica documento soporte como operativo únicamente
+  desde su adaptador contable; la emisión libre y las familias sin contrato
+  propio continúan bloqueadas.
+- Evidencia local: pruebas Go enfocadas verdes, `node --check` verde, catálogo
+  DIAN comparado 1.093/1.093 sin diferencias, XSD oficial y Schematron ejecutados
+  correctamente, preflight profesional en modo rápido verde y QA visual del formulario sin
+  guardar ni emitir: residencia, identificación, crédito, líneas y totales. La suite Go global
+  conserva dos fallos de inventario ya presentes en `origin/main`, verificados
+  por separado; no se cuentan como aprobación de esta rama.
+- La inspección SQL de solo lectura previa a la migración confirmó que producción
+  conserva la tabla histórica, pero tiene cero documentos soporte en todas las
+  empresas, cero en `empresa_id=12`, cero filas monetarias incompatibles y cero
+  configuraciones específicas. No se modificaron datos ni esquema.
+- Estado operativo: cambios aún locales en rama limpia. No se declara PR,
+  aprobación, merge, despliegue ni acuse real. Powerful Control System no tiene
+  actualmente borradores de documento soporte ni configuración específica, por
+  lo que una emisión real sigue bloqueada de forma correcta y no se fabricó una
+  compra fiscal para forzar la prueba.
+
 2026-08-26: Reconciliacion local DIAN limitada a acuses aceptados.
 - Se agrega `POST /api/empresa/facturacion_electronica?action=reconciliar_aceptados_local&empresa_id={id}&aplicar=1` con permiso `facturacion:A`.
 - El modo exclusivo omite colas pendientes, fallidas o enviadas sin acuse antes

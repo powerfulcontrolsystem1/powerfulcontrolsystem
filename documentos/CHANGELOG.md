@@ -52,6 +52,26 @@
   interaccion o comprobacion de sesion transitoria; el segundo intento deja de
   quedar anulado por una excepcion de `page.goto`.
 
+## [2026-08-26] Documento soporte DIAN 1.1 dedicado
+
+- [Fuente fiscal] Las compras a no obligados nacen de un borrador estructurado;
+  líneas, vendedor, pago e importes se recalculan y sellan en servidor por
+  empresa antes de cualquier XML.
+- [Numeración] Configuración independiente con autorización de 14 dígitos,
+  prefijo opcional, vigencia/rango estrictos y reserva atómica que nunca reduce
+  un consecutivo alcanzado.
+- [UBL/DIAN] Se genera `InvoiceTypeCode=05`, CUDS SHA-384,
+  `CustomizationID=10|11`, unidades del catálogo exacto UN/ECE Revision 4,
+  firma XAdES y transporte síncrono `SendBillSync`.
+- [Seguridad] El preflight no emite; la emisión exige permiso de aprobación y
+  frase exacta. Se conservan fuente, XML, acuse y representación en
+  almacenamiento privado, sin incluir secretos en el snapshot de numeración.
+- [Migración] `20260826-002-dian-documento-soporte-v1` convierte importes a
+  `NUMERIC(18,2)` y preserva históricos sin sintetizar datos fiscales.
+- [QA] Pruebas enfocadas, catálogo 1.093/1.093, XSD/Schematron oficial y
+  preflight profesional aprueban localmente. PR, merge, despliegue y primer
+  acuse real permanecen como compuertas separadas.
+
 ## [2026-08-26] Reconciliacion DIAN exclusiva de acuses aceptados
 
 - [Seguridad operativa] `action=reconciliar_aceptados_local` solo examina colas
