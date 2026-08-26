@@ -1,3 +1,15 @@
+2026-08-26: Carga unica del menu de Compras.
+- El E2E visual exacto de PSI-000 observo que `compras_menu.html` iniciaba una
+  navegacion del iframe a `compras.html` antes de resolver la empresa y luego la
+  cancelaba para agregar `empresa_id`.
+- El destino inicial pasa de `src` a `data-src`; el controlador empresarial
+  compartido realiza la unica navegacion despues de resolver el tenant. Una
+  regresion conserva este contrato.
+- La comprobacion con una sesion persistente encontro ademas que Productos y
+  Compras compartian la ultima pagina solo por empresa. La clave incluye ahora
+  el nombre del iframe, impidiendo restaurar una vista de Productos dentro del
+  menu de Compras o viceversa.
+
 2026-08-26: Compuerta visual segura para confirmar anulaciones DIAN.
 - El QA autenticado posterior al despliegue del documento soporte detectó que
   el diálogo explicaba la frase `ANULAR`, pero mostraba habilitado el botón
@@ -43655,3 +43667,13 @@ Archivos modificados:
   desactiva catalogos existentes automaticamente.
 - El handler reconoce la nueva restriccion y responde HTTP 409 sin publicar el
   nombre del indice, SQLSTATE ni detalles internos de PostgreSQL.
+
+2026-08-26: Soportes de Compras IA sin desbordamiento dentro del submenu.
+- El smoke visual autenticado del flujo anidado detecto que la tabla de soportes
+  imponia su ancho minimo al contenedor y extendia todo el documento cuando el
+  iframe de Compras tenia cerca de 800 px disponibles.
+- Los items de las grillas permiten ahora reducirse con `min-width:0`; el
+  contenedor de tabla queda limitado al ancho disponible y conserva su propio
+  desplazamiento horizontal.
+- La medicion paso de 966 px de documento sobre 791 px de viewport a 791/791,
+  sin cambiar datos, acciones, permisos ni el comportamiento movil.

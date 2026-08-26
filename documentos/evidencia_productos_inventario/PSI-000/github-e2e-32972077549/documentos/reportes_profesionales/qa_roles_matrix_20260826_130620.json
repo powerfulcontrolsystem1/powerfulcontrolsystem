@@ -1,0 +1,50 @@
+{
+  "generated_at": "2026-08-26T13:06:20.080Z",
+  "status": "ok",
+  "workflow_ready": true,
+  "roles": [
+    {
+      "role": "super_administrador",
+      "name": "Super administrador",
+      "ok": true,
+      "missing_pages": [],
+      "missing_apis": []
+    },
+    {
+      "role": "admin_empresa",
+      "name": "Administrador de empresa",
+      "ok": true,
+      "missing_pages": [],
+      "missing_apis": []
+    },
+    {
+      "role": "cajero",
+      "name": "Cajero",
+      "ok": true,
+      "missing_pages": [],
+      "missing_apis": []
+    },
+    {
+      "role": "vendedor",
+      "name": "Vendedor",
+      "ok": true,
+      "missing_pages": [],
+      "missing_apis": []
+    },
+    {
+      "role": "asesor_comercial",
+      "name": "Asesor comercial",
+      "ok": true,
+      "missing_pages": [],
+      "missing_apis": []
+    },
+    {
+      "role": "soporte",
+      "name": "Soporte operativo",
+      "ok": true,
+      "missing_pages": [],
+      "missing_apis": []
+    }
+  ],
+  "recommendation": "Para pruebas reales por rol, configurar credenciales PCS_QA_ROLE_MATRIX_JSON en GitHub Actions y ejecutar qa_e2e_buttons por rol."
+}

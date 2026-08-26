@@ -706,7 +706,10 @@ try {
   }
 
   function storageKey(empresaId) {
-    return "admin_empresa:last_page:" + String(empresaId || "global");
+    // Los submenus comparten sessionStorage por pertenecer al mismo tab. El
+    // nombre del frame evita que Productos restaure su ultima vista dentro de
+    // Compras (o viceversa) cuando ambas rutas reutilizan un pathname.
+    return "admin_empresa:last_page:" + String(empresaId || "global") + ":" + String(frameTargetName || "contentFrame");
   }
 
   function getFrameLinks() {
