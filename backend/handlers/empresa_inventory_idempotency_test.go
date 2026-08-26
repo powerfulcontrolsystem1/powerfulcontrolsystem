@@ -141,10 +141,44 @@ func TestInventoryFrontendProductionContracts(t *testing.T) {
 		t.Fatalf("read %s: %v", advancedPath, err)
 	}
 	advanced := string(rawAdvanced)
-	for _, required := range []string{"Idempotency-Key", "function readJSONResponse(", `typeof data.error === "string"`} {
+	for _, required := range []string{
+		"Idempotency-Key",
+		"function readJSONResponse(",
+		`typeof data.error === "string"`,
+		`function loadProductos(){`,
+		`function loadBodegas(){`,
+		`function loadLotes(){`,
+		`function loadSeriales(){`,
+		`Promise.all([dashboard, loadProductos(), loadBodegas(), loadLotes(), loadSeriales(), loadReservas()])`,
+	} {
 		if !strings.Contains(advanced, required) {
 			t.Errorf("inventario_avanzado.js missing production contract %q", required)
 		}
+	}
+	advancedPagePath := filepath.Join("..", "..", "web", "administrar_empresa", "inventario_avanzado.html")
+	rawAdvancedPage, err := os.ReadFile(advancedPagePath)
+	if err != nil {
+		t.Fatalf("read %s: %v", advancedPagePath, err)
+	}
+	advancedPage := string(rawAdvancedPage)
+	for _, required := range []string{
+		`class="form-input iav-product-select"`,
+		`class="form-input iav-bodega-select"`,
+		`class="form-input iav-lote-select"`,
+	} {
+		if !strings.Contains(advancedPage, required) {
+			t.Errorf("inventario_avanzado.html missing production selector %q", required)
+		}
+	}
+	if strings.Contains(advancedPage, `id="btnSeed"`) || strings.Contains(advanced, `seed_demo`) {
+		t.Error("production inventory UI must not expose demo-data creation")
+	}
+	handlerRaw, err := os.ReadFile("inventario_avanzado.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(handlerRaw), `case "seed_demo"`) {
+		t.Error("production inventory API must not expose demo-data creation")
 	}
 }
 
@@ -228,6 +262,12 @@ func TestAdvancedPurchasesInventoryProductionContracts(t *testing.T) {
 		`id="recItemID" class="form-input"`,
 		`id="recBodega" class="form-input bodega-select"`,
 		`id="recLote"`,
+		`id="btnAddReqItems"`,
+		`id="reqItemsDraftBody"`,
+		`Puedes agregar tantos productos como necesites.`,
+		`id="btnAddRecItem"`,
+		`id="recItemsDraftBody"`,
+		`Todos se registran de forma atomica bajo el mismo documento de recepcion.`,
 		`Recibir y actualizar inventario`,
 		`La recepción se marca total únicamente cuando no quedan cantidades pendientes.`,
 	} {
@@ -248,11 +288,20 @@ func TestAdvancedPurchasesInventoryProductionContracts(t *testing.T) {
 		t.Fatal(err)
 	}
 	js := string(rawJS)
+	if strings.Contains(js, `seed_demo`) {
+		t.Error("production purchases JavaScript must not retain demo-data helpers")
+	}
 	for _, required := range []string{
 		`"Idempotency-Key":idempotencyKey(action, reference)`,
-		`producto_id:Number(product.id)`,
+		`producto_id: productID`,
 		`bodega_id:num("recBodega")`,
-		`lote:val("recLote")`,
+		`lote: val("recLote")`,
+		`var recepcionItemsDraft = [];`,
+		`var requisicionItemsDraft = [];`,
+		`function addRequisitionItems(){`,
+		`function renderRequisitionDraft(){`,
+		`function addReceptionItem(){`,
+		`items:items`,
 		`function publicError(status, raw)`,
 		`Promise.all([loadProveedores(), loadProductos(), loadBodegas()])`,
 	} {
@@ -267,9 +316,16 @@ func TestAdvancedPurchasesInventoryProductionContracts(t *testing.T) {
 		t.Fatal(err)
 	}
 	dbSource := string(rawDB)
+	if strings.Contains(dbSource, `SeedEmpresaComprasAvanzadasDemo`) {
+		t.Error("production purchases database layer must not retain demo-data creation")
+	}
 	for _, required := range []string{
 		`WHERE empresa_id=? AND id=?`,
 		`FOR UPDATE OF i`,
+		`len(req.Items) == 0 || len(req.Items) > 500`,
+		`len(rec.Items) == 0 || len(rec.Items) > 500`,
+		`seenProducts := make(map[int64]struct{}, len(req.Items))`,
+		`ErrInventarioEntidadNoDisponible`,
 		`COALESCE(cantidad_recibida,0)+? <= COALESCE(cantidad_solicitada,0)`,
 		`validateBodegaEmpresaTx(tx, rec.EmpresaID, rec.BodegaID)`,
 		`validateProductoEmpresaTx(tx, rec.EmpresaID, productoID)`,
@@ -285,6 +341,14 @@ func TestAdvancedPurchasesInventoryProductionContracts(t *testing.T) {
 		if !strings.Contains(dbSource, required) {
 			t.Errorf("compras_avanzadas.go missing atomic inventory contract %q", required)
 		}
+	}
+	handlerPath := filepath.Join("compras_avanzadas.go")
+	rawHandler, err := os.ReadFile(handlerPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(rawHandler), `case "seed_demo"`) {
+		t.Error("production purchases API must not expose demo-data creation")
 	}
 }
 

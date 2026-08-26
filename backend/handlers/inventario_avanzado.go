@@ -91,13 +91,6 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			usuario := strings.TrimSpace(adminEmailFromRequest(r))
 			switch action {
-			case "seed_demo":
-				id, err := dbpkg.SeedEmpresaInventarioAvanzadoDemo(dbEmp, payload.EmpresaID, usuario)
-				if err != nil {
-					http.Error(w, "No se pudo crear demo de inventario avanzado", http.StatusInternalServerError)
-					return
-				}
-				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
 			case "lote":
 				payload.Lote.EmpresaID = payload.EmpresaID
 				if payload.Lote.UsuarioCreador == "" {

@@ -1,3 +1,24 @@
+## [2026-08-26] Productos e inventario preparados como candidato productivo
+
+- [Multiempresa] Las referencias hijas ajenas se rechazan como recurso no
+  disponible sin 500, filtrado de IDs ni mutaciones; la inconsistencia de
+  `empresa_id` entre URL, cabecera y cuerpo sigue bloqueada antes del handler.
+- [Productos/Servicios] Valores economicos, impuestos, stock y duraciones fuera
+  de rango se rechazan; los codigos opcionales vacios se persisten como `NULL`
+  para permitir varios catalogos validos por empresa.
+- [Inventario] Lotes, seriales y reservas usan selectores descriptivos; tanto
+  Inventario como Compras avanzados dejan de exponer generacion demo en capas
+  productivas.
+- [Compras] Una recepcion puede agrupar varios items pendientes en la misma
+  transaccion/documento, con stock, costo, lote, Kardex y estados atomicos.
+- [IA/archivos] El XML aceptado y extraido por GPT-5.5 tambien puede conservarse
+  como comprobante privado bien formado, sin DTD, y descargable como attachment.
+- [Observabilidad] Operaciones de catalogo, reservas e impresoras ya no descartan
+  errores de `RowsAffected`; los listados propagan `rows.Err()`.
+- [QA] Se agregan regresiones de ownership, proveedor sin codigo, recepcion
+  multiitem, formatos privados e idempotencia; los gates exactos del candidato
+  final quedan documentados en PSI-000.
+
 ## [2026-08-26] Reconciliacion DIAN exclusiva de acuses aceptados
 
 - [Seguridad operativa] `action=reconciliar_aceptados_local` solo examina colas

@@ -35,7 +35,7 @@ func writeInventarioEntidadNoDisponible(w http.ResponseWriter, err error) bool {
 	if !errors.Is(err, dbpkg.ErrInventarioEntidadNoDisponible) {
 		return false
 	}
-	http.Error(w, "Producto, bodega, categoria o proveedor no disponible para la empresa activa.", http.StatusNotFound)
+	http.Error(w, "Producto, servicio, bodega, categoria o proveedor no disponible para la empresa activa.", http.StatusNotFound)
 	return true
 }
 
@@ -1132,6 +1132,10 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateProducto(dbEmp, payload.Producto, payload.StockInicial, payload.ReferenciaInicial)
 			if err != nil {
+				if errors.Is(err, dbpkg.ErrProductosDatosInvalidos) {
+					http.Error(w, productosPublicError(err, "Datos de producto inválidos."), http.StatusBadRequest)
+					return
+				}
 				if writeInventarioEntidadNoDisponible(w, err) {
 					return
 				}
@@ -1201,6 +1205,10 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			if err := dbpkg.UpdateProducto(dbEmp, payload, motivoPrecio, referenciaPrecio); err != nil {
+				if errors.Is(err, dbpkg.ErrProductosDatosInvalidos) {
+					http.Error(w, productosPublicError(err, "Datos de producto inválidos."), http.StatusBadRequest)
+					return
+				}
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "producto no encontrado", http.StatusNotFound)
 					return
@@ -2842,6 +2850,10 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateServicio(dbEmp, payload)
 			if err != nil {
+				if errors.Is(err, dbpkg.ErrProductosDatosInvalidos) {
+					http.Error(w, productosPublicError(err, "Datos de servicio inválidos."), http.StatusBadRequest)
+					return
+				}
 				writeProductosInternalError(w, r, "crear_servicio", err)
 				return
 			}
@@ -2866,6 +2878,9 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					estado = "activo"
 				}
 				if err := dbpkg.SetServicioEstado(dbEmp, empresaID, id, estado); err != nil {
+					if writeInventarioEntidadNoDisponible(w, err) {
+						return
+					}
 					writeProductosInternalError(w, r, "actualizar_estado_servicio", err)
 					return
 				}
@@ -2883,6 +2898,13 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.UpdateServicio(dbEmp, payload); err != nil {
+				if errors.Is(err, dbpkg.ErrProductosDatosInvalidos) {
+					http.Error(w, productosPublicError(err, "Datos de servicio inválidos."), http.StatusBadRequest)
+					return
+				}
+				if writeInventarioEntidadNoDisponible(w, err) {
+					return
+				}
 				writeProductosInternalError(w, r, "actualizar_servicio", err)
 				return
 			}
@@ -2900,6 +2922,9 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.DeleteServicio(dbEmp, empresaID, id); err != nil {
+				if writeInventarioEntidadNoDisponible(w, err) {
+					return
+				}
 				writeProductosInternalError(w, r, "eliminar_servicio", err)
 				return
 			}

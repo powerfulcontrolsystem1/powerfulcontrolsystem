@@ -376,7 +376,10 @@ func ConfirmarEmpresaInventarioReservaAvanzada(dbConn *sql.DB, empresaID, reserv
 		if err != nil {
 			return err
 		}
-		affected, _ := res.RowsAffected()
+		affected, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
 		if affected == 0 {
 			return ErrStockInsuficiente
 		}
@@ -527,9 +530,15 @@ func ListEmpresaInventarioReservasAvanzadas(dbConn *sql.DB, empresaID int64, est
 func BuildEmpresaInventarioAvanzadoDashboard(dbConn *sql.DB, empresaID int64) (EmpresaInventarioAvanzadoDashboard, error) {
 	var d EmpresaInventarioAvanzadoDashboard
 	d.EmpresaID = empresaID
-	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(cantidad_disponible*costo_unitario),0) FROM empresa_inventario_lotes_avanzados WHERE empresa_id=? AND estado='activo'`, empresaID).Scan(&d.LotesActivos, &d.ValorDisponible)
-	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM empresa_inventario_seriales_avanzados WHERE empresa_id=? AND estado_inventario IN ('disponible','reservado')`, empresaID).Scan(&d.SerialesActivos)
-	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(cantidad),0) FROM empresa_inventario_reservas_avanzadas WHERE empresa_id=? AND estado='activa'`, empresaID).Scan(&d.ReservasActivas, &d.UnidadesReservadas)
+	if err := QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(cantidad_disponible*costo_unitario),0) FROM empresa_inventario_lotes_avanzados WHERE empresa_id=? AND estado='activo'`, empresaID).Scan(&d.LotesActivos, &d.ValorDisponible); err != nil {
+		return d, err
+	}
+	if err := QueryRowCompat(dbConn, `SELECT COUNT(1) FROM empresa_inventario_seriales_avanzados WHERE empresa_id=? AND estado_inventario IN ('disponible','reservado')`, empresaID).Scan(&d.SerialesActivos); err != nil {
+		return d, err
+	}
+	if err := QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(cantidad),0) FROM empresa_inventario_reservas_avanzadas WHERE empresa_id=? AND estado='activa'`, empresaID).Scan(&d.ReservasActivas, &d.UnidadesReservadas); err != nil {
+		return d, err
+	}
 	lotes, err := ListEmpresaInventarioLotesAvanzados(dbConn, empresaID, 0, 0, "activo", 8)
 	if err != nil {
 		return d, err
@@ -581,48 +590,6 @@ func ListEmpresaInventarioValorizacionAvanzada(dbConn *sql.DB, empresaID int64, 
 		out = append(out, x)
 	}
 	return out, rows.Err()
-}
-
-func SeedEmpresaInventarioAvanzadoDemo(dbConn *sql.DB, empresaID int64, usuario string) (int64, error) {
-	bodegas, err := GetBodegasByEmpresa(dbConn, empresaID, false)
-	if err != nil {
-		return 0, err
-	}
-	var bodegaID int64
-	if len(bodegas) > 0 {
-		bodegaID = bodegas[0].ID
-	} else {
-		bodegaID, err = CreateBodega(dbConn, Bodega{EmpresaID: empresaID, Codigo: "BOD-INV-AV", Nombre: "Bodega inventario avanzado", UsuarioCreador: usuario, Estado: "activo"})
-		if err != nil {
-			return 0, err
-		}
-	}
-	productos, err := GetProductosByEmpresa(dbConn, empresaID, "", "activo", 0, 0, 1, 0)
-	if err != nil {
-		return 0, err
-	}
-	var productoID int64
-	if len(productos) > 0 {
-		productoID = productos[0].ID
-	} else {
-		productoID, err = CreateProducto(dbConn, Producto{EmpresaID: empresaID, BodegaPrincipalID: bodegaID, SKU: "INV-AV-DEMO", Nombre: "Producto inventario avanzado demo", UnidadMedida: "und", Costo: 12000, Precio: 18000, StockMinimo: 5, StockMaximo: 100, UsuarioCreador: usuario, Estado: "activo"}, 0, "demo inventario avanzado")
-		if err != nil {
-			return 0, err
-		}
-	}
-	code := "LOT-AV-" + time.Now().Format("20060102150405")
-	loteID, err := CreateEmpresaInventarioLoteAvanzado(dbConn, EmpresaInventarioLoteAvanzado{EmpresaID: empresaID, ProductoID: productoID, BodegaID: bodegaID, LoteCodigo: code, FechaFabricacion: time.Now().AddDate(0, -1, 0).Format("2006-01-02"), FechaVencimiento: time.Now().AddDate(0, 2, 0).Format("2006-01-02"), CantidadInicial: 25, CostoUnitario: 12500, EstadoCalidad: "liberado", Proveedor: "Proveedor demo inventario", DocumentoRef: "QA-" + code, UbicacionInterna: "Rack A1", UsuarioCreador: usuario})
-	if err != nil {
-		return 0, err
-	}
-	serialID, err := CreateEmpresaInventarioSerialAvanzado(dbConn, EmpresaInventarioSerialAvanzado{EmpresaID: empresaID, LoteID: loteID, ProductoID: productoID, BodegaID: bodegaID, Serial: "SER-" + code, EstadoOperativo: "operativo", EstadoInventario: "disponible", FechaIngreso: time.Now().Format("2006-01-02"), GarantiaHasta: time.Now().AddDate(1, 0, 0).Format("2006-01-02"), UsuarioCreador: usuario})
-	if err != nil {
-		return 0, err
-	}
-	if _, err := CreateEmpresaInventarioReservaAvanzada(dbConn, EmpresaInventarioReservaAvanzada{EmpresaID: empresaID, ProductoID: productoID, BodegaID: bodegaID, LoteID: loteID, SerialID: serialID, Cantidad: 1, OrigenModulo: "qa_demo", OrigenRef: "RSV-" + code, ClienteNombre: "Cliente inventario avanzado", FechaReserva: time.Now().Format("2006-01-02"), FechaExpira: time.Now().AddDate(0, 0, 2).Format("2006-01-02"), UsuarioCreador: usuario}); err != nil {
-		return 0, err
-	}
-	return loteID, nil
 }
 
 func getInventarioDisponibleAvanzado(dbConn *sql.DB, empresaID, productoID, bodegaID, loteID int64) (float64, error) {

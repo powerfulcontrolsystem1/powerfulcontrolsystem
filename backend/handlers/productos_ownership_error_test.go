@@ -26,6 +26,22 @@ func TestWriteInventarioEntidadNoDisponibleDevuelve404Seguro(t *testing.T) {
 	}
 }
 
+func TestWriteInventarioEntidadNoDisponibleIncluyeServicioSinFiltrarID(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	err := fmt.Errorf("%w: servicio", dbpkg.ErrInventarioEntidadNoDisponible)
+
+	if !writeInventarioEntidadNoDisponible(recorder, err) {
+		t.Fatal("el servicio ajeno no uso el error seguro de ownership")
+	}
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status=%d, want %d", recorder.Code, http.StatusNotFound)
+	}
+	body := strings.ToLower(recorder.Body.String())
+	if !strings.Contains(body, "servicio") || strings.Contains(body, "id=") {
+		t.Fatalf("respuesta de servicio insegura o ambigua: %q", recorder.Body.String())
+	}
+}
+
 func TestWriteInventarioEntidadNoDisponibleIgnoraErroresInternos(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	if writeInventarioEntidadNoDisponible(recorder, fmt.Errorf("fallo interno")) {

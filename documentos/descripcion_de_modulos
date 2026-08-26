@@ -2655,11 +2655,11 @@
 2026-05-06: Inventario avanzado
 - Modulos afectados: `inventario`, `productos`, `bodegas`, `roles/licencias`, `administrar_empresa`.
 - Cambio funcional: se amplia `Inventario` sin crear un modulo paralelo, agregando lotes, seriales, reservas, vencimientos y valorizacion por producto/bodega.
-- Backend: nueva API `/api/empresa/inventario_avanzado` con acciones `dashboard`, `lotes`, `seriales`, `reservas`, `valorizacion`, `lote`, `serial`, `reserva`, `confirmar_reserva` y `seed_demo`.
+- Backend: API `/api/empresa/inventario_avanzado` con acciones productivas `dashboard`, `lotes`, `seriales`, `reservas`, `valorizacion`, `lote`, `serial`, `reserva` y `confirmar_reserva`; la accion de datos demo fue retirada de la superficie productiva.
 - Base de datos: nuevas tablas `empresa_inventario_lotes_avanzados`, `empresa_inventario_seriales_avanzados` y `empresa_inventario_reservas_avanzadas`, todas con `empresa_id`.
 - Integracion: la entrada de lote alimenta `inventario_existencias` e `inventario_movimientos`, para conservar kardex, reportes y reposicion.
 - Seguridad: se reutiliza la licencia y permiso `inventario`; la pagina `linkInventarioAvanzado` queda protegida por `WithEmpresaInventarioPermissions`.
-- Frontend: `web/administrar_empresa/inventario_avanzado.html` queda enlazada desde `web/administrar_empresa/administrar_productos_menu.html`.
+- Frontend: `web/administrar_empresa/inventario_avanzado.html` queda enlazada desde `web/administrar_empresa/administrar_productos_menu.html` y usa selectores descriptivos de productos, bodegas, lotes, seriales y reservas en lugar de exigir IDs internos.
 - Documentacion: se agrega `documentos/inventario_avanzado.md`.
 
 2026-05-06: Compras avanzadas
@@ -2669,6 +2669,9 @@
 - Base de datos: nuevas tablas `empresa_compras_requisiciones`, `empresa_compras_requisicion_items`, `empresa_compras_cotizaciones`, `empresa_compras_aprobaciones`, `empresa_compras_recepciones_avanzadas` y `empresa_compras_recepcion_items_avanzadas`, todas con `empresa_id`.
 - Seguridad: se reutiliza la licencia y permiso `compras`; la pagina `linkComprasAvanzadas` queda protegida por `WithEmpresaComprasPermissions`.
 - Frontend: `web/administrar_empresa/compras_avanzadas.html` queda enlazada desde el submenu `web/administrar_empresa/compras_menu.html`.
+- Requisicion y recepcion: la pantalla usa borradores dinamicos para una cantidad
+  abierta de productos; la recepcion envia varios items pendientes atomica e
+  idempotentemente bajo un mismo documento y bodega, conservando lote por item.
 - Documentacion: se agrega `documentos/compras_avanzadas.md`.
 
 2026-05-06: Importaciones y costeo de nacionalizacion

@@ -1,3 +1,31 @@
+2026-08-26: Endurecimiento productivo de Productos, Compras e Inventario.
+- Proveedores permite varios registros sin codigo opcional al persistir el valor
+  vacio como `NULL`, manteniendo la unicidad de los codigos informados.
+- Servicios aplica el mismo contrato para codigo opcional, rechaza duracion,
+  costo, precio o impuesto fuera de rango y devuelve 404 seguro cuando el ID no
+  pertenece a la empresa activa.
+- Producto, servicio, bodega, categoria o proveedor ajeno al tenant se rechaza con un
+  error 404 publico seguro; la transaccion no muta datos ni filtra la existencia
+  de IDs de otra empresa. El `empresa_id` manipulado en query/cuerpo conserva el
+  rechazo previo de la frontera de permisos.
+- Productos rechaza costos, precios, impuestos, stock inicial y umbrales de
+  inventario invalidos antes de abrir una transaccion.
+- Inventario avanzado reemplaza IDs manuales por selectores de catalogos
+  empresariales; Inventario y Compras avanzados retiran la creacion demo de UI,
+  JavaScript, API y repositorio productivos.
+- Compras avanzadas prepara entre 1 y 500 productos unicos y recibe hasta 500
+  items de una requisicion en una sola mutacion atomica e idempotente,
+  manteniendo validacion multiempresa de cada referencia, pendientes, costos,
+  lotes, existencias, Kardex y estado total/parcial.
+- El comprobante privado de Compras acepta XML bien formado, rechaza DTD y
+  contenido que no sea XML, alineado con la carga automatica por GPT-5.5 y con
+  la lista visible de formatos.
+- Catalogos, reservas y cola de impresion propagan fallos de `RowsAffected`; los
+  listados de inventario y productos propagan errores tardios de iteracion.
+- QA enfocada: Go `./db ./handlers`, sintaxis JavaScript y contratos de UI,
+  ownership, idempotencia y almacenamiento privado aprobados localmente. La
+  validacion desplegada del SHA final se registra en la evidencia PSI-000.
+
 2026-08-26: Reconciliacion local DIAN limitada a acuses aceptados.
 - Se agrega `POST /api/empresa/facturacion_electronica?action=reconciliar_aceptados_local&empresa_id={id}&aplicar=1` con permiso `facturacion:A`.
 - El modo exclusivo omite colas pendientes, fallidas o enviadas sin acuse antes

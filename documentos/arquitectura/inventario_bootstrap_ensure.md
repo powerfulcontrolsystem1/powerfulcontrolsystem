@@ -121,8 +121,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaPortalContadorSchema` | [backend/db/portal_contador.go:109](../../backend/db/portal_contador.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPortalTercerosCertificadosSchema` | [backend/db/portal_terceros_certificados.go:98](../../backend/db/portal_terceros_certificados.go#L98) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaProduccionMRPSchema` | [backend/db/produccion_mrp.go:158](../../backend/db/produccion_mrp.go#L158) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaProductosSchema` | [backend/db/productos.go:507](../../backend/db/productos.go#L507) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaBodega1` | [backend/db/productos.go:1215](../../backend/db/productos.go#L1215) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureEmpresaProductosSchema` | [backend/db/productos.go:515](../../backend/db/productos.go#L515) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaBodega1` | [backend/db/productos.go:1223](../../backend/db/productos.go#L1223) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaPropiedadHorizontalSchema` | [backend/db/propiedad_horizontal.go:156](../../backend/db/propiedad_horizontal.go#L156) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPropinasSchema` | [backend/db/propinas.go:152](../../backend/db/propinas.go#L152) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaRappiSchema` | [backend/db/rappi.go:52](../../backend/db/rappi.go#L52) | DDL / indice / funcion | empresas o por confirmar |

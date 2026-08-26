@@ -14,11 +14,14 @@ import (
 var (
 	// ErrStockInsuficiente se usa cuando una salida/traslado excede la existencia disponible.
 	ErrStockInsuficiente = errors.New("stock insuficiente")
-	// ErrInventarioEntidadNoDisponible identifica referencias a productos, bodegas,
-	// categorias o proveedores que no existen dentro de la empresa activa. Los
+	// ErrInventarioEntidadNoDisponible identifica referencias a productos, servicios,
+	// bodegas, categorias o proveedores que no existen dentro de la empresa activa. Los
 	// handlers pueden convertirlo en un 4xx seguro sin filtrar si el ID existe en
 	// otra empresa.
 	ErrInventarioEntidadNoDisponible = errors.New("entidad de inventario no disponible para la empresa")
+	// ErrProductosDatosInvalidos permite distinguir validaciones de catalogo de
+	// fallos internos sin exponer detalles de PostgreSQL al cliente.
+	ErrProductosDatosInvalidos = errors.New("datos de productos e inventario invalidos")
 )
 
 const (
@@ -1383,7 +1386,7 @@ func GetBodegasByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivas bool)
 		}
 		out = append(out, b)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // UpdateBodega actualiza los datos editables de una bodega.
@@ -1396,7 +1399,10 @@ func UpdateBodega(dbConn *sql.DB, b Bodega) error {
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1409,7 +1415,10 @@ func DeleteBodega(dbConn *sql.DB, empresaID, bodegaID int64) error {
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1423,7 +1432,10 @@ func SetBodegaEstado(dbConn *sql.DB, empresaID, bodegaID int64, estado string) e
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1500,7 +1512,7 @@ func GetCategoriasProductoByEmpresa(dbConn *sql.DB, empresaID int64, incluirInac
 		}
 		out = append(out, c)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // UpdateCategoriaProducto actualiza una categoría y sincroniza el nombre en productos asociados.
@@ -1519,7 +1531,10 @@ func UpdateCategoriaProducto(dbConn *sql.DB, c CategoriaProducto) error {
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1546,7 +1561,10 @@ func DeleteCategoriaProducto(dbConn *sql.DB, empresaID, categoriaID int64) error
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1560,7 +1578,10 @@ func SetCategoriaProductoEstado(dbConn *sql.DB, empresaID, categoriaID int64, es
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -1573,6 +1594,25 @@ func validateProductoStockThresholds(stockMinimo, stockMaximo float64) error {
 	}
 	if stockMaximo > 0 && stockMinimo > stockMaximo {
 		return fmt.Errorf("stock_minimo no puede ser mayor que stock_maximo")
+	}
+	return nil
+}
+
+func validateProductoValores(p Producto, stockInicial float64) error {
+	if strings.TrimSpace(p.Nombre) == "" {
+		return fmt.Errorf("%w: nombre es obligatorio", ErrProductosDatosInvalidos)
+	}
+	if p.Costo < 0 || p.Precio < 0 {
+		return fmt.Errorf("%w: costo y precio no pueden ser negativos", ErrProductosDatosInvalidos)
+	}
+	if p.ImpuestoPorcentaje < 0 || p.ImpuestoPorcentaje > 100 {
+		return fmt.Errorf("%w: impuesto_porcentaje debe estar entre 0 y 100", ErrProductosDatosInvalidos)
+	}
+	if stockInicial < 0 {
+		return fmt.Errorf("%w: stock_inicial no puede ser negativo", ErrProductosDatosInvalidos)
+	}
+	if err := validateProductoStockThresholds(p.StockMinimo, p.StockMaximo); err != nil {
+		return fmt.Errorf("%w: %v", ErrProductosDatosInvalidos, err)
 	}
 	return nil
 }
@@ -1669,14 +1709,14 @@ func applyProductoVencimientoRuntime(p *Producto, now time.Time) {
 
 // CreateProducto crea un producto y opcionalmente su stock inicial.
 func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referenciaInicial string) (int64, error) {
-	if err := validateProductoStockThresholds(p.StockMinimo, p.StockMaximo); err != nil {
+	if err := validateProductoValores(p, stockInicial); err != nil {
 		return 0, err
 	}
 	if err := normalizeProductoVencimiento(&p); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%w: %v", ErrProductosDatosInvalidos, err)
 	}
 	if stockInicial > 0 && p.BodegaPrincipalID <= 0 {
-		return 0, fmt.Errorf("bodega_principal_id requerido para registrar stock inicial")
+		return 0, fmt.Errorf("%w: bodega_principal_id requerido para registrar stock inicial", ErrProductosDatosInvalidos)
 	}
 
 	tx, err := dbConn.Begin()
@@ -1916,7 +1956,7 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		out = append(out, p)
 	}
 
-	return out, nil
+	return out, rows.Err()
 }
 
 // GetProductoByID devuelve un producto específico por empresa.
@@ -2066,11 +2106,11 @@ func GetProductosVencimientoByEmpresa(dbConn *sql.DB, empresaID int64, estadoVen
 
 // UpdateProducto actualiza un producto de la empresa.
 func UpdateProducto(dbConn *sql.DB, p Producto, motivoCambio, referenciaCambio string) error {
-	if err := validateProductoStockThresholds(p.StockMinimo, p.StockMaximo); err != nil {
+	if err := validateProductoValores(p, 0); err != nil {
 		return err
 	}
 	if err := normalizeProductoVencimiento(&p); err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrProductosDatosInvalidos, err)
 	}
 
 	tx, err := dbConn.Begin()
@@ -2116,7 +2156,10 @@ func UpdateProducto(dbConn *sql.DB, p Producto, motivoCambio, referenciaCambio s
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -2171,7 +2214,10 @@ func DeleteProducto(dbConn *sql.DB, empresaID, productoID int64) error {
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -2185,7 +2231,10 @@ func SetProductoEstado(dbConn *sql.DB, empresaID, productoID int64, estado strin
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -2209,7 +2258,10 @@ func DeleteProductosPreconfiguracion(dbConn *sql.DB, empresaID int64) (int64, er
 	if err != nil {
 		return 0, err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
 	return affected, nil
 }
 
@@ -2220,7 +2272,10 @@ func UpdateProductoImagen(dbConn *sql.DB, empresaID, productoID int64, imagenURL
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -2284,7 +2339,7 @@ func GetExistenciasByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int
 		}
 		out = append(out, e)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 func normalizeInventarioPoliticaCosto(raw string) string {
@@ -2501,7 +2556,7 @@ func GetAlertasQuiebreByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID 
 		out = append(out, a)
 	}
 
-	return out, nil
+	return out, rows.Err()
 }
 
 // GetAlertasOperativasByEmpresa devuelve alertas proactivas de quiebre y sobrestock por producto/bodega.
@@ -2598,6 +2653,9 @@ func GetAlertasOperativasByEmpresa(dbConn *sql.DB, empresaID, productoID, bodega
 		}
 
 		out = append(out, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	severidad := func(estado string) int {
@@ -2970,7 +3028,7 @@ func GetInventarioBalanceBodegasByEmpresa(dbConn *sql.DB, empresaID, bodegaID in
 		out = append(out, row)
 	}
 
-	return out, nil
+	return out, rows.Err()
 }
 
 // GetInventarioProyeccionQuiebreByEmpresa estima cobertura y riesgo de quiebre por producto/bodega.
@@ -3086,6 +3144,9 @@ func GetInventarioProyeccionQuiebreByEmpresa(dbConn *sql.DB, empresaID, bodegaID
 		}
 
 		out = append(out, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	severity := func(estado string) int {
@@ -3899,7 +3960,7 @@ func GetMovimientosByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int
 		out = append(out, m)
 	}
 
-	return out, nil
+	return out, rows.Err()
 }
 
 // CreateProveedor inserta un proveedor para la empresa.
@@ -4002,7 +4063,7 @@ func GetProveedoresByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivos b
 		}
 		out = append(out, p)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // UpdateProveedor actualiza proveedor.
@@ -4021,7 +4082,10 @@ func UpdateProveedor(dbConn *sql.DB, p Proveedor) error {
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -4047,7 +4111,10 @@ func DeleteProveedor(dbConn *sql.DB, empresaID, proveedorID int64) error {
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -4061,7 +4128,10 @@ func SetProveedorEstado(dbConn *sql.DB, empresaID, proveedorID int64, estado str
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -4648,7 +4718,7 @@ func GetRecetasProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estad
 		}
 		out = append(out, c)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // GetRecetaProductoByID obtiene una receta por empresa e incluye sus ingredientes.
@@ -4764,7 +4834,7 @@ func GetRecetaProductoIngredientes(dbConn *sql.DB, empresaID, recetaID int64, in
 		}
 		out = append(out, d)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // UpdateRecetaProducto actualiza cabecera e ingredientes de una receta.
@@ -4862,7 +4932,10 @@ func UpdateRecetaProducto(dbConn *sql.DB, receta RecetaProducto, ingredientes []
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -4918,7 +4991,10 @@ func DeleteRecetaProducto(dbConn *sql.DB, empresaID, recetaID int64) error {
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -4953,7 +5029,10 @@ func SetRecetaProductoEstado(dbConn *sql.DB, empresaID, recetaID int64, estado s
 	if err != nil {
 		return err
 	}
-	affected, _ := res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
@@ -4963,12 +5042,31 @@ func SetRecetaProductoEstado(dbConn *sql.DB, empresaID, recetaID int64, estado s
 
 // CreateServicio crea un servicio comercial por empresa.
 func CreateServicio(dbConn *sql.DB, s Servicio) (int64, error) {
+	if err := validateServicioPayload(s); err != nil {
+		return 0, err
+	}
 	nowExpr := sqlNowExpr()
 	return insertSQLCompat(dbConn, `INSERT INTO servicios (
 		empresa_id, codigo, nombre, descripcion, categoria, duracion_minutos, costo_referencial, precio, impuesto_porcentaje, imagen_url,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, `+nowExpr+`, `+nowExpr+`)`,
+	) VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, `+nowExpr+`, `+nowExpr+`)`,
 		s.EmpresaID, strings.TrimSpace(s.Codigo), strings.TrimSpace(s.Nombre), strings.TrimSpace(s.Descripcion), strings.TrimSpace(s.Categoria), s.DuracionMinutos, s.CostoReferencial, s.Precio, s.ImpuestoPorcentaje, strings.TrimSpace(s.ImagenURL), strings.TrimSpace(s.UsuarioCreador), strings.TrimSpace(s.Estado), strings.TrimSpace(s.Observaciones))
+}
+
+func validateServicioPayload(s Servicio) error {
+	if s.EmpresaID <= 0 || strings.TrimSpace(s.Nombre) == "" {
+		return fmt.Errorf("%w: empresa_id y nombre son obligatorios", ErrProductosDatosInvalidos)
+	}
+	if s.DuracionMinutos < 0 {
+		return fmt.Errorf("%w: duracion_minutos no puede ser negativa", ErrProductosDatosInvalidos)
+	}
+	if s.CostoReferencial < 0 || s.Precio < 0 {
+		return fmt.Errorf("%w: costo_referencial y precio no pueden ser negativos", ErrProductosDatosInvalidos)
+	}
+	if s.ImpuestoPorcentaje < 0 || s.ImpuestoPorcentaje > 100 {
+		return fmt.Errorf("%w: impuesto_porcentaje debe estar entre 0 y 100", ErrProductosDatosInvalidos)
+	}
+	return nil
 }
 
 // GetServiciosByEmpresa lista servicios por empresa.
@@ -5038,30 +5136,63 @@ func GetServiciosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		}
 		out = append(out, s)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // UpdateServicio actualiza servicio.
 func UpdateServicio(dbConn *sql.DB, s Servicio) error {
+	if err := validateServicioPayload(s); err != nil {
+		return err
+	}
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, `UPDATE servicios
-		SET codigo = ?, nombre = ?, descripcion = ?, categoria = ?, duracion_minutos = ?, costo_referencial = ?, precio = ?, impuesto_porcentaje = ?, imagen_url = ?, observaciones = ?, fecha_actualizacion = `+nowExpr+`
+	res, err := execSQLCompat(dbConn, `UPDATE servicios
+		SET codigo = NULLIF(?, ''), nombre = ?, descripcion = ?, categoria = ?, duracion_minutos = ?, costo_referencial = ?, precio = ?, impuesto_porcentaje = ?, imagen_url = ?, observaciones = ?, fecha_actualizacion = `+nowExpr+`
 		WHERE id = ? AND empresa_id = ?`,
 		strings.TrimSpace(s.Codigo), strings.TrimSpace(s.Nombre), strings.TrimSpace(s.Descripcion), strings.TrimSpace(s.Categoria), s.DuracionMinutos, s.CostoReferencial, s.Precio, s.ImpuestoPorcentaje, strings.TrimSpace(s.ImagenURL), strings.TrimSpace(s.Observaciones), s.ID, s.EmpresaID)
-	return err
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("%w: servicio", ErrInventarioEntidadNoDisponible)
+	}
+	return nil
 }
 
 // DeleteServicio elimina servicio.
 func DeleteServicio(dbConn *sql.DB, empresaID, servicioID int64) error {
-	_, err := execSQLCompat(dbConn, `DELETE FROM servicios WHERE id = ? AND empresa_id = ?`, servicioID, empresaID)
-	return err
+	res, err := execSQLCompat(dbConn, `DELETE FROM servicios WHERE id = ? AND empresa_id = ?`, servicioID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("%w: servicio", ErrInventarioEntidadNoDisponible)
+	}
+	return nil
 }
 
 // SetServicioEstado activa/desactiva servicio.
 func SetServicioEstado(dbConn *sql.DB, empresaID, servicioID int64, estado string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, `UPDATE servicios SET estado = ?, fecha_actualizacion = `+nowExpr+` WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), servicioID, empresaID)
-	return err
+	res, err := execSQLCompat(dbConn, `UPDATE servicios SET estado = ?, fecha_actualizacion = `+nowExpr+` WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), servicioID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("%w: servicio", ErrInventarioEntidadNoDisponible)
+	}
+	return nil
 }
 
 // GetProductoPrecioHistorialByEmpresa lista historial de precios de productos.
@@ -5126,7 +5257,7 @@ func GetProductoPrecioHistorialByEmpresa(dbConn *sql.DB, empresaID, productoID i
 		}
 		out = append(out, h)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // RegistrarMovimientoInventario registra entradas, salidas, devoluciones y pérdidas con impacto en stock.
@@ -5562,7 +5693,7 @@ func GetInventarioConteosCiclicosByEmpresa(dbConn *sql.DB, empresaID, productoID
 		out = append(out, row)
 	}
 
-	return out, nil
+	return out, rows.Err()
 }
 
 // RegistrarCambioProducto registra cambio de un producto por otro afectando existencias y movimientos.
