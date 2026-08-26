@@ -149,8 +149,9 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 }
 
 func TestCatalogoDianSoloDeclaraOperativasFamiliasConAdaptador(t *testing.T) {
-	operativos := map[string]bool{
-		"factura_electronica": true,
+	operativos := map[string]string{
+		"factura_electronica": "operativo",
+		"documento_soporte":   "operativo_anexo_1_1",
 	}
 	for _, item := range ListFacturacionDianDocumentosElectronicos() {
 		if item.Codigo == "nota_credito" {
@@ -159,8 +160,8 @@ func TestCatalogoDianSoloDeclaraOperativasFamiliasConAdaptador(t *testing.T) {
 			}
 			continue
 		}
-		if operativos[item.Codigo] {
-			if !item.DisponibleEmision || item.EstadoImplementacion != "operativo" {
+		if estadoEsperado, operativo := operativos[item.Codigo]; operativo {
+			if !item.DisponibleEmision || item.EstadoImplementacion != estadoEsperado || !item.RequiereFirma || !item.RequiereNumeracion {
 				t.Fatalf("documento con adaptador no está operativo: %#v", item)
 			}
 			continue

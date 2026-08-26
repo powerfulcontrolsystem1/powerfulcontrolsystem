@@ -1567,6 +1567,29 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 
 ### Tablas de documentos transaccionales canonicos
 
+Actualizacion 2026-08-26 (documento soporte DIAN 1.1):
+- La migracion inmutable `20260826-002-dian-documento-soporte-v1` amplía
+  `empresa_contabilidad_documentos_soporte` sin inventar datos fiscales para
+  filas históricas. Los importes pasan a `NUMERIC(18,2)` y se agregan vendedor,
+  ubicación, pago, `lineas_json`, `total_neto_contable`, `numero_legal`,
+  `fecha_emision_legal`, `configuracion_dian_json` y
+  `fuente_fiscal_sellada`.
+- La migracion falla cerrada si una fila existente tiene importes negativos o
+  precisión incompatible. Las filas legadas continúan como borrador y no
+  reciben CUDS, número, dirección ni respuesta DIAN sintetizados.
+- El índice único parcial `(empresa_id,numero_legal)` evita duplicados solo
+  después de reservar número. La reserva bloquea tanto borrador como
+  `empresa_dian_documentos_configuracion`, incrementa el consecutivo en la misma
+  transacción y reutiliza la instantánea en reintentos.
+- La configuración `tipo_documento=documento_soporte` no permite reducir un
+  consecutivo ya alcanzado ni guardar un rango por debajo de éste. Los datos de
+  firma/software siguen en la configuración DIAN principal; el snapshot de
+  numeración es deliberadamente libre de secretos.
+- Las líneas se recalculan en servidor y aceptan únicamente el catálogo de
+  1.093 unidades UN/ECE Revision 4 embebido por la caja DIAN 1.1. La fuente
+  fiscal y los artefactos se conservan en las tablas privadas existentes,
+  siempre por `empresa_id`.
+
 Actualizacion 2026-08-23 (configuracion DIAN por familia documental):
 - La migracion `20260823-001-dian-documentos-configuracion-v1` crea
   `empresa_dian_documentos_configuracion`, aislada por
@@ -1574,8 +1597,8 @@ Actualizacion 2026-08-23 (configuracion DIAN por familia documental):
   TestSet, prefijo, resolucion, vigencia, rango y consecutivo de cada familia.
 - La configuracion base `empresa_dian_configuracion` no se reutiliza como rango
   de documento soporte, nomina, equivalentes o RADIAN. La nueva tabla inicia
-  inactiva y no habilita ningun envio hasta que el adaptador y sus validaciones
-  tecnicas correspondientes esten terminados.
+  inactiva. Documento soporte obtuvo adaptador propio el 2026-08-26; las demás
+  familias continúan sin habilitar envío hasta completar sus contratos.
 - No se reescriben filas fiscales históricas durante el despliegue. Cualquier
   estado legado de nómina o documento soporte requiere conciliación y evidencia
   antes de corregirse; los formularios nuevos sí quedan forzados a borrador.

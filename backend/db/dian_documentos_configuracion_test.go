@@ -35,6 +35,35 @@ func TestNormalizeEmpresaDIANDocumentoConfiguracionRejectsInvalidRange(t *testin
 	}
 }
 
+func TestNormalizeEmpresaDIANDocumentoConfiguracionRejectsInvalidSupportStructure(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*EmpresaDIANDocumentoConfiguracion)
+	}{
+		{"prefijo", func(item *EmpresaDIANDocumentoConfiguracion) { item.Prefijo = "DS-1" }},
+		{"autorizacion", func(item *EmpresaDIANDocumentoConfiguracion) { item.ResolucionNumero = "1234567890123A" }},
+		{"rango", func(item *EmpresaDIANDocumentoConfiguracion) { item.RangoHasta = 1000000000 }},
+		{"consecutivo_fuera_rango", func(item *EmpresaDIANDocumentoConfiguracion) { item.ConsecutivoActual = 101 }},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			item := &EmpresaDIANDocumentoConfiguracion{
+				EmpresaID:         12,
+				TipoDocumento:     "documento_soporte",
+				Estado:            "configurando",
+				TipoAmbiente:      "produccion",
+				RangoDesde:        1,
+				RangoHasta:        100,
+				ConsecutivoActual: 1,
+			}
+			test.mutate(item)
+			if err := normalizeEmpresaDIANDocumentoConfiguracion(item); err == nil {
+				t.Fatalf("se esperaba rechazo de %s invalido", test.name)
+			}
+		})
+	}
+}
+
 func TestNormalizeEmpresaDIANDocumentoConfiguracionRejectsPrivateOverride(t *testing.T) {
 	item := &EmpresaDIANDocumentoConfiguracion{
 		EmpresaID: 12, TipoDocumento: "documento_soporte", URLDIANOverride: "https://127.0.0.1:8443",
