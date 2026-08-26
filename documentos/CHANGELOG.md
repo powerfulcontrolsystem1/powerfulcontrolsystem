@@ -32,6 +32,9 @@
 - [Impresion/UX] Los formularios y tablas de impresoras quedan acotados a su
   columna: las tablas anchas conservan desplazamiento interno sin extender la
   pagina en escritorio ni movil.
+- [Rendimiento/UX] El menu de Productos difiere la URL inicial de su iframe
+  hasta resolver `empresa_id`; evita la primera navegacion sin tenant y su
+  cancelacion inmediata, por lo que el catalogo se carga una sola vez.
 - [QA] Se agregan regresiones de ownership, proveedor sin codigo, recepcion
   multiitem, formatos privados, idempotencia y ancho del centro de impresion;
   los gates exactos del candidato final quedan documentados en PSI-000.

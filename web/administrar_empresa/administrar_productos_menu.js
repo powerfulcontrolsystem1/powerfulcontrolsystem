@@ -1,5 +1,5 @@
 (function() {
-        const VERSION = '20260610-bodegas-traslados-menu';
+        const VERSION = '20260826-psi-no-double-frame';
 
         function parsePositiveInt(raw) {
           const n = Number(String(raw || '').trim());
@@ -70,6 +70,7 @@
         });
         const frame = document.getElementById('productosContentFrame');
         if (frame) {
-          frame.setAttribute('src', withEmpresaAndVersion(frame.getAttribute('src') || '/administrar_empresa/administrar_productos.html?view=productos'));
+          const deferredSrc = frame.getAttribute('data-src') || '/administrar_empresa/administrar_productos.html?view=productos';
+          frame.setAttribute('src', withEmpresaAndVersion(deferredSrc));
         }
       })();

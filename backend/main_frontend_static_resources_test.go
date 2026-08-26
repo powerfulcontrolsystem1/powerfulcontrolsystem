@@ -501,6 +501,36 @@ func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T
 	}
 }
 
+func TestProductosMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing.T) {
+	menu, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "administrar_productos_menu.html"))
+	if err != nil {
+		t.Fatalf("read products menu: %v", err)
+	}
+	content := string(menu)
+	framePattern := regexp.MustCompile(`<iframe[^>]+id="productosContentFrame"[^>]*>`)
+	frame := framePattern.FindString(content)
+	if frame == "" {
+		t.Fatal("products menu must keep the products content frame")
+	}
+	if strings.Contains(frame, ` src=`) {
+		t.Fatal("products content frame must not navigate before empresa_id is resolved")
+	}
+	if !strings.Contains(frame, ` data-src="/administrar_empresa/administrar_productos.html?view=productos`) {
+		t.Fatal("products content frame must declare its deferred tenant-aware destination")
+	}
+
+	script, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "administrar_productos_menu.js"))
+	if err != nil {
+		t.Fatalf("read products menu script: %v", err)
+	}
+	scriptContent := string(script)
+	for _, required := range []string{"frame.getAttribute('data-src')", "withEmpresaAndVersion(deferredSrc)", "frame.setAttribute('src'"} {
+		if !strings.Contains(scriptContent, required) {
+			t.Fatalf("products menu must perform one deferred tenant-aware frame navigation; missing %q", required)
+		}
+	}
+}
+
 func TestEmpresaPagesWithMutatingFetchInstallCSRFSynchronizer(t *testing.T) {
 	root := filepath.Join("..", "web", "administrar_empresa")
 	mutatingFetch := regexp.MustCompile(`(?s)fetch\s*\(.{0,800}?method\s*:\s*["'](?:POST|PUT|PATCH|DELETE)["']`)

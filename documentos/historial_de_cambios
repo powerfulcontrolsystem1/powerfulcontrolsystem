@@ -37,6 +37,9 @@
 - El centro de impresion acota cada `.form` y `.table-wrap` a la columna de
   `.empresa-config-grid`; las tablas extensas mantienen scroll local y dejan de
   ampliar el documento a 1.581 px en una ventana de 1.366 px.
+- El menu de Productos conserva la URL del iframe en `data-src` y solo asigna
+  `src` despues de resolver y anexar el `empresa_id`; elimina la carga inicial
+  sin tenant que el navegador cancelaba al iniciar la vista empresarial.
 - QA enfocada: Go `./db ./handlers`, sintaxis JavaScript y contratos de UI,
   ownership, idempotencia, almacenamiento privado y contrato responsive de
   impresoras aprobados localmente. La validacion desplegada del SHA final se
