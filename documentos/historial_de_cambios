@@ -43520,3 +43520,13 @@ Archivos modificados:
 - La regresion cubre PostgreSQL y el formato compatible usado por pruebas,
   incluidos codigo/nombre de categoria/proveedor, SKU/barras y codigo de
   servicio.
+
+2026-08-26: Correccion del agregado diario visible del Kardex.
+- En staging, 39 movimientos y el balance real por bodega se mostraban
+  correctamente, pero la tendencia de siete dias publicaba ceros. PostgreSQL
+  entregaba la columna `DATE` con representacion temporal y la clave no
+  coincidia con el texto `YYYY-MM-DD` usado para completar la serie.
+- La capa de datos normaliza `time.Time`, texto y bytes al formato ISO antes de
+  agregar la fila. Una fecha invalida produce error en vez de ocultar actividad.
+- La regresion cubre la representacion PostgreSQL y los formatos de
+  compatibilidad de pruebas; el resultado desplegado se repetira en PSI-000.

@@ -5,7 +5,30 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestNormalizeInventarioTendenciaFechaPostgresYCompat(t *testing.T) {
+	want := "2026-08-26"
+	values := []interface{}{
+		time.Date(2026, time.August, 26, 0, 0, 0, 0, time.UTC),
+		"2026-08-26T00:00:00Z",
+		"2026-08-26 00:00:00+00",
+		[]byte("2026-08-26"),
+	}
+	for _, value := range values {
+		got, err := normalizeInventarioTendenciaFecha(value)
+		if err != nil {
+			t.Fatalf("normalize %T: %v", value, err)
+		}
+		if got != want {
+			t.Fatalf("normalize %T=%q, want %q", value, got, want)
+		}
+	}
+	if _, err := normalizeInventarioTendenciaFecha("fecha-invalida"); err == nil {
+		t.Fatal("invalid daily inventory date must fail closed")
+	}
+}
 
 func TestCreateBodegaUsaTimestampPostgres(t *testing.T) {
 	raw, err := os.ReadFile("productos.go")

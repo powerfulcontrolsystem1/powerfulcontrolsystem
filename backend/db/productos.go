@@ -2809,6 +2809,24 @@ func getInventarioCatalogTotalsByEmpresa(dbConn *sql.DB, empresaID int64, resume
 }
 
 // GetInventarioTendenciaByEmpresa devuelve una serie diaria de entradas/salidas de inventario.
+func normalizeInventarioTendenciaFecha(raw interface{}) (string, error) {
+	switch value := raw.(type) {
+	case time.Time:
+		return value.Format("2006-01-02"), nil
+	case []byte:
+		raw = string(value)
+	}
+
+	text := strings.TrimSpace(fmt.Sprint(raw))
+	if len(text) >= len("2006-01-02") {
+		candidate := text[:len("2006-01-02")]
+		if _, err := time.Parse("2006-01-02", candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("fecha diaria de inventario invalida")
+}
+
 func GetInventarioTendenciaByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, desde, hasta string, dias int) ([]InventarioTendenciaDia, error) {
 	desde = strings.TrimSpace(desde)
 	hasta = strings.TrimSpace(hasta)
@@ -2874,7 +2892,12 @@ func GetInventarioTendenciaByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, 
 	seriesByDate := make(map[string]InventarioTendenciaDia)
 	for rows.Next() {
 		var row InventarioTendenciaDia
-		if err := rows.Scan(&row.Fecha, &row.Entradas, &row.Salidas, &row.AjusteNeto, &row.Traslados, &row.Eventos); err != nil {
+		var rawFecha interface{}
+		if err := rows.Scan(&rawFecha, &row.Entradas, &row.Salidas, &row.AjusteNeto, &row.Traslados, &row.Eventos); err != nil {
+			return nil, err
+		}
+		row.Fecha, err = normalizeInventarioTendenciaFecha(rawFecha)
+		if err != nil {
 			return nil, err
 		}
 		row.Neto = row.Entradas - row.Salidas
