@@ -43530,3 +43530,11 @@ Archivos modificados:
   agregar la fila. Una fecha invalida produce error en vez de ocultar actividad.
 - La regresion cubre la representacion PostgreSQL y los formatos de
   compatibilidad de pruebas; el resultado desplegado se repetira en PSI-000.
+
+2026-08-26: Ownership seguro en las mutaciones de bodegas.
+- Actualizar, cambiar estado o borrar una bodega que no pertenezca a la empresa
+  autenticada devuelve el mismo HTTP 404 que una bodega inexistente.
+- El helper comun evita repetir la clasificacion y mantiene como error interno
+  cualquier fallo distinto de `sql.ErrNoRows`.
+- La regresion valida el estado y el mensaje publico sin revelar IDs, SQL o la
+  existencia de datos de otra empresa.

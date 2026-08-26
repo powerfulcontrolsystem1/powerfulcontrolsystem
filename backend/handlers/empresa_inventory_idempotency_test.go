@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -64,6 +65,19 @@ func TestProductosCatalogDuplicateReturnsConflictWithoutDatabaseDetails(t *testi
 	rec := httptest.NewRecorder()
 	if writeProductosCatalogDuplicate(rec, "categoria", errors.New("database unavailable")) {
 		t.Fatal("non-duplicate error was classified as duplicate")
+	}
+}
+
+func TestBodegaNoEncontradaUsa404Seguro(t *testing.T) {
+	rec := httptest.NewRecorder()
+	if !writeBodegaNoEncontrada(rec, sql.ErrNoRows) {
+		t.Fatal("sql.ErrNoRows was not classified")
+	}
+	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), "bodega no encontrada") {
+		t.Fatalf("response=%d %q", rec.Code, rec.Body.String())
+	}
+	if writeBodegaNoEncontrada(httptest.NewRecorder(), errors.New("database unavailable")) {
+		t.Fatal("internal error was classified as not found")
 	}
 }
 

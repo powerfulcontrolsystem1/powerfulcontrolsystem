@@ -877,6 +877,9 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					estado = "activo"
 				}
 				if err := dbpkg.SetBodegaEstado(dbEmp, empresaID, id, estado); err != nil {
+					if writeBodegaNoEncontrada(w, err) {
+						return
+					}
 					writeProductosInternalError(w, r, "actualizar_estado_bodega", err)
 					return
 				}
@@ -898,6 +901,9 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.UpdateBodega(dbEmp, payload); err != nil {
+				if writeBodegaNoEncontrada(w, err) {
+					return
+				}
 				writeBodegaPersistenceError(w, err)
 				return
 			}
@@ -915,6 +921,9 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.DeleteBodega(dbEmp, empresaID, id); err != nil {
+				if writeBodegaNoEncontrada(w, err) {
+					return
+				}
 				writeProductosInternalError(w, r, "eliminar_bodega", err)
 				return
 			}
@@ -3153,6 +3162,14 @@ func writeBodegaPersistenceError(w http.ResponseWriter, err error) {
 		return
 	}
 	http.Error(w, "No se pudo guardar la bodega. Intenta de nuevo en unos segundos.", http.StatusInternalServerError)
+}
+
+func writeBodegaNoEncontrada(w http.ResponseWriter, err error) bool {
+	if !errors.Is(err, sql.ErrNoRows) {
+		return false
+	}
+	http.Error(w, "bodega no encontrada", http.StatusNotFound)
+	return true
 }
 
 func parseInt64Query(r *http.Request, key string) (int64, error) {
