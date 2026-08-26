@@ -1100,6 +1100,9 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - servicios:
   - empresa_id, codigo, nombre, descripcion, categoria, duracion_minutos
   - costo_referencial, precio, impuesto_porcentaje, imagen_url
+  - `ux_servicios_empresa_nombre_normalizado` garantiza un solo
+    `LOWER(BTRIM(nombre))` no vacio por `empresa_id`; el codigo opcional vacio se
+    conserva como `NULL` y puede omitirse en servicios distintos.
 - producto_precios_historial:
   - empresa_id, producto_id
   - costo_anterior, costo_nuevo, precio_anterior, precio_nuevo

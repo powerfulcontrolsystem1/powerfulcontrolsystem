@@ -52,13 +52,13 @@ func writeProductosCatalogDuplicate(w http.ResponseWriter, entity string, err er
 		"categoria": {"ux_categorias_productos_empresa_", "categorias_productos."},
 		"producto":  {"ux_productos_empresa_", "productos.sku", "productos.codigo_barras"},
 		"proveedor": {"ux_proveedores_empresa_", "proveedores.codigo", "proveedores.nombre"},
-		"servicio":  {"ux_servicios_empresa_codigo", "servicios.codigo"},
+		"servicio":  {"ux_servicios_empresa_codigo", "ux_servicios_empresa_nombre_normalizado", "servicios.codigo"},
 	}
 	messages := map[string]string{
 		"categoria": "Ya existe una categoria con ese nombre o codigo para esta empresa.",
 		"producto":  "Ya existe un producto con el mismo SKU o codigo de barras para esta empresa.",
 		"proveedor": "Ya existe un proveedor con ese nombre o codigo para esta empresa.",
-		"servicio":  "Ya existe un servicio con ese codigo para esta empresa.",
+		"servicio":  "Ya existe un servicio con el mismo nombre o codigo para esta empresa.",
 	}
 	for _, marker := range markers[entity] {
 		if strings.Contains(lower, marker) {

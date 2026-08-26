@@ -204,6 +204,9 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260826-002-productos-inventario-recepcion-bodega-v2", Description: "safe legacy warehouse compatibility for purchase receipts", Body: empresaProductosInventarioLegacyWarehouseSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaProductosInventarioLegacyWarehouseSchemaTx(ctx, tx)
 			}},
+			{Version: "20260826-003-servicios-nombre-unico-v1", Description: "tenant-scoped normalized unique service names", Body: empresaServiciosNombreUniqueSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaServiciosNombreUniqueSchemaTx(ctx, tx)
+			}},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

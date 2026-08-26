@@ -43,6 +43,7 @@ func TestProductosCatalogDuplicateReturnsConflictWithoutDatabaseDetails(t *testi
 		{"producto", `UNIQUE constraint failed: productos.empresa_id, productos.sku`, "Ya existe un producto"},
 		{"proveedor", `pq: duplicate key value violates unique constraint "ux_proveedores_empresa_nombre"`, "Ya existe un proveedor"},
 		{"servicio", `UNIQUE constraint failed: servicios.empresa_id, servicios.codigo`, "Ya existe un servicio"},
+		{"servicio", `pq: duplicate key value violates unique constraint "ux_servicios_empresa_nombre_normalizado"`, "mismo nombre o codigo"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.entity, func(t *testing.T) {

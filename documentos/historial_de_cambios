@@ -43554,3 +43554,17 @@ Archivos modificados:
   cualquier fallo distinto de `sql.ErrNoRows`.
 - La regresion valida el estado y el mensaje publico sin revelar IDs, SQL o la
   existencia de datos de otra empresa.
+
+2026-08-26: Unicidad concurrente del catalogo de servicios por empresa.
+- La prueba real en PCS detecto que dos servicios con el mismo nombre podian
+  coexistir cuando ambos omitian el codigo opcional; el registro sintetico de la
+  prueba fue retirado inmediatamente.
+- La migracion versionada `20260826-003-servicios-nombre-unico-v1` crea el indice
+  funcional por `empresa_id` y nombre sin espacios exteriores ni diferencias de
+  mayusculas. PostgreSQL resuelve la concurrencia y los codigos vacios siguen
+  almacenados como `NULL`.
+- La migracion inspecciona grupos historicos antes del DDL y falla cerrado con un
+  conteo no sensible si necesitan conciliacion; nunca renombra, elimina ni
+  desactiva catalogos existentes automaticamente.
+- El handler reconoce la nueva restriccion y responde HTTP 409 sin publicar el
+  nombre del indice, SQLSTATE ni detalles internos de PostgreSQL.

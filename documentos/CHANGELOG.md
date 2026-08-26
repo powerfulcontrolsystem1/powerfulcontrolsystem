@@ -18,6 +18,10 @@
 - [Catalogos] Categorias, productos, proveedores y servicios duplicados devuelven
   HTTP 409 con un mensaje publico estable; las restricciones y mensajes internos
   de PostgreSQL no se exponen al navegador.
+- [Servicios] El nombre normalizado es unico dentro de cada empresa mediante un
+  indice PostgreSQL versionado; conserva codigos opcionales `NULL`, bloquea
+  carreras concurrentes y falla cerrado si una instalacion historica requiere
+  reconciliar duplicados antes de migrar.
 - [Bodegas] Actualizar, cambiar estado o eliminar una bodega inexistente o ajena
   devuelve 404 seguro en vez de convertir `sql.ErrNoRows` en un error 500.
 - [Kardex] La tendencia diaria normaliza fechas PostgreSQL antes de completar el

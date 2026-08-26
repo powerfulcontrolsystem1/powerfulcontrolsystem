@@ -9,6 +9,7 @@ import (
 const (
 	empresaProductosInventarioSchemaFingerprint                = "empresa-productos-inventario:v1:recepcion-bodega-not-null:productos-tenant-state-index"
 	empresaProductosInventarioLegacyWarehouseSchemaFingerprint = "empresa-productos-inventario:v2:recepcion-bodega-legacy-nullable-positive"
+	empresaServiciosNombreUniqueSchemaFingerprint              = "empresa-servicios:v1:tenant-normalized-name-unique"
 )
 
 // applyEmpresaProductosInventarioSchemaTx owns the schema additions required
@@ -86,6 +87,39 @@ func applyEmpresaProductosInventarioLegacyWarehouseSchemaTx(ctx context.Context,
 		if _, err := tx.ExecContext(ctx, statement); err != nil {
 			return fmt.Errorf("migrate products and inventory schema: %w", err)
 		}
+	}
+	return nil
+}
+
+// applyEmpresaServiciosNombreUniqueSchemaTx prevents two concurrent writes from
+// creating the same logical service name inside one tenant. Optional blank
+// service codes remain NULL and therefore independent from this name invariant.
+// Existing duplicate groups fail closed so an operator can reconcile them
+// explicitly instead of silently changing business catalog data.
+func applyEmpresaServiciosNombreUniqueSchemaTx(ctx context.Context, tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("migration transaction is required")
+	}
+
+	var duplicateGroups int64
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*)
+		FROM (
+			SELECT empresa_id, LOWER(BTRIM(nombre)) AS nombre_normalizado
+			FROM servicios
+			WHERE BTRIM(nombre) <> ''
+			GROUP BY empresa_id, LOWER(BTRIM(nombre))
+			HAVING COUNT(*) > 1
+		) AS duplicados`).Scan(&duplicateGroups); err != nil {
+		return fmt.Errorf("inspect duplicate enterprise service names: %w", err)
+	}
+	if duplicateGroups > 0 {
+		return fmt.Errorf("cannot enforce unique enterprise service names: %d duplicate tenant/name groups require reconciliation", duplicateGroups)
+	}
+
+	if _, err := tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS ux_servicios_empresa_nombre_normalizado
+		ON servicios(empresa_id, LOWER(BTRIM(nombre)))
+		WHERE BTRIM(nombre) <> ''`); err != nil {
+		return fmt.Errorf("enforce unique enterprise service names: %w", err)
 	}
 	return nil
 }

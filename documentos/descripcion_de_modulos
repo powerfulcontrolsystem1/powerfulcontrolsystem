@@ -4560,6 +4560,14 @@ Captura inteligente de compras y gastos
 - Importacion: valida nombre, campos obligatorios configurados, duplicados por SKU/codigo de barras/nombre, bodega para stock inicial y categorias por empresa.
 - Seguridad: no crea tablas nuevas, no usa SQLite, no introduce dependencias externas y conserva aislamiento por `empresa_id`.
 
+2026-08-26 - Servicios: nombre unico y seguro para concurrencia
+- Modulos afectados: `productos`, `servicios`, `inventario`, `administrar_empresa`.
+- El catalogo central admite varios servicios sin codigo, pero no permite repetir
+  el mismo nombre normalizado dentro de una empresa; otra empresa puede usarlo
+  de forma independiente.
+- La regla vive en PostgreSQL mediante migracion versionada y se presenta como
+  HTTP 409 seguro en altas o ediciones concurrentes.
+
 2026-06-11 - Finanzas: Pagos Bre-B QR
 - Modulos afectados: `finanzas`, `carritos`, `caja`, `bancos_pagos`.
 - Cambio funcional: el centro financiero incorpora una pagina profesional `Pagos Bre-B QR` con configuracion de QR por empresa, cuentas receptoras por caja, payload oficial/plantilla, alertas operativas, registro manual de pagos recibidos y tabla de ventas/abonos Bre-B.

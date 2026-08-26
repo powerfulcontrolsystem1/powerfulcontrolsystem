@@ -101,6 +101,23 @@ func TestEmpresaCatalogIncludesProductosInventarioLegacyWarehouseMigration(t *te
 	t.Fatal("legacy receipt warehouse migration is missing from empresas catalog")
 }
 
+func TestEmpresaCatalogIncludesServiciosNombreUniqueMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260826-003-servicios-nombre-unico-v1" {
+			if migration.Body != empresaServiciosNombreUniqueSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("normalized service-name uniqueness migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("normalized service-name uniqueness migration is missing from empresas catalog")
+}
+
 func TestEmpresaCatalogIncludesNextcloudLegacyRepairMigration(t *testing.T) {
 	t.Parallel()
 	migrations, err := PlatformMigrations(MigrationTargetEmpresas)

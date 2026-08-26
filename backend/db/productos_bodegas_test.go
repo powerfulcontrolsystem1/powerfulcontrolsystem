@@ -198,6 +198,24 @@ func TestServicioCodigoOpcionalYValoresProductivos(t *testing.T) {
 	}
 }
 
+func TestServicioNombreNormalizadoTieneIndiceUnicoMultiempresa(t *testing.T) {
+	raw, err := os.ReadFile("productos_inventario_migration.go")
+	if err != nil {
+		t.Fatalf("read productos_inventario_migration.go: %v", err)
+	}
+	src := string(raw)
+	for _, required := range []string{
+		"ux_servicios_empresa_nombre_normalizado",
+		"ON servicios(empresa_id, LOWER(BTRIM(nombre)))",
+		"HAVING COUNT(*) > 1",
+		"duplicate tenant/name groups require reconciliation",
+	} {
+		if !strings.Contains(src, required) {
+			t.Fatalf("service-name uniqueness migration is missing %q", required)
+		}
+	}
+}
+
 func TestProductoRechazaValoresEconomicosYStockInvalidos(t *testing.T) {
 	valid := Producto{Nombre: "Producto QA", Costo: 100, Precio: 200, ImpuestoPorcentaje: 19, StockMinimo: 1, StockMaximo: 10}
 	if err := validateProductoValores(valid, 2); err != nil {
