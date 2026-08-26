@@ -2233,7 +2233,7 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 		}
 		return permActionRead
 	}
-	if action == "procesar_reintentos" || action == "reconciliar_estados" ||
+	if action == "procesar_reintentos" || action == "reconciliar_estados" || action == "reconciliar_aceptados_local" ||
 		action == "facturar_desde_venta" || action == "reenviar_dian" || action == "reintentar_dian" || action == "enviar_dian" ||
 		action == "firmar_xml_real" || action == "firmar_xml_xades_base" || action == "validar_documento_dian" || action == "preflight_documento" || action == "validar_previo_envio" || action == "enviar_documento_real" ||
 		action == "reconexion_dian" || action == "consultar_acuse_real" || action == "consultar_rango_numeracion" || action == "get_numbering_range" || action == "consultar_clave_tecnica" ||

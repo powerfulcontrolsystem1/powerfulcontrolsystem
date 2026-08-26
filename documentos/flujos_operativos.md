@@ -1521,9 +1521,11 @@ afecte dinero, documentos, licencias o seguridad.
 7. La bandeja habilita la anulacion solo si la factura conserva CUFE oficial y
    `fuente_fiscal_disponible=true`. Un documento historico sin snapshot queda en
    consulta; no se reconstruyen lineas, impuestos o cliente por suposicion.
-8. `reconciliar_estados` repara primero los datos locales de una cola ya
-   aceptada/reconciliada. Esa ruta no vuelve a transmitir el XML ni aumenta sus
-   intentos; una cola sin aceptacion permanece pendiente del flujo normal.
+8. `reconciliar_aceptados_local` repara exclusivamente los datos locales de una
+   cola ya aceptada/reconciliada. Omite el resto antes de cualquier despacho, no
+   vuelve a transmitir el XML ni aumenta intentos o fechas de envio. La accion
+   general `reconciliar_estados` conserva el flujo operativo de pendientes y no
+   debe usarse para un cierre limitado a acuses aceptados.
 
 ### Errores DIAN que el usuario puede resolver
 
