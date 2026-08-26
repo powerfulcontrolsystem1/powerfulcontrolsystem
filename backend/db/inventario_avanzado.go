@@ -227,7 +227,27 @@ func CreateEmpresaInventarioSerialAvanzado(dbConn *sql.DB, serial EmpresaInventa
 	if serial.EmpresaID <= 0 || serial.ProductoID <= 0 || serial.BodegaID <= 0 || serial.Serial == "" {
 		return 0, errors.New("empresa, producto, bodega y serial son requeridos")
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_inventario_seriales_avanzados
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	if err := validateProductoEmpresaTx(tx, serial.EmpresaID, serial.ProductoID); err != nil {
+		return 0, err
+	}
+	if err := validateBodegaEmpresaTx(tx, serial.EmpresaID, serial.BodegaID); err != nil {
+		return 0, err
+	}
+	if serial.LoteID > 0 {
+		var loteProductoID, loteBodegaID int64
+		if err := queryRowTxSQLCompat(tx, `SELECT producto_id,bodega_id FROM empresa_inventario_lotes_avanzados WHERE empresa_id=? AND id=? FOR UPDATE`, serial.EmpresaID, serial.LoteID).Scan(&loteProductoID, &loteBodegaID); err != nil {
+			return 0, err
+		}
+		if loteProductoID != serial.ProductoID || loteBodegaID != serial.BodegaID {
+			return 0, errors.New("el lote no corresponde al producto y bodega")
+		}
+	}
+	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_inventario_seriales_avanzados
 		(empresa_id,lote_id,producto_id,bodega_id,serial,estado_operativo,estado_inventario,fecha_ingreso,garantia_hasta,cliente_reserva,observaciones,usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT (empresa_id,serial) DO UPDATE SET
@@ -243,6 +263,10 @@ func CreateEmpresaInventarioSerialAvanzado(dbConn *sql.DB, serial EmpresaInventa
 			usuario_creador=EXCLUDED.usuario_creador,
 			fecha_actualizacion=CURRENT_TIMESTAMP`,
 		serial.EmpresaID, serial.LoteID, serial.ProductoID, serial.BodegaID, serial.Serial, serial.EstadoOperativo, serial.EstadoInventario, serial.FechaIngreso, serial.GarantiaHasta, serial.ClienteReserva, serial.Observaciones, serial.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	return id, tx.Commit()
 }
 
 func CreateEmpresaInventarioReservaAvanzada(dbConn *sql.DB, reserva EmpresaInventarioReservaAvanzada) (int64, error) {
@@ -250,14 +274,68 @@ func CreateEmpresaInventarioReservaAvanzada(dbConn *sql.DB, reserva EmpresaInven
 	if reserva.EmpresaID <= 0 || reserva.ProductoID <= 0 || reserva.BodegaID <= 0 || reserva.Cantidad <= 0 {
 		return 0, errors.New("empresa, producto, bodega y cantidad son requeridos")
 	}
-	disponible, err := getInventarioDisponibleAvanzado(dbConn, reserva.EmpresaID, reserva.ProductoID, reserva.BodegaID, reserva.LoteID)
+	tx, err := dbConn.Begin()
 	if err != nil {
 		return 0, err
+	}
+	defer tx.Rollback()
+	if err := validateProductoEmpresaTx(tx, reserva.EmpresaID, reserva.ProductoID); err != nil {
+		return 0, err
+	}
+	if err := validateBodegaEmpresaTx(tx, reserva.EmpresaID, reserva.BodegaID); err != nil {
+		return 0, err
+	}
+	var disponible float64
+	if reserva.LoteID > 0 {
+		var loteProductoID, loteBodegaID int64
+		if err := queryRowTxSQLCompat(tx, `SELECT producto_id,bodega_id,cantidad_disponible FROM empresa_inventario_lotes_avanzados WHERE empresa_id=? AND id=? AND estado='activo' FOR UPDATE`, reserva.EmpresaID, reserva.LoteID).Scan(&loteProductoID, &loteBodegaID, &disponible); err != nil {
+			return 0, err
+		}
+		if loteProductoID != reserva.ProductoID || loteBodegaID != reserva.BodegaID {
+			return 0, errors.New("el lote no corresponde al producto y bodega")
+		}
+		var reservado float64
+		if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(SUM(cantidad),0) FROM empresa_inventario_reservas_avanzadas WHERE empresa_id=? AND lote_id=? AND estado='activa'`, reserva.EmpresaID, reserva.LoteID).Scan(&reservado); err != nil {
+			return 0, err
+		}
+		disponible -= reservado
+	} else {
+		if err := queryRowTxSQLCompat(tx, `SELECT cantidad FROM inventario_existencias WHERE empresa_id=? AND producto_id=? AND bodega_id=? FOR UPDATE`, reserva.EmpresaID, reserva.ProductoID, reserva.BodegaID).Scan(&disponible); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return 0, ErrStockInsuficiente
+			}
+			return 0, err
+		}
+		var reservado float64
+		if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(SUM(cantidad),0) FROM empresa_inventario_reservas_avanzadas WHERE empresa_id=? AND producto_id=? AND bodega_id=? AND COALESCE(lote_id,0)=0 AND estado='activa'`, reserva.EmpresaID, reserva.ProductoID, reserva.BodegaID).Scan(&reservado); err != nil {
+			return 0, err
+		}
+		disponible -= reservado
 	}
 	if disponible < reserva.Cantidad {
 		return 0, ErrStockInsuficiente
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_inventario_reservas_avanzadas
+	if reserva.SerialID > 0 {
+		var serialProductoID, serialBodegaID, serialLoteID int64
+		var estado string
+		if err := queryRowTxSQLCompat(tx, `SELECT producto_id,bodega_id,COALESCE(lote_id,0),COALESCE(estado_inventario,'') FROM empresa_inventario_seriales_avanzados WHERE empresa_id=? AND id=? FOR UPDATE`, reserva.EmpresaID, reserva.SerialID).Scan(&serialProductoID, &serialBodegaID, &serialLoteID, &estado); err != nil {
+			return 0, err
+		}
+		if serialProductoID != reserva.ProductoID || serialBodegaID != reserva.BodegaID || (reserva.LoteID > 0 && serialLoteID != reserva.LoteID) || estado != "disponible" || reserva.Cantidad != 1 {
+			return 0, errors.New("serial no disponible para la reserva")
+		}
+	}
+	if reserva.OrigenRef != "" {
+		var existingID int64
+		err := queryRowTxSQLCompat(tx, `SELECT id FROM empresa_inventario_reservas_avanzadas WHERE empresa_id=? AND producto_id=? AND bodega_id=? AND COALESCE(lote_id,0)=? AND COALESCE(serial_id,0)=? AND origen_modulo=? AND origen_ref=? AND estado='activa'`, reserva.EmpresaID, reserva.ProductoID, reserva.BodegaID, reserva.LoteID, reserva.SerialID, reserva.OrigenModulo, reserva.OrigenRef).Scan(&existingID)
+		if err == nil {
+			return existingID, tx.Commit()
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return 0, err
+		}
+	}
+	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_inventario_reservas_avanzadas
 		(empresa_id,producto_id,bodega_id,lote_id,serial_id,cantidad,origen_modulo,origen_ref,cliente_nombre,fecha_reserva,fecha_expira,estado,usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		reserva.EmpresaID, reserva.ProductoID, reserva.BodegaID, reserva.LoteID, reserva.SerialID, reserva.Cantidad, reserva.OrigenModulo, reserva.OrigenRef, reserva.ClienteNombre, reserva.FechaReserva, reserva.FechaExpira, reserva.Estado, reserva.UsuarioCreador)
@@ -265,9 +343,19 @@ func CreateEmpresaInventarioReservaAvanzada(dbConn *sql.DB, reserva EmpresaInven
 		return 0, err
 	}
 	if reserva.SerialID > 0 {
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_inventario_seriales_avanzados SET estado_inventario='reservado', cliente_reserva=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, reserva.ClienteNombre, reserva.EmpresaID, reserva.SerialID)
+		res, err := execTxSQLCompat(tx, `UPDATE empresa_inventario_seriales_avanzados SET estado_inventario='reservado', cliente_reserva=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=? AND estado_inventario='disponible'`, reserva.ClienteNombre, reserva.EmpresaID, reserva.SerialID)
+		if err != nil {
+			return 0, err
+		}
+		affected, err := res.RowsAffected()
+		if err != nil {
+			return 0, err
+		}
+		if affected != 1 {
+			return 0, errors.New("serial no disponible para la reserva")
+		}
 	}
-	return id, nil
+	return id, tx.Commit()
 }
 
 func ConfirmarEmpresaInventarioReservaAvanzada(dbConn *sql.DB, empresaID, reservaID int64, usuario string) error {
@@ -277,7 +365,7 @@ func ConfirmarEmpresaInventarioReservaAvanzada(dbConn *sql.DB, empresaID, reserv
 	}
 	defer tx.Rollback()
 	var r EmpresaInventarioReservaAvanzada
-	if err := queryRowTxSQLCompat(tx, `SELECT id,empresa_id,producto_id,bodega_id,COALESCE(lote_id,0),COALESCE(serial_id,0),COALESCE(cantidad,0),COALESCE(origen_modulo,''),COALESCE(origen_ref,''),COALESCE(cliente_nombre,''),COALESCE(estado,'activa') FROM empresa_inventario_reservas_avanzadas WHERE empresa_id=? AND id=?`, empresaID, reservaID).Scan(&r.ID, &r.EmpresaID, &r.ProductoID, &r.BodegaID, &r.LoteID, &r.SerialID, &r.Cantidad, &r.OrigenModulo, &r.OrigenRef, &r.ClienteNombre, &r.Estado); err != nil {
+	if err := queryRowTxSQLCompat(tx, `SELECT id,empresa_id,producto_id,bodega_id,COALESCE(lote_id,0),COALESCE(serial_id,0),COALESCE(cantidad,0),COALESCE(origen_modulo,''),COALESCE(origen_ref,''),COALESCE(cliente_nombre,''),COALESCE(estado,'activa') FROM empresa_inventario_reservas_avanzadas WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, reservaID).Scan(&r.ID, &r.EmpresaID, &r.ProductoID, &r.BodegaID, &r.LoteID, &r.SerialID, &r.Cantidad, &r.OrigenModulo, &r.OrigenRef, &r.ClienteNombre, &r.Estado); err != nil {
 		return err
 	}
 	if r.Estado != "activa" {
@@ -293,11 +381,27 @@ func ConfirmarEmpresaInventarioReservaAvanzada(dbConn *sql.DB, empresaID, reserv
 			return ErrStockInsuficiente
 		}
 	}
-	if _, err := execTxSQLCompat(tx, `UPDATE inventario_existencias SET cantidad=cantidad-?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND producto_id=? AND bodega_id=?`, r.Cantidad, empresaID, r.ProductoID, r.BodegaID); err != nil {
+	res, err := execTxSQLCompat(tx, `UPDATE inventario_existencias SET cantidad=cantidad-?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND producto_id=? AND bodega_id=? AND cantidad>=?`, r.Cantidad, empresaID, r.ProductoID, r.BodegaID, r.Cantidad)
+	if err != nil {
 		return err
 	}
-	if _, err := execTxSQLCompat(tx, `UPDATE empresa_inventario_reservas_avanzadas SET estado='confirmada', fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, empresaID, reservaID); err != nil {
+	affected, err := res.RowsAffected()
+	if err != nil {
 		return err
+	}
+	if affected != 1 {
+		return ErrStockInsuficiente
+	}
+	res, err = execTxSQLCompat(tx, `UPDATE empresa_inventario_reservas_avanzadas SET estado='confirmada', fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=? AND estado='activa'`, empresaID, reservaID)
+	if err != nil {
+		return err
+	}
+	affected, err = res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return fmt.Errorf("reserva no activa")
 	}
 	if r.SerialID > 0 {
 		if _, err := execTxSQLCompat(tx, `UPDATE empresa_inventario_seriales_avanzados SET estado_inventario='salido', fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, empresaID, r.SerialID); err != nil {

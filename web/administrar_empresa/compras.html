@@ -115,8 +115,8 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="comprobanteArchivo">Adjuntar comprobante</label>
-            <input id="comprobanteArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx">
-            <div class="form-help">Puedes tomar una foto o subir imagen/PDF; se guarda en la carpeta de comprobantes.</div>
+            <input id="comprobanteArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.xml">
+            <div class="form-help">Puedes tomar una foto o subir PNG/JPEG/WebP, PDF o XML; el backend verifica tipo y contenido antes de guardarlo.</div>
             <button id="btnAnalizarCompraIA" class="btn secondary ai-action-btn" type="button"><img src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true">Carga automática de factura de compra</button>
           </div>
         </div>
@@ -249,11 +249,31 @@
       }
     }
 
+    function publicError(status, raw) {
+      var text = String(raw || "").trim();
+      if (text && text.charAt(0) === "{") {
+        try {
+          var data = JSON.parse(text);
+          if (data && typeof data.error === "string") {
+            text = data.error.trim();
+          }
+        } catch (_err) {}
+      }
+      if (!text || text.indexOf("<") !== -1 || text.length > 240) {
+        if (status === 401) return "La sesión expiró. Inicia sesión nuevamente.";
+        if (status === 403) return "No tienes permiso para operar compras en esta empresa.";
+        if (status === 404) return "La información de compras todavía no está disponible.";
+        if (status === 409) return "La operación ya fue procesada o entra en conflicto con el estado actual.";
+        return "No se pudo completar la operación de compras.";
+      }
+      return text;
+    }
+
     async function apiRequest(path, options) {
       var resp = await fetch(path, Object.assign({ credentials: "same-origin" }, options || {}));
       if (!resp.ok) {
         var errorText = await resp.text();
-        throw new Error(errorText || ("HTTP " + resp.status));
+        throw new Error(publicError(resp.status, errorText));
       }
       if (resp.status === 204) {
         return null;

@@ -1,0 +1,441 @@
+package handlers
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"testing"
+)
+
+func TestEmpresaInventoryIdempotentMutationRequiresKeyBeforeDatabase(t *testing.T) {
+	called := false
+	handler := EmpresaInventoryIdempotentMutation(nil, "adjustment", func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/inventario/ajustar?empresa_id=12", strings.NewReader(`{"empresa_id":12}`))
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d, want %d", rec.Code, http.StatusBadRequest)
+	}
+	if called {
+		t.Fatal("inventory mutation executed without Idempotency-Key")
+	}
+	if !strings.Contains(rec.Body.String(), "Idempotency-Key") {
+		t.Fatalf("missing public idempotency error: %q", rec.Body.String())
+	}
+}
+
+func TestEmpresaInventoryIdempotentMutationAllowsReadsWithoutKey(t *testing.T) {
+	called := false
+	handler := EmpresaInventoryIdempotentMutation(nil, "advanced", func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	})
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/inventario_avanzado?empresa_id=12", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status=%d, want %d", rec.Code, http.StatusNoContent)
+	}
+	if !called {
+		t.Fatal("inventory read was not delegated")
+	}
+}
+
+func TestEmpresaPurchasesIdempotentMutationRequiresKeyBeforeDatabase(t *testing.T) {
+	called := false
+	handler := EmpresaPurchasesIdempotentMutation(nil, "advanced", func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/compras_avanzadas?empresa_id=12", strings.NewReader(`{"action":"recepcion","empresa_id":12}`))
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest || called {
+		t.Fatalf("status=%d called=%v; mutation must stop before database", rec.Code, called)
+	}
+	if !strings.Contains(rec.Body.String(), "Idempotency-Key") {
+		t.Fatalf("missing public idempotency error: %q", rec.Body.String())
+	}
+}
+
+func TestEmpresaPrinterQueueIdempotentMutationRequiresKeyBeforeDatabase(t *testing.T) {
+	called := false
+	handler := EmpresaPrinterQueueIdempotentMutation(nil, func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	})
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/impresoras?empresa_id=12&action=cola_trabajo", strings.NewReader(`{"empresa_id":12,"contenido":"prueba"}`))
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest || called {
+		t.Fatalf("status=%d called=%v; queue creation must stop before database", rec.Code, called)
+	}
+	if !strings.Contains(rec.Body.String(), "Idempotency-Key") {
+		t.Fatalf("missing public idempotency error: %q", rec.Body.String())
+	}
+}
+
+func TestEmpresaPrinterQueueIdempotentMutationLeavesConfigurationUpsertsCompatible(t *testing.T) {
+	called := false
+	handler := EmpresaPrinterQueueIdempotentMutation(nil, func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	})
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/impresoras?empresa_id=12&action=funcionalidad", strings.NewReader(`{"empresa_id":12}`))
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent || !called {
+		t.Fatalf("status=%d called=%v; configuration upsert must remain compatible", rec.Code, called)
+	}
+}
+
+func TestInventoryFrontendProductionContracts(t *testing.T) {
+	pagePath := filepath.Join("..", "..", "web", "administrar_empresa", "administrar_productos.html")
+	rawPage, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatalf("read %s: %v", pagePath, err)
+	}
+	page := string(rawPage)
+	for _, required := range []string{
+		"inventarioMutationHeaders('cycle-count'",
+		"inventarioMutationHeaders('transfer'",
+		"inventarioMutationHeaders('adjustment'",
+		"inventarioMutationHeaders('product-change'",
+		"/api/empresa/inventario/conteo_ciclico?empresa_id=",
+		"/api/empresa/inventario/transferir?empresa_id=",
+		"/api/empresa/inventario/ajustar?empresa_id=",
+		"/api/empresa/inventario/cambiar_producto?empresa_id=",
+		"ensureInventarioMutationReference('conteoReferencia', 'CNT-UI')",
+		"ensureInventarioMutationReference('transferReferencia', 'TR-UI')",
+		"ensureInventarioMutationReference('ajusteReferencia', 'AJ-UI')",
+		"ensureInventarioMutationReference('cambioReferencia', 'CAM-UI')",
+		"created.resultado && created.resultado.variacion",
+		"await loadInventarioResumen();",
+		"function publicAPIError(",
+		`accept=".png,.jpg,.jpeg,.gif,.webp"`,
+	} {
+		if !strings.Contains(page, required) {
+			t.Errorf("administrar_productos.html missing production contract %q", required)
+		}
+	}
+	if strings.Count(page, "<section") != strings.Count(page, "</section>") {
+		t.Fatalf("unbalanced section markup: open=%d close=%d", strings.Count(page, "<section"), strings.Count(page, "</section>"))
+	}
+
+	advancedPath := filepath.Join("..", "..", "web", "js", "inventario_avanzado.js")
+	rawAdvanced, err := os.ReadFile(advancedPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", advancedPath, err)
+	}
+	advanced := string(rawAdvanced)
+	for _, required := range []string{"Idempotency-Key", "function readJSONResponse(", `typeof data.error === "string"`} {
+		if !strings.Contains(advanced, required) {
+			t.Errorf("inventario_avanzado.js missing production contract %q", required)
+		}
+	}
+}
+
+func TestInventoryCriticalRoutesRequireIdempotency(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "main.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mainSource := string(raw)
+	for _, operation := range []string{`"cycle_count"`, `"transfer"`, `"adjustment"`, `"product_change"`, `"advanced"`} {
+		if !strings.Contains(mainSource, "EmpresaInventoryIdempotentMutation(dbEmpresas, "+operation) {
+			t.Errorf("main.go missing inventory idempotency wrapper for %s", operation)
+		}
+	}
+	if !strings.Contains(mainSource, `EmpresaPurchasesIdempotentMutation(dbEmpresas, "advanced"`) {
+		t.Error("main.go missing durable idempotency for advanced purchases")
+	}
+	if !strings.Contains(mainSource, `EmpresaPrinterQueueIdempotentMutation(dbEmpresas`) {
+		t.Error("main.go missing durable idempotency for printer queue creation")
+	}
+}
+
+func TestPrinterQueueFrontendProductionContracts(t *testing.T) {
+	pagePath := filepath.Join("..", "..", "web", "administrar_empresa", "configuracion_impresora.html")
+	rawPage, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(rawPage)
+	for _, required := range []string{
+		`function readPrinterResponse(res)`,
+		`function ensurePrinterQueueMutationKey()`,
+		`'Idempotency-Key': ensurePrinterQueueMutationKey()`,
+		`queueMutationInFlight`,
+		`submitButton.setAttribute('aria-busy', 'true')`,
+	} {
+		if !strings.Contains(page, required) {
+			t.Errorf("configuracion_impresora.html missing production contract %q", required)
+		}
+	}
+
+	handlerPath := filepath.Join("empresa_impresoras.go")
+	rawHandler, err := os.ReadFile(handlerPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(rawHandler), `http.Error(w, err.Error(), http.StatusBadRequest)`) {
+		t.Fatal("printer handler must not expose raw internal errors")
+	}
+
+	cartPath := filepath.Join("..", "..", "web", "administrar_empresa", "carrito_de_compras.html")
+	rawCart, err := os.ReadFile(cartPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cart := string(rawCart)
+	if strings.Count(cart, `/api/empresa/impresoras/resolver?`) != 1 {
+		t.Fatal("cart must centralize printer resolution in one request helper")
+	}
+	for _, required := range []string{
+		`async function resolvePrinterOperation(funcionalidad, itemPayload)`,
+		`resolvePrinterOperation('orden_servicio', itemPayload)`,
+		`resolvePrinterOperation('ticket_cobro')`,
+		`resolvePrinterOperation(drawer.printerFunction || 'cajon_monedero')`,
+	} {
+		if !strings.Contains(cart, required) {
+			t.Errorf("carrito_de_compras.html missing centralized printer contract %q", required)
+		}
+	}
+}
+
+func TestAdvancedPurchasesInventoryProductionContracts(t *testing.T) {
+	pagePath := filepath.Join("..", "..", "web", "administrar_empresa", "compras_avanzadas.html")
+	rawPage, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(rawPage)
+	for _, required := range []string{
+		`id="itemNombre1" class="form-input producto-select"`,
+		`id="recItemID" class="form-input"`,
+		`id="recBodega" class="form-input bodega-select"`,
+		`id="recLote"`,
+		`Recibir y actualizar inventario`,
+		`La recepción se marca total únicamente cuando no quedan cantidades pendientes.`,
+	} {
+		if !strings.Contains(page, required) {
+			t.Errorf("compras_avanzadas.html missing %q", required)
+		}
+	}
+	if strings.Contains(page, `id="btnSeed"`) {
+		t.Error("production purchases UI must not expose demo data seeding")
+	}
+	if strings.Contains(page, `id="recEstado"`) {
+		t.Error("receipt completion must be calculated by the backend, not selected by the user")
+	}
+
+	jsPath := filepath.Join("..", "..", "web", "js", "compras_avanzadas.js")
+	rawJS, err := os.ReadFile(jsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	js := string(rawJS)
+	for _, required := range []string{
+		`"Idempotency-Key":idempotencyKey(action, reference)`,
+		`producto_id:Number(product.id)`,
+		`bodega_id:num("recBodega")`,
+		`lote:val("recLote")`,
+		`function publicError(status, raw)`,
+		`Promise.all([loadProveedores(), loadProductos(), loadBodegas()])`,
+	} {
+		if !strings.Contains(js, required) {
+			t.Errorf("compras_avanzadas.js missing %q", required)
+		}
+	}
+
+	dbPath := filepath.Join("..", "db", "compras_avanzadas.go")
+	rawDB, err := os.ReadFile(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dbSource := string(rawDB)
+	for _, required := range []string{
+		`WHERE empresa_id=? AND id=?`,
+		`FOR UPDATE OF i`,
+		`COALESCE(cantidad_recibida,0)+? <= COALESCE(cantidad_solicitada,0)`,
+		`validateBodegaEmpresaTx(tx, rec.EmpresaID, rec.BodegaID)`,
+		`validateProductoEmpresaTx(tx, rec.EmpresaID, productoID)`,
+		`upsertExistenciaTx(tx, rec.EmpresaID, productoID, rec.BodegaID`,
+		`registerCostoLoteTx(tx, rec.EmpresaID, productoID, rec.BodegaID`,
+		`insertMovimientoTx(tx, InventarioMovimiento{`,
+		`upsertLoteAvanzadoCompraTx`,
+		`la requisicion no se puede editar en estado`,
+		`la requisicion no se puede cotizar en estado`,
+		`la requisicion no se puede aprobar en estado`,
+		`la cotizacion no esta seleccionada para recepcion`,
+	} {
+		if !strings.Contains(dbSource, required) {
+			t.Errorf("compras_avanzadas.go missing atomic inventory contract %q", required)
+		}
+	}
+}
+
+func TestPurchaseAIFilePickerMatchesBackendAllowlist(t *testing.T) {
+	pagePath := filepath.Join("..", "..", "web", "administrar_empresa", "compras.html")
+	rawPage, err := os.ReadFile(pagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(rawPage)
+	inputStart := strings.Index(page, `id="comprobanteArchivo"`)
+	if inputStart < 0 {
+		t.Fatal("purchase AI file picker is missing")
+	}
+	inputTag := page[inputStart:]
+	if inputEnd := strings.Index(inputTag, ">"); inputEnd >= 0 {
+		inputTag = inputTag[:inputEnd]
+	}
+	if !strings.Contains(inputTag, `accept=".png,.jpg,.jpeg,.webp,.pdf,.xml"`) {
+		t.Fatal("purchase AI file picker must match the verified backend types")
+	}
+	if !strings.Contains(page, `throw new Error(publicError(resp.status, errorText))`) {
+		t.Fatal("purchase UI must not expose raw HTML or internal API errors")
+	}
+	for _, forbidden := range []string{".gif", ".txt", ".csv", ".doc", ".xlsx"} {
+		if strings.Contains(inputTag, forbidden) {
+			t.Errorf("purchase AI file picker still advertises unsupported type %s", forbidden)
+		}
+	}
+	fixturePath := filepath.Join("testdata", "qa_factura_compra.xml")
+	fixture, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(string(fixture)), `<?xml`) || !strings.Contains(string(fixture), `<DocumentoSintetico>true</DocumentoSintetico>`) {
+		t.Fatal("synthetic purchase fixture must be explicit XML without commercial validity")
+	}
+}
+
+func TestInventoryProductionRoutesAreRegisteredOnce(t *testing.T) {
+	mainPath := filepath.Join("..", "main.go")
+	raw, err := os.ReadFile(mainPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, route := range []string{
+		"/api/empresa/bodegas",
+		"/api/empresa/categorias_productos",
+		"/api/empresa/productos",
+		"/api/empresa/recetas_productos",
+		"/api/empresa/inventario/existencias",
+		"/api/empresa/inventario/movimientos",
+		"/api/empresa/inventario/transferir",
+		"/api/empresa/inventario/ajustar",
+		"/api/empresa/inventario_avanzado",
+		"/api/empresa/compras_avanzadas",
+		"/api/empresa/soportes_compras_ia",
+		"/api/empresa/impresoras",
+		"/api/empresa/impresoras/resolver",
+	} {
+		marker := `http.HandleFunc("` + route + `"`
+		if count := strings.Count(source, marker); count != 1 {
+			t.Errorf("inventory route %s registered %d times, want exactly once", route, count)
+		}
+	}
+}
+
+func TestInventoryProductionPagesHaveUniqueMarkupIDs(t *testing.T) {
+	scriptBlock := regexp.MustCompile(`(?is)<script\b[^>]*>.*?</script>`)
+	idPattern := regexp.MustCompile(`\bid\s*=\s*["']([^"']+)["']`)
+	for _, name := range []string{
+		"administrar_productos.html",
+		"compras.html",
+		"compras_avanzadas.html",
+		"inventario_avanzado.html",
+		"soportes_compras_ia.html",
+		"configuracion_impresora.html",
+		"carrito_de_compras.html",
+		"recetas_productos.html",
+	} {
+		t.Run(name, func(t *testing.T) {
+			raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			markup := scriptBlock.ReplaceAll(raw, nil)
+			seen := map[string]bool{}
+			for _, match := range idPattern.FindAllSubmatch(markup, -1) {
+				id := string(match[1])
+				if seen[id] {
+					t.Errorf("duplicate markup id %q", id)
+				}
+				seen[id] = true
+			}
+		})
+	}
+}
+
+func TestInventoryProductionPagesHaveUniqueNamedFunctions(t *testing.T) {
+	functionPattern := regexp.MustCompile(`\bfunction\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\(`)
+	for _, name := range []string{
+		"administrar_productos.html",
+		"compras.html",
+		"compras_avanzadas.html",
+		"inventario_avanzado.html",
+		"soportes_compras_ia.html",
+		"configuracion_impresora.html",
+		"carrito_de_compras.html",
+		"recetas_productos.html",
+	} {
+		t.Run(name, func(t *testing.T) {
+			raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			seen := map[string]bool{}
+			for _, match := range functionPattern.FindAllSubmatch(raw, -1) {
+				functionName := string(match[1])
+				if seen[functionName] {
+					t.Errorf("duplicate named function %q", functionName)
+				}
+				seen[functionName] = true
+			}
+		})
+	}
+}
+
+func TestProductosHandlersDoNotExposeRawInternalErrors(t *testing.T) {
+	raw, err := os.ReadFile("productos.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, forbidden := range []string{
+		`http.Error(w, err.Error(),`,
+		`"failed to list productos: "+err.Error()`,
+		`"failed to transfer stock: "+err.Error()`,
+	} {
+		if strings.Contains(source, forbidden) {
+			t.Errorf("productos handler exposes raw internal error through %q", forbidden)
+		}
+	}
+	for _, required := range []string{
+		`func writeProductosInternalError`,
+		`[productos_inventario] operation=%s request_id=%s error_type=%T`,
+		`func productosPublicError`,
+		`No se pudo completar la operación de productos e inventario.`,
+	} {
+		if !strings.Contains(source, required) {
+			t.Errorf("productos public error contract missing %q", required)
+		}
+	}
+}

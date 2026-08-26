@@ -82,6 +82,7 @@ type EmpresaCompraRecepcion struct {
 	ID              int64                        `json:"id"`
 	EmpresaID       int64                        `json:"empresa_id"`
 	RequisicionID   int64                        `json:"requisicion_id"`
+	BodegaID        int64                        `json:"bodega_id,omitempty"`
 	CotizacionID    int64                        `json:"cotizacion_id,omitempty"`
 	ProveedorID     int64                        `json:"proveedor_id,omitempty"`
 	ProveedorNombre string                       `json:"proveedor_nombre"`
@@ -193,6 +194,7 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			requisicion_id INTEGER NOT NULL,
+			bodega_id INTEGER DEFAULT 0,
 			cotizacion_id INTEGER DEFAULT 0,
 			proveedor_id INTEGER DEFAULT 0,
 			proveedor_nombre TEXT DEFAULT '',
@@ -228,6 +230,9 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_compras_recepciones_avanzadas", "proveedor_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_recepciones_avanzadas", "bodega_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -242,24 +247,36 @@ func CreateEmpresaCompraRequisicion(dbConn *sql.DB, req EmpresaCompraRequisicion
 	}
 	defer tx.Rollback()
 
-	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_compras_requisiciones
-		(empresa_id,codigo,solicitante,area,centro_costo,prioridad,fecha_solicitud,fecha_necesidad,estado_flujo,total_estimado,justificacion,usuario_creador)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-		ON CONFLICT (empresa_id,codigo) DO UPDATE SET
-			solicitante=EXCLUDED.solicitante,
-			area=EXCLUDED.area,
-			centro_costo=EXCLUDED.centro_costo,
-			prioridad=EXCLUDED.prioridad,
-			fecha_solicitud=EXCLUDED.fecha_solicitud,
-			fecha_necesidad=EXCLUDED.fecha_necesidad,
-			estado_flujo=EXCLUDED.estado_flujo,
-			total_estimado=EXCLUDED.total_estimado,
-			justificacion=EXCLUDED.justificacion,
-			usuario_creador=EXCLUDED.usuario_creador,
-			fecha_actualizacion=CURRENT_TIMESTAMP`,
-		req.EmpresaID, req.Codigo, req.Solicitante, req.Area, req.CentroCosto, req.Prioridad, req.FechaSolicitud, req.FechaNecesidad, req.EstadoFlujo, req.TotalEstimado, req.Justificacion, req.UsuarioCreador)
-	if err != nil {
+	var id int64
+	var estadoExistente string
+	err = queryRowTxSQLCompat(tx, `SELECT id,COALESCE(estado_flujo,'borrador')
+		FROM empresa_compras_requisiciones
+		WHERE empresa_id=? AND codigo=?
+		FOR UPDATE`, req.EmpresaID, req.Codigo).Scan(&id, &estadoExistente)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		id, err = insertTxSQLCompat(tx, `INSERT INTO empresa_compras_requisiciones
+			(empresa_id,codigo,solicitante,area,centro_costo,prioridad,fecha_solicitud,fecha_necesidad,estado_flujo,total_estimado,justificacion,usuario_creador)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+			req.EmpresaID, req.Codigo, req.Solicitante, req.Area, req.CentroCosto, req.Prioridad, req.FechaSolicitud, req.FechaNecesidad, req.EstadoFlujo, req.TotalEstimado, req.Justificacion, req.UsuarioCreador)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		estadoExistente = normalizeCompraEstadoFlujo(estadoExistente)
+		if estadoExistente != "borrador" && estadoExistente != "solicitada" {
+			return 0, fmt.Errorf("la requisicion no se puede editar en estado %s", estadoExistente)
+		}
+		if _, err := execTxSQLCompat(tx, `UPDATE empresa_compras_requisiciones SET
+			solicitante=?,area=?,centro_costo=?,prioridad=?,fecha_solicitud=?,fecha_necesidad=?,
+			estado_flujo=?,total_estimado=?,justificacion=?,usuario_creador=?,fecha_actualizacion=CURRENT_TIMESTAMP
+			WHERE empresa_id=? AND id=?`, req.Solicitante, req.Area, req.CentroCosto, req.Prioridad,
+			req.FechaSolicitud, req.FechaNecesidad, req.EstadoFlujo, req.TotalEstimado, req.Justificacion,
+			req.UsuarioCreador, req.EmpresaID, id); err != nil {
+			return 0, err
+		}
 	}
 	if len(req.Items) > 0 {
 		if _, err := execTxSQLCompat(tx, `DELETE FROM empresa_compras_requisicion_items WHERE empresa_id=? AND requisicion_id=?`, req.EmpresaID, id); err != nil {
@@ -270,6 +287,26 @@ func CreateEmpresaCompraRequisicion(dbConn *sql.DB, req EmpresaCompraRequisicion
 			item.EmpresaID = req.EmpresaID
 			item.RequisicionID = id
 			item = normalizeCompraRequisicionItem(item)
+			if item.ProductoID > 0 {
+				var nombre, unidad string
+				var costo float64
+				if err := queryRowTxSQLCompat(tx, `SELECT nombre,COALESCE(unidad_medida,'und'),COALESCE(costo,0)
+					FROM productos WHERE empresa_id=? AND id=? AND LOWER(COALESCE(estado,'activo'))='activo'`,
+					req.EmpresaID, item.ProductoID).Scan(&nombre, &unidad, &costo); err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						return 0, fmt.Errorf("el producto %d no pertenece a la empresa o esta inactivo", item.ProductoID)
+					}
+					return 0, err
+				}
+				item.ProductoNombre = strings.TrimSpace(nombre)
+				item.Unidad = strings.TrimSpace(unidad)
+				if item.CostoEstimado <= 0 {
+					item.CostoEstimado = math.Max(0, costo)
+				}
+			}
+			if item.ProductoNombre == "" || item.CantidadSolicitada <= 0 {
+				return 0, errors.New("cada item requiere producto y cantidad mayor a cero")
+			}
 			total += item.CantidadSolicitada * item.CostoEstimado
 			if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_compras_requisicion_items
 				(empresa_id,requisicion_id,producto_id,producto_nombre,cantidad_solicitada,cantidad_recibida,unidad,costo_estimado,proveedor_sugerido,especificacion,estado)
@@ -292,7 +329,30 @@ func CreateEmpresaCompraCotizacion(dbConn *sql.DB, cot EmpresaCompraCotizacion) 
 	if cot.EmpresaID <= 0 || cot.RequisicionID <= 0 || cot.ProveedorNombre == "" || cot.Numero == "" {
 		return 0, errors.New("requisicion, proveedor y numero son requeridos")
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_compras_cotizaciones
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	var estadoRequisicion string
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado_flujo,'borrador')
+		FROM empresa_compras_requisiciones WHERE empresa_id=? AND id=? FOR UPDATE`,
+		cot.EmpresaID, cot.RequisicionID).Scan(&estadoRequisicion); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, errors.New("la requisicion no pertenece a la empresa")
+		}
+		return 0, err
+	}
+	estadoRequisicion = normalizeCompraEstadoFlujo(estadoRequisicion)
+	if estadoRequisicion != "borrador" && estadoRequisicion != "solicitada" && estadoRequisicion != "cotizando" {
+		return 0, fmt.Errorf("la requisicion no se puede cotizar en estado %s", estadoRequisicion)
+	}
+	if cot.ProveedorID > 0 {
+		if err := validateProveedorEmpresaTx(tx, cot.EmpresaID, cot.ProveedorID); err != nil {
+			return 0, err
+		}
+	}
+	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_compras_cotizaciones
 		(empresa_id,requisicion_id,proveedor_id,proveedor_nombre,numero,fecha_cotizacion,validez_hasta,tiempo_entrega_dias,subtotal,impuestos,total,condiciones_pago,observaciones,estado,usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT (empresa_id,requisicion_id,numero) DO UPDATE SET
@@ -312,8 +372,12 @@ func CreateEmpresaCompraCotizacion(dbConn *sql.DB, cot EmpresaCompraCotizacion) 
 	if err != nil {
 		return 0, err
 	}
-	_, _ = ExecCompat(dbConn, `UPDATE empresa_compras_requisiciones SET estado_flujo='cotizando', fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=? AND estado_flujo IN ('borrador','solicitada','cotizando')`, cot.EmpresaID, cot.RequisicionID)
-	return id, nil
+	if _, err := execTxSQLCompat(tx, `UPDATE empresa_compras_requisiciones
+		SET estado_flujo='cotizando', fecha_actualizacion=CURRENT_TIMESTAMP
+		WHERE empresa_id=? AND id=? AND estado_flujo IN ('borrador','solicitada','cotizando')`, cot.EmpresaID, cot.RequisicionID); err != nil {
+		return 0, err
+	}
+	return id, tx.Commit()
 }
 
 func ResolverEmpresaCompraAprobacion(dbConn *sql.DB, apr EmpresaCompraAprobacion) (int64, error) {
@@ -321,7 +385,34 @@ func ResolverEmpresaCompraAprobacion(dbConn *sql.DB, apr EmpresaCompraAprobacion
 	if apr.EmpresaID <= 0 || apr.RequisicionID <= 0 || apr.Aprobador == "" {
 		return 0, errors.New("requisicion y aprobador son requeridos")
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_compras_aprobaciones
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	var estadoRequisicion string
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado_flujo,'borrador') FROM empresa_compras_requisiciones
+		WHERE empresa_id=? AND id=? FOR UPDATE`, apr.EmpresaID, apr.RequisicionID).Scan(&estadoRequisicion); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, errors.New("la requisicion no pertenece a la empresa")
+		}
+		return 0, err
+	}
+	estadoRequisicion = normalizeCompraEstadoFlujo(estadoRequisicion)
+	if estadoRequisicion != "cotizando" && estadoRequisicion != "pendiente_aprobacion" {
+		return 0, fmt.Errorf("la requisicion no se puede aprobar en estado %s", estadoRequisicion)
+	}
+	if apr.CotizacionID > 0 {
+		var cotizacionExiste int
+		if err := queryRowTxSQLCompat(tx, `SELECT 1 FROM empresa_compras_cotizaciones
+			WHERE empresa_id=? AND requisicion_id=? AND id=? FOR UPDATE`, apr.EmpresaID, apr.RequisicionID, apr.CotizacionID).Scan(&cotizacionExiste); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return 0, errors.New("la cotizacion no pertenece a la requisicion y empresa")
+			}
+			return 0, err
+		}
+	}
+	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_compras_aprobaciones
 		(empresa_id,requisicion_id,cotizacion_id,nivel,aprobador,decision,comentario,monto_autorizado)
 		VALUES (?,?,?,?,?,?,?,?)`,
 		apr.EmpresaID, apr.RequisicionID, apr.CotizacionID, apr.Nivel, apr.Aprobador, apr.Decision, apr.Comentario, apr.MontoAutorizado)
@@ -329,8 +420,12 @@ func ResolverEmpresaCompraAprobacion(dbConn *sql.DB, apr EmpresaCompraAprobacion
 		return 0, err
 	}
 	if apr.CotizacionID > 0 && apr.Decision == "aprobada" {
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_compras_cotizaciones SET estado='seleccionada' WHERE empresa_id=? AND id=?`, apr.EmpresaID, apr.CotizacionID)
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_compras_cotizaciones SET estado='no_seleccionada' WHERE empresa_id=? AND requisicion_id=? AND id<>? AND estado IN ('recibida','evaluacion')`, apr.EmpresaID, apr.RequisicionID, apr.CotizacionID)
+		if _, err := execTxSQLCompat(tx, `UPDATE empresa_compras_cotizaciones SET estado='seleccionada' WHERE empresa_id=? AND requisicion_id=? AND id=?`, apr.EmpresaID, apr.RequisicionID, apr.CotizacionID); err != nil {
+			return 0, err
+		}
+		if _, err := execTxSQLCompat(tx, `UPDATE empresa_compras_cotizaciones SET estado='no_seleccionada' WHERE empresa_id=? AND requisicion_id=? AND id<>? AND estado IN ('recibida','evaluacion')`, apr.EmpresaID, apr.RequisicionID, apr.CotizacionID); err != nil {
+			return 0, err
+		}
 	}
 	nextState := "pendiente_aprobacion"
 	if apr.Decision == "aprobada" {
@@ -338,8 +433,10 @@ func ResolverEmpresaCompraAprobacion(dbConn *sql.DB, apr EmpresaCompraAprobacion
 	} else if apr.Decision == "rechazada" {
 		nextState = "rechazada"
 	}
-	_, _ = ExecCompat(dbConn, `UPDATE empresa_compras_requisiciones SET estado_flujo=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nextState, apr.EmpresaID, apr.RequisicionID)
-	return id, nil
+	if _, err := execTxSQLCompat(tx, `UPDATE empresa_compras_requisiciones SET estado_flujo=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nextState, apr.EmpresaID, apr.RequisicionID); err != nil {
+		return 0, err
+	}
+	return id, tx.Commit()
 }
 
 func CreateEmpresaCompraRecepcion(dbConn *sql.DB, rec EmpresaCompraRecepcion) (int64, error) {
@@ -347,15 +444,76 @@ func CreateEmpresaCompraRecepcion(dbConn *sql.DB, rec EmpresaCompraRecepcion) (i
 	if rec.EmpresaID <= 0 || rec.RequisicionID <= 0 || rec.Documento == "" {
 		return 0, errors.New("requisicion y documento son requeridos")
 	}
+	if len(rec.Items) == 0 {
+		return 0, errors.New("la recepcion debe incluir al menos un item")
+	}
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
+
+	var estadoRequisicion string
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado_flujo,'borrador')
+		FROM empresa_compras_requisiciones
+		WHERE empresa_id=? AND id=?
+		FOR UPDATE`, rec.EmpresaID, rec.RequisicionID).Scan(&estadoRequisicion); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, errors.New("la requisicion no pertenece a la empresa")
+		}
+		return 0, err
+	}
+	estadoRequisicion = normalizeCompraEstadoFlujo(estadoRequisicion)
+	if estadoRequisicion != "aprobada" && estadoRequisicion != "recibida_parcial" {
+		return 0, fmt.Errorf("la requisicion no esta habilitada para recepcion: %s", estadoRequisicion)
+	}
+	if rec.BodegaID <= 0 {
+		return 0, errors.New("bodega_id es obligatorio para recibir productos")
+	}
+	if err := validateBodegaEmpresaTx(tx, rec.EmpresaID, rec.BodegaID); err != nil {
+		return 0, err
+	}
+	if rec.ProveedorID > 0 {
+		if err := validateProveedorEmpresaTx(tx, rec.EmpresaID, rec.ProveedorID); err != nil {
+			return 0, err
+		}
+	}
+	if rec.CotizacionID > 0 {
+		var proveedorCotizacionID int64
+		var estadoCotizacion string
+		if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(proveedor_id,0),COALESCE(estado,'recibida')
+			FROM empresa_compras_cotizaciones
+			WHERE empresa_id=? AND requisicion_id=? AND id=?
+			FOR UPDATE`, rec.EmpresaID, rec.RequisicionID, rec.CotizacionID).Scan(&proveedorCotizacionID, &estadoCotizacion); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return 0, errors.New("la cotizacion no pertenece a la requisicion y empresa")
+			}
+			return 0, err
+		}
+		if strings.ToLower(strings.TrimSpace(estadoCotizacion)) != "seleccionada" {
+			return 0, errors.New("la cotizacion no esta seleccionada para recepcion")
+		}
+		if proveedorCotizacionID > 0 && rec.ProveedorID != proveedorCotizacionID {
+			return 0, errors.New("el proveedor no corresponde a la cotizacion seleccionada")
+		}
+	}
+
+	var recepcionExistente int64
+	err = queryRowTxSQLCompat(tx, `SELECT id
+		FROM empresa_compras_recepciones_avanzadas
+		WHERE empresa_id=? AND requisicion_id=? AND UPPER(TRIM(documento))=UPPER(TRIM(?))
+		LIMIT 1`, rec.EmpresaID, rec.RequisicionID, rec.Documento).Scan(&recepcionExistente)
+	if err == nil {
+		return 0, fmt.Errorf("el documento de recepcion ya fue registrado: %s", rec.Documento)
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+
 	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_compras_recepciones_avanzadas
-		(empresa_id,requisicion_id,cotizacion_id,proveedor_id,proveedor_nombre,documento,fecha_recepcion,estado_recepcion,responsable,observaciones,usuario_creador)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-		rec.EmpresaID, rec.RequisicionID, rec.CotizacionID, rec.ProveedorID, rec.ProveedorNombre, rec.Documento, rec.FechaRecepcion, rec.EstadoRecepcion, rec.Responsable, rec.Observaciones, rec.UsuarioCreador)
+		(empresa_id,requisicion_id,bodega_id,cotizacion_id,proveedor_id,proveedor_nombre,documento,fecha_recepcion,estado_recepcion,responsable,observaciones,usuario_creador)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+		rec.EmpresaID, rec.RequisicionID, rec.BodegaID, rec.CotizacionID, rec.ProveedorID, rec.ProveedorNombre, rec.Documento, rec.FechaRecepcion, rec.EstadoRecepcion, rec.Responsable, rec.Observaciones, rec.UsuarioCreador)
 	if err != nil {
 		return 0, err
 	}
@@ -363,26 +521,132 @@ func CreateEmpresaCompraRecepcion(dbConn *sql.DB, rec EmpresaCompraRecepcion) (i
 		item.EmpresaID = rec.EmpresaID
 		item.RecepcionID = id
 		item = normalizeCompraRecepcionItem(item)
+		if item.RequisicionItemID <= 0 || item.CantidadRecibida <= 0 {
+			return 0, errors.New("item y cantidad recibida mayor a cero son obligatorios")
+		}
+
+		var productoID int64
+		var productoNombre string
+		var cantidadSolicitada, cantidadRecibidaActual, costoProducto float64
+		if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(i.producto_id,0), i.producto_nombre,
+			COALESCE(i.cantidad_solicitada,0), COALESCE(i.cantidad_recibida,0), COALESCE(p.costo,0)
+			FROM empresa_compras_requisicion_items i
+			LEFT JOIN productos p ON p.empresa_id=i.empresa_id AND p.id=i.producto_id
+			WHERE i.empresa_id=? AND i.requisicion_id=? AND i.id=?
+			FOR UPDATE OF i`,
+			rec.EmpresaID, rec.RequisicionID, item.RequisicionItemID).Scan(
+			&productoID, &productoNombre, &cantidadSolicitada, &cantidadRecibidaActual, &costoProducto,
+		); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return 0, errors.New("el item no pertenece a la requisicion y empresa")
+			}
+			return 0, err
+		}
+		pendiente := roundMoney(math.Max(0, cantidadSolicitada-cantidadRecibidaActual))
+		if item.CantidadRecibida > pendiente+0.000001 {
+			return 0, fmt.Errorf("cantidad recibida excede el pendiente del item %d", item.RequisicionItemID)
+		}
+		item.ProductoNombre = strings.TrimSpace(productoNombre)
+		item.CantidadOrdenada = cantidadSolicitada
+		item.CantidadPendiente = roundMoney(math.Max(0, pendiente-item.CantidadRecibida))
+		if item.CostoUnitario <= 0 {
+			item.CostoUnitario = math.Max(0, costoProducto)
+		}
 		if _, err := insertTxSQLCompat(tx, `INSERT INTO empresa_compras_recepcion_items_avanzadas
 			(empresa_id,recepcion_id,requisicion_item_id,producto_nombre,cantidad_ordenada,cantidad_recibida,cantidad_pendiente,costo_unitario,lote,estado_calidad)
 			VALUES (?,?,?,?,?,?,?,?,?,?)`,
 			item.EmpresaID, item.RecepcionID, item.RequisicionItemID, item.ProductoNombre, item.CantidadOrdenada, item.CantidadRecibida, item.CantidadPendiente, item.CostoUnitario, item.Lote, item.EstadoCalidad); err != nil {
 			return 0, err
 		}
-		if item.RequisicionItemID > 0 {
-			if _, err := execTxSQLCompat(tx, `UPDATE empresa_compras_requisicion_items SET cantidad_recibida=COALESCE(cantidad_recibida,0)+?, estado=CASE WHEN COALESCE(cantidad_recibida,0)+? >= cantidad_solicitada THEN 'recibido' ELSE 'parcial' END WHERE empresa_id=? AND id=?`, item.CantidadRecibida, item.CantidadRecibida, item.EmpresaID, item.RequisicionItemID); err != nil {
+		res, err := execTxSQLCompat(tx, `UPDATE empresa_compras_requisicion_items
+			SET cantidad_recibida=COALESCE(cantidad_recibida,0)+?,
+				estado=CASE WHEN COALESCE(cantidad_recibida,0)+? >= cantidad_solicitada THEN 'recibido' ELSE 'parcial' END
+			WHERE empresa_id=? AND requisicion_id=? AND id=?
+				AND COALESCE(cantidad_recibida,0)+? <= COALESCE(cantidad_solicitada,0)`,
+			item.CantidadRecibida, item.CantidadRecibida, item.EmpresaID, rec.RequisicionID, item.RequisicionItemID, item.CantidadRecibida)
+		if err != nil {
+			return 0, err
+		}
+		affected, err := res.RowsAffected()
+		if err != nil || affected != 1 {
+			return 0, fmt.Errorf("no se pudo aplicar la recepcion al item %d", item.RequisicionItemID)
+		}
+
+		if productoID > 0 {
+			if err := validateProductoEmpresaTx(tx, rec.EmpresaID, productoID); err != nil {
+				return 0, err
+			}
+			if err := ensureCostoLotesSeedTx(tx, rec.EmpresaID, productoID, rec.BodegaID, rec.UsuarioCreador); err != nil {
+				return 0, err
+			}
+			referencia := fmt.Sprintf("COMPRA:%s:REC:%d:ITEM:%d", rec.Documento, id, item.RequisicionItemID)
+			if err := upsertExistenciaTx(tx, rec.EmpresaID, productoID, rec.BodegaID, item.CantidadRecibida, rec.UsuarioCreador, "recepcion de compra "+rec.Documento); err != nil {
+				return 0, err
+			}
+			if err := registerCostoLoteTx(tx, rec.EmpresaID, productoID, rec.BodegaID, item.CantidadRecibida, item.CostoUnitario, referencia, rec.UsuarioCreador, "costo de recepcion de compra"); err != nil {
+				return 0, err
+			}
+			if strings.TrimSpace(item.Lote) != "" {
+				if err := upsertLoteAvanzadoCompraTx(tx, rec, productoID, item); err != nil {
+					return 0, err
+				}
+			}
+			politicaCosto, err := getInventarioPoliticaCostoTx(tx, rec.EmpresaID)
+			if err != nil {
+				return 0, err
+			}
+			if politicaCosto == inventarioPoliticaCostoPromedio {
+				if err := recalcularCostoPromedioProductoTx(tx, rec.EmpresaID, productoID); err != nil {
+					return 0, err
+				}
+			}
+			if err := insertMovimientoTx(tx, InventarioMovimiento{
+				EmpresaID: rec.EmpresaID, ProductoID: productoID, BodegaDestinoID: rec.BodegaID,
+				Tipo: "entrada", Cantidad: item.CantidadRecibida, CostoUnitario: item.CostoUnitario,
+				Referencia: referencia, UsuarioCreador: rec.UsuarioCreador, Estado: "activo",
+				Observaciones: "entrada por recepcion de compra " + rec.Documento,
+			}); err != nil {
 				return 0, err
 			}
 		}
 	}
 	state := "recibida_parcial"
-	if rec.EstadoRecepcion == "total" || compraRecepcionCompletaTx(tx, rec.EmpresaID, rec.RequisicionID) {
+	estadoRecepcion := "parcial"
+	completa, err := compraRecepcionCompletaTx(tx, rec.EmpresaID, rec.RequisicionID)
+	if err != nil {
+		return 0, err
+	}
+	if completa {
 		state = "recibida_total"
+		estadoRecepcion = "total"
+	}
+	if _, err := execTxSQLCompat(tx, `UPDATE empresa_compras_recepciones_avanzadas
+		SET estado_recepcion=? WHERE empresa_id=? AND id=?`, estadoRecepcion, rec.EmpresaID, id); err != nil {
+		return 0, err
 	}
 	if _, err := execTxSQLCompat(tx, `UPDATE empresa_compras_requisiciones SET estado_flujo=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, state, rec.EmpresaID, rec.RequisicionID); err != nil {
 		return 0, err
 	}
 	return id, tx.Commit()
+}
+
+func upsertLoteAvanzadoCompraTx(tx *sql.Tx, rec EmpresaCompraRecepcion, productoID int64, item EmpresaCompraRecepcionItem) error {
+	_, err := execTxSQLCompat(tx, `INSERT INTO empresa_inventario_lotes_avanzados
+		(empresa_id,producto_id,bodega_id,lote_codigo,cantidad_inicial,cantidad_disponible,costo_unitario,estado_calidad,proveedor,documento_ref,estado,usuario_creador)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+		ON CONFLICT (empresa_id,producto_id,bodega_id,lote_codigo) DO UPDATE SET
+			cantidad_inicial=empresa_inventario_lotes_avanzados.cantidad_inicial+EXCLUDED.cantidad_inicial,
+			cantidad_disponible=empresa_inventario_lotes_avanzados.cantidad_disponible+EXCLUDED.cantidad_disponible,
+			costo_unitario=EXCLUDED.costo_unitario,
+			estado_calidad=EXCLUDED.estado_calidad,
+			proveedor=EXCLUDED.proveedor,
+			documento_ref=EXCLUDED.documento_ref,
+			estado='activo',
+			usuario_creador=EXCLUDED.usuario_creador,
+			fecha_actualizacion=CURRENT_TIMESTAMP`,
+		rec.EmpresaID, productoID, rec.BodegaID, strings.TrimSpace(item.Lote), item.CantidadRecibida,
+		item.CantidadRecibida, item.CostoUnitario, "liberado", rec.ProveedorNombre, rec.Documento, "activo", rec.UsuarioCreador)
+	return err
 }
 
 func ListEmpresaCompraRequisiciones(dbConn *sql.DB, empresaID int64, estado string, limit int) ([]EmpresaCompraRequisicion, error) {
@@ -480,7 +744,7 @@ func ListEmpresaCompraAprobaciones(dbConn *sql.DB, empresaID, requisicionID int6
 }
 
 func ListEmpresaCompraRecepciones(dbConn *sql.DB, empresaID, requisicionID int64) ([]EmpresaCompraRecepcion, error) {
-	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,requisicion_id,COALESCE(cotizacion_id,0),COALESCE(proveedor_id,0),COALESCE(proveedor_nombre,''),documento,COALESCE(fecha_recepcion,''),COALESCE(estado_recepcion,'parcial'),COALESCE(responsable,''),COALESCE(observaciones,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,'') FROM empresa_compras_recepciones_avanzadas WHERE empresa_id=? AND requisicion_id=? ORDER BY id DESC`, empresaID, requisicionID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,requisicion_id,COALESCE(bodega_id,0),COALESCE(cotizacion_id,0),COALESCE(proveedor_id,0),COALESCE(proveedor_nombre,''),documento,COALESCE(fecha_recepcion,''),COALESCE(estado_recepcion,'parcial'),COALESCE(responsable,''),COALESCE(observaciones,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,'') FROM empresa_compras_recepciones_avanzadas WHERE empresa_id=? AND requisicion_id=? ORDER BY id DESC`, empresaID, requisicionID)
 	if err != nil {
 		return nil, err
 	}
@@ -488,7 +752,7 @@ func ListEmpresaCompraRecepciones(dbConn *sql.DB, empresaID, requisicionID int64
 	out := []EmpresaCompraRecepcion{}
 	for rows.Next() {
 		var x EmpresaCompraRecepcion
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.RequisicionID, &x.CotizacionID, &x.ProveedorID, &x.ProveedorNombre, &x.Documento, &x.FechaRecepcion, &x.EstadoRecepcion, &x.Responsable, &x.Observaciones, &x.UsuarioCreador, &x.FechaCreacion); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.RequisicionID, &x.BodegaID, &x.CotizacionID, &x.ProveedorID, &x.ProveedorNombre, &x.Documento, &x.FechaRecepcion, &x.EstadoRecepcion, &x.Responsable, &x.Observaciones, &x.UsuarioCreador, &x.FechaCreacion); err != nil {
 			return nil, err
 		}
 		x.Items, _ = ListEmpresaCompraRecepcionItems(dbConn, empresaID, x.ID)
@@ -554,22 +818,15 @@ func SeedEmpresaComprasAvanzadasDemo(dbConn *sql.DB, empresaID int64, usuario st
 	if _, err := ResolverEmpresaCompraAprobacion(dbConn, EmpresaCompraAprobacion{EmpresaID: empresaID, RequisicionID: reqID, CotizacionID: cotID, Nivel: 1, Aprobador: usuario, Decision: "aprobada", Comentario: "Aprobado por QA compras avanzadas", MontoAutorizado: 904400}); err != nil {
 		return 0, err
 	}
-	items, err := ListEmpresaCompraRequisicionItems(dbConn, empresaID, reqID)
-	if err != nil {
-		return 0, err
-	}
-	recItems := make([]EmpresaCompraRecepcionItem, 0, len(items))
-	for _, item := range items {
-		recItems = append(recItems, EmpresaCompraRecepcionItem{RequisicionItemID: item.ID, ProductoNombre: item.ProductoNombre, CantidadOrdenada: item.CantidadSolicitada, CantidadRecibida: item.CantidadSolicitada, CostoUnitario: item.CostoEstimado, EstadoCalidad: "aprobado"})
-	}
-	_, err = CreateEmpresaCompraRecepcion(dbConn, EmpresaCompraRecepcion{EmpresaID: empresaID, RequisicionID: reqID, CotizacionID: cotID, ProveedorNombre: "Proveedor Integral Calipso", Documento: "REM-" + code, FechaRecepcion: time.Now().Format("2006-01-02"), EstadoRecepcion: "total", Responsable: usuario, UsuarioCreador: usuario, Items: recItems})
-	return reqID, err
+	return reqID, nil
 }
 
-func compraRecepcionCompletaTx(tx *sql.Tx, empresaID, requisicionID int64) bool {
+func compraRecepcionCompletaTx(tx *sql.Tx, empresaID, requisicionID int64) (bool, error) {
 	var pendientes int
-	_ = queryRowTxSQLCompat(tx, `SELECT COUNT(1) FROM empresa_compras_requisicion_items WHERE empresa_id=? AND requisicion_id=? AND COALESCE(cantidad_recibida,0) < COALESCE(cantidad_solicitada,0)`, empresaID, requisicionID).Scan(&pendientes)
-	return pendientes == 0
+	if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1) FROM empresa_compras_requisicion_items WHERE empresa_id=? AND requisicion_id=? AND COALESCE(cantidad_recibida,0) < COALESCE(cantidad_solicitada,0)`, empresaID, requisicionID).Scan(&pendientes); err != nil {
+		return false, err
+	}
+	return pendientes == 0, nil
 }
 
 func normalizeCompraRequisicion(req EmpresaCompraRequisicion) EmpresaCompraRequisicion {

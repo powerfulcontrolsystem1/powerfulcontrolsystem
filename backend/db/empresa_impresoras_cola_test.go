@@ -49,10 +49,32 @@ func TestEmpresaImpresorasColaUsaPostgreSQLYEmpresaID(t *testing.T) {
 		"COALESCE(c.estado, 'pendiente') = 'pendiente'",
 		"COALESCE(c.agente_id, '') = '' OR COALESCE(c.agente_id, '') = ?",
 		"COALESCE(c.estacion_id, 0) = 0 OR COALESCE(c.estacion_id, 0) = ?",
-		"RowsAffected",
+		"FOR UPDATE SKIP LOCKED",
+		"UPDATE empresa_impresoras_cola c",
+		"RETURNING c.*",
+		"FROM reclamados c",
 	} {
 		if !strings.Contains(body, required) {
 			t.Fatalf("TomarEmpresaImpresoraTrabajos debe conservar aislamiento/claim %s en: %s", required, body)
+		}
+	}
+}
+
+func TestEmpresaImpresorasColaCierreYReintentoSonSeguros(t *testing.T) {
+	raw, err := os.ReadFile("empresa_impresoras.go")
+	if err != nil {
+		t.Fatalf("read empresa_impresoras.go: %v", err)
+	}
+	src := string(raw)
+	for _, required := range []string{
+		`COALESCE(tomado_por, '') = ?`,
+		`COALESCE(estado, 'pendiente') IN ('tomado', 'impreso')`,
+		`COALESCE(estado, 'pendiente') IN ('tomado', 'error')`,
+		`intentos = 0`,
+		`WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'pendiente') IN ('tomado', 'error', 'cancelado')`,
+	} {
+		if !strings.Contains(src, required) {
+			t.Fatalf("cola de impresoras debe conservar transición/reintento seguro %q", required)
 		}
 	}
 }

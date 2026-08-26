@@ -1080,9 +1080,8 @@ func GetEmpresaImpresoraByID(dbConn *sql.DB, empresaID, impresoraID int64) (*Emp
 	return scanEmpresaImpresora(row)
 }
 
-func empresaImpresoraTrabajoSelectSQL() string {
-	return `SELECT
-		c.id,
+func empresaImpresoraTrabajoColumnsSQL() string {
+	return `c.id,
 		c.empresa_id,
 		COALESCE(c.estacion_id, 0),
 		COALESCE(c.agente_id, ''),
@@ -1110,7 +1109,11 @@ func empresaImpresoraTrabajoSelectSQL() string {
 		COALESCE(c.metadata_json, ''),
 		COALESCE(c.fecha_creacion, ''),
 		COALESCE(c.fecha_actualizacion, ''),
-		COALESCE(c.usuario_creador, '')
+		COALESCE(c.usuario_creador, '')`
+}
+
+func empresaImpresoraTrabajoSelectSQL() string {
+	return `SELECT ` + empresaImpresoraTrabajoColumnsSQL() + `
 	FROM empresa_impresoras_cola c
 	LEFT JOIN empresa_impresoras i ON i.id = c.impresora_id AND i.empresa_id = c.empresa_id`
 }
@@ -1267,54 +1270,49 @@ func TomarEmpresaImpresoraTrabajos(dbConn *sql.DB, empresaID int64, agenteID str
 	if limit > 25 {
 		limit = 25
 	}
-	rows, err := querySQLCompat(dbConn, `SELECT c.id
-	FROM empresa_impresoras_cola c
-	WHERE c.empresa_id = ?
-		AND COALESCE(c.estado, 'pendiente') = 'pendiente'
-		AND COALESCE(c.intentos, 0) < COALESCE(c.max_intentos, 3)
-		AND (COALESCE(c.agente_id, '') = '' OR COALESCE(c.agente_id, '') = ?)
-		AND (COALESCE(c.estacion_id, 0) = 0 OR COALESCE(c.estacion_id, 0) = ?)
-	ORDER BY COALESCE(c.prioridad, 100) ASC, c.id ASC
-	LIMIT ?`, empresaID, agenteID, estacionID, limit)
+	rows, err := querySQLCompat(dbConn, `WITH candidatos AS (
+		SELECT c.id
+		FROM empresa_impresoras_cola c
+		WHERE c.empresa_id = ?
+			AND COALESCE(c.estado, 'pendiente') = 'pendiente'
+			AND COALESCE(c.intentos, 0) < COALESCE(c.max_intentos, 3)
+			AND (COALESCE(c.agente_id, '') = '' OR COALESCE(c.agente_id, '') = ?)
+			AND (COALESCE(c.estacion_id, 0) = 0 OR COALESCE(c.estacion_id, 0) = ?)
+		ORDER BY COALESCE(c.prioridad, 100) ASC, c.id ASC
+		FOR UPDATE SKIP LOCKED
+		LIMIT ?
+	), reclamados AS (
+		UPDATE empresa_impresoras_cola c
+		SET estado = 'tomado',
+			tomado_por = ?,
+			tomado_en = CURRENT_TIMESTAMP,
+			intentos = COALESCE(c.intentos, 0) + 1,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		FROM candidatos candidatos_cola
+		WHERE c.empresa_id = ?
+			AND c.id = candidatos_cola.id
+			AND COALESCE(c.estado, 'pendiente') = 'pendiente'
+		RETURNING c.*
+	)
+	SELECT `+empresaImpresoraTrabajoColumnsSQL()+`
+	FROM reclamados c
+	LEFT JOIN empresa_impresoras i ON i.id = c.impresora_id AND i.empresa_id = c.empresa_id
+	ORDER BY COALESCE(c.prioridad, 100) ASC, c.id ASC`, empresaID, agenteID, estacionID, limit, agenteID, empresaID)
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int64, 0)
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			_ = rows.Close()
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	if err := rows.Err(); err != nil {
-		_ = rows.Close()
-		return nil, err
-	}
-	_ = rows.Close()
+	defer rows.Close()
 
-	out := make([]EmpresaImpresoraTrabajo, 0, len(ids))
-	for _, id := range ids {
-		res, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
-			SET estado = 'tomado',
-				tomado_por = ?,
-				tomado_en = CURRENT_TIMESTAMP,
-				intentos = COALESCE(intentos, 0) + 1,
-				fecha_actualizacion = CURRENT_TIMESTAMP
-			WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'pendiente') = 'pendiente'`, agenteID, empresaID, id)
-		if err != nil {
-			return nil, err
-		}
-		affected, _ := res.RowsAffected()
-		if affected != 1 {
-			continue
-		}
-		item, err := GetEmpresaImpresoraTrabajoByID(dbConn, empresaID, id)
-		if err != nil {
-			return nil, err
+	out := make([]EmpresaImpresoraTrabajo, 0, limit)
+	for rows.Next() {
+		item, errScan := scanEmpresaImpresoraTrabajo(rows)
+		if errScan != nil {
+			return nil, errScan
 		}
 		out = append(out, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
@@ -1330,29 +1328,41 @@ func ActualizarEmpresaImpresoraTrabajoEstado(dbConn *sql.DB, empresaID, trabajoI
 	if estado != "impreso" && estado != "error" && estado != "cancelado" {
 		return fmt.Errorf("estado de cola no permitido")
 	}
+	if (estado == "impreso" || estado == "error") && agenteID == "" {
+		return fmt.Errorf("agente_id requerido para cerrar el trabajo")
+	}
 	var res sql.Result
 	var err error
 	if estado == "impreso" {
 		res, err = execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
 			SET estado = 'impreso',
-				impreso_en = CURRENT_TIMESTAMP,
-				tomado_por = CASE WHEN TRIM(COALESCE(?, '')) <> '' THEN ? ELSE tomado_por END,
+				impreso_en = CASE WHEN TRIM(COALESCE(impreso_en, '')) = '' THEN CAST(CURRENT_TIMESTAMP AS TEXT) ELSE impreso_en END,
 				ultimo_error = '',
 				fecha_actualizacion = CURRENT_TIMESTAMP
-			WHERE empresa_id = ? AND id = ?`, agenteID, agenteID, empresaID, trabajoID)
-	} else {
+			WHERE empresa_id = ? AND id = ?
+				AND COALESCE(tomado_por, '') = ?
+				AND COALESCE(estado, 'pendiente') IN ('tomado', 'impreso')`, empresaID, trabajoID, agenteID)
+	} else if estado == "error" {
 		res, err = execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
-			SET estado = ?,
-				tomado_por = CASE WHEN TRIM(COALESCE(?, '')) <> '' THEN ? ELSE tomado_por END,
+			SET estado = 'error',
 				ultimo_error = ?,
 				fecha_actualizacion = CURRENT_TIMESTAMP
-			WHERE empresa_id = ? AND id = ?`, estado, agenteID, agenteID, ultimoError, empresaID, trabajoID)
+			WHERE empresa_id = ? AND id = ?
+				AND COALESCE(tomado_por, '') = ?
+				AND COALESCE(estado, 'pendiente') IN ('tomado', 'error')`, ultimoError, empresaID, trabajoID, agenteID)
+	} else {
+		res, err = execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
+			SET estado = 'cancelado',
+				ultimo_error = ?,
+				fecha_actualizacion = CURRENT_TIMESTAMP
+			WHERE empresa_id = ? AND id = ?
+				AND COALESCE(estado, 'pendiente') IN ('pendiente', 'tomado', 'error', 'cancelado')`, ultimoError, empresaID, trabajoID)
 	}
 	if err != nil {
 		return err
 	}
 	if affected, _ := res.RowsAffected(); affected == 0 {
-		return fmt.Errorf("trabajo de impresion no encontrado")
+		return fmt.Errorf("trabajo de impresion no encontrado o no asignado al agente")
 	}
 	return nil
 }
@@ -1365,6 +1375,7 @@ func ReintentarEmpresaImpresoraTrabajo(dbConn *sql.DB, empresaID, trabajoID int6
 	usuario = trimEmpresaImpresoraText(usuario, 180)
 	res, err := execSQLCompat(dbConn, `UPDATE empresa_impresoras_cola
 		SET estado = 'pendiente',
+			intentos = 0,
 			tomado_por = '',
 			tomado_en = '',
 			impreso_en = '',
