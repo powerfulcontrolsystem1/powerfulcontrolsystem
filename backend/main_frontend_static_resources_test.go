@@ -567,6 +567,14 @@ func TestComprasMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing.T
 	if !strings.Contains(string(sharedScript), `frame.getAttribute("data-src")`) {
 		t.Fatal("shared company controller must resolve deferred frame destinations")
 	}
+	for _, required := range []string{
+		`"admin_empresa:last_page:"`,
+		`String(frameTargetName || "contentFrame")`,
+	} {
+		if !strings.Contains(string(sharedScript), required) {
+			t.Fatalf("company menus must scope restored frame state by frame target; missing %q", required)
+		}
+	}
 }
 
 func TestBodegasLegacyRoutesDelegateToUnifiedInventoryView(t *testing.T) {

@@ -5,6 +5,10 @@
 - El destino inicial pasa de `src` a `data-src`; el controlador empresarial
   compartido realiza la unica navegacion despues de resolver el tenant. Una
   regresion conserva este contrato.
+- La comprobacion con una sesion persistente encontro ademas que Productos y
+  Compras compartian la ultima pagina solo por empresa. La clave incluye ahora
+  el nombre del iframe, impidiendo restaurar una vista de Productos dentro del
+  menu de Compras o viceversa.
 
 2026-08-26: Soportes de compras IA sin generacion demo en produccion.
 - La revision visual final de PSI-000 detecto que el encabezado aun exponia
