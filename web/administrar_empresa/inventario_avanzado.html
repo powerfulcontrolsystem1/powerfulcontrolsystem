@@ -43,7 +43,6 @@
         <p>Controla inventario trazable por lote, vencimiento, serial, calidad, reservas comerciales y valor disponible por bodega.</p>
         <div class="iav-actions" style="margin-top:12px">
           <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
-          <button id="btnSeed" class="btn secondary" type="button">Cargar demo</button>
         </div>
       </div>
       <div class="iav-kpis">
@@ -65,8 +64,8 @@
 
         <div id="panelLote" class="iav-panel is-active">
           <div class="iav-row">
-            <div><label class="form-label" for="loteProducto">Producto ID</label><input id="loteProducto" class="form-input" type="number"></div>
-            <div><label class="form-label" for="loteBodega">Bodega ID</label><input id="loteBodega" class="form-input" type="number"></div>
+            <div><label class="form-label" for="loteProducto">Producto</label><select id="loteProducto" class="form-input iav-product-select"><option value="">Cargando productos...</option></select></div>
+            <div><label class="form-label" for="loteBodega">Bodega</label><select id="loteBodega" class="form-input iav-bodega-select"><option value="">Cargando bodegas...</option></select></div>
             <div><label class="form-label" for="loteCodigo">Lote</label><input id="loteCodigo" class="form-input"></div>
             <div><label class="form-label" for="loteCantidad">Cantidad</label><input id="loteCantidad" class="form-input" type="number" step=".01"></div>
           </div>
@@ -86,9 +85,9 @@
 
         <div id="panelSerial" class="iav-panel">
           <div class="iav-row">
-            <div><label class="form-label" for="serialLote">Lote ID</label><input id="serialLote" class="form-input" type="number"></div>
-            <div><label class="form-label" for="serialProducto">Producto ID</label><input id="serialProducto" class="form-input" type="number"></div>
-            <div><label class="form-label" for="serialBodega">Bodega ID</label><input id="serialBodega" class="form-input" type="number"></div>
+            <div><label class="form-label" for="serialLote">Lote</label><select id="serialLote" class="form-input iav-lote-select"><option value="">Seleccione lote</option></select></div>
+            <div><label class="form-label" for="serialProducto">Producto</label><select id="serialProducto" class="form-input iav-product-select"><option value="">Cargando productos...</option></select></div>
+            <div><label class="form-label" for="serialBodega">Bodega</label><select id="serialBodega" class="form-input iav-bodega-select"><option value="">Cargando bodegas...</option></select></div>
             <div><label class="form-label" for="serialCodigo">Serial</label><input id="serialCodigo" class="form-input"></div>
           </div>
           <div class="iav-row">
@@ -101,10 +100,10 @@
 
         <div id="panelReserva" class="iav-panel">
           <div class="iav-row">
-            <div><label class="form-label" for="resProducto">Producto ID</label><input id="resProducto" class="form-input" type="number"></div>
-            <div><label class="form-label" for="resBodega">Bodega ID</label><input id="resBodega" class="form-input" type="number"></div>
-            <div><label class="form-label" for="resLote">Lote ID</label><input id="resLote" class="form-input" type="number"></div>
-            <div><label class="form-label" for="resSerial">Serial ID</label><input id="resSerial" class="form-input" type="number"></div>
+            <div><label class="form-label" for="resProducto">Producto</label><select id="resProducto" class="form-input iav-product-select"><option value="">Cargando productos...</option></select></div>
+            <div><label class="form-label" for="resBodega">Bodega</label><select id="resBodega" class="form-input iav-bodega-select"><option value="">Cargando bodegas...</option></select></div>
+            <div><label class="form-label" for="resLote">Lote</label><select id="resLote" class="form-input iav-lote-select"><option value="">Seleccione lote</option></select></div>
+            <div><label class="form-label" for="resSerial">Serial (opcional)</label><select id="resSerial" class="form-input iav-serial-select"><option value="">Sin serial</option></select></div>
           </div>
           <div class="iav-row">
             <div><label class="form-label" for="resCantidad">Cantidad</label><input id="resCantidad" class="form-input" type="number" step=".01"></div>
@@ -114,7 +113,7 @@
           </div>
           <div class="iav-row">
             <div><label class="form-label" for="resExpira">Expira</label><input id="resExpira" class="form-input" type="date"></div>
-            <div><label class="form-label" for="confirmReservaID">Reserva a confirmar</label><input id="confirmReservaID" class="form-input" type="number"></div>
+            <div><label class="form-label" for="confirmReservaID">Reserva a confirmar</label><select id="confirmReservaID" class="form-input"><option value="">Seleccione reserva activa</option></select></div>
             <div><button id="btnSaveReserva" class="btn" type="button" style="margin-top:24px">Crear reserva</button></div>
             <div><button id="btnConfirmReserva" class="btn secondary" type="button" style="margin-top:24px">Confirmar salida</button></div>
           </div>

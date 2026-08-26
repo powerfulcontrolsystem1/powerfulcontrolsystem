@@ -20,6 +20,8 @@
     .cav-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:14px}
     .cav-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
     .cav-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .cav-panel>.cav-actions{margin-top:12px}
+    .cav-help{margin:4px 0 10px;color:var(--muted);line-height:1.45}
     .cav-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
     .cav-table{width:100%;min-width:820px;border-collapse:collapse}
     .cav-table th,.cav-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
@@ -91,6 +93,10 @@
             <div><label class="form-label" for="itemCosto2">Costo unitario</label><input id="itemCosto2" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="itemProv2">Proveedor sugerido</label><select id="itemProv2" class="form-input proveedor-select"><option value="">Cargando proveedores...</option></select></div>
           </div>
+          <div class="cav-actions"><button id="btnAddReqItems" class="btn secondary" type="button">Añadir productos a la requisicion</button></div>
+          <h3>Productos preparados</h3>
+          <p class="cav-help">Puedes agregar tantos productos como necesites. Si repites un producto, su fila preparada se actualiza antes de guardar.</p>
+          <div class="cav-table-wrap"><table class="cav-table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Costo</th><th>Proveedor sugerido</th><th>Accion</th></tr></thead><tbody id="reqItemsDraftBody"><tr><td colspan="5">Aun no hay productos preparados.</td></tr></tbody></table></div>
           <div class="cav-actions"><button id="btnSaveReq" class="btn" type="button">Guardar requisicion</button></div>
         </div>
 
@@ -142,8 +148,12 @@
           </div>
           <div class="cav-row">
             <div><label class="form-label" for="recLote">Lote (opcional)</label><input id="recLote" class="form-input" autocomplete="off"></div>
-            <div><button id="btnSaveRec" class="btn" type="button" style="margin-top:24px">Recibir y actualizar inventario</button></div>
+            <div><button id="btnAddRecItem" class="btn secondary" type="button" style="margin-top:24px">Añadir item a la recepcion</button></div>
           </div>
+          <h3>Items preparados</h3>
+          <p class="cav-help">Agrega uno o varios productos pendientes. Todos se registran de forma atomica bajo el mismo documento de recepcion.</p>
+          <div class="cav-table-wrap"><table class="cav-table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Costo</th><th>Lote</th><th>Accion</th></tr></thead><tbody id="recItemsDraftBody"><tr><td colspan="5">Aun no hay items preparados.</td></tr></tbody></table></div>
+          <div class="cav-actions"><button id="btnSaveRec" class="btn" type="button">Recibir y actualizar inventario</button></div>
         </div>
       </article>
 

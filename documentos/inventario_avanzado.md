@@ -21,16 +21,30 @@ Ampliacion del modulo `inventario` para trazabilidad empresarial sin crear un in
 - `POST /api/empresa/inventario_avanzado?action=serial`
 - `POST /api/empresa/inventario_avanzado?action=reserva`
 - `POST /api/empresa/inventario_avanzado?action=confirmar_reserva`
-- `POST /api/empresa/inventario_avanzado?action=seed_demo`
 
 ## Integracion
 
 `CreateEmpresaInventarioLoteAvanzado` registra entrada en `inventario_existencias` y en `inventario_movimientos`, por lo que el kardex y las existencias existentes siguen siendo la fuente operativa central.
 
+La pantalla empresarial carga productos, bodegas, lotes, seriales y reservas
+activas como selectores descriptivos. Ninguna operacion exige que el usuario
+conozca IDs internos y la superficie productiva no expone creacion de datos
+demo.
+
 ## Seguridad
 
 La pagina `linkInventarioAvanzado` y la API usan el modulo/licencia existente `inventario`, con `WithEmpresaInventarioPermissions`. Todas las tablas incluyen `empresa_id`.
 
+Las mutaciones exigen `Idempotency-Key` durable por empresa y operacion. Las
+referencias a producto, servicio, bodega, categoria o proveedor de otra empresa se
+rechazan como recurso no disponible, sin filtrar IDs ni convertir el rechazo
+esperado en un error 500.
+
+Los valores economicos, impuestos, umbrales y stock inicial de productos se
+validan en servidor. Las escrituras propagan fallos de `RowsAffected` y los
+listados no silencian errores tardios del cursor PostgreSQL.
+
 ## QA
 
-La prueba de Motel Calipso crea producto, lote, serial, reserva, confirma salida y valida valorizacion/dashboard.
+La prueba operativa en la empresa PCS crea producto, lote, serial y reserva,
+confirma la salida y valida existencias, Kardex, valorizacion y dashboard.

@@ -418,13 +418,6 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		}
 		exposeSoporteComprasIAURL(&purged)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": purged})
-	case "seed_demo":
-		row, err := seedSoporteComprasIADemo(dbEmp, empresaID, usuario)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	default:
 		http.Error(w, "accion no soportada", http.StatusBadRequest)
 	}
@@ -1631,45 +1624,6 @@ func resolveExistingPrivateFileUnderRoot(root, candidate string) (string, error)
 		return "", errors.New("enlace de soporte fuera del directorio permitido")
 	}
 	return resolvedCandidate, nil
-}
-
-func seedSoporteComprasIADemo(dbEmp *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
-	row, err := dbpkg.CreateEmpresaSoporteComprasIA(dbEmp, dbpkg.EmpresaSoporteComprasIA{
-		EmpresaID:              empresaID,
-		TipoSoporte:            "gasto",
-		Origen:                 "manual",
-		ProveedorNombre:        "Papeleria Centro Empresarial SAS",
-		ProveedorNIT:           "901234567-8",
-		DocumentoTipo:          "factura_compra",
-		DocumentoNumero:        "FE-1024",
-		FechaDocumento:         time.Now().Format("2006-01-02"),
-		FechaVencimiento:       time.Now().AddDate(0, 0, 15).Format("2006-01-02"),
-		Subtotal:               180000,
-		ImpuestoIVA:            34200,
-		Total:                  214200,
-		Moneda:                 "COP",
-		CategoriaContable:      "Gastos administrativos",
-		CentroCosto:            "Administracion",
-		ConfianzaIA:            0.94,
-		ModeloIA:               dbpkg.EmpresaSoporteComprasIAModeloDefault,
-		RequiereRevisionHumana: true,
-		Usuario:                usuario,
-		Observaciones:          "Soporte de ejemplo para probar captura inteligente.",
-	})
-	if err != nil {
-		return row, err
-	}
-	extraction := row
-	raw, _ := json.Marshal(map[string]interface{}{
-		"proveedor_nombre": row.ProveedorNombre,
-		"proveedor_nit":    row.ProveedorNIT,
-		"documento_tipo":   row.DocumentoTipo,
-		"documento_numero": row.DocumentoNumero,
-		"total":            row.Total,
-		"confianza_ia":     row.ConfianzaIA,
-	})
-	extraction.ExtraccionJSON = string(raw)
-	return dbpkg.UpdateEmpresaSoporteComprasIAExtraccion(dbEmp, empresaID, row.ID, extraction, usuario)
 }
 
 func extFromSoporteComprasIAMime(mimeType string) string {
