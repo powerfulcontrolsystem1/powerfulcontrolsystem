@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-08-26T13:35:54.955Z",
+  "status": "ok",
+  "cases": [
+    {
+      "id": "wompi_create",
+      "ok": true,
+      "expected": "creacion de transaccion Wompi"
+    },
+    {
+      "id": "wompi_status",
+      "ok": true,
+      "expected": "consulta por transaccion o referencia Wompi"
+    },
+    {
+      "id": "wompi_webhook",
+      "ok": true,
+      "expected": "webhook Wompi idempotente"
+    },
+    {
+      "id": "epayco_create",
+      "ok": true,
+      "expected": "creacion de transaccion Epayco"
+    },
+    {
+      "id": "epayco_status",
+      "ok": true,
+      "expected": "consulta por transaccion o referencia Epayco"
+    },
+    {
+      "id": "epayco_webhook",
+      "ok": true,
+      "expected": "webhook Epayco idempotente"
+    },
+    {
+      "id": "return_flow",
+      "ok": true,
+      "expected": "retorno de pasarela sin perder referencia"
+    },
+    {
+      "id": "print_formats",
+      "ok": true,
+      "expected": "evidencia visual de comprobantes grandes y POS"
+    },
+    {
+      "id": "contract_doc",
+      "ok": true,
+      "expected": "contrato de checkout documentado"
+    }
+  ]
+}

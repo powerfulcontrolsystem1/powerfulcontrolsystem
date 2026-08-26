@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "fecha": "2026-08-26",
+  "alcance": "Productos, Servicios, Compras e Inventario",
+  "candidato_funcional": "9eba6b12729baa1735f25dc0c38659292a88d19d",
+  "pull_request_cierre": 215,
+  "empresa_qa": {
+    "empresa_id": 12,
+    "entorno": "staging",
+    "produccion_modificada": false,
+    "secretos_incluidos": false
+  },
+  "despliegue": {
+    "servicios_saludables": 5,
+    "health_http": 200,
+    "ready_http": 200,
+    "migraciones_plataforma_aplicadas": 5,
+    "indices_normalizados_creados": 3,
+    "grupos_duplicados_normalizados": {
+      "categorias": 0,
+      "proveedores": 0,
+      "servicios": 0
+    }
+  },
+  "catalogos": {
+    "conteos_finales": {
+      "productos": 9,
+      "servicios": 4,
+      "categorias": 4,
+      "bodegas": 4,
+      "proveedores": 3
+    },
+    "categoria_nombre_equivalente": {
+      "http": 409,
+      "conteo_conservado": true
+    },
+    "proveedor_nombre_equivalente": {
+      "http": 409,
+      "conteo_conservado": true
+    },
+    "servicio_concurrencia": {
+      "solicitudes_simultaneas": 8,
+      "creadas": 1,
+      "conflictos_http_409": 7,
+      "filas_persistidas": 1,
+      "registro_qa_eliminado": true
+    }
+  },
+  "aislamiento_multiempresa": {
+    "recurso_probado": "bodega",
+    "empresa_origen": 7,
+    "empresa_objetivo": 12,
+    "actualizacion_cruzada_http": 404,
+    "origen_sin_cambios": true,
+    "objetivo_sin_referencia_ajena": true
+  },
+  "inventario": {
+    "stock_total": 62,
+    "movimientos_kardex": 41,
+    "movimientos": {
+      "entradas": 21,
+      "salidas": 14,
+      "traslados": 2,
+      "ajustes": 3
+    },
+    "alertas": 2,
+    "deficit": 0,
+    "lotes": {
+      "filas": 8,
+      "activos": 8
+    },
+    "seriales": {
+      "filas": 2,
+      "activos": 0
+    },
+    "reservas": {
+      "filas": 2,
+      "activas": 0,
+      "unidades_reservadas": 0
+    },
+    "valorizacion": {
+      "filas": 5,
+      "valor_disponible_qa": 31600
+    },
+    "flujos_reales_ejercidos": [
+      "creacion de producto",
+      "entrada y salida de stock",
+      "ajuste",
+      "traslado entre bodegas",
+      "lote",
+      "serial",
+      "reserva y liberacion",
+      "consulta de Kardex"
+    ]
+  },
+  "compras_ia": {
+    "xml_sintetico_sin_validez_comercial": true,
+    "modelo_observado": "openai:gpt-5.5",
+    "extraccion_original_completada": true,
+    "adjunto_privado_recuperable": true,
+    "soportes_duplicados_probados": 3,
+    "duplicados_reutilizaron_original": true,
+    "llamadas_ia_adicionales_en_duplicados": 0,
+    "documentos_compra_visibles": 3,
+    "documentos_con_adjunto": 2,
+    "semilla_demo_expuesta_ui": false,
+    "seed_demo_http": 400,
+    "soportes_antes_seed_demo": 23,
+    "soportes_despues_seed_demo": 23,
+    "errores_frontend": 0
+  },
+  "impresion": {
+    "impresoras_configuradas": 2,
+    "dispositivos": 1,
+    "mapeos": {
+      "cocina": 1,
+      "factura_caja": 2,
+      "ticket_cobro": 2
+    },
+    "productos_mapeados": 2,
+    "trabajos_qa": 2,
+    "trabajos_estado_impreso": 2,
+    "intentos_por_trabajo": 1,
+    "advertencias": 0,
+    "formatos_renderizados": 20,
+    "formatos_ok": 20,
+    "papel_fisico_observado": false
+  },
+  "navegacion_y_rendimiento": {
+    "menu_documentos": 1,
+    "catalogo_documentos": 1,
+    "solicitudes_configuracion": 1,
+    "solicitudes_api": 15,
+    "solicitudes_fallidas": 0,
+    "respuestas_no_2xx": 0,
+    "errores_runtime": 0,
+    "bodega_legacy_redirige_a_vista_unificada": true,
+    "productos_y_compras_estado_separado_por_frame": true,
+    "compras_carga_inicial_diferida": true,
+    "overflow_horizontal_escritorio": false,
+    "overflow_horizontal_movil": false,
+    "compras_ia_anidada": {
+      "documento_antes_px": {
+        "scroll_width": 966,
+        "client_width": 791
+      },
+      "documento_despues_px": {
+        "scroll_width": 791,
+        "client_width": 791
+      },
+      "overflow_global_despues": false,
+      "tabla_scroll_interno_px": {
+        "scroll_width": 920,
+        "client_width": 728
+      }
+    }
+  },
+  "qa_automatizada": {
+    "ci_profesional": {
+      "run_id": 32974327264,
+      "sha": "9eba6b12729baa1735f25dc0c38659292a88d19d",
+      "resultado": "success"
+    },
+    "e2e_visual": {
+      "run_id": 32974846684,
+      "resultado": "success",
+      "paginas": 32,
+      "rutas": 16,
+      "botones": 1404,
+      "clics_seguros": 28,
+      "acciones_riesgosas_omitidas": 270,
+      "paginas_con_hallazgos": 0
+    },
+    "release_candidate": {
+      "run_id": 32975347367,
+      "sha": "9eba6b12729baa1735f25dc0c38659292a88d19d",
+      "resultado": "success",
+      "imagenes_inmutables_publicadas": true,
+      "compose_validado_por_digest": true
+    },
+    "preflight_local": {
+      "modo": "Full Strict",
+      "resultado": "success",
+      "archivos_javascript": 74,
+      "duplicados_estructurales": 0
+    },
+    "postgresql_migracion_real": "PASS"
+  },
+  "controles_externos_pendientes": [
+    "confirmar salida de papel en impresoras fisicas de cocina y caja",
+    "autorizar merge y despliegue a produccion"
+  ]
+}

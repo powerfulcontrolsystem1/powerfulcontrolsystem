@@ -542,6 +542,59 @@ func TestProductosMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing
 	}
 }
 
+func TestComprasMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing.T) {
+	menu, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "compras_menu.html"))
+	if err != nil {
+		t.Fatalf("read purchases menu: %v", err)
+	}
+	content := string(menu)
+	framePattern := regexp.MustCompile(`<iframe[^>]+id="comprasContentFrame"[^>]*>`)
+	frame := framePattern.FindString(content)
+	if frame == "" {
+		t.Fatal("purchases menu must keep the purchases content frame")
+	}
+	if strings.Contains(frame, ` src=`) {
+		t.Fatal("purchases content frame must not navigate before empresa_id is resolved")
+	}
+	if !strings.Contains(frame, ` data-src="/administrar_empresa/compras.html"`) {
+		t.Fatal("purchases content frame must declare its deferred tenant-aware destination")
+	}
+
+	sharedScript, err := os.ReadFile(filepath.Join("..", "web", "js", "administrar_empresa.js"))
+	if err != nil {
+		t.Fatalf("read shared company controller: %v", err)
+	}
+	if !strings.Contains(string(sharedScript), `frame.getAttribute("data-src")`) {
+		t.Fatal("shared company controller must resolve deferred frame destinations")
+	}
+	for _, required := range []string{
+		`"admin_empresa:last_page:"`,
+		`String(frameTargetName || "contentFrame")`,
+	} {
+		if !strings.Contains(string(sharedScript), required) {
+			t.Fatalf("company menus must scope restored frame state by frame target; missing %q", required)
+		}
+	}
+}
+
+func TestPurchaseAISupportsShrinkInsideNestedPurchasesFrame(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "soportes_compras_ia.html"))
+	if err != nil {
+		t.Fatalf("read purchase AI supports page: %v", err)
+	}
+	content := string(page)
+	for _, required := range []string{
+		`.capture-shell,.capture-shell>*`,
+		`.capture-overview>*`,
+		`.capture-box{min-width:0}`,
+		`.capture-table-wrap{min-width:0;max-width:100%;overflow:auto`,
+	} {
+		if !strings.Contains(content, required) {
+			t.Fatalf("purchase AI supports must shrink inside the nested purchases frame; missing %q", required)
+		}
+	}
+}
+
 func TestBodegasLegacyRoutesDelegateToUnifiedInventoryView(t *testing.T) {
 	root := filepath.Join("..", "web", "administrar_empresa")
 	for _, rel := range []string{"bodega.html", filepath.Join("productos", "bodegas.html")} {
