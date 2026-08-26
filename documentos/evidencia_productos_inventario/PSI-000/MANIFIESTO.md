@@ -4,24 +4,38 @@ Empresa autorizada: Powerful Control System (`empresa_id=12`).
 
 Este directorio conserva evidencia sintetica y visual de la preparacion de
 Productos, Servicios, Compras e Inventario. No contiene contrasenas, cookies,
-tokens, cabeceras de autorizacion ni datos comerciales de una factura real.
+tokens, cabeceras de autorizacion, NIT, hashes privados ni datos comerciales de
+una factura real.
 
-## Grupos
+## Cierre
+
+- `REPORTE_FINAL.md`: dictamen, alcance, gates, riesgos y condiciones exactas
+  para promover el candidato.
+- `validacion_operativa_final_5eb4a012.json`: resultado estructurado y
+  sanitizado de las pruebas reales, multiempresa, IA, impresion y rendimiento.
+- `github-e2e-32972077549/`: reporte y 32 capturas del barrido autenticado final
+  sobre `5eb4a012`, con 16 rutas en escritorio y movil, 1.404 botones, 28 clics
+  seguros y cero paginas con hallazgos.
+- `productos_menu_operativo_desktop_20f4628e.png` y
+  `bodegas_unificadas_*_20f4628e.png`: comprobacion manual exacta de navegacion
+  unica, redireccion heredada y vista canonica de bodegas.
+- `compras_ia_sin_demo_*_13525e92.png`: comprobacion manual de que la interfaz
+  ya no ofrece carga de datos demo en escritorio ni movil.
+- `*_a0d3989d.png`: capturas manuales complementarias de secciones inferiores,
+  lotes, seriales, reservas, Compras IA y reglas de impresion que no quedan
+  completas en una captura de viewport del auditor automatico.
+
+## Evidencia historica de la cadena
 
 - `productos_staging_*_5b4d9ac0.png`: catalogo de Productos en escritorio y
-  movil sobre el candidato `5b4d9ac0`.
+  movil durante la primera promocion de la cadena.
 - `inventario_avanzado_staging_*_efbde84d*.png`: flujo real de lote, serial,
-  reserva, confirmacion y valorizacion antes/despues, incluido movil, sobre
-  `efbde84d`.
+  reserva, confirmacion y valorizacion antes/despues, incluido movil.
 - `compras_avanzadas_staging_*_efbde84d*.png`: requisicion, cotizacion,
-  aprobacion y recepciones reales de QA antes/despues sobre `efbde84d`.
-- `github-e2e-32940533286/test_runs/qa_e2e_buttons_*`: barrido autenticado de
-  14 paginas, 622 botones inventariados, ocho clics seguros y cero hallazgos.
-- `github-e2e-32940533286/test_runs/qa_print_formats_*`: render de 20 formatos
-  imprimibles y sus resultados estructurados.
-- `github-e2e-32940533286/documentos/reportes_profesionales/`: matrices de
-  roles y comprobantes generadas por el mismo workflow.
+  aprobacion y recepciones reales de QA antes/despues.
+- `github-e2e-32940533286/`: primera evidencia automatizada conservada para
+  comparar la ampliacion posterior de 14 a 34 paginas.
 
-Las capturas y el reporte del SHA final se agregan al cerrar CI y la repeticion
-desplegada. La observacion de papel fisico se registra por separado porque una
-cola tomada no demuestra por si sola que la impresora produjo papel.
+La observacion de papel fisico se registra por separado porque una cola tomada
+y un documento renderizado no demuestran por si solos que la impresora produjo
+papel.
