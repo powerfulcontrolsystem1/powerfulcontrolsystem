@@ -39,6 +39,36 @@ func writeInventarioEntidadNoDisponible(w http.ResponseWriter, err error) bool {
 	return true
 }
 
+func writeProductosCatalogDuplicate(w http.ResponseWriter, entity string, err error) bool {
+	if err == nil {
+		return false
+	}
+	lower := strings.ToLower(err.Error())
+	if !strings.Contains(lower, "duplicate") && !strings.Contains(lower, "unique") {
+		return false
+	}
+
+	markers := map[string][]string{
+		"categoria": {"ux_categorias_productos_empresa_", "categorias_productos."},
+		"producto":  {"ux_productos_empresa_", "productos.sku", "productos.codigo_barras"},
+		"proveedor": {"ux_proveedores_empresa_", "proveedores.codigo", "proveedores.nombre"},
+		"servicio":  {"ux_servicios_empresa_codigo", "servicios.codigo"},
+	}
+	messages := map[string]string{
+		"categoria": "Ya existe una categoria con ese nombre o codigo para esta empresa.",
+		"producto":  "Ya existe un producto con el mismo SKU o codigo de barras para esta empresa.",
+		"proveedor": "Ya existe un proveedor con ese nombre o codigo para esta empresa.",
+		"servicio":  "Ya existe un servicio con ese codigo para esta empresa.",
+	}
+	for _, marker := range markers[entity] {
+		if strings.Contains(lower, marker) {
+			http.Error(w, messages[entity], http.StatusConflict)
+			return true
+		}
+	}
+	return false
+}
+
 func productosPublicError(err error, fallback string) string {
 	text := strings.TrimSpace(fmt.Sprint(err))
 	if text == "" || len(text) > 240 || strings.ContainsAny(text, "\r\n") {
@@ -934,6 +964,9 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateCategoriaProducto(dbEmp, payload)
 			if err != nil {
+				if writeProductosCatalogDuplicate(w, "categoria", err) {
+					return
+				}
 				writeProductosInternalError(w, r, "crear_categoria", err)
 				return
 			}
@@ -985,6 +1018,9 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if err := dbpkg.UpdateCategoriaProducto(dbEmp, payload); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "categoria de producto no encontrada", http.StatusNotFound)
+					return
+				}
+				if writeProductosCatalogDuplicate(w, "categoria", err) {
 					return
 				}
 				writeProductosInternalError(w, r, "actualizar_categoria", err)
@@ -1139,6 +1175,9 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if writeInventarioEntidadNoDisponible(w, err) {
 					return
 				}
+				if writeProductosCatalogDuplicate(w, "producto", err) {
+					return
+				}
 				writeProductosInternalError(w, r, "crear_producto", err)
 				return
 			}
@@ -1214,6 +1253,9 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				if writeInventarioEntidadNoDisponible(w, err) {
+					return
+				}
+				if writeProductosCatalogDuplicate(w, "producto", err) {
 					return
 				}
 				writeProductosInternalError(w, r, "actualizar_producto", err)
@@ -2528,6 +2570,9 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateProveedor(dbEmp, payload.Proveedor)
 			if err != nil {
+				if writeProductosCatalogDuplicate(w, "proveedor", err) {
+					return
+				}
 				writeProductosInternalError(w, r, "crear_proveedor", err)
 				return
 			}
@@ -2746,6 +2791,9 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "proveedor no encontrado", http.StatusNotFound)
 					return
 				}
+				if writeProductosCatalogDuplicate(w, "proveedor", err) {
+					return
+				}
 				writeProductosInternalError(w, r, "actualizar_proveedor", err)
 				return
 			}
@@ -2854,6 +2902,9 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, productosPublicError(err, "Datos de servicio inválidos."), http.StatusBadRequest)
 					return
 				}
+				if writeProductosCatalogDuplicate(w, "servicio", err) {
+					return
+				}
 				writeProductosInternalError(w, r, "crear_servicio", err)
 				return
 			}
@@ -2903,6 +2954,9 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				if writeInventarioEntidadNoDisponible(w, err) {
+					return
+				}
+				if writeProductosCatalogDuplicate(w, "servicio", err) {
 					return
 				}
 				writeProductosInternalError(w, r, "actualizar_servicio", err)

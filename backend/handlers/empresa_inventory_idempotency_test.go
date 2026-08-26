@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -28,6 +29,41 @@ func TestEmpresaInventoryIdempotentMutationRequiresKeyBeforeDatabase(t *testing.
 	}
 	if !strings.Contains(rec.Body.String(), "Idempotency-Key") {
 		t.Fatalf("missing public idempotency error: %q", rec.Body.String())
+	}
+}
+
+func TestProductosCatalogDuplicateReturnsConflictWithoutDatabaseDetails(t *testing.T) {
+	tests := []struct {
+		entity  string
+		detail  string
+		message string
+	}{
+		{"categoria", `pq: duplicate key value violates unique constraint "ux_categorias_productos_empresa_codigo"`, "Ya existe una categoria"},
+		{"producto", `UNIQUE constraint failed: productos.empresa_id, productos.sku`, "Ya existe un producto"},
+		{"proveedor", `pq: duplicate key value violates unique constraint "ux_proveedores_empresa_nombre"`, "Ya existe un proveedor"},
+		{"servicio", `UNIQUE constraint failed: servicios.empresa_id, servicios.codigo`, "Ya existe un servicio"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.entity, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			if !writeProductosCatalogDuplicate(rec, tc.entity, errors.New(tc.detail)) {
+				t.Fatal("duplicate was not classified")
+			}
+			if rec.Code != http.StatusConflict {
+				t.Fatalf("status=%d, want %d", rec.Code, http.StatusConflict)
+			}
+			if !strings.Contains(rec.Body.String(), tc.message) {
+				t.Fatalf("public message=%q", rec.Body.String())
+			}
+			if strings.Contains(strings.ToLower(rec.Body.String()), "constraint") || strings.Contains(strings.ToLower(rec.Body.String()), "pq:") {
+				t.Fatalf("database detail leaked: %q", rec.Body.String())
+			}
+		})
+	}
+
+	rec := httptest.NewRecorder()
+	if writeProductosCatalogDuplicate(rec, "categoria", errors.New("database unavailable")) {
+		t.Fatal("non-duplicate error was classified as duplicate")
 	}
 }
 

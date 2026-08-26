@@ -43508,3 +43508,15 @@ Archivos modificados:
   extraccion normal y el usuario debe revisar los campos antes de guardar.
 - Se agrego una regresion de contrato frontend; la validacion visual desplegada
   y el cierre integral se registran con la evidencia PSI-000 del SHA final.
+
+2026-08-26: Conflictos profesionales de unicidad en Productos e Inventario.
+- La prueba visual real de Categorias confirmo que un codigo repetido no creaba
+  una segunda fila, pero el handler convertia el rechazo PostgreSQL en HTTP 500
+  y la pantalla solo podia mostrar un aviso interno generico.
+- Categorias, productos, proveedores y servicios clasifican ahora solamente sus
+  restricciones empresariales conocidas como HTTP 409, con mensajes publicos
+  acotados. No se publican SQLSTATE, nombres de constraints ni detalles del
+  motor; cualquier error no reconocido conserva el tratamiento interno 500.
+- La regresion cubre PostgreSQL y el formato compatible usado por pruebas,
+  incluidos codigo/nombre de categoria/proveedor, SKU/barras y codigo de
+  servicio.
