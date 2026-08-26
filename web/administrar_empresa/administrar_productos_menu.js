@@ -71,6 +71,6 @@
         const frame = document.getElementById('productosContentFrame');
         if (frame) {
           const deferredSrc = frame.getAttribute('data-src') || '/administrar_empresa/administrar_productos.html?view=productos';
-          frame.setAttribute('src', withEmpresaAndVersion(deferredSrc));
+          frame.setAttribute('data-src', withEmpresaAndVersion(deferredSrc));
         }
       })();

@@ -524,10 +524,21 @@ func TestProductosMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing
 		t.Fatalf("read products menu script: %v", err)
 	}
 	scriptContent := string(script)
-	for _, required := range []string{"frame.getAttribute('data-src')", "withEmpresaAndVersion(deferredSrc)", "frame.setAttribute('src'"} {
+	for _, required := range []string{"frame.getAttribute('data-src')", "withEmpresaAndVersion(deferredSrc)", "frame.setAttribute('data-src'"} {
 		if !strings.Contains(scriptContent, required) {
-			t.Fatalf("products menu must perform one deferred tenant-aware frame navigation; missing %q", required)
+			t.Fatalf("products menu must prepare one deferred tenant-aware frame destination; missing %q", required)
 		}
+	}
+	if strings.Contains(scriptContent, "frame.setAttribute('src'") {
+		t.Fatal("products menu script must leave the only frame navigation to the shared company controller")
+	}
+
+	sharedScript, err := os.ReadFile(filepath.Join("..", "web", "js", "administrar_empresa.js"))
+	if err != nil {
+		t.Fatalf("read shared company controller: %v", err)
+	}
+	if !strings.Contains(string(sharedScript), `frame.getAttribute("data-src")`) {
+		t.Fatal("shared company controller must resolve deferred frame destinations")
 	}
 }
 
