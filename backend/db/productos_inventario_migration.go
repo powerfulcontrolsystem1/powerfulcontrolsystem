@@ -6,12 +6,43 @@ import (
 	"fmt"
 )
 
-const empresaProductosInventarioSchemaFingerprint = "empresa-productos-inventario:v1:recepcion-bodega-legacy-nullable-positive:productos-tenant-state-index"
+const (
+	empresaProductosInventarioSchemaFingerprint                = "empresa-productos-inventario:v1:recepcion-bodega-not-null:productos-tenant-state-index"
+	empresaProductosInventarioLegacyWarehouseSchemaFingerprint = "empresa-productos-inventario:v2:recepcion-bodega-legacy-nullable-positive"
+)
 
 // applyEmpresaProductosInventarioSchemaTx owns the schema additions required
 // by the atomic purchase-receipt flow. Runtime API and worker processes must
 // never create these structures.
 func applyEmpresaProductosInventarioSchemaTx(ctx context.Context, tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("migration transaction is required")
+	}
+	statements := []string{
+		`ALTER TABLE empresa_compras_recepciones_avanzadas
+			ADD COLUMN IF NOT EXISTS bodega_id INTEGER`,
+		`UPDATE empresa_compras_recepciones_avanzadas
+			SET bodega_id = 0
+			WHERE bodega_id IS NULL`,
+		`ALTER TABLE empresa_compras_recepciones_avanzadas
+			ALTER COLUMN bodega_id SET DEFAULT 0,
+			ALTER COLUMN bodega_id SET NOT NULL`,
+		`CREATE INDEX IF NOT EXISTS ix_productos_empresa_estado_id
+			ON productos(empresa_id, estado, id)`,
+	}
+	for _, statement := range statements {
+		if _, err := tx.ExecContext(ctx, statement); err != nil {
+			return fmt.Errorf("migrate products and inventory schema: %w", err)
+		}
+	}
+	return nil
+}
+
+// applyEmpresaProductosInventarioLegacyWarehouseSchemaTx repairs the sentinel
+// introduced by v1 without changing its published checksum. Unknown legacy
+// warehouses remain NULL; new receipts are still required and tenant-validated
+// by the write path.
+func applyEmpresaProductosInventarioLegacyWarehouseSchemaTx(ctx context.Context, tx *sql.Tx) error {
 	if tx == nil {
 		return fmt.Errorf("migration transaction is required")
 	}
@@ -50,8 +81,6 @@ func applyEmpresaProductosInventarioSchemaTx(ctx context.Context, tx *sql.Tx) er
 		`ALTER TABLE empresa_compras_recepciones_avanzadas
 			ADD CONSTRAINT ck_empresa_compras_recepciones_bodega_positiva
 			CHECK (bodega_id IS NULL OR bodega_id > 0)`,
-		`CREATE INDEX IF NOT EXISTS ix_productos_empresa_estado_id
-			ON productos(empresa_id, estado, id)`,
 	}
 	for _, statement := range statements {
 		if _, err := tx.ExecContext(ctx, statement); err != nil {

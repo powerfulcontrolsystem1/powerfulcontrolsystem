@@ -57,7 +57,7 @@ func TestEmpresaProductosInventarioMigrationPostgres(t *testing.T) {
 	}
 
 	for attempt := 0; attempt < 2; attempt++ {
-		if err := applyEmpresaProductosInventarioSchemaTx(context.Background(), tx); err != nil {
+		if err := applyEmpresaProductosInventarioLegacyWarehouseSchemaTx(context.Background(), tx); err != nil {
 			t.Fatalf("attempt %d: %v", attempt+1, err)
 		}
 	}
@@ -120,8 +120,11 @@ func TestEmpresaProductosInventarioMigrationOnRestoredSchemaPostgres(t *testing.
 	if err := tx.QueryRow(`SELECT count(*) FROM empresa_compras_recepciones_avanzadas`).Scan(&receiptsBefore); err != nil {
 		t.Fatal(err)
 	}
+	if err := applyEmpresaProductosInventarioSchemaTx(context.Background(), tx); err != nil {
+		t.Fatalf("v1: %v", err)
+	}
 	for attempt := 0; attempt < 2; attempt++ {
-		if err := applyEmpresaProductosInventarioSchemaTx(context.Background(), tx); err != nil {
+		if err := applyEmpresaProductosInventarioLegacyWarehouseSchemaTx(context.Background(), tx); err != nil {
 			t.Fatalf("attempt %d: %v", attempt+1, err)
 		}
 	}

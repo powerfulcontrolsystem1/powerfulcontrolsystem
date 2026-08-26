@@ -198,8 +198,11 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260824-001-facturacion-dane-codes-v1", Description: "authoritative DANE codes for electronic document parties", Body: empresaFacturacionDANECodesFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaFacturacionDANECodesTx(ctx, tx)
 			}},
-			{Version: "20260826-001-productos-inventario-v1", Description: "warehouse receipt ownership with safe legacy compatibility and tenant product listing index", Body: empresaProductosInventarioSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+			{Version: "20260826-001-productos-inventario-v1", Description: "warehouse receipt ownership and tenant product listing index", Body: empresaProductosInventarioSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaProductosInventarioSchemaTx(ctx, tx)
+			}},
+			{Version: "20260826-002-productos-inventario-recepcion-bodega-v2", Description: "safe legacy warehouse compatibility for purchase receipts", Body: empresaProductosInventarioLegacyWarehouseSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaProductosInventarioLegacyWarehouseSchemaTx(ctx, tx)
 			}},
 		}, nil
 	case MigrationTargetSuper:
