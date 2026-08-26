@@ -275,13 +275,14 @@ type FacturacionElectronicaRetryItem struct {
 
 // FacturacionElectronicaRetryFilter define filtros para consultar cola de reintentos FE.
 type FacturacionElectronicaRetryFilter struct {
-	TipoDocumento   string
-	EstadoEnvio     string
-	DocumentoQuery  string
-	SoloVencidos    bool
-	IncludeInactive bool
-	Limit           int
-	Offset          int
+	TipoDocumento         string
+	ExcluirTiposDocumento []string
+	EstadoEnvio           string
+	DocumentoQuery        string
+	SoloVencidos          bool
+	IncludeInactive       bool
+	Limit                 int
+	Offset                int
 }
 
 func supportedPaisesFacturacionMap() map[string]PaisFacturacion {
@@ -586,7 +587,7 @@ func ListFacturacionDianDocumentosElectronicos() []FacturacionDianDocumentoCatal
 		{Codigo: "factura_talonario_contingencia", Titulo: "Reporte de factura de talonario o papel por contingencia", Categoria: "Contingencia", Alcance: "Reporte para validacion posterior cuando hubo inconveniente tecnologico del facturador.", ModuloSugerido: "facturacion_electronica/offline", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere flujo de contingencia, reporte y validación DIAN propios."},
 		{Codigo: "documento_soporte", Titulo: "Documento soporte en adquisiciones a no obligados", Categoria: "Compras", Alcance: "Soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.", ModuloSugerido: "contabilidad_colombia_avanzada", EstadoImplementacion: "operativo_anexo_1_1", RequiereNumeracion: true, RequiereFirma: true, DisponibleEmision: true, Observacion: "Emision dedicada desde borrador estructurado, fuente fiscal inmutable, CUDS, firma XAdES y SendBillSync conforme al Anexo Tecnico Documento Soporte 1.1."},
 		{Codigo: "nota_ajuste_documento_soporte", Titulo: "Nota de ajuste del documento soporte", Categoria: "Compras", Alcance: "Ajusta o corrige un documento soporte de adquisiciones.", ModuloSugerido: "compras", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador de ajuste ligado a un documento soporte aceptado."},
-		{Codigo: "nomina_electronica", Titulo: "Documento soporte de pago de nomina electronica", Categoria: "Nomina", Alcance: "Soporta valores devengados, deducidos y pagados a empleados.", ModuloSugerido: "nomina", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emision bloqueada: requiere XML, CUNE y transporte del Anexo Tecnico de Nomina Electronica."},
+		{Codigo: "nomina_electronica", Titulo: "Documento soporte de pago de nomina electronica", Categoria: "Nomina", Alcance: "Soporta valores devengados, deducidos y pagados a empleados.", ModuloSugerido: "nomina", EstadoImplementacion: "operativo_anexo_nomina_1_0", RequiereNumeracion: true, RequiereFirma: true, DisponibleEmision: true, Observacion: "Emision mensual por trabajador desde liquidaciones pagadas acumuladas, perfil fiscal explicito, fuente inmutable, CUNE SHA-384, firma XAdES y SendNominaSync conforme al Anexo Tecnico de Nomina Electronica."},
 		{Codigo: "nota_ajuste_nomina_electronica", Titulo: "Nota de ajuste de nomina electronica", Categoria: "Nomina", Alcance: "Ajusta o corrige documentos soporte de pago de nomina electronica.", ModuloSugerido: "nomina", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador de ajuste y CUNE de nómina previo."},
 		{Codigo: "documento_equivalente_pos", Titulo: "Documento equivalente electronico POS", Categoria: "Documentos equivalentes", Alcance: "Tiquete de maquina registradora con sistema POS transmitido para validacion.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emision bloqueada: requiere adaptador del Anexo Tecnico de Documento Equivalente Electronico 1.0."},
 		{Codigo: "nota_ajuste_documento_equivalente", Titulo: "Nota de ajuste del documento equivalente electronico", Categoria: "Documentos equivalentes", Alcance: "Ajusta errores aritmeticos o de contenido en documentos equivalentes electronicos.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador de ajuste del documento equivalente."},
@@ -1837,6 +1838,14 @@ func ListFacturacionElectronicaRetriesByEmpresaContext(ctx context.Context, dbCo
 	if tipoDocumento != "" {
 		query += " AND tipo_documento = ?"
 		args = append(args, tipoDocumento)
+	}
+	for _, rawExcludedType := range filter.ExcluirTiposDocumento {
+		excludedType := normalizeDocumentoTransaccionalTipo(rawExcludedType, "")
+		if excludedType == "" || excludedType == tipoDocumento {
+			continue
+		}
+		query += " AND tipo_documento <> ?"
+		args = append(args, excludedType)
 	}
 
 	estadoEnvio := normalizeFacturacionRetryEstado(filter.EstadoEnvio)

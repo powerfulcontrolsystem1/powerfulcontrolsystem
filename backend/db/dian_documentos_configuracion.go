@@ -180,6 +180,14 @@ func normalizeEmpresaDIANDocumentoConfiguracion(item *EmpresaDIANDocumentoConfig
 			return fmt.Errorf("el consecutivo DIAN de documento soporte debe estar dentro del rango configurado")
 		}
 	}
+	if item.TipoDocumento == "nomina_electronica" {
+		if item.Prefijo != "" && (len(item.Prefijo) > 20 || !documentoSoportePrefixValid(item.Prefijo)) {
+			return fmt.Errorf("el prefijo interno de nomina electronica debe ser alfanumerico y tener maximo 20 caracteres")
+		}
+		if item.ConsecutivoActual < 0 || item.ConsecutivoActual > 999999999999 {
+			return fmt.Errorf("el consecutivo interno de nomina electronica debe estar entre 0 y 999999999999")
+		}
+	}
 	if err := validateDIANDocumentoURLOverride(item.URLDIANOverride); err != nil {
 		return err
 	}
@@ -312,7 +320,7 @@ func UpsertEmpresaDIANDocumentoConfiguracionContext(ctx context.Context, dbConn 
 		rango_desde = EXCLUDED.rango_desde,
 		rango_hasta = EXCLUDED.rango_hasta,
 		consecutivo_actual = CASE
-			WHEN empresa_dian_documentos_configuracion.tipo_documento = 'documento_soporte'
+			WHEN empresa_dian_documentos_configuracion.tipo_documento IN ('documento_soporte', 'nomina_electronica')
 			 AND empresa_dian_documentos_configuracion.consecutivo_actual > EXCLUDED.consecutivo_actual
 			THEN empresa_dian_documentos_configuracion.consecutivo_actual
 			ELSE EXCLUDED.consecutivo_actual
@@ -321,7 +329,8 @@ func UpsertEmpresaDIANDocumentoConfiguracionContext(ctx context.Context, dbConn 
 		observaciones = EXCLUDED.observaciones,
 		usuario_creador = EXCLUDED.usuario_creador,
 		fecha_actualizacion = CURRENT_TIMESTAMP
-	WHERE empresa_dian_documentos_configuracion.tipo_documento <> 'documento_soporte'
+	WHERE empresa_dian_documentos_configuracion.tipo_documento NOT IN ('documento_soporte', 'nomina_electronica')
+	   OR empresa_dian_documentos_configuracion.tipo_documento = 'nomina_electronica'
 	   OR GREATEST(empresa_dian_documentos_configuracion.consecutivo_actual, EXCLUDED.consecutivo_actual) <= EXCLUDED.rango_hasta
 	RETURNING id`,
 		item.EmpresaID, item.TipoDocumento, item.Estado, item.TipoAmbiente, item.ModoOperacionCodigo, item.TestSetID,

@@ -1,3 +1,22 @@
+2026-08-26: Nomina electronica mensual DIAN desde liquidaciones pagadas.
+- Modulos afectados: `nomina_sueldos`, `facturacion_electronica`, `DIAN
+  Colombia`, `permisos` y `seguridad_multiempresa`.
+- PCS consolida por trabajador/mes cerrado todas las liquidaciones activas con
+  pagos reales. Perfil fiscal incompleto, solapes, periodos cruzados, pagos
+  ambiguos, diferencias o intervalos horarios ausentes bloquean sin numerar.
+- La configuracion de familia es independiente de factura. La reserva atomica
+  sella fuente/configuracion, genera `NominaIndividual`, CUNE SHA-384 y XAdES,
+  valida el XSD oficial y transmite produccion mediante `SendNominaSync`.
+- La UI de Nomina administra perfil fiscal, periodicidad/configuracion,
+  candidatos mensuales, preflight y confirmacion exacta. El preflight no
+  reserva ni transmite.
+- Facturacion + Nomina son una frontera compuesta para lectura, configuracion,
+  artefactos, emision y reenvio. El listado general oculta nomina cuando falta
+  permiso adicional y la cola manual no la transmite.
+- `NominaIndividualDeAjuste`, habilitacion automatica y entrega/PDF dedicado
+  siguen bloqueados. QA local y XSD oficial quedaron verdes; no hubo emision
+  real ni despliegue en este candidato.
+
 2026-08-26: Documento soporte DIAN 1.1 desde fuente contable estructurada.
 - Modulos afectados: `contabilidad_colombia_avanzada`,
   `facturacion_electronica`, `DIAN Colombia`, `permisos` y
@@ -382,7 +401,9 @@
 - Navegacion: `Administrar empresa > Finanzas y cumplimiento > Nomina` abre `web/administrar_empresa/nomina_menu.html`.
 - Submenu propio: Centro, Empleados de nomina, Configuracion legal, Liquidaciones, Pagos y PILA, Nomina electronica DIAN y Tutorial de nomina.
 - Operacion: las subpaginas reutilizan `nomina_sueldos.html?seccion=...` para no duplicar formularios ni reglas; el filtro visual solo cambia la superficie mostrada.
-- DIAN: el boton `Enviar nomina electronica a DIAN` prepara el lote, valida requisitos pendientes y usa el flujo fiscal existente de facturacion electronica por `empresa_id`.
+- DIAN: esta entrada es historica. La preparacion sigue siendo un preflight sin
+  efectos, pero desde la actualizacion 2026-08-26 la emision ordinaria usa el
+  adaptador dedicado `NominaIndividual`, no el XML/PDF de factura.
 
 2026-06-10: E-mail Corporativo independiente
 - Modulo afectado: `Email corporativo Mailu`.

@@ -490,6 +490,8 @@ var (
 		AllowedColumns: []string{
 			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "produccion_local_activa", "software_id", "software_pin",
 			"usar_software_compartido", "software_id_compartido_ref", "software_pin_compartido_ref",
+			"software_proveedor_nit", "software_proveedor_dv", "software_proveedor_razon_social",
+			"software_proveedor_primer_apellido", "software_proveedor_segundo_apellido", "software_proveedor_primer_nombre", "software_proveedor_otros_nombres",
 			"modo_operacion_descripcion", "modo_operacion_fecha_inicio", "modo_operacion_fecha_termino",
 			"test_set_id", "certificado_url", "certificado_clave_ref", "prefijo", "resolucion_numero",
 			"certificado_vencimiento", "certificado_vencimiento_en", "certificado_alerta_dias",
@@ -7838,6 +7840,10 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 	}
 	creating := id <= 0
 	prepareDIANConfigPersistenceDefaults(payload, creating, adminEmailFromRequest(r))
+	if err := validateDIANSoftwareProviderPayload(payload); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	// Certificate material can only be changed by the tenant-scoped upload
 	// flow. Empty write-only fields preserve the current encrypted value.
 	delete(payload, "certificado_url")
@@ -7895,6 +7901,57 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		resp["configuracion_pais_warning"] = "La configuracion DIAN se guardo, pero no se pudo sincronizar la configuracion fiscal por pais."
 	}
 	writeJSON(w, status, resp)
+}
+
+func validateDIANSoftwareProviderPayload(payload map[string]interface{}) error {
+	fields := []string{
+		"software_proveedor_nit", "software_proveedor_dv", "software_proveedor_razon_social",
+		"software_proveedor_primer_apellido", "software_proveedor_segundo_apellido",
+		"software_proveedor_primer_nombre", "software_proveedor_otros_nombres",
+	}
+	touched := false
+	values := make(map[string]string, len(fields))
+	for _, field := range fields {
+		raw, exists := payload[field]
+		if exists {
+			touched = true
+		}
+		value := strings.TrimSpace(genericStringValue(raw))
+		if len(value) > 200 {
+			return fmt.Errorf("%s supera la longitud permitida", field)
+		}
+		if exists {
+			payload[field] = value
+		}
+		values[field] = value
+	}
+	if !touched {
+		return nil
+	}
+	isDigits := func(value string) bool {
+		if value == "" {
+			return false
+		}
+		for _, char := range value {
+			if char < '0' || char > '9' {
+				return false
+			}
+		}
+		return true
+	}
+	if !isDigits(values["software_proveedor_nit"]) || !isDigits(values["software_proveedor_dv"]) {
+		return errors.New("NIT y DV del proveedor del software DIAN deben contener solo dígitos")
+	}
+	if len(values["software_proveedor_dv"]) != 1 {
+		return errors.New("el DV del proveedor del software DIAN debe contener exactamente un dígito")
+	}
+	legalName := values["software_proveedor_razon_social"] != ""
+	naturalName := values["software_proveedor_primer_apellido"] != "" &&
+		values["software_proveedor_segundo_apellido"] != "" && values["software_proveedor_primer_nombre"] != ""
+	if !legalName && !naturalName {
+		return errors.New("configure razón social o los dos apellidos y primer nombre del proveedor del software DIAN")
+	}
+	return nil
 }
 
 func prepareDIANConfigPersistenceDefaults(payload map[string]interface{}, creating bool, actorEmail string) {
@@ -9903,7 +9960,8 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 		return generateDIANUBLDesdeFuenteFiscal(cfg, empresaID, payload, fuentes[0])
 	}
 
-	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), genericStringValue(payload["documento_codigo"]), "FV"+time.Now().Format("20060102150405"))
+	documentoCodigoInterno := strings.TrimSpace(genericStringValue(payload["documento_codigo"]))
+	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), documentoCodigoInterno, "FV"+time.Now().Format("20060102150405"))
 	documentoCodigo = strings.ReplaceAll(strings.TrimSpace(documentoCodigo), " ", "")
 	if strings.EqualFold(dianFirstNonBlank(genericStringValue(cfg["pais_codigo"]), genericStringValue(payload["pais_codigo"])), "CO") {
 		documentoCodigo = strings.ReplaceAll(documentoCodigo, "-", "")
@@ -10137,7 +10195,9 @@ func dianIsDocumentRootNamespace(space string) bool {
 	switch space {
 	case "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
 		"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2",
-		"urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2":
+		"urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2",
+		nominaElectronicaNamespace,
+		nominaElectronicaAjusteNamespace:
 		return true
 	default:
 		return false
@@ -10162,6 +10222,16 @@ func dianUBLNamespaceAttrs(rootSpace string) []string {
 	if !dianIsDocumentRootNamespace(rootSpace) {
 		return nil
 	}
+	if rootSpace == nominaElectronicaNamespace || rootSpace == nominaElectronicaAjusteNamespace {
+		return []string{
+			fmt.Sprintf(`xmlns="%s"`, dianEscapeCanonicalAttr(rootSpace)),
+			`xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
+			`xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"`,
+			`xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"`,
+			`xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#"`,
+			`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
+		}
+	}
 	return []string{
 		fmt.Sprintf(`xmlns="%s"`, dianEscapeCanonicalAttr(rootSpace)),
 		`xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"`,
@@ -10177,17 +10247,7 @@ func dianUBLNamespaceAttrs(rootSpace string) []string {
 
 func dianCanonicalRootNamespaceAttrs(root xml.Name, contextRootSpace string) []string {
 	if dianIsDocumentRootNamespace(root.Space) {
-		return []string{
-			fmt.Sprintf(`xmlns="%s"`, dianEscapeCanonicalAttr(root.Space)),
-			`xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"`,
-			`xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"`,
-			`xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
-			`xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"`,
-			`xmlns:sts="dian:gov:co:facturaelectronica:Structures-2-1"`,
-			`xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"`,
-			`xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#"`,
-			`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
-		}
+		return dianUBLNamespaceAttrs(root.Space)
 	}
 	if attrs := dianUBLNamespaceAttrs(contextRootSpace); len(attrs) > 0 {
 		return attrs
@@ -10686,6 +10746,10 @@ func dianSOAPCanonicalTimestamp(id, created, expires string) string {
 func dianBuildSOAPBody(operation, fileName string, zipBytes []byte, testSetID string) string {
 	contentBase64 := base64.StdEncoding.EncodeToString(zipBytes)
 	switch operation {
+	case "SendNominaSync":
+		// El WSDL oficial define unicamente contentFile para nomina; incluir
+		// fileName hace que el contrato SOAP no corresponda al servicio.
+		return fmt.Sprintf(`<wcf:SendNominaSync><wcf:contentFile>%s</wcf:contentFile></wcf:SendNominaSync>`, contentBase64)
 	case "SendTestSetAsync":
 		return fmt.Sprintf(`<wcf:SendTestSetAsync><wcf:fileName>%s</wcf:fileName><wcf:contentFile>%s</wcf:contentFile><wcf:testSetId>%s</wcf:testSetId></wcf:SendTestSetAsync>`,
 			escapeXML(fileName), contentBase64, escapeXML(testSetID))
@@ -10776,6 +10840,10 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 }
 
 func dianSOAPOperationFromPayload(payload map[string]interface{}, ambiente, testSetID string) string {
+	documentType := normalizeFacturacionDocumentoElectronicoTipo(dianPayloadString(payload, "documento_tipo", "tipo_documento"))
+	if documentType == "nomina_electronica" || documentType == "nota_ajuste_nomina_electronica" {
+		return "SendNominaSync"
+	}
 	operation := strings.TrimSpace(dianPayloadString(payload, "soap_operacion", "operacion_soap", "operation"))
 	if operation != "" {
 		return operation
@@ -11940,12 +12008,13 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 	if len(cfg) == 0 {
 		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
 	}
-	documentoTipo := genericStringDefault(payload["documento_tipo"], "factura")
+	documentoTipo := normalizeFacturacionDocumentoElectronicoTipo(genericStringDefault(payload["documento_tipo"], "factura"))
 	if !facturacionDocumentoElectronicoDIANTransporteSoportado(documentoTipo) {
 		return nil, http.StatusUnprocessableEntity, fmt.Errorf("%s", facturacionDocumentoElectronicoBloqueoMotivo(documentoTipo))
 	}
 
-	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), genericStringValue(payload["documento_codigo"]), "FV"+time.Now().Format("20060102150405"))
+	documentoCodigoInterno := strings.TrimSpace(genericStringValue(payload["documento_codigo"]))
+	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), documentoCodigoInterno, "FV"+time.Now().Format("20060102150405"))
 	documentoCodigo = strings.ReplaceAll(strings.TrimSpace(documentoCodigo), " ", "")
 	if strings.EqualFold(dianFirstNonBlank(genericStringValue(cfg["pais_codigo"]), genericStringValue(payload["pais_codigo"])), "CO") {
 		documentoCodigo = strings.ReplaceAll(documentoCodigo, "-", "")
@@ -11978,7 +12047,12 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 
 	fechaEmision := dianFirstNonBlank(genericStringValue(payload["fecha_emision"]), time.Now().Format("2006-01-02T15:04:05-07:00"))
 	total := dianFirstNonBlank(genericStringValue(payload["total"]), "0")
-	cufe := dianFirstNonBlank(genericStringValue(payload["cufe"]), extractDIANUUIDFromXML(xmlFirmado), buildDIANCUFE(genericStringValue(cfg["nit"]), documentoCodigo, fechaEmision, total, softwareID, softwarePIN))
+	cufe := ""
+	if documentoTipo == "nomina_electronica" {
+		cufe = dianFirstNonBlank(genericStringValue(payload["cune"]), genericStringValue(payload["cufe"]), nominaElectronicaCUNEDesdeXML(xmlFirmado))
+	} else {
+		cufe = dianFirstNonBlank(genericStringValue(payload["cufe"]), extractDIANUUIDFromXML(xmlFirmado), buildDIANCUFE(genericStringValue(cfg["nit"]), documentoCodigo, fechaEmision, total, softwareID, softwarePIN))
+	}
 	requestBody := map[string]interface{}{
 		"empresa_id":       empresaID,
 		"documento_codigo": documentoCodigo,
@@ -11993,13 +12067,29 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		"test_set_id":      dianFirstNonBlank(genericStringValue(payload["test_set_id"]), genericStringValue(cfg["test_set_id"])),
 		"xml_firmado":      xmlFirmado,
 	}
+	if documentoTipo == "nomina_electronica" {
+		requestBody["cune"] = cufe
+	}
 	for _, key := range []string{"cliente_nombre", "cliente_nit", "impuesto_total", "moneda", "certificado_ref", "certificado_pem", "certificado_clave_ref"} {
 		if _, exists := requestBody[key]; !exists && !isEmptyGenericValue(payload[key]) {
 			requestBody[key] = payload[key]
 		}
 	}
 
-	preflight := validateDIANDocumentPreflight(cfg, empresaID, requestBody, xmlFirmado, "envio_real")
+	preflight := map[string]interface{}{}
+	if documentoTipo == "nomina_electronica" {
+		pseudoDocument := dbpkg.EmpresaDocumentoFacturacion{
+			EmpresaID: empresaID, TipoDocumento: documentoTipo, DocumentoCodigo: documentoCodigoInterno,
+			NumeroLegal: documentoCodigo, MontoTotal: ventasAnyToFloat64(total),
+		}
+		_, source, _, loadErr := loadNominaElectronicaParaDispatch(context.Background(), dbEmp, pseudoDocument)
+		if loadErr != nil {
+			return nil, http.StatusConflict, fmt.Errorf("fuente fiscal canónica de nómina no disponible: %w", loadErr)
+		}
+		preflight = validateDIANNominaDocumentPreflight(cfg, empresaID, source, xmlFirmado, "envio_real")
+	} else {
+		preflight = validateDIANDocumentPreflight(cfg, empresaID, requestBody, xmlFirmado, "envio_real")
+	}
 	if parseTruthy(genericStringValue(preflight["bloqueado"])) {
 		return map[string]interface{}{
 			"ok":                   false,

@@ -1,3 +1,45 @@
+2026-08-26: Nomina electronica mensual DIAN como candidato local seguro.
+- Se reemplaza el borrador manual por una fuente fiscal mensual construida en
+  servidor desde liquidaciones activas y pagos reales del trabajador. Periodos
+  abiertos, cruzados/solapados, pagos ambiguos, totales inconciliables y horas
+  sin intervalos reales bloquean antes de numeracion o transporte.
+- La migracion `20260826-005-dian-nomina-electronica-v2` agrega perfil fiscal
+  DIAN del trabajador, periodicidad, identidad del proveedor de software,
+  importes exactos, origen, mes, numero/fecha legal, fuente/configuracion
+  selladas, intentos e indices unicos por empresa.
+- La emision dedicada reserva de forma atomica un documento por trabajador/mes,
+  genera `NominaIndividual`, CUNE SHA-384 y XAdES, valida el XML y usa
+  `SendNominaSync`. XML/acuse se conservan como artefactos privados y los
+  reintentos reutilizan el XML firmado.
+- La interfaz de Nomina incorpora perfil fiscal, configuracion separada,
+  candidatos mensuales, preflight y confirmacion exacta. Habilitacion
+  automatica, nota de ajuste y entrega/PDF dedicado permanecen bloqueados.
+- Facturacion y Nomina forman una frontera compuesta: emision/reenvio requieren
+  aprobacion en ambos modulos; documentos, configuracion, cola y artefactos de
+  nomina no se exponen a quien solo puede leer Facturacion. La cola manual
+  general omite nomina y el reenvio individual exige frase fuerte.
+- El dashboard contable deja de consultar o devolver conteos y documentos de
+  nomina cuando falta `nomina_sueldos:R`; la pantalla oculta tambien el KPI y
+  la pestaña, manteniendo el control efectivo en servidor.
+- El listado fiscal general excluye la union de `clientes` para la familia de
+  nomina: `entidad_relacionada_id` conserva al trabajador sin confundirlo con
+  un cliente que tenga el mismo identificador numerico.
+- La cola manual filtra la familia de nomina en SQL antes de `LIMIT/OFFSET` y
+  deja de devolver codigos o conteos de filas omitidas; solo el worker conserva
+  alcance para continuar reintentos previamente autorizados y sellados.
+- Empleador y proveedor del software deben aportar un DV de exactamente un
+  digito. El preflight lo rechaza antes de reservar numeracion y la API no
+  permite guardar una identidad de proveedor con DV vacio, alfabetico o de
+  varios digitos.
+- La bandeja mensual solo habilita la emision real cuando el mes esta cerrado,
+  la familia de nomina esta activa en produccion y la integracion Colombia usa
+  DIAN real en produccion; habilitacion, sandbox o configuracion inactiva se
+  muestran como bloqueos antes de abrir el dialogo irreversible.
+- El fixture firmado supero
+  `NominaIndividualElectronicaXSDV1.0.6.xsd` de la caja oficial DIAN. No se
+  realizo emision real ni despliegue; PR, CI, merge, migracion y QA productivo
+  siguen siendo compuertas separadas.
+
 2026-08-26: Carga unica del menu de Compras.
 - El E2E visual exacto de PSI-000 observo que `compras_menu.html` iniciaba una
   navegacion del iframe a `compras.html` antes de resolver la empresa y luego la

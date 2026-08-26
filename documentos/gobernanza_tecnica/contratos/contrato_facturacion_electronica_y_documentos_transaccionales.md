@@ -3,6 +3,31 @@
 Fecha: 2026-04-18
 Estado: vigente
 
+Actualizacion 2026-08-26 - Nomina electronica mensual (candidato local):
+
+- `nomina_electronica` ordinaria deja de reutilizar el adaptador comercial. PCS
+  consolida en servidor todas las liquidaciones activas y pagadas de un
+  trabajador dentro de un mes calendario cerrado y genera un solo
+  `NominaIndividual` por empresa/trabajador/mes.
+- La reserva atomica sella fuente/configuracion, conserva consecutivo y fecha,
+  calcula CUNE SHA-384, firma XAdES, valida el XML y transmite en produccion con
+  `SendNominaSync`. Un reintento reutiliza el XML ya firmado.
+- Configuracion de familia, perfil fiscal del trabajador e identidad del
+  proveedor del software son explicitos. No se reutiliza la resolucion/rango de
+  factura y los secretos no entran en la fuente fiscal.
+- Emision y reenvio requieren aprobacion efectiva en Facturacion y Nomina. La
+  lectura de documentos, cola, configuracion y artefactos de nomina exige
+  lectura en ambos dominios; el listado general la omite cuando falta Nomina.
+- El procesamiento manual general de cola omite nomina. El reenvio individual
+  exige `REENVIAR NOMINA ELECTRONICA DIAN`; el worker conserva el reintento
+  automatico del documento ya autorizado.
+- Permanecen cerrados `NominaIndividualDeAjuste`, habilitacion automatica por
+  `SendTestSetAsync` y la representacion/entrega dedicada. El correo generico de
+  factura rechaza nomina antes de generar o adjuntar un PDF incorrecto.
+- El XML firmado de fixture paso el XSD oficial 1.0.6. No hubo emision real de
+  nomina en este candidato; PR, CI, despliegue, migracion y prueba fiscal son
+  compuertas separadas.
+
 Actualizacion 2026-08-25:
 
 - La factura comercial no admite emision libre: solo
@@ -120,9 +145,19 @@ Este contrato cubre el ciclo documental empresarial de facturacion y documentos 
 - `POST|PUT /api/empresa/facturacion_electronica?action=emitir_nota_credito`
   (bloqueado para emision fiscal DIAN actual)
 - `POST|PUT /api/empresa/facturacion_electronica?action=reenviar_correo`
+- `POST /api/empresa/facturacion_electronica?action=emitir_nomina_electronica`
 - `POST /api/empresa/facturacion_electronica?action=procesar_reintentos`
 - `POST /api/empresa/facturacion_electronica?action=reconciliar_estados`
 - `POST /api/empresa/facturacion_electronica?action=reconciliar_aceptados_local`
+
+### Fuente y preflight de nomina electronica
+
+- `GET /api/empresa/nomina?action=perfil_dian&empleado_nomina_id={id}`
+- `POST /api/empresa/nomina?action=perfil_dian`
+- `GET /api/empresa/nomina?action=documentos_electronicos_colombia`
+- `GET /api/empresa/nomina?action=nomina_electronica_preflight&liquidacion_id={id}`
+- `POST /api/empresa/nomina?action=preparar_nomina_electronica` (revision sin
+  reserva, firma ni transporte)
 
 ### Deteccion y catalogo de paises FE
 
@@ -192,16 +227,31 @@ Restriccion clave:
   `fuente_fiscal_json` inmutable del mismo documento y esta vuelve a superar
   los bloqueos fiscales. No regenera fecha/CUFE para el mismo intento documental.
 
+### Fuente canonica de nomina electronica
+
+- `empresa_nomina_liquidaciones` y `empresa_nomina_pagos` aportan la fuente
+  operativa real; el cliente HTTP no puede reemplazar sus totales o partes.
+- `empresa_nomina_dian_perfiles` aporta los atributos fiscales explicitos del
+  trabajador, siempre por `empresa_id + empleado_nomina_id`.
+- `empresa_contabilidad_nomina_electronica` conserva un espejo por
+  `empresa_id + empleado_nomina_id + periodo_reporte`, numero/fecha legal,
+  CUNE, respuesta, intentos y las instantaneas selladas.
+- El documento comun usa `tipo_documento=nomina_electronica`; sus artefactos y
+  cola permanecen privados para quienes no tengan permiso de Nomina.
+
 ## Tipos documentales cubiertos
 
-- `factura_electronica`
-- `nota_credito` y `nota_debito` (solo legado/consulta; emision DIAN bloqueada)
-- `comprobante_pago`
+- `factura_electronica` desde venta pagada.
+- `nota_credito` solo para anulacion total de una factura aceptada;
+  `nota_credito` libre/parcial y `nota_debito` siguen bloqueadas.
+- `documento_soporte` ordinario desde borrador de compra estructurado; su nota
+  de ajuste sigue bloqueada.
+- `nomina_electronica` ordinaria desde liquidaciones/pagos mensuales y perfil
+  fiscal; su nota de ajuste sigue bloqueada.
+- `comprobante_pago` comercial.
 
 Catalogados sin emision DIAN disponible:
 
-- `documento_soporte` y su nota de ajuste
-- `nomina_electronica` y su nota de ajuste
 - `documento_equivalente_pos`, los demas documentos equivalentes y sus notas
   de ajuste
 - `eventos_radian_recepcion`
@@ -329,6 +379,26 @@ Catalogados sin emision DIAN disponible:
 32. Toda descarga y adjunto fiscal vuelve a calcular SHA-256 contra los metadatos tenant-scoped; una diferencia de integridad bloquea la entrega.
 33. Al reutilizar un XML firmado, la fecha fiscal se toma de `IssueDate`/`IssueTime` del mismo XML y no se reemplaza por la hora del reintento.
 34. El envío o consulta de acuse de un mismo `empresa_id + tipo_documento + documento_codigo` usa bloqueo asesor documental; una segunda ejecución concurrente no transmite el documento.
+35. Nomina ordinaria se consolida por mes calendario cerrado. Dos
+    liquidaciones del mismo trabajador/mes producen una sola fuente; periodos
+    cruzados o solapados bloquean antes de numerar.
+36. Cada liquidacion incluida exige un unico pago activo real y se conservan
+    todas las fechas de pago. PCS no fabrica pagos, intervalos horarios ni
+    atributos fiscales del trabajador.
+37. La reserva de nomina es idempotente por empresa/trabajador/mes. Fuente,
+    configuracion, numero y fecha fiscal son inmutables para reintentos.
+38. `SendNominaSync` recibe solo `contentFile`; `TestSetId` pertenece al flujo
+    separado de habilitacion y no puede agregarse al sobre de produccion.
+39. Emision y reenvio de nomina exigen permiso de aprobacion de Facturacion y
+    Nomina. Lectura/descarga explicita exige lectura en ambos dominios.
+40. Un listado general sin permiso de Nomina excluye esa familia antes de
+    aplicar paginacion. No entrega documento, CUNE, total, cola, configuracion
+    ni hash de artefactos de nomina.
+41. El procesamiento manual general de cola no transmite nomina. Solo el
+    reenvio individual con la frase fuerte puede solicitarlo; el worker puede
+    continuar el documento que ya fue autorizado y sellado.
+42. El correo/PDF de factura nunca se reutiliza para nomina; hasta existir una
+    representacion y entrega dedicadas, esa accion responde bloqueada.
 
 ## Salidas y estados funcionales
 
@@ -364,11 +434,15 @@ Catalogados sin emision DIAN disponible:
 ### Listado de documentos
 
 - `200` con `items[]` filtrados por empresa
+- si falta lectura de Nomina, el listado general excluye esa familia; pedirla
+  expresamente responde `403`
 
 ### Cola de reintentos y reconciliacion
 
 - `200` con resumen operativo o items de cola
 - `400` si `empresa_id` o parametros numericos son invalidos
+- el procesamiento manual general informa y omite nomina; el worker conserva
+  la cola automatica del documento ya autorizado
 
 ### DIAN Colombia base
 
@@ -418,6 +492,9 @@ Orden de prioridad:
 - para `factura_electronica`: asunto y cuerpo fiscal con `numero_legal`, `codigo_validacion`, `monto_total`, `moneda`, `pais_codigo` y `ambiente_fe`
 - en Colombia produccion, el correo fiscal espera `estado_envio=aceptado`; XML firmado y representacion PDF son obligatorios y el envio falla cerrado si falta alguno o no supera la validacion de integridad
 - para `comprobante_pago`: asunto y cuerpo comercial equivalentes, sin forzar detalle FE
+- para `nomina_electronica`: bloqueado; no usa asunto, destinatario,
+  representacion PDF ni adjuntos de factura. La entrega requiere su contrato
+  dedicado de nomina.
 - si SMTP global no esta disponible, el handler responde el error dentro de `factura_email` sin deshacer el documento
 
 ## Contrato DIAN Colombia: alcance real actual
@@ -438,6 +515,11 @@ Orden de prioridad:
 - diagnostico de brechas frente al objetivo oficial
 - envio del adaptador interno de factura comercial desde fuente fiscal
   inmutable; no existe emision generica libre
+- emision dedicada de documento soporte ordinario desde su borrador de compra
+  y fuente fiscal propia
+- generacion/preflight y transporte productivo dedicado de
+  `NominaIndividual` mensual desde liquidaciones/pagos reales, con CUNE,
+  XAdES, XSD oficial y `SendNominaSync`
 - consulta base de acuse
 - reconexion operativa
 - ejecucion de set de pruebas con envio real, `ZipKey` y consulta de acuse `GetStatusZip`
@@ -452,12 +534,18 @@ Orden de prioridad:
   corrida Schematron oficial permanece pendiente por falta de un procesador
   XSLT 3 compatible en el entorno actual, y la aceptacion fiscal final depende
   siempre del acuse DIAN/proveedor.
-- `factura_electronica` tiene emision comercial y `nota_credito` solo la ruta
-  especializada de anulacion total descrita en la actualizacion 2026-08-25.
-  Nota debito, documento soporte, nomina, equivalentes POS y RADIAN siguen
-  bloqueados de forma segura; catalogarlos no significa que funcionen en
-  produccion.
-- el XML firmado, el acuse del proveedor y la representacion PDF se persisten en almacenamiento privado por empresa y pueden descargarse desde la bandeja de facturas; el XML y PDF se adjuntan al correo posterior a la aceptacion.
+- `factura_electronica` tiene emision comercial; `nota_credito` solo la ruta
+  especializada de anulacion total; documento soporte ordinario y nomina
+  ordinaria tienen adaptadores propios. Nota debito, notas de ajuste,
+  equivalentes POS y RADIAN siguen bloqueados de forma segura.
+- la habilitacion automatica de nomina mediante `SendTestSetAsync` y
+  `TestSetId` no esta implementada. Produccion solo puede usarse despues de una
+  habilitacion oficial verificada por fuera de este action.
+- la nomina ordinaria aun requiere prueba real posterior al despliegue con una
+  fuente genuina; el fixture XSD no es un acuse DIAN.
+- XML firmado y acuse se persisten en almacenamiento privado por empresa. La
+  factura y documento soporte conservan su PDF propio; nomina no genera ni
+  envia el PDF generico de facturacion.
 
 ## Errores de contrato esperados
 
@@ -472,6 +560,10 @@ Orden de prioridad:
 - firma DIAN sin `certificado_clave_ref`: `400`
 - set de pruebas con rango insuficiente: `409`
 - configuracion DIAN inexistente para empresa: `400`
+- consulta o artefacto explicito de nomina sin permiso adicional: `403`
+- mes abierto, fuente mensual ambigua o preflight de nomina incompleto: `422`
+- emision de nomina sin frase exacta o reenvio sin su frase fuerte: `409`
+- correo generico solicitado para nomina: `409`
 
 ## Side effects obligatorios
 
@@ -482,6 +574,8 @@ Orden de prioridad:
 - consulta automatica de acuses pendientes mediante `pcs-worker`
 - posible envio de correo al cliente
 - actualizacion de consecutivo o metadata DIAN cuando aplica set de pruebas o carga de firma
+- para nomina, reserva mensual atomica, sellado de fuente/configuracion y espejo
+  en documento/cola; ninguno de estos efectos ocurre durante el preflight
 
 ## Evidencia tecnica minima
 

@@ -320,8 +320,16 @@ func TestNominaFrontendCannotCallGenericFiscalEndpoint(t *testing.T) {
 	if strings.Contains(page, `/api/empresa/facturacion_electronica?action=nomina_electronica`) {
 		t.Fatal("payroll UI still contains a dead generic DIAN submission path")
 	}
-	if !strings.Contains(page, `Adaptador DIAN de nomina electronica pendiente`) || !strings.Contains(page, `Preparar el lote no genera XML ni transmite información`) {
-		t.Fatal("payroll UI must explain the fail-closed preflight-only scope")
+	for _, marker := range []string{
+		`/api/empresa/facturacion_electronica?action=emitir_nomina_electronica`,
+		`action: 'nomina_electronica_preflight'`,
+		`/api/empresa/nomina?action=perfil_dian`,
+		`EMITIR NOMINA ELECTRONICA DIAN`,
+		`id="nomCoDianEmitSubmit" type="submit" class="btn primary" disabled`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("payroll UI dedicated DIAN guard missing %q", marker)
+		}
 	}
 }
 
@@ -561,7 +569,8 @@ func TestContabilidadManualFormsDoNotOfferForgedDIANStates(t *testing.T) {
 	page := string(raw)
 	for _, marker := range []string{
 		`value="Borrador local - sin envío DIAN" readonly`,
-		`CUNE y aceptación DIAN solo se registrarán desde el adaptador técnico`,
+		`La fuente fiscal mensual, CUNE, firma y transmisi&oacute;n se administran exclusivamente desde N&oacute;mina y sueldos`,
+		`id="btnSaveNomina" class="btn" type="button" disabled`,
 		`El servidor recalcula los importes y elimina cualquier CUDS, respuesta o estado DIAN escrito desde el navegador.`,
 		`Guardar no consume consecutivo, no genera XML y no transmite a DIAN.`,
 	} {
@@ -649,11 +658,89 @@ func TestContabilidadNominaPreflightIsVisibleAndNonEmitting(t *testing.T) {
 		`id="nominaPreflight"`,
 		`data-nom-preflight`,
 		`nomina_electronica_preflight`,
-		`La revisión no genera XML, no consume consecutivo y no envía información.`,
-		`No se emitió ni transmitió ningún documento.`,
+		`preflight mensual especializado, no consume consecutivo y no transmite informaci&oacute;n`,
+		`No se emiti&oacute; ni transmiti&oacute; ning&uacute;n documento.`,
 	} {
 		if !strings.Contains(page, marker) {
 			t.Fatalf("payroll preflight UI missing safety marker %q", marker)
+		}
+	}
+}
+
+func TestContabilidadDashboardScopesNominaByPayrollReadPermission(t *testing.T) {
+	handlerRaw, err := os.ReadFile("contabilidad_colombia_avanzada.go")
+	if err != nil {
+		t.Fatalf("read Colombia accounting handler: %v", err)
+	}
+	dbRaw, err := os.ReadFile(filepath.Join("..", "db", "contabilidad_colombia_avanzada.go"))
+	if err != nil {
+		t.Fatalf("read Colombia accounting database layer: %v", err)
+	}
+	pageRaw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "contabilidad_colombia_avanzada.html"))
+	if err != nil {
+		t.Fatalf("read Colombia accounting page: %v", err)
+	}
+	for sourceName, source := range map[string]string{
+		"handler": string(handlerRaw),
+		"db":      string(dbRaw),
+		"page":    string(pageRaw),
+	} {
+		for _, marker := range map[string][]string{
+			"handler": {`inspectEmpresaAdditionalModulePermission(r, dbEmp, dbSuper, permModuleNominaSueldos, permActionRead`, `BuildEmpresaContabilidadAvanzadaDashboardScoped(dbEmp, empresaID, includeNomina)`},
+			"db":      {`func BuildEmpresaContabilidadAvanzadaDashboardScoped`, `if includeNomina {`, `listUltimosDocumentosDIAN(dbConn, empresaID, includeNomina)`},
+			"page":    {`kpi=els.kpiNomina&&els.kpiNomina.closest(".coadv-kpi")`, `if(kpi)kpi.hidden=true`},
+		}[sourceName] {
+			if !strings.Contains(source, marker) {
+				t.Fatalf("%s missing payroll privacy marker %q", sourceName, marker)
+			}
+		}
+	}
+}
+
+func TestNominaElectronicaFrontendRequiresMonthlySourceAndSeparateFamilyConfig(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "nomina_sueldos.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read payroll page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`id="cfgPeriodoNominaDian"`,
+		`id="nomCoDianConfigForm"`,
+		`id="nomCoDianConfigTestSet"`,
+		`tipo_documento: 'nomina_electronica'`,
+		`action: 'configuracion_documentos_dian'`,
+		`item.periodo_reporte`,
+		`item.liquidacion_ids`,
+		`doc.periodo_reporte`,
+		`doc.liquidacion_ids`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("payroll electronic-document UI missing monthly safety marker %q", marker)
+		}
+	}
+}
+
+func TestFacturacionElectronicaFrontendCollectsSoftwareProviderIdentity(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read electronic-invoicing page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`Identidad del proveedor del software DIAN`,
+		`id="dian_software_proveedor_nit"`,
+		`id="dian_software_proveedor_dv" class="form-input" inputmode="numeric" maxlength="1" pattern="[0-9]"`,
+		`id="dian_software_proveedor_razon_social"`,
+		`id="dian_software_proveedor_primer_apellido"`,
+		`id="dian_software_proveedor_segundo_apellido"`,
+		`id="dian_software_proveedor_primer_nombre"`,
+		`software_proveedor_nit: dianFieldValue("dian_software_proveedor_nit")`,
+		`/^\d$/.test(dv)`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("electronic-invoicing UI missing software-provider identity marker %q", marker)
 		}
 	}
 }

@@ -213,6 +213,9 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260826-004-catalogos-nombre-unico-v1", Description: "tenant-scoped normalized unique category and provider names", Body: empresaCatalogosNombreUniqueSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaCatalogosNombreUniqueSchemaTx(ctx, tx)
 			}},
+			{Version: "20260826-005-dian-nomina-electronica-v2", Description: "tenant monthly payroll fiscal source, profiles and atomic DIAN numbering", Body: empresaDIANNominaElectronicaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
+				return applyEmpresaDIANNominaElectronicaTx(ctx, tx)
+			}},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

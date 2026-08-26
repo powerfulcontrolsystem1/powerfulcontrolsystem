@@ -229,6 +229,26 @@
           <div class="form-col"><label class="form-label" for="dian_software_pin">Software PIN</label><input id="dian_software_pin" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_software_pin_estado"><div id="dian_software_pin_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
           <div class="form-col"><div class="form-help" style="margin-top:28px;"><label><input id="dian_usar_software_compartido" type="checkbox"> Usar software compartido SaaS</label></div></div>
         </div>
+        <div class="dian-capture-panel" id="dianSoftwareProveedorPanel">
+          <div class="dian-capture-head">
+            <div>
+              <h3>Identidad del proveedor del software DIAN</h3>
+              <p class="form-help">Obligatoria para n&oacute;mina electr&oacute;nica cuando PCS usa software compartido SaaS. No contiene el PIN ni sustituye la identidad fiscal del empleador.</p>
+            </div>
+            <span class="dian-chip">Proveedor XML</span>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_nit">NIT proveedor</label><input id="dian_software_proveedor_nit" class="form-input" inputmode="numeric" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_dv">DV proveedor</label><input id="dian_software_proveedor_dv" class="form-input" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_razon_social">Raz&oacute;n social proveedor</label><input id="dian_software_proveedor_razon_social" class="form-input" autocomplete="organization"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_primer_apellido">Primer apellido (persona natural)</label><input id="dian_software_proveedor_primer_apellido" class="form-input" autocomplete="family-name"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_segundo_apellido">Segundo apellido (persona natural)</label><input id="dian_software_proveedor_segundo_apellido" class="form-input" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_primer_nombre">Primer nombre (persona natural)</label><input id="dian_software_proveedor_primer_nombre" class="form-input" autocomplete="given-name"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_otros_nombres">Otros nombres (opcional)</label><input id="dian_software_proveedor_otros_nombres" class="form-input" autocomplete="additional-name"></div>
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-col"><label class="form-label">Prefijo</label><input id="dian_prefijo" class="form-input" placeholder="FE"></div>
           <div class="form-col"><label class="form-label">Resolución</label><input id="dian_resolucion_numero" class="form-input" placeholder="18760000000000"></div>
@@ -1552,6 +1572,16 @@
       return !!(state.dianConfig && asBool(state.dianConfig[field + "_configurado"])) || !!dianFieldValue(inputID);
     }
 
+    function dianSoftwareProviderIdentityComplete() {
+      var nit = dianFieldValue("dian_software_proveedor_nit");
+      var dv = dianFieldValue("dian_software_proveedor_dv");
+      var legalName = dianFieldValue("dian_software_proveedor_razon_social");
+      var naturalName = dianFieldValue("dian_software_proveedor_primer_apellido") &&
+        dianFieldValue("dian_software_proveedor_segundo_apellido") &&
+        dianFieldValue("dian_software_proveedor_primer_nombre");
+      return /^\d+$/.test(nit) && /^\d$/.test(dv) && !!(legalName || naturalName);
+    }
+
     function dianSetupChecks() {
       var ambiente = dianFieldValue("dian_tipo_ambiente").toLowerCase();
       var softwareCompartido = !!(document.getElementById("dian_usar_software_compartido") && document.getElementById("dian_usar_software_compartido").checked);
@@ -1568,6 +1598,7 @@
         { group: "Ambiente y conexión", label: "TestSetId de habilitación", done: !testSetRequired || dianSecretConfigured("test_set_id", "dian_test_set_id") },
         { group: "Software", label: "Software ID", done: dianSecretConfigured("software_id", "dian_software_id") },
         { group: "Software", label: "Software PIN o software compartido SaaS", done: softwareCompartido || dianSecretConfigured("software_pin", "dian_software_pin") },
+        { group: "Software", label: "Identidad del proveedor del software compartido", done: !softwareCompartido || dianSoftwareProviderIdentityComplete() },
         { group: "Numeración", label: "Prefijo", done: !!dianFieldValue("dian_prefijo") },
         { group: "Numeración", label: "Resolución", done: !!dianFieldValue("dian_resolucion_numero") },
         { group: "Numeración", label: "Fechas de resolución", done: !!dianFieldValue("dian_resolucion_fecha_desde") && !!dianFieldValue("dian_resolucion_fecha_hasta") },
@@ -1666,6 +1697,11 @@
       var rangoDesde = dianNumberValue("dian_rango_desde");
       var rangoHasta = dianNumberValue("dian_rango_hasta");
       var consecutivo = dianNumberValue("dian_consecutivo_actual");
+      var providerNameMissing = softwareCompartido && !dianFieldValue("dian_software_proveedor_razon_social") && !(
+        dianFieldValue("dian_software_proveedor_primer_apellido") &&
+        dianFieldValue("dian_software_proveedor_segundo_apellido") &&
+        dianFieldValue("dian_software_proveedor_primer_nombre")
+      );
       var dianRequired = {
         dian_nit: !dianFieldValue("dian_nit"),
         dian_dv: !dianFieldValue("dian_dv"),
@@ -1675,6 +1711,12 @@
         dian_test_set_id: ambiente !== "produccion" && !dianSecretConfigured("test_set_id", "dian_test_set_id"),
         dian_software_id: !dianSecretConfigured("software_id", "dian_software_id"),
         dian_software_pin: !softwareCompartido && !dianSecretConfigured("software_pin", "dian_software_pin"),
+        dian_software_proveedor_nit: softwareCompartido && !/^\d+$/.test(dianFieldValue("dian_software_proveedor_nit")),
+        dian_software_proveedor_dv: softwareCompartido && !/^\d$/.test(dianFieldValue("dian_software_proveedor_dv")),
+        dian_software_proveedor_razon_social: providerNameMissing,
+        dian_software_proveedor_primer_apellido: providerNameMissing,
+        dian_software_proveedor_segundo_apellido: providerNameMissing,
+        dian_software_proveedor_primer_nombre: providerNameMissing,
         dian_prefijo: !dianFieldValue("dian_prefijo"),
         dian_resolucion_numero: !dianFieldValue("dian_resolucion_numero"),
         dian_consecutivo_actual: !(consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta)),
@@ -1737,7 +1779,10 @@
       var ids = [
         "dian_nit", "dian_dv", "dian_razon_social", "dian_tipo_ambiente",
         "dian_url", "dian_test_set_id", "dian_software_id", "dian_software_pin",
-        "dian_usar_software_compartido", "dian_prefijo", "dian_resolucion_numero",
+        "dian_usar_software_compartido", "dian_software_proveedor_nit", "dian_software_proveedor_dv",
+        "dian_software_proveedor_razon_social", "dian_software_proveedor_primer_apellido",
+        "dian_software_proveedor_segundo_apellido", "dian_software_proveedor_primer_nombre",
+        "dian_software_proveedor_otros_nombres", "dian_prefijo", "dian_resolucion_numero",
         "dian_consecutivo_actual", "dian_resolucion_fecha_desde",
         "dian_resolucion_fecha_hasta", "dian_rango_desde", "dian_rango_hasta",
         "dian_llave_tecnica", "dian_token_emisor_ref", "dian_certificado_url", "dian_certificado_clave_ref"
@@ -2136,6 +2181,13 @@
       set("dian_nit", cfg.nit || document.getElementById("adv_nit") && document.getElementById("adv_nit").value || document.getElementById("identificador_fiscal") && document.getElementById("identificador_fiscal").value);
       set("dian_dv", cfg.digito_verificacion || document.getElementById("adv_digito_verificacion") && document.getElementById("adv_digito_verificacion").value);
       set("dian_razon_social", cfg.razon_social || document.getElementById("adv_razon_social") && document.getElementById("adv_razon_social").value || document.getElementById("razon_social") && document.getElementById("razon_social").value);
+	  set("dian_software_proveedor_nit", cfg.software_proveedor_nit);
+	  set("dian_software_proveedor_dv", cfg.software_proveedor_dv);
+	  set("dian_software_proveedor_razon_social", cfg.software_proveedor_razon_social);
+	  set("dian_software_proveedor_primer_apellido", cfg.software_proveedor_primer_apellido);
+	  set("dian_software_proveedor_segundo_apellido", cfg.software_proveedor_segundo_apellido);
+	  set("dian_software_proveedor_primer_nombre", cfg.software_proveedor_primer_nombre);
+	  set("dian_software_proveedor_otros_nombres", cfg.software_proveedor_otros_nombres);
       set("dian_tipo_ambiente", cfg.tipo_ambiente || document.getElementById("adv_ambiente_fe") && document.getElementById("adv_ambiente_fe").value || "habilitacion");
       set("dian_url", cfg.url_dian || "https://vpfe-hab.dian.gov.co");
       set("dian_prefijo", cfg.prefijo || document.getElementById("adv_prefijo_factura") && document.getElementById("adv_prefijo_factura").value || document.getElementById("prefijo_factura") && document.getElementById("prefijo_factura").value);
@@ -2169,6 +2221,13 @@
         nit: txt(document.getElementById("dian_nit").value),
         digito_verificacion: txt(document.getElementById("dian_dv").value),
         razon_social: txt(document.getElementById("dian_razon_social").value),
+		software_proveedor_nit: dianFieldValue("dian_software_proveedor_nit"),
+		software_proveedor_dv: dianFieldValue("dian_software_proveedor_dv"),
+		software_proveedor_razon_social: dianFieldValue("dian_software_proveedor_razon_social"),
+		software_proveedor_primer_apellido: dianFieldValue("dian_software_proveedor_primer_apellido"),
+		software_proveedor_segundo_apellido: dianFieldValue("dian_software_proveedor_segundo_apellido"),
+		software_proveedor_primer_nombre: dianFieldValue("dian_software_proveedor_primer_nombre"),
+		software_proveedor_otros_nombres: dianFieldValue("dian_software_proveedor_otros_nombres"),
         tipo_ambiente: txt(document.getElementById("dian_tipo_ambiente").value) || "habilitacion",
         usar_software_compartido: !!document.getElementById("dian_usar_software_compartido").checked,
         modo_operacion_descripcion: hiddenValue("dian_modo_operacion_descripcion"),

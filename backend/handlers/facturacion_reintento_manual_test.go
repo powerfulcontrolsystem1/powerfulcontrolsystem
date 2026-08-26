@@ -73,3 +73,47 @@ func TestFacturacionPrepareManualTerminalRetryIgnoresNonTerminal(t *testing.T) {
 		t.Fatalf("non-terminal retry must remain untouched, changed=%v err=%v", changed, err)
 	}
 }
+
+func TestNominaElectronicaManualRetryRequiresExactConfirmation(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		tipo    string
+		mensaje string
+		wantErr bool
+	}{
+		{name: "invoice unchanged", tipo: "factura_electronica", wantErr: false},
+		{name: "payroll missing", tipo: "nomina_electronica", wantErr: true},
+		{name: "payroll wrong case", tipo: "nomina_electronica", mensaje: "reenviar nomina electronica dian", wantErr: true},
+		{name: "payroll exact", tipo: "nomina_electronica", mensaje: nominaElectronicaReenvioConfirmacion, wantErr: false},
+		{name: "payroll adjustment remains blocked", tipo: "nota_ajuste_nomina_electronica", mensaje: nominaElectronicaReenvioConfirmacion, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateNominaElectronicaManualRetryConfirmation(tc.tipo, tc.mensaje)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("validation error=%v; wantErr=%v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestFacturacionManualRetryQueueOmitsPayroll(t *testing.T) {
+	excluded := facturacionRetryQueueExcludedTypes(false)
+	if len(excluded) != 2 || excluded[0] != "nomina_electronica" || excluded[1] != "nota_ajuste_nomina_electronica" {
+		t.Fatalf("manual generic queue must exclude the complete payroll family before pagination: %v", excluded)
+	}
+	if scheduled := facturacionRetryQueueExcludedTypes(true); len(scheduled) != 0 {
+		t.Fatalf("scheduled worker must keep its already-authorized payroll scope: %v", scheduled)
+	}
+	if facturacionRetryQueueDocumentAllowed("nomina_electronica", false) {
+		t.Fatal("manual generic queue must omit electronic payroll")
+	}
+	if facturacionRetryQueueDocumentAllowed("nota_ajuste_nomina_electronica", false) {
+		t.Fatal("manual generic queue must omit electronic payroll adjustments")
+	}
+	if !facturacionRetryQueueDocumentAllowed("factura_electronica", false) {
+		t.Fatal("manual generic queue must continue processing invoices")
+	}
+	if !facturacionRetryQueueDocumentAllowed("nomina_electronica", true) {
+		t.Fatal("scheduled worker must keep processing an already authorized payroll retry")
+	}
+}

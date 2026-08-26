@@ -14,6 +14,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 const documentoSoporteConfirmacion = "EMITIR DOCUMENTO SOPORTE DIAN"
@@ -222,7 +223,7 @@ func documentoSoporteCompletarBloqueantes(snapshot *facturacionFuenteFiscalSnaps
 			add(fmt.Sprintf("lineas.%d.totales_no_conciliados", line.Numero))
 		}
 	}
-	snapshot.Bloqueantes = facturacionFuenteFiscalUniqueSorted(snapshot.Bloqueantes)
+	snapshot.Bloqueantes = valueutil.UniqueSortedNonBlank(snapshot.Bloqueantes)
 }
 
 func documentoSoporteSellerScheme(rawType, rawDocument, residence string) (string, string, bool) {

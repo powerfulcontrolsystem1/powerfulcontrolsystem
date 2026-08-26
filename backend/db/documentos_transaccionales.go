@@ -77,18 +77,19 @@ type EmpresaDocumentoFacturacionListado struct {
 
 // EmpresaDocumentoFacturacionListFilter define los filtros para consultar documentos de facturación.
 type EmpresaDocumentoFacturacionListFilter struct {
-	EmpresaID       int64
-	TipoDocumento   string
-	EstadoDocumento string
-	IncludeInactive bool
-	ClienteQuery    string
-	DocumentoQuery  string
-	CajeroQuery     string
-	FechaDesde      string
-	FechaHasta      string
-	Query           string
-	Limit           int
-	Offset          int
+	EmpresaID             int64
+	TipoDocumento         string
+	ExcluirTiposDocumento []string
+	EstadoDocumento       string
+	IncludeInactive       bool
+	ClienteQuery          string
+	DocumentoQuery        string
+	CajeroQuery           string
+	FechaDesde            string
+	FechaHasta            string
+	Query                 string
+	Limit                 int
+	Offset                int
 }
 
 // EmpresaDocumentosTransaccionalesSchemaReady verifica las tablas de compras y
@@ -677,12 +678,21 @@ func ListEmpresaDocumentosFacturacionByEmpresaContext(ctx context.Context, dbCon
 		COALESCE(c.numero_documento, '')
 	FROM empresa_facturacion_documentos d
 	LEFT JOIN clientes c ON c.empresa_id = d.empresa_id AND c.id = d.entidad_relacionada_id
+		AND COALESCE(d.tipo_documento, '') NOT IN ('nomina_electronica', 'nota_ajuste_nomina_electronica')
 	WHERE d.empresa_id = ?`
 	args := []interface{}{filter.EmpresaID}
 
 	if tipo != "" {
 		query += ` AND d.tipo_documento = ?`
 		args = append(args, tipo)
+	}
+	for _, rawExcludedType := range filter.ExcluirTiposDocumento {
+		excludedType := normalizeDocumentoTransaccionalTipo(rawExcludedType, "")
+		if excludedType == "" || excludedType == tipo {
+			continue
+		}
+		query += ` AND d.tipo_documento <> ?`
+		args = append(args, excludedType)
 	}
 	if estadoDoc != "" {
 		query += ` AND d.estado_documento = ?`

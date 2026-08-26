@@ -1,8 +1,10 @@
 package valueutil
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -95,6 +97,48 @@ func Truncate(value string, maximum int) string {
 		return string(runes)
 	}
 	return string(runes[:maximum])
+}
+
+// TrimmedPrefix limits an ASCII-oriented protocol value after removing outer
+// whitespace. It is used for fixed-width ISO date/time fields, not free-form
+// Unicode text (use Truncate for the latter).
+func TrimmedPrefix(value string, maximum int) string {
+	value = strings.TrimSpace(value)
+	if maximum <= 0 {
+		return ""
+	}
+	if len(value) <= maximum {
+		return value
+	}
+	return value[:maximum]
+}
+
+// UniqueSortedNonBlank normalizes a validation-message collection into a
+// deterministic set.
+func UniqueSortedNonBlank(values []string) []string {
+	set := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			set[value] = struct{}{}
+		}
+	}
+	result := make([]string, 0, len(set))
+	for value := range set {
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
+}
+
+// IsHexLength verifies an exact-length hexadecimal identifier such as a
+// SHA-384 digest represented by 96 characters.
+func IsHexLength(value string, length int) bool {
+	value = strings.TrimSpace(value)
+	if length <= 0 || len(value) != length {
+		return false
+	}
+	_, err := hex.DecodeString(value)
+	return err == nil
 }
 
 // ParseDateTimeLocal reconoce los formatos historicos de fecha del sistema.

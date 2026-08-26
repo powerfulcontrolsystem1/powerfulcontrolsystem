@@ -172,16 +172,29 @@ afecte dinero, documentos, licencias o seguridad.
    antes de continuar.
 4. En `Pagos y PILA`, validar control contable, consultar provisiones, generar
    pagos y generar PILA cuando aplique.
-5. En `Nomina electronica DIAN`, usar `Preparar lote DIAN`; PCS arma el resumen
-   por empleado y muestra requisitos pendientes.
-6. `Preparar lote DIAN` es solo un preflight documental: no genera XML, no
-   reserva numeracion y no transmite informacion. El envio permanece bloqueado
-   tanto en la interfaz como en el endpoint fiscal generico.
-7. La nomina no reutiliza el adaptador de factura de venta. Para habilitarla se
-   requiere una fuente inmutable por empleado, UBL `NominaIndividual`, CUNE,
-   firma, transporte y acuse propios, todos aislados por `empresa_id`.
-8. El tutorial vive en el mismo submenu y explica preparacion, revision,
-   pendientes y archivo documental sin presentar el preflight como envio DIAN.
+5. En `Nomina electronica DIAN`, elegir un mes calendario cerrado. PCS agrupa
+   todas las liquidaciones pagadas del trabajador en un solo candidato mensual.
+6. Completar el perfil fiscal DIAN del trabajador y la configuracion separada
+   de la familia `nomina_electronica`. La numeracion interna de nomina no usa la
+   resolucion ni el rango de factura de venta.
+7. Ejecutar `Preflight` desde la fila mensual. Reconstruye la fuente en servidor
+   y valida liquidaciones, pagos, partes, totales, ambiente y configuracion; no
+   reserva consecutivo, no firma y no transmite.
+8. Un periodo abierto, liquidaciones solapadas/cruzadas, pago ambiguo, perfil
+   incompleto o concepto horario sin intervalos reales mantiene `Emitir`
+   bloqueado. PCS no completa datos fiscales por suposicion.
+9. La emision solo se ofrece con la familia activa en produccion y exige la
+   frase exacta `EMITIR NOMINA ELECTRONICA DIAN`, ademas de aprobacion efectiva
+   tanto en Facturacion como en Nomina.
+10. El servidor reserva de forma atomica un documento por trabajador/mes,
+    sella fuente y configuracion, genera `NominaIndividual`, CUNE SHA-384 y
+    firma XAdES, valida el XML y transmite con `SendNominaSync`.
+11. XML firmado y acuse quedan privados por empresa. El worker reintenta el XML
+    ya autorizado; el procesamiento manual general omite nomina y el reenvio
+    individual exige `REENVIAR NOMINA ELECTRONICA DIAN`.
+12. Habilitacion automatica por `SendTestSetAsync`, nota de ajuste y entrega/PDF
+    dedicado de nomina siguen cerrados. No usar el correo o PDF de factura para
+    esta familia; consultar `nomina_colombia_avanzada.md`.
 
 ## Snapshot completo VPS desde super administrador
 
@@ -1367,21 +1380,25 @@ afecte dinero, documentos, licencias o seguridad.
    liquidaciones, pagos, costo empresa y sedes activas.
 7. Para Colombia, la seccion avanzada consulta conceptos, novedades, PILA y el
    resumen de documentos electronicos de nomina.
-8. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` valida el
-   periodo y muestra liquidaciones listas por empleado para documento soporte de
-   pago de nomina electronica.
-9. `POST /api/empresa/nomina?action=preparar_nomina_electronica` prepara el lote
-   por empleado con devengados, deducciones, neto, IBC, sede y centro de costo.
-   La salida es solo de revision y no llama el endpoint fiscal generico. El
-   envio real permanece bloqueado hasta implementar fuente, `NominaIndividual`,
-   CUNE, firma, transporte y acuse propios por empresa.
+8. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` consolida
+   por trabajador y mes calendario todas las liquidaciones activas con pagos
+   reales, y devuelve bloqueos/preflight sin efectos fiscales.
+9. `POST /api/empresa/nomina?action=preparar_nomina_electronica` conserva la
+   revision compatible. `GET action=nomina_electronica_preflight` valida la
+   fuente mensual completa; solo
+   `POST /api/empresa/facturacion_electronica?action=emitir_nomina_electronica`
+   puede reservar, sellar, firmar y usar `SendNominaSync`, con doble permiso y
+   confirmacion fuerte.
 10. La pagina `web/administrar_empresa/nomina_tutorial.html` debe abrirse desde
    el boton `Tutorial` de nomina y conservar `empresa_id`; explica el orden
    recomendado: parametros legales, configuracion, empleados, novedades,
    liquidacion, pagos/PILA, preparacion del lote DIAN y revision de acuses.
-11. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
-   sedes, liquidaciones por sede, PILA, pagos, desprendible y botones `Ver estado
-   DIAN` / `Preparar lote DIAN`; abrir `Tutorial` y `Ayuda` desde nomina.
+11. Pruebas de nomina ordinaria: verificar empleados en varias sedes,
+   liquidaciones, PILA, pagos y desprendibles. Para DIAN no usar semillas ni
+   fabricar pagos/configuracion: validar perfil, candidato mensual, preflight y
+   dialogo sin confirmar una emision real salvo autorizacion fiscal especifica.
+12. `NominaIndividualDeAjuste`, habilitacion automatica y distribucion grafica
+   dedicada permanecen bloqueadas y deben presentarse como limites visibles.
 
 ## Carrito: medios de pago y pagos combinados
 

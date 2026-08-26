@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 const (
@@ -409,7 +410,7 @@ func facturacionFuenteFiscalCompletarBloqueantes(snapshot *facturacionFuenteFisc
 	if !facturacionFuenteFiscalClose(snapshot.Totales.TotalCarrito, snapshot.Totales.TotalDocumentoOrigen) {
 		snapshot.Bloqueantes = append(snapshot.Bloqueantes, "totales.carrito_no_concilia_documento")
 	}
-	snapshot.Bloqueantes = facturacionFuenteFiscalUniqueSorted(snapshot.Bloqueantes)
+	snapshot.Bloqueantes = valueutil.UniqueSortedNonBlank(snapshot.Bloqueantes)
 }
 
 func facturacionFuenteFiscalDANEDepartamentoValido(value string) bool {
@@ -438,22 +439,6 @@ func facturacionFuenteFiscalRound(value float64) float64 {
 
 func facturacionFuenteFiscalClose(a, b float64) bool {
 	return math.Abs(a-b) <= 0.01
-}
-
-func facturacionFuenteFiscalUniqueSorted(values []string) []string {
-	set := make(map[string]struct{}, len(values))
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-		if value != "" {
-			set[value] = struct{}{}
-		}
-	}
-	out := make([]string, 0, len(set))
-	for value := range set {
-		out = append(out, value)
-	}
-	sort.Strings(out)
-	return out
 }
 
 func marshalFacturacionFuenteFiscal(snapshot *facturacionFuenteFiscalSnapshot) ([]byte, error) {
