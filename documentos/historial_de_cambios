@@ -10,6 +10,21 @@
   el nombre del iframe, impidiendo restaurar una vista de Productos dentro del
   menu de Compras o viceversa.
 
+2026-08-26: Compuerta visual segura para confirmar anulaciones DIAN.
+- El QA autenticado posterior al despliegue del documento soporte detectó que
+  el diálogo explicaba la frase `ANULAR`, pero mostraba habilitado el botón
+  final con frase y motivo vacíos. El backend ya rechazaba esos valores y no se
+  ejecutó ninguna anulación durante la prueba.
+- `facturas_electronicas.html` inicia el botón deshabilitado y lo habilita solo
+  con la frase exacta y un motivo de al menos diez caracteres; el estado se
+  recalcula durante todo el ciclo del diálogo.
+- Se agrega una regresión de contrato. PR, aprobación, merge y despliegue de
+  esta corrección se registran como compuertas separadas.
+- Dos pruebas de inventario que comparan SQL multilínea normalizan los saltos
+  `CRLF` del checkout de Windows. No cambia runtime de inventario; evita el falso
+  fallo observado durante `rs -FullPreflight`, mientras el checkout `LF` y CI ya
+  aprobaban el mismo código.
+
 2026-08-26: Soportes de compras IA sin generacion demo en produccion.
 - La revision visual final de PSI-000 detecto que el encabezado aun exponia
   `Cargar demo`, una accion que insertaba un soporte y una extraccion ficticios
