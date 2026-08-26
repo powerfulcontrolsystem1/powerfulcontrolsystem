@@ -373,6 +373,17 @@ func TestPurchaseAIFilePickerMatchesBackendAllowlist(t *testing.T) {
 	if !strings.Contains(page, `throw new Error(publicError(resp.status, errorText))`) {
 		t.Fatal("purchase UI must not expose raw HTML or internal API errors")
 	}
+	for _, required := range []string{
+		`function resolverSoporteCompraDuplicado(soporte)`,
+		`&action=soportes&registro=activo`,
+		`actual.duplicado_soporte_id`,
+		`soporteCompraTieneExtraccion(soporte)`,
+		`se reutilizo de forma segura una extraccion IA existente`,
+	} {
+		if !strings.Contains(page, required) {
+			t.Errorf("purchase AI duplicate flow missing contract %q", required)
+		}
+	}
 	for _, forbidden := range []string{".gif", ".txt", ".csv", ".doc", ".xlsx"} {
 		if strings.Contains(inputTag, forbidden) {
 			t.Errorf("purchase AI file picker still advertises unsupported type %s", forbidden)

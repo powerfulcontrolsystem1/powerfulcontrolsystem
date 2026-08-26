@@ -43494,3 +43494,17 @@ Archivos modificados:
 - La reconciliacion completa estado y CUFE/CUDE de documento/cola cuando el
   acuse almacenado ya es aceptado o reconciliado. La reparacion ocurre antes de
   cualquier despacho, conserva intentos y no retransmite XML.
+
+2026-08-26: Correccion visual real de carga IA duplicada en Compras.
+- La prueba autenticada en la empresa PCS detecto que una factura XML ya
+  radicada creaba correctamente un soporte marcado como duplicado, pero la
+  pantalla intentaba extraerlo otra vez y dejaba el formulario vacio ante el
+  conflicto de estado.
+- Compras resuelve ahora `duplicado_soporte_id` unicamente contra el listado
+  autenticado de la misma empresa, limita la cadena a 20 saltos y falla cerrado
+  si falta el original o existe un ciclo.
+- Cuando el original ya contiene una extraccion verificable, la reutiliza sin
+  consumir otra llamada IA. Un soporte nuevo o sin datos sigue pasando por la
+  extraccion normal y el usuario debe revisar los campos antes de guardar.
+- Se agrego una regresion de contrato frontend; la validacion visual desplegada
+  y el cierre integral se registran con la evidencia PSI-000 del SHA final.
