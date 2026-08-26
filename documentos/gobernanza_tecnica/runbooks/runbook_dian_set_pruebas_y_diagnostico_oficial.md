@@ -35,6 +35,11 @@ exige fuente antes de numerar, serializa la anulacion, espera CUDE/acuse
 coincidentes, cierra GET desconocidos y reserva permiso `A` para acciones
 fiscales con efectos.
 
+Actualizacion 2026-08-26: para cierres que solo deben reparar acuses ya
+aceptados se usa `reconciliar_aceptados_local&aplicar=1`. Este modo omite colas
+pendientes/fallidas/enviadas sin acuse antes del despachador y debe comprobarse
+con instantaneas previas y posteriores de intentos y fechas de envio.
+
 ## Sintomas cubiertos
 
 - la empresa no logra pasar de onboarding DIAN a pruebas operativas.

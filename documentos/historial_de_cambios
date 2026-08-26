@@ -1,3 +1,12 @@
+2026-08-26: Reconciliacion local DIAN limitada a acuses aceptados.
+- Se agrega `POST /api/empresa/facturacion_electronica?action=reconciliar_aceptados_local&empresa_id={id}&aplicar=1` con permiso `facturacion:A`.
+- El modo exclusivo omite colas pendientes, fallidas o enviadas sin acuse antes
+  de alcanzar `processFacturacionIntegracionForDocumento`; por contrato realiza
+  cero transmisiones XML.
+- La respuesta diferencia reparaciones locales y omitidos, e informa
+  `transmision_xml_habilitada=false` para dejar evidencia operativa verificable.
+- Se agregan regresiones de permiso y orden del guard respecto del despachador.
+
 2026-08-25: Cierre real del restablecimiento de clave administrativo.
 - Con autorizacion especifica se completo el formulario real de nueva clave de
   la cuenta QA confirmada. El resultado visible abrio el selector de empresas.

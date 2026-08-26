@@ -409,6 +409,52 @@ func TestReconciliationRepairsAcceptedDocumentsWithoutResending(t *testing.T) {
 	}
 }
 
+func TestAcceptedOnlyReconciliationStopsBeforeAnyDispatch(t *testing.T) {
+	path := filepath.Join("facturacion_electronica.go")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read billing backend: %v", err)
+	}
+	source := string(raw)
+	actionStart := strings.Index(source, `if action == "reconciliar_estados" || action == "reconciliar_aceptados_local"`)
+	if actionStart < 0 {
+		t.Fatal("accepted-only reconciliation action missing")
+	}
+	actionEnd := strings.Index(source[actionStart:], `if action == "facturar_desde_venta"`)
+	if actionEnd < 0 {
+		t.Fatal("accepted-only reconciliation action boundary missing")
+	}
+	actionBody := source[actionStart : actionStart+actionEnd]
+	for _, marker := range []string{
+		`soloAcusesAceptados := action == "reconciliar_aceptados_local"`,
+		`reconcileFacturacionEstados(dbEmp, empresaID, aplicar, soloAcusesAceptados`,
+	} {
+		if !strings.Contains(actionBody, marker) {
+			t.Fatalf("accepted-only action missing %q", marker)
+		}
+	}
+
+	start := strings.Index(source, "func reconcileFacturacionEstados(")
+	if start < 0 {
+		t.Fatal("reconciliation function missing")
+	}
+	body := source[start:]
+	guard := strings.Index(body, `if soloAcusesAceptados {`)
+	dispatch := strings.Index(body, `processFacturacionIntegracionForDocumento(`)
+	if guard < 0 || dispatch < 0 || guard > dispatch {
+		t.Fatal("accepted-only guard must run before any integration dispatch")
+	}
+	guardBody := body[guard:dispatch]
+	if !strings.Contains(guardBody, "continue") {
+		t.Fatal("accepted-only guard must stop processing non-accepted documents")
+	}
+	for _, marker := range []string{`"solo_acuses_aceptados"`, `"transmision_xml_habilitada"`, `"omitidos_no_aceptados"`} {
+		if !strings.Contains(body, marker) {
+			t.Fatalf("accepted-only evidence missing %q", marker)
+		}
+	}
+}
+
 func TestDIANFrontendDisablesFreeFormFiscalEmission(t *testing.T) {
 	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica_pruebas_dian.html")
 	raw, err := os.ReadFile(path)

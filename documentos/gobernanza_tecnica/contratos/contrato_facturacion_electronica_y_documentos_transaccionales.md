@@ -23,9 +23,11 @@ Actualizacion 2026-08-25:
 - El listado publica solo el booleano `fuente_fiscal_disponible`; nunca expone
   ruta, hash ni contenido de la fuente. Una factura historica sin esa fuente no
   ofrece anulacion aunque conserve un estado o codigo fiscal legado.
-- `reconciliar_estados` puede completar documento y cola desde un acuse ya
-  aceptado/reconciliado antes de cualquier despacho. Esta reparacion local no
-  incrementa intentos ni retransmite XML.
+- `reconciliar_aceptados_local` completa documento y cola exclusivamente desde
+  un acuse ya aceptado/reconciliado y omite el resto antes de cualquier
+  despacho. Esta reparacion local no incrementa intentos, no cambia fechas de
+  envio y no retransmite XML. `reconciliar_estados` conserva el procesamiento
+  operativo general y no sustituye este modo restringido.
 - `nota_credito` solo se emite mediante `anular_factura_nota_credito` sobre una
   factura aceptada con CUFE oficial y fuente fiscal inmutable. El servidor
   deriva y sella una fuente separada para la nota; no acepta lineas, partes,
@@ -120,6 +122,7 @@ Este contrato cubre el ciclo documental empresarial de facturacion y documentos 
 - `POST|PUT /api/empresa/facturacion_electronica?action=reenviar_correo`
 - `POST /api/empresa/facturacion_electronica?action=procesar_reintentos`
 - `POST /api/empresa/facturacion_electronica?action=reconciliar_estados`
+- `POST /api/empresa/facturacion_electronica?action=reconciliar_aceptados_local`
 
 ### Deteccion y catalogo de paises FE
 

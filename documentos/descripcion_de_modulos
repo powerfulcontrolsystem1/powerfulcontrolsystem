@@ -1,3 +1,10 @@
+2026-08-26: Facturacion electronica - reconciliacion local de acuses aceptados.
+- Nueva accion `reconciliar_aceptados_local` para reparar exclusivamente el
+  documento y la cola locales desde un acuse DIAN ya aceptado/reconciliado.
+- No consulta ni retransmite XML, no procesa pendientes y conserva intentos y
+  fechas fiscales. Requiere `facturacion:A` y mantiene aislamiento por
+  `empresa_id` resuelto en backend.
+
 2026-08-25: Cierre seguro de facturacion electronica Colombia.
 - Modulos afectados: `facturacion_electronica`, `carritos`, `permisos`,
   `nomina`, `correo_fiscal` y `seguridad_multiempresa`.
