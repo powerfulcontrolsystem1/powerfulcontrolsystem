@@ -40,6 +40,10 @@
 - El menu de Productos conserva la URL del iframe en `data-src` y solo asigna
   `src` despues de resolver y anexar el `empresa_id`; elimina la carga inicial
   sin tenant que el navegador cancelaba al iniciar la vista empresarial.
+- La ruta historica `bodega.html` deja de mantener un CRUD paralelo y delega en
+  la vista unificada `administrar_productos.html?view=bodegas`; el acceso desde
+  el carrito usa ya la ruta canonica y los marcadores antiguos siguen entrando
+  mediante una redireccion que conserva los parametros de empresa.
 - QA enfocada: Go `./db ./handlers`, sintaxis JavaScript y contratos de UI,
   ownership, idempotencia, almacenamiento privado y contrato responsive de
   impresoras aprobados localmente. La validacion desplegada del SHA final se

@@ -542,6 +542,46 @@ func TestProductosMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing
 	}
 }
 
+func TestBodegasLegacyRoutesDelegateToUnifiedInventoryView(t *testing.T) {
+	root := filepath.Join("..", "web", "administrar_empresa")
+	for _, rel := range []string{"bodega.html", filepath.Join("productos", "bodegas.html")} {
+		page, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("read legacy warehouses page %s: %v", rel, err)
+		}
+		content := string(page)
+		if !strings.Contains(content, "/administrar_empresa/productos/bodegas.js") {
+			t.Fatalf("legacy warehouses page %s must delegate to the unified redirect", rel)
+		}
+		for _, duplicate := range []string{"function renderBodegas", "/api/empresa/bodegas", "id=\"bodegaForm\""} {
+			if strings.Contains(content, duplicate) {
+				t.Fatalf("legacy warehouses page %s must not keep duplicate CRUD code %q", rel, duplicate)
+			}
+		}
+	}
+
+	redirect, err := os.ReadFile(filepath.Join(root, "productos", "bodegas.js"))
+	if err != nil {
+		t.Fatalf("read unified warehouses redirect: %v", err)
+	}
+	redirectContent := string(redirect)
+	if !strings.Contains(redirectContent, "'/administrar_empresa/administrar_productos.html'") || !strings.Contains(redirectContent, "target.searchParams.set('view', 'bodegas')") {
+		t.Fatal("warehouses compatibility redirect must target the unified inventory view")
+	}
+
+	cart, err := os.ReadFile(filepath.Join(root, "carrito_de_compras.html"))
+	if err != nil {
+		t.Fatalf("read cart page: %v", err)
+	}
+	cartContent := string(cart)
+	if strings.Contains(cartContent, "/administrar_empresa/bodega.html") {
+		t.Fatal("cart must not route new warehouse navigation through the legacy CRUD")
+	}
+	if !strings.Contains(cartContent, "/administrar_empresa/administrar_productos.html?view=bodegas&empresa_id=") {
+		t.Fatal("cart must open the unified warehouses and inventory view")
+	}
+}
+
 func TestEmpresaPagesWithMutatingFetchInstallCSRFSynchronizer(t *testing.T) {
 	root := filepath.Join("..", "web", "administrar_empresa")
 	mutatingFetch := regexp.MustCompile(`(?s)fetch\s*\(.{0,800}?method\s*:\s*["'](?:POST|PUT|PATCH|DELETE)["']`)
