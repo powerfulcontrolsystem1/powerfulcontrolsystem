@@ -577,6 +577,24 @@ func TestComprasMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing.T
 	}
 }
 
+func TestPurchaseAISupportsShrinkInsideNestedPurchasesFrame(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "soportes_compras_ia.html"))
+	if err != nil {
+		t.Fatalf("read purchase AI supports page: %v", err)
+	}
+	content := string(page)
+	for _, required := range []string{
+		`.capture-shell,.capture-shell>*`,
+		`.capture-overview>*`,
+		`.capture-box{min-width:0}`,
+		`.capture-table-wrap{min-width:0;max-width:100%;overflow:auto`,
+	} {
+		if !strings.Contains(content, required) {
+			t.Fatalf("purchase AI supports must shrink inside the nested purchases frame; missing %q", required)
+		}
+	}
+}
+
 func TestBodegasLegacyRoutesDelegateToUnifiedInventoryView(t *testing.T) {
 	root := filepath.Join("..", "web", "administrar_empresa")
 	for _, rel := range []string{"bodega.html", filepath.Join("productos", "bodegas.html")} {
