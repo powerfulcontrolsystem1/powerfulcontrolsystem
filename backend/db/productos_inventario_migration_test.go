@@ -95,3 +95,86 @@ func TestEmpresaProductosInventarioMigrationPostgres(t *testing.T) {
 		t.Fatal("migration constraint must reject zero warehouse ids")
 	}
 }
+
+func TestEmpresaProductosInventarioMigrationOnRestoredSchemaPostgres(t *testing.T) {
+	if os.Getenv("PCS_TEST_POSTGRES_LIVE_SCHEMA") != "isolated" {
+		t.Skip("requires PCS_TEST_POSTGRES_LIVE_SCHEMA=isolated and a disposable restored database")
+	}
+	dsn := os.Getenv("PCS_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("PCS_TEST_POSTGRES_DSN is not configured")
+	}
+	dbConn, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbConn.Close()
+
+	tx, err := dbConn.BeginTx(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+
+	var receiptsBefore int
+	if err := tx.QueryRow(`SELECT count(*) FROM empresa_compras_recepciones_avanzadas`).Scan(&receiptsBefore); err != nil {
+		t.Fatal(err)
+	}
+	for attempt := 0; attempt < 2; attempt++ {
+		if err := applyEmpresaProductosInventarioSchemaTx(context.Background(), tx); err != nil {
+			t.Fatalf("attempt %d: %v", attempt+1, err)
+		}
+	}
+
+	var receiptsAfter, invalidWarehouseRefs int
+	if err := tx.QueryRow(`SELECT count(*) FROM empresa_compras_recepciones_avanzadas`).Scan(&receiptsAfter); err != nil {
+		t.Fatal(err)
+	}
+	if receiptsAfter != receiptsBefore {
+		t.Fatalf("receipt count changed from %d to %d", receiptsBefore, receiptsAfter)
+	}
+	if err := tx.QueryRow(`SELECT count(*)
+		FROM empresa_compras_recepciones_avanzadas AS recepcion
+		WHERE bodega_id IS NOT NULL
+			AND (
+				bodega_id <= 0
+				OR NOT EXISTS (
+					SELECT 1 FROM bodegas AS bodega
+					WHERE bodega.empresa_id=recepcion.empresa_id
+						AND bodega.id=recepcion.bodega_id
+				)
+			)`).Scan(&invalidWarehouseRefs); err != nil {
+		t.Fatal(err)
+	}
+	if invalidWarehouseRefs != 0 {
+		t.Fatalf("migration left %d invalid warehouse references", invalidWarehouseRefs)
+	}
+
+	var nullable string
+	var defaultValue sql.NullString
+	if err := tx.QueryRow(`SELECT is_nullable, column_default
+		FROM information_schema.columns
+		WHERE table_schema='public'
+			AND table_name='empresa_compras_recepciones_avanzadas'
+			AND column_name='bodega_id'`).Scan(&nullable, &defaultValue); err != nil {
+		t.Fatal(err)
+	}
+	if nullable != "YES" || defaultValue.Valid {
+		t.Fatalf("restored bodega_id nullable=%s default=%v", nullable, defaultValue)
+	}
+
+	var constraintCount, indexCount int
+	if err := tx.QueryRow(`SELECT count(*) FROM pg_constraint
+		WHERE conname='ck_empresa_compras_recepciones_bodega_positiva'
+			AND conrelid='empresa_compras_recepciones_avanzadas'::regclass`).Scan(&constraintCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.QueryRow(`SELECT count(*) FROM pg_indexes
+		WHERE schemaname='public' AND tablename='productos'
+			AND indexname='ix_productos_empresa_estado_id'`).Scan(&indexCount); err != nil {
+		t.Fatal(err)
+	}
+	if constraintCount != 1 || indexCount != 1 {
+		t.Fatalf("constraint=%d index=%d, want both present", constraintCount, indexCount)
+	}
+}
