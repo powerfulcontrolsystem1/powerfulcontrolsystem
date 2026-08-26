@@ -290,6 +290,26 @@ func TestFacturasElectronicasOnlyCancelsWithOfficialCUFEAndShowsCreditNoteArtifa
 	}
 }
 
+func TestFacturasElectronicasCancellationConfirmationStartsAndStaysFailClosed(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturas_electronicas.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read invoice tray: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`id="feCancelSubmit" type="submit" class="btn danger" disabled`,
+		`function updateCancelSubmitState()`,
+		`confirmation !== "ANULAR" || motivo.length < 10`,
+		`feCancelConfirmation").addEventListener("input", updateCancelSubmitState)`,
+		`feCancelReason").addEventListener("input", updateCancelSubmitState)`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("cancellation confirmation guard missing %q", marker)
+		}
+	}
+}
+
 func TestNominaFrontendCannotCallGenericFiscalEndpoint(t *testing.T) {
 	path := filepath.Join("..", "..", "web", "administrar_empresa", "nomina_sueldos.html")
 	raw, err := os.ReadFile(path)

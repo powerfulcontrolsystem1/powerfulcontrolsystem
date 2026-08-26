@@ -1,3 +1,16 @@
+## [2026-08-26] Confirmación visual fail-closed para anulación DIAN
+
+- [UX segura] El botón final de anulación inicia deshabilitado y solo se
+  habilita cuando la frase es exactamente `ANULAR` y el motivo contiene al
+  menos diez caracteres.
+- [Defensa en profundidad] La validación de envío existente permanece intacta;
+  el estado del botón también se recalcula al abrir, escribir, cerrar, fallar o
+  finalizar el diálogo.
+- [QA] Una regresión de contrato fija el estado inicial deshabilitado y los dos
+  requisitos visibles antes de cualquier solicitud de anulación. Las dos
+  pruebas de atomicidad de inventario con contratos SQL multilínea normalizan
+  `CRLF` para que el preflight completo sea equivalente en Windows y Linux.
+
 ## [2026-08-26] Documento soporte DIAN 1.1 dedicado
 
 - [Fuente fiscal] Las compras a no obligados nacen de un borrador estructurado;

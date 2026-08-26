@@ -117,7 +117,7 @@ func TestListadoProductosAcotaAgregadoDeStockPorEmpresa(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	source := string(raw)
+	source := strings.ReplaceAll(string(raw), "\r\n", "\n")
 	start := strings.Index(source, "func GetProductosByEmpresa")
 	if start < 0 {
 		t.Fatal("GetProductosByEmpresa missing")
@@ -149,7 +149,7 @@ func TestConsumoCostoPEPSBloqueaCapasYConservaTenant(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	source := string(raw)
+	source := strings.ReplaceAll(string(raw), "\r\n", "\n")
 	start := strings.Index(source, "func consumirCostoLotesPEPSTx")
 	if start < 0 {
 		t.Fatal("consumirCostoLotesPEPSTx missing")

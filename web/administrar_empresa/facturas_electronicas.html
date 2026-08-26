@@ -269,7 +269,7 @@
       <div id="feCancelMessage" class="form-help" role="status" aria-live="polite"></div>
       <div class="form-actions">
         <button id="feCancelDismiss" type="button" class="btn secondary">Cancelar</button>
-        <button id="feCancelSubmit" type="submit" class="btn danger">Confirmar anulación</button>
+        <button id="feCancelSubmit" type="submit" class="btn danger" disabled>Confirmar anulación</button>
       </div>
     </form>
   </dialog>
@@ -1585,10 +1585,19 @@
         box.style.color = isError ? "#ef5350" : "";
       }
 
+      function updateCancelSubmitState() {
+        var submitButton = document.getElementById("feCancelSubmit");
+        if (!submitButton) return;
+        var confirmation = normalize(document.getElementById("feCancelConfirmation").value);
+        var motivo = normalize(document.getElementById("feCancelReason").value);
+        submitButton.disabled = cancelDialogBusy || !cancelDialogItem || confirmation !== "ANULAR" || motivo.length < 10;
+      }
+
       function closeCancelDialog() {
         if (cancelDialogBusy) return;
         var dialog = document.getElementById("feCancelDialog");
         cancelDialogItem = null;
+        updateCancelSubmitState();
         if (dialog && dialog.open) dialog.close();
       }
 
@@ -1610,6 +1619,7 @@
         document.getElementById("feCancelConfirmation").value = "";
         document.getElementById("feCancelReason").value = "";
         setCancelDialogMessage("", false);
+        updateCancelSubmitState();
         if (dialog && typeof dialog.showModal === "function") {
           dialog.showModal();
           document.getElementById("feCancelConfirmation").focus();
@@ -1635,9 +1645,8 @@
         var tipo = normalize(item.tipo_documento).toLowerCase();
         var code = normalize(item.numero_legal) || normalize(item.documento_codigo);
         var facturaElectronica = tipo === "factura_electronica";
-        var submitButton = document.getElementById("feCancelSubmit");
         cancelDialogBusy = true;
-        submitButton.disabled = true;
+        updateCancelSubmitState();
         setCancelDialogMessage(facturaElectronica ? "Generando nota crédito de anulación..." : "Anulando venta...", false);
         showMessage(facturaElectronica ? "Generando nota credito de anulacion..." : "Anulando venta...");
         var action = facturaElectronica ? "anular_factura_nota_credito" : "anular_venta";
@@ -1653,7 +1662,6 @@
         }).then(function(out) {
           var nota = out && out.nota_credito ? out.nota_credito : null;
           cancelDialogBusy = false;
-          submitButton.disabled = false;
           closeCancelDialog();
           if (facturaElectronica && !(out && out.anulacion_confirmada_dian === true)) {
             var estadoDIAN = normalize(out && out.integracion_fiscal && out.integracion_fiscal.estado_envio) || "pendiente";
@@ -1665,7 +1673,7 @@
           return runSearch();
         }).catch(function(err) {
           cancelDialogBusy = false;
-          submitButton.disabled = false;
+          updateCancelSubmitState();
           var message = err.message || "No se pudo anular el documento.";
           setCancelDialogMessage(message, true);
           showMessage(message, "error");
@@ -1845,15 +1853,21 @@
 
       document.getElementById("feCancelForm").addEventListener("submit", submitCancelInvoice);
       document.getElementById("feCancelDismiss").addEventListener("click", closeCancelDialog);
+      document.getElementById("feCancelConfirmation").addEventListener("input", updateCancelSubmitState);
+      document.getElementById("feCancelReason").addEventListener("input", updateCancelSubmitState);
       document.getElementById("feCancelDialog").addEventListener("cancel", function (event) {
         if (cancelDialogBusy) {
           event.preventDefault();
           return;
         }
         cancelDialogItem = null;
+        updateCancelSubmitState();
       });
       document.getElementById("feCancelDialog").addEventListener("close", function () {
-        if (!cancelDialogBusy) cancelDialogItem = null;
+        if (!cancelDialogBusy) {
+          cancelDialogItem = null;
+          updateCancelSubmitState();
+        }
       });
 
       function init() {
