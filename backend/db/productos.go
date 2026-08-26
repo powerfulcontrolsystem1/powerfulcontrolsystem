@@ -14,6 +14,11 @@ import (
 var (
 	// ErrStockInsuficiente se usa cuando una salida/traslado excede la existencia disponible.
 	ErrStockInsuficiente = errors.New("stock insuficiente")
+	// ErrInventarioEntidadNoDisponible identifica referencias a productos, bodegas,
+	// categorias o proveedores que no existen dentro de la empresa activa. Los
+	// handlers pueden convertirlo en un 4xx seguro sin filtrar si el ID existe en
+	// otra empresa.
+	ErrInventarioEntidadNoDisponible = errors.New("entidad de inventario no disponible para la empresa")
 )
 
 const (
@@ -5301,13 +5306,13 @@ func RegistrarConteoCiclicoInventario(dbConn *sql.DB, conteo InventarioConteoCic
 	var exists int
 	if err := dbConn.QueryRow(`SELECT 1 FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, conteo.EmpresaID, conteo.ProductoID).Scan(&exists); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return InventarioConteoCiclico{}, fmt.Errorf("producto %d no pertenece a la empresa %d", conteo.ProductoID, conteo.EmpresaID)
+			return InventarioConteoCiclico{}, fmt.Errorf("%w: producto", ErrInventarioEntidadNoDisponible)
 		}
 		return InventarioConteoCiclico{}, err
 	}
 	if err := dbConn.QueryRow(`SELECT 1 FROM bodegas WHERE empresa_id = ? AND id = ? LIMIT 1`, conteo.EmpresaID, conteo.BodegaID).Scan(&exists); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return InventarioConteoCiclico{}, fmt.Errorf("bodega %d no pertenece a la empresa %d", conteo.BodegaID, conteo.EmpresaID)
+			return InventarioConteoCiclico{}, fmt.Errorf("%w: bodega", ErrInventarioEntidadNoDisponible)
 		}
 		return InventarioConteoCiclico{}, err
 	}
@@ -5758,7 +5763,7 @@ func resolveCategoriaProductoTx(tx *sql.Tx, empresaID, categoriaID int64) (strin
 	var nombre string
 	if err := tx.QueryRow(`SELECT nombre FROM categorias_productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, categoriaID).Scan(&nombre); err != nil {
 		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("categoria %d no pertenece a la empresa %d", categoriaID, empresaID)
+			return "", fmt.Errorf("%w: categoria", ErrInventarioEntidadNoDisponible)
 		}
 		return "", err
 	}
@@ -6014,7 +6019,7 @@ func validateProductoEmpresaTx(tx *sql.Tx, empresaID, productoID int64) error {
 	var exists int
 	if err := queryRowTxSQLCompat(tx, `SELECT 1 FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&exists); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("producto %d no pertenece a la empresa %d", productoID, empresaID)
+			return fmt.Errorf("%w: producto", ErrInventarioEntidadNoDisponible)
 		}
 		return err
 	}
@@ -6025,7 +6030,7 @@ func validateBodegaEmpresaTx(tx *sql.Tx, empresaID, bodegaID int64) error {
 	var exists int
 	if err := queryRowTxSQLCompat(tx, "SELECT 1 FROM bodegas WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, bodegaID).Scan(&exists); err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("bodega %d no pertenece a la empresa %d", bodegaID, empresaID)
+			return fmt.Errorf("%w: bodega", ErrInventarioEntidadNoDisponible)
 		}
 		return err
 	}
@@ -6036,7 +6041,7 @@ func validateProveedorEmpresaTx(tx *sql.Tx, empresaID, proveedorID int64) error 
 	var exists int
 	if err := queryRowTxSQLCompat(tx, "SELECT 1 FROM proveedores WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, proveedorID).Scan(&exists); err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("proveedor %d no pertenece a la empresa %d", proveedorID, empresaID)
+			return fmt.Errorf("%w: proveedor", ErrInventarioEntidadNoDisponible)
 		}
 		return err
 	}

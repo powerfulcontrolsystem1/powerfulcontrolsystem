@@ -31,6 +31,14 @@ func writeProductosInternalError(w http.ResponseWriter, r *http.Request, operati
 	http.Error(w, "No se pudo completar la operación de productos e inventario.", http.StatusInternalServerError)
 }
 
+func writeInventarioEntidadNoDisponible(w http.ResponseWriter, err error) bool {
+	if !errors.Is(err, dbpkg.ErrInventarioEntidadNoDisponible) {
+		return false
+	}
+	http.Error(w, "Producto, bodega, categoria o proveedor no disponible para la empresa activa.", http.StatusNotFound)
+	return true
+}
+
 func productosPublicError(err error, fallback string) string {
 	text := strings.TrimSpace(fmt.Sprint(err))
 	if text == "" || len(text) > 240 || strings.ContainsAny(text, "\r\n") {
@@ -1124,6 +1132,9 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateProducto(dbEmp, payload.Producto, payload.StockInicial, payload.ReferenciaInicial)
 			if err != nil {
+				if writeInventarioEntidadNoDisponible(w, err) {
+					return
+				}
 				writeProductosInternalError(w, r, "crear_producto", err)
 				return
 			}
@@ -1192,6 +1203,9 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if err := dbpkg.UpdateProducto(dbEmp, payload, motivoPrecio, referenciaPrecio); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "producto no encontrado", http.StatusNotFound)
+					return
+				}
+				if writeInventarioEntidadNoDisponible(w, err) {
 					return
 				}
 				writeProductosInternalError(w, r, "actualizar_producto", err)
@@ -1472,6 +1486,9 @@ func EmpresaInventarioConteoCiclicoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if err != nil {
 				if errors.Is(err, dbpkg.ErrStockInsuficiente) {
 					http.Error(w, "stock insuficiente para ajuste de conteo", http.StatusConflict)
+					return
+				}
+				if writeInventarioEntidadNoDisponible(w, err) {
 					return
 				}
 				writeProductosInternalError(w, r, "registrar_conteo_ciclico", err)
@@ -2266,6 +2283,9 @@ func EmpresaInventarioTransferHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "stock insuficiente en la bodega origen", http.StatusBadRequest)
 				return
 			}
+			if writeInventarioEntidadNoDisponible(w, err) {
+				return
+			}
 			writeProductosInternalError(w, r, "transferir_stock", err)
 			return
 		}
@@ -2339,6 +2359,9 @@ func EmpresaInventarioAjusteHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "stock insuficiente para la operación", http.StatusBadRequest)
 				return
 			}
+			if writeInventarioEntidadNoDisponible(w, err) {
+				return
+			}
 			writeProductosInternalError(w, r, "ajustar_inventario", err)
 			return
 		}
@@ -2390,6 +2413,9 @@ func EmpresaInventarioCambioProductoHandler(dbEmp *sql.DB) http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, dbpkg.ErrStockInsuficiente) {
 				http.Error(w, "stock insuficiente para cambio de producto", http.StatusBadRequest)
+				return
+			}
+			if writeInventarioEntidadNoDisponible(w, err) {
 				return
 			}
 			writeProductosInternalError(w, r, "cambiar_producto", err)

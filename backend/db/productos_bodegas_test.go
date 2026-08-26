@@ -130,3 +130,32 @@ func TestProveedorCodigoOpcionalNoBloqueaMultiplesProveedores(t *testing.T) {
 		t.Fatalf("UpdateProveedor debe normalizar codigo vacio a NULL: %s", updateBody)
 	}
 }
+
+func TestReferenciasInventarioAjenasUsanErrorSeguroTipado(t *testing.T) {
+	raw, err := os.ReadFile("productos.go")
+	if err != nil {
+		t.Fatalf("read productos.go: %v", err)
+	}
+	src := string(raw)
+	for _, required := range []string{
+		`ErrInventarioEntidadNoDisponible = errors.New("entidad de inventario no disponible para la empresa")`,
+		`fmt.Errorf("%w: producto", ErrInventarioEntidadNoDisponible)`,
+		`fmt.Errorf("%w: bodega", ErrInventarioEntidadNoDisponible)`,
+		`fmt.Errorf("%w: proveedor", ErrInventarioEntidadNoDisponible)`,
+		`fmt.Errorf("%w: categoria", ErrInventarioEntidadNoDisponible)`,
+	} {
+		if !strings.Contains(src, required) {
+			t.Errorf("productos.go debe conservar el contrato de ownership seguro %q", required)
+		}
+	}
+	for _, leaked := range []string{
+		`fmt.Errorf("producto %d no pertenece a la empresa %d"`,
+		`fmt.Errorf("bodega %d no pertenece a la empresa %d"`,
+		`fmt.Errorf("proveedor %d no pertenece a la empresa %d"`,
+		`fmt.Errorf("categoria %d no pertenece a la empresa %d"`,
+	} {
+		if strings.Contains(src, leaked) {
+			t.Errorf("productos.go no debe filtrar IDs multiempresa mediante %q", leaked)
+		}
+	}
+}
