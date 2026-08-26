@@ -1,3 +1,25 @@
+2026-08-26: Unicidad normalizada de categorias de producto y proveedores.
+- La prueba real PSI-000 demostro que un proveedor o una categoria con el mismo
+  nombre y distinto uso de mayusculas podia superar los indices exactos
+  heredados. Los registros de prueba se eliminaron y los conteos originales se
+  restauraron antes de corregir el esquema.
+- La migracion `20260826-004-catalogos-nombre-unico-v1` verifica que no existan
+  grupos repetidos por `(empresa_id, LOWER(BTRIM(nombre)))` en ambos catalogos y
+  solo entonces crea los dos indices. Una colision historica detiene la
+  migracion completa para exigir reconciliacion explicita.
+- La unicidad sigue siendo por empresa y los clasificadores existentes
+  convierten la carrera PostgreSQL en HTTP 409 sin filtrar detalles internos.
+
+2026-08-26: Reintento efectivo del login en el E2E visual profesional.
+- El barrido final de Productos e Inventario encontro un timeout transitorio al
+  cargar `login.html`; la ruta publica respondia 200 y el flujo manual seguia
+  autenticado, pero la excepcion de `page.goto` salia del bucle antes del segundo
+  intento ya previsto.
+- `tools/qa_e2e_buttons.cjs` contiene ahora toda la navegacion, captura de
+  credenciales, envio y comprobacion de `/me` dentro del intento reintentable.
+  Si ambos intentos fallan, conserva la causa tecnica sin registrar usuario,
+  contrasena, cookies ni cabeceras privadas.
+
 2026-08-26: Endurecimiento productivo de Productos, Compras e Inventario.
 - Proveedores permite varios registros sin codigo opcional al persistir el valor
   vacio como `NULL`, manteniendo la unicidad de los codigos informados.

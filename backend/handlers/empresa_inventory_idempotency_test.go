@@ -40,8 +40,10 @@ func TestProductosCatalogDuplicateReturnsConflictWithoutDatabaseDetails(t *testi
 		message string
 	}{
 		{"categoria", `pq: duplicate key value violates unique constraint "ux_categorias_productos_empresa_codigo"`, "Ya existe una categoria"},
+		{"categoria", `pq: duplicate key value violates unique constraint "ux_categorias_productos_empresa_nombre_normalizado"`, "Ya existe una categoria"},
 		{"producto", `UNIQUE constraint failed: productos.empresa_id, productos.sku`, "Ya existe un producto"},
 		{"proveedor", `pq: duplicate key value violates unique constraint "ux_proveedores_empresa_nombre"`, "Ya existe un proveedor"},
+		{"proveedor", `pq: duplicate key value violates unique constraint "ux_proveedores_empresa_nombre_normalizado"`, "Ya existe un proveedor"},
 		{"servicio", `UNIQUE constraint failed: servicios.empresa_id, servicios.codigo`, "Ya existe un servicio"},
 		{"servicio", `pq: duplicate key value violates unique constraint "ux_servicios_empresa_nombre_normalizado"`, "mismo nombre o codigo"},
 	}

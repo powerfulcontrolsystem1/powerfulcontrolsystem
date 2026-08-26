@@ -1078,6 +1078,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, codigo, nombre, ubicacion, responsable
 - categorias_productos:
   - empresa_id, codigo, nombre, descripcion, color_hex, orden
+  - `ux_categorias_productos_empresa_nombre_normalizado` impide repetir
+    `LOWER(BTRIM(nombre))` no vacio dentro de la misma empresa.
 - productos:
   - empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras
   - nombre, descripcion, categoria, marca, unidad_medida
@@ -1097,6 +1099,9 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - proveedores:
   - empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion
   - catalogo_referencia, precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega
+  - `ux_proveedores_empresa_nombre_normalizado` impide repetir
+    `LOWER(BTRIM(nombre))` no vacio dentro de la misma empresa; empresas
+    distintas conservan catalogos independientes.
 - servicios:
   - empresa_id, codigo, nombre, descripcion, categoria, duracion_minutos
   - costo_referencial, precio, impuesto_porcentaje, imagen_url

@@ -181,3 +181,71 @@ func TestEmpresaProductosInventarioMigrationOnRestoredSchemaPostgres(t *testing.
 		t.Fatalf("constraint=%d index=%d, want both present", constraintCount, indexCount)
 	}
 }
+
+func TestEmpresaCatalogosNombreUniqueMigrationPostgres(t *testing.T) {
+	dsn := os.Getenv("PCS_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("PCS_TEST_POSTGRES_DSN is not configured")
+	}
+	dbConn, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbConn.Close()
+
+	tx, err := dbConn.BeginTx(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+
+	for _, statement := range []string{
+		`CREATE TEMP TABLE categorias_productos (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id INTEGER NOT NULL,
+			nombre TEXT NOT NULL
+		) ON COMMIT DROP`,
+		`CREATE TEMP TABLE proveedores (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id INTEGER NOT NULL,
+			nombre TEXT NOT NULL
+		) ON COMMIT DROP`,
+		`INSERT INTO categorias_productos (empresa_id,nombre) VALUES (1,'Retail')`,
+		`INSERT INTO proveedores (empresa_id,nombre) VALUES (1,'Proveedor Norte')`,
+	} {
+		if _, err := tx.Exec(statement); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for attempt := 0; attempt < 2; attempt++ {
+		if err := applyEmpresaCatalogosNombreUniqueSchemaTx(context.Background(), tx); err != nil {
+			t.Fatalf("attempt %d: %v", attempt+1, err)
+		}
+	}
+	if _, err := tx.Exec(`INSERT INTO categorias_productos (empresa_id,nombre) VALUES (2,'  retail  ')`); err != nil {
+		t.Fatalf("same normalized category name in another tenant must remain valid: %v", err)
+	}
+	if _, err := tx.Exec(`INSERT INTO proveedores (empresa_id,nombre) VALUES (2,'PROVEEDOR NORTE')`); err != nil {
+		t.Fatalf("same normalized provider name in another tenant must remain valid: %v", err)
+	}
+
+	for _, duplicate := range []struct {
+		name      string
+		savepoint string
+		statement string
+	}{
+		{name: "category", savepoint: "duplicate_category", statement: `INSERT INTO categorias_productos (empresa_id,nombre) VALUES (1,'  RETAIL ')`},
+		{name: "provider", savepoint: "duplicate_provider", statement: `INSERT INTO proveedores (empresa_id,nombre) VALUES (1,' proveedor norte ')`},
+	} {
+		if _, err := tx.Exec("SAVEPOINT " + duplicate.savepoint); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.Exec(duplicate.statement); err == nil {
+			t.Fatalf("normalized duplicate %s name must be rejected", duplicate.name)
+		}
+		if _, err := tx.Exec("ROLLBACK TO SAVEPOINT " + duplicate.savepoint); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

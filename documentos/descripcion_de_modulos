@@ -4568,6 +4568,18 @@ Captura inteligente de compras y gastos
 - La regla vive en PostgreSQL mediante migracion versionada y se presenta como
   HTTP 409 seguro en altas o ediciones concurrentes.
 
+2026-08-26 - Categorias y proveedores: nombres normalizados por empresa
+- Modulos afectados: `productos`, `categorias_productos`, `proveedores`,
+  `inventario`, `administrar_empresa`.
+- PostgreSQL impide que mayusculas o espacios exteriores eludan la unicidad del
+  nombre dentro de un tenant; el mismo nombre continua permitido en otra
+  empresa.
+- La migracion inspecciona primero ambos catalogos y falla sin aplicar indices
+  parciales si una instalacion historica contiene colisiones que requieren
+  reconciliacion explicita.
+- Las altas y ediciones exponen el conflicto como HTTP 409 seguro, sin SQL ni
+  nombres internos de restricciones.
+
 2026-06-11 - Finanzas: Pagos Bre-B QR
 - Modulos afectados: `finanzas`, `carritos`, `caja`, `bancos_pagos`.
 - Cambio funcional: el centro financiero incorpora una pagina profesional `Pagos Bre-B QR` con configuracion de QR por empresa, cuentas receptoras por caja, payload oficial/plantilla, alertas operativas, registro manual de pagos recibidos y tabla de ventas/abonos Bre-B.

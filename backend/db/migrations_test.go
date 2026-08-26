@@ -118,6 +118,23 @@ func TestEmpresaCatalogIncludesServiciosNombreUniqueMigration(t *testing.T) {
 	t.Fatal("normalized service-name uniqueness migration is missing from empresas catalog")
 }
 
+func TestEmpresaCatalogIncludesCatalogosNombreUniqueMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260826-004-catalogos-nombre-unico-v1" {
+			if migration.Body != empresaCatalogosNombreUniqueSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("normalized category/provider-name uniqueness migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("normalized category/provider-name uniqueness migration is missing from empresas catalog")
+}
+
 func TestEmpresaCatalogIncludesNextcloudLegacyRepairMigration(t *testing.T) {
 	t.Parallel()
 	migrations, err := PlatformMigrations(MigrationTargetEmpresas)

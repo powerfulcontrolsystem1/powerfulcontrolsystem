@@ -198,22 +198,31 @@ async function login(page) {
     throw new Error("Faltan PCS_QA_EMAIL y PCS_QA_PASSWORD en el entorno.");
   }
   let authenticated = false;
+  let lastLoginError = null;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    await page.goto(BASE_URL + "/login.html", { waitUntil: "domcontentloaded", timeout: 45000 });
-    await page.locator("#adminEmail").fill(EMAIL, { timeout: 15000 });
-    await page.locator("#adminPassword").fill(PASSWORD, { timeout: 15000 });
-    await Promise.all([
-      page.waitForLoadState("networkidle", { timeout: 45000 }).catch(() => null),
-      page.locator("#emailLoginBtn").click({ timeout: 15000 })
-    ]);
-    await page.waitForTimeout(900);
-    const check = await page.request.get(BASE_URL + "/me", { timeout: 15000 }).catch(() => null);
-    authenticated = Boolean(check && check.ok());
-    if (authenticated) break;
-    await page.waitForTimeout(700);
+    try {
+      await page.goto(BASE_URL + "/login.html", { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.locator("#adminEmail").fill(EMAIL, { timeout: 15000 });
+      await page.locator("#adminPassword").fill(PASSWORD, { timeout: 15000 });
+      await Promise.all([
+        page.waitForLoadState("networkidle", { timeout: 45000 }).catch(() => null),
+        page.locator("#emailLoginBtn").click({ timeout: 15000 })
+      ]);
+      await page.waitForTimeout(900);
+      const check = await page.request.get(BASE_URL + "/me", { timeout: 15000 }).catch(() => null);
+      authenticated = Boolean(check && check.ok());
+      if (authenticated) break;
+      lastLoginError = new Error("El endpoint /me no confirmo la sesion.");
+    } catch (error) {
+      lastLoginError = error;
+    }
+    if (attempt < 2) {
+      await page.waitForTimeout(1000);
+    }
   }
   if (!authenticated) {
-    throw new Error("No se pudo validar la sesion autenticada despues del login.");
+    const detail = lastLoginError && lastLoginError.message ? " " + lastLoginError.message : "";
+    throw new Error("No se pudo validar la sesion autenticada despues de dos intentos." + detail);
   }
   await page.evaluate((empresaID) => {
     try {

@@ -10,6 +10,7 @@ const (
 	empresaProductosInventarioSchemaFingerprint                = "empresa-productos-inventario:v1:recepcion-bodega-not-null:productos-tenant-state-index"
 	empresaProductosInventarioLegacyWarehouseSchemaFingerprint = "empresa-productos-inventario:v2:recepcion-bodega-legacy-nullable-positive"
 	empresaServiciosNombreUniqueSchemaFingerprint              = "empresa-servicios:v1:tenant-normalized-name-unique"
+	empresaCatalogosNombreUniqueSchemaFingerprint              = "empresa-catalogos:v1:tenant-normalized-category-provider-names"
 )
 
 // applyEmpresaProductosInventarioSchemaTx owns the schema additions required
@@ -120,6 +121,68 @@ func applyEmpresaServiciosNombreUniqueSchemaTx(ctx context.Context, tx *sql.Tx) 
 		ON servicios(empresa_id, LOWER(BTRIM(nombre)))
 		WHERE BTRIM(nombre) <> ''`); err != nil {
 		return fmt.Errorf("enforce unique enterprise service names: %w", err)
+	}
+	return nil
+}
+
+// applyEmpresaCatalogosNombreUniqueSchemaTx closes case and surrounding-space
+// variants that bypass the legacy exact-name indexes for categories and
+// providers. The checks run for every tenant before either index is created so
+// an installation with historical collisions fails without a partial schema.
+func applyEmpresaCatalogosNombreUniqueSchemaTx(ctx context.Context, tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("migration transaction is required")
+	}
+
+	catalogs := []struct {
+		name        string
+		duplicates  string
+		createIndex string
+	}{
+		{
+			name: "product categories",
+			duplicates: `SELECT COUNT(*)
+				FROM (
+					SELECT empresa_id, LOWER(BTRIM(nombre)) AS nombre_normalizado
+					FROM categorias_productos
+					WHERE BTRIM(nombre) <> ''
+					GROUP BY empresa_id, LOWER(BTRIM(nombre))
+					HAVING COUNT(*) > 1
+				) AS duplicados`,
+			createIndex: `CREATE UNIQUE INDEX IF NOT EXISTS ux_categorias_productos_empresa_nombre_normalizado
+				ON categorias_productos(empresa_id, LOWER(BTRIM(nombre)))
+				WHERE BTRIM(nombre) <> ''`,
+		},
+		{
+			name: "providers",
+			duplicates: `SELECT COUNT(*)
+				FROM (
+					SELECT empresa_id, LOWER(BTRIM(nombre)) AS nombre_normalizado
+					FROM proveedores
+					WHERE BTRIM(nombre) <> ''
+					GROUP BY empresa_id, LOWER(BTRIM(nombre))
+					HAVING COUNT(*) > 1
+				) AS duplicados`,
+			createIndex: `CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedores_empresa_nombre_normalizado
+				ON proveedores(empresa_id, LOWER(BTRIM(nombre)))
+				WHERE BTRIM(nombre) <> ''`,
+		},
+	}
+
+	for _, catalog := range catalogs {
+		var duplicateGroups int64
+		if err := tx.QueryRowContext(ctx, catalog.duplicates).Scan(&duplicateGroups); err != nil {
+			return fmt.Errorf("inspect duplicate tenant %s names: %w", catalog.name, err)
+		}
+		if duplicateGroups > 0 {
+			return fmt.Errorf("cannot enforce unique tenant %s names: %d duplicate tenant/name groups require reconciliation", catalog.name, duplicateGroups)
+		}
+	}
+
+	for _, catalog := range catalogs {
+		if _, err := tx.ExecContext(ctx, catalog.createIndex); err != nil {
+			return fmt.Errorf("enforce unique tenant %s names: %w", catalog.name, err)
+		}
 	}
 	return nil
 }

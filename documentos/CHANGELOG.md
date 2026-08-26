@@ -18,6 +18,9 @@
 - [Catalogos] Categorias, productos, proveedores y servicios duplicados devuelven
   HTTP 409 con un mensaje publico estable; las restricciones y mensajes internos
   de PostgreSQL no se exponen al navegador.
+- [Catalogos] Categorias y proveedores comparan ademas el nombre normalizado por
+  empresa, de modo que cambios de mayusculas o espacios externos no creen el
+  mismo registro logico; una migracion con colisiones historicas falla cerrada.
 - [Servicios] El nombre normalizado es unico dentro de cada empresa mediante un
   indice PostgreSQL versionado; conserva codigos opcionales `NULL`, bloquea
   carreras concurrentes y falla cerrado si una instalacion historica requiere
@@ -42,6 +45,9 @@
 - [QA] Se agregan regresiones de ownership, proveedor sin codigo, recepcion
   multiitem, formatos privados, idempotencia y ancho del centro de impresion;
   los gates exactos del candidato final quedan documentados en PSI-000.
+- [QA/E2E] El login visual reintenta el flujo completo tras una navegacion,
+  interaccion o comprobacion de sesion transitoria; el segundo intento deja de
+  quedar anulado por una excepcion de `page.goto`.
 
 ## [2026-08-26] Reconciliacion DIAN exclusiva de acuses aceptados
 
