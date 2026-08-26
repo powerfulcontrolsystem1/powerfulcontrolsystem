@@ -15,9 +15,22 @@
   como comprobante privado bien formado, sin DTD, y descargable como attachment.
 - [Observabilidad] Operaciones de catalogo, reservas e impresoras ya no descartan
   errores de `RowsAffected`; los listados propagan `rows.Err()`.
+- [Catalogos] Categorias, productos, proveedores y servicios duplicados devuelven
+  HTTP 409 con un mensaje publico estable; las restricciones y mensajes internos
+  de PostgreSQL no se exponen al navegador.
+- [Bodegas] Actualizar, cambiar estado o eliminar una bodega inexistente o ajena
+  devuelve 404 seguro en vez de convertir `sql.ErrNoRows` en un error 500.
+- [Kardex] La tendencia diaria normaliza fechas PostgreSQL antes de completar el
+  rango solicitado, evitando mostrar siete dias en cero cuando existen movimientos.
+- [IA/Compras] Si una factura repetida apunta a una cadena de soportes duplicados,
+  la carga automatica resuelve el original del mismo tenant y reutiliza su
+  extraccion verificable sin consumir otra llamada de IA.
+- [Impresion/UX] Los formularios y tablas de impresoras quedan acotados a su
+  columna: las tablas anchas conservan desplazamiento interno sin extender la
+  pagina en escritorio ni movil.
 - [QA] Se agregan regresiones de ownership, proveedor sin codigo, recepcion
-  multiitem, formatos privados e idempotencia; los gates exactos del candidato
-  final quedan documentados en PSI-000.
+  multiitem, formatos privados, idempotencia y ancho del centro de impresion;
+  los gates exactos del candidato final quedan documentados en PSI-000.
 
 ## [2026-08-26] Reconciliacion DIAN exclusiva de acuses aceptados
 

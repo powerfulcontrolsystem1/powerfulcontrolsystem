@@ -22,9 +22,25 @@
   la lista visible de formatos.
 - Catalogos, reservas y cola de impresion propagan fallos de `RowsAffected`; los
   listados de inventario y productos propagan errores tardios de iteracion.
+- Categorias, productos, proveedores y servicios clasifican las restricciones
+  unicas conocidas como conflicto HTTP 409 sin devolver SQL ni nombres de
+  restricciones; errores desconocidos conservan el cierre seguro en 500.
+- Bodegas convierte `sql.ErrNoRows` de actualizar, cambiar estado y eliminar en
+  el mismo 404 publico usado para recursos ajenos, sin revelar si el ID existe
+  bajo otro `empresa_id`.
+- La tendencia de Kardex normaliza `time.Time`, texto RFC3339, fecha ISO y bytes
+  devueltos por PostgreSQL antes de completar el rango diario; formatos
+  inesperados fallan cerrados en vez de asociar movimientos al dia equivocado.
+- Compras resuelve hasta 20 saltos de una cadena de soportes duplicados dentro
+  del listado autenticado de la empresa, detecta ciclos/faltantes y reutiliza la
+  extraccion verificable del original sin una segunda llamada a IA.
+- El centro de impresion acota cada `.form` y `.table-wrap` a la columna de
+  `.empresa-config-grid`; las tablas extensas mantienen scroll local y dejan de
+  ampliar el documento a 1.581 px en una ventana de 1.366 px.
 - QA enfocada: Go `./db ./handlers`, sintaxis JavaScript y contratos de UI,
-  ownership, idempotencia y almacenamiento privado aprobados localmente. La
-  validacion desplegada del SHA final se registra en la evidencia PSI-000.
+  ownership, idempotencia, almacenamiento privado y contrato responsive de
+  impresoras aprobados localmente. La validacion desplegada del SHA final se
+  registra en la evidencia PSI-000.
 
 2026-08-26: Reconciliacion local DIAN limitada a acuses aceptados.
 - Se agrega `POST /api/empresa/facturacion_electronica?action=reconciliar_aceptados_local&empresa_id={id}&aplicar=1` con permiso `facturacion:A`.

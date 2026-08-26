@@ -269,6 +269,14 @@ func TestPrinterQueueFrontendProductionContracts(t *testing.T) {
 			t.Errorf("configuracion_impresora.html missing production contract %q", required)
 		}
 	}
+	gridFormSizing := regexp.MustCompile(`(?s)\.empresa-config-grid\s*>\s*\.form\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*100%;[^}]*min-width:\s*0;[^}]*box-sizing:\s*border-box;`)
+	if !gridFormSizing.MatchString(page) {
+		t.Error("configuracion_impresora.html must constrain grid forms so printer tables scroll inside their column")
+	}
+	gridTableSizing := regexp.MustCompile(`(?s)\.empresa-config-grid\s+\.table-wrap\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*100%;[^}]*min-width:\s*0;`)
+	if !gridTableSizing.MatchString(page) {
+		t.Error("configuracion_impresora.html must constrain printer table wrappers to the grid column")
+	}
 
 	handlerPath := filepath.Join("empresa_impresoras.go")
 	rawHandler, err := os.ReadFile(handlerPath)
