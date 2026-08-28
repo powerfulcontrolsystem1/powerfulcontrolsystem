@@ -1,3 +1,13 @@
+## [2026-08-28] Cola de impresión con cierre físico explícito
+
+- [Operación] Reclamar un trabajo se identifica como una reserva de cola y no
+  como impresión física; el cierre como impreso exige confirmar que salió el
+  papel.
+- [Idempotencia] Reintentar advierte el riesgo de una segunda copia y no se
+  automatiza la recuperación de trabajos tomados sin conciliación física.
+- [QA] Una regresión protege la separación entre reclamar e imprimir, y el
+  script de sintaxis valida el JavaScript inline de la pantalla.
+
 ## [2026-08-26] Nomina electronica mensual DIAN dedicada
 
 - [Fuente fiscal] Consolida liquidaciones pagadas por trabajador/mes cerrado,
