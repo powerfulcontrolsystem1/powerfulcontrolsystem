@@ -11,7 +11,6 @@
   var INPUT_ID = 'aiChatInput';
   var MODE_ID = 'aiChatMode';
   var AGENT_ID = 'aiChatAgent';
-  var AGENT_MODE_ID = 'aiChatAgentMode';
   var MODEL_ID = 'aiChatModel';
   var MODEL_USAGE_ID = 'aiChatModelUsage';
   var ATTACHMENT_INPUT_ID = 'aiChatAttachment';
@@ -31,6 +30,12 @@
   var NOTICE_ID = 'aiChatNotice';
   var HINT_TOGGLE_ID = 'aiChatHintToggle';
   var HINTS_ID = 'aiChatHints';
+  var HISTORY_BUTTON_ID = 'aiChatHistoryBtn';
+  var HISTORY_PANEL_ID = 'aiChatHistoryPanel';
+  var HISTORY_LIST_ID = 'aiChatHistoryList';
+  var HISTORY_SCOPE_ID = 'aiChatHistoryScope';
+  var HISTORY_CLOSE_ID = 'aiChatHistoryClose';
+  var MODEL_SUMMARY_ID = 'aiChatModelSummary';
   var CONFIG_PANEL_ID = 'aiChatCompactConfig';
   var CONFIG_CLOSE_ID = 'aiChatCompactConfigClose';
   var CONFIG_SAVE_ID = 'aiChatCompactConfigSave';
@@ -262,10 +267,14 @@
 
   function normalizeAIToggleButtonIcon(toggleBtn) {
     if (!toggleBtn || toggleBtn.classList.contains('is-robot-avatar')) return;
-    if (toggleBtn.querySelector('.ai-openai-mark')) return;
-    toggleBtn.innerHTML = AI_TOGGLE_ICON + '<span class="ai-chat-toggle-label">Asistente IA</span>';
-    toggleBtn.setAttribute('aria-label', 'Abrir asistente IA');
-    toggleBtn.title = 'Asistente IA';
+    var label = isEnterpriseAIContext() ? 'Agente PCS' : 'Asistente IA';
+    if (!toggleBtn.querySelector('.ai-openai-mark')) {
+      toggleBtn.innerHTML = AI_TOGGLE_ICON + '<span class="ai-chat-toggle-label">' + label + '</span>';
+    }
+    var labelEl = toggleBtn.querySelector('.ai-chat-toggle-label');
+    if (labelEl) labelEl.textContent = label;
+    toggleBtn.setAttribute('aria-label', 'Abrir ' + label);
+    toggleBtn.title = label;
   }
 
   function getPublicPortalContextConfig() {
@@ -374,7 +383,7 @@
     var hintsMarkup = buildPublicDrawerExamplesMarkup();
     var toggleMarkup = existingToggle ? '' : (
       '<button id="' + TOGGLE_ID + '" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">' +
-        AI_TOGGLE_ICON + '<span class="ai-chat-toggle-label">Asistente IA</span>' +
+        AI_TOGGLE_ICON + '<span class="ai-chat-toggle-label">' + (isEnterpriseAIContext() ? 'Agente PCS' : 'Asistente IA') + '</span>' +
       '</button>'
     );
     document.body.insertAdjacentHTML('beforeend',
@@ -382,8 +391,8 @@
       (existingBackdrop ? '' : '<div id="' + BACKDROP_ID + '" class="ai-chat-backdrop" aria-hidden="true"></div>') +
       (existingDrawer ? '' : '<section id="' + DRAWER_ID + '" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">' +
         '<div class="ai-chat-minibar" id="' + MINIBAR_ID + '" hidden>' +
-          '<span class="ai-chat-minibar-label">Asistente IA</span>' +
-          '<button type="button" id="' + MINIBAR_EXPAND_ID + '" class="ai-chat-minibar-btn" aria-label="Abrir asistente IA">' +
+          '<span class="ai-chat-minibar-label">' + (isEnterpriseAIContext() ? 'Agente PCS' : 'Asistente IA') + '</span>' +
+          '<button type="button" id="' + MINIBAR_EXPAND_ID + '" class="ai-chat-minibar-btn" aria-label="' + (isEnterpriseAIContext() ? 'Abrir Agente PCS' : 'Abrir asistente IA') + '">' +
             '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M7 14l5-5 5 5H7z"/></svg>' +
           '</button>' +
         '</div>' +
@@ -403,7 +412,7 @@
               '<button id="' + MINIMIZE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">' +
                 '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>' +
               '</button>' +
-              '<button id="' + CLOSE_ID + '" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>' +
+              '<button id="' + CLOSE_ID + '" type="button" class="ai-chat-close" aria-label="' + (isEnterpriseAIContext() ? 'Cerrar Agente PCS' : 'Cerrar asistente IA') + '">×</button>' +
             '</div>' +
           '</div>' +
           '<div id="' + NOTICE_ID + '" class="ai-chat-notice"></div>' +
@@ -424,11 +433,6 @@
               '</div>' +
               '<div class="ai-chat-controls">' +
                 '<input id="' + MODE_ID + '" type="hidden" value="operativo">' +
-                '<label class="ai-chat-control-field ai-chat-agent-toggle" for="' + AGENT_MODE_ID + '">' +
-                  '<span>Modo agente</span>' +
-                  '<input id="' + AGENT_MODE_ID + '" type="checkbox" role="switch" aria-label="Activar modo agente">' +
-                  '<small>Solicita propuestas; nunca amplía tus permisos.</small>' +
-                '</label>' +
                 '<label class="ai-chat-control-field" for="' + MODEL_ID + '">' +
                   '<span>Modelo</span>' +
                   '<select id="' + MODEL_ID + '" class="form-input" aria-label="Modelo IA"><option value="">Cargando modelos...</option></select>' +
@@ -475,13 +479,177 @@
     }
     var agentEl = document.getElementById(AGENT_ID);
     if (agentEl && agentEl.closest('.ai-chat-control-field')) agentEl.closest('.ai-chat-control-field').remove();
-    if (!document.getElementById(AGENT_MODE_ID)) {
-      var toggle = document.createElement('label');
-      toggle.className = 'ai-chat-control-field ai-chat-agent-toggle';
-      toggle.setAttribute('for', AGENT_MODE_ID);
-      toggle.innerHTML = '<span>Modo agente</span><input id="' + AGENT_MODE_ID + '" type="checkbox" role="switch" aria-label="Activar modo agente"><small>Solicita propuestas; nunca amplía tus permisos.</small>';
-      controls.insertBefore(toggle, controls.firstChild || null);
+    var legacyAgentMode = document.getElementById('aiChatAgentMode');
+    if (legacyAgentMode) {
+      var legacyAgentField = legacyAgentMode.closest('.ai-chat-control-field');
+      if (legacyAgentField) legacyAgentField.remove();
+      else legacyAgentMode.remove();
     }
+  }
+
+  function ensureSimpleChatUI() {
+    var drawer = document.getElementById(DRAWER_ID);
+    var form = document.getElementById(FORM_ID);
+    if (!drawer || !form) return;
+    drawer.classList.add('ai-chat-simple');
+
+    if (isEnterpriseAIContext()) {
+      var title = document.getElementById('aiChatTitle');
+      if (title) title.textContent = 'Agente PCS';
+      var toggleLabel = document.querySelector('#' + TOGGLE_ID + ' .ai-chat-toggle-label');
+      if (toggleLabel) toggleLabel.textContent = 'Agente PCS';
+      var minibarLabel = document.querySelector('#' + MINIBAR_ID + ' .ai-chat-minibar-label');
+      if (minibarLabel) minibarLabel.textContent = 'Agente PCS';
+    }
+
+    var titleHost = drawer.querySelector('.ai-chat-header-title-row > div');
+    if (titleHost && !document.getElementById(MODEL_SUMMARY_ID)) {
+      var summary = document.createElement('p');
+      summary.id = MODEL_SUMMARY_ID;
+      summary.className = 'ai-chat-model-summary';
+      summary.textContent = 'Un agente para todo el sistema';
+      titleHost.appendChild(summary);
+    }
+
+    var hintToggle = document.getElementById(HINT_TOGGLE_ID);
+    if (hintToggle) hintToggle.hidden = true;
+    var configButton = document.getElementById('aiChatConfigBtn');
+    if (configButton) configButton.hidden = true;
+    var minimizeButton = document.getElementById(MINIMIZE_ID);
+    if (minimizeButton) minimizeButton.hidden = true;
+    var headerActions = drawer.querySelector('.ai-chat-header-actions');
+    var clearBtn = document.getElementById(CLEAR_CHAT_ID);
+    if (headerActions && clearBtn && clearBtn.parentNode !== headerActions) {
+      clearBtn.title = 'Nuevo chat';
+      headerActions.insertBefore(clearBtn, headerActions.firstChild || null);
+    }
+
+    var modelEl = document.getElementById(MODEL_ID);
+    var modelField = modelEl && modelEl.closest('.ai-chat-control-field');
+    if (modelField) modelField.hidden = true;
+    var attachBtn = document.getElementById(ATTACH_BTN_ID);
+    if (attachBtn) {
+      attachBtn.setAttribute('aria-label', 'Adjuntar foto o documento');
+      attachBtn.title = 'Adjuntar foto o documento';
+    }
+
+    if (!isEnterpriseAIContext() || !headerActions || document.getElementById(HISTORY_BUTTON_ID)) return;
+    var historyButton = document.createElement('button');
+    historyButton.id = HISTORY_BUTTON_ID;
+    historyButton.type = 'button';
+    historyButton.className = 'ai-chat-header-icon-btn';
+    historyButton.setAttribute('aria-label', 'Ver historial del chat');
+    historyButton.title = 'Historial';
+    historyButton.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M13 3a9 9 0 1 0 8.5 6h-2.1A7 7 0 1 1 13 5v3l4-4-4-4v3zm-1 5h2v5.2l3.2 1.9-1 1.7-4.2-2.5V8z"/></svg>';
+    headerActions.insertBefore(historyButton, clearBtn ? clearBtn.nextSibling : headerActions.firstChild || null);
+
+    var surface = drawer.querySelector('.ai-chat-drawer-surface');
+    if (!surface) return;
+    var panel = document.createElement('aside');
+    panel.id = HISTORY_PANEL_ID;
+    panel.className = 'ai-chat-history-panel';
+    panel.hidden = true;
+    panel.innerHTML = '<div class="ai-chat-history-head"><div><strong>Historial</strong><small>Guardado por usuario</small></div><button id="' + HISTORY_CLOSE_ID + '" type="button" class="ai-chat-header-icon-btn" aria-label="Cerrar historial">×</button></div>' +
+      '<label class="ai-chat-history-scope" hidden>Ver <select id="' + HISTORY_SCOPE_ID + '" class="form-input"><option value="usuario">Mis chats</option><option value="empresa">Todos los usuarios</option></select></label>' +
+      '<div id="' + HISTORY_LIST_ID + '" class="ai-chat-history-list"><p class="ai-chat-empty">Cargando historial...</p></div>';
+    surface.appendChild(panel);
+  }
+
+  function updateGlobalModelSummary(modelID) {
+    var summary = document.getElementById(MODEL_SUMMARY_ID);
+    if (!summary) return;
+    var item = (state.modelCatalog || []).filter(function (candidate) { return candidate && candidate.id === modelID; })[0];
+    summary.textContent = normalize(item && (item.display_name || item.id)) || 'Modelo global administrado por PCS';
+  }
+
+  function buildHistoryEndpoint(scope) {
+    var empresaID = parsePositiveInt(getCurrentEmpresaId());
+    return '/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=' + encodeURIComponent(String(empresaID)) + '&limit=100&scope=' + encodeURIComponent(scope || 'usuario');
+  }
+
+  function groupChatHistory(items) {
+    var groups = [];
+    var byKey = {};
+    (items || []).forEach(function (item) {
+      var user = normalize(item.usuario_creador).toLowerCase();
+      var conversationID = normalize(item.conversation_id) || ('legacy-' + String(item.id || ''));
+      var key = user + '|' + conversationID;
+      if (!byKey[key]) {
+        byKey[key] = { id: conversationID, user: user, date: normalize(item.fecha_consulta), rows: [] };
+        groups.push(byKey[key]);
+      }
+      byKey[key].rows.push(item);
+    });
+    return groups;
+  }
+
+  function restoreHistoryGroup(group) {
+    if (!group || !Array.isArray(group.rows)) return;
+    var messagesEl = document.getElementById(MESSAGES_ID);
+    if (!messagesEl) return;
+    messagesEl.innerHTML = '';
+    state.proposals = [];
+    state.exportables = [];
+    state.conversationID = group.id.indexOf('legacy-') === 0 ? createChatConversationID() : group.id;
+    state.conversationHistory = [];
+    group.rows.slice().reverse().forEach(function (row) {
+      var question = normalize(row.pregunta);
+      var answer = normalize(row.respuesta);
+      if (question) {
+        appendMessage('user', question);
+        state.conversationHistory.push({ rol: 'user', contenido: question });
+      }
+      if (answer) {
+        appendMessage('assistant', answer, null, null, { model_id: row.model_id, provider: row.provider });
+        state.conversationHistory.push({ rol: 'assistant', contenido: answer });
+      }
+    });
+    var panel = document.getElementById(HISTORY_PANEL_ID);
+    if (panel) panel.hidden = true;
+    setNotice('Conversación restaurada. Puedes continuar desde aquí.');
+  }
+
+  function renderChatHistory(data) {
+    var list = document.getElementById(HISTORY_LIST_ID);
+    if (!list) return;
+    state.historyItems = Array.isArray(data && data.items) ? data.items : [];
+    state.historyScope = normalize(data && data.history_scope) || 'usuario';
+    var scopeSummary = document.querySelector('#' + HISTORY_PANEL_ID + ' .ai-chat-history-head small');
+    if (scopeSummary) {
+      scopeSummary.textContent = state.historyScope === 'empresa' ? 'Todos los usuarios de la empresa' : 'Guardado por usuario';
+    }
+    var scopeSelect = document.getElementById(HISTORY_SCOPE_ID);
+    var scopeLabel = scopeSelect && scopeSelect.closest('.ai-chat-history-scope');
+    if (scopeLabel) scopeLabel.hidden = !(data && data.can_view_company_history);
+    if (scopeSelect) scopeSelect.value = state.historyScope;
+    list.innerHTML = '';
+    var groups = groupChatHistory(state.historyItems);
+    if (!groups.length) {
+      list.innerHTML = '<p class="ai-chat-empty">Aún no hay conversaciones guardadas.</p>';
+      return;
+    }
+    groups.forEach(function (group) {
+      var first = group.rows[group.rows.length - 1] || group.rows[0] || {};
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ai-chat-history-item';
+      var title = normalize(first.pregunta) || 'Conversación';
+      button.innerHTML = '<strong></strong><span></span>';
+      button.querySelector('strong').textContent = title.length > 72 ? title.slice(0, 69) + '...' : title;
+      button.querySelector('span').textContent = (state.historyScope === 'empresa' && group.user ? group.user + ' · ' : '') + (group.date || 'Sin fecha');
+      button.addEventListener('click', function () { restoreHistoryGroup(group); });
+      list.appendChild(button);
+    });
+  }
+
+  function loadChatHistory(scope) {
+    if (!isEnterpriseAIContext()) return Promise.resolve();
+    var list = document.getElementById(HISTORY_LIST_ID);
+    if (list) list.innerHTML = '<p class="ai-chat-empty">Cargando historial...</p>';
+    return fetch(buildHistoryEndpoint(scope || state.historyScope), { credentials: 'same-origin', headers: { 'X-PCS-Source': 'ai_drawer' } })
+      .then(function (resp) { if (!resp.ok) return parseErrorResponse(resp); return resp.json(); })
+      .then(renderChatHistory)
+      .catch(function (error) { if (list) list.innerHTML = '<p class="ai-chat-empty">No se pudo cargar el historial.</p>'; throw error; });
   }
 
   function buildModelsEndpoint() {
@@ -547,6 +715,7 @@
       if (!models.some(function (item) { return item && item.id === selected; })) selected = normalize(models[0].id);
       select.value = selected;
       state.selectedModelID = selected;
+      updateGlobalModelSummary(selected);
       var modeEl = document.getElementById(MODE_ID);
       if (modeEl && normalize(data && data.modo_preferido)) modeEl.value = normalize(data.modo_preferido);
       renderModelUsage(selected);
@@ -555,6 +724,7 @@
       select.innerHTML = '<option value="">Modelo no disponible</option>';
       select.disabled = true;
       renderModelUsage('');
+      updateGlobalModelSummary('');
     });
   }
 
@@ -563,13 +733,12 @@
     var empresaID = parsePositiveInt(getCurrentEmpresaId());
     var select = document.getElementById(MODEL_ID);
     var modeEl = document.getElementById(MODE_ID);
-    var agentModeEl = document.getElementById(AGENT_MODE_ID);
     if ((!empresaID && !isSelectorContext()) || !select || !normalize(select.value)) return Promise.resolve();
     state.selectedModelID = normalize(select.value);
     renderModelUsage(state.selectedModelID);
     return fetch(buildModelPreferenceEndpoint(), {
       method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-PCS-Source': 'ai_drawer' },
-      body: JSON.stringify(Object.assign(isSelectorContext() ? {} : { empresa_id: empresaID }, { model_id: state.selectedModelID, modo_asistente: modeEl ? normalize(modeEl.value) : 'operativo', agent_id: 'general', modo_agente: !!(agentModeEl && agentModeEl.checked) }))
+      body: JSON.stringify(Object.assign(isSelectorContext() ? {} : { empresa_id: empresaID }, { model_id: state.selectedModelID, modo_asistente: modeEl ? normalize(modeEl.value) : 'operativo', agent_id: 'agente_pcs', modo_agente: true }))
     }).then(function (resp) { if (!resp.ok) return parseErrorResponse(resp); return resp.json(); });
   }
 
@@ -619,6 +788,33 @@
       return CHAT_PREFS_ENDPOINT;
     }
     return CHAT_PREFS_ENDPOINT + '?empresa_id=' + encodeURIComponent(String(empresaId));
+  }
+
+  function loadSharedChatPreferences() {
+    var url = buildChatPrefsEndpoint();
+    if (window.PCSRequestCache && typeof window.PCSRequestCache.getJSON === 'function') {
+      return window.PCSRequestCache.getJSON(url, {
+        credentials: 'same-origin',
+        ttlMs: 5000
+      }).then(function (result) {
+        return result && result.ok ? result.data : null;
+      });
+    }
+    return fetch(url, { credentials: 'same-origin' }).then(function (res) {
+      if (!res.ok) return null;
+      return res.json();
+    });
+  }
+
+  function invalidateSharedChatPreferences() {
+    if (window.PCSRequestCache && typeof window.PCSRequestCache.invalidate === 'function') {
+      window.PCSRequestCache.invalidate(buildChatPrefsEndpoint());
+    }
+  }
+
+  function invalidateSharedChatPreferencesOnSuccess(response) {
+    if (response && response.ok) invalidateSharedChatPreferences();
+    return response;
   }
 
   function normalizeChatPersonalityMode(value) {
@@ -705,11 +901,32 @@
   function setChatEnabledPreference(enabled) {
     var next = (isPublicPortalContext() || isEnterpriseAIContext()) ? true : !!enabled;
     state.chatEnabled = writeEnabledPreference(CHAT_ENABLED_STORAGE_KEY, next);
-    if (!state.chatEnabled) {
+    if (!state.chatEnabled || (isEnterpriseAIContext() && window.__pcsEnterpriseAIChromeAllowed === false)) {
       closeChatDrawerFully();
       setRobotInlineVisible(false);
     }
     applyChatPersonalityMode();
+    return state.chatEnabled;
+  }
+
+  function createChatConversationID() {
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return 'chat-' + window.crypto.randomUUID();
+      }
+    } catch (error) {}
+    return 'chat-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+  }
+
+  // En Administrar empresa la empresa activa se resuelve después de que este
+  // script carga. Si una preferencia local antigua dejó el chat apagado, el
+  // permiso puede hacer visible el icono sin actualizar `state.chatEnabled`.
+  // La interfaz no concede acceso: el backend sigue validando sesión, rol,
+  // licencia y empresa_id en cada consulta.
+  function ensureEnterpriseChatEnabledForOpen() {
+    if (!state.chatEnabled && isEnterpriseAIContext()) {
+      setChatEnabledPreference(true);
+    }
     return state.chatEnabled;
   }
 
@@ -756,7 +973,7 @@
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ personality_mode: mode })
-    }).catch(function (err) {
+    }).then(invalidateSharedChatPreferencesOnSuccess).catch(function (err) {
       console.warn('No se pudo guardar la apariencia del chat:', err);
       return null;
     });
@@ -831,7 +1048,7 @@
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ voice_enabled: value })
-    }).catch(function (err) {
+    }).then(invalidateSharedChatPreferencesOnSuccess).catch(function (err) {
       console.warn('No se pudo guardar la preferencia de voz del chat:', err);
       return null;
     });
@@ -844,7 +1061,7 @@
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_enabled: value })
-    }).catch(function (err) {
+    }).then(invalidateSharedChatPreferencesOnSuccess).catch(function (err) {
       console.warn('No se pudo guardar el estado del chat IA:', err);
       return null;
     });
@@ -857,7 +1074,7 @@
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ robot_enabled: value })
-    }).catch(function (err) {
+    }).then(invalidateSharedChatPreferencesOnSuccess).catch(function (err) {
       console.warn('No se pudo guardar el estado del robot IA:', err);
       return null;
     });
@@ -870,7 +1087,7 @@
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ robot_voice: voice })
-    }).catch(function (err) {
+    }).then(invalidateSharedChatPreferencesOnSuccess).catch(function (err) {
       console.warn('No se pudo guardar la voz del robot:', err);
       return null;
     });
@@ -899,11 +1116,7 @@
     } catch (error) {}
     applyChatPersonalityMode();
     updateVoiceButtons(micBtn, voiceBtn, convBtn);
-    fetch(buildChatPrefsEndpoint(), { credentials: 'same-origin' })
-      .then(function (res) {
-        if (!res.ok) return null;
-        return res.json();
-      })
+    loadSharedChatPreferences()
       .then(function (data) {
         if (!data) return;
         if (typeof data.chat_enabled === 'boolean') {
@@ -1450,10 +1663,10 @@
       drawer.classList.toggle('secretary-mode', mode === 'secretary');
     }
     if (titleEl) {
-      titleEl.textContent = isAvatarPersonalityMode(mode) ? (mode === 'secretary' ? 'Secretaria IA 3D' : 'Robot IA 3D') : 'Asistente IA';
+      titleEl.textContent = isAvatarPersonalityMode(mode) ? (mode === 'secretary' ? 'Secretaria IA 3D' : 'Robot IA 3D') : (isEnterpriseAIContext() ? 'Agente PCS' : 'Asistente IA');
     }
     if (input) {
-      input.placeholder = 'Escribele al asistente IA...';
+      input.placeholder = isEnterpriseAIContext() ? 'Escribe tu consulta al Agente PCS...' : 'Escríbele al asistente IA...';
     }
 
     if (input && isAvatarPersonalityMode(mode)) {
@@ -1574,6 +1787,9 @@
     }
     if (mode === 'robot') {
       return 'Hola. Soy tu robot IA 3D, listo para ayudarte en este panel.';
+    }
+    if (isEnterpriseAIContext()) {
+      return 'Hola. Soy el Agente PCS. Puedo ayudarte con las tareas de este sistema según tu rol y permisos.';
     }
     return 'Hola. Soy tu Asistente IA, listo para ayudarte en el panel.';
   }
@@ -1766,6 +1982,7 @@
           body: JSON.stringify({ chat_enabled: chatOn, robot_enabled: false, radio_online_enabled: radioOn, personality_mode: 'normal', voice_enabled: voice, robot_voice: robotVoice })
         }).then(function (res) {
           if (!res.ok) throw new Error('No se pudo guardar en servidor.');
+          invalidateSharedChatPreferences();
           return res.json();
         }).then(function (data) {
           var savedChat = typeof (data && data.chat_enabled) === 'boolean' ? setChatEnabledPreference(data.chat_enabled) : chatOn;
@@ -1809,11 +2026,7 @@
     setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled, state.radioEnabled);
     panel.hidden = false;
     if (typeof panel._pcsLoadMemories === 'function') panel._pcsLoadMemories().catch(function () {});
-    fetch(buildChatPrefsEndpoint(), { credentials: 'same-origin' })
-      .then(function (res) {
-        if (!res.ok) return null;
-        return res.json();
-      })
+    loadSharedChatPreferences()
       .then(function (data) {
         if (!data) return;
         if (typeof data.chat_enabled === 'boolean') {
@@ -3103,13 +3316,13 @@
     }
 
     if (configBtn) {
-      configBtn.hidden = publicContext;
+      configBtn.hidden = publicContext || isEnterpriseAIContext();
     }
     if (attachField) {
       attachField.hidden = publicContext;
     }
     if (modelField) {
-      modelField.hidden = publicContext || superContext;
+      modelField.hidden = publicContext || superContext || !!document.querySelector('#' + DRAWER_ID + '.ai-chat-simple');
     }
 
     if (documentTools) {
@@ -3155,6 +3368,8 @@
     }
     state.proposals = [];
     state.exportables = [];
+    state.conversationID = createChatConversationID();
+    state.conversationHistory = [];
     setGeneratedDocument(null);
     setShareArtifact(null);
     clearAttachmentSelection();
@@ -3889,9 +4104,10 @@
   }
 
   function shouldUseStreamingForTextQuery(attachment) {
-    if (attachment || isDocumentMode() || isReportMode() || isSelectorContext()) return false;
-    if (!window.fetch || !window.TextDecoder) return false;
-    return true;
+    // El modelo global usa Responses API. El endpoint de streaming heredado
+    // sigue usando Chat Completions, por lo que se evita ese intento y su
+    // retraso de fallback hasta que el stream de Responses esté implementado.
+    return false;
   }
 
   function streamTextQuery(body, callbacks) {
@@ -4129,16 +4345,17 @@
 
     var endpoint = attachment ? buildAttachmentEndpoint() : buildTextEndpoint();
     var mode = getAssistantMode();
-    var agentModeEl = document.getElementById(AGENT_MODE_ID);
     var modelEl = document.getElementById(MODEL_ID);
-    var agentID = 'general';
+    var agentID = 'agente_pcs';
     var modelID = modelEl ? normalize(modelEl.value) : '';
     var pageContext = String(window.location.pathname || '') + String(window.location.search || '');
     var body = {
       pregunta: query,
+      conversation_id: state.conversationID,
+      historial: state.conversationHistory.slice(-8),
       modo_asistente: mode,
-      agent_id: agentID || 'general',
-      modo_agente: !!(agentModeEl && agentModeEl.checked),
+      agent_id: agentID,
+      modo_agente: true,
       model_id: modelID,
     };
 
@@ -4182,9 +4399,11 @@
       }
       var formData = new FormData();
       formData.set('pregunta', query);
+      formData.set('conversation_id', state.conversationID);
+      formData.set('historial', JSON.stringify(state.conversationHistory.slice(-8)));
       formData.set('modo_asistente', mode);
-      formData.set('agent_id', agentID || 'general');
-      formData.set('modo_agente', String(!!(agentModeEl && agentModeEl.checked)));
+      formData.set('agent_id', agentID);
+      formData.set('modo_agente', 'true');
       if (modelID) formData.set('model_id', modelID);
       if (pageContext) {
         formData.set('pagina_contexto', pageContext);
@@ -4224,6 +4443,7 @@
             var extractedFallback = extractPCSActionBlock(answerFallback);
             extractedFallback.meta = normalizeResponseModelMeta(data);
             extractedFallback.usage = data.usage || null;
+            extractedFallback.conversationID = normalize(data.conversation_id);
             return extractedFallback;
           });
       });
@@ -4245,6 +4465,7 @@
         var extracted = extractPCSActionBlock(answer);
         extracted.meta = normalizeResponseModelMeta(data);
         extracted.usage = data.usage || null;
+        extracted.conversationID = normalize(data.conversation_id);
         return extracted;
       });
   }
@@ -4310,6 +4531,7 @@
         setNotice('El modo en tiempo real no estuvo disponible. Continuo con respuesta normal.');
       }
     }).then(function (result) {
+      if (result && result.conversationID) state.conversationID = result.conversationID;
       setLastResponseModelMeta(result && result.meta ? result.meta : null);
       if (result && result.meta) applyResponseUsage(result.meta.model_id, result.usage);
       var answer = result && result.clean ? result.clean : 'Respuesta lista.';
@@ -4318,6 +4540,10 @@
         answer += '\n\nPrepare acciones sugeridas. Puedes confirmarlas desde estos botones del robot.';
       }
       setRobotAssistantText(answer);
+      state.conversationHistory.push({ rol: 'user', contenido: query });
+      state.conversationHistory.push({ rol: 'assistant', contenido: answer });
+      state.conversationHistory = state.conversationHistory.slice(-16);
+      loadChatHistory('usuario').catch(function () {});
       if (hasActions) {
         setRobotMood('action', 3200);
         renderRobotProposalActions(result.proposal);
@@ -4883,6 +5109,7 @@
       }
     }).then(function (result) {
       if (requestSeq !== state.activeRequestSeq) return;
+      if (result && result.conversationID) state.conversationID = result.conversationID;
       setLastResponseModelMeta(result && result.meta ? result.meta : null);
       if (result && result.meta) applyResponseUsage(result.meta.model_id, result.usage);
       var hasActions = !!(result && result.proposal && Array.isArray(result.proposal.actions) && result.proposal.actions.length);
@@ -4899,6 +5126,10 @@
         }
       }
       if (hasActions) setRobotMood('action', 3200);
+      state.conversationHistory.push({ rol: 'user', contenido: query });
+      state.conversationHistory.push({ rol: 'assistant', contenido: normalize(result && result.clean) });
+      state.conversationHistory = state.conversationHistory.slice(-16);
+      loadChatHistory('usuario').catch(function () {});
       if (!(result && result.streamed)) {
         speakAssistantText(result.clean);
       }
@@ -5037,6 +5268,8 @@
     if (!drawer || !toggle) return;
     drawer.classList.remove('open');
     drawer.classList.remove('minimized');
+    drawer.hidden = true;
+    drawer.setAttribute('aria-hidden', 'true');
     if (minibar) minibar.hidden = true;
     toggle.classList.remove('is-drawer-open');
     toggle.setAttribute('aria-expanded', 'false');
@@ -5051,6 +5284,8 @@
     var toggle = document.getElementById(TOGGLE_ID);
     var minibar = document.getElementById(MINIBAR_ID);
     if (!drawer || !toggle) return;
+    drawer.hidden = false;
+    drawer.setAttribute('aria-hidden', 'false');
     drawer.classList.remove('minimized');
     if (minibar) minibar.hidden = true;
     drawer.classList.add('open');
@@ -5060,6 +5295,7 @@
     setChatBackdropVisible(true);
     setChatBodyScrollLock(true);
     loadChatModels();
+    loadChatHistory(state.historyScope).catch(function () {});
     window.setTimeout(function () {
       var inp = document.getElementById(INPUT_ID);
       if (inp) inp.focus();
@@ -5072,6 +5308,8 @@
     var toggle = document.getElementById(TOGGLE_ID);
     var minibar = document.getElementById(MINIBAR_ID);
     if (!drawer || !toggle) return false;
+    drawer.hidden = false;
+    drawer.setAttribute('aria-hidden', 'false');
     drawer.classList.remove('minimized');
     if (minibar) minibar.hidden = true;
     drawer.classList.add('open');
@@ -5088,6 +5326,7 @@
     var toggle = document.getElementById(TOGGLE_ID);
     var minibar = document.getElementById(MINIBAR_ID);
     if (!drawer || !toggle) return;
+    drawer.hidden = false;
     if (isMobileChatViewport()) {
       closeChatDrawerFully();
       return;
@@ -5124,6 +5363,7 @@
 
   function initDrawer() {
     ensureDrawerShell();
+    ensureSimpleChatUI();
     var toggle = document.getElementById(TOGGLE_ID);
     var drawer = document.getElementById(DRAWER_ID);
     var closeBtn = document.getElementById(CLOSE_ID);
@@ -5141,6 +5381,10 @@
     var modeEl = document.getElementById(MODE_ID);
     var modelEl = document.getElementById(MODEL_ID);
     var input = document.getElementById(INPUT_ID);
+    var historyButton = document.getElementById(HISTORY_BUTTON_ID);
+    var historyPanel = document.getElementById(HISTORY_PANEL_ID);
+    var historyClose = document.getElementById(HISTORY_CLOSE_ID);
+    var historyScope = document.getElementById(HISTORY_SCOPE_ID);
 
     if (!toggle || !drawer || !closeBtn || !form || !messagesEl) return;
     try {
@@ -5201,13 +5445,6 @@
         setNotice('Modo actualizado. Puedes seguir consultando normalmente.');
       });
     }
-    var agentModeEl = document.getElementById(AGENT_MODE_ID);
-    if (agentModeEl) {
-      agentModeEl.addEventListener('change', function () {
-        persistSelectedModel().catch(function () {});
-        setNotice(agentModeEl.checked ? 'Modo agente activado. Las acciones requieren permisos y confirmación.' : 'Modo agente desactivado.');
-      });
-    }
     if (modelEl) {
       modelEl.addEventListener('change', function () {
         persistSelectedModel().catch(function () {
@@ -5219,6 +5456,21 @@
       hintToggle.addEventListener('click', function () {
         hints.classList.toggle('is-hidden');
         hintToggle.textContent = hints.classList.contains('is-hidden') ? 'Ver ejemplos' : 'Ocultar ejemplos';
+      });
+    }
+
+    if (historyButton && historyPanel) {
+      historyButton.addEventListener('click', function () {
+        historyPanel.hidden = !historyPanel.hidden;
+        if (!historyPanel.hidden) loadChatHistory(state.historyScope).catch(function () {});
+      });
+    }
+    if (historyClose && historyPanel) {
+      historyClose.addEventListener('click', function () { historyPanel.hidden = true; });
+    }
+    if (historyScope) {
+      historyScope.addEventListener('change', function () {
+        loadChatHistory(historyScope.value).catch(function () {});
       });
     }
 
@@ -5399,8 +5651,6 @@
         modeEl.value = normalize(data.mode);
         syncModeUI();
       }
-      var agentModeEl = document.getElementById(AGENT_MODE_ID);
-      if (agentModeEl && data.modo_agente === true) agentModeEl.checked = true;
       if (input && normalize(data.prompt)) {
         input.value = normalize(data.prompt);
       }
@@ -5466,6 +5716,7 @@
         var drawerDisabled = document.getElementById(DRAWER_ID);
         var toggleDisabled = document.getElementById(TOGGLE_ID);
         if (drawerDisabled && toggleDisabled) {
+          drawerDisabled.hidden = false;
           drawerDisabled.classList.remove('minimized');
           drawerDisabled.classList.add('open');
           toggleDisabled.classList.add('is-drawer-open');

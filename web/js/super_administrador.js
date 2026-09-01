@@ -81,6 +81,7 @@
     "/super/vps2.html": true,
     "/super/servidores.html": true,
     "/super/docker_portabilidad.html": true,
+    "/super/administrar_disco_vps.html": true,
     "/super/soporte_remoto.html": true,
     "/super/domotica_storage.html": true,
     "/super/domotica_raspberry_trafico.html": true,

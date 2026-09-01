@@ -700,13 +700,18 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Integrity Key (secreta)</label>
-          <input id="wompiIntegrityKey" class="form-input" type="password" placeholder="test_integrity_... o prod_integrity_...">
-          <div id="wompiIntegritySet" class="form-help">Cargando estado...</div>
-        </div>
-        <div class="form-col">
+	      <div class="form-row">
+	        <div class="form-col">
+	          <label class="form-label">Integrity Key (secreta)</label>
+	          <input id="wompiIntegrityKey" class="form-input" type="password" placeholder="test_integrity_... o prod_integrity_...">
+	          <div id="wompiIntegritySet" class="form-help">Cargando estado...</div>
+	        </div>
+	        <div class="form-col">
+	          <label class="form-label">Secreto de eventos (webhook)</label>
+	          <input id="wompiEventsSecret" class="form-input" type="password" placeholder="Secreto de eventos del comercio Wompi">
+	          <div id="wompiEventsSet" class="form-help">Cargando estado...</div>
+	        </div>
+	        <div class="form-col">
           <label class="form-label">Opciones</label>
           <div class="form-help">Las llaves secretas se guardan cifradas obligatoriamente.</div>
           <div class="form-help">Si no conoces las credenciales, deja este formulario listo y luego pégalas cuando te las entregue Wompi.</div>
@@ -1055,13 +1060,13 @@
           <div class="form-help">La credencial se guarda cifrada en backend. Nunca se muestra completa en pantalla ni se escribe en logs.</div>
         </div>
         <div class="form-col">
-          <div class="form-label">Modelos conectados</div>
-          <label class="form-label" for="aiOperationModel">Operaciones y preguntas</label>
-          <select id="aiOperationModel" class="form-input"></select>
-          <label class="form-label" for="aiAttachmentModel">Fotos, documentos y analisis avanzado</label>
-          <select id="aiAttachmentModel" class="form-input"></select>
-          <div id="aiEnabledModels" class="form-help">Cargando modelos permitidos...</div>
-          <div class="form-help">El modelo pequeño atiende volumen operativo. El avanzado analiza adjuntos y tareas complejas. La misma credencial se mantiene cifrada; los límites y permisos se aplican por empresa.</div>
+          <div class="form-label">Modelo global del sistema</div>
+          <label class="form-label" for="aiPrimaryModel">Chat, fotos, documentos y acciones</label>
+          <select id="aiPrimaryModel" class="form-input"></select>
+          <label class="form-label" for="aiPrimaryReasoning">Razonamiento</label>
+          <select id="aiPrimaryReasoning" class="form-input"></select>
+          <div id="aiPrimaryModelHelp" class="form-help">Cargando modelo principal...</div>
+          <div class="form-help">Todas las empresas y usuarios utilizan este único modelo multimodal. Los permisos, límites y confirmaciones continúan aplicándose en el servidor.</div>
         </div>
       </div>
 
@@ -1241,7 +1246,7 @@
   <script>
     (function(){
       const aiCredentialBindings = [
-        { model_id: 'openai:gpt-5.4-mini', inputId: 'aiKeyOpenAI', statusId: 'aiStatusOpenAI' }
+        { model_id: 'openai:gpt-5.6-terra', inputId: 'aiKeyOpenAI', statusId: 'aiStatusOpenAI' }
       ];
       let rustdeskActiveToggleBusy = false;
 
@@ -2210,16 +2215,24 @@
               document.getElementById('wompiPrivateKey').disabled = false;
             }
 
-            if (wompi.integrity_key_set) {
+	            if (wompi.integrity_key_set) {
               const ts3 = wompi.integrity_key_updated ? (' - Última actualización: ' + wompi.integrity_key_updated) : '';
               document.getElementById('wompiIntegritySet').innerText = 'Integrity key guardada (' + (wompi.integrity_key_masked || '****') + ')' + ts3;
               document.getElementById('wompiIntegrityKey').disabled = true;
             } else {
               document.getElementById('wompiIntegritySet').innerText = 'No configurada';
-              document.getElementById('wompiIntegrityKey').disabled = false;
-            }
+	              document.getElementById('wompiIntegrityKey').disabled = false;
+	            }
+	            if (wompi.events_secret_set) {
+	              const ts4 = wompi.events_secret_updated ? (' - Última actualización: ' + wompi.events_secret_updated) : '';
+	              document.getElementById('wompiEventsSet').innerText = 'Secreto de eventos guardado (' + (wompi.events_secret_masked || '****') + ')' + ts4;
+	              document.getElementById('wompiEventsSecret').disabled = true;
+	            } else {
+	              document.getElementById('wompiEventsSet').innerText = 'No configurado: los webhooks no pueden aprobar pagos';
+	              document.getElementById('wompiEventsSecret').disabled = false;
+	            }
 
-            const hasWompiConfig = !!(wompi.public_key_set || wompi.private_key_set || wompi.integrity_key_set || wompi.mode_set);
+	            const hasWompiConfig = !!(wompi.public_key_set || wompi.private_key_set || wompi.integrity_key_set || wompi.events_secret_set || wompi.mode_set);
             const enabledEl = document.getElementById('wompiEnabledToggle');
             if (enabledEl) enabledEl.checked = !!wompi.enabled;
             applyPaymentCountryOverrides('wompi', wompi.country_overrides);
@@ -2227,7 +2240,8 @@
             if (hasWompiConfig) {
               document.getElementById('wompiPublicKey').disabled = true;
               document.getElementById('wompiPrivateKey').disabled = true;
-              document.getElementById('wompiIntegrityKey').disabled = true;
+	              document.getElementById('wompiIntegrityKey').disabled = true;
+	              document.getElementById('wompiEventsSecret').disabled = true;
               if (modeToggle) modeToggle.disabled = false;
               document.getElementById('editWompiBtn').style.display = '';
               document.getElementById('cancelWompiBtn').style.display = 'none';
@@ -2236,7 +2250,8 @@
             } else {
               document.getElementById('wompiPublicKey').disabled = false;
               document.getElementById('wompiPrivateKey').disabled = false;
-              document.getElementById('wompiIntegrityKey').disabled = false;
+	              document.getElementById('wompiIntegrityKey').disabled = false;
+	              document.getElementById('wompiEventsSecret').disabled = false;
               if (modeToggle) modeToggle.disabled = false;
               document.getElementById('editWompiBtn').style.display = 'none';
               document.getElementById('cancelWompiBtn').style.display = 'none';
@@ -2246,14 +2261,16 @@
           } else {
             document.getElementById('wompiPublicSet').innerText = 'Error al leer configuración';
             document.getElementById('wompiPrivateSet').innerText = 'Error al leer configuración';
-            document.getElementById('wompiIntegritySet').innerText = 'Error al leer configuración';
+	            document.getElementById('wompiIntegritySet').innerText = 'Error al leer configuración';
+	            document.getElementById('wompiEventsSet').innerText = 'Error al leer configuración';
             document.getElementById('wompiModeInfo').innerText = 'Modo: --';
             document.getElementById('wompiModeSource').innerText = 'Origen: --';
           }
         } catch (e) {
           document.getElementById('wompiPublicSet').innerText = 'Error cargando';
           document.getElementById('wompiPrivateSet').innerText = 'Error cargando';
-          document.getElementById('wompiIntegritySet').innerText = 'Error cargando';
+	          document.getElementById('wompiIntegritySet').innerText = 'Error cargando';
+	          document.getElementById('wompiEventsSet').innerText = 'Error cargando';
           document.getElementById('wompiModeInfo').innerText = 'Modo: --';
           document.getElementById('wompiModeSource').innerText = 'Origen: --';
           refreshWompiEnabledHint();
@@ -3006,42 +3023,33 @@
           const byModel = {};
           (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
           const policy = data.chat_model_policy || {};
-          const enabledModels = policy.enabled_model_ids || {};
           const reasoningEfforts = policy.reasoning_effort_by_model || {};
-          const operationModel = document.getElementById('aiOperationModel');
-          const attachmentModel = document.getElementById('aiAttachmentModel');
-          const enabledModelsHost = document.getElementById('aiEnabledModels');
-          [operationModel, attachmentModel].forEach(function(select){
-            if (!select) return;
-            select.innerHTML = '';
+          const primaryModel = document.getElementById('aiPrimaryModel');
+          const primaryReasoning = document.getElementById('aiPrimaryReasoning');
+          const primaryHelp = document.getElementById('aiPrimaryModelHelp');
+          const renderReasoning = function(){
+            if (!primaryModel || !primaryReasoning) return;
+            const item = byModel[primaryModel.value] || {};
+            const efforts = item.reasoning_efforts || ['none'];
+            primaryReasoning.innerHTML = '';
+            efforts.forEach(function(value){ const option = document.createElement('option'); option.value = value; option.textContent = value; primaryReasoning.appendChild(option); });
+            primaryReasoning.value = reasoningEfforts[primaryModel.value] || item.default_reasoning_effort || efforts[0];
+            if (primaryHelp) primaryHelp.innerText = (item.description || '') + ' Modelo aplicado a todas las empresas.';
+          };
+          if (primaryModel) {
+            primaryModel.innerHTML = '';
             (data.modelos || []).forEach(function(item){
               const option = document.createElement('option');
               option.value = item.model_id;
               option.textContent = item.display_name || item.model_id;
-              select.appendChild(option);
+              primaryModel.appendChild(option);
             });
-          });
-          if (operationModel) operationModel.value = policy.operation_model_id || 'openai:gpt-5.4-mini';
-          if (attachmentModel) attachmentModel.value = policy.attachment_model_id || 'openai:gpt-5.5';
-          if (enabledModelsHost) {
-            enabledModelsHost.innerHTML = '';
-            (data.modelos || []).forEach(function(item){
-              const label = document.createElement('label');
-              label.className = 'mode-switch-row';
-              const input = document.createElement('input');
-              input.type = 'checkbox'; input.value = item.model_id; input.className = 'ai-enabled-model';
-              input.checked = enabledModels[item.model_id] !== false;
-              label.appendChild(input); label.appendChild(document.createTextNode(' ' + (item.display_name || item.model_id)));
-              const effort = document.createElement('select');
-              effort.className = 'form-input ai-reasoning-effort'; effort.dataset.modelId = item.model_id;
-              (item.reasoning_efforts || ['none']).forEach(function(value){ const option = document.createElement('option'); option.value = value; option.textContent = value; effort.appendChild(option); });
-              effort.value = reasoningEfforts[item.model_id] || item.default_reasoning_effort || (item.reasoning_efforts || ['none'])[0];
-              label.appendChild(effort);
-              enabledModelsHost.appendChild(label);
-            });
+            primaryModel.value = policy.operation_model_id || 'openai:gpt-5.6-terra';
+            primaryModel.onchange = renderReasoning;
+            renderReasoning();
           }
 
-          const openAIItem = byModel['openai:gpt-5.4-mini'] || null;
+          const openAIItem = byModel[policy.operation_model_id || 'openai:gpt-5.6-terra'] || (data.modelos || []).find(function(item){ return item.provider === 'openai'; }) || null;
           if (openAIEnabledEl) openAIEnabledEl.checked = !openAIItem || !!openAIItem.enabled;
           if (summaryEl) {
             const proveedor = openAIItem && openAIItem.enabled === false ? 'OpenAI desactivado' : 'OpenAI disponible';
@@ -3070,7 +3078,7 @@
           (function renderUsage(){
             const usageEl = document.getElementById('aiUsageOpenAI');
             if (!usageEl) return;
-            const item = byModel['openai:gpt-5.4-mini'] || null;
+            const item = byModel[policy.operation_model_id || 'openai:gpt-5.6-terra'] || openAIItem;
             const u = item && item.usage_today ? item.usage_today : null;
             if (u) {
               usageEl.innerText = 'Consumo del plan (hoy): ' + (Number(u.consultas_total || 0)) + ' consulta(s), ' + (Number(u.tokens_total || 0)) + ' token(s).';
@@ -3127,10 +3135,10 @@
       provider_enabled: {
 		  openai: !!document.getElementById('aiProviderOpenAIEnabled').checked
       },
-      operation_model_id: (document.getElementById('aiOperationModel').value || '').trim(),
-      attachment_model_id: (document.getElementById('aiAttachmentModel').value || '').trim(),
-      enabled_model_ids: Array.prototype.slice.call(document.querySelectorAll('.ai-enabled-model:checked')).map(function(input){ return input.value; })
-          , reasoning_effort_by_model: Array.prototype.slice.call(document.querySelectorAll('.ai-reasoning-effort')).reduce(function(out, select){ out[select.dataset.modelId] = select.value; return out; }, {})
+      operation_model_id: (document.getElementById('aiPrimaryModel').value || '').trim(),
+      attachment_model_id: (document.getElementById('aiPrimaryModel').value || '').trim(),
+      enabled_model_ids: [(document.getElementById('aiPrimaryModel').value || '').trim()],
+      reasoning_effort_by_model: (function(){ const out = {}; const model = (document.getElementById('aiPrimaryModel').value || '').trim(); out[model] = document.getElementById('aiPrimaryReasoning').value; return out; })()
         };
 
         btn.disabled = true;
@@ -3161,19 +3169,22 @@
       async function persistWompiConfig(){
         const pub = document.getElementById('wompiPublicKey').value.trim();
         const prv = document.getElementById('wompiPrivateKey').value.trim();
-        const integrity = document.getElementById('wompiIntegrityKey').value.trim();
+	        const integrity = document.getElementById('wompiIntegrityKey').value.trim();
+	        const eventsSecret = document.getElementById('wompiEventsSecret').value.trim();
         const mode = document.getElementById('wompiModeToggle').checked ? 'production' : 'sandbox';
         const enabled = !!document.getElementById('wompiEnabledToggle').checked;
         const payload = { encrypt: true, mode: mode, enabled: enabled, country_overrides: readPaymentCountryOverrides('wompi') };
         if (pub) payload.public_key = pub;
         if (prv) payload.private_key = prv;
-        if (integrity) payload.integrity_key = integrity;
+	        if (integrity) payload.integrity_key = integrity;
+	        if (eventsSecret) payload.events_secret = eventsSecret;
         const res = await fetch('/super/api/config/wompi', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         const raw = await res.text();
         if (!res.ok) throw new Error('Wompi: ' + (raw || res.status));
         document.getElementById('wompiPublicKey').value = '';
         document.getElementById('wompiPrivateKey').value = '';
-        document.getElementById('wompiIntegrityKey').value = '';
+	        document.getElementById('wompiIntegrityKey').value = '';
+	        document.getElementById('wompiEventsSecret').value = '';
       }
 
       async function persistEpaycoConfig(){
@@ -3392,7 +3403,8 @@
         if (e && e.preventDefault) e.preventDefault();
         const pub = document.getElementById('wompiPublicKey').value.trim();
         const prv = document.getElementById('wompiPrivateKey').value.trim();
-        const integrity = document.getElementById('wompiIntegrityKey').value.trim();
+	        const integrity = document.getElementById('wompiIntegrityKey').value.trim();
+	        const eventsSecret = document.getElementById('wompiEventsSecret').value.trim();
         const encrypt = true; // cifrado obligatorio
         const mode = document.getElementById('wompiModeToggle').checked ? 'production' : 'sandbox';
         const enabled = !!document.getElementById('wompiEnabledToggle').checked;
@@ -3400,7 +3412,8 @@
         const payload = { encrypt, mode, enabled, country_overrides: readPaymentCountryOverrides('wompi') };
         if (pub) payload.public_key = pub;
         if (prv) payload.private_key = prv;
-        if (integrity) payload.integrity_key = integrity;
+	        if (integrity) payload.integrity_key = integrity;
+	        if (eventsSecret) payload.events_secret = eventsSecret;
 
         const btn = document.getElementById('saveWompiBtn');
         btn.disabled = true; btn.innerText = 'Guardando...';
@@ -3415,7 +3428,8 @@
             document.getElementById('wompiMsg').innerText = 'Configuración Wompi guardada correctamente. Estado: ' + enabledTxt + '. Modo activo: ' + modeTxt + '.';
             document.getElementById('wompiPublicKey').value = '';
             document.getElementById('wompiPrivateKey').value = '';
-            document.getElementById('wompiIntegrityKey').value = '';
+	            document.getElementById('wompiIntegrityKey').value = '';
+	            document.getElementById('wompiEventsSecret').value = '';
             await load();
           } else {
             document.getElementById('wompiMsg').innerText = 'Error guardando Wompi: ' + (body ? JSON.stringify(body) : raw);
@@ -3429,7 +3443,8 @@
       function enableEditWompi(){
         document.getElementById('wompiPublicKey').disabled = false;
         document.getElementById('wompiPrivateKey').disabled = false;
-        document.getElementById('wompiIntegrityKey').disabled = false;
+	      document.getElementById('wompiIntegrityKey').disabled = false;
+	      document.getElementById('wompiEventsSecret').disabled = false;
         document.getElementById('wompiModeToggle').disabled = false;
         document.getElementById('saveWompiBtn').disabled = false;
         document.getElementById('editWompiBtn').style.display = 'none';

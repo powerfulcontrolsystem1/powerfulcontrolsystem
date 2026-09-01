@@ -183,8 +183,6 @@ type TipoEmpresaPreconfigTarifaMotel struct {
 
 type TipoEmpresaPreconfigModulos struct {
 	TurnosAtencion   *TipoEmpresaPreconfigTurnosAtencion   `json:"turnos_atencion,omitempty"`
-	Gimnasio         *TipoEmpresaPreconfigGimnasio         `json:"gimnasio,omitempty"`
-	Odontologia      *TipoEmpresaPreconfigOdontologia      `json:"odontologia,omitempty"`
 	Vehiculos        *TipoEmpresaPreconfigVehiculos        `json:"vehiculos,omitempty"`
 	ControlElectrico *TipoEmpresaPreconfigControlElectrico `json:"control_electrico,omitempty"`
 	EnergiaSolar     *TipoEmpresaPreconfigEnergiaSolar     `json:"energia_solar,omitempty"`
@@ -217,104 +215,6 @@ type TipoEmpresaPreconfigTurnoAtencionPuesto struct {
 	Area                string `json:"area,omitempty"`
 	Ubicacion           string `json:"ubicacion,omitempty"`
 	ServiciosPermitidos string `json:"servicios_permitidos,omitempty"`
-}
-
-type TipoEmpresaPreconfigGimnasio struct {
-	Planes       []TipoEmpresaPreconfigGimnasioPlan       `json:"planes,omitempty"`
-	Entrenadores []TipoEmpresaPreconfigGimnasioEntrenador `json:"entrenadores,omitempty"`
-	Clases       []TipoEmpresaPreconfigGimnasioClase      `json:"clases,omitempty"`
-	Socios       []TipoEmpresaPreconfigGimnasioSocio      `json:"socios,omitempty"`
-}
-
-type TipoEmpresaPreconfigGimnasioPlan struct {
-	Nombre                 string  `json:"nombre"`
-	Descripcion            string  `json:"descripcion,omitempty"`
-	Precio                 float64 `json:"precio"`
-	DuracionDias           int     `json:"duracion_dias"`
-	ClasesIncluidas        int     `json:"clases_incluidas"`
-	AccesoIlimitado        bool    `json:"acceso_ilimitado"`
-	SesionesPersonalizadas int     `json:"sesiones_personalizadas"`
-}
-
-type TipoEmpresaPreconfigGimnasioEntrenador struct {
-	NombreCompleto  string `json:"nombre_completo"`
-	Especialidad    string `json:"especialidad,omitempty"`
-	Telefono        string `json:"telefono,omitempty"`
-	Email           string `json:"email,omitempty"`
-	Certificaciones string `json:"certificaciones,omitempty"`
-	Disponibilidad  string `json:"disponibilidad,omitempty"`
-	Observaciones   string `json:"observaciones,omitempty"`
-}
-
-type TipoEmpresaPreconfigGimnasioClase struct {
-	Nombre          string  `json:"nombre"`
-	Categoria       string  `json:"categoria,omitempty"`
-	EntrenadorIndex int     `json:"entrenador_index,omitempty"`
-	Sede            string  `json:"sede,omitempty"`
-	Canal           string  `json:"canal,omitempty"`
-	Cupos           int     `json:"cupos"`
-	DuracionMinutos int     `json:"duracion_minutos"`
-	Precio          float64 `json:"precio"`
-	Descripcion     string  `json:"descripcion,omitempty"`
-}
-
-type TipoEmpresaPreconfigGimnasioSocio struct {
-	Codigo         string `json:"codigo,omitempty"`
-	NombreCompleto string `json:"nombre_completo"`
-	Documento      string `json:"documento,omitempty"`
-	Telefono       string `json:"telefono,omitempty"`
-	Email          string `json:"email,omitempty"`
-	Objetivo       string `json:"objetivo,omitempty"`
-	PlanIndex      int    `json:"plan_index,omitempty"`
-	Observaciones  string `json:"observaciones,omitempty"`
-}
-
-type TipoEmpresaPreconfigOdontologia struct {
-	Pacientes     []TipoEmpresaPreconfigOdontoPaciente    `json:"pacientes,omitempty"`
-	Profesionales []TipoEmpresaPreconfigOdontoProfesional `json:"profesionales,omitempty"`
-	Consultorios  []TipoEmpresaPreconfigOdontoConsultorio `json:"consultorios,omitempty"`
-	Tratamientos  []TipoEmpresaPreconfigOdontoTratamiento `json:"tratamientos,omitempty"`
-}
-
-type TipoEmpresaPreconfigOdontoPaciente struct {
-	Codigo         string  `json:"codigo,omitempty"`
-	NombreCompleto string  `json:"nombre_completo"`
-	Documento      string  `json:"documento,omitempty"`
-	Telefono       string  `json:"telefono,omitempty"`
-	Email          string  `json:"email,omitempty"`
-	Aseguradora    string  `json:"aseguradora,omitempty"`
-	Alergias       string  `json:"alergias,omitempty"`
-	RiesgoMedico   string  `json:"riesgo_medico,omitempty"`
-	Saldo          float64 `json:"saldo,omitempty"`
-	Observaciones  string  `json:"observaciones,omitempty"`
-}
-
-type TipoEmpresaPreconfigOdontoProfesional struct {
-	NombreCompleto      string `json:"nombre_completo"`
-	Especialidad        string `json:"especialidad,omitempty"`
-	RegistroProfesional string `json:"registro_profesional,omitempty"`
-	Telefono            string `json:"telefono,omitempty"`
-	Email               string `json:"email,omitempty"`
-	ColorAgenda         string `json:"color_agenda,omitempty"`
-	Observaciones       string `json:"observaciones,omitempty"`
-}
-
-type TipoEmpresaPreconfigOdontoConsultorio struct {
-	Nombre        string `json:"nombre"`
-	Sede          string `json:"sede,omitempty"`
-	Sillon        string `json:"sillon,omitempty"`
-	Observaciones string `json:"observaciones,omitempty"`
-}
-
-type TipoEmpresaPreconfigOdontoTratamiento struct {
-	PacienteIndex    int     `json:"paciente_index,omitempty"`
-	ProfesionalIndex int     `json:"profesional_index,omitempty"`
-	Nombre           string  `json:"nombre"`
-	Categoria        string  `json:"categoria,omitempty"`
-	Piezas           string  `json:"piezas,omitempty"`
-	SesionesTotal    int     `json:"sesiones_total"`
-	CostoEstimado    float64 `json:"costo_estimado"`
-	Observaciones    string  `json:"observaciones,omitempty"`
 }
 
 type TipoEmpresaPreconfigVehiculos struct {
@@ -813,8 +713,6 @@ func SyncCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
 		{"Alquileres de herramientas, motos y objetos", "Herramientas, motos, maquinaria, mobiliario, garantias, contratos, devoluciones y mantenimiento.", isTipoEmpresaAlquilerObjetos},
 		{"Constructora", "Obras, presupuestos AIU, contratistas, compras, centros de costo y avance de proyectos.", isTipoEmpresaConstructora},
 		{"Drogueria y farmacia", "Medicamentos, lotes, INVIMA, vencimientos, formulas, controlados y dispensacion.", isTipoEmpresaDrogueriaFarmacia},
-		{"Gimnasio", "Planes, socios, entrenadores, clases, accesos y pagos.", isTipoEmpresaGimnasio},
-		{"Odontologia", "Pacientes, profesionales, consultorios, agenda, tratamientos y presupuestos.", isTipoEmpresaOdontologia},
 		{"Manejo de turnos", "Servicios, puestos, emision publica y pantalla de llamados.", isTipoEmpresaTurnos},
 		{"Vehiculos y flotas", "Registro, permanencia, hoja de vida, mantenimientos y alertas de vehiculos.", isTipoEmpresaVehiculos},
 		{"Tecnico independiente", "Sin estaciones; venta directa, agenda y servicios.", isTipoEmpresaIndependiente},
@@ -1058,42 +956,15 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Auxiliar farmacia", "auxiliar_farmacia", "Atiende mostrador, ventas, inventario, formulas y alertas de vencimiento."),
 			usuarioPreconfig("Compras farmacia", "compras", "Gestiona proveedores, soportes, recepcion de medicamentos y trazabilidad de lotes."),
 			usuarioPreconfig("Caja farmacia", "caja", "Registra ventas, pagos, facturacion y cierres diarios."),
-		}, "Asistente sanitario-operativo para lotes, INVIMA, vencimientos, recetas, controlados, compras, dispensacion, cartera y facturacion."), operacionPreconfig("drogueria_farmacia", "Caja", "Cajas", true, true, false, "", "", 0, []string{"director_tecnico_farmacia", "regente_farmacia", "auxiliar_farmacia", "compras", "caja"}))
+		}, "Asistente sanitario-operativo para lotes, INVIMA, vencimientos, recetas, controlados, compras, dispensacion, cartera y facturacion."), operacionPreconfig("inventario", "Caja", "Cajas", true, true, false, "", "", 0, []string{"director_tecnico_farmacia", "regente_farmacia", "auxiliar_farmacia", "compras", "caja"}))
 		template.TareasGuia = append(template.TareasGuia,
-			TipoEmpresaPreconfigTareaGuia{Modulo: "Drogueria / Farmacia", Titulo: "Configurar trazabilidad sanitaria", Descripcion: "Registrar INVIMA, lotes, fechas de vencimiento, proveedor, laboratorio y condiciones especiales por producto."},
+			TipoEmpresaPreconfigTareaGuia{Modulo: "Inventario", Titulo: "Configurar trazabilidad sanitaria", Descripcion: "Registrar INVIMA, lotes, fechas de vencimiento, proveedor, laboratorio y condiciones especiales por producto."},
 			TipoEmpresaPreconfigTareaGuia{Modulo: "Inventario", Titulo: "Activar alertas FEFO y stock minimo", Descripcion: "Priorizar salida por vencimiento, controlar quiebres y bloquear lotes vencidos o observados."},
 			TipoEmpresaPreconfigTareaGuia{Modulo: "Compras", Titulo: "Normalizar recepcion de medicamentos", Descripcion: "Validar factura, proveedor, lote, registro sanitario, temperatura y novedades antes de poner en venta."},
 			TipoEmpresaPreconfigTareaGuia{Modulo: "Facturacion", Titulo: "Revisar dispensacion y factura electronica", Descripcion: "Definir envio automatico al cliente, datos minimos del comprador y trazabilidad documental."},
 			TipoEmpresaPreconfigTareaGuia{Modulo: "Calidad y procesos", Titulo: "Crear procedimiento de farmacovigilancia", Descripcion: "Registrar eventos adversos, devoluciones, quejas, responsables y cierres con evidencia."},
 		)
 		return enrichTipoEmpresaPreconfigTemplate(template)
-	}
-	if isTipoEmpresaGimnasio(tipoNombre) {
-		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("GYM", "Zona", 4, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("BASE-GYM-001", "Mensualidad general", "Planes", "Plan mensual de acceso general", 0, 95000, 0),
-			productoPreconfig("BASE-GYM-002", "Clase personalizada", "Entrenamiento", "Sesion individual con entrenador", 0, 45000, 0),
-			productoPreconfig("BASE-GYM-003", "Dia de entrenamiento", "Planes", "Ingreso por dia", 0, 15000, 0),
-			productoPreconfig("BASE-GYM-004", "Bebida hidratante", "Tienda", "Bebida de tienda fitness", 2500, 6000, 10),
-			productoPreconfig("BASE-GYM-005", "Proteina porcion", "Tienda", "Porcion individual de proteina", 4500, 12000, 6),
-		}, []TipoEmpresaPreconfigUsuario{
-			usuarioPreconfig("Recepcion gimnasio", "recepcion", "Gestiona socios, accesos, pagos y renovaciones."),
-			usuarioPreconfig("Entrenador principal", "entrenador", "Programa clases, valoraciones y sesiones personalizadas."),
-			usuarioPreconfig("Caja gimnasio", "caja", "Registra pagos, ventas de tienda y cierres."),
-		}, "Asistente para planes, socios, clases, accesos, renovaciones, pagos y alertas de vencimiento."), operacionPreconfig("gimnasio", "Zona", "Zonas", true, true, true, "entrenador", "entrenamiento", 25, []string{"recepcion", "entrenador", "caja"}))
-	}
-	if isTipoEmpresaOdontologia(tipoNombre) {
-		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("ODONTO", "Consultorio", 3, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("BASE-ODONTO-001", "Consulta odontologica", "Consulta", "Valoracion inicial del paciente", 0, 60000, 0),
-			productoPreconfig("BASE-ODONTO-002", "Limpieza dental", "Higiene oral", "Profilaxis y control", 12000, 90000, 0),
-			productoPreconfig("BASE-ODONTO-003", "Resina simple", "Operatoria", "Restauracion de una superficie", 18000, 120000, 0),
-			productoPreconfig("BASE-ODONTO-004", "Radiografia periapical", "Imagenologia", "Radiografia de apoyo diagnostico", 8000, 35000, 0),
-			productoPreconfig("BASE-ODONTO-005", "Kit higiene oral", "Productos", "Cepillo, seda y crema dental", 12000, 28000, 8),
-		}, []TipoEmpresaPreconfigUsuario{
-			usuarioPreconfig("Recepcion odontologia", "recepcion", "Agenda pacientes, confirma citas y recauda anticipos."),
-			usuarioPreconfig("Odontologo general", "odontologo", "Atiende historias, odontogramas, tratamientos y presupuestos."),
-			usuarioPreconfig("Auxiliar consultorio", "operacion", "Prepara consultorio, apoya procedimientos e inventario."),
-			usuarioPreconfig("Caja odontologia", "caja", "Registra pagos, abonos y cartera de pacientes."),
-		}, "Asistente clinico-administrativo para agenda, pacientes, historias, tratamientos, presupuestos y cartera."), operacionPreconfig("odontologia", "Consultorio", "Consultorios", true, true, true, "odontologo", "tratamiento", 30, []string{"recepcion", "odontologo", "operacion", "caja"}))
 	}
 	if isTipoEmpresaTurnos(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("TURNOS", "Puesto", 4, []TipoEmpresaPreconfigProducto{
@@ -1247,14 +1118,6 @@ func enrichTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate) T
 		if len(template.Modulos.HojaVida) == 0 {
 			template.Modulos.HojaVida = defaultHojaVidaConstructoraPreconfig()
 		}
-	case "gimnasio":
-		if template.Modulos.Gimnasio == nil {
-			template.Modulos.Gimnasio = defaultGimnasioPreconfig()
-		}
-	case "odontologia":
-		if template.Modulos.Odontologia == nil {
-			template.Modulos.Odontologia = defaultOdontologiaPreconfig()
-		}
 	case "turnos_atencion":
 		if template.Modulos.TurnosAtencion == nil {
 			template.Modulos.TurnosAtencion = defaultTurnosAtencionPreconfig()
@@ -1396,49 +1259,6 @@ func defaultTurnosAtencionPreconfig() *TipoEmpresaPreconfigTurnosAtencion {
 			{Codigo: "P1", Nombre: "Puesto 1", Area: "Atencion", Ubicacion: "Modulo principal", ServiciosPermitidos: "GEN,PRI"},
 			{Codigo: "P2", Nombre: "Puesto 2", Area: "Atencion", Ubicacion: "Modulo secundario", ServiciosPermitidos: "GEN"},
 			{Codigo: "CJ1", Nombre: "Caja 1", Area: "Caja", Ubicacion: "Caja principal", ServiciosPermitidos: "CAJ"},
-		},
-	}
-}
-
-func defaultGimnasioPreconfig() *TipoEmpresaPreconfigGimnasio {
-	return &TipoEmpresaPreconfigGimnasio{
-		Planes: []TipoEmpresaPreconfigGimnasioPlan{
-			{Nombre: "Plan mensual basico", Descripcion: "Acceso general en horario regular.", Precio: 95000, DuracionDias: 30, ClasesIncluidas: 4, AccesoIlimitado: false},
-			{Nombre: "Plan ilimitado", Descripcion: "Acceso ilimitado y clases grupales.", Precio: 145000, DuracionDias: 30, ClasesIncluidas: 999, AccesoIlimitado: true},
-			{Nombre: "Plan personalizado", Descripcion: "Entrenamiento con sesiones personalizadas.", Precio: 260000, DuracionDias: 30, ClasesIncluidas: 8, AccesoIlimitado: true, SesionesPersonalizadas: 4},
-		},
-		Entrenadores: []TipoEmpresaPreconfigGimnasioEntrenador{
-			{NombreCompleto: "Entrenador guia funcional", Especialidad: "Funcional y fuerza", Email: "entrenador.funcional@empresa.local", Disponibilidad: "Lunes a sabado 06:00-14:00", Certificaciones: "Entrenamiento funcional"},
-			{NombreCompleto: "Entrenadora guia bienestar", Especialidad: "Yoga y movilidad", Email: "entrenadora.bienestar@empresa.local", Disponibilidad: "Lunes a viernes 16:00-21:00", Certificaciones: "Yoga, movilidad"},
-		},
-		Clases: []TipoEmpresaPreconfigGimnasioClase{
-			{Nombre: "Funcional manana", Categoria: "Funcional", EntrenadorIndex: 1, Sede: "principal", Canal: "presencial", Cupos: 20, DuracionMinutos: 60, Precio: 0, Descripcion: "Clase guia incluida en planes."},
-			{Nombre: "Yoga movilidad", Categoria: "Bienestar", EntrenadorIndex: 2, Sede: "principal", Canal: "presencial", Cupos: 15, DuracionMinutos: 50, Precio: 25000, Descripcion: "Clase abierta con cobro individual opcional."},
-		},
-		Socios: []TipoEmpresaPreconfigGimnasioSocio{
-			{Codigo: "GYM-BASE-001", NombreCompleto: "Socio Base Activo", Documento: "700000001", Telefono: "3000000001", Email: "socio.activo@empresa.local", Objetivo: "Bajar grasa y mejorar condicion", PlanIndex: 1, Observaciones: "Socio guia para validar accesos y renovaciones."},
-			{Codigo: "GYM-BASE-002", NombreCompleto: "Socia Base Personalizado", Documento: "700000002", Telefono: "3000000002", Email: "socia.personal@empresa.local", Objetivo: "Ganar fuerza", PlanIndex: 3, Observaciones: "Socio guia con plan personalizado."},
-		},
-	}
-}
-
-func defaultOdontologiaPreconfig() *TipoEmpresaPreconfigOdontologia {
-	return &TipoEmpresaPreconfigOdontologia{
-		Pacientes: []TipoEmpresaPreconfigOdontoPaciente{
-			{Codigo: "PAC-BASE-001", NombreCompleto: "Paciente Base Control", Documento: "700000101", Telefono: "3000000101", Email: "paciente.control@empresa.local", Aseguradora: "Particular", Alergias: "Sin alergias reportadas", RiesgoMedico: "Bajo", Observaciones: "Paciente guia para historia clinica y odontograma."},
-			{Codigo: "PAC-BASE-002", NombreCompleto: "Paciente Base Tratamiento", Documento: "700000102", Telefono: "3000000102", Email: "paciente.tratamiento@empresa.local", Aseguradora: "EPS guia", RiesgoMedico: "Medio", Saldo: 180000, Observaciones: "Paciente guia con presupuesto y saldo."},
-		},
-		Profesionales: []TipoEmpresaPreconfigOdontoProfesional{
-			{NombreCompleto: "Odontologo General Base", Especialidad: "Odontologia general", RegistroProfesional: "OD-BASE-001", Email: "odontologo.general@empresa.local", ColorAgenda: "#0ea5e9"},
-			{NombreCompleto: "Ortodoncista Base", Especialidad: "Ortodoncia", RegistroProfesional: "OD-BASE-002", Email: "ortodoncia@empresa.local", ColorAgenda: "#7c3aed"},
-		},
-		Consultorios: []TipoEmpresaPreconfigOdontoConsultorio{
-			{Nombre: "Consultorio 1", Sede: "principal", Sillon: "Sillon A", Observaciones: "Consultorio guia principal."},
-			{Nombre: "Consultorio 2", Sede: "principal", Sillon: "Sillon B", Observaciones: "Consultorio guia de apoyo."},
-		},
-		Tratamientos: []TipoEmpresaPreconfigOdontoTratamiento{
-			{PacienteIndex: 2, ProfesionalIndex: 1, Nombre: "Plan limpieza y resina", Categoria: "Operatoria", Piezas: "16, 26", SesionesTotal: 2, CostoEstimado: 210000, Observaciones: "Tratamiento guia para presupuestos y seguimiento."},
-			{PacienteIndex: 1, ProfesionalIndex: 2, Nombre: "Valoracion ortodoncia", Categoria: "Ortodoncia", SesionesTotal: 1, CostoEstimado: 80000, Observaciones: "Tratamiento guia de valoracion."},
 		},
 	}
 }
@@ -1733,17 +1553,16 @@ func permisosModuloPreconfigRol(rolID int64, rolNombre string) []RolPermisoModul
 		add("calidad_procesos", readCreateUpdate)
 		add("ventas", readOnly)
 	case "director_tecnico_farmacia":
-		for _, modulo := range []string{"drogueria_farmacia", "inventario", "compras", "soportes_compras_ia", "logistica_wms", "ventas", "clientes", "facturacion", "gestion_documental", "calidad_procesos", "cumplimiento_kyc"} {
+		for _, modulo := range []string{"inventario", "compras", "soportes_compras_ia", "logistica_wms", "ventas", "clientes", "facturacion", "gestion_documental", "calidad_procesos", "cumplimiento_kyc"} {
 			add(modulo, allActions)
 		}
 		add("finanzas", readOnly)
 	case "regente_farmacia":
-		for _, modulo := range []string{"drogueria_farmacia", "inventario", "compras", "ventas", "clientes", "facturacion", "gestion_documental", "calidad_procesos"} {
+		for _, modulo := range []string{"inventario", "compras", "ventas", "clientes", "facturacion", "gestion_documental", "calidad_procesos"} {
 			add(modulo, readCreateUpdate)
 		}
 		add("finanzas", readOnly)
 	case "auxiliar_farmacia":
-		add("drogueria_farmacia", readCreateUpdate)
 		add("inventario", readCreateUpdate)
 		add("ventas", readCreateUpdate)
 		add("clientes", readCreate)
@@ -2719,14 +2538,6 @@ func isTipoEmpresaDrogueriaFarmacia(tipoNombre string) bool {
 	return tipoEmpresaNameContains(tipoNombre, "drogueria", "drogueria y farmacia", "farmacia", "farmaceutica", "farmaceutico", "medicamentos", "botica")
 }
 
-func isTipoEmpresaGimnasio(tipoNombre string) bool {
-	return tipoEmpresaNameContains(tipoNombre, "gimnasio", "gym", "fitness", "centro deportivo", "entrenamiento")
-}
-
-func isTipoEmpresaOdontologia(tipoNombre string) bool {
-	return tipoEmpresaNameContains(tipoNombre, "odontologia", "odontologico", "odontologica", "dentista", "dental", "consultorio dental")
-}
-
 func isTipoEmpresaTurnos(tipoNombre string) bool {
 	return tipoEmpresaNameContains(tipoNombre, "turnos", "manejo de turnos", "filas", "atencion al cliente", "pantalla de llamados")
 }
@@ -2773,10 +2584,6 @@ func defaultTipoEmpresaPreconfigNombre(tipoNombre string) string {
 		return "Constructora con obras, AIU y proyectos guia"
 	case isTipoEmpresaDrogueriaFarmacia(tipoNombre):
 		return "Drogueria y farmacia con inventario sanitario guia"
-	case isTipoEmpresaGimnasio(tipoNombre):
-		return "Gimnasio con socios, planes y clases guia"
-	case isTipoEmpresaOdontologia(tipoNombre):
-		return "Odontologia con pacientes y agenda guia"
 	case isTipoEmpresaTurnos(tipoNombre):
 		return "Manejo de turnos con servicios guia"
 	case isTipoEmpresaVehiculos(tipoNombre):

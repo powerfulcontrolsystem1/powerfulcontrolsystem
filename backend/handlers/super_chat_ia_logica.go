@@ -25,6 +25,7 @@ const (
 	superChatIAEmpresaDBQueryRowsKey        = "ai.chat.empresa.db_query_rows"
 	superChatIASuperContextoAmplioKey       = "ai.chat.super.contexto_amplio"
 	superChatIAEmpresaSoloLecturaKey        = "ai.chat.super.empresa_solo_lectura"
+	superChatIAEmpresaModeloPrincipalKey    = "ai.chat.empresa.modelo_principal"
 	superChatIAEmpresaModeloOperacionKey    = "ai.chat.empresa.modelo_operacion"
 	superChatIAEmpresaModeloAdjuntosKey     = "ai.chat.empresa.modelo_adjuntos"
 	superChatIAEmpresaModelosHabilitadosKey = "ai.chat.empresa.modelos_habilitados"
@@ -45,8 +46,8 @@ const (
 	defaultChatIAEmpresaDBQueryRows       = int64(8)
 	defaultChatIASuperContextoAmplio      = true
 	defaultChatIAEmpresaSoloLectura       = true
-	defaultChatIAEmpresaModeloOperacion   = "openai:gpt-5.4-mini"
-	defaultChatIAEmpresaModeloAdjuntos    = "openai:gpt-5.5"
+	defaultChatIAEmpresaModeloOperacion   = "openai:gpt-5.6-terra"
+	defaultChatIAEmpresaModeloAdjuntos    = "openai:gpt-5.6-terra"
 )
 
 func defaultChatIAEmpresaModelosEsfuerzo() map[string]string {
@@ -232,7 +233,7 @@ func getChatIAEmpresaSoloLectura(dbSuper *sql.DB) (bool, string, string, error) 
 }
 
 func getChatIAEmpresaModeloOperacion(dbSuper *sql.DB) (string, string, string, error) {
-	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAEmpresaModeloOperacionKey)
+	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAEmpresaModeloPrincipalKey)
 	if err != nil {
 		return defaultChatIAEmpresaModeloOperacion, "", "", err
 	}
@@ -243,14 +244,7 @@ func getChatIAEmpresaModeloOperacion(dbSuper *sql.DB) (string, string, string, e
 }
 
 func getChatIAEmpresaModeloAdjuntos(dbSuper *sql.DB) (string, string, string, error) {
-	raw, updatedAt, updatedBy, err := getSuperConfigString(dbSuper, superChatIAEmpresaModeloAdjuntosKey)
-	if err != nil {
-		return defaultChatIAEmpresaModeloAdjuntos, "", "", err
-	}
-	if strings.TrimSpace(raw) == "" {
-		return defaultChatIAEmpresaModeloAdjuntos, updatedAt, updatedBy, nil
-	}
-	return strings.TrimSpace(raw), updatedAt, updatedBy, nil
+	return getChatIAEmpresaModeloOperacion(dbSuper)
 }
 
 func getChatIAEmpresaModelosHabilitados(dbSuper *sql.DB) (map[string]bool, error) {

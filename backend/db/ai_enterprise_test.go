@@ -42,6 +42,23 @@ func TestEmpresaAIOperationsDoNotCreateSchemaAtRuntime(t *testing.T) {
 	}
 }
 
+func TestEmpresaAIProposalReplayDoesNotExecuteAgain(t *testing.T) {
+	body, err := os.ReadFile("ai_enterprise.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(body)
+	for _, required := range []string{
+		"p.Estado == AIProposalCompleted || p.Estado == AIProposalExecuting",
+		"p.IdempotentReplay = true",
+		"strings.TrimSpace(p.IdempotencyKey) != requestedKey",
+	} {
+		if !strings.Contains(source, required) {
+			t.Errorf("falta proteccion de replay IA %q", required)
+		}
+	}
+}
+
 func TestNormalizeEmpresaAIHotelRoomPlanRejectsAmbiguousOrUnsafeInput(t *testing.T) {
 	plan := EmpresaAIHotelRoomPlan{EstacionID: 1, NombreHabitacion: "Habitacion 1", Moneda: "COP", HoraCheckIn: "14:00", HoraCheckOut: "13:00", Tarifas: []EmpresaAIHotelRoomRate{{Personas: 2, Valor: 100000}, {Personas: 2, Valor: 200000}}}
 	if err := NormalizeEmpresaAIHotelRoomPlan(&plan); err == nil {

@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestAIChatEntryPointsExposeOnlyServerOwnedAgentSwitch(t *testing.T) {
+func TestAIChatEntryPointsExposePermanentServerOwnedPCSAgent(t *testing.T) {
 	pages := []string{
 		"administrar_empresa.html",
 		"seleccionar_empresa.html",
@@ -33,13 +33,28 @@ func TestAIChatEntryPointsExposeOnlyServerOwnedAgentSwitch(t *testing.T) {
 		t.Fatalf("read drawer: %v", err)
 	}
 	drawer := string(raw)
+	if strings.Contains(drawer, `aria-label="Activar modo agente"`) || strings.Contains(drawer, `id="aiChatAgentMode"`) {
+		t.Fatal("chat drawer still exposes the removed agent-mode switch")
+	}
 	for _, marker := range []string{
 		`modeEl.tagName || '').toLowerCase() === 'select'`,
 		`hiddenMode.type = 'hidden'`,
-		`aria-label="Activar modo agente"`,
+		`agent_id: 'agente_pcs'`,
+		`modo_agente: true`,
+		`function ensureEnterpriseChatEnabledForOpen()`,
+		`if (!state.chatEnabled && isEnterpriseAIContext())`,
 	} {
 		if !strings.Contains(drawer, marker) {
-			t.Fatalf("chat drawer missing single-switch marker %q", marker)
+			t.Fatalf("chat drawer missing permanent-agent marker %q", marker)
 		}
+	}
+
+	centerRaw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "centro_ia_empresarial.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	center := string(centerRaw)
+	if strings.Contains(center, `id="agentMode"`) || !strings.Contains(center, `agent_id: "agente_pcs", modo_agente: true`) {
+		t.Fatal("Centro IA must use the permanent PCS agent without a switch")
 	}
 }

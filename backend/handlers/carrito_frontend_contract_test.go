@@ -34,7 +34,7 @@ func TestDirectSaleInitialLoadIncludesLegacyCartBeforeCreatingCanonicalCart(t *t
 		t.Fatalf("read carrito frontend: %v", err)
 	}
 	source := string(raw)
-	start := strings.Index(source, "async function loadCarritos()")
+	start := strings.Index(source, "async function loadCarritos(")
 	if start < 0 {
 		t.Fatal("loadCarritos frontend contract is missing")
 	}

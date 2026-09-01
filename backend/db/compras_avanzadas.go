@@ -194,6 +194,7 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id INTEGER NOT NULL,
 			requisicion_id INTEGER NOT NULL,
+			bodega_id INTEGER DEFAULT 0,
 			cotizacion_id INTEGER DEFAULT 0,
 			proveedor_id INTEGER DEFAULT 0,
 			proveedor_nombre TEXT DEFAULT '',
@@ -227,6 +228,9 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 		}
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_compras_recepciones_avanzadas", "proveedor_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_recepciones_avanzadas", "bodega_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	return nil

@@ -183,11 +183,14 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 		usuario = "sistema"
 	}
 	payloadBytes, _ := json.Marshal(venta)
-	if err := dbpkg.UpsertEmpresaVentaOfflineSyncPending(dbEmp, empresaID, syncKey, string(payloadBytes), venta.FechaOffline, usuario, "venta capturada sin internet"); err != nil {
+	existing, claimed, err := dbpkg.ClaimEmpresaVentaOfflineSync(dbEmp, empresaID, syncKey, string(payloadBytes), venta.FechaOffline, usuario, "venta capturada sin internet")
+	if err != nil {
+		if errors.Is(err, dbpkg.ErrEmpresaVentaOfflineIdempotencyConflict) {
+			return nil, fmt.Errorf("sync_key ya fue usado con otra venta offline")
+		}
 		return nil, err
 	}
-	existing, errExisting := dbpkg.GetEmpresaVentaOfflineSyncByKey(dbEmp, empresaID, syncKey)
-	if errExisting == nil && existing != nil && strings.EqualFold(existing.EstadoSync, "sincronizado") {
+	if existing != nil && strings.EqualFold(existing.EstadoSync, "sincronizado") {
 		return map[string]interface{}{
 			"ok":               true,
 			"sync_key":         syncKey,
@@ -196,6 +199,9 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 			"documento_codigo": existing.DocumentoCodigo,
 			"estado_sync":      existing.EstadoSync,
 		}, nil
+	}
+	if !claimed {
+		return nil, fmt.Errorf("venta offline en proceso; reintenta cuando termine la sincronizacion actual")
 	}
 	if err := validateOfflineVentaSessionOwner(venta, usuario); err != nil {
 		_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "error", 0, "", "", err.Error())
@@ -293,8 +299,9 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 		_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "error", carrito.ID, "", "", err.Error())
 		return nil, err
 	}
+	montoEfectivoCaja := offlineMontoEfectivoCaja(metodoPago, totalPagado, pago.PagosMixtos)
 
-	if err := dbpkg.PayCarritoStationSession(dbEmp, empresaID, carrito.ID, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo, descuentoValor, devolucionTotal, totalPagado, codigoDescuentoID, caja.ID, caja.CajaCodigo, caja.Turno, caja.SucursalID, usuario); err != nil {
+	if err := dbpkg.PayCarritoStationSession(dbEmp, empresaID, carrito.ID, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo, descuentoValor, devolucionTotal, totalPagado, montoEfectivoCaja, codigoDescuentoID, caja.ID, caja.CajaCodigo, caja.Turno, caja.SucursalID, usuario); err != nil {
 		if errors.Is(err, dbpkg.ErrCarritoYaPagado) {
 			if carritoActual, errActual := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, carrito.ID); errActual == nil && carritoActual != nil && offlineCarritoEstaPagado(carritoActual) {
 				result := map[string]interface{}{

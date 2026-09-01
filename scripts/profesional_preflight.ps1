@@ -14,6 +14,8 @@ param(
   [switch]$SkipOpenAPI,
   [switch]$SkipAudit,
   [switch]$Strict,
+  [switch]$RequireMigrationAudit,
+  [string]$MigrationBaseRef = "origin/main",
   [string]$ReportDir = "documentos\reportes_profesionales"
 )
 
@@ -173,7 +175,8 @@ try {
       "Observabilidad de negocio finalizo con codigo $code"
     }
 
-    Invoke-Captured -Title "Auditoria de migraciones" -Required:$Strict -Script {
+    $migrationRequired = $Strict -or $RequireMigrationAudit
+    Invoke-Captured -Title "Auditoria de migraciones" -Required:$migrationRequired -Script {
       & $nodeCmd tools\ensure_bootstrap_inventory.mjs --check
       if ($LASTEXITCODE -ne 0) { throw "inventario Ensure desactualizado con codigo $LASTEXITCODE" }
 
@@ -183,9 +186,19 @@ try {
       & $nodeCmd tools\runtime_ensure_inventory.mjs --check
       if ($LASTEXITCODE -ne 0) { throw "inventario runtime Ensure desactualizado con codigo $LASTEXITCODE" }
 
-      & $nodeCmd tools\migration_audit.mjs --out $ReportDir
+      $migrationArgs = @("tools\migration_audit.mjs", "--out", $ReportDir, "--base-ref", $MigrationBaseRef)
+      if ($migrationRequired) { $migrationArgs += "--strict" }
+      & $nodeCmd @migrationArgs
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
-      if ($Strict -and $code -ne 0) { throw "auditoria de migraciones fallo con codigo $code" }
+      if ($migrationRequired -and $code -ne 0) { throw "auditoria de migraciones fallo con codigo $code" }
+
+      Push-Location backend
+      try {
+        & go test ./db -run "Migration|SchemaCatalog" -count=1
+        if ($LASTEXITCODE -ne 0) { throw "pruebas enfocadas de migraciones fallaron con codigo $LASTEXITCODE" }
+      } finally {
+        Pop-Location
+      }
       "Auditoria de migraciones finalizo con codigo $code"
     }
 
@@ -286,7 +299,7 @@ try {
   }
 
   if ($Full -and -not $SkipGoTests) {
-    Invoke-Captured -Title "Go test backend completo" -Required:$Strict -Script {
+    Invoke-Captured -Title "Go test backend completo" -Required -Script {
       Push-Location backend
       try {
         & go test ./...

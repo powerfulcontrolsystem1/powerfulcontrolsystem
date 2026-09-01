@@ -642,13 +642,48 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				}
 				payload.EmpresaID = empresaID
 				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				wasNew := payload.ID <= 0
+				var previousAudit interface{}
+				if payload.ID > 0 {
+					if previous, previousErr := dbpkg.GetEmpresaControlElectricoRaspberryByID(dbEmp, empresaID, payload.ID, false); previousErr == nil {
+						previousAudit = map[string]interface{}{
+							"codigo": previous.Codigo, "nombre": previous.Nombre, "uso_tipo": previous.UsoTipo,
+							"tipo_controlador": previous.TipoControlador, "puerta_reles_salida": previous.PuertaRelesSalida,
+							"puerta_delay_ms": previous.PuertaDelayMS, "estado": previous.Estado,
+						}
+					}
+				}
 				id, err := dbpkg.UpsertEmpresaControlElectricoRaspberry(dbEmp, &payload)
 				if err != nil {
 					log.Printf("[control_electrico] upsert raspberry empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
-				registrarEventoControlElectrico(dbEmp, empresaID, 0, 0, id, 0, "raspberry_configurada", payload.Estado, "ok", payload.UsuarioCreador, "api_raspberry_pi", map[string]interface{}{"tunnel_enabled": payload.TunnelEnabled, "tipo_controlador": payload.TipoControlador})
+				metadata, _ := json.Marshal(map[string]interface{}{
+					"anterior": previousAudit,
+					"nuevo": map[string]interface{}{
+						"codigo": payload.Codigo, "nombre": payload.Nombre, "uso_tipo": payload.UsoTipo,
+						"tipo_controlador": payload.TipoControlador, "puerta_reles_salida": payload.PuertaRelesSalida,
+						"puerta_delay_ms": payload.PuertaDelayMS, "estado": payload.Estado,
+					},
+				})
+				command := "raspberry_configurada"
+				if wasNew {
+					command = "raspberry_agregada"
+				}
+				if err := dbpkg.SyncEmpresaControlElectricoDoorSensorChannels(dbEmp, empresaID, id, payload.PuertaRelesSalida, payload.UsoTipo == dbpkg.ControlElectricoUsoSensorPuertas, payload.UsuarioCreador); err != nil {
+					log.Printf("[control_electrico] sync door channels empresa_id=%d raspberry_id=%d error: %v", empresaID, id, err)
+					_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
+						EmpresaID: empresaID, RaspberryID: id, Comando: "raspberry_configuracion_fallida", Resultado: "error",
+						Actor: payload.UsuarioCreador, Origen: "panel_domotica", MetadataJSON: string(metadata),
+					})
+					http.Error(w, "No se pudieron configurar los canales de sensores de puertas", http.StatusInternalServerError)
+					return
+				}
+				_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
+					EmpresaID: empresaID, RaspberryID: id, Comando: command, Resultado: "ok",
+					Actor: payload.UsuarioCreador, Origen: "panel_domotica", MetadataJSON: string(metadata),
+				})
 				rows, _ := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "raspberry_pis": rows})
 				return
@@ -1578,6 +1613,9 @@ func controlElectricoTestRaspberryGPIO(dbEmp *sql.DB, empresaID, raspberryID int
 	if !pi.TunnelEnabled || strings.TrimSpace(pi.DeviceUID) == "" {
 		return controlElectricoDispatchResult{OK: false, Error: "La Raspberry Pi no tiene tunel aprovisionado"}
 	}
+	if pi.UsoTipo == dbpkg.ControlElectricoUsoSensorPuertas {
+		return controlElectricoDispatchResult{OK: false, Error: "Los GPIO de esta Raspberry estan reservados para el barrido de sensores de puertas"}
+	}
 	if !domoticaTunnelSeenRecently(pi.LastSeen, 90*time.Second) {
 		return controlElectricoDispatchResult{OK: false, Error: "La Raspberry Pi no esta conectada; la prueba no se pondra en cola"}
 	}
@@ -1674,6 +1712,9 @@ func resolveControlElectricoDispatchConfig(dbEmp *sql.DB, cfg *dbpkg.EmpresaCont
 				return nil, rele.RaspberryID, fmt.Errorf("Raspberry Pi asignada no esta activa")
 			}
 			return nil, rele.RaspberryID, err
+		}
+		if pi.UsoTipo == dbpkg.ControlElectricoUsoSensorPuertas {
+			return nil, rele.RaspberryID, fmt.Errorf("Raspberry reservada para sensores de puertas")
 		}
 		return controlElectricoConfigFromRaspberry(cfg, pi), pi.ID, nil
 	}

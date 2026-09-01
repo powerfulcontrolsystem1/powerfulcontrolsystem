@@ -222,12 +222,10 @@ services:
       GOOGLE_RECAPTCHA_SECRET_KEY: ${GOOGLE_RECAPTCHA_SECRET_KEY:-}
       RECAPTCHA_PROVIDER: ${RECAPTCHA_PROVIDER:-google-recaptcha-v2}
       RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-0}
-      GRAFOLOGIA_TESSERACT_ENABLED: ${GRAFOLOGIA_TESSERACT_ENABLED:-1}
-      GRAFOLOGIA_TESSERACT_BIN: ${GRAFOLOGIA_TESSERACT_BIN:-tesseract}
-      GRAFOLOGIA_TESSERACT_LANG: ${GRAFOLOGIA_TESSERACT_LANG:-spa+eng}
       # El cache/DB de Trivy supera el tmpfs de 64 MiB; usar el volumen de logs
       # evita falsos errores de "no space left on device" durante auditorias.
       PCS_VPS_SECURITY_TMP_DIR: ${PCS_VPS_SECURITY_TMP_DIR:-/app/backend/logs/vps_security/tmp}
+      PCS_DISK_MANAGER_URL: http://disk-manager:8083
     volumes:
       - pcs_backend_logs:/app/backend/logs
       - pcs_web_uploads:/app/web/uploads
@@ -248,6 +246,33 @@ services:
     networks:
       pcs_internal:
       mailu_internal:
+
+  # Servicio sin puertos publicados. Su API interna exige una firma del backend
+  # y solo admite las categorías de limpieza Docker declaradas en su binario.
+  disk-manager:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: disk-manager
+    image: ${PCS_DISK_MANAGER_IMAGE:-pcs-disk-manager:local}
+    container_name: pcs-disk-manager
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    environment:
+      PCS_DISK_MANAGER_SHARED_SECRET: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      PCS_DISK_MANAGER_ADDR: :8083
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - "8083"
+    networks:
+      pcs_internal:
 
   worker:
     build:

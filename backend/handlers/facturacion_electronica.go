@@ -4452,13 +4452,7 @@ func processFacturacionRetryQueueContextWithScope(ctx context.Context, dbEmp, db
 		}
 	}()
 
-	items, err := dbpkg.ListFacturacionElectronicaRetriesByEmpresaContext(ctx, dbEmp, empresaID, dbpkg.FacturacionElectronicaRetryFilter{
-		ExcluirTiposDocumento: facturacionRetryQueueExcludedTypes(includeNomina),
-		SoloVencidos:          true,
-		IncludeInactive:       false,
-		Limit:                 limit,
-		Offset:                0,
-	})
+	items, err := dbpkg.ClaimFacturacionElectronicaRetriesByEmpresaWithScope(dbEmp, empresaID, limit, usuario, includeNomina)
 	if err != nil {
 		return nil, err
 	}
@@ -4519,11 +4513,17 @@ func processFacturacionRetryQueueContextWithScope(ctx context.Context, dbEmp, db
 					procesados += 1
 				}
 				resumenItems = append(resumenItems, detail)
+				if releaseErr := dbpkg.ReleaseFacturacionElectronicaRetryClaim(dbEmp, empresaID, retryItem.ID, retryItem.LeaseToken); releaseErr != nil {
+					erroresInternos += 1
+				}
 				continue
 			}
 			erroresInternos += 1
 			detail["error"] = "no se pudo consultar documento para reintento"
 			resumenItems = append(resumenItems, detail)
+			if releaseErr := dbpkg.ReleaseFacturacionElectronicaRetryClaim(dbEmp, empresaID, retryItem.ID, retryItem.LeaseToken); releaseErr != nil {
+				erroresInternos += 1
+			}
 			continue
 		}
 
@@ -4572,6 +4572,9 @@ func processFacturacionRetryQueueContextWithScope(ctx context.Context, dbEmp, db
 			procesados += 1
 		}
 		resumenItems = append(resumenItems, detail)
+		if releaseErr := dbpkg.ReleaseFacturacionElectronicaRetryClaim(dbEmp, empresaID, retryItem.ID, retryItem.LeaseToken); releaseErr != nil {
+			erroresInternos += 1
+		}
 	}
 
 	return map[string]interface{}{

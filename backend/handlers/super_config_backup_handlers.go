@@ -27,6 +27,7 @@ func superConfigSensitiveSecretKeys() map[string]struct{} {
 	keys := map[string]struct{}{
 		"wompi.private_key":       {},
 		"wompi.integrity_key":     {},
+		"wompi.events_secret":     {},
 		"gmail.smtp_app_password": {},
 		"onlyoffice.jwt_secret":   {},
 		"voice_stream.auth_token": {},
@@ -107,6 +108,7 @@ func superConfigCriticalKeys() []string {
 		"wompi.public_key",
 		"wompi.private_key",
 		"wompi.integrity_key",
+		"wompi.events_secret",
 		"wompi.mode",
 		"onlyoffice.enabled",
 		"onlyoffice.document_server_url",

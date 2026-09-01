@@ -65,6 +65,36 @@ func TestJSONErrorMiddlewareUnmarkedServerErrorStaysFriendly(t *testing.T) {
 	}
 }
 
+func TestJSONErrorMiddlewareProtectsDynamicDocumentAlias(t *testing.T) {
+	t.Parallel()
+
+	handler := JSONErrorMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "open /private/document: permission denied", http.StatusInternalServerError)
+	}))
+
+	for _, path := range []string{"/generate", "/download?id=temporary-document&type=pdf"} {
+		path := path
+		t.Run(path, func(t *testing.T) {
+			t.Parallel()
+			res := httptest.NewRecorder()
+			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, path, nil))
+
+			if res.Code != http.StatusInternalServerError {
+				t.Fatalf("status = %d, want %d", res.Code, http.StatusInternalServerError)
+			}
+			body := strings.ToLower(res.Body.String())
+			for _, leaked := range []string{"private/document", "permission denied"} {
+				if strings.Contains(body, leaked) {
+					t.Fatalf("internal detail leaked %q in %s", leaked, res.Body.String())
+				}
+			}
+			if !strings.Contains(body, "problema interno") || !strings.Contains(body, "request_id") {
+				t.Fatalf("friendly API response missing: %s", res.Body.String())
+			}
+		})
+	}
+}
+
 func TestJSONErrorMiddlewareRedactsSensitiveClientError(t *testing.T) {
 	t.Parallel()
 

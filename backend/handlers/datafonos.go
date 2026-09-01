@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -63,10 +64,12 @@ type httpDatafonoProviderClient struct {
 	httpClient *http.Client
 }
 
-var datafonoHTTPClient = &http.Client{Timeout: 15 * time.Second}
+const datafonoMaxRequestBytes = 64 << 10
+
+var datafonoAuthHeaderPattern = regexp.MustCompile(`^[A-Za-z0-9!#$%&'*+.^_|~-]+$`)
 
 func EmpresaDatafonosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
-	client := &httpDatafonoProviderClient{httpClient: datafonoHTTPClient}
+	client := &httpDatafonoProviderClient{}
 	return empresaDatafonosHandlerWithClient(dbEmp, dbSuper, client)
 }
 
@@ -126,12 +129,16 @@ func handleEmpresaDatafonosWrite(w http.ResponseWriter, r *http.Request, dbEmp, 
 	switch action {
 	case "config":
 		var cfg dbpkg.EmpresaDatafonoConfig
-		if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
+		if err := decodeDatafonoJSON(w, r, &cfg); err != nil {
 			http.Error(w, "JSON invalido", http.StatusBadRequest)
 			return
 		}
 		cfg.EmpresaID = empresaID
 		cfg.UsuarioCreador = adminEmailFromRequest(r)
+		if err := validateDatafonoConfig(cfg); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		id, err := dbpkg.UpsertEmpresaDatafonoConfig(dbEmp, cfg)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -140,7 +147,7 @@ func handleEmpresaDatafonosWrite(w http.ResponseWriter, r *http.Request, dbEmp, 
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 	case "iniciar_pago":
 		var payload datafonoPaymentPayload
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		if err := decodeDatafonoJSON(w, r, &payload); err != nil {
 			http.Error(w, "JSON invalido", http.StatusBadRequest)
 			return
 		}
@@ -148,7 +155,7 @@ func handleEmpresaDatafonosWrite(w http.ResponseWriter, r *http.Request, dbEmp, 
 		writeJSON(w, status, result)
 	case "consultar_pago":
 		var payload datafonoConsultarPayload
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		if err := decodeDatafonoJSON(w, r, &payload); err != nil {
 			http.Error(w, "JSON invalido", http.StatusBadRequest)
 			return
 		}
@@ -168,6 +175,9 @@ func iniciarEmpresaDatafonoPago(r *http.Request, dbEmp, dbSuper *sql.DB, client 
 		log.Printf("[datafonos] get config empresa_id=%d error: %v", empresaID, err)
 		return map[string]interface{}{"ok": false, "error": "No se pudo cargar la configuracion del datafono"}, http.StatusInternalServerError
 	}
+	if _, genericHTTP := client.(*httpDatafonoProviderClient); genericHTTP && !datafonoProviderHomologated(cfg.Proveedor) {
+		return map[string]interface{}{"ok": false, "error": "adaptador de datafono no homologado; configura el proveedor contractual y habilitalo explicitamente en el servidor"}, http.StatusPreconditionFailed
+	}
 	req := dbpkg.EmpresaDatafonoPaymentRequest{
 		EmpresaID:  empresaID,
 		ConfigID:   cfg.ID,
@@ -182,6 +192,17 @@ func iniciarEmpresaDatafonoPago(r *http.Request, dbEmp, dbSuper *sql.DB, client 
 			"carrito_id": payload.CarritoID,
 			"origen":     "pos_multiempresa",
 		},
+	}
+	if payload.AplicarAlPOS && payload.CarritoID <= 0 {
+		return map[string]interface{}{"ok": false, "error": "carrito_id es obligatorio para aplicar el pago al POS"}, http.StatusBadRequest
+	}
+	if payload.CarritoID > 0 {
+		amount, currency, err := resolveDatafonoCartCharge(dbEmp, empresaID, payload.CarritoID, payload.Monto, payload.Moneda)
+		if err != nil {
+			return map[string]interface{}{"ok": false, "error": err.Error()}, http.StatusConflict
+		}
+		req.Monto = amount
+		req.Moneda = currency
 	}
 	if req.Monto <= 0 {
 		return map[string]interface{}{"ok": false, "error": "monto invalido"}, http.StatusBadRequest
@@ -215,7 +236,7 @@ func iniciarEmpresaDatafonoPago(r *http.Request, dbEmp, dbSuper *sql.DB, client 
 	resp, err := client.InitiatePayment(ctx, cfg, req)
 	if err != nil {
 		_ = dbpkg.UpdateEmpresaDatafonoTransactionFromProvider(dbEmp, empresaID, txID, dbpkg.EmpresaDatafonoProviderResponse{EstadoPago: dbpkg.DatafonoEstadoError, MensajeRespuesta: err.Error()}, "", "", err.Error())
-		return map[string]interface{}{"ok": false, "id": txID, "estado_pago": dbpkg.DatafonoEstadoError, "error": err.Error()}, http.StatusBadGateway
+		return map[string]interface{}{"ok": false, "id": txID, "estado_pago": dbpkg.DatafonoEstadoError, "error": datafonoProviderPublicError(err)}, http.StatusBadGateway
 	}
 	status := http.StatusOK
 	errValidacion := dbpkg.ValidateDatafonoAmountAndReference(req, resp)
@@ -258,12 +279,15 @@ func consultarEmpresaDatafonoPago(r *http.Request, dbEmp, dbSuper *sql.DB, clien
 	if err != nil {
 		return map[string]interface{}{"ok": false, "error": "datafono no configurado para consultar esta transaccion"}, http.StatusPreconditionFailed
 	}
+	if _, genericHTTP := client.(*httpDatafonoProviderClient); genericHTTP && !datafonoProviderHomologated(cfg.Proveedor) {
+		return map[string]interface{}{"ok": false, "error": "adaptador de datafono no homologado para consultas automaticas"}, http.StatusPreconditionFailed
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(cfg.TimeoutMs)*time.Millisecond)
 	defer cancel()
 	resp, err := client.QueryPayment(ctx, cfg, tx)
 	if err != nil {
 		_ = dbpkg.UpdateEmpresaDatafonoTransactionFromProvider(dbEmp, empresaID, tx.ID, dbpkg.EmpresaDatafonoProviderResponse{EstadoPago: dbpkg.DatafonoEstadoError, MensajeRespuesta: err.Error()}, "", "", err.Error())
-		return map[string]interface{}{"ok": false, "id": tx.ID, "estado_pago": dbpkg.DatafonoEstadoError, "error": err.Error()}, http.StatusBadGateway
+		return map[string]interface{}{"ok": false, "id": tx.ID, "estado_pago": dbpkg.DatafonoEstadoError, "error": datafonoProviderPublicError(err)}, http.StatusBadGateway
 	}
 	req := dbpkg.EmpresaDatafonoPaymentRequest{
 		EmpresaID:  empresaID,
@@ -350,7 +374,8 @@ func (c *httpDatafonoProviderClient) doProviderJSON(ctx context.Context, cfg dbp
 	if base == "" {
 		return dbpkg.EmpresaDatafonoProviderResponse{}, fmt.Errorf("api_base_url del datafono no configurado")
 	}
-	endpoint, err := joinProviderURL(base, path)
+	allowTestHTTP := c.httpClient != nil && strings.TrimSpace(os.Getenv("PCS_DATAFONO_TEST_ALLOW_HTTP")) == "1"
+	endpoint, err := joinProviderURLWithPolicy(base, path, allowTestHTTP)
 	if err != nil {
 		return dbpkg.EmpresaDatafonoProviderResponse{}, err
 	}
@@ -375,7 +400,7 @@ func (c *httpDatafonoProviderClient) doProviderJSON(ctx context.Context, cfg dbp
 	}
 	httpClient := c.httpClient
 	if httpClient == nil {
-		httpClient = datafonoHTTPClient
+		httpClient = publicOutboundHTTPClientForEndpoint(15*time.Second, endpoint)
 	}
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -385,7 +410,9 @@ func (c *httpDatafonoProviderClient) doProviderJSON(ctx context.Context, cfg dbp
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1024*1024))
 	var decoded map[string]interface{}
 	if len(raw) > 0 {
-		_ = json.Unmarshal(raw, &decoded)
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			return dbpkg.EmpresaDatafonoProviderResponse{}, fmt.Errorf("respuesta JSON invalida del proveedor")
+		}
 	}
 	if decoded == nil {
 		decoded = map[string]interface{}{}
@@ -490,6 +517,13 @@ func aplicarDatafonoAlPOS(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID, tx
 		_ = dbpkg.MarkEmpresaDatafonoTransactionPOSApplied(dbEmp, empresaID, txID, req.CarritoID)
 		return true, "el carrito ya estaba cerrado"
 	}
+	expectedAmount, expectedCurrency, err := resolveDatafonoCartCharge(dbEmp, empresaID, req.CarritoID, req.Monto, req.Moneda)
+	if err != nil {
+		return false, "pago aprobado, pero el carrito cambio y no se cerro automaticamente: " + err.Error()
+	}
+	if math.Abs(expectedAmount-req.Monto) > 0.01 || !strings.EqualFold(expectedCurrency, req.Moneda) {
+		return false, "pago aprobado, pero el saldo o la moneda del carrito cambiaron antes del cierre"
+	}
 	usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
 	cierreCaja, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(r.Context(), dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 	if err != nil {
@@ -506,7 +540,7 @@ func aplicarDatafonoAlPOS(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID, tx
 	if referenciaPago == "" {
 		referenciaPago = req.Referencia
 	}
-	if err := dbpkg.PayCarritoStationSession(dbEmp, empresaID, req.CarritoID, metodoPago, referenciaPago, "", "", 0, 0, req.Monto, 0, cierreCaja.ID, cierreCaja.CajaCodigo, cierreCaja.Turno, cierreCaja.SucursalID, usuarioOperacion); err != nil {
+	if err := dbpkg.PayCarritoStationSession(dbEmp, empresaID, req.CarritoID, metodoPago, referenciaPago, "", "", 0, 0, req.Monto, 0, 0, cierreCaja.ID, cierreCaja.CajaCodigo, cierreCaja.Turno, cierreCaja.SucursalID, usuarioOperacion); err != nil {
 		return false, "pago aprobado, pero no se pudo cerrar el carrito en POS: " + err.Error()
 	}
 	_ = dbpkg.MarkEmpresaDatafonoTransactionPOSApplied(dbEmp, empresaID, txID, req.CarritoID)
@@ -516,23 +550,40 @@ func aplicarDatafonoAlPOS(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID, tx
 
 func datafonoProviderCatalog() []datafonoProviderDescriptor {
 	return []datafonoProviderDescriptor{
-		{Proveedor: dbpkg.DatafonoProviderRedeban, Nombre: "Redeban", Tipo: "REST / datáfono / QR Redeban", RequiereContrato: true, ApiPublica: true, Nota: "Configura el endpoint y credenciales entregados por Redeban para comercio/terminal."},
+		{Proveedor: dbpkg.DatafonoProviderRedeban, Nombre: "Redeban", Tipo: "TEF / datáfono / QR contractual", RequiereContrato: true, ApiPublica: false, Nota: "Requiere contrato, especificacion y homologacion del adquirente antes de habilitar cobros automaticos."},
 		{Proveedor: dbpkg.DatafonoProviderCredibanco, Nombre: "CredibanCo", Tipo: "TEF Cloud / certificacion", RequiereContrato: true, ApiPublica: false, Nota: "La integracion tecnica se habilita bajo certificacion TEF Cloud o proveedor homologado."},
-		{Proveedor: dbpkg.DatafonoProviderBold, Nombre: "Bold", Tipo: "Pagos presenciales/en linea API", RequiereContrato: true, ApiPublica: true, ApiBaseSugerida: "https://api.online.payments.bold.co", Nota: "Bold publica API de pagos; ajusta paths segun producto contratado y ambiente."},
-		{Proveedor: dbpkg.DatafonoProviderBBVA, Nombre: "BBVA", Tipo: "QR/recaudo/reporting/API contractual", RequiereContrato: true, ApiPublica: true, Nota: "BBVA Colombia publica QR y APIs de reporte/recaudo; el endpoint de cobro depende del convenio."},
+		{Proveedor: dbpkg.DatafonoProviderBold, Nombre: "Bold", Tipo: "App Checkout para Smart/Smart Pro", RequiereContrato: true, ApiPublica: true, Nota: "Requiere activacion del comercio, terminal compatible y adaptador homologado al contrato App Checkout vigente."},
+		{Proveedor: dbpkg.DatafonoProviderBBVA, Nombre: "BBVA", Tipo: "QR/recaudo/API contractual", RequiereContrato: true, ApiPublica: false, Nota: "El endpoint de cobro depende del convenio y no se habilita con un JSON generico."},
 	}
 }
 
 func joinProviderURL(base, path string) (string, error) {
-	u, err := url.Parse(strings.TrimSpace(base))
-	if err != nil || u.Scheme == "" || u.Host == "" {
+	return joinProviderURLWithPolicy(base, path, false)
+}
+
+func joinProviderURLWithPolicy(base, path string, allowTestHTTP bool) (string, error) {
+	normalized := normalizePublicIntegracionEndpoint(base)
+	if allowTestHTTP {
+		normalized = normalizeHTTPIntegracionEndpoint(base)
+	}
+	u, err := url.Parse(normalized)
+	if err != nil || u == nil || u.Scheme == "" || u.Host == "" || u.User != nil {
 		return "", fmt.Errorf("api_base_url invalida")
+	}
+	if !allowTestHTTP && !strings.EqualFold(u.Scheme, "https") {
+		return "", fmt.Errorf("api_base_url debe usar HTTPS y un host publico")
 	}
 	if strings.TrimSpace(path) == "" {
 		return "", fmt.Errorf("ruta del proveedor vacia")
 	}
+	relative, err := url.Parse(strings.TrimSpace(path))
+	if err != nil || relative.IsAbs() || relative.Host != "" || relative.User != nil {
+		return "", fmt.Errorf("ruta del proveedor debe ser relativa")
+	}
 	basePath := strings.TrimRight(u.Path, "/")
-	u.Path = basePath + "/" + strings.TrimLeft(path, "/")
+	u.Path = basePath + "/" + strings.TrimLeft(relative.Path, "/")
+	u.RawQuery = relative.RawQuery
+	u.Fragment = ""
 	return u.String(), nil
 }
 
@@ -582,14 +633,110 @@ func firstFloatFromMap(raw map[string]interface{}, keys ...string) float64 {
 func scrubDatafonoRaw(raw map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{}, len(raw))
 	for key, value := range raw {
-		lower := strings.ToLower(key)
-		if strings.Contains(lower, "card") || strings.Contains(lower, "pan") || strings.Contains(lower, "token") || strings.Contains(lower, "secret") || strings.Contains(lower, "key") {
-			out[key] = "[redacted]"
-			continue
-		}
-		out[key] = value
+		out[key] = scrubDatafonoValue(key, value)
 	}
 	return out
+}
+
+func scrubDatafonoValue(key string, value interface{}) interface{} {
+	lower := strings.ToLower(strings.TrimSpace(key))
+	for _, sensitive := range []string{"card", "pan", "token", "secret", "key", "cvv", "cvc", "track", "magstripe", "cryptogram"} {
+		if strings.Contains(lower, sensitive) {
+			return "[redacted]"
+		}
+	}
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		return scrubDatafonoRaw(typed)
+	case []interface{}:
+		out := make([]interface{}, len(typed))
+		for i, item := range typed {
+			out[i] = scrubDatafonoValue("", item)
+		}
+		return out
+	default:
+		return value
+	}
+}
+
+func decodeDatafonoJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
+	r.Body = http.MaxBytesReader(w, r.Body, datafonoMaxRequestBytes)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	return decoder.Decode(dst)
+}
+
+func validateDatafonoConfig(cfg dbpkg.EmpresaDatafonoConfig) error {
+	provider := dbpkg.NormalizeDatafonoProvider(cfg.Proveedor)
+	if provider == "" {
+		return fmt.Errorf("proveedor de datafono no soportado")
+	}
+	if dbpkg.NormalizeDatafonoMoneda(cfg.Moneda) != "COP" {
+		return fmt.Errorf("los adaptadores de datafono Colombia solo admiten COP")
+	}
+	if !cfg.Activo {
+		return nil
+	}
+	if _, err := joinProviderURL(cfg.ApiBaseURL, firstNonEmptyDatafono(cfg.CrearPagoPath, "/payments")); err != nil {
+		return err
+	}
+	if _, err := joinProviderURL(cfg.ApiBaseURL, firstNonEmptyDatafono(cfg.ConsultarPagoPath, "/payments/{provider_transaction_id}")); err != nil {
+		return err
+	}
+	if strings.ContainsAny(cfg.AuthHeader, "\r\n") || (strings.TrimSpace(cfg.AuthHeader) != "" && !datafonoAuthHeaderPattern.MatchString(strings.TrimSpace(cfg.AuthHeader))) {
+		return fmt.Errorf("auth_header de datafono invalido")
+	}
+	mode := strings.ToLower(strings.TrimSpace(cfg.AuthMode))
+	if mode != "" && mode != "none" && strings.TrimSpace(cfg.ApiKeyRef) == "" {
+		return fmt.Errorf("api_key_ref es obligatorio para el modo de autenticacion seleccionado")
+	}
+	return nil
+}
+
+func datafonoProviderHomologated(provider string) bool {
+	wanted := dbpkg.NormalizeDatafonoProvider(provider)
+	for _, item := range strings.Split(os.Getenv("PCS_DATAFONO_HOMOLOGATED_PROVIDERS"), ",") {
+		if dbpkg.NormalizeDatafonoProvider(item) == wanted && wanted != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func resolveDatafonoCartCharge(dbEmp *sql.DB, empresaID, carritoID int64, requestedAmount float64, requestedCurrency string) (float64, string, error) {
+	carrito, err := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, carritoID)
+	if err != nil || carrito == nil {
+		return 0, "", fmt.Errorf("carrito no encontrado para esta empresa")
+	}
+	if strings.EqualFold(strings.TrimSpace(carrito.EstadoCarrito), "cerrado") || strings.TrimSpace(carrito.PagadoEn) != "" {
+		return 0, "", fmt.Errorf("el carrito ya fue pagado o cerrado")
+	}
+	abonos, err := dbpkg.TotalCarritoCompraAbonos(dbEmp, empresaID, carritoID)
+	if err != nil {
+		return 0, "", fmt.Errorf("no se pudo calcular el saldo del carrito")
+	}
+	expected := roundMoneyDatafono(carrito.Total - abonos)
+	if expected <= 0 {
+		return 0, "", fmt.Errorf("el carrito no tiene saldo pendiente")
+	}
+	currency := dbpkg.NormalizeDatafonoMoneda(carrito.Moneda)
+	if currency != "COP" {
+		return 0, "", fmt.Errorf("el carrito debe estar expresado en COP")
+	}
+	if requestedAmount > 0 && math.Abs(roundMoneyDatafono(requestedAmount)-expected) > 0.01 {
+		return 0, "", fmt.Errorf("el monto solicitado no coincide con el saldo calculado por el servidor")
+	}
+	if strings.TrimSpace(requestedCurrency) != "" && dbpkg.NormalizeDatafonoMoneda(requestedCurrency) != currency {
+		return 0, "", fmt.Errorf("la moneda solicitada no coincide con la del carrito")
+	}
+	return expected, currency, nil
+}
+
+func datafonoProviderPublicError(err error) string {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "el proveedor no respondio dentro del tiempo permitido"
+	}
+	return "no se pudo confirmar la operacion con el proveedor de datafono"
 }
 
 func firstNonEmptyDatafono(values ...string) string {

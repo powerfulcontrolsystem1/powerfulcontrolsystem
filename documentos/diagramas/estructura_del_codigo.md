@@ -93,6 +93,19 @@ liquidaciones + pagos + perfil + configuracion
   `backup/vps_snapshots` + `super_vps_snapshots` -> descarga/restauracion o
   nube `rclone`.
 
+## Actualizacion 2026-08-24 - Administrar disco VPS
+
+- `web/super/administrar_disco_vps.html` presenta únicamente categorías
+  recuperables y exige la confirmación visible `LIBERAR ESPACIO`.
+- `backend/handlers/super_disk_manager.go` valida sesión/rol super, la lista
+  cerrada de categorías y firma una solicitud interna usando la clave de
+  configuración ya presente; no recibe rutas ni comandos del navegador.
+- `backend/cmd/pcs-disk-manager/main.go` es un sidecar sin puertos publicados
+  que valida la firma y solo ejecuta `docker prune` con límites fijos. El socket
+  Docker no se monta en la API principal.
+- Flujo: Super administrador -> API auditada -> sidecar interno firmado ->
+  Docker (solo recursos no referenciados) -> resultado saneado y espacio final.
+
 ## Actualizacion 2026-06-18 - OCR documental retirado
 
 - `backend/db/ocr.go` y `backend/handlers/ocr.go`
@@ -174,21 +187,6 @@ liquidaciones + pagos + perfil + configuracion
 - Flujo de capas: checkout licencia -> pago aprobado -> activacion idempotente
   -> empresa emisora interna -> consecutivo/facturacion electronica -> correo
   al cliente -> marca idempotente en `pagos_epayco`/`pagos_wompi`.
-
-## Actualizacion 2026-06-01 (GRAFOLOGIX grafologia OCR)
-
-- `backend/internal/grafologia/`: nuevo paquete interno con motor de analisis
-  grafológico en Go puro, reporte HTML y prueba unitaria.
-- `backend/db/grafologia.go`: esquema y consultas de
-  `empresa_grafologia_analisis`.
-- `backend/handlers/grafologia.go`: endpoint empresarial
-  `/api/empresa/grafologia` con upload multipart, dashboard y reportes.
-- `backend/main.go`: asegura el esquema y registra la ruta con permisos.
-- `backend/handlers/empresa_permisos.go`: agrega modulo `grafologia`, pagina
-  `linkGrafologia` y wrapper `WithEmpresaGrafologiaPermissions`.
-- `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js`: dashboard
-  de carga, camara, canvas, analisis y exportaciones.
-- `documentos/grafologix_arquitectura.md`: especificacion tecnica de Fase 1.
 
 ## Actualizacion 2026-05-30 (carrito plano, fondo diferenciado y pantalla completa)
 
@@ -1007,10 +1005,33 @@ liquidaciones + pagos + perfil + configuracion
 
 ## Actualizacion 2026-05-05 (portal publico, carta QR y publicacion Motel Calipso)
 
-- `web/index.html` contiene la seccion publica `Modulos del sistema` y el arreglo `fallbackCards`; ambos describen el alcance comercial actual de la plataforma: POS, estaciones, hotel/motel, gimnasio, odontologia, domicilios, taxi, turnos, control electrico, venta publica, carta QR, red social, roles/licencias y hoja de vida.
+- `web/index.html` contenia en ese corte el resumen publico de 52 modulos y el arreglo `fallbackCards`; las cuatro plantillas clasicas se combinan con las nueve nuevas y las tarjetas personalizadas sin duplicar claves `module`. `web/descripcion_de_los_sistemas.html` y la compatibilidad `.ht` consumen el mismo contrato.
 - `backend/utils/utils.go` en `AuthMiddleware` declara como publicas las rutas de carta `visualizar_productos_y_precios_publico.html` tanto directa como bajo `/{empresa_slug}/...`. Esto mantiene el contrato de solo lectura externa y evita `401` para visitantes.
 - `backend/tmp_tools/seed_motel_calipso_publicacion/main.go` es un helper idempotente para publicar Motel Calipso en `empresa_venta_publica_configuracion`, `empresa_venta_publica_paginas`, `empresa_venta_publica_items` y `empresa_publicaciones_red_social`.
-- `documentos/carta_publica_productos.md`, `documentos/domicilios_profesional.md` y `documentos/taxi_system_profesional.md` registran la documentacion funcional de los modulos publicos/plantillas y su presencia en el portal.
+- `documentos/carta_publica_productos.md` y `documentos/domicilios_profesional.md` registran la documentacion funcional de los modulos publicos vigentes y su presencia en el portal.
+
+## Actualizacion 2026-08-31 (Vida personal)
+
+- `backend/db/vida.go` concentra el esquema y las consultas de gastos y
+  suscripciones. Cada operacion SQL inicia su frontera de propiedad con
+  `empresa_id + usuario_id`.
+- `backend/handlers/vida.go` deriva el usuario de la sesion, valida entradas,
+  compone alertas y sirve comprobantes solo despues de comprobar el gasto.
+- `backend/handlers/private_files.go` agrega la categoria `vida` para JPEG, PNG,
+  WebP y PDF privados; `backend/handlers/empresa_permisos.go` agrega el permiso
+  universal autenticado y `backend/main.go` registra la ruta empresarial.
+- `web/administrar_empresa/vida.html`, `vida.css` y `web/js/vida.js` forman la
+  vista embebida. El shell empresarial agrega el enlace, contador y alarma
+  opcional sin convertir el frontend en frontera de seguridad.
+- `backend/db/platform_migrations.go` delega el DDL a
+  `20260831-001-vida-personal-v1`; API y worker permanecen sin DDL.
+- `20260831-003-vida-price-history-ai-v1` agrega el historial personal. El flujo
+  `factura_ia` valida archivo privado -> OpenAI Responses con `store=false` ->
+  JSON acotado -> transaccion gasto + lineas de precio; no llama modulos de
+  compras, inventario, proveedores, caja ni contabilidad.
+- `web/js/vida.js` usa `BarcodeDetector` y `getUserMedia` solo tras el clic del
+  usuario, detiene todas las pistas al cerrar y conserva entrada manual como
+  alternativa.
 
 ## Actualizacion 2026-04-30 (pagos, chat IA, documentos y empresas compartidas)
 

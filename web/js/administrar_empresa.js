@@ -133,13 +133,41 @@ try {
   var adminPageURLsConfig = { enabled: false };
   var lastPermissionContext = null;
   var lastPermissionRole = "";
+
+  function fetchSharedJSONResult(url, ttlMs, force) {
+    if (window.PCSRequestCache && typeof window.PCSRequestCache.getJSON === "function") {
+      return window.PCSRequestCache.getJSON(url, {
+        ttlMs: Number(ttlMs || 5000),
+        credentials: "same-origin",
+        force: !!force
+      });
+    }
+    return fetch(url, { credentials: "same-origin" }).then(function (resp) {
+      return resp.json().catch(function () { return null; }).then(function (data) {
+        return { ok: resp.ok, status: resp.status, data: data };
+      });
+    });
+  }
+
+  function fetchSharedJSONData(url, ttlMs, force) {
+    return fetchSharedJSONResult(url, ttlMs, force).then(function (result) {
+      if (!result || !result.ok) {
+        var error = new Error("HTTP " + String(result && result.status || 0));
+        error.status = Number(result && result.status || 0);
+        throw error;
+      }
+      return result.data;
+    });
+  }
   var nonHideableMenuLinks = {
     linkPanelEmpresa: true,
+    linkVida: true,
     linkConfiguracion: true,
     linkConfiguracionMenuVisual: true,
     linkVolverEmpresas: true
   };
   var stableMenuLinksWithoutBeta = {
+	linkVida: true,
     linkProductos: true,
     linkVentaDirecta: true,
     linkVentas: true,
@@ -162,6 +190,7 @@ try {
     storage = null;
   }
   var links = [
+	document.getElementById("linkVida"),
     document.getElementById("linkVentaDirecta"),
     document.getElementById("linkEstaciones"),
     document.getElementById("linkPanelEmpresa"),
@@ -174,11 +203,7 @@ try {
     document.getElementById("linkProduccionMRP"),
     document.getElementById("linkLogisticaWMS"),
     document.getElementById("linkPlantillasIntegracion"),
-    document.getElementById("linkGimnasio"),
-    document.getElementById("linkTaxiSystem"),
     document.getElementById("linkParqueadero"),
-    document.getElementById("linkApartamentosTuristicos"),
-    document.getElementById("linkPropiedadHorizontal"),
     document.getElementById("linkAlquileres"),
     document.getElementById("linkTurnosAtencion"),
     document.getElementById("linkConfiguracion"),
@@ -255,7 +280,6 @@ try {
     document.getElementById("linkAuditoria"),
     document.getElementById("linkCalidadProcesos"),
     document.getElementById("linkEnergiaSolar"),
-    document.getElementById("linkGrafologia"),
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
     document.getElementById("linkCRMComercial"),
@@ -386,7 +410,6 @@ try {
   var permModuleCumplimientoKYC = "cumplimiento_kyc";
   var permModuleContratosObligaciones = "contratos_obligaciones";
   var permModuleCalidadProcesos = "calidad_procesos";
-  var permModuleDrogueriaFarmacia = "drogueria_farmacia";
   var permModuleAIUConstruccion = "aiu_construccion";
   var permModuleClientes = "clientes";
   var permModuleCRMUnificado = "crm_unificado";
@@ -397,14 +420,9 @@ try {
   var permModuleVentaPublica = "venta_publica";
   var permModuleReservasHotel = "reservas_hotel";
   var permModuleChatTareas = "chat_tareas";
-  var permModuleGimnasio = "gimnasio";
-  var permModuleTaxiSystem = "taxi_system";
   var permModuleDomicilios = "domicilios";
   var permModuleParqueadero = "parqueadero";
-  var permModuleApartTuristicos = "apartamentos_turisticos";
-  var permModulePropiedadHorizontal = "propiedad_horizontal";
   var permModuleAlquileres = "alquileres";
-  var permModuleOdontologia = "odontologia";
   var permModuleTurnos = "turnos_atencion";
   var permModuleControlElectrico = "control_electrico";
   var permModuleCamaras = "camaras";
@@ -419,11 +437,12 @@ try {
   var permModuleReportes = "reportes";
   var permModuleAuditoria = "auditoria";
   var permModuleEnergiaSolar = "energia_solar";
-  var permModuleGrafologia = "grafologia";
   var permModuleBolsa = "bolsa";
   var permModuleBackups = "backups";
   var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
+  var permModuleVida = "vida";
   var menuPermissionCatalog = {
+	linkVida: { module: permModuleVida, action: permActionCreate },
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkVentas: { module: permModuleVentas, action: permActionRead },
     linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
@@ -466,25 +485,9 @@ try {
     linkEmailCorporativo: { module: permModuleSeguridad, action: permActionRead },
     linkConfiguracionCarritoEmpresa: { module: permModuleVentaPublica, action: permActionApprove },
     linkConfiguracionRolCajero: { module: permModuleSeguridad, action: permActionUpdate },
-
-    linkGimnasio: { module: permModuleGimnasio, action: permActionCreate },
-    linkGimnasioDashboard: { module: permModuleGimnasio, action: permActionRead },
-    linkGimnasioSocios: { module: permModuleGimnasio, action: permActionCreate },
-    linkGimnasioPlanes: { module: permModuleGimnasio, action: permActionUpdate },
-    linkGimnasioEntrenadores: { module: permModuleGimnasio, action: permActionUpdate },
-    linkGimnasioClases: { module: permModuleGimnasio, action: permActionCreate },
-    linkGimnasioInscripciones: { module: permModuleGimnasio, action: permActionCreate },
-    linkGimnasioAsistencias: { module: permModuleGimnasio, action: permActionCreate },
-    linkGimnasioPagos: { module: permModuleGimnasio, action: permActionCreate },
-    linkGimnasioAcceso: { module: permModuleGimnasio, action: permActionApprove },
-    linkTaxiSystem: { module: permModuleTaxiSystem, action: permActionCreate },
     linkDomicilios: { module: permModuleDomicilios, action: permActionCreate },
     linkParqueadero: { module: permModuleParqueadero, action: permActionCreate },
-    linkApartamentosTuristicos: { module: permModuleApartTuristicos, action: permActionCreate },
-    linkPropiedadHorizontal: { module: permModulePropiedadHorizontal, action: permActionCreate },
     linkAlquileres: { module: permModuleAlquileres, action: permActionCreate },
-    linkConsultorioOdontologico: { module: permModuleOdontologia, action: permActionCreate },
-    linkDrogueriaFarmacia: { module: permModuleDrogueriaFarmacia, action: permActionCreate },
     linkAIUConstruccion: { module: permModuleAIUConstruccion, action: permActionCreate },
 
     linkClientes: { module: permModuleClientes, action: permActionCreate },
@@ -563,7 +566,6 @@ try {
     linkAuditoria: { module: permModuleAuditoria, action: permActionRead },
     linkCalidadProcesos: { module: permModuleCalidadProcesos, action: permActionCreate },
     linkEnergiaSolar: { module: permModuleEnergiaSolar, action: permActionCreate },
-    linkGrafologia: { module: permModuleGrafologia, action: permActionCreate },
     linkBolsa: { module: permModuleBolsa, action: permActionRead },
     linkBackups: { module: permModuleBackups, action: permActionApprove },
 
@@ -1265,6 +1267,10 @@ try {
       return true;
     }
 
+    if (normalizedModule === permModuleVida) {
+      return normalizedRole !== "" && normalizedRole !== "sin_rol" && normalizedAction !== permActionApprove;
+    }
+
     if (isNuevoVerticalModule(normalizedModule)) {
       if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
       if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
@@ -1348,7 +1354,6 @@ try {
       case permModuleContratosObligaciones:
       case permModuleCalidadProcesos:
       case permModuleEnergiaSolar:
-      case permModuleGrafologia:
       case permModuleAuditoria:
       case permModuleBackups:
       case permModuleDocumentosOnlyOffice:
@@ -1410,15 +1415,9 @@ try {
       case permModuleVentaPublica:
       case permModuleReservasHotel:
       case permModuleChatTareas:
-      case permModuleGimnasio:
-      case permModuleTaxiSystem:
       case permModuleDomicilios:
       case permModuleParqueadero:
-      case permModuleApartTuristicos:
-      case permModulePropiedadHorizontal:
       case permModuleAlquileres:
-      case permModuleOdontologia:
-      case permModuleDrogueriaFarmacia:
       case permModuleTurnos:
       case permModuleCarnets:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
@@ -1584,6 +1583,7 @@ try {
 
   function setEnterpriseAIChromeVisible(visible) {
     visible = !!visible;
+    window.__pcsEnterpriseAIChromeAllowed = visible;
     var toggle = document.getElementById("openAIDrawer");
     var backdrop = document.getElementById("aiChatBackdrop");
     var drawer = document.getElementById("aiChatDrawer");
@@ -1726,11 +1726,7 @@ try {
       return Promise.resolve(null);
     }
     var url = "/api/empresa/permisos_contexto?empresa_id=" + encodeURIComponent(empresaId);
-    return fetch(url, { credentials: "same-origin" })
-      .then(function (resp) {
-        if (!resp.ok) return null;
-        return resp.json();
-      })
+    return fetchSharedJSONData(url, 5000)
       .then(function (data) {
         if (!data || typeof data !== "object") return null;
         if (!Array.isArray(data.modulos)) return null;
@@ -1741,14 +1737,10 @@ try {
       });
   }
 
-  function fetchEmpresaMenuVisualConfig(empresaId) {
+  function fetchEmpresaMenuVisualConfig(empresaId, force) {
     enterpriseMenuVisualConfig = normalizeMenuVisualConfig(null);
     if (!empresaId) return Promise.resolve(enterpriseMenuVisualConfig);
-    return fetch("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId) + "&estacion_id=0", { credentials: "same-origin" })
-      .then(function (resp) {
-        if (!resp.ok) return null;
-        return resp.json();
-      })
+    return fetchSharedJSONData("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId), 5000, force)
       .then(function (data) {
         var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
         var pref = null;
@@ -1774,11 +1766,7 @@ try {
     var url = empresaId
       ? "/api/empresa/plantillas_integracion/catalogo?empresa_id=" + encodeURIComponent(empresaId)
       : "/api/public/plantillas_integracion/catalogo";
-    return fetch(url, { credentials: "same-origin" })
-      .then(function (resp) {
-        if (!resp.ok) return null;
-        return resp.json();
-      })
+    return fetchSharedJSONData(url, 5000)
       .then(function (payload) {
         var items = payload && Array.isArray(payload.items) ? payload.items : [];
         if (!items.length) return null;
@@ -2101,11 +2089,7 @@ try {
   }
 
   function fetchAdminPageURLsConfig() {
-    return fetch('/super/api/config/admin_page_urls', { credentials: 'same-origin' })
-      .then(function (resp) {
-        if (!resp.ok) return null;
-        return resp.json();
-      })
+    return fetchSharedJSONData('/super/api/config/admin_page_urls', 5000)
       .then(function (data) {
         adminPageURLsConfig = {
           enabled: !!(data && data.ok && data.enabled)
@@ -2146,29 +2130,31 @@ try {
     lastPermissionRole = normalizedRole;
     return fetchEmpresaPermisosContexto(empresaId)
       .then(function (permissionContext) {
-        if (permissionContext) {
-          applyMenuPermissionsByContext(permissionContext);
-          setMenuPermissionsEvidence(describePermissionContext(permissionContext), false);
-          return;
-        }
-        applyMenuPermissionsByRole(normalizedRole);
-        if (normalizedRole) {
-          setMenuPermissionsEvidence("Permisos de menú: rol " + normalizedRole + " | fuente local de respaldo.", true);
-        } else {
-          setMenuPermissionsEvidence("Permisos de menú: sin rol detectado | fuente local de respaldo.", true);
-        }
+        applyResolvedMenuPermissions(permissionContext, normalizedRole);
       });
+  }
+
+  function applyResolvedMenuPermissions(permissionContext, role) {
+    var normalizedRole = normalizePermissionRole(role);
+    lastPermissionRole = normalizedRole;
+    if (permissionContext) {
+      applyMenuPermissionsByContext(permissionContext);
+      setMenuPermissionsEvidence(describePermissionContext(permissionContext), false);
+      return;
+    }
+    applyMenuPermissionsByRole(normalizedRole);
+    if (normalizedRole) {
+      setMenuPermissionsEvidence("Permisos de menú: rol " + normalizedRole + " | fuente local de respaldo.", true);
+    } else {
+      setMenuPermissionsEvidence("Permisos de menú: sin rol detectado | fuente local de respaldo.", true);
+    }
   }
 
   function fetchCashierAutoDirectSalePreference(empresaId) {
     cashierAutoDirectSaleEnabled = false;
     stationEntryDomoticaEnabled = false;
     if (!empresaId) return Promise.resolve(false);
-    return fetch("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
-      .then(function (resp) {
-        if (!resp.ok) return false;
-        return resp.json();
-      })
+    return fetchSharedJSONData("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId), 5000)
       .then(function (data) {
         var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
         var pref = prefs.find(function (item) {
@@ -2258,26 +2244,21 @@ try {
   }
 
   function fetchCurrentAdminSession() {
-    return fetch("/me", { credentials: "same-origin" })
-      .then(function (resp) {
-        if (resp.status === 401 || resp.status === 403) {
+    return fetchSharedJSONResult("/me", 30000)
+      .then(function (result) {
+        if (result && (result.status === 401 || result.status === 403)) {
           return { authenticated: false, role: "" };
         }
-        if (!resp.ok) {
+        if (!result || !result.ok) {
           return { authenticated: null, role: "" };
         }
-        return resp.json()
-          .then(function (data) {
-            return {
-              authenticated: true,
-              role: (!data || typeof data !== "object")
-                ? ""
-                : String(data.role || data.Role || "").trim()
-            };
-          })
-          .catch(function () {
-            return { authenticated: true, role: "" };
-          });
+        var data = result.data;
+        return {
+          authenticated: true,
+          role: (!data || typeof data !== "object")
+            ? ""
+            : String(data.role || data.Role || "").trim()
+        };
       })
       .catch(function () {
         return { authenticated: null, role: "" };
@@ -2285,15 +2266,7 @@ try {
   }
 
   function loadEmpresaTitle(empresaId) {
-    return fetch("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
-      .then(function (resp) {
-        if (!resp.ok) {
-          if (titleMenu) titleMenu.textContent = "Administrar Empresa";
-          else if (title) title.textContent = "Administrar Empresa";
-          throw new Error("empresa no encontrada");
-        }
-        return resp.json();
-      })
+    return fetchSharedJSONData("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId), 5000)
       .then(function (data) {
           var estado = data && data.estado && typeof data.estado === "object" ? data.estado : data;
           var nombre = estado && (estado.empresa_nombre || estado.nombre || estado.Nombre);
@@ -2355,7 +2328,7 @@ try {
   try {
     window.PCSAdminMenuVisual = {
       reload: function () {
-        return fetchEmpresaMenuVisualConfig(id).then(function () {
+        return fetchEmpresaMenuVisualConfig(id, true).then(function () {
           reapplyMenuVisualConfiguration(id);
         });
       }
@@ -2374,7 +2347,7 @@ try {
     }
     if (!data || data.type !== "pcs-menu-visual-config-updated") return;
     if (String(data.empresa_id || "") && String(data.empresa_id || "") !== String(id || "")) return;
-    fetchEmpresaMenuVisualConfig(id).then(function () {
+    fetchEmpresaMenuVisualConfig(id, true).then(function () {
       reapplyMenuVisualConfiguration(id);
     });
   });
@@ -2464,11 +2437,7 @@ try {
 
   function fetchEmpresaBuzonResumen() {
     if (!id) return Promise.resolve(null);
-    return fetch("/api/empresa/buzon?empresa_id=" + encodeURIComponent(id) + "&action=resumen", { credentials: "same-origin" })
-      .then(function (res) {
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return res.json();
-      });
+    return fetchSharedJSONData("/api/empresa/buzon?empresa_id=" + encodeURIComponent(id) + "&action=resumen", 2000);
   }
 
   function renderNotificationBell(data) {
@@ -2510,6 +2479,44 @@ try {
       .catch(function () {
         renderNotificationBell({ unread: 0, mensajes: [] });
       });
+  }
+
+  function loadVidaPersonalReminders() {
+    var vidaLink = document.getElementById("linkVida");
+    if (!id || !vidaLink || typeof window.fetch !== "function") return Promise.resolve();
+    var url = "/api/empresa/vida?empresa_id=" + encodeURIComponent(String(id)) + "&action=suscripciones";
+    return fetch(url, { credentials: "same-origin" })
+      .then(function (response) {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then(function (data) {
+        var alerts = data && Array.isArray(data.alertas) ? data.alertas : [];
+        var badge = vidaLink.querySelector("[data-vida-alert-badge]");
+        if (!alerts.length) {
+          if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
+          vidaLink.removeAttribute("title");
+          return;
+        }
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "menu-beta-badge";
+          badge.setAttribute("data-vida-alert-badge", "1");
+          vidaLink.appendChild(badge);
+        }
+        badge.textContent = String(alerts.length);
+        vidaLink.title = alerts.length + " recordatorio(s) personal(es) de suscripcion";
+        if (!("Notification" in window) || window.Notification.permission !== "granted") return;
+        alerts.forEach(function (item) {
+          var key = "pcs_vida_alert_" + String(id) + "_" + String(item.suscripcion_id || "") + "_" + String(item.fecha || "");
+          try {
+            if (window.localStorage.getItem(key)) return;
+            new window.Notification("Vida · Suscripcion", { body: String(item.mensaje || "Tienes una suscripcion proxima."), tag: key });
+            window.localStorage.setItem(key, new Date().toISOString());
+          } catch (_) {}
+        });
+      })
+      .catch(function () {});
   }
 
   function markNotificationReadAndOpen(msg) {
@@ -2657,35 +2664,41 @@ try {
 
   setupAdminNavGroups();
 
-  fetchVerticalIntegrationCatalog(id)
-    .then(function (integrationResult) {
+  var initialVerticalCatalogPromise = fetchVerticalIntegrationCatalog(id);
+  var initialSessionPromise = fetchCurrentAdminSession();
+  var initialAdminURLsPromise = id ? fetchAdminPageURLsConfig() : Promise.resolve(adminPageURLsConfig);
+  var initialMenuVisualPromise = id ? fetchEmpresaMenuVisualConfig(id) : Promise.resolve(enterpriseMenuVisualConfig);
+  var initialPermissionsPromise = id ? fetchEmpresaPermisosContexto(id) : Promise.resolve(null);
+  var initialCashierPreferencePromise = id ? fetchCashierAutoDirectSalePreference(id) : Promise.resolve(false);
+
+  Promise.all([
+    initialVerticalCatalogPromise,
+    initialSessionPromise,
+    initialAdminURLsPromise,
+    initialMenuVisualPromise,
+    initialPermissionsPromise,
+    initialCashierPreferencePromise
+  ])
+    .then(function (values) {
+      var integrationResult = values[0];
+      var session = values[1];
+      var permissionContext = values[4];
       setVerticalIntegrationEvidence(integrationResult);
-      return fetchCurrentAdminSession();
-    })
-    .then(function (session) {
       if (session && session.authenticated === false) {
         redirectToAdminLogin();
         return null;
       }
       var role = session && session.role ? session.role : "";
       if (id) {
-        return fetchAdminPageURLsConfig()
-          .then(function () {
-            return fetchEmpresaMenuVisualConfig(id);
-          })
-          .then(function () {
-            return applyMenuPermissionsWithSource(id, role);
-          })
-          .then(function () {
-            return fetchCashierAutoDirectSalePreference(id);
-          })
-          .then(function () {
-            initializeMenuAndFrame(id);
-            loadEmpresaTitle(id);
-            clearPendingConfigurationAssistant(id);
-            loadNotificationBell();
-            window.setInterval(loadNotificationBell, 60000);
-          });
+        applyResolvedMenuPermissions(permissionContext, role);
+        initializeMenuAndFrame(id);
+        loadEmpresaTitle(id);
+        clearPendingConfigurationAssistant(id);
+        loadNotificationBell();
+        loadVidaPersonalReminders();
+        window.setInterval(loadNotificationBell, 60000);
+        window.setInterval(loadVidaPersonalReminders, 15 * 60000);
+        return null;
       }
       applyMenuPermissionsByRole(role);
       initializeMenuAndFrame("");
@@ -2704,6 +2717,7 @@ try {
           loadEmpresaTitle(id);
           clearPendingConfigurationAssistant(id);
           loadNotificationBell();
+          loadVidaPersonalReminders();
         });
         return;
       }

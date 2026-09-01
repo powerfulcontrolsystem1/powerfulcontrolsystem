@@ -702,31 +702,6 @@ decisiones en cada tarea.
   correo al administrador de la empresa cuando faltan 30 dias o menos, con
   control de no repetir alertas dentro de 24 horas.
 
-## Actualizacion 2026-06-01 - GRAFOLOGIX
-
-- Nuevo modulo empresarial `grafologia` visible como `Administrar empresa >
-  Analisis y control > GRAFOLOGIX`.
-- API: `/api/empresa/grafologia`, protegida por
-  `WithEmpresaGrafologiaPermissions`.
-- Backend: `backend/internal/grafologia` contiene el motor Go puro; no usa
-  dependencias externas.
-- Docker/VPS: desde 2026-06-18 no se instala Tesseract/pdftoppm para OCR; el
-  analisis complementario debe usar IA GPT-5.5 y transcripcion manual opcional.
-- BD: `empresa_grafologia_analisis` en `pcs_empresas`.
-- UI: `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js`.
-- La pantalla asocia cada manuscrito a un cliente central de la empresa:
-  busca/crea desde `/api/empresa/clientes`, guarda `cliente_id` validado por
-  `empresa_id` y conserva descripcion/caracteristicas de la persona en el
-  informe.
-- La pantalla tambien ofrece `Analizar con GPT-5.5`, que reutiliza el catalogo
-  de Chat IA empresarial (`openai:gpt-5.5`), valida limites diarios por empresa,
-  envia la imagen como adjunto de vision y registra la consulta en la auditoria
-  de uso IA sin crear dependencias nuevas.
-- Documento completo: `documentos/grafologix_arquitectura.md`.
-- Advertencia permanente: las interpretaciones grafológicas son heuristicas y
-  orientativas; no son diagnostico psicologico ni criterio automatico de
-  contratacion.
-
 ## Resumen del sistema
 
 Powerful Control System es un POS/ERP SaaS multiempresa. El backend esta escrito

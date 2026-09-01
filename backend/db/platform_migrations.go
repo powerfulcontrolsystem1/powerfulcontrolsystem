@@ -201,12 +201,17 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260826-001-productos-inventario-v1", Description: "warehouse receipt ownership and tenant product listing index", Body: empresaProductosInventarioSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaProductosInventarioSchemaTx(ctx, tx)
 			}},
+			{Version: "20260826-001-sale-accounting-idempotency-v1", Description: "one active paid-sale accounting event per tenant cart", Body: empresaSaleAccountingIdempotencyFingerprint, Apply: applyEmpresaSaleAccountingIdempotencyTx},
+			{Version: "20260826-002-cart-sale-history-v1", Description: "immutable cart sale history for cash reports", Body: empresaCarritoSaleHistorySchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error {
+				return applyEmpresaCarritoSaleHistorySchemaTx(tx)
+			}},
 			{Version: "20260826-002-dian-documento-soporte-v1", Description: "structured purchase-support source, exact amounts and atomic DIAN numbering", Body: empresaDIANDocumentoSoporteFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaDIANDocumentoSoporteTx(ctx, tx)
 			}},
 			{Version: "20260826-002-productos-inventario-recepcion-bodega-v2", Description: "safe legacy warehouse compatibility for purchase receipts", Body: empresaProductosInventarioLegacyWarehouseSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaProductosInventarioLegacyWarehouseSchemaTx(ctx, tx)
 			}},
+			{Version: "20260826-003-operational-idempotency-v1", Description: "request fingerprints and leased claims for CxP offline sales and DIAN retries", Body: empresaOperationalIdempotencyFingerprint, Apply: applyEmpresaOperationalIdempotencyTx},
 			{Version: "20260826-003-servicios-nombre-unico-v1", Description: "tenant-scoped normalized unique service names", Body: empresaServiciosNombreUniqueSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaServiciosNombreUniqueSchemaTx(ctx, tx)
 			}},
@@ -216,6 +221,12 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260826-005-dian-nomina-electronica-v2", Description: "tenant monthly payroll fiscal source, profiles and atomic DIAN numbering", Body: empresaDIANNominaElectronicaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaDIANNominaElectronicaTx(ctx, tx)
 			}},
+			{Version: "20260831-001-vida-personal-v1", Description: "personal expenses receipts subscriptions and reminders isolated by tenant and user", Body: empresaVidaSchemaFingerprint, Apply: applyEmpresaVidaSchemaTx},
+			{Version: "20260831-002-raspberry-door-sensor-v1", Description: "multiplexed four-input door sensors for enrolled Raspberry controllers", Body: empresaControlElectricoDoorSensorSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error {
+				return applyEmpresaControlElectricoDoorSensorSchemaTx(tx)
+			}},
+			{Version: "20260831-003-vida-price-history-ai-v1", Description: "personal price history barcode captures and AI invoice line items", Body: empresaVidaPriceHistorySchemaFingerprint, Apply: applyEmpresaVidaPriceHistorySchemaTx},
+			{Version: "20260901-001-retire-vertical-modules-v1", Description: "remove retired vertical module tables and references", Body: empresaVerticalModulesDecommissionFingerprint, Apply: applyEmpresaVerticalModulesDecommissionTx},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
@@ -289,6 +300,12 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Apply: func(ctx context.Context, tx *sql.Tx) error {
 					return applySessionPrincipalClaimsSchemaTx(ctx, tx)
 				},
+			},
+			{
+				Version:     "20260826-001-payment-idempotency-v1",
+				Description: "durable payment checkout and post-effect idempotency",
+				Body:        paymentIdempotencySchemaFingerprint,
+				Apply:       applyPaymentIdempotencySchemaTx,
 			},
 		}, nil
 	default:

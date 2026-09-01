@@ -19,7 +19,7 @@ func TestInformacionModulosNormalizeConfig(t *testing.T) {
 		},
 	})
 
-	if cfg.Titulo != "Modulos y caracteristicas principales" {
+	if cfg.Titulo != "53 modulos activos y 13 plantillas empresariales" {
 		t.Fatalf("titulo = %q, want default", cfg.Titulo)
 	}
 	if got := len(cfg.Modulos); got != 5 {
@@ -44,7 +44,7 @@ func TestInformacionModulosNormalizeConfig(t *testing.T) {
 	for _, mod := range cfg.Modulos {
 		seen[mod.Titulo] = true
 	}
-	for _, expected := range []string{"GRAFOLOGIX", "Camaras y DVR", "Energia solar"} {
+	for _, expected := range []string{"Camaras y DVR", "Energia solar", "Vida personal"} {
 		if !seen[expected] {
 			t.Fatalf("configuracion antigua debe completar modulo destacado %q; got %#v", expected, cfg.Modulos)
 		}

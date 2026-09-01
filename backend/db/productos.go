@@ -760,6 +760,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_categorias_productos_empresa_orden ON categorias_productos(empresa_id, orden, nombre);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_productos_empresa_sku ON productos(empresa_id, sku);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_productos_empresa_barras ON productos(empresa_id, codigo_barras);`,
+		`CREATE INDEX IF NOT EXISTS ix_productos_empresa_estado_id ON productos(empresa_id, estado, id);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedores_empresa_codigo ON proveedores(empresa_id, codigo);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedores_empresa_nombre ON proveedores(empresa_id, nombre);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_servicios_empresa_codigo ON servicios(empresa_id, codigo);`,
@@ -2705,6 +2706,33 @@ func GetInventarioResumenByEmpresa(dbConn *sql.DB, empresaID int64, desde, hasta
 	}
 
 	err := dbConn.QueryRow(`SELECT
+		(SELECT COUNT(*) FROM productos p WHERE p.empresa_id = ? AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'),
+		(SELECT COUNT(*) FROM productos p
+			WHERE p.empresa_id = ?
+				AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'
+				AND COALESCE(p.maneja_vencimiento, 0) <> 0
+				AND COALESCE(TRIM(p.fecha_vencimiento), '') <> ''
+				AND p.fecha_vencimiento <= TO_CHAR(CURRENT_DATE + INTERVAL '30 days', 'YYYY-MM-DD')),
+		(SELECT COUNT(*) FROM bodegas b WHERE b.empresa_id = ? AND LOWER(COALESCE(b.estado, 'activo')) = 'activo'),
+		(SELECT COUNT(*) FROM servicios s WHERE s.empresa_id = ? AND LOWER(COALESCE(s.estado, 'activo')) = 'activo'),
+		(SELECT COUNT(*) FROM categorias_productos c WHERE c.empresa_id = ? AND LOWER(COALESCE(c.estado, 'activo')) = 'activo')`,
+		empresaID,
+		empresaID,
+		empresaID,
+		empresaID,
+		empresaID,
+	).Scan(
+		&resumen.ProductosTotal,
+		&resumen.ProductosPorVencer,
+		&resumen.BodegasTotal,
+		&resumen.ServiciosTotal,
+		&resumen.CategoriasTotal,
+	)
+	if err != nil {
+		return resumen, err
+	}
+
+	err = dbConn.QueryRow(`SELECT
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(e.estado, 'activo')) = 'activo' THEN COALESCE(e.cantidad, 0) ELSE 0 END), 0),
 		COALESCE(COUNT(DISTINCT CASE WHEN LOWER(COALESCE(e.estado, 'activo')) = 'activo' THEN e.producto_id END), 0),
 		COALESCE(COUNT(DISTINCT CASE WHEN LOWER(COALESCE(e.estado, 'activo')) = 'activo' THEN e.bodega_id END), 0)

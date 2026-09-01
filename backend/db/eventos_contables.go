@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -317,6 +318,10 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_fecha ON empresa_eventos_contables(empresa_id, fecha_evento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_modulo_evento ON empresa_eventos_contables(empresa_id, modulo, evento);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_pendientes ON empresa_eventos_contables(empresa_id, procesado, fecha_evento);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_eventos_contables_venta_pagada_carrito
+			ON empresa_eventos_contables(empresa_id, modulo, evento, entidad, entidad_id)
+			WHERE modulo = 'ventas' AND evento = 'venta_pagada' AND entidad = 'carrito_compra'
+				AND entidad_id IS NOT NULL AND estado = 'activo';`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_fecha ON empresa_asientos_contables(empresa_id, fecha_asiento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_modulo_evento ON empresa_asientos_contables(empresa_id, modulo, evento);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_periodo ON empresa_asientos_contables(empresa_id, periodo_contable, estado);`,
@@ -524,7 +529,11 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
+	ON CONFLICT (empresa_id, modulo, evento, entidad, entidad_id)
+		WHERE modulo = 'ventas' AND evento = 'venta_pagada' AND entidad = 'carrito_compra'
+			AND entidad_id IS NOT NULL AND estado = 'activo'
+	DO NOTHING`
 
 	id, err := insertSQLCompat(dbConn, query,
 		e.EmpresaID,
@@ -545,6 +554,14 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		e.Observaciones,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) && e.Modulo == "ventas" && e.Evento == "venta_pagada" && e.Entidad == "carrito_compra" && e.EntidadID > 0 && e.Estado == "activo" {
+			var existingID int64
+			lookupErr := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_eventos_contables
+				WHERE empresa_id = ? AND modulo = 'ventas' AND evento = 'venta_pagada'
+					AND entidad = 'carrito_compra' AND entidad_id = ? AND estado = 'activo'
+				ORDER BY id LIMIT 1`, e.EmpresaID, e.EntidadID).Scan(&existingID)
+			return existingID, lookupErr
+		}
 		return 0, err
 	}
 	return id, nil

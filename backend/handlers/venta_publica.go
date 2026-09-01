@@ -1246,42 +1246,8 @@ func handleEmpresaVentaPublicaOrderState(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "orden no encontrada", http.StatusNotFound)
 		return
 	}
-	cfg, err := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, empresaID)
-	if err != nil {
-		http.Error(w, "No se pudo cargar configuracion", http.StatusInternalServerError)
-		return
-	}
 	estadoPedido := payload.EstadoPedido
-	taxiRequestID := order.TaxiRequestID
-	trackingToken := strings.TrimSpace(order.TrackingToken)
-	if order.TipoOrden == "pedido_restaurante" && estadoPedido == "entregado_al_mensajero" && order.CanalEntrega == "domicilio" && cfg.PedidosTrackingDomiciliario && cfg.PedidosDespachoAutomatico {
-		if taxiRequestID <= 0 {
-			if trackingToken == "" {
-				sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%s|%d", empresaID, order.CodigoOrden, time.Now().UnixNano())))
-				trackingToken = hex.EncodeToString(sum[:])[:24]
-			}
-			req, err := dbpkg.CreateTaxiRequest(dbEmp, dbpkg.EmpresaTaxiRequest{
-				EmpresaID:                empresaID,
-				ClienteNombre:            firstNonEmptyString(order.CompradorNombre, "Cliente"),
-				ClienteTelefono:          order.CompradorTelefono,
-				RecogerTexto:             firstNonEmptyString(cfg.NombreTienda, "Restaurante"),
-				RecogerLatitud:           0,
-				RecogerLongitud:          0,
-				DestinoTexto:             firstNonEmptyString(order.DireccionEntrega, "Entrega a domicilio"),
-				DestinoLatitud:           order.EntregaLatitud,
-				DestinoLongitud:          order.EntregaLongitud,
-				ComparteUbicacionCliente: order.ClienteComparteUbicacion,
-				MetodoSolicitud:          "pedido_restaurante",
-				Canal:                    "venta_publica",
-				Notas:                    "Entrega de pedido " + order.CodigoOrden,
-			})
-			if err == nil {
-				taxiRequestID = req.ID
-				_ = dbpkg.UpdateEmpresaVentaPublicaOrderTracking(dbEmp, empresaID, order.CodigoOrden, taxiRequestID, trackingToken)
-			}
-		}
-	}
-	if err := dbpkg.UpdateEmpresaVentaPublicaOrderOperationalState(dbEmp, empresaID, order.CodigoOrden, estadoPedido, payload.Observaciones, taxiRequestID); err != nil {
+	if err := dbpkg.UpdateEmpresaVentaPublicaOrderOperationalState(dbEmp, empresaID, order.CodigoOrden, estadoPedido, payload.Observaciones); err != nil {
 		http.Error(w, "No se pudo actualizar el pedido", http.StatusBadRequest)
 		return
 	}
@@ -2335,16 +2301,6 @@ func handleVentaPublicaEstadoPedidoPublico(w http.ResponseWriter, r *http.Reques
 		"ok":       true,
 		"order":    order,
 		"tracking": map[string]interface{}{"enabled": false},
-	}
-	if order.TaxiRequestID > 0 {
-		if req, err := dbpkg.GetTaxiRequestByID(dbEmp, resolvedEmpresaID, order.TaxiRequestID); err == nil {
-			route, _ := dbpkg.ListTaxiRoutePoints(dbEmp, resolvedEmpresaID, order.TaxiRequestID, 300)
-			resp["tracking"] = map[string]interface{}{
-				"enabled": true,
-				"request": req,
-				"route":   route,
-			}
-		}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

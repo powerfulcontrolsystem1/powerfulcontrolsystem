@@ -18,6 +18,7 @@ func TestNormalizeDatafonoProviderHTTPResponse(t *testing.T) {
 		"reference":          "VENTA-9",
 		"amount":             float64(12500),
 		"card_number":        "4111111111111111",
+		"payment_method":     map[string]interface{}{"card": map[string]interface{}{"pan": "4111111111111111", "cvv": "123"}},
 	})
 	if resp.EstadoPago != dbpkg.DatafonoEstadoAprobado {
 		t.Fatalf("estado = %q", resp.EstadoPago)
@@ -27,6 +28,10 @@ func TestNormalizeDatafonoProviderHTTPResponse(t *testing.T) {
 	}
 	if got := resp.Raw["card_number"]; got != "[redacted]" {
 		t.Fatalf("card_number not redacted: %v", got)
+	}
+	nested := resp.Raw["payment_method"].(map[string]interface{})
+	if nested["card"] != "[redacted]" {
+		t.Fatalf("nested card block not redacted: %#v", nested)
 	}
 }
 
@@ -57,6 +62,7 @@ func TestHTTPDatafonoProviderClientInitiatePayment(t *testing.T) {
 	defer server.Close()
 
 	t.Setenv("DATAFONO_TEST_KEY", "secret-test")
+	t.Setenv("PCS_DATAFONO_TEST_ALLOW_HTTP", "1")
 	client := &httpDatafonoProviderClient{httpClient: server.Client()}
 	resp, err := client.InitiatePayment(context.Background(), dbpkg.EmpresaDatafonoConfig{
 		Proveedor:     dbpkg.DatafonoProviderRedeban,
@@ -74,5 +80,16 @@ func TestHTTPDatafonoProviderClientInitiatePayment(t *testing.T) {
 	}
 	if resp.EstadoPago != dbpkg.DatafonoEstadoAprobado || resp.ProviderTransactionID != "tx-1" {
 		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
+func TestJoinProviderURLRejectsPrivateAndCrossOriginTargets(t *testing.T) {
+	for _, raw := range []string{"http://127.0.0.1:8080", "https://localhost", "https://169.254.169.254"} {
+		if _, err := joinProviderURL(raw, "/payments"); err == nil {
+			t.Fatalf("expected private endpoint %q to be rejected", raw)
+		}
+	}
+	if _, err := joinProviderURL("https://payments.example.com", "https://attacker.example/pay"); err == nil {
+		t.Fatal("expected absolute provider path to be rejected")
 	}
 }

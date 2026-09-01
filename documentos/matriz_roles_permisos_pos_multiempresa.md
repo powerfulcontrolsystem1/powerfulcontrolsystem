@@ -2078,7 +2078,7 @@ Regla de lectura comun (R):
 | `/super/api/domotica_storage` | `WithSuperAuditoria` + sesion super | SA | SA | limites de imagenes y revision de carpetas empresariales de Domotica; no expone secretos |
 | `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta roles globales + roles propios por `empresa_id`; crea/edita/desactiva solo roles personalizados de la empresa con evidencia trazable |
 | `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
-| `/api/empresa/auditoria/eventos` | `WithEmpresaAuditoriaPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`); `action=conexion` registra perdida/restauracion de internet como accion de lectura operativa para usuarios con acceso a la empresa |
+| `/api/empresa/auditoria/eventos` | `WithEmpresaAuditoriaPermissions` | SA, AE | SA, AE con `auditoria:D` para `action=retener|purgar` | consulta, exportacion forense (`action=export_forense`, `auditoria:R`) y retencion/purga destructiva (`auditoria:D`); `action=conexion` registra perdida/restauracion de internet como accion de lectura operativa para usuarios con acceso a la empresa |
 | `/api/empresa/backups` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | snapshots/restauracion y depuracion por fecha (`action=restaurar|depurar_fecha` requiere `A`) |
 
 ### Endpoints fuera de wrapper (control alterno)

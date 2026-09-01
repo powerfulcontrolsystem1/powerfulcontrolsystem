@@ -3132,6 +3132,7 @@ func handleConciliarCarteraPagosAction(dbEmp *sql.DB, cfg empresaModuloGenericCo
 func registrarPagoCxPErrorStatus(err error) int {
 	if errors.Is(err, dbpkg.ErrEmpresaCxPAmountExceedsBalance) ||
 		errors.Is(err, dbpkg.ErrEmpresaCxPNoPendingBalance) ||
+		errors.Is(err, dbpkg.ErrEmpresaCxPIdempotencyConflict) ||
 		errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
 		return http.StatusConflict
 	}

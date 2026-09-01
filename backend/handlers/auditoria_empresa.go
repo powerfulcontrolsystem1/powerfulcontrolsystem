@@ -98,6 +98,18 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			isForenseExport := isAuditoriaForenseExportAction(action)
+			format := ""
+			if isForenseExport {
+				format = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+				if format == "" {
+					format = "json"
+				}
+				if format != "json" && format != "csv" {
+					http.Error(w, "format invalido (use json o csv)", http.StatusBadRequest)
+					return
+				}
+			}
 			limit, err := parseIntQueryOptional(r, "limit")
 			if err != nil {
 				http.Error(w, "limit invalido", http.StatusBadRequest)
@@ -188,16 +200,7 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			w.Header().Set("X-Total-Count", strconv.FormatInt(total, 10))
 			w.Header().Set("X-Page-Limit", strconv.Itoa(pageLimit))
 			w.Header().Set("X-Page-Offset", strconv.Itoa(pageOffset))
-			if action == "export_forense" || action == "forense_export" || action == "cadena_custodia" {
-				format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
-				if format == "" {
-					format = "json"
-				}
-				if format != "json" && format != "csv" {
-					http.Error(w, "format invalido (use json o csv)", http.StatusBadRequest)
-					return
-				}
-
+			if isForenseExport {
 				payload, err := buildAuditoriaForenseExportPayload(empresaID, filter, total, rows)
 				if err != nil {
 					http.Error(w, "No se pudo construir la exportacion forense", http.StatusInternalServerError)
@@ -275,6 +278,15 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}
+
+func isAuditoriaForenseExportAction(action string) bool {
+	switch strings.ToLower(strings.TrimSpace(action)) {
+	case "export_forense", "forense_export", "cadena_custodia":
+		return true
+	default:
+		return false
 	}
 }
 

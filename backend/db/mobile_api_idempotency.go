@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 )
 
 const mobileAPIIdempotencySchemaFingerprint = "empresa_mobile_api_idempotencia:v2:tenant-operation-key-hash-response-expiry"
@@ -24,6 +25,8 @@ type MobileAPIIdempotencyRecord struct {
 }
 
 var ErrMobileAPIIdempotencyConflict = errors.New("mobile api idempotency key conflict")
+
+var mobileAPIIdempotencyCleanupCounter atomic.Uint64
 
 func mobileAPIHash(value string) string {
 	sum := sha256.Sum256([]byte(value))
@@ -87,6 +90,9 @@ func ClaimMobileAPIIdempotency(dbConn *sql.DB, empresaID int64, operation, key, 
 	if empresaID <= 0 || strings.TrimSpace(operation) == "" || strings.TrimSpace(key) == "" {
 		return nil, false, fmt.Errorf("idempotency input invalido")
 	}
+	if mobileAPIIdempotencyCleanupCounter.Add(1)%256 == 0 {
+		_, _ = CleanupExpiredMobileAPIIdempotency(dbConn, 250)
+	}
 	record := &MobileAPIIdempotencyRecord{
 		EmpresaID:   empresaID,
 		Operation:   strings.TrimSpace(operation),
@@ -97,16 +103,8 @@ func ClaimMobileAPIIdempotency(dbConn *sql.DB, empresaID int64, operation, key, 
 	result, err := execSQLCompat(dbConn, `INSERT INTO empresa_mobile_api_idempotencia (
 		empresa_id, operacion, clave_hash, solicitud_hash, estado, codigo_respuesta, respuesta_json,
 		fecha_creacion, fecha_actualizacion, fecha_expiracion
-	) VALUES (?, ?, ?, ?, 'procesando', 0, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + interval '15 minutes')
-	ON CONFLICT (empresa_id, operacion, clave_hash) DO UPDATE SET
-		solicitud_hash = EXCLUDED.solicitud_hash,
-		estado = 'procesando', codigo_respuesta = 0, respuesta_json = '',
-		fecha_actualizacion = CURRENT_TIMESTAMP, fecha_completado = NULL,
-		fecha_expiracion = CURRENT_TIMESTAMP + interval '15 minutes'
-	WHERE empresa_mobile_api_idempotencia.estado = 'procesando'
-		AND empresa_mobile_api_idempotencia.solicitud_hash = EXCLUDED.solicitud_hash
-		AND empresa_mobile_api_idempotencia.fecha_expiracion IS NOT NULL
-		AND empresa_mobile_api_idempotencia.fecha_expiracion < CURRENT_TIMESTAMP`,
+	) VALUES (?, ?, ?, ?, 'procesando', 0, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)
+	ON CONFLICT (empresa_id, operacion, clave_hash) DO NOTHING`,
 		record.EmpresaID, record.Operation, record.KeyHash, record.RequestHash)
 	if err != nil {
 		return nil, false, err
@@ -137,13 +135,39 @@ func GetMobileAPIIdempotency(dbConn *sql.DB, empresaID int64, operation, keyHash
 	return &out, nil
 }
 
+// CleanupExpiredMobileAPIIdempotency bounds growth of the shared durable
+// ledger. The tuple subquery keeps each cleanup short and tenant-neutral while
+// preserving active and replayable claims.
+func CleanupExpiredMobileAPIIdempotency(dbConn *sql.DB, limit int) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("db connection is nil")
+	}
+	if limit <= 0 || limit > 1000 {
+		limit = 250
+	}
+	result, err := execSQLCompat(dbConn, `DELETE FROM empresa_mobile_api_idempotencia
+		WHERE (empresa_id, operacion, clave_hash) IN (
+			SELECT empresa_id, operacion, clave_hash
+			FROM empresa_mobile_api_idempotencia
+			WHERE estado = 'completado'
+				AND fecha_expiracion IS NOT NULL
+				AND fecha_expiracion < CURRENT_TIMESTAMP
+			ORDER BY fecha_expiracion ASC
+			LIMIT ?
+		)`, limit)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 func CompleteMobileAPIIdempotency(dbConn *sql.DB, record *MobileAPIIdempotencyRecord, responseCode int, responseJSON string) error {
 	if record == nil || responseCode < 200 || responseCode >= 300 {
 		return fmt.Errorf("resultado de idempotencia invalido")
 	}
 	result, err := execSQLCompat(dbConn, `UPDATE empresa_mobile_api_idempotencia
 		SET estado = 'completado', codigo_respuesta = ?, respuesta_json = ?, fecha_actualizacion = CURRENT_TIMESTAMP,
-			fecha_completado = CURRENT_TIMESTAMP, fecha_expiracion = CURRENT_TIMESTAMP + interval '24 hours'
+			fecha_completado = CURRENT_TIMESTAMP, fecha_expiracion = CURRENT_TIMESTAMP + interval '30 days'
 		WHERE empresa_id = ? AND operacion = ? AND clave_hash = ? AND solicitud_hash = ?`,
 		responseCode, responseJSON, record.EmpresaID, record.Operation, record.KeyHash, record.RequestHash)
 	if err != nil {
@@ -157,6 +181,20 @@ func CompleteMobileAPIIdempotency(dbConn *sql.DB, record *MobileAPIIdempotencyRe
 		return fmt.Errorf("idempotency claim is no longer owned")
 	}
 	return nil
+}
+
+// MarkMobileAPIIdempotencyUncertain preserves a claim when the handler returned
+// a server error or the durable response could not be completed. Re-executing
+// automatically would risk duplicating a committed business effect.
+func MarkMobileAPIIdempotencyUncertain(dbConn *sql.DB, record *MobileAPIIdempotencyRecord) error {
+	if record == nil {
+		return nil
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_mobile_api_idempotencia
+		SET estado = 'incierto', fecha_actualizacion = CURRENT_TIMESTAMP, fecha_expiracion = NULL
+		WHERE empresa_id = ? AND operacion = ? AND clave_hash = ? AND solicitud_hash = ? AND estado = 'procesando'`,
+		record.EmpresaID, record.Operation, record.KeyHash, record.RequestHash)
+	return err
 }
 
 func AbandonMobileAPIIdempotency(dbConn *sql.DB, record *MobileAPIIdempotencyRecord) error {

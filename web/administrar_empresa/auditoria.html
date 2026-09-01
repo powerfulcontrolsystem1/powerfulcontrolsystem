@@ -24,8 +24,10 @@
         <div class="empresa-inline-actions">
           <button id="btnBuscar" class="btn" type="button">Buscar</button>
           <button id="btnLimpiar" class="btn secondary" type="button">Limpiar</button>
-          <button id="btnExportCSV" class="btn secondary" type="button">Exportar CSV</button>
-          <button id="btnExportJSON" class="btn secondary" type="button">Exportar JSON</button>
+          <button id="btnExportCSV" class="btn secondary" type="button">Exportar vista CSV</button>
+          <button id="btnExportJSON" class="btn secondary" type="button">Exportar vista JSON</button>
+          <button id="btnExportForenseCSV" class="btn secondary" type="button">Forense CSV</button>
+          <button id="btnExportForenseJSON" class="btn secondary" type="button">Forense JSON</button>
         </div>
       </div>
 
@@ -96,15 +98,10 @@
               <option value="nomina_colombia_novedades">Nomina novedades</option>
               <option value="horarios_trabajadores">Horarios laborales</option>
               <option value="asistencia_empleados">Asistencia empleados</option>
-              <option value="gimnasio">Gimnasio</option>
-              <option value="odontologia">Odontologia</option>
               <option value="alquileres">Alquileres</option>
-              <option value="apartamentos_turisticos">Apartamentos turisticos</option>
-              <option value="propiedad_horizontal">Propiedad horizontal</option>
               <option value="aiu_construccion">Construccion / AIU</option>
               <option value="parqueadero">Parqueadero</option>
               <option value="domicilios">Domicilios</option>
-              <option value="taxi_system">Taxi system</option>
               <option value="tarifas_motel">Tarifas motel</option>
               <option value="turnos_atencion">Turnos</option>
               <option value="produccion_mrp">Produccion / MRP</option>
@@ -112,7 +109,6 @@
               <option value="control_electrico">Domotica</option>
               <option value="energia_solar">Energia solar</option>
               <option value="camaras">Camaras y DVR</option>
-              <option value="grafologia">GRAFOLOGIX</option>
               <option value="ubicacion_gps">Ubicacion GPS</option>
               <option value="hoja_vida_operativa">Hoja de vida operativa</option>
               <option value="carnets">Carnets</option>
@@ -638,6 +634,22 @@
       }
     }
 
+    async function exportForense(format) {
+      try {
+        const rows = ensureRowsForExport();
+        const query = new URLSearchParams(buildQuery());
+        query.set('action', 'export_forense');
+        query.set('format', format);
+        const res = await fetch('/api/empresa/auditoria/eventos?' + query.toString(), { credentials: 'same-origin' });
+        await ensureOk(res);
+        const content = await res.blob();
+        downloadBlob(buildExportFilename('forense.' + format), format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8', content);
+        setMsg('tablaMsg', 'Exportacion forense completada: ' + rows.length + ' eventos de la pagina actual, con manifiesto SHA-256 y cadena de custodia.', false);
+      } catch (err) {
+        setMsg('tablaMsg', err.message || 'No se pudo exportar la cadena de custodia.', true);
+      }
+    }
+
     async function buscarAuditoria(options) {
       const opts = options || {};
       if (opts.resetOffset) {
@@ -738,6 +750,8 @@
       document.getElementById('btnPurgar').addEventListener('click', aplicarRetencion);
       document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
       document.getElementById('btnExportJSON').addEventListener('click', exportJSON);
+      document.getElementById('btnExportForenseCSV').addEventListener('click', function() { exportForense('csv'); });
+      document.getElementById('btnExportForenseJSON').addEventListener('click', function() { exportForense('json'); });
       document.getElementById('btnPrevPage').addEventListener('click', paginaAnterior);
       document.getElementById('btnNextPage').addEventListener('click', paginaSiguiente);
       document.getElementById('btnCerrarDetalle').addEventListener('click', hideDetalleEvento);

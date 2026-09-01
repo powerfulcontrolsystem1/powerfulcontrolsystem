@@ -44,7 +44,6 @@ var privateFilesMigrationSources = []privateFilesMigrationSource{
 	{table: "chat_tareas", column: "nota_voz_url", category: "chat_tareas", route: "/api/empresa/chat_tareas/archivo"},
 	{table: "empresa_buzon_adjuntos", column: "file_url", category: "buzon", route: "/api/empresa/buzon/archivo"},
 	{table: "empresa_finanzas_movimientos", column: "comprobante_url", category: "finanzas", route: "/api/empresa/finanzas/archivo"},
-	{table: "empresa_grafologia_analisis", column: "imagen_url", category: "grafologia", route: "/api/empresa/grafologia/archivo"},
 	{table: "empresa_dian_configuracion", column: "certificado_clave_ref", category: "dian", fileRef: true},
 	{table: "empresa_dian_configuracion", column: "certificado_url", category: "dian", fileRef: true},
 }
@@ -140,6 +139,8 @@ func privateCategoryAllowsExtension(category, extension string) bool {
 		return isAllowedAttachmentExt(extension) && extension != ".svg"
 	case "soportes_compras_ia":
 		return soporteComprasIAAllowedExt[extension]
+	case "vida":
+		return extension == ".jpg" || extension == ".jpeg" || extension == ".png" || extension == ".webp" || extension == ".pdf"
 	default:
 		return false
 	}

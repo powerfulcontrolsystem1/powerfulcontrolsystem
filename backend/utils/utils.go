@@ -1107,7 +1107,6 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			// sesion web. La autenticacion propia del dispositivo se valida en el
 			// handler mediante su token de enrolamiento o token de dispositivo.
 			"/api/public/domotica/tunnel":                           {},
-			"/api/public/taxi_system":                               {},
 			"/api/public/estacion_vip":                              {},
 			"/api/public/chat_portal":                               {},
 			"/api/public/chat_portal_stream":                        {},
@@ -1141,8 +1140,6 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/pantalla_publica.html":                                {},
 			"/pantalla_turnos.html":                                 {},
 			"/turnos_publicos.html":                                 {},
-			"/taxi_system.html":                                     {},
-			"/taxi_system_conductor.html":                           {},
 			"/calculadora.html":                                     {},
 			"/productos_estacion_clientes_publico.html":             {},
 			"/estilos.css":                                          {},

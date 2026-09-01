@@ -60,6 +60,8 @@ func TestBIMILogoDeclaresTinyPSProfile(t *testing.T) {
 		"<script",
 		"<animate",
 		"<image",
+		"aria-labelledby=",
+		`font-weight="900"`,
 	} {
 		if strings.Contains(strings.ToLower(svg), forbidden) {
 			t.Fatalf("BIMI logo contains forbidden Tiny-PS marker %q", forbidden)

@@ -189,7 +189,7 @@ func buildEmpresaFinanzasRentaIAResponse(r *http.Request, dbEmp, dbSuper *sql.DB
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
 	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, nil, system)
 	if err != nil {
-		return map[string]interface{}{"ok": false, "code": "ai_error", "error": "No se pudo generar analisis IA: " + err.Error()}
+		return map[string]interface{}{"ok": false, "code": "ai_error", "error": publicAIProviderError(err)}
 	}
 	respuesta = strings.TrimSpace(respuesta)
 	if _, err := dbpkg.RegisterEmpresaAIConsulta(dbEmp, dbpkg.EmpresaAIConsulta{

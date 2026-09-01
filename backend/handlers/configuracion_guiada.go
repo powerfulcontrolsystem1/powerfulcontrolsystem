@@ -652,7 +652,7 @@ func buildGuidedBusinessSpecificQuestions(kind, singular, plural string) []empre
 		)
 		return questions
 	}
-	if guidedTypeContains(kind, "salon", "salón", "belleza", "spa", "barberia", "barbería", "veterinaria", "consultorio", "gimnasio", "taller", "lavadero") {
+	if guidedTypeContains(kind, "salon", "salón", "belleza", "spa", "barberia", "barbería", "veterinaria", "consultorio", "taller", "lavadero") {
 		questions = append(questions,
 			empresaConfiguracionGuiadaQuestion{ID: "servicios_base", Label: "Servicios base", Prompt: "Lista los servicios principales separados por coma.", Type: "textarea", Placeholder: "Corte, Barba, Lavado", DefaultValue: ""},
 			empresaConfiguracionGuiadaQuestion{ID: "duracion_servicio_minutos", Label: "Duracion base", Prompt: "Duracion promedio de un servicio en minutos.", Type: "number", Placeholder: "45", DefaultValue: "45"},

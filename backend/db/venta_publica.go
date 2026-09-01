@@ -320,7 +320,6 @@ type EmpresaVentaPublicaOrder struct {
 	ClienteComparteUbicacion bool    `json:"cliente_comparte_ubicacion"`
 	EntregaLatitud           float64 `json:"entrega_latitud,omitempty"`
 	EntregaLongitud          float64 `json:"entrega_longitud,omitempty"`
-	TaxiRequestID            int64   `json:"taxi_request_id,omitempty"`
 	TrackingToken            string  `json:"tracking_token,omitempty"`
 	ReferenciaExterna        string  `json:"referencia_externa,omitempty"`
 	TransactionID            string  `json:"transaction_id,omitempty"`
@@ -670,7 +669,6 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			cliente_comparte_ubicacion INTEGER DEFAULT 0,
 			entrega_latitud REAL DEFAULT 0,
 			entrega_longitud REAL DEFAULT 0,
-			taxi_request_id BIGINT DEFAULT 0,
 			tracking_token TEXT,
 			referencia_externa TEXT,
 			transaction_id TEXT,
@@ -849,9 +847,6 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "entrega_longitud", "REAL DEFAULT 0"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "taxi_request_id", "BIGINT DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "tracking_token", "TEXT"); err != nil {
@@ -2035,7 +2030,6 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 		cliente_comparte_ubicacion,
 		entrega_latitud,
 		entrega_longitud,
-		taxi_request_id,
 		tracking_token,
 		referencia_externa,
 		transaction_id,
@@ -2066,7 +2060,6 @@ func CreateEmpresaVentaPublicaOrder(dbConn *sql.DB, order EmpresaVentaPublicaOrd
 		ventaPublicaBoolToInt(order.ClienteComparteUbicacion),
 		order.EntregaLatitud,
 		order.EntregaLongitud,
-		order.TaxiRequestID,
 		strings.TrimSpace(order.TrackingToken),
 		strings.TrimSpace(order.ReferenciaExterna),
 		strings.TrimSpace(order.TransactionID),
@@ -2100,7 +2093,12 @@ func UpdateEmpresaVentaPublicaOrderPayment(dbConn *sql.DB, empresaID int64, codi
 		estadoPago = "pendiente"
 	}
 	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_ordenes
-		SET estado_pago = ?,
+		SET estado_pago = CASE
+				WHEN LOWER(COALESCE(estado_pago, 'pendiente')) = 'aprobado' THEN estado_pago
+				WHEN LOWER(?) = 'aprobado' THEN ?
+				WHEN LOWER(COALESCE(estado_pago, 'pendiente')) = 'rechazado' AND LOWER(?) = 'pendiente' THEN estado_pago
+				ELSE ?
+			END,
 			transaction_id = ?,
 			referencia_externa = ?,
 			pasarela_payload_json = CASE WHEN ? = '' THEN pasarela_payload_json ELSE ? END,
@@ -2108,6 +2106,9 @@ func UpdateEmpresaVentaPublicaOrderPayment(dbConn *sql.DB, empresaID int64, codi
 			observaciones = CASE WHEN ? = '' THEN observaciones ELSE ? END,
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND codigo_orden = ?`,
+		strings.TrimSpace(estadoPago),
+		strings.TrimSpace(estadoPago),
+		strings.TrimSpace(estadoPago),
 		strings.TrimSpace(estadoPago),
 		strings.TrimSpace(transactionID),
 		strings.TrimSpace(referenciaExterna),
@@ -2173,7 +2174,6 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 		COALESCE(cliente_comparte_ubicacion, 0),
 		COALESCE(entrega_latitud, 0),
 		COALESCE(entrega_longitud, 0),
-		COALESCE(taxi_request_id, 0),
 		COALESCE(tracking_token, ''),
 		COALESCE(referencia_externa, ''),
 		COALESCE(transaction_id, ''),
@@ -2209,7 +2209,6 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 		&comparteUbicacion,
 		&out.EntregaLatitud,
 		&out.EntregaLongitud,
-		&out.TaxiRequestID,
 		&out.TrackingToken,
 		&out.ReferenciaExterna,
 		&out.TransactionID,
@@ -2275,7 +2274,6 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 		COALESCE(cliente_comparte_ubicacion, 0),
 		COALESCE(entrega_latitud, 0),
 		COALESCE(entrega_longitud, 0),
-		COALESCE(taxi_request_id, 0),
 		COALESCE(tracking_token, ''),
 		COALESCE(referencia_externa, ''),
 		COALESCE(transaction_id, ''),
@@ -2312,7 +2310,6 @@ func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transa
 		&comparteUbicacion,
 		&out.EntregaLatitud,
 		&out.EntregaLongitud,
-		&out.TaxiRequestID,
 		&out.TrackingToken,
 		&out.ReferenciaExterna,
 		&out.TransactionID,
@@ -2401,7 +2398,6 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 		COALESCE(cliente_comparte_ubicacion, 0),
 		COALESCE(entrega_latitud, 0),
 		COALESCE(entrega_longitud, 0),
-		COALESCE(taxi_request_id, 0),
 		COALESCE(tracking_token, ''),
 		COALESCE(referencia_externa, ''),
 		COALESCE(transaction_id, ''),
@@ -2448,7 +2444,6 @@ func ListEmpresaVentaPublicaOrders(dbConn *sql.DB, empresaID int64, filter Empre
 			&comparteUbicacion,
 			&item.EntregaLatitud,
 			&item.EntregaLongitud,
-			&item.TaxiRequestID,
 			&item.TrackingToken,
 			&item.ReferenciaExterna,
 			&item.TransactionID,
@@ -2495,7 +2490,7 @@ func GetEmpresaVentaPublicaOrderByTrackingToken(dbConn *sql.DB, empresaID int64,
 	return GetEmpresaVentaPublicaOrderByCodigo(dbConn, empresaID, orderCode)
 }
 
-func UpdateEmpresaVentaPublicaOrderOperationalState(dbConn *sql.DB, empresaID int64, codigoOrden, estadoPedido, observaciones string, taxiRequestID int64) error {
+func UpdateEmpresaVentaPublicaOrderOperationalState(dbConn *sql.DB, empresaID int64, codigoOrden, estadoPedido, observaciones string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -2505,47 +2500,12 @@ func UpdateEmpresaVentaPublicaOrderOperationalState(dbConn *sql.DB, empresaID in
 	estadoPedido = ventaPublicaNormalizeOrderOperationalState(estadoPedido)
 	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_ordenes
 		SET estado_pedido = ?,
-			taxi_request_id = CASE WHEN ? > 0 THEN ? ELSE taxi_request_id END,
 			observaciones = CASE WHEN ? = '' THEN observaciones ELSE ? END,
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND codigo_orden = ?`,
 		estadoPedido,
-		taxiRequestID,
-		taxiRequestID,
 		strings.TrimSpace(observaciones),
 		strings.TrimSpace(observaciones),
-		empresaID,
-		strings.TrimSpace(codigoOrden),
-	)
-	if err != nil {
-		return err
-	}
-	affected, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected <= 0 {
-		return sql.ErrNoRows
-	}
-	return nil
-}
-
-func UpdateEmpresaVentaPublicaOrderTracking(dbConn *sql.DB, empresaID int64, codigoOrden string, taxiRequestID int64, trackingToken string) error {
-	if dbConn == nil {
-		return errors.New("db connection is nil")
-	}
-	if empresaID <= 0 || strings.TrimSpace(codigoOrden) == "" {
-		return fmt.Errorf("empresa_id o codigo_orden invalido")
-	}
-	res, err := execSQLCompat(dbConn, `UPDATE empresa_venta_publica_ordenes
-		SET taxi_request_id = CASE WHEN ? > 0 THEN ? ELSE taxi_request_id END,
-			tracking_token = CASE WHEN ? = '' THEN tracking_token ELSE ? END,
-			fecha_actualizacion = CURRENT_TIMESTAMP
-		WHERE empresa_id = ? AND codigo_orden = ?`,
-		taxiRequestID,
-		taxiRequestID,
-		strings.TrimSpace(trackingToken),
-		strings.TrimSpace(trackingToken),
 		empresaID,
 		strings.TrimSpace(codigoOrden),
 	)

@@ -119,8 +119,6 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 		{nombre: "Alquiler de herramientas y motos", prefijo: "Mostrador", estaciones: 2, ventaDirecta: true, nombreSingular: "Mostrador"},
 		{nombre: "Constructora", prefijo: "Obra", estaciones: 6, ventaDirecta: true, comisiones: true, nombreSingular: "Obra"},
 		{nombre: "Drogueria y farmacia", prefijo: "Caja", estaciones: 2, ventaDirecta: true, nombreSingular: "Caja"},
-		{nombre: "Gimnasio", prefijo: "Zona", estaciones: 4, ventaDirecta: true, comisiones: true, nombreSingular: "Zona"},
-		{nombre: "Odontologia", prefijo: "Consultorio", estaciones: 3, ventaDirecta: true, comisiones: true, nombreSingular: "Consultorio"},
 		{nombre: "Manejo de turnos", prefijo: "Puesto", estaciones: 4, ventaDirecta: true, nombreSingular: "Puesto"},
 		{nombre: "Vehiculos y flotas", prefijo: "Bahia", estaciones: 4, ventaDirecta: true, comisiones: true, nombreSingular: "Bahia"},
 		{nombre: "Profesional independiente", prefijo: "Venta directa", estaciones: 0, ventaDirecta: true, nombreSingular: "Venta directa", permiteSinEstacion: true},
@@ -210,14 +208,6 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 				if template.Modulos.ControlElectrico == nil || len(template.Modulos.ControlElectrico.Reles) == 0 {
 					t.Fatalf("hotel debe incluir aparatos guia de control electrico")
 				}
-			case "Gimnasio":
-				if template.Modulos.Gimnasio == nil || len(template.Modulos.Gimnasio.Planes) == 0 || len(template.Modulos.Gimnasio.Socios) == 0 {
-					t.Fatalf("gimnasio debe incluir planes y socios guia")
-				}
-			case "Odontologia":
-				if template.Modulos.Odontologia == nil || len(template.Modulos.Odontologia.Pacientes) == 0 || len(template.Modulos.Odontologia.Tratamientos) == 0 {
-					t.Fatalf("odontologia debe incluir pacientes y tratamientos guia")
-				}
 			case "Manejo de turnos":
 				if template.Modulos.TurnosAtencion == nil || len(template.Modulos.TurnosAtencion.Servicios) == 0 || len(template.Modulos.TurnosAtencion.Puestos) == 0 {
 					t.Fatalf("turnos debe incluir servicios y puestos guia")
@@ -238,8 +228,8 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 				}
 			}
 			if tc.nombre == "Drogueria y farmacia" {
-				if template.Operacion.TipoNegocio != "drogueria_farmacia" {
-					t.Fatalf("drogueria debe quedar como tipo_negocio drogueria_farmacia, got %q", template.Operacion.TipoNegocio)
+				if template.Operacion.TipoNegocio != "inventario" {
+					t.Fatalf("drogueria debe usar el modulo inventario, got %q", template.Operacion.TipoNegocio)
 				}
 				if !isTipoEmpresaDrogueriaFarmacia("Farmacia especializada") {
 					t.Fatalf("drogueria debe reconocer farmacia")
@@ -337,10 +327,10 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 	}
 }
 
-func TestNuevasPlantillasProduccionMasivaSeleccionaVeinte(t *testing.T) {
+func TestNuevasPlantillasProduccionMasivaSeleccionadas(t *testing.T) {
 	selected := NuevasPlantillasProduccionMasivaSeleccionados()
-	if len(selected) != 20 {
-		t.Fatalf("plantillas produccion masiva len=%d, want 20: %v", len(selected), selected)
+	if len(selected) != 9 {
+		t.Fatalf("plantillas produccion masiva len=%d, want 9: %v", len(selected), selected)
 	}
 
 	seen := map[string]bool{}
@@ -386,13 +376,13 @@ func TestNuevasPlantillasProduccionMasivaSeleccionaVeinte(t *testing.T) {
 		}
 		masivos++
 	}
-	if masivos != 20 {
-		t.Fatalf("plantillas masivos=%d, want 20", masivos)
+	if masivos != 9 {
+		t.Fatalf("plantillas masivos=%d, want 9", masivos)
 	}
 }
 
 func TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1(t *testing.T) {
-	for _, modulo := range []string{"gimnasio", "odontologia", "drogueria_farmacia", "alquileres", "constructora"} {
+	for _, modulo := range []string{"alquileres", "constructora"} {
 		t.Run(modulo, func(t *testing.T) {
 			integracion := BuildTipoEmpresaPreconfigIntegracionVertical(modulo)
 			if integracion == nil {

@@ -17,6 +17,7 @@ func TestEmpresaCxPAtomicSchemaHasTenantIdempotencyAndLedger(t *testing.T) {
 		"empresa_cxp_pagos",
 		"empresa_id BIGINT NOT NULL",
 		"idempotency_key_hash TEXT NOT NULL",
+		"request_hash TEXT NOT NULL",
 		"UNIQUE (empresa_id, idempotency_key_hash)",
 		"movimiento_finanzas_id BIGINT NOT NULL",
 		"monto NUMERIC(18,2) NOT NULL",
@@ -142,6 +143,8 @@ func TestRegistrarEmpresaCxPAbonoKeepsTenantScopedAtomicInvariants(t *testing.T)
 		"INSERT INTO empresa_cxp_pagos",
 		"InsertOutboxEvent(tx",
 		"ErrEmpresaCxPAmountExceedsBalance",
+		"ErrEmpresaCxPIdempotencyConflict",
+		"existingRequestHash != requestHash",
 		"EmpresaCxPPaymentOutboxTopic",
 	} {
 		if !strings.Contains(body, required) {

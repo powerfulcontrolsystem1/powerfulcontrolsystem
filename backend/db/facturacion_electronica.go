@@ -271,6 +271,8 @@ type FacturacionElectronicaRetryItem struct {
 	UsuarioCreador     string `json:"usuario_creador,omitempty"`
 	Estado             string `json:"estado"`
 	Observaciones      string `json:"observaciones,omitempty"`
+	LeaseToken         string `json:"-"`
+	LeaseUntil         string `json:"-"`
 }
 
 // FacturacionElectronicaRetryFilter define filtros para consultar cola de reintentos FE.
@@ -399,6 +401,9 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_empresa_estado ON facturacion_electronica_reintentos(empresa_id, estado_envio, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_proximo_intento ON facturacion_electronica_reintentos(empresa_id, proximo_intento, estado_envio);`,
 		`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_documento ON facturacion_electronica_reintentos(empresa_id, tipo_documento, documento_codigo);`,
+		`ALTER TABLE facturacion_electronica_reintentos ADD COLUMN IF NOT EXISTS lease_token TEXT`,
+		`ALTER TABLE facturacion_electronica_reintentos ADD COLUMN IF NOT EXISTS lease_until TIMESTAMPTZ`,
+		`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_lease ON facturacion_electronica_reintentos(empresa_id, lease_until)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := execSQLCompat(dbConn, stmt); err != nil {
@@ -1965,6 +1970,100 @@ func ListFacturacionElectronicaRetryEmpresaIDsDueContext(ctx context.Context, db
 		}
 	}
 	return items, rows.Err()
+}
+
+// ClaimFacturacionElectronicaRetriesByEmpresa reserves due fiscal documents
+// with PostgreSQL row locks. Concurrent workers cannot send the same document;
+// an abandoned claim becomes eligible only after its lease expires.
+func ClaimFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64, limit int, owner string) ([]FacturacionElectronicaRetryItem, error) {
+	return ClaimFacturacionElectronicaRetriesByEmpresaWithScope(dbConn, empresaID, limit, owner, true)
+}
+
+// ClaimFacturacionElectronicaRetriesByEmpresaWithScope preserves the atomic
+// claim while allowing the generic invoice worker to leave payroll documents
+// for the separately authorized payroll processor.
+func ClaimFacturacionElectronicaRetriesByEmpresaWithScope(dbConn *sql.DB, empresaID int64, limit int, owner string, includeNomina bool) ([]FacturacionElectronicaRetryItem, error) {
+	if dbConn == nil {
+		return nil, fmt.Errorf("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	if err := EnsureEmpresaFacturacionElectronicaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	seed := fmt.Sprintf("%d|%s|%d", empresaID, strings.TrimSpace(owner), time.Now().UnixNano())
+	leaseToken := paymentCheckoutHash(seed)
+	rows, err := querySQLCompat(dbConn, `WITH candidatos AS (
+		SELECT id
+		FROM facturacion_electronica_reintentos
+		WHERE empresa_id = ?
+			AND estado = 'activo'
+			AND estado_envio IN ('pendiente','fallido','contingencia')
+			AND (? = TRUE OR LOWER(TRIM(COALESCE(tipo_documento, ''))) NOT IN ('nomina_electronica','nota_ajuste_nomina_electronica'))
+			AND (COALESCE(proximo_intento, '') = '' OR proximo_intento <= CAST(CURRENT_TIMESTAMP AS TEXT))
+			AND (lease_until IS NULL OR lease_until < CURRENT_TIMESTAMP)
+		ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 ELSE 2 END,
+			COALESCE(proximo_intento, ''), id
+		FOR UPDATE SKIP LOCKED
+		LIMIT ?
+	)
+	UPDATE facturacion_electronica_reintentos AS retry
+	SET lease_token = ?, lease_until = CURRENT_TIMESTAMP + interval '5 minutes', fecha_actualizacion = CURRENT_TIMESTAMP
+	FROM candidatos
+	WHERE retry.id = candidatos.id
+	RETURNING retry.id, retry.empresa_id, COALESCE(retry.tipo_documento, ''),
+		COALESCE(retry.documento_codigo, ''), COALESCE(retry.pais_codigo, ''), COALESCE(retry.proveedor, ''),
+		COALESCE(retry.ambiente, 'sandbox'), COALESCE(retry.estado_envio, 'pendiente'), COALESCE(retry.intentos, 0),
+		COALESCE(retry.max_intentos, 5), COALESCE(retry.proximo_intento, ''), COALESCE(retry.fecha_ultimo_intento, ''),
+		COALESCE(retry.ultimo_error, ''), COALESCE(retry.respuesta_proveedor_json, ''), COALESCE(retry.contingencia_activa, 0),
+		COALESCE(retry.fecha_contingencia, ''), COALESCE(retry.referencia_externa, ''), COALESCE(retry.numero_legal, ''),
+		COALESCE(retry.codigo_validacion, ''), COALESCE(retry.fecha_emision_legal, ''), COALESCE(retry.fecha_creacion, ''),
+		COALESCE(retry.fecha_actualizacion, ''), COALESCE(retry.usuario_creador, ''), COALESCE(retry.estado, 'activo'),
+		COALESCE(retry.observaciones, ''), COALESCE(retry.lease_token, ''), COALESCE(CAST(retry.lease_until AS TEXT), '')`,
+		empresaID, includeNomina, limit, leaseToken)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]FacturacionElectronicaRetryItem, 0)
+	for rows.Next() {
+		var item FacturacionElectronicaRetryItem
+		var contingenciaRaw int64
+		if err := rows.Scan(
+			&item.ID, &item.EmpresaID, &item.TipoDocumento, &item.DocumentoCodigo, &item.PaisCodigo,
+			&item.Proveedor, &item.Ambiente, &item.EstadoEnvio, &item.Intentos, &item.MaxIntentos,
+			&item.ProximoIntento, &item.FechaUltimoIntento, &item.UltimoError, &item.RespuestaProveedor,
+			&contingenciaRaw, &item.FechaContingencia, &item.ReferenciaExterna, &item.NumeroLegal,
+			&item.CodigoValidacion, &item.FechaEmisionLegal, &item.FechaCreacion, &item.FechaActualizacion,
+			&item.UsuarioCreador, &item.Estado, &item.Observaciones, &item.LeaseToken, &item.LeaseUntil,
+		); err != nil {
+			return nil, err
+		}
+		item.ContingenciaActiva = int64ToBoolFE(contingenciaRaw)
+		normalizeFacturacionRetryItem(&item)
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func ReleaseFacturacionElectronicaRetryClaim(dbConn *sql.DB, empresaID, retryID int64, leaseToken string) error {
+	if dbConn == nil || empresaID <= 0 || retryID <= 0 || strings.TrimSpace(leaseToken) == "" {
+		return fmt.Errorf("claim de facturacion invalido")
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE facturacion_electronica_reintentos
+		SET lease_token = NULL, lease_until = NULL, fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE empresa_id = ? AND id = ? AND lease_token = ?`, empresaID, retryID, strings.TrimSpace(leaseToken))
+	return err
 }
 
 func facturacionPanamaJSONMap(raw string) map[string]interface{} {

@@ -705,10 +705,7 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 		"venta_publica.html",
 		filepath.Join("administrar_empresa", "alquileres.html"),
 		filepath.Join("administrar_empresa", "domicilios.html"),
-		filepath.Join("administrar_empresa", "taxi_system.html"),
 		filepath.Join("administrar_empresa", "ubicacion_gps.html"),
-		"taxi_system.html",
-		"taxi_system_conductor.html",
 	} {
 		content, readErr := os.ReadFile(filepath.Join(root, "web", rel))
 		if readErr != nil {
@@ -753,28 +750,6 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 	}
 	if !strings.Contains(string(domicilios), "function asArray(v)") || !strings.Contains(string(domicilios), "state.menu=asArray(menuData)") {
 		t.Fatal("Domicilios must render an empty menu response as an empty list")
-	}
-}
-
-func TestGrafologiaAIGuardsRenderInlineWithoutBlockingDialogs(t *testing.T) {
-	raw, err := os.ReadFile(filepath.Join("..", "web", "js", "grafologia.js"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	content := string(raw)
-	for _, message := range []string{
-		"No se detecto empresa_id para analizar con GPT-5.5.",
-		"Carga una imagen manuscrita antes de analizar con GPT-5.5.",
-	} {
-		if !strings.Contains(content, `renderAIResult({ error: "`+message+`" }, false)`) {
-			t.Fatalf("Grafologia IA must render its guard inline: %s", message)
-		}
-		if strings.Contains(content, `alert("`+message+`")`) {
-			t.Fatalf("Grafologia IA must not block the browser with alert: %s", message)
-		}
-	}
-	if strings.Contains(content, `alert("No se pudo analizar con GPT-5.5:`) {
-		t.Fatal("Grafologia IA provider failures must remain visible inline without a blocking alert")
 	}
 }
 
@@ -831,6 +806,45 @@ func TestEmpresaShellFullscreenPermissionHasNoDuplicateAttribute(t *testing.T) {
 	}
 	if strings.Contains(content, `allow="geolocation; fullscreen" allowfullscreen`) {
 		t.Fatal("empresa content iframe must not emit duplicate fullscreen attributes")
+	}
+}
+
+func TestEmpresaShellInitialLoadSharesAndParallelizesReads(t *testing.T) {
+	read := func(relative string) string {
+		raw, err := os.ReadFile(filepath.Join("..", "web", relative))
+		if err != nil {
+			t.Fatalf("read %s: %v", relative, err)
+		}
+		return string(raw)
+	}
+
+	menu := read("menu.js")
+	admin := read(filepath.Join("js", "administrar_empresa.js"))
+	panel := read(filepath.Join("administrar_empresa", "panel.html"))
+	radio := read(filepath.Join("js", "radio_player.js"))
+	chat := read(filepath.Join("js", "ai_chat_drawer.js"))
+	help := read(filepath.Join("js", "help_ai_bridge.js"))
+
+	for label, contract := range map[string]struct {
+		content string
+		marker  string
+	}{
+		"shared request cache":     {menu, "window.PCSRequestCache"},
+		"parallel shell bootstrap": {admin, "Promise.all(["},
+		"parent panel reuse":       {panel, "window.parent.PCSRequestCache"},
+		"radio preference reuse":   {radio, "loadSharedPreferences()"},
+		"chat preference reuse":    {chat, "loadSharedChatPreferences()"},
+		"blank frame guard":        {help, "childHref === 'about:blank'"},
+	} {
+		if !strings.Contains(contract.content, contract.marker) {
+			t.Fatalf("missing %s contract %q", label, contract.marker)
+		}
+	}
+	if strings.Contains(admin, "&estacion_id=0") {
+		t.Fatal("empresa shell must not request the station preferences payload twice with URL variants")
+	}
+	if strings.Count(admin, "initialCashierPreferencePromise") < 2 || strings.Count(admin, "initialPermissionsPromise") < 2 {
+		t.Fatal("empresa shell bootstrap reads must remain part of the shared Promise.all gate")
 	}
 }
 

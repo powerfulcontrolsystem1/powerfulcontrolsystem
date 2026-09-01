@@ -11,27 +11,27 @@ import (
 
 func TestEmpresaPlantillasIntegracionCatalogoContrato(t *testing.T) {
 	items := buildEmpresaPlantillasIntegracionCatalogo()
-	if len(items) != 30 {
-		t.Fatalf("catalogo universal debe publicar 30 plantillas canonicos exactos, obtuvo %d", len(items))
+	if len(items) != 13 {
+		t.Fatalf("catalogo universal debe publicar 13 plantillas canonicas exactas, obtuvo %d", len(items))
 	}
 	seen := map[string]bool{}
 	forbidden := map[string]string{
-		"consultorio_odontologico": "alias fusionado en odontologia",
-		"taxi":                     "alias fusionado en taxi_system",
+		"gimnasio":                 "modulo retirado",
+		"odontologia":              "modulo retirado",
+		"consultorio_odontologico": "modulo retirado",
+		"taxi":                     "modulo retirado",
+		"taxi_system":              "modulo retirado",
+		"apartamentos_turisticos":  "modulo retirado",
+		"propiedad_horizontal":     "modulo retirado",
+		"drogueria_farmacia":       "absorbido por inventario",
 		"turnos_atencion":          "capacidad de soporte transversal",
 		"turnos":                   "alias de soporte transversal",
 	}
 	required := map[string]bool{
-		"gimnasio":                false,
-		"odontologia":             false,
-		"parqueadero":             false,
-		"taxi_system":             false,
-		"domicilios":              false,
-		"apartamentos_turisticos": false,
-		"propiedad_horizontal":    false,
-		"alquileres":              false,
-		"drogueria_farmacia":      false,
-		"aiu_construccion":        false,
+		"parqueadero":      false,
+		"domicilios":       false,
+		"alquileres":       false,
+		"aiu_construccion": false,
 	}
 	for _, item := range items {
 		if item.ID == "" || item.Page == "" || item.Modulo == "" || item.Titulo == "" {
@@ -120,14 +120,8 @@ func TestEmpresaPlantillasIntegracionCatalogoContrato(t *testing.T) {
 			t.Fatalf("nueva plantilla faltante en matriz universal: %s", module)
 		}
 	}
-	if len(items)-len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()) != 10 {
-		t.Fatalf("la matriz debe conservar 10 plantillas clasicos canonicos y 20 nuevos: total=%d nuevos=%d", len(items), len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()))
-	}
-	if !hasAllStringValues(findVerticalForTest(items, "odontologia").FusedModules, []string{"consultorio_odontologico"}) {
-		t.Fatalf("odontologia debe declarar fusion de consultorio_odontologico")
-	}
-	if !hasAllStringValues(findVerticalForTest(items, "taxi_system").FusedModules, []string{"taxi"}) {
-		t.Fatalf("taxi_system debe declarar fusion de taxi")
+	if len(items)-len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()) != 4 {
+		t.Fatalf("la matriz debe conservar 4 plantillas clasicas canonicas: total=%d nuevas=%d", len(items), len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()))
 	}
 }
 
@@ -164,7 +158,7 @@ func TestPublicPlantillasIntegracionCatalogoHandler(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode payload: %v", err)
 	}
-	if !payload.OK || payload.Total != len(payload.Items) || payload.Total != 30 {
+	if !payload.OK || payload.Total != len(payload.Items) || payload.Total != 13 {
 		t.Fatalf("payload inesperado: %+v", payload)
 	}
 }

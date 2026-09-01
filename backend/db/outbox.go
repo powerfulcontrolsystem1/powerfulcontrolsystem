@@ -3,10 +3,13 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 )
+
+var ErrOutboxIdempotencyConflict = errors.New("outbox idempotency key conflict")
 
 const (
 	OutboxPending    = "pending"
@@ -192,6 +195,9 @@ func InsertOutboxEventIdempotentContext(ctx context.Context, tx *sql.Tx, event O
 			&existing.Attempts, &existing.MaxAttempts, &existing.IdempotencyKeyHash, &existing.AvailableAt)
 	if err != nil {
 		return nil, false, err
+	}
+	if existing.Version != event.Version || strings.TrimSpace(existing.PayloadJSON) != strings.TrimSpace(event.PayloadJSON) {
+		return nil, false, ErrOutboxIdempotencyConflict
 	}
 	return &existing, false, nil
 }

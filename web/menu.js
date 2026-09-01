@@ -63,6 +63,71 @@
 
   installCSRFFetch();
 
+  function installSharedJSONRequestCache(){
+    if (window.PCSRequestCache && typeof window.PCSRequestCache.getJSON === 'function') return;
+    var entries = Object.create(null);
+
+    function normalizeURL(url){
+      try { return new URL(String(url || ''), window.location.href).href; }
+      catch (error) { return String(url || ''); }
+    }
+
+    function getJSON(url, options){
+      options = options && typeof options === 'object' ? options : {};
+      var key = String(options.key || normalizeURL(url));
+      var ttlMs = Math.max(0, Number(options.ttlMs || 5000));
+      var now = Date.now();
+      var current = entries[key];
+      if (!options.force && current && (current.pending || current.expiresAt > now)) {
+        return current.promise;
+      }
+      if (options.force) delete entries[key];
+
+      var requestOptions = { credentials: options.credentials || 'same-origin' };
+      if (options.headers) requestOptions.headers = options.headers;
+      var entry = { pending: true, expiresAt: 0, promise: null };
+      entry.promise = fetch(url, requestOptions)
+        .then(function(response){
+          return response.json().catch(function(){ return null; }).then(function(data){
+            return { ok: response.ok, status: response.status, data: data };
+          });
+        })
+        .then(function(result){
+          entry.pending = false;
+          entry.expiresAt = Date.now() + ttlMs;
+          if (!ttlMs) delete entries[key];
+          return result;
+        })
+        .catch(function(error){
+          delete entries[key];
+          throw error;
+        });
+      entries[key] = entry;
+      return entry.promise;
+    }
+
+    function invalidate(urlOrKey){
+      var raw = String(urlOrKey || '');
+      delete entries[raw];
+      delete entries[normalizeURL(raw)];
+    }
+
+    window.PCSRequestCache = {
+      getJSON: getJSON,
+      invalidate: invalidate
+    };
+  }
+
+  installSharedJSONRequestCache();
+
+  function loadSharedCurrentSession(){
+    return window.PCSRequestCache.getJSON('/me', { ttlMs: 30000, credentials: 'same-origin' })
+      .then(function(result){
+        if (!result || !result.ok) throw new Error('no-auth');
+        return result.data || {};
+      });
+  }
+
   function isLightTheme(theme){
     return normalizeTheme(theme).indexOf('light') === 0;
   }
@@ -406,11 +471,7 @@
       return;
     }
 
-    fetch('/me', { credentials: 'same-origin' })
-      .then(function(res){
-        if (!res.ok) throw new Error('no-auth');
-        return res.json().catch(function(){ return {}; });
-      })
+    loadSharedCurrentSession()
       .then(function(data){
         try {
           window.__pcsFloatingMenuPending = false;
@@ -1456,11 +1517,7 @@
           if (photo) setAvatarUrl(photo, name); else fallbackIcon();
           return;
         }
-        fetch('/me', { credentials: 'same-origin' })
-          .then(function(res){
-            if (!res.ok) throw new Error('no-auth');
-            return res.json();
-          })
+        loadSharedCurrentSession()
           .then(function(data){
             setSessionLinkAuthenticated(true);
             var photo = (data && (data.photo || data.avatar)) || '';

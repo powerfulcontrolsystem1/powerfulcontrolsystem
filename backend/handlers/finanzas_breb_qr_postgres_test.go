@@ -20,3 +20,18 @@ func TestBrebQRSortExpressionsKeepPostgresTextTypesCompatible(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateAndNormalizeBrebQRCuentasUsesColombianKeyFormats(t *testing.T) {
+	rows, err := validateAndNormalizeBrebQRCuentas([]map[string]interface{}{{
+		"activa": true, "nombre": "Caja principal", "proveedor": "breb", "tipo_llave": "celular", "llave": "3001234567", "qr_tipo": "estatico", "payload_oficial": "000201010211",
+	}})
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("expected valid Colombian Bre-B account, rows=%#v err=%v", rows, err)
+	}
+	if _, err := validateAndNormalizeBrebQRCuentas([]map[string]interface{}{{"activa": true, "proveedor": "breb", "tipo_llave": "celular", "llave": "2001234567", "qr_tipo": "estatico"}}); err == nil {
+		t.Fatal("expected invalid Colombian mobile key to be rejected")
+	}
+	if _, err := validateAndNormalizeBrebQRCuentas([]map[string]interface{}{{"activa": true, "proveedor": "breb", "tipo_llave": "celular", "llave": "3001234567", "qr_tipo": "dinamico", "payload_oficial": "000201{valor}"}}); err == nil {
+		t.Fatal("expected dynamic/template QR to be rejected without a provider connector")
+	}
+}

@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -75,6 +77,8 @@ const (
 	brebQRBancosOrderExpr   = "pcs_ts(COALESCE(fecha_movimiento, fecha_creacion, ''))"
 )
 
+var brebQRReferencePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 ._:/+\-]{2,78}[A-Za-z0-9]$`)
+
 // EmpresaFinanzasBrebQRHandler centraliza configuracion y trazabilidad Bre-B QR por empresa.
 func EmpresaFinanzasBrebQRHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +134,10 @@ func EmpresaFinanzasBrebQRHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			var payload empresaBrebQRConfigPayload
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
+			decoder := json.NewDecoder(r.Body)
+			decoder.DisallowUnknownFields()
+			if err := decoder.Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
 				return
 			}
@@ -141,6 +148,16 @@ func EmpresaFinanzasBrebQRHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if payload.BrebReferenciaPrefijo == "" {
 				payload.BrebReferenciaPrefijo = "BREB"
 			}
+			normalizedAccounts, err := validateAndNormalizeBrebQRCuentas(payload.PagoQRCuentas)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if payload.BrebConciliacionAutomatica || strings.TrimSpace(payload.BrebWebhookURL) != "" {
+				http.Error(w, "la conciliacion automatica Bre-B no puede activarse sin un conector bancario firmado implementado en el servidor", http.StatusConflict)
+				return
+			}
+			payload.PagoQRCuentas = normalizedAccounts
 			if err := saveEmpresaBrebQRConfig(dbEmp, payload, adminEmailFromRequest(r)); err != nil {
 				log.Printf("[breb_qr] save config empresa_id=%d error: %v", empresaID, err)
 				http.Error(w, "No se pudo guardar configuracion Bre-B QR", http.StatusInternalServerError)
@@ -176,7 +193,10 @@ func EmpresaFinanzasBrebQRHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			var payload empresaBrebQRRegistroManualPayload
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+			decoder := json.NewDecoder(r.Body)
+			decoder.DisallowUnknownFields()
+			if err := decoder.Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
 				return
 			}
@@ -228,10 +248,10 @@ func loadEmpresaBrebQRConfig(dbEmp *sql.DB, empresaID int64) (map[string]interfa
 		"pago_qr_habilitado":                    boolFromInterface(global["pago_qr_habilitado"], false),
 		"metodo_pago_transferencia_bre_b":       boolFromInterface(global["metodo_pago_transferencia_bre_b"], true),
 		"permitir_pago_mixto":                   boolFromInterface(global["permitir_pago_mixto"], true),
-		"breb_conciliacion_automatica":          boolFromInterface(global["breb_conciliacion_automatica"], false),
+		"breb_conciliacion_automatica":          false,
 		"breb_requiere_comprobante":             boolFromInterface(global["breb_requiere_comprobante"], true),
 		"breb_referencia_prefijo":               stringFromInterfaceDefault(global["breb_referencia_prefijo"], "BREB"),
-		"breb_webhook_url":                      stringFromInterfaceDefault(global["breb_webhook_url"], ""),
+		"breb_webhook_url":                      "",
 		"breb_alerta_pagos_pendientes_min":      intFromInterfaceDefault(global["breb_alerta_pagos_pendientes_min"], 10),
 		"breb_cuenta_default_por_caja":          boolFromInterface(global["breb_cuenta_default_por_caja"], false),
 		"breb_instrucciones_operacion":          stringFromInterfaceDefault(global["breb_instrucciones_operacion"], "Verificar el abono en la app bancaria antes de cerrar el carrito."),
@@ -240,7 +260,7 @@ func loadEmpresaBrebQRConfig(dbEmp *sql.DB, empresaID int64) (map[string]interfa
 		"pago_qr_llave_legacy":                  stringFromInterfaceDefault(global["pago_qr_llave"], ""),
 		"pago_qr_payload_oficial_legacy":        stringFromInterfaceDefault(global["pago_qr_payload_oficial"], ""),
 		"origen_configuracion":                  "empresa_estacion_prefs.estaciones_config.carrito_ui_global",
-		"requiere_integracion_bancaria_externa": !boolFromInterface(global["breb_conciliacion_automatica"], false),
+		"requiere_integracion_bancaria_externa": true,
 	}
 	return out, nil
 }
@@ -255,10 +275,10 @@ func saveEmpresaBrebQRConfig(dbEmp *sql.DB, payload empresaBrebQRConfigPayload, 
 	global["pago_qr_habilitado"] = payload.PagoQRHabilitado
 	global["metodo_pago_transferencia_bre_b"] = payload.MetodoPagoTransferenciaBreb
 	global["permitir_pago_mixto"] = payload.PermitirPagoMixto
-	global["breb_conciliacion_automatica"] = payload.BrebConciliacionAutomatica
+	global["breb_conciliacion_automatica"] = false
 	global["breb_requiere_comprobante"] = payload.BrebRequiereComprobante
 	global["breb_referencia_prefijo"] = strings.TrimSpace(payload.BrebReferenciaPrefijo)
-	global["breb_webhook_url"] = strings.TrimSpace(payload.BrebWebhookURL)
+	global["breb_webhook_url"] = ""
 	global["breb_alerta_pagos_pendientes_min"] = payload.BrebAlertaPagosPendientesMin
 	global["breb_cuenta_default_por_caja"] = payload.BrebCuentaDefaultPorCaja
 	global["breb_instrucciones_operacion"] = strings.TrimSpace(payload.BrebInstruccionesOperacion)
@@ -440,13 +460,14 @@ func listEmpresaBrebQRPagos(dbEmp *sql.DB, empresaID int64, limit int) ([]empres
 
 func summarizeEmpresaBrebQRPagos(pagos []empresaBrebQRPago) map[string]interface{} {
 	resumen := map[string]interface{}{
-		"total_registros":       len(pagos),
-		"total_monto":           0.0,
-		"ventas_carrito":        0,
-		"abonos_carrito":        0,
-		"registros_bancarios":   0,
-		"pendientes_conciliar":  0,
-		"confirmados_operativo": 0,
+		"total_registros":                       len(pagos),
+		"total_monto":                           0.0,
+		"ventas_carrito":                        0,
+		"abonos_carrito":                        0,
+		"registros_bancarios":                   0,
+		"pendientes_conciliar":                  0,
+		"confirmados_bancarios":                 0,
+		"registrados_sin_confirmacion_bancaria": 0,
 	}
 	total := 0.0
 	for _, p := range pagos {
@@ -454,14 +475,14 @@ func summarizeEmpresaBrebQRPagos(pagos []empresaBrebQRPago) map[string]interface
 		switch p.Origen {
 		case "venta_carrito":
 			resumen["ventas_carrito"] = resumen["ventas_carrito"].(int) + 1
-			resumen["confirmados_operativo"] = resumen["confirmados_operativo"].(int) + 1
+			resumen["registrados_sin_confirmacion_bancaria"] = resumen["registrados_sin_confirmacion_bancaria"].(int) + 1
 		case "abono_carrito":
 			resumen["abonos_carrito"] = resumen["abonos_carrito"].(int) + 1
-			resumen["confirmados_operativo"] = resumen["confirmados_operativo"].(int) + 1
+			resumen["registrados_sin_confirmacion_bancaria"] = resumen["registrados_sin_confirmacion_bancaria"].(int) + 1
 		case "registro_bancario":
 			resumen["registros_bancarios"] = resumen["registros_bancarios"].(int) + 1
 			if strings.EqualFold(strings.TrimSpace(p.EstadoConciliado), "conciliado") {
-				resumen["confirmados_operativo"] = resumen["confirmados_operativo"].(int) + 1
+				resumen["confirmados_bancarios"] = resumen["confirmados_bancarios"].(int) + 1
 			} else {
 				resumen["pendientes_conciliar"] = resumen["pendientes_conciliar"].(int) + 1
 			}
@@ -475,24 +496,45 @@ func insertEmpresaBrebQRRegistroManual(dbEmp *sql.DB, payload empresaBrebQRRegis
 	if payload.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
-	if payload.Monto <= 0 {
+	if payload.Monto <= 0 || math.IsNaN(payload.Monto) || math.IsInf(payload.Monto, 0) {
 		return 0, fmt.Errorf("monto debe ser mayor a cero")
 	}
 	ref := strings.TrimSpace(payload.ReferenciaBancaria)
-	if len(ref) < 4 {
+	if len(ref) < 4 || len(ref) > 80 || !brebQRReferencePattern.MatchString(ref) {
 		return 0, fmt.Errorf("referencia_bancaria es obligatoria")
 	}
-	fecha := strings.TrimSpace(payload.FechaMovimiento)
-	if fecha == "" {
-		fecha = time.Now().Format("2006-01-02 15:04:05")
+	fecha, err := normalizeBrebQRMovementDate(payload.FechaMovimiento)
+	if err != nil {
+		return 0, err
 	}
 	moneda := strings.ToUpper(strings.TrimSpace(payload.Moneda))
 	if moneda == "" {
 		moneda = "COP"
 	}
+	if moneda != "COP" {
+		return 0, fmt.Errorf("Bre-B Colombia solo admite moneda COP")
+	}
 	estadoConciliacion := strings.ToLower(strings.TrimSpace(payload.EstadoConciliacion))
-	if estadoConciliacion == "" {
-		estadoConciliacion = "pendiente"
+	if estadoConciliacion != "" && estadoConciliacion != "pendiente" {
+		return 0, fmt.Errorf("un registro manual debe iniciar pendiente de conciliacion bancaria")
+	}
+	estadoConciliacion = "pendiente"
+	if payload.CarritoID > 0 {
+		carrito, err := dbpkg.GetCarritoCompraByID(dbEmp, payload.EmpresaID, payload.CarritoID)
+		if err != nil || carrito == nil {
+			return 0, fmt.Errorf("el carrito indicado no pertenece a esta empresa")
+		}
+		expected := carrito.TotalPagado
+		if expected <= 0 {
+			expected = carrito.Total
+		}
+		if math.Abs(mathRound2(expected)-mathRound2(payload.Monto)) > 0.01 {
+			return 0, fmt.Errorf("el monto no coincide con el total registrado para el carrito")
+		}
+		cartCurrency := strings.ToUpper(strings.TrimSpace(carrito.Moneda))
+		if cartCurrency != "" && cartCurrency != "COP" {
+			return 0, fmt.Errorf("la moneda del carrito no corresponde a Bre-B Colombia")
+		}
 	}
 	hash := hashEmpresaBrebQRMovimiento(payload.EmpresaID, fecha, ref, payload.Monto, payload.CajaCodigo, payload.CarritoID)
 	obs := map[string]interface{}{
@@ -506,7 +548,7 @@ func insertEmpresaBrebQRRegistroManual(dbEmp *sql.DB, payload empresaBrebQRRegis
 	}
 	obsBlob, _ := json.Marshal(obs)
 	id := int64(0)
-	err := dbpkg.QueryRowCompat(dbEmp, `INSERT INTO empresa_finanzas_bancos_movimientos (
+	err = dbpkg.QueryRowCompat(dbEmp, `INSERT INTO empresa_finanzas_bancos_movimientos (
 		empresa_id, periodo_contable, fecha_movimiento, fecha_valor, cuenta_bancaria, banco_nombre, tipo_movimiento,
 		descripcion, referencia_bancaria, documento_codigo, moneda, monto, total, estado_conciliacion, origen,
 		hash_movimiento, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
@@ -530,7 +572,7 @@ func insertEmpresaBrebQRRegistroManual(dbEmp *sql.DB, payload empresaBrebQRRegis
 }
 
 func hashEmpresaBrebQRMovimiento(empresaID int64, fecha, referencia string, monto float64, caja string, carritoID int64) string {
-	base := strconv.FormatInt(empresaID, 10) + "|" + strings.TrimSpace(fecha) + "|" + strings.ToLower(strings.TrimSpace(referencia)) + "|" + fmt.Sprintf("%.2f", monto) + "|" + strings.ToLower(strings.TrimSpace(caja)) + "|" + strconv.FormatInt(carritoID, 10)
+	base := strconv.FormatInt(empresaID, 10) + "|" + strings.ToLower(strings.TrimSpace(referencia))
 	sum := sha256.Sum256([]byte(base))
 	return "breb_qr_" + hex.EncodeToString(sum[:])
 }
@@ -567,7 +609,7 @@ func normalizeBrebQRCuentas(raw interface{}) []map[string]interface{} {
 			"cuenta_contable": stringFromInterfaceDefault(row["cuenta_contable"], ""),
 			"banco_receptor":  stringFromInterfaceDefault(row["banco_receptor"], ""),
 			"referencia_fija": stringFromInterfaceDefault(row["referencia_fija"], ""),
-			"qr_tipo":         stringFromInterfaceDefault(row["qr_tipo"], "dinamico"),
+			"qr_tipo":         stringFromInterfaceDefault(row["qr_tipo"], "estatico"),
 		}
 		if strings.TrimSpace(fmt.Sprint(item["nombre"], item["llave"], item["payload_oficial"], item["caja_codigo"])) == "" {
 			continue
@@ -575,6 +617,137 @@ func normalizeBrebQRCuentas(raw interface{}) []map[string]interface{} {
 		out = append(out, item)
 	}
 	return out
+}
+
+func validateAndNormalizeBrebQRCuentas(raw []map[string]interface{}) ([]map[string]interface{}, error) {
+	if len(raw) > 50 {
+		return nil, fmt.Errorf("se permiten maximo 50 cuentas receptoras")
+	}
+	normalized := normalizeBrebQRCuentas(raw)
+	for index, row := range normalized {
+		provider := strings.ToLower(stringFromInterfaceDefault(row["proveedor"], "breb"))
+		keyType := normalizeBrebQRKeyType(stringFromInterfaceDefault(row["tipo_llave"], ""))
+		key := stringFromInterfaceDefault(row["llave"], "")
+		payload := stringFromInterfaceDefault(row["payload_oficial"], "")
+		qrType := strings.ToLower(stringFromInterfaceDefault(row["qr_tipo"], "estatico"))
+		if qrType != "estatico" {
+			return nil, fmt.Errorf("cuenta %d: el QR dinamico requiere API oficial del participante Bre-B; solo se admite payload estatico emitido por el proveedor", index+1)
+		}
+		if len(payload) > 4096 || strings.ContainsAny(payload, "\r\n") {
+			return nil, fmt.Errorf("cuenta %d: payload QR invalido o demasiado largo", index+1)
+		}
+		if strings.Contains(payload, "{") || strings.Contains(payload, "}") {
+			return nil, fmt.Errorf("cuenta %d: no se permiten plantillas en un payload QR oficial; usa el contenido estatico exacto", index+1)
+		}
+		if key != "" {
+			if keyType == "" {
+				keyType = inferBrebQRKeyType(key, provider)
+			}
+			if err := validateBrebQRKey(keyType, key); err != nil {
+				return nil, fmt.Errorf("cuenta %d: %w", index+1, err)
+			}
+		}
+		if boolFromInterface(row["activa"], true) && key == "" && payload == "" {
+			return nil, fmt.Errorf("cuenta %d: una cuenta activa requiere llave o payload QR oficial", index+1)
+		}
+		row["proveedor"] = provider
+		row["tipo_llave"] = keyType
+		row["llave"] = key
+		row["payload_oficial"] = payload
+		row["qr_tipo"] = "estatico"
+	}
+	return normalized, nil
+}
+
+func normalizeBrebQRKeyType(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	v = strings.NewReplacer("á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u").Replace(v)
+	switch v {
+	case "celular", "telefono", "movil", "nequi":
+		return "celular"
+	case "correo", "email", "correo_electronico":
+		return "correo"
+	case "documento", "nit", "cedula", "identificacion":
+		return "documento"
+	case "alfanumerica", "usuario", "alias":
+		return "alfanumerica"
+	case "comercio", "codigo_comercio":
+		return "comercio"
+	default:
+		return ""
+	}
+}
+
+func inferBrebQRKeyType(key, provider string) string {
+	key = strings.TrimSpace(key)
+	if strings.Contains(key, "@") && !strings.HasPrefix(key, "@") {
+		return "correo"
+	}
+	if strings.HasPrefix(key, "@") {
+		return "alfanumerica"
+	}
+	if len(key) == 10 && strings.HasPrefix(key, "00") {
+		return "comercio"
+	}
+	if len(key) == 10 && strings.HasPrefix(key, "3") {
+		return "celular"
+	}
+	if provider == "nequi" {
+		return "celular"
+	}
+	return "documento"
+}
+
+func validateBrebQRKey(keyType, key string) error {
+	key = strings.TrimSpace(key)
+	switch keyType {
+	case "celular":
+		if len(key) != 10 || key[0] != '3' || !regexp.MustCompile(`^[0-9]{10}$`).MatchString(key) {
+			return fmt.Errorf("la llave celular debe tener 10 digitos y comenzar por 3")
+		}
+	case "correo":
+		parts := strings.Split(key, "@")
+		if len(key) > 120 || len(parts) != 2 || parts[0] == "" || !strings.Contains(parts[1], ".") || strings.ContainsAny(key, " \t\r\n") {
+			return fmt.Errorf("la llave de correo no tiene un formato valido")
+		}
+	case "documento":
+		if len(key) > 18 || !regexp.MustCompile(`^[A-Za-z0-9]{1,18}$`).MatchString(key) {
+			return fmt.Errorf("la llave de documento admite hasta 18 caracteres alfanumericos sin puntuacion")
+		}
+	case "alfanumerica":
+		if len(key) < 5 || len(key) > 20 || !regexp.MustCompile(`^@[A-Za-z0-9._-]{4,19}$`).MatchString(key) {
+			return fmt.Errorf("la llave alfanumerica debe iniciar por @ y tener entre 5 y 20 caracteres")
+		}
+	case "comercio":
+		if !regexp.MustCompile(`^00[0-9]{8}$`).MatchString(key) {
+			return fmt.Errorf("la llave de comercio debe tener 10 digitos y comenzar por 00")
+		}
+	default:
+		return fmt.Errorf("tipo_llave no reconocido para Bre-B Colombia")
+	}
+	return nil
+}
+
+func normalizeBrebQRMovementDate(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return time.Now().Format("2006-01-02 15:04:05"), nil
+	}
+	var parsed time.Time
+	var err error
+	for _, layout := range []string{"2006-01-02 15:04:05", "2006-01-02 15:04", time.RFC3339} {
+		parsed, err = time.ParseInLocation(layout, value, time.Local)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil || parsed.IsZero() {
+		return "", fmt.Errorf("fecha_movimiento invalida")
+	}
+	if parsed.After(time.Now().Add(5 * time.Minute)) {
+		return "", fmt.Errorf("fecha_movimiento no puede estar en el futuro")
+	}
+	return parsed.Format("2006-01-02 15:04:05"), nil
 }
 
 func boolFromInterface(value interface{}, fallback bool) bool {

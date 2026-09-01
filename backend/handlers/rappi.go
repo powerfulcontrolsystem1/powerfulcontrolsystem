@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -243,6 +244,11 @@ func handleEmpresaRappiOrderAction(w http.ResponseWriter, r *http.Request, dbEmp
 	if orderID == "" {
 		orderID = strings.TrimSpace(r.URL.Query().Get("order_id"))
 	}
+	idempotencyKey := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	if !validMobileIdempotencyKey(idempotencyKey) {
+		http.Error(w, "Idempotency-Key valido es obligatorio", http.StatusBadRequest)
+		return
+	}
 	if orderID == "" {
 		http.Error(w, "order_id es obligatorio", http.StatusBadRequest)
 		return
@@ -274,13 +280,43 @@ func handleEmpresaRappiOrderAction(w http.ResponseWriter, r *http.Request, dbEmp
 		http.Error(w, "accion no permitida", http.StatusBadRequest)
 		return
 	}
+	fingerprintBytes, _ := json.Marshal(map[string]interface{}{
+		"action": action, "order_id": orderID, "cooking_time_minutes": cookingTime,
+		"reason": strings.TrimSpace(payload.Reason), "usuario": strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r))),
+	})
+	claim, claimed, err := dbpkg.ClaimMobileAPIIdempotency(dbEmp, empresaID, "rappi_order_"+action, idempotencyKey, string(fingerprintBytes))
+	if err != nil {
+		if errors.Is(err, dbpkg.ErrMobileAPIIdempotencyConflict) {
+			http.Error(w, "Idempotency-Key ya fue usado con otra accion Rappi", http.StatusConflict)
+			return
+		}
+		http.Error(w, "no se pudo reservar la accion Rappi", http.StatusServiceUnavailable)
+		return
+	}
+	if !claimed {
+		if claim.Status == "completado" && claim.ResponseCode >= 200 && claim.ResponseCode < 300 {
+			w.Header().Set("Idempotency-Replayed", "true")
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(claim.ResponseCode)
+			_, _ = io.WriteString(w, claim.ResponseJSON)
+			return
+		}
+		http.Error(w, "accion Rappi en proceso o con resultado incierto", http.StatusConflict)
+		return
+	}
 	respBody, status, err := empresaRappiRequest(dbEmp, empresaID, method, path, body)
 	if err != nil {
+		_ = dbpkg.MarkMobileAPIIdempotencyUncertain(dbEmp, claim)
 		http.Error(w, "No se pudo comunicar con Rappi", http.StatusBadGateway)
 		return
 	}
+	if status >= 400 {
+		_ = dbpkg.AbandonMobileAPIIdempotency(dbEmp, claim)
+		writeJSON(w, status, map[string]interface{}{"ok": false, "status": status, "rappi_response": jsonRawOrString(respBody)})
+		return
+	}
 	localState := map[string]string{"take": "tomada", "reject": "rechazada", "ready": "lista"}[action]
-	_, _ = dbpkg.UpsertEmpresaRappiOrderLog(dbEmp, dbpkg.EmpresaRappiOrderLog{
+	if _, err := dbpkg.UpsertEmpresaRappiOrderLog(dbEmp, dbpkg.EmpresaRappiOrderLog{
 		EmpresaID:      empresaID,
 		RappiOrderID:   orderID,
 		EstadoRappi:    strings.ToUpper(action),
@@ -288,12 +324,23 @@ func handleEmpresaRappiOrderAction(w http.ResponseWriter, r *http.Request, dbEmp
 		RawPayloadJSON: string(respBody),
 		Origen:         "accion_" + action,
 		UsuarioCreador: adminEmailFromRequest(r),
-	})
+	}); err != nil {
+		_ = dbpkg.MarkMobileAPIIdempotencyUncertain(dbEmp, claim)
+		http.Error(w, "accion enviada pero pendiente de reconciliacion local", http.StatusServiceUnavailable)
+		return
+	}
 	registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "rappi", "orden_"+localState, "empresa_rappi_ordenes", 0, status, map[string]interface{}{
 		"rappi_order_id": orderID,
 		"accion":         action,
 	}, "accion operativa enviada a Rappi")
-	writeJSON(w, status, map[string]interface{}{"ok": status < 400, "status": status, "rappi_response": jsonRawOrString(respBody)})
+	response := map[string]interface{}{"ok": true, "status": status, "rappi_response": jsonRawOrString(respBody)}
+	responseBytes, _ := json.Marshal(response)
+	if err := dbpkg.CompleteMobileAPIIdempotency(dbEmp, claim, status, string(responseBytes)); err != nil {
+		_ = dbpkg.MarkMobileAPIIdempotencyUncertain(dbEmp, claim)
+		http.Error(w, "accion enviada pero pendiente de reconciliacion", http.StatusServiceUnavailable)
+		return
+	}
+	writeJSON(w, status, response)
 }
 
 func handleEmpresaRappiProxy(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64, method, path string, body []byte, includeConfig bool) {
@@ -483,12 +530,31 @@ func verifyRappiSignature(header string, payload []byte, secret string) bool {
 	if ts == "" || signature == "" {
 		return false
 	}
+	if !rappiSignatureTimestampFresh(ts, time.Now()) {
+		return false
+	}
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(ts))
 	mac.Write([]byte("."))
 	mac.Write(payload)
 	expected := hex.EncodeToString(mac.Sum(nil))
 	return hmac.Equal([]byte(strings.ToLower(signature)), []byte(strings.ToLower(expected)))
+}
+
+func rappiSignatureTimestampFresh(raw string, now time.Time) bool {
+	value, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+	if err != nil || value <= 0 {
+		return false
+	}
+	if value > 1_000_000_000_000 {
+		value /= 1000
+	}
+	timestamp := time.Unix(value, 0)
+	delta := now.Sub(timestamp)
+	if delta < 0 {
+		delta = -delta
+	}
+	return delta <= 5*time.Minute
 }
 
 func rappiOrderLogFromPayload(empresaID int64, origen string, payload []byte) dbpkg.EmpresaRappiOrderLog {

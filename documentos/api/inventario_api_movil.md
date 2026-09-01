@@ -31,7 +31,6 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/ai/enterprise` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/aiu_construccion` | `backend/main.go` |
 | `/api/empresa/alquileres` | `backend/main.go` |
-| `/api/empresa/apartamentos_turisticos` | `backend/main.go` |
 | `/api/empresa/asistencia_empleados` | `backend/main.go` |
 | `/api/empresa/auditoria/eventos` | `backend/main.go` |
 | `/api/empresa/backups` | `backend/main.go` |
@@ -103,7 +102,6 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/documentos/firmas` | `backend/handlers/modulos_faltantes.go` |
 | `/api/empresa/documentos/gestion` | `backend/handlers/modulos_faltantes.go` |
 | `/api/empresa/domicilios` | `backend/main.go` |
-| `/api/empresa/drogueria_farmacia` | `backend/main.go` |
 | `/api/empresa/email_corporativo` | `backend/main.go` |
 | `/api/empresa/energia_solar` | `backend/main.go` |
 | `/api/empresa/estacion_aseo` | `backend/main.go` |
@@ -128,9 +126,6 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/finanzas/renta_ia` | `backend/main.go` |
 | `/api/empresa/frecuencia_fp/permitido` | `backend/main.go` |
 | `/api/empresa/gestion_documental` | `backend/main.go` |
-| `/api/empresa/gimnasio` | `backend/main.go` |
-| `/api/empresa/grafologia` | `backend/main.go` |
-| `/api/empresa/grafologia/archivo` | `backend/main.go` |
 | `/api/empresa/hoja_vida_operativa` | `backend/main.go` |
 | `/api/empresa/horarios_trabajadores` | `backend/main.go` |
 | `/api/empresa/hotel_tarjetas_acceso` | `backend/main.go` |
@@ -174,7 +169,6 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/nomina` | `backend/main.go` |
 | `/api/empresa/nomina/agente_internet` | `backend/main.go` |
 | `/api/empresa/noticias` | `backend/main.go` |
-| `/api/empresa/odontologia` | `backend/main.go` |
 | `/api/empresa/offline_ventas` | `backend/main.go` |
 | `/api/empresa/panel_configuracion` | `backend/main.go` |
 | `/api/empresa/parqueadero` | `backend/main.go` |
@@ -191,7 +185,6 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/productos` | `backend/main.go` |
 | `/api/empresa/productos/imagen` | `backend/main.go` |
 | `/api/empresa/productos/precios_historial` | `backend/main.go` |
-| `/api/empresa/propiedad_horizontal` | `backend/main.go` |
 | `/api/empresa/propinas` | `backend/main.go` |
 | `/api/empresa/proveedores` | `backend/main.go` |
 | `/api/empresa/publicaciones` | `backend/main.go` |
@@ -211,7 +204,6 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/tarifas_motel` | `backend/main.go` |
 | `/api/empresa/tarifas_por_dia` | `backend/main.go` |
 | `/api/empresa/tarifas_por_minutos` | `backend/main.go` |
-| `/api/empresa/taxi_system` | `backend/main.go` |
 | `/api/empresa/tesoreria_presupuesto` | `backend/main.go` |
 | `/api/empresa/tickets_ayuda` | `backend/main.go` |
 | `/api/empresa/turnos_atencion` | `backend/main.go` |
@@ -304,7 +296,6 @@ Total de rutas detectadas: **368**.
 | `/api/public/rappi/webhook` | `backend/main.go` |
 | `/api/public/sensor_puertas` | `backend/main.go` |
 | `/api/public/soporte_remoto` | `backend/main.go` |
-| `/api/public/taxi_system` | `backend/main.go` |
 | `/api/public/turnos_atencion` | `backend/main.go` |
 | `/api/public/venta_digital` | `backend/main.go` |
 | `/api/public/venta_publica` | `backend/main.go` |

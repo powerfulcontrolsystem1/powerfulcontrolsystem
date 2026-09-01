@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"crypto/hmac"
 	"crypto/md5" // #nosec G501 -- ePayco Classic requires this provider signature; internal integrity uses SHA-256/HMAC.
 	"crypto/sha256"
 	"crypto/subtle"
@@ -1310,7 +1309,20 @@ func trySendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID 
 			log.Println("warning: licencia factura electronica no se adjunta al correo unificado:", invoiceErr)
 		}
 	}
+	emailClaim, claimed, err := dbpkg.ClaimPaymentPostEffect(dbSuper, "epayco", payRec.TransactionID.String, payRec.Reference.String, "licencia_activation_email")
+	if err != nil {
+		return err
+	}
+	if !claimed {
+		return nil
+	}
 	if err := sendLicenciaActivationEmailWithAttachments(r, dbSuper, empresaID, lic, payRec, provider, reference, invoiceAttachments); err != nil {
+		if finishErr := dbpkg.FinishPaymentPostEffect(dbSuper, emailClaim, "incierto", err.Error()); finishErr != nil {
+			return fmt.Errorf("correo de activacion incierto: %v; no se pudo persistir el estado: %w", err, finishErr)
+		}
+		return err
+	}
+	if err := dbpkg.FinishPaymentPostEffect(dbSuper, emailClaim, "completado", ""); err != nil {
 		return err
 	}
 	if err := markEpaycoActivationEmailSent(dbSuper, payRec, recipient, reference); err != nil {
@@ -1351,7 +1363,20 @@ func trySendLicenciaActivationEmailForWompi(r *http.Request, dbSuper *sql.DB, em
 			log.Println("warning: licencia factura electronica no se adjunta al correo unificado:", invoiceErr)
 		}
 	}
+	emailClaim, claimed, err := dbpkg.ClaimPaymentPostEffect(dbSuper, "wompi", payRec.TransactionID.String, payRec.Reference.String, "licencia_activation_email")
+	if err != nil {
+		return err
+	}
+	if !claimed {
+		return nil
+	}
 	if err := sendLicenciaActivationEmailWithAttachments(r, dbSuper, empresaID, lic, epaycoLike, provider, reference, invoiceAttachments); err != nil {
+		if finishErr := dbpkg.FinishPaymentPostEffect(dbSuper, emailClaim, "incierto", err.Error()); finishErr != nil {
+			return fmt.Errorf("correo de activacion incierto: %v; no se pudo persistir el estado: %w", err, finishErr)
+		}
+		return err
+	}
+	if err := dbpkg.FinishPaymentPostEffect(dbSuper, emailClaim, "completado", ""); err != nil {
 		return err
 	}
 	if err := markWompiActivationEmailSent(dbSuper, payRec, recipient, reference); err != nil {
@@ -3043,6 +3068,52 @@ func extractWompiWebhookPaymentInfo(obj map[string]interface{}) (string, string,
 	return transactionID, reference, status
 }
 
+type wompiPaymentEvidence struct {
+	TransactionID string
+	Reference     string
+	Status        string
+	Currency      string
+	Environment   string
+	AmountInCents int64
+}
+
+func extractWompiPaymentEvidence(obj map[string]interface{}) wompiPaymentEvidence {
+	transactionID, reference, status := extractWompiWebhookPaymentInfo(obj)
+	data, _ := obj["data"].(map[string]interface{})
+	tx, _ := data["transaction"].(map[string]interface{})
+	if tx == nil {
+		tx = data
+	}
+	amount, _ := parseWompiInteger(tx["amount_in_cents"])
+	currency := strings.ToUpper(strings.TrimSpace(fmt.Sprint(tx["currency"])))
+	if currency == "<NIL>" {
+		currency = ""
+	}
+	environment := strings.ToLower(strings.TrimSpace(fmt.Sprint(obj["environment"])))
+	if environment == "<nil>" {
+		environment = ""
+	}
+	return wompiPaymentEvidence{TransactionID: transactionID, Reference: reference, Status: status, Currency: currency, Environment: environment, AmountInCents: amount}
+}
+
+func parseWompiInteger(value interface{}) (int64, bool) {
+	switch typed := value.(type) {
+	case float64:
+		if math.IsNaN(typed) || math.IsInf(typed, 0) || typed < 0 || math.Trunc(typed) != typed {
+			return 0, false
+		}
+		return int64(typed), true
+	case json.Number:
+		value, err := typed.Int64()
+		return value, err == nil
+	case string:
+		value, err := strconv.ParseInt(strings.TrimSpace(typed), 10, 64)
+		return value, err == nil
+	default:
+		return 0, false
+	}
+}
+
 func parseSignatureCandidates(raw string) []string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -3092,18 +3163,18 @@ func signatureMatch(candidate, expected string) bool {
 	return subtle.ConstantTimeCompare(left, right) == 1
 }
 
-func verifyWompiWebhookSignature(dbSuper *sql.DB, r *http.Request, body []byte, obj map[string]interface{}) error {
-	integrityKey, err := getDecryptedConfigValue(dbSuper, "wompi.integrity_key")
+func verifyWompiWebhookSignature(dbSuper *sql.DB, r *http.Request, _ []byte, obj map[string]interface{}) error {
+	eventsSecret, err := getDecryptedConfigValue(dbSuper, "wompi.events_secret")
 	if err != nil {
 		return err
 	}
-	integrityKey = strings.TrimSpace(integrityKey)
-	if integrityKey == "" {
+	eventsSecret = strings.TrimSpace(eventsSecret)
+	if eventsSecret == "" {
 		return errors.New("wompi webhook verification is not configured")
 	}
 
 	rawSignature := ""
-	headerKeys := []string{"X-Wompi-Signature", "X-Event-Checksum", "X-Signature"}
+	headerKeys := []string{"X-Event-Checksum"}
 	for _, hk := range headerKeys {
 		if v := strings.TrimSpace(r.Header.Get(hk)); v != "" {
 			rawSignature = v
@@ -3113,9 +3184,6 @@ func verifyWompiWebhookSignature(dbSuper *sql.DB, r *http.Request, body []byte, 
 	if rawSignature == "" {
 		if sigObj, ok := obj["signature"].(map[string]interface{}); ok {
 			rawSignature = strings.TrimSpace(fmt.Sprint(sigObj["checksum"]))
-			if rawSignature == "" || rawSignature == "<nil>" {
-				rawSignature = strings.TrimSpace(fmt.Sprint(sigObj["signature"]))
-			}
 		}
 	}
 	if rawSignature == "" || rawSignature == "<nil>" {
@@ -3127,23 +3195,137 @@ func verifyWompiWebhookSignature(dbSuper *sql.DB, r *http.Request, body []byte, 
 		return errors.New("invalid wompi signature format")
 	}
 
-	h := hmac.New(sha256.New, []byte(integrityKey))
-	h.Write(body)
-	hmacHex := hex.EncodeToString(h.Sum(nil))
-	hmacB64 := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
-	shaBodyPlus := sha256.Sum256(append(append([]byte{}, body...), []byte(integrityKey)...))
-	shaKeyPlus := sha256.Sum256(append([]byte(integrityKey), body...))
-	bodyHex := hex.EncodeToString(shaBodyPlus[:])
-	keyHex := hex.EncodeToString(shaKeyPlus[:])
+	expected, err := buildWompiEventChecksum(obj, eventsSecret)
+	if err != nil {
+		return err
+	}
 
 	for _, candidate := range candidates {
-		if signatureMatch(candidate, hmacHex) || signatureMatch(candidate, hmacB64) || signatureMatch(candidate, bodyHex) || signatureMatch(candidate, keyHex) {
+		if signatureMatch(candidate, expected) {
 			return nil
 		}
 	}
 
 	return errors.New("invalid wompi signature")
+}
+
+func buildWompiEventChecksum(obj map[string]interface{}, eventsSecret string) (string, error) {
+	signature, ok := obj["signature"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("missing wompi signature properties")
+	}
+	properties, ok := signature["properties"].([]interface{})
+	if !ok || len(properties) == 0 || len(properties) > 32 {
+		return "", errors.New("invalid wompi signature properties")
+	}
+	data, ok := obj["data"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("missing wompi event data")
+	}
+	var source strings.Builder
+	for _, rawProperty := range properties {
+		property := strings.TrimSpace(fmt.Sprint(rawProperty))
+		value, found := wompiEventPropertyValue(data, property)
+		if !found {
+			return "", fmt.Errorf("missing wompi signed property %s", property)
+		}
+		scalar, ok := wompiChecksumScalar(value)
+		if !ok {
+			return "", fmt.Errorf("invalid wompi signed property %s", property)
+		}
+		source.WriteString(scalar)
+	}
+	timestamp, ok := wompiChecksumScalar(obj["timestamp"])
+	if !ok || timestamp == "" {
+		return "", errors.New("missing wompi event timestamp")
+	}
+	source.WriteString(timestamp)
+	source.WriteString(strings.TrimSpace(eventsSecret))
+	sum := sha256.Sum256([]byte(source.String()))
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func wompiEventPropertyValue(root map[string]interface{}, path string) (interface{}, bool) {
+	if root == nil || strings.TrimSpace(path) == "" {
+		return nil, false
+	}
+	var current interface{} = root
+	for _, part := range strings.Split(path, ".") {
+		node, ok := current.(map[string]interface{})
+		if !ok {
+			return nil, false
+		}
+		current, ok = node[part]
+		if !ok {
+			return nil, false
+		}
+	}
+	return current, true
+}
+
+func wompiChecksumScalar(value interface{}) (string, bool) {
+	switch typed := value.(type) {
+	case string:
+		return typed, true
+	case float64:
+		if math.IsNaN(typed) || math.IsInf(typed, 0) {
+			return "", false
+		}
+		return strconv.FormatFloat(typed, 'f', -1, 64), true
+	case json.Number:
+		return typed.String(), true
+	case bool:
+		return strconv.FormatBool(typed), true
+	default:
+		return "", false
+	}
+}
+
+func validateWompiPaymentEvidence(rec *dbpkg.WompiPaymentRecord, evidence wompiPaymentEvidence, mode string, requireEnvironment bool) error {
+	if rec == nil {
+		return errors.New("pago Wompi no registrado previamente")
+	}
+	if rec.Reference.Valid && strings.TrimSpace(rec.Reference.String) != "" && strings.TrimSpace(rec.Reference.String) != strings.TrimSpace(evidence.Reference) {
+		return errors.New("referencia Wompi no coincide con la orden")
+	}
+	if rec.TransactionID.Valid && strings.TrimSpace(rec.TransactionID.String) != "" && strings.TrimSpace(evidence.TransactionID) != "" && strings.TrimSpace(rec.TransactionID.String) != strings.TrimSpace(evidence.TransactionID) {
+		return errors.New("transaccion Wompi no coincide con el registro")
+	}
+	expectedAmount := 0.0
+	if rec.RawPayload.Valid {
+		expectedAmount = paymentPayloadAmount(rec.RawPayload.String)
+	}
+	if expectedAmount <= 0 || evidence.AmountInCents <= 0 || int64(math.Round(expectedAmount*100)) != evidence.AmountInCents {
+		return errors.New("monto Wompi no coincide con la orden")
+	}
+	if evidence.Currency != "COP" {
+		return errors.New("moneda Wompi debe ser COP")
+	}
+	if requireEnvironment {
+		expectedEnvironment := "prod"
+		if normalizeWompiMode(mode) == "sandbox" {
+			expectedEnvironment = "test"
+		}
+		if evidence.Environment != expectedEnvironment {
+			return errors.New("ambiente Wompi no coincide con la configuracion")
+		}
+	}
+	return nil
+}
+
+func wompiAuditPayload(obj map[string]interface{}) string {
+	evidence := extractWompiPaymentEvidence(obj)
+	payload := map[string]interface{}{
+		"event":       strings.TrimSpace(fmt.Sprint(obj["event"])),
+		"environment": evidence.Environment,
+		"timestamp":   obj["timestamp"],
+		"data": map[string]interface{}{"transaction": map[string]interface{}{
+			"id": evidence.TransactionID, "reference": evidence.Reference, "status": evidence.Status,
+			"amount_in_cents": evidence.AmountInCents, "currency": evidence.Currency,
+		}},
+	}
+	raw, _ := json.Marshal(payload)
+	return string(raw)
 }
 
 func normalizeWompiMode(raw string) string {
@@ -4432,11 +4614,13 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			pub, _, _, pubUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.public_key")
 			prv, _, _, prvUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.private_key")
 			integrity, _, _, intUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.integrity_key")
+			eventsSecret, _, _, eventsUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.events_secret")
 			modeRaw, _, _, modeUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.mode")
 
 			pubSet := pub != ""
 			prvSet := prv != ""
 			intSet := integrity != ""
+			eventsSet := eventsSecret != ""
 
 			pubMasked := ""
 			if pubSet {
@@ -4487,6 +4671,14 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"integrity_key_set":     intSet,
 				"integrity_key_masked":  integrityMasked,
 				"integrity_key_updated": intUpdated,
+				"events_secret_set":     eventsSet,
+				"events_secret_masked": func() string {
+					if eventsSet {
+						return "********"
+					}
+					return ""
+				}(),
+				"events_secret_updated": eventsUpdated,
 				"encryption_available":  utils.EncryptionAvailable(),
 				"enabled":               enabled,
 				"mode":                  mode,
@@ -4502,6 +4694,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				PublicKey        string          `json:"public_key"`
 				PrivateKey       string          `json:"private_key"`
 				IntegrityKey     string          `json:"integrity_key"`
+				EventsSecret     string          `json:"events_secret"`
 				CountryOverrides map[string]bool `json:"country_overrides"`
 				Enabled          *bool           `json:"enabled"`
 				Mode             string          `json:"mode"`
@@ -4517,7 +4710,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "mode inválido: usa sandbox o real", http.StatusBadRequest)
 				return
 			}
-			if strings.TrimSpace(payload.PublicKey) == "" && strings.TrimSpace(payload.PrivateKey) == "" && strings.TrimSpace(payload.IntegrityKey) == "" && normalizedMode == "" && payload.Enabled == nil {
+			if strings.TrimSpace(payload.PublicKey) == "" && strings.TrimSpace(payload.PrivateKey) == "" && strings.TrimSpace(payload.IntegrityKey) == "" && strings.TrimSpace(payload.EventsSecret) == "" && normalizedMode == "" && payload.Enabled == nil {
 				http.Error(w, "at least one value is required (enabled, mode o llaves)", http.StatusBadRequest)
 				return
 			}
@@ -4532,6 +4725,10 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			if payload.IntegrityKey != "" && !strings.Contains(payload.IntegrityKey, "integrity") {
 				http.Error(w, "integrity_key inválida: prefijo esperado *_integrity_*", http.StatusBadRequest)
+				return
+			}
+			if payload.EventsSecret != "" && (len(strings.TrimSpace(payload.EventsSecret)) < 16 || len(payload.EventsSecret) > 256 || strings.ContainsAny(payload.EventsSecret, " \t\r\n")) {
+				http.Error(w, "events_secret invalido", http.StatusBadRequest)
 				return
 			}
 
@@ -4562,6 +4759,10 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			if err := saveSensitive("wompi.integrity_key", payload.IntegrityKey); err != nil {
 				http.Error(w, "no se pudo guardar la clave de integridad de Wompi", http.StatusInternalServerError)
+				return
+			}
+			if err := saveSensitive("wompi.events_secret", payload.EventsSecret); err != nil {
+				http.Error(w, "no se pudo guardar el secreto de eventos de Wompi", http.StatusInternalServerError)
 				return
 			}
 			if normalizedMode != "" {
@@ -4969,6 +5170,76 @@ func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+func paymentCheckoutRequestFingerprint(provider string, licenciaID, empresaID int64, email, discountCode, asesorID, checkoutMode string, addonLicenciaIDs []int64, quantity int, total float64, paisCodigo string) string {
+	payload := map[string]interface{}{
+		"provider":           strings.ToLower(strings.TrimSpace(provider)),
+		"licencia_id":        licenciaID,
+		"empresa_id":         empresaID,
+		"customer_email":     strings.ToLower(strings.TrimSpace(email)),
+		"discount_code":      strings.ToUpper(strings.TrimSpace(discountCode)),
+		"asesor_id":          strings.ToUpper(strings.TrimSpace(asesorID)),
+		"checkout_mode":      normalizeLicenciaCheckoutMode(checkoutMode),
+		"addon_licencia_ids": addonLicenciaIDs,
+		"cantidad":           quantity,
+		"total":              math.Round(total*100) / 100,
+		"pais_codigo":        strings.ToUpper(strings.TrimSpace(paisCodigo)),
+	}
+	raw, _ := json.Marshal(payload)
+	return string(raw)
+}
+
+func beginPaymentCheckoutIdempotency(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, provider string, licenciaID, empresaID int64, requestFingerprint string) (*dbpkg.PaymentCheckoutIdempotency, string, bool) {
+	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	if !validMobileIdempotencyKey(key) {
+		http.Error(w, "Idempotency-Key valido es obligatorio", http.StatusBadRequest)
+		return nil, "", true
+	}
+	reference, err := dbpkg.PaymentCheckoutReference(provider, licenciaID, empresaID, key)
+	if err != nil {
+		http.Error(w, "no se pudo preparar la referencia de pago", http.StatusBadRequest)
+		return nil, "", true
+	}
+	claim, claimed, err := dbpkg.ClaimPaymentCheckoutIdempotency(dbSuper, provider, empresaID, key, requestFingerprint, reference)
+	if err != nil {
+		if errors.Is(err, dbpkg.ErrPaymentCheckoutIdempotencyConflict) {
+			http.Error(w, "Idempotency-Key ya fue usado con otro checkout", http.StatusConflict)
+			return nil, "", true
+		}
+		http.Error(w, "no se pudo reservar el checkout", http.StatusServiceUnavailable)
+		return nil, "", true
+	}
+	if claimed {
+		return claim, reference, false
+	}
+	if claim.Status == "completado" && claim.ResponseCode >= 200 && claim.ResponseCode < 300 && strings.TrimSpace(claim.ResponseJSON) != "" {
+		w.Header().Set("Idempotency-Replayed", "true")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(claim.ResponseCode)
+		_, _ = io.WriteString(w, claim.ResponseJSON)
+		return nil, "", true
+	}
+	http.Error(w, "checkout en proceso o con resultado incierto; reconcilia la referencia antes de reintentar", http.StatusConflict)
+	return nil, "", true
+}
+
+func completePaymentCheckoutAndWrite(w http.ResponseWriter, dbSuper *sql.DB, claim *dbpkg.PaymentCheckoutIdempotency, response map[string]interface{}) bool {
+	raw, err := json.Marshal(response)
+	if err != nil {
+		_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, claim)
+		http.Error(w, "no se pudo serializar la respuesta del checkout", http.StatusInternalServerError)
+		return false
+	}
+	if err := dbpkg.CompletePaymentCheckoutIdempotency(dbSuper, claim, http.StatusOK, string(raw)); err != nil {
+		_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, claim)
+		http.Error(w, "checkout registrado con resultado pendiente de reconciliacion", http.StatusServiceUnavailable)
+		return false
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(raw)
+	return true
+}
+
 // WompiCreateCheckoutHandler prepara Web Checkout hospedado de Wompi para licencias.
 func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -5095,7 +5366,11 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if email == "" {
 			email = strings.TrimSpace(r.Header.Get("X-Admin-Email"))
 		}
-		reference := fmt.Sprintf("WOMPI-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+		fingerprint := paymentCheckoutRequestFingerprint("wompi", payload.LicenciaID, payload.EmpresaID, email, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs, summary.Quantity, summary.TotalValue, paisCodigo)
+		checkoutClaim, reference, handled := beginPaymentCheckoutIdempotency(w, r, dbSuper, "wompi", payload.LicenciaID, payload.EmpresaID, fingerprint)
+		if handled {
+			return
+		}
 		redirectURL := buildLicenciaReturnURL(paymentBaseURL, "wompi", "pending", reference, payload.LicenciaID, payload.EmpresaID)
 		form := buildWompiWebCheckoutForm(publicKey, integrityKey, reference, redirectURL, email, amountInCents)
 		mode, modeSource := resolveWompiMode(dbSuper, publicKey, privateKey)
@@ -5131,11 +5406,12 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		rawBytes, _ := json.Marshal(rawMap)
 		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, "", reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
-			log.Println("warning: failed to record Wompi checkout in DB:", err)
+			_ = dbpkg.AbandonPaymentCheckoutIdempotency(dbSuper, checkoutClaim)
+			http.Error(w, "no se pudo registrar el checkout Wompi", http.StatusServiceUnavailable)
+			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		encodeJSONResponse(w, map[string]interface{}{
+		response := map[string]interface{}{
 			"provider":            "wompi",
 			"payment_method":      "WEB_CHECKOUT",
 			"mode":                mode,
@@ -5158,7 +5434,8 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"type":          "web_checkout",
 				"checkout_form": form,
 			},
-		})
+		}
+		completePaymentCheckoutAndWrite(w, dbSuper, checkoutClaim, response)
 	}
 }
 
@@ -5345,7 +5622,11 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		reference := fmt.Sprintf("WOMPI-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+		fingerprint := paymentCheckoutRequestFingerprint("wompi-nequi", payload.LicenciaID, payload.EmpresaID, email, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs, summary.Quantity, summary.TotalValue, "CO") + "\nphone=" + phone
+		checkoutClaim, reference, handled := beginPaymentCheckoutIdempotency(w, r, dbSuper, "wompi", payload.LicenciaID, payload.EmpresaID, fingerprint)
+		if handled {
+			return
+		}
 		signature := buildWompiIntegritySignature(reference, amountInCents, "COP", integrityKey)
 
 		paymentBaseURL, err := resolvePaymentBaseURL(r, dbSuper)
@@ -5374,6 +5655,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		apiURL := strings.TrimRight(baseURL, "/") + "/transactions"
 		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(bodyBytes))
 		if err != nil {
+			_ = dbpkg.AbandonPaymentCheckoutIdempotency(dbSuper, checkoutClaim)
 			http.Error(w, "failed to create request: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -5383,12 +5665,14 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		client := &http.Client{Timeout: 20 * time.Second}
 		resp, err := client.Do(req)
 		if err != nil {
+			_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
 			http.Error(w, "request error: "+err.Error(), http.StatusBadGateway)
 			return
 		}
 		defer resp.Body.Close()
 		respBody, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode >= 400 {
+			_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
 			log.Println("Wompi API error:", resp.Status, string(respBody))
 			http.Error(w, "wompi API error: "+string(respBody), http.StatusBadGateway)
 			return
@@ -5396,6 +5680,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		var wompiResp map[string]interface{}
 		if err := json.Unmarshal(respBody, &wompiResp); err != nil {
+			_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
 			http.Error(w, "invalid response from wompi: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -5405,6 +5690,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		transactionStatus := strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
 		respReference := strings.TrimSpace(fmt.Sprint(data["reference"]))
 		if transactionID == "" || transactionID == "<nil>" {
+			_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
 			http.Error(w, "wompi response sin transaction id", http.StatusBadGateway)
 			return
 		}
@@ -5432,11 +5718,12 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		rawPayload := mergePaymentPayloadJSON(string(respBody), string(rawBytes))
 
 		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, transactionStatus, rawPayload, payload.DiscountCode, payload.AsesorID); err != nil {
-			log.Println("warning: failed to record Wompi transaction in DB:", err)
+			_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
+			http.Error(w, "no se pudo registrar la transaccion Wompi", http.StatusServiceUnavailable)
+			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		encodeJSONResponse(w, map[string]interface{}{
+		response := map[string]interface{}{
 			"provider":                "wompi",
 			"payment_method":          "NEQUI",
 			"mode":                    mode,
@@ -5447,7 +5734,8 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"acceptance_permalink":    acceptancePermalink,
 			"personal_data_permalink": personalPermalink,
 			"data":                    data,
-		})
+		}
+		completePaymentCheckoutAndWrite(w, dbSuper, checkoutClaim, response)
 	}
 }
 
@@ -5709,6 +5997,10 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			reference = strings.TrimSpace(r.URL.Query().Get("ref"))
 		}
 		expectedLicenciaID, expectedEmpresaID, hasExpectedContext := expectedPaymentContextFromRequest(r)
+		if !hasExpectedContext {
+			http.Error(w, "licencia_id y empresa_id son obligatorios para consultar el pago", http.StatusBadRequest)
+			return
+		}
 		if transactionID == "" && reference != "" {
 			rec, lookupErr := dbpkg.GetWompiPaymentByReference(dbSuper, reference)
 			if lookupErr != nil {
@@ -5815,12 +6107,31 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if refFromGateway := strings.TrimSpace(fmt.Sprint(data["reference"])); refFromGateway != "" && refFromGateway != "<nil>" {
 			reference = refFromGateway
 		}
+		var expectedRecord *dbpkg.WompiPaymentRecord
+		if transactionID != "" {
+			expectedRecord, _ = dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
+		}
+		if expectedRecord == nil && reference != "" {
+			expectedRecord, _ = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+		}
+		evidence := extractWompiPaymentEvidence(wompiResp)
+		if isApprovedPaymentStatus(status) {
+			if err := validateWompiPaymentEvidence(expectedRecord, evidence, mode, false); err != nil {
+				http.Error(w, "la confirmacion Wompi no coincide con la orden registrada", http.StatusConflict)
+				return
+			}
+		}
+		auditRaw := wompiAuditPayload(wompiResp)
+		mergedRaw := auditRaw
+		if expectedRecord != nil && expectedRecord.RawPayload.Valid {
+			mergedRaw = mergePaymentPayloadJSON(expectedRecord.RawPayload.String, auditRaw)
+		}
 
-		if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, string(respBody)); err != nil {
+		if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, mergedRaw); err != nil {
 			log.Println("warning: failed to update Wompi payment record:", err)
 		}
 		if strings.TrimSpace(reference) != "" {
-			if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, reference, status, string(respBody)); err != nil {
+			if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, reference, status, mergedRaw); err != nil {
 				log.Println("warning: failed to update Wompi payment record by reference:", err)
 			}
 		}
@@ -5946,7 +6257,6 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"licencia_id":    licenciaID,
 			"empresa_id":     empresaID,
 			"activated":      activated,
-			"data":           data,
 		})
 	}
 }
@@ -5976,6 +6286,10 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			http.Error(w, "invalid webhook", http.StatusUnauthorized)
 			return
 		}
+		if strings.TrimSpace(fmt.Sprint(obj["event"])) != "transaction.updated" {
+			encodeJSONResponse(w, map[string]interface{}{"ok": true, "ignored": true})
+			return
+		}
 
 		transactionID, reference, status := extractWompiWebhookPaymentInfo(obj)
 		if strings.TrimSpace(transactionID) == "" && strings.TrimSpace(reference) == "" {
@@ -5985,14 +6299,35 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		if status == "" {
 			status = "PENDING"
 		}
+		var wompiPaymentRec *dbpkg.WompiPaymentRecord
+		if transactionID != "" {
+			wompiPaymentRec, _ = dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
+		}
+		if wompiPaymentRec == nil && reference != "" {
+			wompiPaymentRec, _ = dbpkg.GetWompiPaymentByReference(dbSuper, reference)
+		}
+		publicKey, _ := getOptionalPaymentCredentialValue(dbSuper, "wompi.public_key")
+		privateKey, _ := getOptionalPaymentCredentialValue(dbSuper, "wompi.private_key")
+		mode, _ := resolveWompiMode(dbSuper, publicKey, privateKey)
+		if isApprovedPaymentStatus(status) && wompiPaymentRec != nil {
+			if err := validateWompiPaymentEvidence(wompiPaymentRec, extractWompiPaymentEvidence(obj), mode, true); err != nil {
+				http.Error(w, "wompi payment evidence mismatch", http.StatusConflict)
+				return
+			}
+		}
+		auditRaw := wompiAuditPayload(obj)
+		mergedRaw := auditRaw
+		if wompiPaymentRec != nil && wompiPaymentRec.RawPayload.Valid {
+			mergedRaw = mergePaymentPayloadJSON(wompiPaymentRec.RawPayload.String, auditRaw)
+		}
 
 		if transactionID != "" {
-			if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, string(body)); err != nil {
+			if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, mergedRaw); err != nil {
 				log.Println("warning: failed to update Wompi record by transaction_id:", err)
 			}
 		}
 		if reference != "" {
-			if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, reference, status, string(body)); err != nil {
+			if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, reference, status, mergedRaw); err != nil {
 				log.Println("warning: failed to update Wompi record by reference:", err)
 			}
 		}
@@ -6002,8 +6337,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			log.Println("warning: failed to resolve Wompi payment context:", ctxErr)
 		}
 		paymentDiscountCode := ""
-		var wompiPaymentRec *dbpkg.WompiPaymentRecord
-		if transactionID != "" {
+		if wompiPaymentRec == nil && transactionID != "" {
 			wompiPaymentRec, err = dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID)
 			if err != nil {
 				log.Println("warning: failed to load Wompi payment for discount validation:", err)
@@ -6103,12 +6437,12 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 		}
 
 		if strings.TrimSpace(status) != "" {
-			_, _, _, vdErr := processVentaDigitalPaymentStatusUpdate(r, dbSuper, transactionID, reference, status, string(body))
+			_, _, _, vdErr := processVentaDigitalPaymentStatusUpdate(r, dbSuper, transactionID, reference, status, mergedRaw)
 			if vdErr != nil {
 				log.Println("warning: failed to process venta_digital webhook update:", vdErr)
 			}
 			if len(dbEmp) > 0 && dbEmp[0] != nil {
-				_, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "wompi", transactionID, reference, status, string(body))
+				_, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "wompi", transactionID, reference, status, mergedRaw)
 				if vpErr != nil {
 					log.Println("warning: failed to process venta_publica webhook update:", vpErr)
 				}
@@ -6313,7 +6647,11 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if !smartCheckoutReady {
 			mode, modeSource = classicMode, classicModeSource
 		}
-		reference := fmt.Sprintf("EPAYCO-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+		fingerprint := paymentCheckoutRequestFingerprint("epayco", payload.LicenciaID, payload.EmpresaID, email, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs, summary.Quantity, summary.TotalValue, paisCodigo)
+		checkoutClaim, reference, handled := beginPaymentCheckoutIdempotency(w, r, dbSuper, "epayco", payload.LicenciaID, payload.EmpresaID, fingerprint)
+		if handled {
+			return
+		}
 		responseURL := buildEpaycoResponseURL(paymentBaseURL, "pending", reference, payload.LicenciaID, payload.EmpresaID)
 		confirmationURL := strings.TrimRight(strings.TrimSpace(paymentBaseURL), "/") + "/epayco/webhook"
 		sessionPayload := buildEpaycoSmartCheckoutSessionPayload(paymentBaseURL, reference, lic.Nombre, payload.LicenciaID, payload.EmpresaID, summary.TotalValue, email)
@@ -6367,11 +6705,12 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			rawBytes, _ := json.Marshal(rawMap)
 			if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
-				log.Println("warning: failed to record Epayco fallback transaction in DB:", err)
+				_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
+				http.Error(w, "no se pudo registrar el checkout Epayco", http.StatusServiceUnavailable)
+				return
 			}
 
-			w.Header().Set("Content-Type", "application/json")
-			encodeJSONResponse(w, map[string]interface{}{
+			response := map[string]interface{}{
 				"provider":                "epayco",
 				"payment_method":          "CLASSIC_CHECKOUT",
 				"mode":                    classicMode,
@@ -6399,7 +6738,8 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 					"checkout_data":   classicCheckoutPayload.Data,
 					"type":            "classic_js",
 				},
-			})
+			}
+			completePaymentCheckoutAndWrite(w, dbSuper, checkoutClaim, response)
 		}
 		if !smartCheckoutReady {
 			writeClassicCheckoutFallback("Smart Checkout no configurado; usando checkout estandar con checkout.js", "", "")
@@ -6444,11 +6784,12 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		rawBytes, _ := json.Marshal(rawMap)
 		if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
-			log.Println("warning: failed to record Epayco transaction in DB:", err)
+			_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
+			http.Error(w, "no se pudo registrar la transaccion Epayco", http.StatusServiceUnavailable)
+			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		encodeJSONResponse(w, map[string]interface{}{
+		response := map[string]interface{}{
 			"provider":            "epayco",
 			"payment_method":      "SMART_CHECKOUT",
 			"mode":                mode,
@@ -6471,7 +6812,8 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"type":       "standard",
 				"script_url": epaycoSmartCheckoutScriptURL,
 			},
-		})
+		}
+		completePaymentCheckoutAndWrite(w, dbSuper, checkoutClaim, response)
 	}
 }
 

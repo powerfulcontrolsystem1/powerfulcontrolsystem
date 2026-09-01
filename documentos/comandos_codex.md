@@ -146,6 +146,7 @@ UTF-8 y volver a ejecutar el barrido.
 ```powershell
 .\scripts\profesional_preflight.ps1
 .\scripts\profesional_preflight.ps1 -Full
+.\scripts\profesional_preflight.ps1 -RequireMigrationAudit -MigrationBaseRef origin/main
 ```
 
 Usar preflight antes de sincronizaciones o cambios grandes. Si falla, corregir la
@@ -183,6 +184,34 @@ orquestador antes de los pasos restantes; el codigo de salida se conserva y
 detiene el flujo solo cuando el paso correspondiente falla. Cada fase tiene
 timeout controlado (3600 segundos por defecto) y reporta las rutas de log si se
 agota o falla. Puede ajustarse con `-StepTimeoutSeconds`.
+
+Un `rs` real exige siempre el gate de migraciones, aunque no se use
+`-FullPreflight`: valida los inventarios `Ensure`, compara las entradas
+historicas del catalogo contra el ancestro comun de una rama de trabajo,
+rechaza migraciones eliminadas o mutadas y ejecuta las pruebas Go enfocadas del
+migrador. Despues de fusionar una PR, repite el gate contra el SHA que tenia
+`main` antes de la integracion para comprobar que la fusion conservo sus
+migraciones. `-SkipPreflight` solo
+se admite con `-DryRun` o `-PreviewOnly`. Antes de reintentar tras un inventario
+desactualizado, regenerar y revisar los artefactos:
+
+```powershell
+& "C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" tools\ensure_bootstrap_inventory.mjs
+& "C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" tools\runtime_ensure_inventory.mjs
+```
+
+Si `rs` parte de una rama distinta de `main`, primero publica esa rama, crea o
+reutiliza una PR abierta hacia `main`, solicita auto-merge sin omitir checks y
+espera la fusion. Solo entonces cambia a `main`, aplica fast-forward y exige
+igualdad exacta con `origin/main` antes del VPS. Una PR fusionada antigua de la
+misma rama no cuenta como abierta para commits nuevos. Para bloquear en lugar de
+integrar automaticamente, usar `-NoIntegrateWorkBranch`; para otro nombre de
+rama productiva, usar `-ProductionBranch`.
+
+`-FullPreflight` hace bloqueante la bateria `go test ./...`. Si GitHub informa
+que la PR esta `DIRTY`, `rs` termina de inmediato y exige reconciliacion manual;
+no elige automaticamente entre cambios en conflicto ni espera inutilmente el
+timeout de la PR.
 
 Si GitHub protege `main` y rechaza el push directo, `actualizar_repositorio.ps1`
 crea una rama `codex/rs-...`, abre la PR y solicita `auto-merge`. Nunca se

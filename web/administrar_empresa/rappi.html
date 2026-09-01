@@ -118,7 +118,7 @@
 
   <script>
     (function () {
-      var state = { empresaId: "", config: {}, orders: [] };
+	      var state = { empresaId: "", config: {}, orders: [], actionKeys: {} };
       function $(id) { return document.getElementById(id); }
       function getEmpresaId() {
         try {
@@ -257,13 +257,20 @@
           setStatus(e.message, true);
         }
       }
-      async function orderAction(action, orderId) {
+	      async function orderAction(action, orderId) {
         if (!orderId) return;
         try {
           setStatus("Enviando accion a Rappi...");
-          var data = await requestJSON(api(action), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+	          var actionScope = String(action || '') + '|' + String(orderId || '');
+	          if (!state.actionKeys[actionScope]) {
+	            var randomPart = window.crypto && typeof window.crypto.randomUUID === 'function'
+	              ? window.crypto.randomUUID()
+	              : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2));
+	            state.actionKeys[actionScope] = 'rappi-action-' + randomPart;
+	          }
+	          var data = await requestJSON(api(action), {
+	            method: "POST",
+	            headers: { "Content-Type": "application/json", "Idempotency-Key": state.actionKeys[actionScope] },
             body: JSON.stringify({ order_id: orderId, cooking_time_minutes: Number($("rappiCookingTime").value || 15) })
           });
           setRaw(data.rappi_response || data);

@@ -317,7 +317,6 @@ var empresaModuloColombiaTitulos = map[string]string{
 	"cumplimiento_kyc":       "Cumplimiento KYC/KYB y riesgo LAFT",
 	"contratos_obligaciones": "Contratos, obligaciones y firma electronica",
 	"calidad_procesos":       "Calidad, procesos y no conformidades",
-	"drogueria_farmacia":     "Drogueria y farmacia",
 }
 
 func GetEmpresaModuloColombiaPlantilla(modulo string) EmpresaModuloColombiaPlantilla {
@@ -378,14 +377,6 @@ func GetEmpresaModuloColombiaPlantilla(modulo string) EmpresaModuloColombiaPlant
 		base.EtiquetaTercero = "Proceso / area"
 		base.EtiquetaReferencia = "Checklist / auditoria"
 		base.MetadataEjemplo = `{"hallazgos":2,"causa_raiz":"pendiente","accion_correctiva":"definir","responsable_cierre":"Supervisor"}`
-	case "drogueria_farmacia":
-		base.Tipos = []string{"medicamento", "lote", "formula_medica", "controlado", "vencimiento", "devolucion", "farmacovigilancia", "inventario_sanitario"}
-		base.Categorias = []string{"otc", "rx", "controlados", "dispositivos_medicos", "aseo_salud", "cadena_frio", "compras", "dispensacion"}
-		base.EstadosFlujo = []string{"pendiente", "en_revision", "aprobado", "dispensado", "observado", "bloqueado", "cerrado", "rechazado"}
-		base.AccionesSugeridas = []string{"dispensacion", "validacion_formula", "bloqueo_lote", "farmacovigilancia", "conteo", "devolucion", "cierre"}
-		base.EtiquetaTercero = "Paciente / proveedor / laboratorio"
-		base.EtiquetaReferencia = "INVIMA / lote / formula"
-		base.MetadataEjemplo = `{"registro_invima":"INVIMA 2026M-000000","lote":"L-001","vence":"2026-12-31","requiere_formula":true,"controlado":false,"cadena_frio":false}`
 	default:
 		base.Tipos = []string{"general", "seguimiento", "aprobacion"}
 		base.Categorias = []string{"general", "operacion", "finanzas"}
@@ -2078,7 +2069,7 @@ func NormalizeEmpresaModuloColombia(v string) string {
 		return clean
 	}
 	switch clean {
-	case "bancos_pagos", "gestion_documental", "cumplimiento_kyc", "contratos_obligaciones", "calidad_procesos", "drogueria_farmacia":
+	case "bancos_pagos", "gestion_documental", "cumplimiento_kyc", "contratos_obligaciones", "calidad_procesos":
 		return clean
 	default:
 		return ""
@@ -2312,12 +2303,6 @@ func demoEmpresaModuloColombiaRows(empresaID int64, modulo, usuario string) []Em
 		return []EmpresaModuloColombiaRegistro{
 			mergeModuloDemo(base, "NC-001", "No conformidad en alistamiento de estacion", "no_conformidad", "Operacion", "Calidad", "servicio", "CHK-HAB-001", 0, map[string]interface{}{"accion_correctiva": "reforzar checklist", "responsable_cierre": "Supervisor"}),
 			mergeModuloDemo(base, "AUD-001", "Auditoria interna proceso de caja", "auditoria", "Caja", "Auditor", "finanzas", "PROC-CAJA", 0, map[string]interface{}{"hallazgos": 2, "checklist": "cierre diario"}),
-		}
-	case "drogueria_farmacia":
-		return []EmpresaModuloColombiaRegistro{
-			mergeModuloDemo(base, "FARMA-LOT-001", "Control lote acetaminofen 500 mg", "lote", "Laboratorio demo", "Regente farmacia", "rx", "INVIMA-2026M-000001", 145000, map[string]interface{}{"lote": "ACET-0526", "vence": today.AddDate(0, 8, 0).Format("2006-01-02"), "stock": 120, "requiere_formula": false}),
-			mergeModuloDemo(base, "FARMA-RX-001", "Validacion formula antibiotico", "formula_medica", "Paciente demo", "Auxiliar farmacia", "dispensacion", "FORM-001", 82000, map[string]interface{}{"medico": "Registro medico demo", "requiere_formula": true, "entrega_parcial": false}),
-			mergeModuloDemo(base, "FARMA-CTRL-001", "Seguimiento medicamento controlado", "controlado", "Paciente controlado", "Director tecnico", "controlados", "REC-CTRL-001", 0, map[string]interface{}{"libro_control": "pendiente", "cantidad_dispensada": 1, "requiere_firma": true}),
 		}
 	default:
 		plantilla := GetEmpresaModuloColombiaPlantilla(modulo)

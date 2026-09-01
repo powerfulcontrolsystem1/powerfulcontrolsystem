@@ -200,20 +200,6 @@
           troubleshooting: ['Si falta un pago, revisa el carrito/factura original.', 'Si no suma egresos, valida que esten aprobados.', 'Si el reporte oculta datos, revisa la configuracion del corte.']
         },
         {
-          match: ['gimnasio', 'membresia', 'cliente'],
-          purpose: 'Gestiona clientes, membresias, asistencias y estado operativo del gimnasio.',
-          before: ['Crea el cliente.', 'Define plan o membresia vigente.', 'Revisa restricciones del rol.'],
-          steps: ['Busca el cliente.', 'Registra membresia, pago o asistencia.', 'Consulta vencimientos y estado.'],
-          troubleshooting: ['Si no deja ingresar, revisa vencimiento o deuda.', 'Si no aparece el cliente, confirma empresa y documento.', 'Si el pago no cruza, revisa el carrito o movimiento financiero.']
-        },
-        {
-          match: ['odontologia', 'odontologico', 'turno', 'cita'],
-          purpose: 'Administra pacientes, citas, turnos y datos clinicos/operativos del consultorio.',
-          before: ['Confirma paciente y profesional.', 'Define fecha, hora y servicio.', 'Revisa permisos del rol para datos sensibles.'],
-          steps: ['Crea o selecciona paciente.', 'Agenda turno/cita.', 'Registra atencion, pago o seguimiento.'],
-          troubleshooting: ['Si no aparece disponibilidad, revisa horarios configurados.', 'Si el turno no se guarda, valida campos obligatorios.', 'Si hay restricciones, revisa permisos del usuario.']
-        },
-        {
           match: ['gps', 'ubicacion', 'dispositivo', 'recorrido'],
           purpose: 'Controla dispositivos GPS de diferentes marcas, ubicaciones, recorridos y estado de conectividad.',
           before: ['Registra marca, identificador y protocolo.', 'Confirma que el dispositivo envie datos.', 'Verifica permisos de ubicacion y empresa.'],

@@ -615,7 +615,7 @@
       if (window.__pcsHelpAIBridgeInstalled) return;
       if (document.querySelector('script[data-pcs-help-ai-bridge]')) return;
       const script = document.createElement('script');
-      script.src = '/js/help_ai_bridge.js?v=20260725-observer-guard';
+      script.src = '/js/help_ai_bridge.js?v=20260825-admin-load-v1';
       script.defer = true;
       script.dataset.pcsHelpAiBridge = '1';
       (document.head || document.documentElement).appendChild(script);

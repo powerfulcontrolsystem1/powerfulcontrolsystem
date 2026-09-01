@@ -145,7 +145,7 @@ func isLikelyAPIPath(path string) bool {
 		return true
 	}
 	switch path {
-	case "/me", "/super/administradores", "/super/sesiones":
+	case "/me", "/super/administradores", "/super/sesiones", "/generate", "/download":
 		return true
 	default:
 		return false

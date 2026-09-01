@@ -1591,13 +1591,14 @@
     }
 
     function abrirCartaPreciosIA() {
-      const prompt = 'Actua como agente_configuracion_de_empresa. Voy a adjuntar una foto, PDF o imagen de una carta/lista de precios. Extrae productos, categorias, precios, impuestos, costos si aparecen, y presentame una tabla para revision humana. No guardes nada hasta que yo confirme. Si falta SKU o categoria, propon valores seguros por empresa_id.';
+      const prompt = 'Como Agente PCS, analiza la foto, PDF o imagen de una carta/lista de precios. Extrae productos, categorias, precios, impuestos y costos si aparecen, y presenta una tabla para revision humana. No guardes nada hasta que yo confirme. Si falta SKU o categoria, propon valores seguros dentro de la empresa activa.';
       try {
         const chatHost = window.top && window.top !== window ? window.top : window;
         chatHost.postMessage({
           type: 'pcs-ai-drawer-open',
           mode: 'operativo',
-          agent_id: 'agente_configuracion_de_empresa',
+          agent_id: 'agente_pcs',
+          modo_agente: true,
           prompt: prompt
         }, window.location.origin);
       } catch (_) {}
@@ -4357,6 +4358,7 @@
         return;
       }
       await loadEmpresaInfo();
+      await loadInventarioResumen();
       if (viewMode === 'categorias') {
         await loadCategoriasProductos();
         return;

@@ -26,24 +26,25 @@ const (
 
 // EmpresaAIProposal is a server-owned approval record. PlanJSON never contains credentials.
 type EmpresaAIProposal struct {
-	ProposalID      string `json:"proposal_id"`
-	ConversationID  string `json:"conversation_id"`
-	EmpresaID       int64  `json:"empresa_id"`
-	UsuarioCreador  string `json:"usuario_creador"`
-	ToolName        string `json:"tool_name"`
-	RiskLevel       string `json:"risk_level"`
-	PlanJSON        string `json:"plan_json"`
-	PlanHash        string `json:"plan_hash"`
-	EstadoAnterior  string `json:"estado_anterior_json"`
-	EstadoEsperado  string `json:"estado_esperado_json"`
-	Resumen         string `json:"resumen"`
-	RollbackPolicy  string `json:"rollback_policy"`
-	Estado          string `json:"estado"`
-	IdempotencyKey  string `json:"idempotency_key,omitempty"`
-	FechaCreacion   string `json:"fecha_creacion,omitempty"`
-	FechaExpiracion string `json:"fecha_expiracion,omitempty"`
-	FechaUso        string `json:"fecha_uso,omitempty"`
-	ResultadoJSON   string `json:"resultado_json,omitempty"`
+	ProposalID       string `json:"proposal_id"`
+	ConversationID   string `json:"conversation_id"`
+	EmpresaID        int64  `json:"empresa_id"`
+	UsuarioCreador   string `json:"usuario_creador"`
+	ToolName         string `json:"tool_name"`
+	RiskLevel        string `json:"risk_level"`
+	PlanJSON         string `json:"plan_json"`
+	PlanHash         string `json:"plan_hash"`
+	EstadoAnterior   string `json:"estado_anterior_json"`
+	EstadoEsperado   string `json:"estado_esperado_json"`
+	Resumen          string `json:"resumen"`
+	RollbackPolicy   string `json:"rollback_policy"`
+	Estado           string `json:"estado"`
+	IdempotencyKey   string `json:"idempotency_key,omitempty"`
+	FechaCreacion    string `json:"fecha_creacion,omitempty"`
+	FechaExpiracion  string `json:"fecha_expiracion,omitempty"`
+	FechaUso         string `json:"fecha_uso,omitempty"`
+	ResultadoJSON    string `json:"resultado_json,omitempty"`
+	IdempotentReplay bool   `json:"idempotent_replay,omitempty"`
 }
 
 // EmpresaAIConversation keeps the execution state independent of model text.
@@ -471,7 +472,7 @@ func BeginEmpresaAIProposalExecution(dbConn *sql.DB, empresaID int64, proposalID
 	}
 	defer tx.Rollback()
 	var p EmpresaAIProposal
-	err = queryRowTxSQLCompat(tx, `SELECT proposal_id, conversation_id, empresa_id, usuario_creador, tool_name, risk_level, plan_json, plan_hash, estado_anterior_json, estado_esperado_json, resumen, rollback_policy, estado, COALESCE(idempotency_key,'') FROM empresa_ai_propuestas WHERE empresa_id=? AND proposal_id=? FOR UPDATE`, empresaID, proposalID).Scan(&p.ProposalID, &p.ConversationID, &p.EmpresaID, &p.UsuarioCreador, &p.ToolName, &p.RiskLevel, &p.PlanJSON, &p.PlanHash, &p.EstadoAnterior, &p.EstadoEsperado, &p.Resumen, &p.RollbackPolicy, &p.Estado, &p.IdempotencyKey)
+	err = queryRowTxSQLCompat(tx, `SELECT proposal_id, conversation_id, empresa_id, usuario_creador, tool_name, risk_level, plan_json, plan_hash, estado_anterior_json, estado_esperado_json, resumen, rollback_policy, estado, COALESCE(idempotency_key,''), COALESCE(resultado_json,'') FROM empresa_ai_propuestas WHERE empresa_id=? AND proposal_id=? FOR UPDATE`, empresaID, proposalID).Scan(&p.ProposalID, &p.ConversationID, &p.EmpresaID, &p.UsuarioCreador, &p.ToolName, &p.RiskLevel, &p.PlanJSON, &p.PlanHash, &p.EstadoAnterior, &p.EstadoEsperado, &p.Resumen, &p.RollbackPolicy, &p.Estado, &p.IdempotencyKey, &p.ResultadoJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -481,10 +482,21 @@ func BeginEmpresaAIProposalExecution(dbConn *sql.DB, empresaID int64, proposalID
 	if p.PlanHash != strings.TrimSpace(planHash) {
 		return nil, fmt.Errorf("el plan ha cambiado o no corresponde a la propuesta")
 	}
+	requestedKey := strings.TrimSpace(idempotencyKey)
+	if p.Estado == AIProposalCompleted || p.Estado == AIProposalExecuting {
+		if strings.TrimSpace(p.IdempotencyKey) != requestedKey {
+			return nil, fmt.Errorf("la propuesta ya fue ejecutada con otra clave de idempotencia")
+		}
+		p.IdempotentReplay = true
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
 	if p.Estado != AIProposalAwaitingConfirmation {
 		return nil, fmt.Errorf("la propuesta no esta disponible para confirmacion")
 	}
-	res, err := execTxSQLCompat(tx, `UPDATE empresa_ai_propuestas SET estado=?, idempotency_key=?, fecha_uso=CURRENT_TIMESTAMP, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND proposal_id=? AND estado=? AND fecha_expiracion>CURRENT_TIMESTAMP`, AIProposalExecuting, strings.TrimSpace(idempotencyKey), empresaID, proposalID, AIProposalAwaitingConfirmation)
+	res, err := execTxSQLCompat(tx, `UPDATE empresa_ai_propuestas SET estado=?, idempotency_key=?, fecha_uso=CURRENT_TIMESTAMP, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND proposal_id=? AND estado=? AND fecha_expiracion>CURRENT_TIMESTAMP`, AIProposalExecuting, requestedKey, empresaID, proposalID, AIProposalAwaitingConfirmation)
 	if err != nil {
 		return nil, err
 	}
@@ -492,7 +504,7 @@ func BeginEmpresaAIProposalExecution(dbConn *sql.DB, empresaID int64, proposalID
 	if n != 1 {
 		return nil, fmt.Errorf("la propuesta vencio, ya fue usada o cambio de estado")
 	}
-	p.Estado, p.IdempotencyKey = AIProposalExecuting, strings.TrimSpace(idempotencyKey)
+	p.Estado, p.IdempotencyKey = AIProposalExecuting, requestedKey
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}

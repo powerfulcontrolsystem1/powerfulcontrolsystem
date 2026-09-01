@@ -964,7 +964,7 @@ func tipoEmpresaPreconfigTarifasEmpty(t dbpkg.TipoEmpresaPreconfigTarifas) bool 
 }
 
 func tipoEmpresaPreconfigModulosEmpty(m dbpkg.TipoEmpresaPreconfigModulos) bool {
-	return m.TurnosAtencion == nil && m.Gimnasio == nil && m.Odontologia == nil && m.Vehiculos == nil && m.ControlElectrico == nil && len(m.HojaVida) == 0
+	return m.TurnosAtencion == nil && m.Vehiculos == nil && m.ControlElectrico == nil && len(m.HojaVida) == 0
 }
 
 func preconfigStationRef(estaciones dbpkg.TipoEmpresaPreconfigEstaciones, numero int) (int64, string, string) {
@@ -1100,16 +1100,6 @@ func applyEmpresaPreconfigModulos(dbEmp *sql.DB, empresaID int64, estaciones dbp
 		created += n
 		errs = append(errs, e...)
 	}
-	if modulos.Gimnasio != nil {
-		n, e := applyEmpresaPreconfigGimnasio(dbEmp, empresaID, *modulos.Gimnasio, usuario)
-		created += n
-		errs = append(errs, e...)
-	}
-	if modulos.Odontologia != nil {
-		n, e := applyEmpresaPreconfigOdontologia(dbEmp, empresaID, *modulos.Odontologia, usuario)
-		created += n
-		errs = append(errs, e...)
-	}
 	if modulos.Vehiculos != nil {
 		n, e := applyEmpresaPreconfigVehiculos(dbEmp, empresaID, *modulos.Vehiculos, usuario)
 		created += n
@@ -1174,105 +1164,6 @@ func applyEmpresaPreconfigTurnos(dbEmp *sql.DB, empresaID int64, cfg dbpkg.TipoE
 			UsuarioCreador:      usuario,
 		}); err != nil {
 			errs = append(errs, fmt.Sprintf("turnos puesto %s: %v", puesto.Codigo, err))
-		} else {
-			created++
-		}
-	}
-	return created, errs
-}
-
-func applyEmpresaPreconfigGimnasio(dbEmp *sql.DB, empresaID int64, cfg dbpkg.TipoEmpresaPreconfigGimnasio, usuario string) (int, []string) {
-	created := 0
-	var errs []string
-	planIDs := make([]int64, 0, len(cfg.Planes))
-	entrenadorIDs := make([]int64, 0, len(cfg.Entrenadores))
-	for _, plan := range cfg.Planes {
-		id, err := dbpkg.CreateEmpresaGimnasioPlan(dbEmp, dbpkg.EmpresaGimnasioPlan{EmpresaID: empresaID, Nombre: plan.Nombre, Descripcion: empresaPreconfigMarker + " " + plan.Descripcion, Precio: plan.Precio, DuracionDias: plan.DuracionDias, ClasesIncluidas: plan.ClasesIncluidas, AccesoIlimitado: plan.AccesoIlimitado, SesionesPersonalizadas: plan.SesionesPersonalizadas, Estado: "activo", UsuarioCreador: usuario})
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("gimnasio plan %s: %v", plan.Nombre, err))
-			continue
-		}
-		planIDs = append(planIDs, id)
-		created++
-	}
-	for _, entrenador := range cfg.Entrenadores {
-		id, err := dbpkg.CreateEmpresaGimnasioEntrenador(dbEmp, dbpkg.EmpresaGimnasioEntrenador{EmpresaID: empresaID, NombreCompleto: entrenador.NombreCompleto, Especialidad: entrenador.Especialidad, Telefono: entrenador.Telefono, Email: entrenador.Email, Certificaciones: entrenador.Certificaciones, Estado: "activo", Disponibilidad: entrenador.Disponibilidad, Observaciones: empresaPreconfigMarker + " " + entrenador.Observaciones, UsuarioCreador: usuario})
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("gimnasio entrenador %s: %v", entrenador.NombreCompleto, err))
-			continue
-		}
-		entrenadorIDs = append(entrenadorIDs, id)
-		created++
-	}
-	for _, clase := range cfg.Clases {
-		var entrenadorID int64
-		if clase.EntrenadorIndex > 0 && clase.EntrenadorIndex <= len(entrenadorIDs) {
-			entrenadorID = entrenadorIDs[clase.EntrenadorIndex-1]
-		}
-		if _, err := dbpkg.CreateEmpresaGimnasioClase(dbEmp, dbpkg.EmpresaGimnasioClase{EmpresaID: empresaID, Nombre: clase.Nombre, Categoria: clase.Categoria, EntrenadorID: entrenadorID, Sede: clase.Sede, Canal: clase.Canal, Cupos: clase.Cupos, DuracionMinutos: clase.DuracionMinutos, Estado: "programada", Precio: clase.Precio, Descripcion: empresaPreconfigMarker + " " + clase.Descripcion, UsuarioCreador: usuario}); err != nil {
-			errs = append(errs, fmt.Sprintf("gimnasio clase %s: %v", clase.Nombre, err))
-		} else {
-			created++
-		}
-	}
-	for _, socio := range cfg.Socios {
-		var planID int64
-		if socio.PlanIndex > 0 && socio.PlanIndex <= len(planIDs) {
-			planID = planIDs[socio.PlanIndex-1]
-		}
-		if _, err := dbpkg.CreateEmpresaGimnasioSocio(dbEmp, dbpkg.EmpresaGimnasioSocio{EmpresaID: empresaID, Codigo: socio.Codigo, NombreCompleto: socio.NombreCompleto, Documento: socio.Documento, Telefono: socio.Telefono, Email: socio.Email, Objetivo: socio.Objetivo, Estado: "activo", PlanID: planID, Observaciones: empresaPreconfigMarker + " " + socio.Observaciones, UsuarioCreador: usuario}); err != nil {
-			errs = append(errs, fmt.Sprintf("gimnasio socio %s: %v", socio.NombreCompleto, err))
-		} else {
-			created++
-		}
-	}
-	return created, errs
-}
-
-func applyEmpresaPreconfigOdontologia(dbEmp *sql.DB, empresaID int64, cfg dbpkg.TipoEmpresaPreconfigOdontologia, usuario string) (int, []string) {
-	created := 0
-	var errs []string
-	pacienteIDs := make([]int64, 0, len(cfg.Pacientes))
-	profesionalIDs := make([]int64, 0, len(cfg.Profesionales))
-	for _, paciente := range cfg.Pacientes {
-		id, err := dbpkg.CreateEmpresaOdontologiaPaciente(dbEmp, dbpkg.EmpresaOdontologiaPaciente{EmpresaID: empresaID, Codigo: paciente.Codigo, NombreCompleto: paciente.NombreCompleto, Documento: paciente.Documento, Telefono: paciente.Telefono, Email: paciente.Email, Aseguradora: paciente.Aseguradora, Alergias: paciente.Alergias, RiesgoMedico: paciente.RiesgoMedico, Saldo: paciente.Saldo, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + paciente.Observaciones, UsuarioCreador: usuario})
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("odontologia paciente %s: %v", paciente.NombreCompleto, err))
-			continue
-		}
-		pacienteIDs = append(pacienteIDs, id)
-		created++
-	}
-	for _, profesional := range cfg.Profesionales {
-		id, err := dbpkg.CreateEmpresaOdontologiaProfesional(dbEmp, dbpkg.EmpresaOdontologiaProfesional{EmpresaID: empresaID, NombreCompleto: profesional.NombreCompleto, Especialidad: profesional.Especialidad, RegistroProfesional: profesional.RegistroProfesional, Telefono: profesional.Telefono, Email: profesional.Email, ColorAgenda: profesional.ColorAgenda, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + profesional.Observaciones, UsuarioCreador: usuario})
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("odontologia profesional %s: %v", profesional.NombreCompleto, err))
-			continue
-		}
-		profesionalIDs = append(profesionalIDs, id)
-		created++
-	}
-	for _, consultorio := range cfg.Consultorios {
-		if _, err := dbpkg.CreateEmpresaOdontologiaConsultorio(dbEmp, dbpkg.EmpresaOdontologiaConsultorio{EmpresaID: empresaID, Nombre: consultorio.Nombre, Sede: consultorio.Sede, Sillon: consultorio.Sillon, Estado: "activo", Observaciones: empresaPreconfigMarker + " " + consultorio.Observaciones, UsuarioCreador: usuario}); err != nil {
-			errs = append(errs, fmt.Sprintf("odontologia consultorio %s: %v", consultorio.Nombre, err))
-		} else {
-			created++
-		}
-	}
-	for _, tratamiento := range cfg.Tratamientos {
-		if len(pacienteIDs) == 0 {
-			break
-		}
-		pacienteID := pacienteIDs[0]
-		if tratamiento.PacienteIndex > 0 && tratamiento.PacienteIndex <= len(pacienteIDs) {
-			pacienteID = pacienteIDs[tratamiento.PacienteIndex-1]
-		}
-		var profesionalID int64
-		if tratamiento.ProfesionalIndex > 0 && tratamiento.ProfesionalIndex <= len(profesionalIDs) {
-			profesionalID = profesionalIDs[tratamiento.ProfesionalIndex-1]
-		}
-		if _, err := dbpkg.CreateEmpresaOdontologiaTratamiento(dbEmp, dbpkg.EmpresaOdontologiaTratamiento{EmpresaID: empresaID, PacienteID: pacienteID, ProfesionalID: profesionalID, Nombre: tratamiento.Nombre, Categoria: tratamiento.Categoria, Piezas: tratamiento.Piezas, SesionesTotal: tratamiento.SesionesTotal, CostoEstimado: tratamiento.CostoEstimado, Estado: "planificado", Observaciones: empresaPreconfigMarker + " " + tratamiento.Observaciones, UsuarioCreador: usuario}); err != nil {
-			errs = append(errs, fmt.Sprintf("odontologia tratamiento %s: %v", tratamiento.Nombre, err))
 		} else {
 			created++
 		}

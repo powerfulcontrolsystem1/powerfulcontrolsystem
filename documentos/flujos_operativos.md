@@ -216,6 +216,21 @@ afecte dinero, documentos, licencias o seguridad.
    volumenes Docker PCS, `MANIFEST.json` y `RESTAURAR_VPS.md`; no incluye
    `.env.platform` ni secretos por defecto.
 
+## Administrar disco VPS
+
+1. Abrir `Super administrador > Plataforma > Administrar disco VPS`.
+2. Revisar el uso total y las cuatro categorías recuperables. La pantalla no
+   lista bases, archivos empresariales, certificados, código, respaldos ni
+   volúmenes Docker conectados.
+3. Seleccionar una o más categorías y escribir exactamente `LIBERAR ESPACIO`.
+4. La API super auditada firma la solicitud hacia el sidecar interno. El
+   navegador nunca recibe acceso al socket Docker, rutas del host o comandos.
+5. El sidecar solo puede eliminar contenedores detenidos por más de 24 horas,
+   imágenes no usadas por contenedores con más de 7 días, caché BuildKit vencida
+   y volúmenes Docker anónimos sin referencias.
+6. Al finalizar, revisar los bytes recuperados y el espacio disponible. Si una
+   categoría no tiene candidatos, la operación no altera recursos activos.
+
 ## Transferir cuenta entre mesas, habitaciones o estaciones
 
 1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
@@ -256,13 +271,23 @@ afecte dinero, documentos, licencias o seguridad.
    impresora directa.
 7. El agente local de cada caja consulta
    `/api/empresa/impresoras/agente?action=tomar` con `empresa_id`, `agente_id` y
-   `estacion_id`; solo recibe trabajos pendientes de su empresa, agente o estacion.
+   `estacion_id`; solo recibe trabajos pendientes de su empresa, agente o
+   estación. PostgreSQL reclama el lote en una sola operación con
+   `FOR UPDATE SKIP LOCKED`, por lo que varios agentes pueden trabajar sin tomar
+   la misma fila.
 8. Tras imprimir en la impresora fisica del equipo, el agente marca el trabajo
-   como `impreso` o `error` en `/api/empresa/impresoras/agente?action=estado`.
+   como `impreso` o `error` en `/api/empresa/impresoras/agente?action=estado`;
+   solo el `agente_id` propietario puede cerrarlo y repetir el mismo cierre es
+   idempotente.
 9. El administrador puede ver la cola reciente y reintentar trabajos fallidos
-   desde la pagina de configuracion.
+   desde la pagina de configuracion. Reintentar pone el trabajo en `pendiente` y
+   reinicia intentos para que vuelva a ser elegible.
 10. La ruta de agente usa permisos de ventas y no permite editar impresoras,
    reglas ni predeterminadas; esas acciones siguen bajo permisos de seguridad.
+11. Crear un trabajo desde web conserva una `Idempotency-Key` hasta obtener una
+   respuesta definitiva. Antes de producción se debe definir por flujo si la
+   salida se hará mediante agente local o mediante el diálogo de impresión del
+   navegador; activar ambos sobre el mismo comprobante puede duplicar papel.
 
 ## Factura electronica desde una venta existente
 
@@ -480,24 +505,6 @@ afecte dinero, documentos, licencias o seguridad.
    impresoras, menu visible, atajos POS, productos import/export,
    bodegas/traslados, verticales y analisis/control para revisar eventos
    reales y exportar CSV/JSON.
-
-## GRAFOLOGIX grafologia OCR
-
-1. Abrir `Administrar empresa > Analisis y control > GRAFOLOGIX`.
-2. Cargar imagen desde PC, arrastrar archivo o tomar fotografia con camara.
-3. Ajustar brillo, contraste, recorte central o recorte automatico por tinta.
-4. Presionar `Analizar manuscrito`.
-5. El frontend envia `multipart/form-data` a
-   `/api/empresa/grafologia?empresa_id={id}&action=analizar`.
-6. El backend valida empresa, permisos y tipo `image/*`, guarda la imagen en la
-   carpeta de la empresa y ejecuta el motor Go puro.
-7. Si la VPS tiene `GRAFOLOGIA_TESSERACT_ENABLED=1`, se intenta OCR por
-   Tesseract CLI; si falla, el analisis geometrico continua.
-8. El sistema guarda metricas, interpretacion y reporte HTML en
-   `empresa_grafologia_analisis`.
-9. El usuario puede abrir HTML imprimible, JSON o vista `PDF / imprimir`.
-10. El resultado es orientativo; no debe tratarse como diagnostico ni decision
-    automatizada.
 
 ## Camaras y DVR
 
@@ -1094,7 +1101,20 @@ afecte dinero, documentos, licencias o seguridad.
 7. Si el carrito ya fue seleccionado y una sincronizacion secundaria falla, la
    pantalla no debe desmontarse; debe conservar la venta visible y mostrar una
    advertencia operativa.
-8. Pruebas: entrar con rol `cajero` por `login_usuario`, crear/asignar cliente
+8. En la apertura, la estructura visual aparece antes de los datos. Las lecturas
+   independientes de configuracion, permisos, clientes, descuentos, cajas y
+   carrito se ejecutan en paralelo; la sesion `/me` se comparte y no se repite
+   el listado del carrito canonico si su ciclo de vida no cambio. La lectura de
+   `estacion_prefs` se comparte con las etiquetas globales de estaciones. El
+   render de clientes, cajas, reglas y carritos se agrupa al final de esa fase;
+   resumen e items solo vuelven a pintarse cuando llegan items y abonos del
+   carrito seleccionado. El boton de pago permanece bloqueado hasta terminar
+   carritos, items, abonos y reglas de cobro, y sigue bloqueado si no existe al
+   menos un producto, servicio o total cobrable. La primera lectura de venta directa
+   no debe filtrar todavía por el código canónico calculado: primero reconoce el
+   carrito empresarial existente, incluido el formato legado, y solo las
+   recargas posteriores pueden acotar por código.
+9. Pruebas: entrar con rol `cajero` por `login_usuario`, crear/asignar cliente
    natural y empresa, agregar item por nombre y por codigo, cambiar cantidad,
    devolver producto, pagar, imprimir, validar inventario y caja, abrir/salir
    de pantalla completa y revisar contraste fondo/tarjetas.
@@ -1127,7 +1147,15 @@ afecte dinero, documentos, licencias o seguridad.
    puede cambiarlo de abierto a pagado. Reintentos, doble clic o concurrencia
    reciben respuesta idempotente y no duplican caja, documento, metricas ni
    movimientos de inventario.
-5. Se registra venta/pago y se genera documento.
+5. En la misma transaccion del cierre se registra una venta inmutable en
+   `empresa_ventas_estacion_metricas`, con codigo unico por sesion del carrito,
+   caja/turno, componente en efectivo y snapshot de items. El outbox
+   `commerce.sale-paid` usa esa identidad; dos pagos sucesivos del mismo carrito
+   reutilizable no se absorben entre si. Corte de caja debe leer esa fuente
+   historica por `empresa_id`, `cierre_caja_id` y `caja_codigo`, nunca inferir la
+   venta desde el estado actual del carrito que se reabre para el siguiente
+   cliente. El esquema pertenece a la migracion de empresa
+   `20260826-002-cart-sale-history-v1`; despues se genera el documento de venta.
 6. En venta directa o estaciones, despues del pago exitoso PCS reabre la cuenta
    operativa con `reset_items=1` y la pantalla debe quedar sin items, abonos ni
    cliente para el siguiente cliente, sin recarga manual.
@@ -1426,20 +1454,21 @@ afecte dinero, documentos, licencias o seguridad.
    Bre-B`; ambos valores se guardan por `empresa_id` dentro de
    `empresa_estacion_prefs.estaciones_config.carrito_ui_global`.
 3. Registrar una o varias cuentas receptoras con proveedor, tipo de llave,
-   llave/cuenta, caja asignada y, cuando el banco lo entregue, payload oficial o
-   plantilla QR con `{valor}`, `{referencia}`, `{empresa_id}`, `{carrito_id}` y
-   `{carrito_codigo}`.
-4. Para varias cajas simultaneas, usar una cuenta por caja o una referencia
-   dinamica unica por venta. El cajero debe validar que la referencia recibida en
-   el banco coincide con la referencia del carrito antes de cerrar la venta.
+   llave/cuenta, caja asignada y, cuando el participante lo entregue, el payload
+   estatico oficial exacto. PCS rechaza plantillas, sustituciones y payloads con
+   saltos de linea porque pueden invalidar la estructura EMV o su CRC.
+4. Para varias cajas simultaneas, usar una cuenta por caja o una referencia unica
+   visible por venta. Un QR dinamico debe generarse mediante la API oficial del
+   participante; el cajero debe validar en el banco monto y referencia antes de
+   cerrar la venta mientras no exista ese conector.
 5. La pantalla lista ventas cerradas con `transferencia_bre_b`, abonos Bre-B y
    registros bancarios manuales de `empresa_finanzas_bancos_movimientos`.
 6. `Registrar pago recibido` crea un movimiento bancario de ingreso con origen
-   `breb_qr_manual`, hash idempotente y estado de conciliacion pendiente o
-   conciliado; no crea venta ni reemplaza el cierre del carrito.
-7. La conciliacion automatica solo debe activarse cuando exista webhook/API real
-   de banco o proveedor; hasta entonces PCS conserva trazabilidad y conciliacion
-   manual sin simular confirmaciones.
+   `breb_qr_manual`, hash idempotente y estado de conciliacion siempre pendiente;
+   no crea venta, no confirma fondos y no reemplaza el cierre del carrito.
+7. La UI y la API rechazan activar conciliacion automatica mientras no exista un
+   webhook/API firmado y homologado del banco o proveedor. Hasta entonces PCS
+   conserva trazabilidad y conciliacion manual sin simular confirmaciones.
 
 ## Rappi por empresa
 

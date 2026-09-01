@@ -3,7 +3,7 @@
 
   var HELP_MESSAGE_TYPE = 'pcs-help-ai-open';
   var INSTALLED_FLAG = '__pcsHelpAIBridgeInstalled';
-  var BRIDGE_SRC = '/js/help_ai_bridge.js?v=20260725-observer-guard';
+  var BRIDGE_SRC = '/js/help_ai_bridge.js?v=20260825-admin-load-v1';
 
   if (window[INSTALLED_FLAG]) return;
   window[INSTALLED_FLAG] = true;
@@ -242,6 +242,8 @@
       var doc = frame.contentDocument;
       var childWindow = frame.contentWindow;
       if (!doc || !childWindow) return;
+      var childHref = String(childWindow.location && childWindow.location.href || '');
+      if (!childHref || childHref === 'about:blank') return;
       if (childWindow[INSTALLED_FLAG]) return;
       if (doc.querySelector('script[data-pcs-help-ai-bridge]')) return;
       var script = doc.createElement('script');

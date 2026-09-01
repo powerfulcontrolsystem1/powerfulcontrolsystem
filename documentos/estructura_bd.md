@@ -1,5 +1,48 @@
 # Estructura del Base de Datos
 
+## Actualizacion 2026-08-31: Raspberry de sensores de puertas
+
+La migracion `20260831-002-raspberry-door-sensor-v1` agrega:
+
+- `empresa_control_electrico_raspberry_pis.uso_tipo`: `domotica` o `sensor_puertas`.
+- `puerta_reles_salida`: cantidad de selectores 1–16; `puerta_delay_ms`: 10–5000 ms.
+- `empresa_sensor_puertas_devices.source_raspberry_id`, `selector_output` y `selector_input`, con unicidad parcial por empresa/Raspberry/canal.
+- indice activo por `(empresa_id, source_raspberry_id, estado)`.
+
+Los canales automáticos conservan `estacion_id`, `last_state` y `last_seen` en
+la tabla vigente de sensores. Las transiciones se insertan en
+`empresa_sensor_puertas_messages`; el ciclo de vida y cambios de configuración
+se registran en `empresa_control_electrico_eventos`. Toda consulta/mutación usa
+`empresa_id`; el túnel deriva esa frontera de la credencial del dispositivo.
+
+## Actualizacion 2026-08-31: Vida personal
+
+La migracion empresarial `20260831-001-vida-personal-v1` crea, solo mediante
+`pcs-migrate`, dos tablas PostgreSQL independientes de la contabilidad:
+
+- `empresa_vida_gastos`: `id`, `empresa_id`, `usuario_id`, `fecha_gasto`,
+  `categoria`, `comercio`, `descripcion`, `monto NUMERIC(18,2)`, `moneda`,
+  `metodo_pago`, referencia/nombre del comprobante privado, idempotencia y
+  auditoria temporal.
+- `empresa_vida_suscripciones`: `id`, `empresa_id`, `usuario_id`, nombre,
+  proveedor, costo, moneda, periodicidad/intervalo, inicio, proxima renovacion,
+  dias/tipo de recordatorio, autorrenovacion, estado, notas, idempotencia y
+  auditoria temporal.
+
+Los indices operativos comienzan por `empresa_id, usuario_id`; las restricciones
+unicas de `client_request_id` usan la misma frontera. Todos los IDs secundarios
+se consultan con empresa y usuario. Los archivos no se guardan en PostgreSQL:
+la tabla conserva una referencia opaca a la categoria privada `vida`.
+
+La migracion aditiva `20260831-003-vida-price-history-ai-v1` crea
+`empresa_vida_precios`. Cada fila pertenece a `empresa_id + usuario_id`, enlaza
+el `gasto_id` personal con borrado en cascada y conserva fecha, codigo de barras,
+producto, comercio, cantidad `NUMERIC(14,3)`, precio unitario/total
+`NUMERIC(18,2)`, moneda y origen (`manual`, `codigo_barras` o `ia_factura`). No
+existe FK hacia productos, compras o inventario empresarial.
+
+El esquema aun no se ha aplicado en ningun entorno por esta tarea.
+
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
@@ -165,6 +208,13 @@ Actualizacion 2026-06-10 (snapshots completos VPS)
   exclusivo de super administrador; las copias fisicas quedan bajo
   `backup/vps_snapshots` y la descarga valida que la ruta no salga de esa
   carpeta.
+
+Actualizacion 2026-08-24 (administracion segura de disco VPS)
+- No agrega tablas, columnas ni configuraciones persistentes. La operación se
+  audita mediante el middleware global existente `super_auditoria_eventos`.
+- No recibe `empresa_id`, rutas físicas, nombres de volúmenes ni comandos desde
+  el navegador; es una operación exclusiva de infraestructura para super
+  administrador.
 
 Actualizacion 2026-06-09 (logos corporativo y factura por empresa)
 - Tabla `empresa_configuracion_avanzada`: agrega
@@ -673,7 +723,7 @@ Actualizacion 2026-05-20 (pagos QR desde carrito)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`.
 - El JSON `estaciones_config.carrito_ui_global` puede incluir `pago_qr_habilitado`, `pago_qr_proveedor`, `pago_qr_llave`, `pago_qr_comercio`, `pago_qr_payload_oficial`, `pago_qr_instrucciones` y `pago_qr_cuentas`.
-- `pago_qr_cuentas` almacena cuentas receptoras por empresa con proveedor, nombre, llave/cuenta, comercio, payload oficial/plantilla, instrucciones y estado activo. El pago final sigue usando `metodo_pago='transferencia_bancaria'` y `referencia_pago` generada por el carrito.
+- `pago_qr_cuentas` almacena cuentas receptoras por empresa con proveedor, nombre, llave/cuenta, comercio, payload estatico oficial exacto, instrucciones y estado activo. El runtime rechaza plantillas y marcadores heredados; un QR dinamico requiere API oficial del participante. El pago final sigue usando `metodo_pago='transferencia_bancaria'` y `referencia_pago` generada por el carrito.
 
 Actualizacion 2026-05-20 (facturacion offline de carrito)
 - Nueva tabla `empresa_ventas_offline_sync` para bitacora e idempotencia de ventas capturadas sin internet.
@@ -1587,16 +1637,14 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - retencion_dias, fecha_evento, fecha_expiracion
   - Los eventos de conectividad del navegador usan `modulo=conectividad`, `recurso=conexion_internet` y acciones `internet_perdido` / `internet_restaurado`. En `metadata_json` guardan `estado_conexion`, `evento_id`, `origen`, `path`, `online`, `pending_count` y `source=frontend_connectivity_monitor`.
 
-### Objetos de busqueda full-text de auditoria (FTS operativa)
-- empresa_auditoria_eventos_fts (tabla virtual):
-  - indexa contenido textual de `empresa_auditoria_eventos` para `search` full-text.
-  - columnas indexadas: `modulo`, `accion`, `recurso`, `endpoint`, `metadata_json`, `observaciones`.
-- Triggers de sincronizacion FTS:
-  - `empresa_auditoria_eventos_ai`: inserta en FTS cuando se crea evento.
-  - `empresa_auditoria_eventos_au`: refresca fila FTS cuando se actualiza evento.
-  - `empresa_auditoria_eventos_ad`: elimina fila FTS cuando se elimina evento.
-- Backfill inicial FTS:
-  - al crear el esquema FTS se repueblan filas existentes para consistencia historica.
+### Busqueda operacional de auditoria
+- PostgreSQL no crea una tabla virtual FTS ni triggers paralelos para
+  `empresa_auditoria_eventos`.
+- `search` aplica coincidencias parametrizadas y siempre dentro de
+  `empresa_id`; los indices por empresa/fecha, módulo/acción, usuario,
+  request id, HTTP/resultado y recurso/ID sostienen los filtros habituales.
+- Esta decisión evita documentar objetos SQLite heredados que no existen en el
+  runtime PostgreSQL vigente.
 
 ### Tablas de documentos transaccionales canonicos
 
@@ -1683,7 +1731,7 @@ Actualizacion 2026-08-21 (precision fiscal y consecutivos):
   - condiciones_pago, observaciones, estado
   - UNIQUE(empresa_id, requisicion_id, numero)
 - empresa_compras_recepciones_avanzadas:
-  - empresa_id, requisicion_id, cotizacion_id, proveedor_id, proveedor_nombre
+  - empresa_id, requisicion_id, bodega_id, cotizacion_id, proveedor_id, proveedor_nombre
   - documento, fecha_recepcion, estado_recepcion, responsable, observaciones
 - empresa_compras_recepcion_items_avanzadas:
   - empresa_id, recepcion_id, requisicion_item_id, producto_nombre

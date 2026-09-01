@@ -20,6 +20,11 @@
     </header>
 
     <main class="portal-main container systems-main systems-main-compact">
+      <header class="systems-catalog-heading">
+        <p>Cat&aacute;logo vigente</p>
+        <h1>53 m&oacute;dulos activos y 13 plantillas empresariales</h1>
+        <span>Las plantillas especializan el negocio sobre Inventario, Ventas, Pagos, Finanzas y Facturaci&oacute;n, sin duplicar el n&uacute;cleo.</span>
+      </header>
       <p id="systemsStatus" class="form-help systems-status" role="status"></p>
 
       <section id="systemsSections" class="systems-sections" aria-live="polite"></section>
@@ -37,6 +42,19 @@
       var sectionObserver = null;
 
       var fallbackCards = [
+        {
+          module: 'vida',
+          titulo: 'Vida',
+          descripcion: 'Gastos personales por usuario, facturas privadas, suscripciones y recordatorios.',
+          imagen_url: '/img/money.svg',
+          imagen_secundaria_url: '/img/Sistema para la vida.png',
+          enlace: '/administrar_empresa.html?module=vida',
+          detalle_etiqueta: 'Finanzas personales',
+          detalle_titular: 'Ordena los gastos cotidianos y anticipa cada suscripcion sin mezclarlos con la empresa.',
+          detalle_parrafo_uno: 'Cada cuenta registra supermercado, hogar, transporte, salud y otras compras dentro de su empresa, pero consulta exclusivamente sus propios datos.',
+          detalle_parrafo_dos: 'La captura movil adjunta una foto privada y las suscripciones calculan costos y alertan antes de renovar o cancelar.',
+          detalle_puntos: ['Foto privada de la factura.', 'Gastos aislados por cuenta.', 'Suscripciones flexibles.', 'Recordatorios visibles y alarmas opcionales.']
+        },
         {
           titulo: 'Punto de venta',
           descripcion: 'Solucion completa para ventas rapidas y facturacion electronica.',
@@ -122,40 +140,6 @@
             'Soporte para operaciones multiusuario con historial claro de movimientos y cobros.'
           ]
         },
-        {
-          titulo: 'Sistema para Gimnasios',
-          descripcion: 'Maneja membresias, accesos RFID, clases, pagos y renovaciones desde una sola plataforma.',
-          imagen_url: '/img/gym-logo.svg',
-          imagen_secundaria_url: '/img/gym-system-hero.svg',
-          enlace: '/administrar_empresa.html?module=gimnasio',
-          detalle_etiqueta: 'Membresias y acceso',
-          detalle_titular: 'Controla socios, accesos, clases y recaudo con una operacion pensada para gimnasios modernos.',
-          detalle_parrafo_uno: 'La solucion para Gimnasios centraliza la vida comercial y operativa del centro deportivo: altas de socios, planes, renovaciones, recaudo, control de cartera, clases, entrenadores y seguimiento por sede o canal. Tambien permite manejar credenciales, carnets y acceso por tarjeta RFID o NFC.',
-          detalle_parrafo_dos: 'Esto ayuda a ofrecer una experiencia profesional desde recepcion hasta el control de acceso, reduciendo filas, mejorando la renovacion de planes y dejando trazabilidad clara sobre ingresos, asistencia, vencimientos y rentabilidad por linea de servicio.',
-          detalle_puntos: [
-            'Membresias, pagos, renovaciones y saldo por socio.',
-            'Control de acceso con tarjetas RFID, QR, PIN o biometria segun la operacion.',
-            'Clases, entrenadores, cupos, horarios y consumo por canal.',
-            'Indicadores de rentabilidad por plan, sede y punto de ingreso.'
-          ]
-        },
-        {
-          titulo: 'Sistema para consultorios odontologicos',
-          descripcion: 'Gestiona agenda clinica, historias, odontograma, tratamientos, presupuestos y recaudo por paciente.',
-          imagen_url: '/img/dental-logo.svg',
-          imagen_secundaria_url: '/img/dental-system-hero.svg',
-          enlace: '/administrar_empresa.html?module=consultorio_odontologico',
-          detalle_etiqueta: 'Agenda y gestion clinica',
-          detalle_titular: 'Organiza la consulta, el tratamiento y el recaudo en una sola plataforma para odontologia.',
-          detalle_parrafo_uno: 'La solucion para consultorios odontologicos integra agenda de citas, profesionales, unidades de atencion, historias clinicas, odontograma, tratamientos, aseguradoras, presupuestos y pagos. Esto permite seguir el recorrido completo del paciente sin depender de varias herramientas aisladas.',
-          detalle_parrafo_dos: 'La operacion se vuelve mas clara para recepcion, equipo clinico y administracion porque cada paciente mantiene su contexto medico y financiero. Asi se mejora la puntualidad, la continuidad del tratamiento, la trazabilidad de sesiones y el control del recaudo pendiente.',
-          detalle_puntos: [
-            'Agenda por profesional, consultorio, prioridad y canal de atencion.',
-            'Historia clinica, odontograma y evolucion por paciente.',
-            'Tratamientos, sesiones, presupuestos y recaudo asociado.',
-            'Control de profesionales, aseguradoras y saldos pendientes.'
-          ]
-        }
       ];
 
       var localVerticalCatalog = window.PCS_NUEVAS_PLANTILLAS || [];
@@ -209,8 +193,15 @@
         };
       }
 
+      var classicTemplateCatalog = [
+        { module: 'parqueadero', fullTitle: 'Parqueadero', description: 'Tickets QR, placas, entrada y salida, tarifas y cobro conectado a la venta central.', icon: '/img/vehiculos-flotas-logo.svg', secondaryIcon: '/img/portal-systems/realistic/parqueaderos-ticket-qr.jpg', sections: ['Entradas', 'Tickets QR', 'Tarifas', 'Salidas', 'Cobros', 'Reportes'] },
+        { module: 'domicilios', fullTitle: 'Domicilios', description: 'Pedidos, domiciliarios, seguimiento, estados logísticos y cobro conectado a ventas y pagos.', icon: '/img/logo.png', secondaryIcon: '/img/portal-systems/realistic/domicilios-entregas.jpg', sections: ['Pedidos', 'Asignacion', 'Seguimiento', 'Entrega', 'Cobro', 'Reportes'] },
+        { module: 'alquileres', fullTitle: 'Alquileres', description: 'Contratos, activos, garantías, entregas, devoluciones y mantenimiento sobre clientes y servicios centrales.', icon: '/img/company-briefcase-color.svg', secondaryIcon: '/img/portal-systems/realistic/alquileres-activos.jpg', sections: ['Activos', 'Contratos', 'Garantias', 'Entregas', 'Devoluciones', 'Mantenimiento'] },
+        { module: 'aiu_construccion', fullTitle: 'Construcción / AIU', description: 'Contratos de obra, capítulos, presupuestos, AIU, retenciones, avances y facturación central.', icon: '/img/taxes.svg', secondaryIcon: '/img/portal-systems/realistic/aiu-construccion.jpg', sections: ['Contratos', 'Capitulos', 'Presupuestos', 'AIU', 'Avances', 'Facturacion'] }
+      ];
+      var publicClassicTemplateCards = classicTemplateCatalog.map(verticalCardFromCatalogItem);
       var publicVerticalCards = localVerticalCatalog.map(verticalCardFromCatalogItem);
-      fallbackCards = fallbackCards.concat(publicVerticalCards);
+      fallbackCards = fallbackCards.concat(publicClassicTemplateCards, publicVerticalCards);
 
       function escapeHTML(value) {
         return String(value == null ? '' : value)
@@ -240,6 +231,56 @@
         }
         value = value.replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
         return value || fallback;
+      }
+
+      function normalizeCatalogKey(value) {
+        var normalized = String(value || '').trim().toLowerCase();
+        if (normalized.normalize) {
+          normalized = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        return normalized.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      }
+
+      var retiredPortalCardModules = {
+        grafologia: true,
+        gimnasio: true,
+        taxi_system: true,
+        apartamentos_turisticos: true,
+        propiedad_horizontal: true,
+        odontologia: true,
+        consultorio_odontologico: true,
+        drogueria_farmacia: true,
+        drogueria_y_farmacia: true,
+        agencia_viajes: true,
+        operador_turistico: true,
+        clinica_consultorios: true,
+        laboratorio_clinico: true,
+        colegio_academia: true,
+        guarderia_infantil: true,
+        seguridad_privada: true,
+        club_deportivo: true,
+        inmobiliaria_comercial: true,
+        cooperativa_fondo: true,
+        capacitacion_empresarial: true
+      };
+
+      function portalCardModuleKey(card) {
+        var direct = normalizeCatalogKey(card && (card.module || card.__verticalModule || card.modulo));
+        if (direct) return direct;
+        var link = String((card && card.enlace) || '').trim();
+        if (!link) return '';
+        try {
+          return normalizeCatalogKey(new URL(link, window.location.origin).searchParams.get('module'));
+        } catch (_) {
+          var match = link.match(/[?&]module=([^&#]+)/i);
+          return match ? normalizeCatalogKey(decodeURIComponent(match[1])) : '';
+        }
+      }
+
+      function isRetiredPortalCard(card) {
+        var module = portalCardModuleKey(card);
+        if (module && retiredPortalCardModules[module]) return true;
+        return !!retiredPortalCardModules[normalizeCatalogKey(card && card.titulo)];
       }
 
       function normalizeLink(raw) {
@@ -328,6 +369,10 @@
 
       function normalizeCards(rawCards) {
         var source = Array.isArray(rawCards) && rawCards.length ? rawCards : fallbackCards;
+        source = source.filter(function (card) { return !isRetiredPortalCard(card); });
+        if (!source.length) {
+          source = fallbackCards.filter(function (card) { return !isRetiredPortalCard(card); });
+        }
         return source.map(function (card, idx) {
           var fallback = fallbackCards[idx % fallbackCards.length];
           var titulo = String((card && card.titulo) || '').trim() || fallback.titulo;
@@ -380,17 +425,19 @@
         if (!Array.isArray(rawCards) || !rawCards.length) {
           return fallbackCards;
         }
-        if (!publicVerticalCards.length) {
+        var publicTemplateCards = publicClassicTemplateCards.concat(publicVerticalCards);
+        if (!publicTemplateCards.length) {
           return rawCards;
         }
         var modules = {};
-        publicVerticalCards.forEach(function(card) {
-          if (card && card.__verticalModule) modules[card.__verticalModule] = true;
+        publicTemplateCards.forEach(function(card) {
+          var module = portalCardModuleKey(card);
+          if (module) modules[module] = true;
         });
         return rawCards.filter(function(card) {
-          var module = String((card && card.__verticalModule) || '').trim().toLowerCase();
+          var module = portalCardModuleKey(card);
           return !module || !modules[module];
-        }).concat(publicVerticalCards);
+        }).concat(publicTemplateCards);
       }
 
       function getSelectedBusinessCardId() {

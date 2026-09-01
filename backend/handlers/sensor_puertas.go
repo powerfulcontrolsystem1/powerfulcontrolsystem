@@ -43,6 +43,10 @@ func PublicSensorPuertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "error interno", http.StatusInternalServerError)
 					return
 				}
+				if sensorRequiresRaspberryTunnel(dev) {
+					writeJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "message": "raspberry tunnel authentication required"})
+					return
+				}
 				empresaID, estacionID, err := dbpkg.UpdateDeviceHeartbeat(dbEmp, dev.DeviceID, payload.State)
 				if err != nil {
 					log.Printf("[sensor_puertas] heartbeat error: %v", err)
@@ -74,6 +78,10 @@ func PublicSensorPuertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if dev.DeviceTokenConfigured {
 				writeJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "message": "device token required"})
+				return
+			}
+			if sensorRequiresRaspberryTunnel(dev) {
+				writeJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "message": "raspberry tunnel authentication required"})
 				return
 			}
 			empresaID, estacionID, err := dbpkg.UpdateDeviceHeartbeat(dbEmp, dev.DeviceID, payload.State)
@@ -115,6 +123,10 @@ func PublicSensorPuertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "error interno", http.StatusInternalServerError)
 					return
 				}
+				if sensorRequiresRaspberryTunnel(dev) {
+					writeJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "message": "raspberry tunnel authentication required"})
+					return
+				}
 				msgID, empresaID, estacionID, err := dbpkg.InsertEmpresaSensorMessage(dbEmp, dev.DeviceID, payload.Message)
 				if err != nil {
 					if err == sql.ErrNoRows {
@@ -147,6 +159,10 @@ func PublicSensorPuertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "message": "device token required"})
 				return
 			}
+			if sensorRequiresRaspberryTunnel(dev) {
+				writeJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "message": "raspberry tunnel authentication required"})
+				return
+			}
 			msgID, empresaID, estacionID, err := dbpkg.InsertEmpresaSensorMessage(dbEmp, dev.DeviceID, payload.Message)
 			if err != nil {
 				log.Printf("[sensor_puertas] insert message error: %v", err)
@@ -160,6 +176,10 @@ func PublicSensorPuertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func sensorRequiresRaspberryTunnel(dev *dbpkg.EmpresaSensorDevice) bool {
+	return dev != nil && dev.SourceRaspberryID > 0
 }
 
 func maybeAutoActivateStationFromSensor(dbEmp *sql.DB, empresaID, estacionID int64, sensorState string) (bool, string) {
@@ -296,6 +316,17 @@ func EmpresaSensorConfigHandler(dbEmp *sql.DB) http.HandlerFunc {
 				log.Printf("[sensor_puertas] upsert error: %v", err)
 				http.Error(w, "error interno", http.StatusInternalServerError)
 				return
+			}
+			if dev, lookupErr := dbpkg.GetEmpresaSensorByEmpresaDeviceID(dbEmp, empresaID, payload.DeviceID); lookupErr == nil && dev.SourceRaspberryID > 0 {
+				metadata, _ := json.Marshal(map[string]interface{}{
+					"device_id": dev.DeviceID, "estacion_id": dev.EstacionID,
+					"selector_output": dev.SelectorOutput, "selector_input": dev.SelectorInput,
+				})
+				_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
+					EmpresaID: empresaID, RaspberryID: dev.SourceRaspberryID, EstacionID: dev.EstacionID,
+					Comando: "canal_puerta_configurado", Resultado: "ok", Actor: p.UsuarioCreador,
+					Origen: "configuracion_sensores_raspberry", MetadataJSON: string(metadata),
+				})
 			}
 			response := map[string]interface{}{"ok": true, "id": id, "device_id": payload.DeviceID}
 			if generatedToken != "" {

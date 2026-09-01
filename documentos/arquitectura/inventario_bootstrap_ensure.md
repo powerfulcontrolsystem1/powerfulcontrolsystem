@@ -6,14 +6,14 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 
 ## Resumen
 
-- Funciones inventariadas: 147.
-- Huella del catalogo legado: `58d9b02cac1806f2ef8e6faddd2354cd8506b7cd0c62082cca23c19d7e596ce8` (122 pasos).
-- DDL / indice / funcion: 118.
+- Funciones inventariadas: 141.
+- Huella del catalogo legado: `2def85762b145df54547dd90454027bbafa6d53ef4b065396f8bb54d49d99d82` (117 pasos).
+- DDL / indice / funcion: 113.
 - DDL catalogado de plataforma: 4.
 - compatibilidad PostgreSQL: 2.
 - provisionamiento de integracion: 4.
 - regla auxiliar o verificacion: 6.
-- seed o provisionamiento idempotente: 13.
+- seed o provisionamiento idempotente: 12.
 - Fuente: `backend/db`, `backend/handlers` y `backend/main.go`; excluye pruebas.
 
 ## Registro
@@ -22,14 +22,13 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | --- | --- | --- | --- |
 | `EnsureAdminPrincipalDelegacionesSchema` | [backend/db/admin_principal_delegaciones.go:31](../../backend/db/admin_principal_delegaciones.go#L31) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaAIOpenAIProviderSchema` | [backend/db/ai_empresa_proveedor.go:23](../../backend/db/ai_empresa_proveedor.go#L23) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaAIEnterpriseSchema` | [backend/db/ai_enterprise.go:97](../../backend/db/ai_enterprise.go#L97) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaAIEnterpriseSchema` | [backend/db/ai_enterprise.go:98](../../backend/db/ai_enterprise.go#L98) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaAIUConstruccionSchema` | [backend/db/aiu_construccion.go:139](../../backend/db/aiu_construccion.go#L139) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaAlquileresSchema` | [backend/db/alquileres.go:210](../../backend/db/alquileres.go#L210) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureAlquileresTipoEmpresaYLicencias` | [backend/db/alquileres_bootstrap.go:64](../../backend/db/alquileres_bootstrap.go#L64) | seed o provisionamiento idempotente | superadministrador o por confirmar |
-| `EnsureEmpresaApartamentosTuristicosSchema` | [backend/db/apartamentos_turisticos.go:148](../../backend/db/apartamentos_turisticos.go#L148) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureAsesorComercialSchema` | [backend/db/asesor_comercial.go:81](../../backend/db/asesor_comercial.go#L81) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaAsistenciaSchema` | [backend/db/asistencia_empleados.go:76](../../backend/db/asistencia_empleados.go#L76) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureAsyncJobsSchema` | [backend/db/async_jobs.go:78](../../backend/db/async_jobs.go#L78) | DDL catalogado de plataforma | superadministrador |
+| `EnsureAsyncJobsSchema` | [backend/db/async_jobs.go:81](../../backend/db/async_jobs.go#L81) | DDL catalogado de plataforma | superadministrador |
 | `EnsureEmpresaAuditoriaSchema` | [backend/db/auditoria_empresa.go:69](../../backend/db/auditoria_empresa.go#L69) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperAuditoriaSchema` | [backend/db/auditoria_super.go:62](../../backend/db/auditoria_super.go#L62) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaBackupsSchema` | [backend/db/backups_empresariales.go:560](../../backend/db/backups_empresariales.go#L560) | DDL / indice / funcion | empresas o por confirmar |
@@ -37,7 +36,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaCamarasSchema` | [backend/db/camaras.go:47](../../backend/db/camaras.go#L47) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCarnetsSchema` | [backend/db/carnets_empresa.go:99](../../backend/db/carnets_empresa.go#L99) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCarnetDefaultTemplate` | [backend/db/carnets_empresa.go:271](../../backend/db/carnets_empresa.go#L271) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEmpresaCarritosSchema` | [backend/db/carritos_compras.go:284](../../backend/db/carritos_compras.go#L284) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaCarritosSchema` | [backend/db/carritos_compras.go:316](../../backend/db/carritos_compras.go#L316) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCentrosCostoSchema` | [backend/db/centros_costo.go:135](../../backend/db/centros_costo.go#L135) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaAIChatSchema` | [backend/db/chat_inteligencia_artificial.go:336](../../backend/db/chat_inteligencia_artificial.go#L336) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperAIChatSchema` | [backend/db/chat_inteligencia_artificial.go:627](../../backend/db/chat_inteligencia_artificial.go#L627) | DDL / indice / funcion | superadministrador o por confirmar |
@@ -55,7 +54,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaContabilidadColombiaAvanzadaSchema` | [backend/db/contabilidad_colombia_avanzada.go:364](../../backend/db/contabilidad_colombia_avanzada.go#L364) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperContractSchema` | [backend/db/contrato_super.go:133](../../backend/db/contrato_super.go#L133) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureDefaultSuperContract` | [backend/db/contrato_super.go:231](../../backend/db/contrato_super.go#L231) | seed o provisionamiento idempotente | superadministrador o por confirmar |
-| `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:238](../../backend/db/control_electrico.go#L238) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaControlElectricoSchema` | [backend/db/control_electrico.go:241](../../backend/db/control_electrico.go#L241) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperCorreoNotificacionesPruebaSchema` | [backend/db/correo_notificaciones_prueba.go:44](../../backend/db/correo_notificaciones_prueba.go#L44) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaCorteCajaConfiguracionSchema` | [backend/db/corte_caja_configuracion.go:102](../../backend/db/corte_caja_configuracion.go#L102) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:622](../../backend/db/creditos.go#L622) | DDL / indice / funcion | empresas o por confirmar |
@@ -63,12 +62,11 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaDatafonosSchema` | [backend/db/datafonos.go:110](../../backend/db/datafonos.go#L110) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureAdministradoresAuthSchema` | [backend/db/db.go:146](../../backend/db/db.go#L146) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsurePaymentGatewaySchema` | [backend/db/db.go:197](../../backend/db/db.go#L197) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsureLicenciasSchema` | [backend/db/db.go:269](../../backend/db/db.go#L269) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsureUserEmpresa` | [backend/db/db.go:410](../../backend/db/db.go#L410) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureLicenciasSchema` | [backend/db/db.go:273](../../backend/db/db.go#L273) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsureUserEmpresa` | [backend/db/db.go:414](../../backend/db/db.go#L414) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaDeclaracionesTributariasSchema` | [backend/db/declaraciones_tributarias.go:104](../../backend/db/declaraciones_tributarias.go#L104) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDocumentosTransaccionalesSchema` | [backend/db/documentos_transaccionales.go:120](../../backend/db/documentos_transaccionales.go#L120) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDomiciliosSchema` | [backend/db/domicilios.go:209](../../backend/db/domicilios.go#L209) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureDrogueriaFarmaciaTipoEmpresaYLicencias` | [backend/db/drogueria_farmacia_bootstrap.go:67](../../backend/db/drogueria_farmacia_bootstrap.go#L67) | seed o provisionamiento idempotente | superadministrador o por confirmar |
 | `EnsureEmpresaEmailCorporativoSchema` | [backend/db/email_corporativo.go:32](../../backend/db/email_corporativo.go#L32) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureAdminEmpresaCompartidaSchema` | [backend/db/empresa_admin_compartida.go:97](../../backend/db/empresa_admin_compartida.go#L97) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaAgentesUsoSchema` | [backend/db/empresa_agentes_uso.go:19](../../backend/db/empresa_agentes_uso.go#L19) | DDL / indice / funcion | empresas o por confirmar |
@@ -86,11 +84,9 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaEnergiaSolarSchema` | [backend/db/energia_solar.go:108](../../backend/db/energia_solar.go#L108) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaEstacionColumnPreferencesSchema` | [backend/db/estacion_columnas_pref.go:24](../../backend/db/estacion_columnas_pref.go#L24) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEstacionVIPCodigosSchema` | [backend/db/estacion_vip_codigos.go:26](../../backend/db/estacion_vip_codigos.go#L26) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaEventosContablesSchema` | [backend/db/eventos_contables.go:261](../../backend/db/eventos_contables.go#L261) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaFacturacionElectronicaSchema` | [backend/db/facturacion_electronica.go:341](../../backend/db/facturacion_electronica.go#L341) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaEventosContablesSchema` | [backend/db/eventos_contables.go:262](../../backend/db/eventos_contables.go#L262) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaFacturacionElectronicaSchema` | [backend/db/facturacion_electronica.go:343](../../backend/db/facturacion_electronica.go#L343) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaFinanzasSchema` | [backend/db/finanzas.go:187](../../backend/db/finanzas.go#L187) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaGimnasioSchema` | [backend/db/gimnasio.go:271](../../backend/db/gimnasio.go#L271) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaGrafologiaSchema` | [backend/db/grafologia.go:39](../../backend/db/grafologia.go#L39) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaHojaVidaOperativaSchema` | [backend/db/hoja_vida_operativa.go:99](../../backend/db/hoja_vida_operativa.go#L99) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureHorariosTrabajadoresSchema` | [backend/db/horarios_trabajadores.go:140](../../backend/db/horarios_trabajadores.go#L140) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureHotelTarjetasAccesoSchema` | [backend/db/hotel_tarjetas.go:57](../../backend/db/hotel_tarjetas.go#L57) | DDL / indice / funcion | empresas o por confirmar |
@@ -106,24 +102,23 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureLicenciaVencimientoNotificacionesSchema` | [backend/db/licencias_vencimiento_notificaciones.go:44](../../backend/db/licencias_vencimiento_notificaciones.go#L44) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaWMSSchema` | [backend/db/logistica_wms.go:128](../../backend/db/logistica_wms.go#L128) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSchemaMigrationsTable` | [backend/db/migrations.go:40](../../backend/db/migrations.go#L40) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureMobileAPIIdempotencySchema` | [backend/db/mobile_api_idempotency.go:36](../../backend/db/mobile_api_idempotency.go#L36) | DDL catalogado de plataforma | empresas |
-| `EnsureEmpresaModulosColombiaSchema` | [backend/db/modulos_empresariales_colombia.go:477](../../backend/db/modulos_empresariales_colombia.go#L477) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureMobileAPIIdempotencySchema` | [backend/db/mobile_api_idempotency.go:39](../../backend/db/mobile_api_idempotency.go#L39) | DDL catalogado de plataforma | empresas |
+| `EnsureEmpresaModulosColombiaSchema` | [backend/db/modulos_empresariales_colombia.go:468](../../backend/db/modulos_empresariales_colombia.go#L468) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaModulosFaltantesSchema` | [backend/db/modulos_faltantes.go:105](../../backend/db/modulos_faltantes.go#L105) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNextcloudSchema` | [backend/db/nextcloud.go:14](../../backend/db/nextcloud.go#L14) | DDL catalogado de plataforma | empresas |
 | `EnsureEmpresaNominaColombiaAvanzadaSchema` | [backend/db/nomina_colombia_avanzada.go:100](../../backend/db/nomina_colombia_avanzada.go#L100) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNominaSchema` | [backend/db/nomina_sueldos.go:388](../../backend/db/nomina_sueldos.go#L388) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaOdontologiaSchema` | [backend/db/odontologia.go:209](../../backend/db/odontologia.go#L209) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaVentasOfflineSchema` | [backend/db/offline_ventas.go:31](../../backend/db/offline_ventas.go#L31) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureOutboxSchema` | [backend/db/outbox.go:39](../../backend/db/outbox.go#L39) | DDL catalogado de plataforma | superadministrador |
+| `EnsureEmpresaVentasOfflineSchema` | [backend/db/offline_ventas.go:43](../../backend/db/offline_ventas.go#L43) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureOutboxSchema` | [backend/db/outbox.go:42](../../backend/db/outbox.go#L42) | DDL catalogado de plataforma | superadministrador |
 | `EnsureEmpresaParqueaderoSchema` | [backend/db/parqueadero.go:89](../../backend/db/parqueadero.go#L89) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureNuevasPlantillasTipoEmpresaYLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:272](../../backend/db/plantillas_nuevas_bootstrap.go#L272) | seed o provisionamiento idempotente | superadministrador o por confirmar |
-| `EnsureNuevasPlantillasProduccionMasivaLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:302](../../backend/db/plantillas_nuevas_bootstrap.go#L302) | regla auxiliar o verificacion | superadministrador o por confirmar |
+| `EnsurePaymentCheckoutIdempotencySchema` | [backend/db/payment_checkout_idempotency.go:61](../../backend/db/payment_checkout_idempotency.go#L61) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureNuevasPlantillasTipoEmpresaYLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:250](../../backend/db/plantillas_nuevas_bootstrap.go#L250) | seed o provisionamiento idempotente | superadministrador o por confirmar |
+| `EnsureNuevasPlantillasProduccionMasivaLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:280](../../backend/db/plantillas_nuevas_bootstrap.go#L280) | regla auxiliar o verificacion | superadministrador o por confirmar |
 | `EnsureEmpresaPortalContadorSchema` | [backend/db/portal_contador.go:109](../../backend/db/portal_contador.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPortalTercerosCertificadosSchema` | [backend/db/portal_terceros_certificados.go:98](../../backend/db/portal_terceros_certificados.go#L98) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaProduccionMRPSchema` | [backend/db/produccion_mrp.go:158](../../backend/db/produccion_mrp.go#L158) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaProductosSchema` | [backend/db/productos.go:515](../../backend/db/productos.go#L515) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaBodega1` | [backend/db/productos.go:1223](../../backend/db/productos.go#L1223) | regla auxiliar o verificacion | empresas o por confirmar |
-| `EnsureEmpresaPropiedadHorizontalSchema` | [backend/db/propiedad_horizontal.go:156](../../backend/db/propiedad_horizontal.go#L156) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaBodega1` | [backend/db/productos.go:1224](../../backend/db/productos.go#L1224) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaPropinasSchema` | [backend/db/propinas.go:152](../../backend/db/propinas.go#L152) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaRappiSchema` | [backend/db/rappi.go:52](../../backend/db/rappi.go#L52) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPublicacionesRedSocialSchema` | [backend/db/red_social.go:28](../../backend/db/red_social.go#L28) | DDL / indice / funcion | empresas o por confirmar |
@@ -133,7 +128,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureRolesPermisosSchema` | [backend/db/roles_permisos_usuario.go:25](../../backend/db/roles_permisos_usuario.go#L25) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureRolesDeUsuarioSchema` | [backend/db/roles_tipos_usuario.go:29](../../backend/db/roles_tipos_usuario.go#L29) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureRuntimeDatabaseRole` | [backend/db/runtime_db_role.go:17](../../backend/db/runtime_db_role.go#L17) | regla auxiliar o verificacion | empresas o por confirmar |
-| `EnsureEmpresaSensorPuertasSchema` | [backend/db/sensor_puertas.go:74](../../backend/db/sensor_puertas.go#L74) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaSensorPuertasSchema` | [backend/db/sensor_puertas.go:77](../../backend/db/sensor_puertas.go#L77) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaSoporteRemotoSchema` | [backend/db/soporte_remoto.go:401](../../backend/db/soporte_remoto.go#L401) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaSoportesComprasIASchema` | [backend/db/soportes_compras_ia.go:131](../../backend/db/soportes_compras_ia.go#L131) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsurePostgresRuntimeCompat` | [backend/db/sql_compat.go:31](../../backend/db/sql_compat.go#L31) | compatibilidad PostgreSQL | empresas o por confirmar |
@@ -148,13 +143,12 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaTarifasPorDiaSchema` | [backend/db/tarifas_por_dia.go:110](../../backend/db/tarifas_por_dia.go#L110) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaTarifasPorMinutosSchema` | [backend/db/tarifas_por_minutos.go:109](../../backend/db/tarifas_por_minutos.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaTarifasPorMinutosConfiguracionSchema` | [backend/db/tarifas_por_minutos.go:214](../../backend/db/tarifas_por_minutos.go#L214) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaTaxiSystemSchema` | [backend/db/taxi_system.go:169](../../backend/db/taxi_system.go#L169) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaTesoreriaPresupuestoSchema` | [backend/db/tesoreria_presupuesto.go:114](../../backend/db/tesoreria_presupuesto.go#L114) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureAyudaTicketsSchema` | [backend/db/tickets_ayuda.go:85](../../backend/db/tickets_ayuda.go#L85) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureTipoEmpresaPreconfiguracionSchema` | [backend/db/tipo_empresa_preconfiguracion.go:475](../../backend/db/tipo_empresa_preconfiguracion.go#L475) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureCanonicalTiposEmpresaPreconfigurables` | [backend/db/tipo_empresa_preconfiguracion.go:788](../../backend/db/tipo_empresa_preconfiguracion.go#L788) | regla auxiliar o verificacion | empresas o por confirmar |
-| `EnsureDefaultRolesForTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1548](../../backend/db/tipo_empresa_preconfiguracion.go#L1548) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1951](../../backend/db/tipo_empresa_preconfiguracion.go#L1951) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureTipoEmpresaPreconfiguracionSchema` | [backend/db/tipo_empresa_preconfiguracion.go:375](../../backend/db/tipo_empresa_preconfiguracion.go#L375) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureCanonicalTiposEmpresaPreconfigurables` | [backend/db/tipo_empresa_preconfiguracion.go:688](../../backend/db/tipo_empresa_preconfiguracion.go#L688) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureDefaultRolesForTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1368](../../backend/db/tipo_empresa_preconfiguracion.go#L1368) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1770](../../backend/db/tipo_empresa_preconfiguracion.go#L1770) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaTurnosAtencionSchema` | [backend/db/turnos_atencion.go:109](../../backend/db/turnos_atencion.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaUbicacionGPSSchema` | [backend/db/ubicacion_gps.go:67](../../backend/db/ubicacion_gps.go#L67) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureUsuarioConfiguracionSchema` | [backend/db/usuario_config_schema.go:12](../../backend/db/usuario_config_schema.go#L12) | DDL / indice / funcion | empresas o por confirmar |
@@ -162,10 +156,10 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaVehiculosRegistroSchema` | [backend/db/vehiculos_registro.go:73](../../backend/db/vehiculos_registro.go#L73) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureSuperVentaDigitalSchema` | [backend/db/venta_digital.go:170](../../backend/db/venta_digital.go#L170) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureVentaPublicaSchema` | [backend/db/venta_publica.go:21](../../backend/db/venta_publica.go#L21) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaVentaPublicaSchema` | [backend/db/venta_publica.go:564](../../backend/db/venta_publica.go#L564) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaVentaPublicaSchema` | [backend/db/venta_publica.go:563](../../backend/db/venta_publica.go#L563) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureCorporateEmailConfigFromEnv` | [backend/handlers/email_corporativo_handlers.go:279](../../backend/handlers/email_corporativo_handlers.go#L279) | provisionamiento de integracion | empresas o por confirmar |
 | `EnsureNextcloudConfigFromEnv` | [backend/handlers/nextcloud.go:271](../../backend/handlers/nextcloud.go#L271) | provisionamiento de integracion | empresas o por confirmar |
-| `EnsureSensitiveSuperConfigEncrypted` | [backend/handlers/super_config_backup_handlers.go:58](../../backend/handlers/super_config_backup_handlers.go#L58) | provisionamiento de integracion | superadministrador o por confirmar |
+| `EnsureSensitiveSuperConfigEncrypted` | [backend/handlers/super_config_backup_handlers.go:59](../../backend/handlers/super_config_backup_handlers.go#L59) | provisionamiento de integracion | superadministrador o por confirmar |
 | `EnsureSuperContextoIALogicaNegocio` | [backend/handlers/super_portal_chat_ia_info.go:182](../../backend/handlers/super_portal_chat_ia_info.go#L182) | provisionamiento de integracion | superadministrador o por confirmar |
 
 ## Gate de retiro
