@@ -41853,3 +41853,10 @@ Archivos modificados:
 - web/super_administrador.html
 - web/taxi_system.html
 - web/taxi_system_conductor.html
+
+2026-09-01: Endurecimiento del orquestador rs para ramas y migraciones.
+- `scripts/rs.ps1` valida el contexto Git antes del preflight, integra ramas de trabajo mediante PR y exige `HEAD == origin/<rama-productiva>` antes de sincronizar el VPS.
+- `scripts/profesional_preflight.ps1` incorpora un gate obligatorio de migraciones para publicacion y pruebas Go enfocadas del catalogo.
+- `tools/migration_audit.mjs` compara las entradas historicas con la rama base y bloquea eliminaciones, cambios de `Description`/`Body` o mutaciones de archivos historicos de migracion.
+- En ramas divergentes, el primer gate usa el ancestro comun y el segundo usa el SHA de `main` previo a la PR, evitando falsos positivos sin permitir que la fusion pierda migraciones.
+- `documentos/comandos_codex.md` documenta regeneracion de inventarios, parametros de rama y limites de `SkipPreflight`.

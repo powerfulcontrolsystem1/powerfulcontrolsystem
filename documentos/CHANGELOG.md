@@ -1,3 +1,9 @@
+## [2026-09-01] rs gobierna ramas y migraciones antes del VPS
+
+- [Operación] `scripts/rs.ps1` detecta ramas de trabajo antes de mutar el repositorio, las integra mediante PR con checks y solo despliega desde la rama productiva alineada exactamente con `origin`.
+- [Migraciones] El gate estricto es obligatorio en publicaciones reales: inventarios `Ensure`, catálogo histórico inmutable contra el ancestro común, comprobación post-PR contra el `main` anterior y pruebas Go enfocadas deben pasar antes de sincronizar.
+- [Seguridad] `-SkipPreflight` queda limitado a `DryRun`/`PreviewOnly`; una PR pendiente, cerrada sin fusionar o una rama divergente bloquea el VPS sin forzar ni reescribir historial.
+
 ## [2026-08-31] Raspberry multiplexada para sensores de puertas
 
 - [Operación] Al agregar una Raspberry se elige `Domótica` o `Sistema de sensores en puertas`. El segundo modo reserva GPIO 0–3 como entradas y GPIO 4–19 como hasta 16 salidas selectoras; cada salida produce cuatro canales de puerta.

@@ -19,6 +19,8 @@ param(
   [switch]$PreviewOnly,
   [switch]$SkipPreflight,
   [switch]$FullPreflight,
+  [string]$ProductionBranch = "main",
+  [switch]$NoIntegrateWorkBranch,
   [int]$ProtectedMainPRWaitSeconds = 900,
   [switch]$NoAutoMergeProtectedPR,
   [int]$RestartHealthTimeoutSeconds = 900,
@@ -36,6 +38,7 @@ $scriptDir = $PSScriptRoot
 $updateScript = Join-Path $scriptDir "actualizar_repositorio.ps1"
 $syncScript = Join-Path $scriptDir "sync_to_vps.ps1"
 $preflightScript = Join-Path $scriptDir "profesional_preflight.ps1"
+$repoRoot = (Resolve-Path (Join-Path $scriptDir "..")).Path
 $childPowerShell = if ($PSVersionTable.PSEdition -eq "Core") {
   Join-Path $PSHOME "pwsh.exe"
 } else {
@@ -125,12 +128,151 @@ function Invoke-Step {
 function Assert-ProductionRevision {
   if ($DryRun -or $PreviewOnly) { return }
   $branch = (& git branch --show-current 2>$null | Select-Object -Last 1).ToString().Trim()
-  if ($branch -ne "main") { throw "rs no sincroniza ramas de trabajo al VPS. Integra la revision aprobada en main." }
-  & git fetch origin main --quiet
-  if ($LASTEXITCODE -ne 0) { throw "No se pudo actualizar origin/main antes del despliegue." }
+  if ($branch -ne $ProductionBranch) { throw "rs no sincroniza ramas de trabajo al VPS. La revision debe estar integrada en $ProductionBranch." }
+  & git fetch origin $ProductionBranch --quiet
+  if ($LASTEXITCODE -ne 0) { throw "No se pudo actualizar origin/$ProductionBranch antes del despliegue." }
   $localRevision = (& git rev-parse HEAD 2>$null | Select-Object -Last 1).ToString().Trim()
-  $remoteRevision = (& git rev-parse origin/main 2>$null | Select-Object -Last 1).ToString().Trim()
-  if ([string]::IsNullOrWhiteSpace($localRevision) -or $localRevision -ne $remoteRevision) { throw "La copia local no coincide exactamente con origin/main." }
+  $remoteRevision = (& git rev-parse "origin/$ProductionBranch" 2>$null | Select-Object -Last 1).ToString().Trim()
+  if ([string]::IsNullOrWhiteSpace($localRevision) -or $localRevision -ne $remoteRevision) { throw "La copia local no coincide exactamente con origin/$ProductionBranch." }
+}
+
+function Assert-ReleaseBranchContext {
+  if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    throw "Git no esta disponible para validar la rama de publicacion."
+  }
+  Set-Location -LiteralPath $repoRoot
+  $insideRepo = ((& git rev-parse --is-inside-work-tree 2>$null) | Out-String).Trim()
+  if ($LASTEXITCODE -ne 0 -or $insideRepo -ne "true") {
+    throw "$repoRoot no es un repositorio Git valido."
+  }
+  $branch = ((& git branch --show-current 2>$null) | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($branch)) {
+    throw "rs no publica desde detached HEAD. Cambia a una rama identificable."
+  }
+  foreach ($stateRef in @("MERGE_HEAD", "REBASE_HEAD", "CHERRY_PICK_HEAD")) {
+    & git rev-parse -q --verify $stateRef *> $null
+    if ($LASTEXITCODE -eq 0) {
+      throw "Hay una operacion Git incompleta ($stateRef). Resuelvela antes de ejecutar rs."
+    }
+  }
+  & git fetch origin $ProductionBranch --quiet
+  if ($LASTEXITCODE -ne 0) {
+    throw "No se pudo leer origin/$ProductionBranch para preparar la publicacion."
+  }
+  & git rev-parse --verify "origin/$ProductionBranch" *> $null
+  if ($LASTEXITCODE -ne 0) {
+    throw "No existe la rama de produccion origin/$ProductionBranch."
+  }
+  $script:ProductionRevisionBefore = ((& git rev-parse "origin/$ProductionBranch" 2>$null) | Out-String).Trim()
+  $script:MigrationBaseRef = "origin/$ProductionBranch"
+  if ($branch -ne $ProductionBranch -and $NoIntegrateWorkBranch) {
+    throw "La rama actual es $branch. Quita -NoIntegrateWorkBranch para integrarla por PR o cambia a $ProductionBranch."
+  }
+  if ($branch -eq $ProductionBranch) {
+    Write-Host "[OK] Candidato sobre rama de produccion $ProductionBranch." -ForegroundColor Green
+  } else {
+    $mergeBase = ((& git merge-base HEAD "origin/$ProductionBranch" 2>$null) | Out-String).Trim()
+    if ([string]::IsNullOrWhiteSpace($mergeBase) -or $LASTEXITCODE -ne 0) {
+      throw "No se pudo resolver el ancestro comun entre $branch y origin/$ProductionBranch."
+    }
+    $script:MigrationBaseRef = $mergeBase
+    $counts = ((& git rev-list --left-right --count "origin/$ProductionBranch...HEAD" 2>$null) | Out-String).Trim()
+    Write-Host "[INFO] Rama de trabajo detectada: $branch (diferencia frente a origin/${ProductionBranch}: $counts)." -ForegroundColor Gray
+    Write-Host "[INFO] Se publicara la rama y se integrara por PR antes de sincronizar el VPS." -ForegroundColor Gray
+  }
+  return $branch
+}
+
+function Complete-WorkBranchIntegration {
+  param([Parameter(Mandatory = $true)][string]$Branch)
+
+  if ($Branch -eq $ProductionBranch) { return }
+  if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    throw "GitHub CLI no esta disponible para integrar $Branch en $ProductionBranch."
+  }
+  & gh auth status *> $null
+  if ($LASTEXITCODE -ne 0) {
+    throw "GitHub CLI no tiene una sesion valida para integrar la rama de trabajo."
+  }
+  $status = ((& git status --porcelain 2>$null) | Out-String).Trim()
+  if (-not [string]::IsNullOrWhiteSpace($status)) {
+    throw "La actualizacion dejo cambios sin commit. No se puede crear una PR de publicacion."
+  }
+  & git fetch origin $Branch $ProductionBranch --quiet
+  if ($LASTEXITCODE -ne 0) {
+    throw "No se pudieron actualizar las referencias remotas de $Branch y $ProductionBranch."
+  }
+  $localRevision = ((& git rev-parse HEAD 2>$null) | Out-String).Trim()
+  $remoteWorkRevision = ((& git rev-parse "origin/$Branch" 2>$null) | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($localRevision) -or $localRevision -ne $remoteWorkRevision) {
+    throw "La rama local $Branch no coincide exactamente con origin/$Branch."
+  }
+  $ahead = [int](((& git rev-list --count "origin/$ProductionBranch..HEAD" 2>$null) | Out-String).Trim())
+  if ($ahead -eq 0) {
+    Write-Host "[INFO] $Branch no contiene commits pendientes frente a $ProductionBranch; se usara la rama de produccion." -ForegroundColor Gray
+  } else {
+    $prUrl = ((& gh pr list --base $ProductionBranch --head $Branch --state open --json url --jq '.[0].url' 2>$null) | Out-String).Trim()
+    if ([string]::IsNullOrWhiteSpace($prUrl)) {
+      $body = @(
+        "## Publicacion automatizada por rs",
+        "",
+        "La rama ``$Branch`` fue validada localmente y debe integrarse en ``$ProductionBranch`` antes del despliegue.",
+        "",
+        "- Revision candidata: ``$($localRevision.Substring(0, 12))``",
+        "- Migraciones e inventarios: gate obligatorio",
+        "- VPS: bloqueado hasta confirmar la fusion"
+      ) -join "`n"
+      $created = @(& gh pr create --base $ProductionBranch --head $Branch --title $Message --body $body 2>&1 | ForEach-Object { $_.ToString().Trim() })
+      $createCode = $LASTEXITCODE
+      $prUrl = @($created | Where-Object { $_ -match '^https://github\.com/[^/]+/[^/]+/pull/\d+$' } | Select-Object -Last 1)[0]
+      if ($createCode -ne 0 -or [string]::IsNullOrWhiteSpace($prUrl)) {
+        $created | ForEach-Object { Write-Host $_ }
+        throw "No se pudo crear la PR de $Branch hacia $ProductionBranch."
+      }
+      Write-Host "[OK] PR de publicacion creada: $prUrl" -ForegroundColor Green
+    } else {
+      Write-Host "[INFO] Reutilizando PR abierta de publicacion: $prUrl" -ForegroundColor Gray
+    }
+
+    if (-not $NoAutoMergeProtectedPR) {
+      $mergeOutput = @(& gh pr merge $prUrl --auto --squash --delete-branch 2>&1 | ForEach-Object { $_.ToString() })
+      if ($LASTEXITCODE -ne 0) {
+        $mergeOutput | ForEach-Object { Write-Host $_ }
+        Write-Host "[AVISO] GitHub no activo auto-merge; rs esperara una fusion valida sin omitir checks." -ForegroundColor Yellow
+      } else {
+        Write-Host "[OK] Auto-merge solicitado; GitHub conserva checks y aprobaciones obligatorias." -ForegroundColor Green
+      }
+    }
+
+    $deadline = (Get-Date).AddSeconds($ProtectedMainPRWaitSeconds)
+    do {
+      $stateJson = ((& gh pr view $prUrl --json state,mergedAt,mergeStateStatus 2>$null) | Out-String).Trim()
+      if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($stateJson)) {
+        $prState = $stateJson | ConvertFrom-Json
+        if ($prState.state -eq "MERGED") { break }
+        if ($prState.state -eq "CLOSED") { throw "La PR se cerro sin fusionar. El VPS permanece sin cambios." }
+      }
+      if ((Get-Date) -ge $deadline) {
+        throw "La PR sigue pendiente despues de $ProtectedMainPRWaitSeconds segundos: $prUrl. El VPS permanece sin cambios."
+      }
+      Start-Sleep -Seconds 10
+    } while ($true)
+    Write-Host "[OK] GitHub confirmo la fusion de la PR." -ForegroundColor Green
+  }
+
+  & git switch $ProductionBranch
+  if ($LASTEXITCODE -ne 0) {
+    throw "La integracion termino, pero no se pudo cambiar a $ProductionBranch."
+  }
+  & git fetch origin $ProductionBranch --quiet
+  if ($LASTEXITCODE -ne 0) {
+    throw "No se pudo actualizar origin/$ProductionBranch despues de la fusion."
+  }
+  & git merge --ff-only "origin/$ProductionBranch"
+  if ($LASTEXITCODE -ne 0) {
+    throw "$ProductionBranch local no admite fast-forward seguro hacia origin/$ProductionBranch."
+  }
+  Write-Host "[OK] Rama local $ProductionBranch alineada con la revision fusionada." -ForegroundColor Green
 }
 
 $updateArgs = @{
@@ -151,8 +293,14 @@ $syncArgs.CleanupRemoteUnusedFiles = $CleanupRemoteUnusedFiles
 $syncArgs.RemoteCleanupTempMinAgeMinutes = $RemoteCleanupTempMinAgeMinutes
 $syncArgs.RemoteCleanupDockerBuilderCacheMaxAgeHours = $RemoteCleanupDockerBuilderCacheMaxAgeHours
 
+$startingBranch = Assert-ReleaseBranchContext
+
+if ($SkipPreflight -and -not ($DryRun -or $PreviewOnly)) {
+  throw "Un rs real no permite -SkipPreflight: el gate de migraciones y rama es obligatorio."
+}
+
 if (-not $SkipPreflight) {
-  $preflightArgs = @{}
+  $preflightArgs = @{ RequireMigrationAudit = $true; MigrationBaseRef = $script:MigrationBaseRef }
   if ($FullPreflight) { $preflightArgs.Full = $true }
   Invoke-Step -Name "Preflight profesional" -Path $preflightScript -Arguments $preflightArgs
 }
@@ -161,6 +309,11 @@ if ($DryRun -or $PreviewOnly) {
   Write-Host "[INFO] Actualizar repositorio omitido por DryRun/PreviewOnly."
 } else {
   Invoke-Step -Name "Actualizar repositorio" -Path $updateScript -Arguments $updateArgs
+  Complete-WorkBranchIntegration -Branch $startingBranch
+  if ($startingBranch -ne $ProductionBranch) {
+    $postIntegrationArgs = @{ RequireMigrationAudit = $true; MigrationBaseRef = $script:ProductionRevisionBefore }
+    Invoke-Step -Name "Preflight post-integracion" -Path $preflightScript -Arguments $postIntegrationArgs
+  }
   Assert-ProductionRevision
 }
 Invoke-Step -Name "Sincronizar VPS" -Path $syncScript -Arguments $syncArgs
