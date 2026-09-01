@@ -4991,3 +4991,5 @@
 - 2026-08-25: `Regeneracion manual de XML DIAN rechazado` permite que un reenvio empresarial explicito, sin CUFE ni TrackId, reemplace un XML firmado obsoleto desde la misma fuente fiscal inmutable. El worker no puede migrarlo y el artefacto nuevo solo sustituye al anterior despues de superar el preflight vigente.
 - 2026-09-01: El panel de disco VPS elimina sus cuatro bloqueos CSP inline al
   cargar estilos y comportamiento desde recursos estaticos externos.
+- 2026-09-01: `rs` reconoce un worktree existente de `main`, exige que este
+  limpio y lo reutiliza mediante fast-forward antes del despliegue.

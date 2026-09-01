@@ -64,6 +64,43 @@ if (-not $SkipPreflight -and -not (Test-Path -LiteralPath $preflightScript)) {
   throw "No se encontro el script requerido: $preflightScript"
 }
 
+function Get-BranchWorktreePath {
+  param([Parameter(Mandatory = $true)][string]$Branch)
+
+  $candidatePath = $null
+  foreach ($line in @(& git worktree list --porcelain 2>$null)) {
+    if ($line -like "worktree *") {
+      $candidatePath = $line.Substring(9).Trim()
+      continue
+    }
+    if ($line -eq "branch refs/heads/$Branch" -and -not [string]::IsNullOrWhiteSpace($candidatePath)) {
+      return $candidatePath
+    }
+  }
+  return $null
+}
+
+function Use-ReleaseRepoRoot {
+  param([Parameter(Mandatory = $true)][string]$Path)
+
+  $resolvedRoot = (Resolve-Path -LiteralPath $Path).Path
+  $resolvedScriptDir = Join-Path $resolvedRoot "scripts"
+  $resolvedUpdateScript = Join-Path $resolvedScriptDir "actualizar_repositorio.ps1"
+  $resolvedSyncScript = Join-Path $resolvedScriptDir "sync_to_vps.ps1"
+  $resolvedPreflightScript = Join-Path $resolvedScriptDir "profesional_preflight.ps1"
+  foreach ($requiredPath in @($resolvedUpdateScript, $resolvedSyncScript, $resolvedPreflightScript)) {
+    if (-not (Test-Path -LiteralPath $requiredPath)) {
+      throw "El worktree de produccion no contiene el script requerido: $requiredPath"
+    }
+  }
+  $script:repoRoot = $resolvedRoot
+  $script:scriptDir = $resolvedScriptDir
+  $script:updateScript = $resolvedUpdateScript
+  $script:syncScript = $resolvedSyncScript
+  $script:preflightScript = $resolvedPreflightScript
+  Set-Location -LiteralPath $resolvedRoot
+}
+
 function Invoke-Step {
   param(
     [Parameter(Mandatory = $true)][string]$Name,
@@ -265,9 +302,27 @@ function Complete-WorkBranchIntegration {
     Write-Host "[OK] GitHub confirmo la fusion de la PR." -ForegroundColor Green
   }
 
-  & git switch $ProductionBranch
-  if ($LASTEXITCODE -ne 0) {
-    throw "La integracion termino, pero no se pudo cambiar a $ProductionBranch."
+  $productionWorktree = Get-BranchWorktreePath -Branch $ProductionBranch
+  $currentWorktree = (Resolve-Path -LiteralPath $repoRoot).Path
+  if (-not [string]::IsNullOrWhiteSpace($productionWorktree)) {
+    $productionWorktree = (Resolve-Path -LiteralPath $productionWorktree).Path
+  }
+  if (-not [string]::IsNullOrWhiteSpace($productionWorktree) -and
+      -not [string]::Equals($productionWorktree, $currentWorktree, [System.StringComparison]::OrdinalIgnoreCase)) {
+    $productionStatus = ((& git -C $productionWorktree status --porcelain 2>$null) | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+      throw "No se pudo validar el worktree de produccion: $productionWorktree"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($productionStatus)) {
+      throw "El worktree de produccion tiene cambios sin commit: $productionWorktree. No se modifico ni desplego."
+    }
+    Use-ReleaseRepoRoot -Path $productionWorktree
+    Write-Host "[INFO] Reutilizando el worktree existente de ${ProductionBranch}: $productionWorktree" -ForegroundColor Gray
+  } else {
+    & git switch $ProductionBranch
+    if ($LASTEXITCODE -ne 0) {
+      throw "La integracion termino, pero no se pudo cambiar a $ProductionBranch."
+    }
   }
   & git fetch origin $ProductionBranch --quiet
   if ($LASTEXITCODE -ne 0) {

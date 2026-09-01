@@ -43740,3 +43740,6 @@ Archivos modificados:
 - El panel nuevo de administracion de disco VPS extrae su CSS y JavaScript a
   recursos estaticos, eliminando cuatro bloqueos CSP inline sin alterar sus
   permisos, endpoints, textos ni comportamiento operativo.
+- `rs` reutiliza ahora el worktree limpio que ya posea `main`, evitando ramas
+  duplicadas y fallos de `git switch`; solo admite actualizacion fast-forward y
+  bloquea el despliegue si ese checkout contiene cambios locales.
