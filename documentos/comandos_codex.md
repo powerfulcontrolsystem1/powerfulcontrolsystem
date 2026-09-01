@@ -195,6 +195,11 @@ migraciones. `-SkipPreflight` solo
 se admite con `-DryRun` o `-PreviewOnly`. Antes de reintentar tras un inventario
 desactualizado, regenerar y revisar los artefactos:
 
+Si `main` ya esta asignada a otro worktree, `rs` no intenta duplicarla ni
+desmontarla. Exige que ese worktree este limpio, lo actualiza exclusivamente con
+`fetch` y `merge --ff-only`, y ejecuta alli el preflight post-integracion y la
+sincronizacion. Si contiene cambios locales, el flujo se detiene antes del VPS.
+
 ```powershell
 & "C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" tools\ensure_bootstrap_inventory.mjs
 & "C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" tools\runtime_ensure_inventory.mjs
