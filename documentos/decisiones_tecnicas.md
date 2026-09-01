@@ -98,6 +98,18 @@ trazabilidad en `documentos/historial_de_cambios`.
 - El submenu de facturacion electronica permanece, pero las paginas internas se
   muestran segun pais detectado, licencia y permisos.
 - No guardar certificados, tokens o claves en documentacion ni logs.
+- Cada familia DIAN usa fuente, numeracion, XML, identificador, transporte y
+  representacion propios. Factura, documento soporte y nomina no pueden
+  reutilizar adaptadores entre si aunque compartan firma o cliente SOAP.
+- La nomina electronica ordinaria se consolida en un solo `NominaIndividual`
+  por empresa, trabajador y mes calendario cerrado desde liquidaciones/pagos
+  reales. No se inventan pagos, intervalos ni perfiles fiscales.
+- La emision/retransmision de nomina exige simultaneamente autorizacion de
+  Facturacion y Nomina. Sus datos y artefactos tampoco se exponen desde listados
+  fiscales genericos a usuarios sin lectura de Nomina.
+- `SendNominaSync` es exclusivo de produccion. Habilitacion de nomina requiere
+  su `SendTestSetAsync`/`TestSetId` verificado; el preflight local no sustituye
+  la habilitacion oficial.
 - Para Colombia, `GetNumberingRange` es parte obligatoria del flujo de
   produccion porque actualiza la clave tecnica usada para CUFE. La llave tecnica
   se trata como secreto y solo se guarda en base de datos.
@@ -130,6 +142,12 @@ trazabilidad en `documentos/historial_de_cambios`.
   cambios operativos.
 - Venta directa y estaciones deben compartir el mismo carrito unificado y las
   mismas reglas de configuracion.
+- El destino predeterminado de estaciones y `Venta directa` sigue siendo el
+  carrito unificado. Una empresa dedicada solo a Domotica puede activar
+  `estaciones_config.carrito_ui_global.abrir_domotica_al_entrar_estacion`; la
+  ruta de una estacion conserva su `estacion_id` y `Venta directa` abre la vista
+  consolidada. La preferencia no concede permisos, no desactiva facturacion y
+  nunca se comparte entre empresas.
 - Venta directa debe permitir abrir y salir de pantalla completa desde el propio
   carrito. Cuando se abre dentro del panel empresarial, el iframe principal debe
   permitir `fullscreen`.
@@ -170,17 +188,18 @@ trazabilidad en `documentos/historial_de_cambios`.
   funciones existentes, además de privilegios por defecto para objetos futuros.
 - La contraseña runtime debe tener al menos 32 caracteres URL-safe y nunca se
   versiona.
+## 2026-08-13 - Domotica: SSH, escenas y VE.Direct
 
-## 2026-08-26 - Efectos idempotentes e incertidumbre remota
-
-- Una clave idempotente fija empresa, actor y solicitud canonica; reutilizarla
-  con otro payload es conflicto, no una nueva operacion.
-- La respuesta solo se reproduce despues de persistirla. Un fallo HTTP 5xx o
-  timeout posterior a un posible efecto remoto queda `incierto`.
-- Los efectos externos no se reapropian por vencimiento cuando un corte puede
-  haber ocurrido despues de ejecutarlos. La recuperacion exige conciliacion.
-- Los efectos locales relacionados deben compartir transaccion PostgreSQL o
-  una restriccion unica; un `SELECT` previo sin barrera no constituye
-  idempotencia bajo concurrencia.
-- Las claves crudas se hashean y toda identidad empresarial incluye
-  `empresa_id`.
+- La conexión operativa sigue siendo HTTPS saliente desde la Raspberry. SSH es
+  solo un canal alternativo de instalación/actualización y nunca sustituye el
+  túnel durable.
+- Las redes privadas SSH se rechazan salvo pertenecer a
+  `PCS_DOMOTICA_SSH_ALLOWED_CIDRS`; la huella del host debe confirmarse antes de
+  autenticar o transferir el instalador.
+- Password y sudo se cifran con `CONFIG_ENC_KEY` mediante AES-GCM y un propósito
+  ligado a empresa/Raspberry. El navegador solo recibe `credentials_configured`.
+- Las escenas no crean una vía paralela de GPIO: llaman el dispatcher canónico y
+  comparten la reserva transaccional de encendidos.
+- VE.Direct se implementa en Python estándar a 19200 8N1, autodetección por
+  datos y checksum módulo 256. No se infiere SOC desde voltaje; se requiere un
+  monitor de batería que publique esa métrica.

@@ -1,6 +1,34 @@
 package db
 
-import "testing"
+import (
+	"database/sql"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+func TestNormalizeListLimitOffset(t *testing.T) {
+	tests := []struct {
+		name               string
+		limit, offset      int
+		defaultLimit, max  int
+		wantLimit, wantOff int
+	}{
+		{name: "defaults and clamps offset", limit: 0, offset: -4, defaultLimit: 100, max: 500, wantLimit: 100, wantOff: 0},
+		{name: "caps limit", limit: 900, offset: 12, defaultLimit: 100, max: 500, wantLimit: 500, wantOff: 12},
+		{name: "preserves valid values", limit: 25, offset: 7, defaultLimit: 100, max: 500, wantLimit: 25, wantOff: 7},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gotLimit, gotOffset := normalizeListLimitOffset(test.limit, test.offset, test.defaultLimit, test.max)
+			if gotLimit != test.wantLimit || gotOffset != test.wantOff {
+				t.Fatalf("normalizeListLimitOffset()=(%d,%d), want (%d,%d)", gotLimit, gotOffset, test.wantLimit, test.wantOff)
+			}
+		})
+	}
+}
 
 func TestEmpresaModulosFaltantesSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaModulosFaltantesSchemaReady(nil); err == nil {
@@ -27,6 +55,20 @@ func TestEmpresaModulosFaltantesRequiredTablesAreAllowed(t *testing.T) {
 func TestEmpresaDocumentosTransaccionalesSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaDocumentosTransaccionalesSchemaReady(nil); err == nil {
 		t.Fatal("expected nil database to be rejected")
+	}
+}
+
+func TestDocumentosTransaccionalesNoEjecutanDDLEnOperacionesRuntime(t *testing.T) {
+	raw, err := os.ReadFile("documentos_transaccionales.go")
+	if err != nil {
+		t.Fatalf("read transactional documents repository: %v", err)
+	}
+	source := string(raw)
+	if got := strings.Count(source, "EnsureEmpresaDocumentosTransaccionalesSchema("); got != 1 {
+		t.Fatalf("runtime repository must not call schema ensure; found %d occurrences", got)
+	}
+	if got := strings.Count(source, "EmpresaDocumentosTransaccionalesSchemaReadyContext(ctx, dbConn)"); got < 2 {
+		t.Fatalf("runtime document operations must fail closed on missing schema; readiness calls=%d", got)
 	}
 }
 
@@ -108,6 +150,68 @@ func TestEmpresaTarifasPorMinutosSchemaReadyRejectsNilDatabase(t *testing.T) {
 	}
 }
 
+func TestEmpresaPreconfigSchemaReadyRejectsNilDatabase(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func(*sql.DB) error
+	}{
+		{"productos", EmpresaProductosSchemaReady},
+		{"clientes", EmpresaClientesSchemaReady},
+		{"usuarios", EmpresaUsuariosAuthSchemaReady},
+		{"configuracion_operativa", EmpresaConfiguracionOperativaSchemaReady},
+		{"comisiones", EmpresaComisionesServicioSchemaReady},
+		{"tarifas_por_dia", EmpresaTarifasPorDiaSchemaReady},
+		{"nextcloud", EmpresaNextcloudSchemaReady},
+		{"eventos_contables", EmpresaEventosContablesSchemaReady},
+		{"permisos_finos", EmpresaPermisosFinosSchemaReady},
+		{"rappi", EmpresaRappiSchemaReady},
+		{"roles_permisos", RolesPermisosSchemaReady},
+		{"super_alertas", SuperAlertasSchemaReady},
+		{"super_mantenimiento", SuperMantenimientoAgentesSchemaReady},
+		{"email_corporativo", EmpresaEmailCorporativoSchemaReady},
+		{"plantillas_licencias", PlantillasLicenciasSchemaReady},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := test.fn(nil); err == nil {
+				t.Fatal("expected nil database to be rejected")
+			}
+		})
+	}
+}
+
+func TestTableroFinancieroNoEjecutaEnsureEnRuntime(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("finanzas.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func GetEmpresaReportesTableroResumenContext(")
+	if start < 0 {
+		t.Fatal("could not find financial dashboard repository")
+	}
+	end := strings.Index(source[start:], "\nfunc buildDateRangeCondition(")
+	if end < 0 {
+		t.Fatal("could not isolate financial dashboard repository")
+	}
+	body := source[start : start+end]
+	if strings.Contains(body, "EnsureEmpresa") {
+		t.Fatal("financial dashboard must fail closed on readiness instead of executing DDL")
+	}
+	for _, expected := range []string{
+		"EmpresaCarritosSchemaReady",
+		"EmpresaClientesSchemaReady",
+		"EmpresaProductosSchemaReady",
+		"EmpresaFinanzasSchemaReady",
+		"EmpresaEventosContablesSchemaReady",
+		"EmpresaDocumentosTransaccionalesSchemaReady",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("missing readiness guard %q", expected)
+		}
+	}
+}
+
 func TestEmpresaSensorPuertasSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaSensorPuertasSchemaReady(nil); err == nil {
 		t.Fatal("expected nil database to be rejected")
@@ -124,5 +228,92 @@ func TestSuperContractSchemaReadyRejectsNilDatabase(t *testing.T) {
 	t.Parallel()
 	if err := SuperContractSchemaReady(nil); err == nil {
 		t.Fatal("super contract readiness accepted nil database")
+	}
+}
+
+func TestSharedRepositoryValueHelpers(t *testing.T) {
+	t.Parallel()
+	if got := firstNonBlankValue("  ", " value ", "fallback"); got != "value" {
+		t.Fatalf("first non-blank value = %q", got)
+	}
+	if got := firstNonBlankValue("", " \t "); got != "" {
+		t.Fatalf("empty values returned %q", got)
+	}
+	if got := escapedContainsPattern(" 50%!_off "); got != "%50!%!!!_off%" {
+		t.Fatalf("escaped LIKE pattern = %q", got)
+	}
+}
+
+func TestRepositoryCoreCodeSharedFormatting(t *testing.T) {
+	t.Parallel()
+	if got := repositoryCoreCode("dom", "Room 1", "Relay_2"); got != "DOM-ROOM-1-RELAY-2" {
+		t.Fatalf("core code = %q", got)
+	}
+	if got := repositoryCoreCode("dom", "   "); len(got) < len("DOM-") {
+		t.Fatalf("fallback core code = %q", got)
+	}
+}
+
+func TestNormalizeRepositoryPeriod(t *testing.T) {
+	t.Parallel()
+	if got := normalizeRepositoryPeriod(" 2026-08-14 ", ""); got != "2026-08" {
+		t.Fatalf("normalized period = %q", got)
+	}
+	if got := normalizeRepositoryPeriod(" 2026 ", "fallback"); got != "fallback" {
+		t.Fatalf("fallback period = %q", got)
+	}
+	if got := normalizeRepositoryPeriod(" 2026 ", ""); got != "2026" {
+		t.Fatalf("short period = %q", got)
+	}
+}
+
+func TestRepositorySharedScalarHelpers(t *testing.T) {
+	t.Parallel()
+	if got := boundedPositiveInt(0, 1, 999); got != 1 {
+		t.Fatalf("bounded fallback = %d", got)
+	}
+	if got := boundedPositiveInt(1000, 1, 999); got != 999 {
+		t.Fatalf("bounded maximum = %d", got)
+	}
+	if got := normalizeRepositoryCurrency(" usd-dollar ", "COP", 8); got != "USD-DOLL" {
+		t.Fatalf("currency = %q", got)
+	}
+	if got := repositoryISOWeekday(time.Date(2026, time.August, 16, 0, 0, 0, 0, time.UTC)); got != 7 {
+		t.Fatalf("ISO weekday = %d", got)
+	}
+	if hashRepositoryKey(" key ") != hashRepositoryKey("key") || hashRepositoryKey(" ") != "" {
+		t.Fatal("repository hash normalization mismatch")
+	}
+}
+
+func TestRepositoryDomainNormalizationHelpers(t *testing.T) {
+	t.Parallel()
+	if got := normalizeActiveArchiveState(" Archivado "); got != "archivado" {
+		t.Fatalf("active archive state = %q", got)
+	}
+	if got := normalizeRoundedPercentage(120.456); got != 100 {
+		t.Fatalf("rounded percentage = %v", got)
+	}
+	if got := parseRepositoryStationID(" ESTACION_18 ", "", 12); got != 18 {
+		t.Fatalf("station reference ID = %d", got)
+	}
+	if got := parseRepositoryStationID("", "EST-12-19", 12); got != 19 {
+		t.Fatalf("station code ID = %d", got)
+	}
+	if got := normalizeRepositorySlug(" Cuenta-Cobro ", "fallback"); got != "cuenta_cobro" {
+		t.Fatalf("slug = %q", got)
+	}
+}
+
+func TestRepositoryJSONAndUnitHelpers(t *testing.T) {
+	t.Parallel()
+	if got := decodeRepositoryJSONMap(`{"ok":true}`); got["ok"] != true {
+		t.Fatalf("decoded JSON = %#v", got)
+	}
+	if got := decodeRepositoryJSONMap("invalid"); len(got) != 0 {
+		t.Fatalf("invalid JSON = %#v", got)
+	}
+	if got := normalizeRepositoryUnit(" KG "); got != "kg" {
+		t.Fatalf("unit = %q", got)
 	}
 }

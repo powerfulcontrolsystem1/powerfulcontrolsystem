@@ -43,6 +43,10 @@ transaccion comun.
   empresa y clave de idempotencia;
 - API y worker no ejecutan DDL: la tabla aparece exclusivamente en la
   migracion `20260724-001-cxp-atomic-payments-v1` de `pcs-migrate`.
+- P110 refuerza la decisión en persistencia: `CreateEmpresaCarteraCXP` y
+  `AplicarEmpresaCarteraCXPAbono` rechazan `tipo=cxp` aun si se invocan fuera
+  del handler HTTP. La tabla histórica permanece disponible solo para lectura
+  y conciliación; CxC histórico no cambia.
 
 ## Pendiente antes de habilitar produccion
 

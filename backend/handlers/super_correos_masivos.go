@@ -299,7 +299,7 @@ func collectSuperCorreoMasivoRecipients(dbEmpresas, dbSuper *sql.DB, alcance str
 	}
 
 	if alcance == "todos" || alcance == "usuarios_empresa" {
-		if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
+		if err := dbpkg.EmpresaUsuariosAuthSchemaReady(dbEmpresas); err != nil {
 			return nil, preview, err
 		}
 		rows, err := dbpkg.ExecQueryCompat(dbEmpresas, `SELECT

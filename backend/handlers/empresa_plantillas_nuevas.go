@@ -79,7 +79,7 @@ func SuperPlantillasNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 				http.Error(w, "db super no disponible", http.StatusInternalServerError)
 				return
 			}
-			tipos, licencias, err := dbpkg.EnsureNuevasPlantillasProduccionMasivaLicencias(superDB, "super.plantillas_20")
+			tipos, licencias, err := dbpkg.ProvisionNuevasPlantillasProduccionMasivaLicencias(superDB, "super.plantillas_20")
 			if err != nil {
 				http.Error(w, "no se pudieron asegurar plantillas de produccion: "+err.Error(), http.StatusInternalServerError)
 				return

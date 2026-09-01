@@ -67,7 +67,7 @@
             <a class="btn secondary admin-link-btn" href="/login.html">Volver al login</a>
           </div>
           <div id="adminRegisterRecaptcha" class="form-help" style="display:none"></div>
-          <div id="adminRegisterMessage" class="form-help auth-message is-hidden"></div>
+          <div id="adminRegisterMessage" class="form-help auth-message is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         </form>
         <p class="footer login-card-note">Después de confirmar tu correo podrás iniciar por Google o con tu correo y contraseña, y continuar a seleccionar empresa.</p>
       </div>
@@ -80,6 +80,7 @@
   </script>
   <script src="/config.js?v=20260510-mobile-login"></script>
   <script src="/js/recaptcha_helper.js?v=20260510-mobile-login"></script>
+  <script src="/js/auth_response.js?v=20260825-gateway-safe"></script>
   <script src="/js/registrar_nuevo_usuario_administrador.js"></script>
   <script src="/js/ai_chat_drawer.js"></script>
 </body>

@@ -30,6 +30,18 @@ func resolveFacturacionTransitionForDocument(actionRaw, estadoActualRaw, tipoDoc
 	if tipoDocumento == "" {
 		tipoDocumento = "factura_electronica"
 	}
+	if !facturacionDocumentoElectronicoDIANTransporteSoportado(tipoDocumento) {
+		return documentoTransition{}, fmt.Errorf("%s no dispone aun de un adaptador DIAN conforme a su anexo tecnico; no se puede declarar emitida", tipoDocumento)
+	}
+	// NominaIndividual is never a free-form fiscal mutation. Its dedicated
+	// handler derives the document from a paid payroll liquidation, validates the
+	// employee profile and configuration, reserves the employer's consecutive,
+	// seals the immutable source and only then invokes SendNominaSync. Keeping the
+	// generic lifecycle closed prevents callers from bypassing that sequence now
+	// that the transport adapter itself is available.
+	if tipoDocumento == "nomina_electronica" {
+		return documentoTransition{}, fmt.Errorf("nomina_electronica requiere el flujo dedicado action=emitir_nomina_electronica; no se puede declarar emitida desde el endpoint generico")
+	}
 	if tipoDocumento == "factura_electronica" && normalizeDocumentoState(actionRaw) == "anular" {
 		return documentoTransition{}, fmt.Errorf("una factura electronica se anula fiscalmente mediante nota credito")
 	}
@@ -86,20 +98,6 @@ func resolveFacturacionTransitionForDocument(actionRaw, estadoActualRaw, tipoDoc
 		"emitir_documento_soporte": {
 			AccionCanonica: "documento_soporte",
 			Evento:         "documento_soporte_emitido",
-			EstadoNuevo:    "emitida",
-			EstadoDefault:  "borrador",
-			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
-		},
-		"nomina_electronica": {
-			AccionCanonica: "nomina_electronica",
-			Evento:         "nomina_electronica_emitida",
-			EstadoNuevo:    "emitida",
-			EstadoDefault:  "borrador",
-			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
-		},
-		"emitir_nomina_electronica": {
-			AccionCanonica: "nomina_electronica",
-			Evento:         "nomina_electronica_emitida",
 			EstadoNuevo:    "emitida",
 			EstadoDefault:  "borrador",
 			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),

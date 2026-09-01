@@ -107,3 +107,17 @@ func TestBuildVentaDocumentoCodigoSeparaCierresDelMismoCarrito(t *testing.T) {
 		t.Fatalf("factura debe conservar identidad de la venta: %q", factura)
 	}
 }
+
+func TestFilterCarritosByExactCodeDoesNotFallbackToOlderDirectSaleCart(t *testing.T) {
+	rows := []dbpkg.CarritoCompra{
+		{ID: 31, Codigo: "VENTA-DIRECTA-12"},
+		{ID: 32, Codigo: "QA-DIAN-REAL-123"},
+	}
+	got := filterCarritosByExactCode(rows, "qa-dian-real-123")
+	if len(got) != 1 || got[0].ID != 32 {
+		t.Fatalf("filtro exacto=%+v; no debe recuperar el carrito directo anterior", got)
+	}
+	if got := filterCarritosByExactCode(rows, "QA-DIAN-REAL-INEXISTENTE"); len(got) != 0 {
+		t.Fatalf("un codigo inexistente no puede degradarse a otro carrito: %+v", got)
+	}
+}

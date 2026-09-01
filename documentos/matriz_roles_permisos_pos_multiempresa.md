@@ -1,14 +1,33 @@
-2026-08-25: Nota de historial y modelo global del Chat IA
-- Todo usuario con acceso efectivo al Chat IA consulta únicamente su propio
-  historial dentro de la empresa activa.
-- `super_administrador`, `administrador_total` y `admin_empresa` pueden leer el
-  historial de todos los usuarios de esa empresa; ningún rol obtiene acceso a
-  otra empresa ni a secretos por esta capacidad.
-- La selección de modelo corresponde al Super Administrador y es global. Los
-  usuarios empresariales no pueden sustituirla desde el navegador.
-- `agente_pcs` está siempre activo, pero no es un rol ni concede permisos. El
-  servidor continúa resolviendo empresa, licencia, rol y acción efectiva antes
-  de exponer o confirmar cualquier herramienta.
+2026-08-26: Frontera compuesta para nomina electronica DIAN.
+- La ruta fiscal conserva `WithEmpresaFacturacionPermissions`; consultar datos
+  o artefactos de `nomina_electronica` exige ademas licencia/pagina y permiso
+  `nomina_sueldos:R`. Sin este segundo dominio, los listados generales excluyen
+  nomina y las consultas explicitas responden `403`.
+- `action=emitir_nomina_electronica`, configuracion de esa familia y reenvio
+  individual exigen `facturacion_electronica:A` y `nomina_sueldos:A`, ademas de
+  `linkNominaSueldos`. La frase de confirmacion no sustituye permisos.
+- El procesamiento manual general de cola omite nomina incluso con permiso
+  fiscal. El worker solo continua documentos ya autorizados/sellados; un
+  reenvio manual requiere accion individual y frase fuerte.
+- Un usuario de Recursos Humanos con Nomina pero sin Facturacion no puede
+  emitir; un cajero con Facturacion pero sin Nomina no puede ver totales, CUNE,
+  configuracion, cola ni artefactos de nomina.
+- El dashboard de Contabilidad conserva sus demas datos para el rol autorizado,
+  pero omite en backend el conteo y los documentos recientes de nomina si falta
+  `nomina_sueldos:R`; el KPI y la pestaña se ocultan como reflejo visual.
+
+2026-08-25: Nota de cierre seguro DIAN Colombia.
+- `/api/empresa/facturacion_electronica` conserva
+  `WithEmpresaFacturacionPermissions`: la factura desde venta, el reenvio y el
+  procesamiento fiscal requieren `A`; la anulacion total mediante nota credito
+  requiere `D` y valida factura/CUFE/fuente del mismo `empresa_id`.
+- En `/api/empresa/facturacion_electronica/dian`, guardar configuracion,
+  validar credenciales, consultar rango, subir firma, enviar set y acciones de
+  importacion fiscal requieren `A`. Un chequeo de vencimiento con
+  `notificar=0` usa `R`; si puede notificar exige `A`.
+- Un tipo documental catalogado no concede permiso ni capacidad de emision. El
+  endpoint generico permanece cerrado para payload fiscal libre y los GET DIAN
+  desconocidos responden 400 antes del CRUD interno.
 
 2026-07-09: Infraestructura del panel super.
 - `/super/api/servidores`, `/super/api/servidores/probar` y
@@ -2039,9 +2058,9 @@ Regla de lectura comun (R):
 | `/api/empresa/clientes` | `WithEmpresaClientesPermissions` | SA, AE, SS, CJ | - | modulo clientes sin `D` por politica actual |
 | `/api/empresa/proveedores` | `WithEmpresaComprasPermissions` | SA, AE, SS, CO | - | `action=emitir_orden|recepcionar_compra|contabilizar_compra|aprobar` exige `A` |
 | `/api/empresa/soportes_compras_ia` | `WithEmpresaSoportesComprasIAPermissions` | SA, AE, SS, CO, CT | - | captura foto/PDF/XML de compras y gastos; `dashboard|soportes|eventos|retencion_preview|cuarentena_preview` usa `R`, `extraer_ia|editar_revision|restaurar` usa `U`, `aprobar|rechazar|contabilizar` exige `A` y `eliminar|purgar` exige `D`; purgar requiere retencion, motivo y codigo exacto y puede reanudar `purga_pendiente` |
-| `/api/empresa/facturacion_electronica` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | `action=emitir|nota_credito|emitir_factura|emitir_documento` exige `A` |
+| `/api/empresa/facturacion_electronica` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | `action=facturar_desde_venta|reenviar_dian|procesar_reintentos|reconciliar_estados|reconciliar_aceptados_local|emitir_nomina_electronica` exige `A`; reconciliacion local omite colas sin acuse; la cola manual omite nomina. Emision/configuracion/reenvio de nomina exige ademas `nomina_sueldos:A` + `linkNominaSueldos` y frase fuerte; lectura/descarga exige `nomina_sueldos:R`. `action=anular_factura_nota_credito` exige `D`; nota credito libre/parcial, nota debito y ajustes siguen bloqueados |
 | `/api/empresa/facturacion_electronica/pais_detectado` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | consulta/actualizacion bajo politica facturacion |
-| `/api/empresa/facturacion_electronica/dian` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | incluye `action=guia_onboarding|validar_credenciales|subir_firma|checklist|validar|generar_cufe_demo|generar_xml_demo|generar_xml_ubl_base|firmar_xml_real|firmar_xml_xades_base|validar_documento_dian|diagnostico_oficial|enviar_documento_real|consultar_acuse_real|reconexion_dian|pruebas_dian|enviar_set_pruebas|activar_produccion_local`; las acciones reales de firma/envio/set/activacion requieren aprobacion; opera por `empresa_id` con `NIT/token/certificado` por empresa y software compartido opcional |
+| `/api/empresa/facturacion_electronica/dian` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | las consultas diagnosticas conocidas usan `R`; configuracion, credenciales, rango, firma, imports, set de pruebas y acciones fiscales con efecto exigen `A`; vencimientos con `notificar=0` usan `R` y con notificacion usan `A`; firma/envio directos siguen bloqueados para uso comercial y los GET desconocidos fallan antes del CRUD; opera por `empresa_id` con secretos cifrados por empresa |
 | `/api/empresa/finanzas/movimientos` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | `action=cerrar|reabrir|aprobar|procesar_asientos|procesar` exige `A` |
 | `/api/empresa/finanzas/configuracion` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | configuracion financiera |
 | `/api/empresa/finanzas/periodos` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | cierre/reapertura de periodos en `A` |
@@ -2146,31 +2165,10 @@ Para declarar un modulo listo en produccion se debe validar por rol: acceso a la
 - `/api/empresa/control_electrico` exige el wrapper empresarial y sobrescribe cualquier identificador del payload con el `empresa_id` autorizado.
 - `/api/public/domotica/tunnel` no acepta alcance empresarial del cliente: lo deriva del dispositivo autenticado.
 - `/super/api/domotica_raspberry_trafico` exige sesión super y auditoría para consultar o cambiar límites.
-
-## Actualizacion 2026-08-23: modulos retirados
-
-- Se eliminan las claves, paginas, wrappers y opciones de licencia de `gimnasio`, `taxi_system`, `apartamentos_turisticos`, `propiedad_horizontal`, `odontologia` y `drogueria_farmacia`.
-- Droguerias y farmacias se autorizan con los permisos centrales de `inventario`, productos, compras, ventas y facturacion; no existe un permiso sanitario paralelo.
-- Las rutas restantes conservan validacion de sesion, licencia, accion efectiva y `empresa_id`.
-## Actualizacion 2026-08-31: Vida personal
-
-- Se agrega el modulo `vida`, la pagina `linkVida` y el wrapper
-  `WithEmpresaVidaPermissions` para `/api/empresa/vida`.
-- Todos los roles empresariales autenticados obtienen `R/C/U/D`; `A` no aplica.
-  Vida no depende de `licencias.modulos_habilitados`, porque debe estar
-  disponible en todas las empresas.
-- La disponibilidad universal no crea privilegio transversal: cada handler y
-  consulta deriva `usuario_id` de la sesion y exige
-  `empresa_id + usuario_id + id`. Ni `admin_empresa` ni
-  `administrador_total` reciben una vista de los registros de otra cuenta.
-- Los comprobantes usan almacenamiento privado y solo se descargan despues de
-  validar la propiedad del gasto. Ocultar el enlace en frontend no sustituye la
-  autorizacion backend.
-- `precios` y `factura_ia` conservan la misma frontera. La IA no amplia permisos
-  ni puede crear movimientos en compras, inventario, caja o contabilidad.
-## Actualizacion 2026-08-31 - Raspberry de sensores de puertas
-
-- Ver controladores/canales/estados requiere lectura efectiva de `control_electrico`/seguridad según la página vigente.
-- Crear, cambiar uso, cantidad, delay, generar instalador, asignar canal o desactivar requiere administración efectiva (`A`) mediante el wrapper empresarial; ocultar botones no sustituye backend.
-- `/api/public/domotica/tunnel?action=door_scan` no usa sesión humana: exige `device_uid` y Bearer de dispositivo, deriva `empresa_id` y `raspberry_id` y rechaza una placa que no sea `sensor_puertas`.
-- La auditoría de ciclo de vida se escribe con el actor humano o la identidad de dispositivo. Ningún rol empresarial recibe acceso global ni tokens.
+- Domotica SSH: consultar/eliminar la credencial guardada e instalar por SSH
+  exigen la acción efectiva de aprobación de `control_electrico`; el secreto no
+  se muestra a ningún rol. Todas las consultas y mutaciones filtran
+  `empresa_id + raspberry_id`.
+- Escenas: listar usa lectura, crear/editar/desactivar usa las acciones CRUD del
+  módulo y ejecutar exige aprobación. Los aparatos se revalidan contra la misma
+  empresa tanto al guardar como al ejecutar.

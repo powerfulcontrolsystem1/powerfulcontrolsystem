@@ -23,6 +23,7 @@ const (
 	jobLicenseAlerts        = "licenses.expiry-alerts"
 	jobVPSSnapshot          = "maintenance.vps-snapshot"
 	jobDIANNewsAgent        = "integrations.dian-news-agent"
+	jobFacturacionRetries   = "integrations.facturacion-electronica-retries"
 	jobLegalParameters      = "compliance.legal-parameters"
 	jobCollections          = "notifications.collections"
 	jobAccounting           = "accounting.pending-events"
@@ -45,6 +46,9 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 	add(jobLicenseAlerts, 20*time.Minute, 8, func(context.Context) error { return handlers.RunLicenciaVencimientoScheduled(dbSuper, dbEmp) })
 	add(jobVPSSnapshot, 30*time.Minute, 3, func(context.Context) error { return handlers.RunSuperVPSSnapshotScheduled(dbSuper) })
 	add(jobDIANNewsAgent, 20*time.Minute, 5, func(context.Context) error { return handlers.RunSuperMaintenanceAgentsScheduled(dbSuper) })
+	add(jobFacturacionRetries, 20*time.Minute, 10, func(ctx context.Context) error {
+		return handlers.RunFacturacionElectronicaRetriesScheduled(ctx, dbEmp, dbSuper, envInt("FACTURACION_RETRY_TENANT_BATCH_SIZE", 100), envInt("FACTURACION_RETRY_DOCUMENT_BATCH_SIZE", 100))
+	})
 	add(jobLegalParameters, 30*time.Minute, 5, func(context.Context) error {
 		_, err := dbpkg.CheckAndApplyEmpresaParametrosLegalesAuto(dbEmp, "sistema.pcs-worker")
 		return err
@@ -89,6 +93,7 @@ func businessSchedules() []platformworker.ScheduleSpec {
 		{Kind: jobLicenseAlerts, Version: 1, Interval: 12 * time.Hour, MaxAttempts: 8, Priority: 70},
 		{Kind: jobVPSSnapshot, Version: 1, Interval: time.Minute, MaxAttempts: 3, Priority: 200},
 		{Kind: jobDIANNewsAgent, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 120},
+		{Kind: jobFacturacionRetries, Version: 1, Interval: time.Duration(envInt("FACTURACION_RETRY_INTERVAL_SECONDS", 60)) * time.Second, MaxAttempts: 10, Priority: 35},
 		{Kind: jobLegalParameters, Version: 1, Interval: 24 * time.Hour, MaxAttempts: 5, Priority: 140},
 		{Kind: jobCollections, Version: 1, Interval: time.Hour, MaxAttempts: 8, Priority: 90},
 		{Kind: jobAccounting, Version: 1, Interval: time.Duration(envInt("ASIENTOS_WORKER_INTERVAL_MINUTES", 15)) * time.Minute, MaxAttempts: 10, Priority: 50},

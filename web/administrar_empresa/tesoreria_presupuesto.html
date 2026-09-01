@@ -5,20 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Tesorería y presupuesto</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    body.tes-page{margin:0;background:var(--page-bg,#f6f7fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
-    [data-theme="dark"] body.tes-page,body.dark.tes-page{background:#0f1724;color:#e8eef7}
-    .tes-shell{padding:18px;display:grid;gap:14px}.tes-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);padding-bottom:12px}
-    .tes-head h1{margin:0;font-size:22px}.tes-head p{margin:5px 0 0;color:var(--muted,#65758b);max-width:780px}.tes-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .tes-btn{border:1px solid color-mix(in srgb,currentColor 16%,transparent);background:var(--button-bg,#fff);color:inherit;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:650;min-height:38px}.tes-btn.primary{background:#1769e0;color:#fff;border-color:#1769e0}
-    .tes-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.tes-kpi,.tes-box{background:var(--card-bg,#fff);border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:12px}.tes-kpi span{display:block;color:var(--muted,#65758b);font-size:12px}.tes-kpi strong{display:block;margin-top:6px;font-size:20px}
-    .tes-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent)}.tes-tab{border:0;border-bottom:3px solid transparent;background:transparent;color:inherit;padding:10px 11px;cursor:pointer;font-weight:650}.tes-tab.is-active{border-color:#1769e0;color:#1769e0}
-    .tes-panel{display:none}.tes-panel.is-active{display:grid;gap:12px}.tes-two{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(360px,1.1fr);gap:12px;align-items:start}.tes-box h2{margin:0 0 10px;font-size:16px}
-    .tes-form{display:grid;gap:9px}.tes-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.tes-field{display:grid;gap:4px}.tes-field label{font-size:12px;color:var(--muted,#65758b)}.tes-field input,.tes-field select,.tes-field textarea{width:100%;box-sizing:border-box;border:1px solid color-mix(in srgb,currentColor 18%,transparent);background:var(--input-bg,#fff);color:inherit;border-radius:8px;padding:9px 10px;min-height:38px}.tes-field textarea{min-height:70px;resize:vertical}
-    .tes-list{display:grid;gap:8px;max-height:520px;overflow:auto}.tes-item{border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px;padding:10px;display:grid;gap:6px;background:color-mix(in srgb,var(--card-bg,#fff) 92%,currentColor 2%)}.tes-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.tes-muted{color:var(--muted,#65758b);font-size:12px}.tes-chip{display:inline-flex;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,#1769e0 12%,transparent);color:#1769e0;font-size:12px;font-weight:700}
-    .tes-table-wrap{overflow:auto;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px}.tes-table{width:100%;min-width:760px;border-collapse:collapse;background:var(--card-bg,#fff)}.tes-table th,.tes-table td{text-align:left;border-bottom:1px solid color-mix(in srgb,currentColor 10%,transparent);padding:9px;font-size:13px}.tes-table th{color:var(--muted,#65758b)}.tes-msg{min-height:24px;color:var(--muted,#65758b)}.tes-msg.is-error{color:#c43737}
-    @media(max-width:980px){.tes-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tes-two{grid-template-columns:1fr}.tes-head{display:grid}.tes-actions{justify-content:flex-start}}@media(max-width:620px){.tes-shell{padding:12px}.tes-grid,.tes-row{grid-template-columns:1fr}.tes-tab{flex:1 1 42%}}
-  </style>
+  <link rel="stylesheet" href="/administrar_empresa/tesoreria_presupuesto.css">
 </head>
 <body class="tes-page">
   <main class="tes-shell">

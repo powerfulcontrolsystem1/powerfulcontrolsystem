@@ -32,6 +32,7 @@ import (
 const (
 	maxSoporteComprasIAUploadBytes     = 15 << 20
 	maxSoporteComprasIAExtractionBytes = 128 << 10
+	soporteComprasIAExtractionTimeout  = 90 * time.Second
 	soporteComprasIAAdvisoryNamespace  = int64(0x534349)
 	soporteComprasIAStorageNamespace   = int64(0x534351)
 	soporteComprasIAPurgeNamespace     = int64(0x534350)
@@ -56,6 +57,7 @@ var (
 	soporteComprasIAExtractionProviderError   atomic.Uint64
 	soporteComprasIAExtractionInvalidResponse atomic.Uint64
 	soporteComprasIAExtractionCanceled        atomic.Uint64
+	soporteComprasIAExtractionTimeouts        atomic.Uint64
 	soporteComprasIAExtractionPersistence     atomic.Uint64
 	soporteComprasIAFileIntegrityFailures     atomic.Uint64
 )
@@ -92,6 +94,7 @@ type SupportExtractionMetrics struct {
 	ProviderError   uint64
 	InvalidResponse uint64
 	Canceled        uint64
+	Timeout         uint64
 	Persistence     uint64
 }
 
@@ -102,6 +105,7 @@ func SupportExtractionOperationalMetrics() SupportExtractionMetrics {
 		ProviderError:   soporteComprasIAExtractionProviderError.Load(),
 		InvalidResponse: soporteComprasIAExtractionInvalidResponse.Load(),
 		Canceled:        soporteComprasIAExtractionCanceled.Load(),
+		Timeout:         soporteComprasIAExtractionTimeouts.Load(),
 		Persistence:     soporteComprasIAExtractionPersistence.Load(),
 	}
 }
@@ -118,6 +122,8 @@ func recordSupportExtractionOutcome(outcome string) {
 		soporteComprasIAExtractionInvalidResponse.Add(1)
 	case "canceled":
 		soporteComprasIAExtractionCanceled.Add(1)
+	case "timeout":
+		soporteComprasIAExtractionTimeouts.Add(1)
 	case "persistence_error":
 		soporteComprasIAExtractionPersistence.Add(1)
 	}
@@ -156,7 +162,7 @@ func EmpresaSoportesComprasIAHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64, action string) {
 	switch action {
 	case "dashboard":
-		dashboard, err := dbpkg.BuildEmpresaSoportesComprasIADashboard(dbEmp, empresaID)
+		dashboard, err := dbpkg.BuildEmpresaSoportesComprasIADashboardContext(r.Context(), dbEmp, empresaID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -165,7 +171,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 	case "soportes":
 		estado := r.URL.Query().Get("estado")
 		registro := r.URL.Query().Get("registro")
-		rows, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, estado, registro, 300)
+		rows, err := dbpkg.ListEmpresaSoportesComprasIARegistroContext(r.Context(), dbEmp, empresaID, estado, registro, 300)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -176,7 +182,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soportes": rows})
 	case "retencion_preview":
 		days := parseSoporteComprasIARetentionDays(r.URL.Query().Get("retencion_dias"))
-		rows, err := dbpkg.ListEmpresaSoportesComprasIARetencion(dbEmp, empresaID, days, 300)
+		rows, err := dbpkg.ListEmpresaSoportesComprasIARetencionContext(r.Context(), dbEmp, empresaID, days, 300)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -190,7 +196,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		})
 	case "cuarentena_preview":
 		thresholdMinutes := parseSoporteComprasIAQuarantineThreshold(r.URL.Query().Get("umbral_minutos"))
-		pending, err := dbpkg.ListEmpresaSoportesComprasIARegistro(dbEmp, empresaID, "", "purga_pendiente", 500)
+		pending, err := dbpkg.ListEmpresaSoportesComprasIARegistroContext(r.Context(), dbEmp, empresaID, "", "purga_pendiente", 500)
 		if err != nil {
 			log.Printf("[soportes_compras_ia] diagnostico cuarentena empresa_id=%d: %v", empresaID, err)
 			http.Error(w, "no se pudo consultar el diagnostico de cuarentena", http.StatusInternalServerError)
@@ -212,7 +218,7 @@ func handleSoportesComprasIAGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 		downloadSoporteComprasIA(w, r, dbEmp, empresaID)
 	case "eventos":
 		soporteID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("soporte_id")), 10, 64)
-		rows, err := dbpkg.ListEmpresaSoportesComprasIAEventos(dbEmp, empresaID, soporteID, 200)
+		rows, err := dbpkg.ListEmpresaSoportesComprasIAEventosContext(r.Context(), dbEmp, empresaID, soporteID, 200)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -276,6 +282,12 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			} else if errors.Is(err, errSoporteComprasIASinAdjunto) {
 				status = http.StatusUnprocessableEntity
 				message = "El soporte no tiene un archivo privado disponible para analizar."
+			} else if errors.Is(err, context.DeadlineExceeded) {
+				status = http.StatusGatewayTimeout
+				message = "El proveedor de IA excedio el tiempo de espera. El soporte conserva su estado anterior."
+			} else if errors.Is(err, context.Canceled) {
+				status = http.StatusRequestTimeout
+				message = "La extraccion IA fue cancelada. El soporte conserva su estado anterior."
 			} else if errors.Is(err, errSoporteComprasIAProveedor) {
 				status = http.StatusBadGateway
 				message = publicAIProviderError(err)
@@ -308,7 +320,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstado(dbEmp, empresaID, payload.SoporteID, "aprobado", usuario, payload.Observaciones)
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstadoContext(r.Context(), dbEmp, empresaID, payload.SoporteID, "aprobado", usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -321,7 +333,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstado(dbEmp, empresaID, payload.SoporteID, "rechazado", usuario, payload.Observaciones)
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIAEstadoContext(r.Context(), dbEmp, empresaID, payload.SoporteID, "rechazado", usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -334,7 +346,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 			http.Error(w, "soporte_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		row, err := dbpkg.ContabilizarEmpresaSoporteComprasIA(dbEmp, empresaID, payload.SoporteID, usuario)
+		row, err := dbpkg.ContabilizarEmpresaSoporteComprasIAContext(r.Context(), dbEmp, empresaID, payload.SoporteID, usuario)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -351,7 +363,7 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		if action == "restaurar" {
 			next = "activo"
 		}
-		row, err := dbpkg.UpdateEmpresaSoporteComprasIARegistroEstado(dbEmp, empresaID, payload.SoporteID, next, usuario, payload.Observaciones)
+		row, err := dbpkg.UpdateEmpresaSoporteComprasIARegistroEstadoContext(r.Context(), dbEmp, empresaID, payload.SoporteID, next, usuario, payload.Observaciones)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -406,13 +418,6 @@ func handleSoportesComprasIAMutate(w http.ResponseWriter, r *http.Request, dbEmp
 		}
 		exposeSoporteComprasIAURL(&purged)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": purged})
-	case "seed_demo":
-		row, err := seedSoporteComprasIADemo(dbEmp, empresaID, usuario)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "soporte": row})
 	default:
 		http.Error(w, "accion no soportada", http.StatusBadRequest)
 	}
@@ -507,10 +512,14 @@ func radicarSoporteComprasIA(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID 
 		}
 		row = soporteComprasIAFromForm(r, row)
 		if att != nil {
-			if err := validateSoporteComprasIAAttachment(att); err != nil {
+			// Scan the raw multipart bytes before format-specific parsing. This lets
+			// the official EICAR probe be rejected even though it is intentionally
+			// not a valid business document, and ensures no untrusted bytes reach
+			// a parser or storage when antivirus is required.
+			if err := scanSoporteComprasIAAttachment(att); err != nil {
 				return row, err
 			}
-			if err := scanSoporteComprasIAAttachment(att); err != nil {
+			if err := validateSoporteComprasIAAttachment(att); err != nil {
 				return row, err
 			}
 			release, err := acquireSoporteComprasIAStorageLock(r, dbEmp, empresaID)
@@ -1168,14 +1177,20 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
 	systemPrompt := soporteComprasIASystemPrompt()
 	pregunta := "Extrae y normaliza este soporte de compra o gasto de Colombia. Responde solo JSON valido, sin explicaciones."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil, empresaAISafetyIdentifier(usuario))
+	providerCtx, cancelProvider := context.WithTimeout(r.Context(), soporteComprasIAExtractionTimeout)
+	defer cancelProvider()
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(providerCtx, model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			recordSupportExtractionOutcome("canceled")
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			outcome := "canceled"
+			if errors.Is(err, context.DeadlineExceeded) {
+				outcome = "timeout"
+			}
+			recordSupportExtractionOutcome(outcome)
 			if refundErr := dbpkg.RefundEmpresaAgenteUsoDiario(dbEmp, dbpkg.EmpresaAgenteUsoDiario{
 				EmpresaID: empresaID, FechaUso: time.Now().Format("2006-01-02"), ConsultasAvanzadas: 1, SegundosUsados: 5,
 			}); refundErr != nil {
-				log.Printf("[soportes_compras_ia] no se pudo devolver reserva IA cancelada empresa_id=%d: %v", empresaID, refundErr)
+				log.Printf("[soportes_compras_ia] no se pudo devolver reserva IA interrumpida empresa_id=%d resultado=%s: %v", empresaID, outcome, refundErr)
 			}
 		} else {
 			recordSupportExtractionOutcome("provider_error")
@@ -1609,45 +1624,6 @@ func resolveExistingPrivateFileUnderRoot(root, candidate string) (string, error)
 		return "", errors.New("enlace de soporte fuera del directorio permitido")
 	}
 	return resolvedCandidate, nil
-}
-
-func seedSoporteComprasIADemo(dbEmp *sql.DB, empresaID int64, usuario string) (dbpkg.EmpresaSoporteComprasIA, error) {
-	row, err := dbpkg.CreateEmpresaSoporteComprasIA(dbEmp, dbpkg.EmpresaSoporteComprasIA{
-		EmpresaID:              empresaID,
-		TipoSoporte:            "gasto",
-		Origen:                 "manual",
-		ProveedorNombre:        "Papeleria Centro Empresarial SAS",
-		ProveedorNIT:           "901234567-8",
-		DocumentoTipo:          "factura_compra",
-		DocumentoNumero:        "FE-1024",
-		FechaDocumento:         time.Now().Format("2006-01-02"),
-		FechaVencimiento:       time.Now().AddDate(0, 0, 15).Format("2006-01-02"),
-		Subtotal:               180000,
-		ImpuestoIVA:            34200,
-		Total:                  214200,
-		Moneda:                 "COP",
-		CategoriaContable:      "Gastos administrativos",
-		CentroCosto:            "Administracion",
-		ConfianzaIA:            0.94,
-		ModeloIA:               dbpkg.EmpresaSoporteComprasIAModeloDefault,
-		RequiereRevisionHumana: true,
-		Usuario:                usuario,
-		Observaciones:          "Soporte de ejemplo para probar captura inteligente.",
-	})
-	if err != nil {
-		return row, err
-	}
-	extraction := row
-	raw, _ := json.Marshal(map[string]interface{}{
-		"proveedor_nombre": row.ProveedorNombre,
-		"proveedor_nit":    row.ProveedorNIT,
-		"documento_tipo":   row.DocumentoTipo,
-		"documento_numero": row.DocumentoNumero,
-		"total":            row.Total,
-		"confianza_ia":     row.ConfianzaIA,
-	})
-	extraction.ExtraccionJSON = string(raw)
-	return dbpkg.UpdateEmpresaSoporteComprasIAExtraccion(dbEmp, empresaID, row.ID, extraction, usuario)
 }
 
 func extFromSoporteComprasIAMime(mimeType string) string {

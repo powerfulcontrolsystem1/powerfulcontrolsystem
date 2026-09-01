@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -44,9 +45,33 @@ func testDIANKeyAndCertPEM(t *testing.T) (string, string) {
 	return keyPEM.String(), certPEM.String()
 }
 
-func testDIANValidConfig(t *testing.T, endpoint string) map[string]interface{} {
+func testDIANValidConfig(t *testing.T, endpoint string, empresaIDs ...int64) map[string]interface{} {
 	t.Helper()
+	empresaID := int64(12)
+	if len(empresaIDs) > 0 {
+		empresaID = empresaIDs[0]
+	}
+	if empresaID <= 0 {
+		t.Fatalf("empresa_id de prueba invalido: %d", empresaID)
+	}
 	keyPEM, certPEM := testDIANKeyAndCertPEM(t)
+	privateStorage := t.TempDir()
+	t.Setenv("PCS_PRIVATE_STORAGE_DIR", privateStorage)
+	tenantDIANRoot, err := empresaPrivateCategoryRoot(empresaID, "dian")
+	if err != nil {
+		t.Fatalf("resolve private DIAN root: %v", err)
+	}
+	if err := os.MkdirAll(tenantDIANRoot, 0o700); err != nil {
+		t.Fatalf("create private DIAN root: %v", err)
+	}
+	keyPath := filepath.Join(tenantDIANRoot, "test-private-key.pem")
+	certPath := filepath.Join(tenantDIANRoot, "test-certificate.pem")
+	if err := os.WriteFile(keyPath, []byte(keyPEM), 0o600); err != nil {
+		t.Fatalf("write private DIAN key: %v", err)
+	}
+	if err := os.WriteFile(certPath, []byte(certPEM), 0o600); err != nil {
+		t.Fatalf("write private DIAN certificate: %v", err)
+	}
 	return map[string]interface{}{
 		"nit":                       "900373913",
 		"digito_verificacion":       "4",
@@ -61,8 +86,8 @@ func testDIANValidConfig(t *testing.T, endpoint string) map[string]interface{} {
 		"consecutivo_actual":        1,
 		"llave_tecnica":             "llave-tecnica-test",
 		"url_dian":                  endpoint,
-		"certificado_clave_ref":     keyPEM,
-		"certificado_url":           certPEM,
+		"certificado_clave_ref":     "file:" + keyPath,
+		"certificado_url":           "file:" + certPath,
 		"test_set_id":               "test-set",
 		"software_id":               "software-id",
 		"software_pin":              "software-pin",
@@ -409,6 +434,32 @@ func TestBuildDIANGetStatusZipEnvelope(t *testing.T) {
 	}
 }
 
+func TestDIANSyntheticHistoryIDIsNeverReconsultable(t *testing.T) {
+	for _, trackID := range []string{"sync:FV-123", "audit:sendbillsync:FV-123", "AUDIT:SENDBILLASYNC:FV-123"} {
+		if !dianIsSyntheticHistoryID(trackID) {
+			t.Fatalf("expected %q to be a synthetic history key", trackID)
+		}
+	}
+	if dianIsSyntheticHistoryID("TRACK-123") {
+		t.Fatal("a DIAN TrackId must remain reconsultable")
+	}
+}
+
+func TestDIANHistoryTrackIDPersistsEverySendOutcome(t *testing.T) {
+	for _, operation := range []string{"SendBillSync", "sendbillsync", "SendBillAsync", "SendTestSetAsync"} {
+		expected := "audit:" + strings.ToLower(operation) + ":FV-123"
+		if got := dianHistoryTrackID(operation, "FV-123", ""); got != expected {
+			t.Fatalf("DIAN response without TrackId must have audit key %q, got %q", expected, got)
+		}
+	}
+	if got := dianHistoryTrackID("SendBillSync", "FV-123", "TRACK-REAL"); got != "TRACK-REAL" {
+		t.Fatalf("real TrackId must win, got %q", got)
+	}
+	if got := dianHistoryTrackID("SendBillSync", "", ""); got != "" {
+		t.Fatalf("response without document identity cannot be persisted, got %q", got)
+	}
+}
+
 func TestValidateDIANCredentialRefsDoesNotRequireTokenForOfficialSOAP(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
 	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{})
@@ -490,6 +541,8 @@ func TestValidateDIANCredentialRefsAllowsMissingTestSetInSimulation(t *testing.T
 
 func TestRunDIANPruebasHabilitacionReportsMissingTestSetForRealRun(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	cfg["set_facturas_requeridas"] = 1
+	cfg["set_documentos_requeridos"] = 1
 	delete(cfg, "test_set_id")
 	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
 		"simular": false,
@@ -509,6 +562,51 @@ func TestRunDIANPruebasHabilitacionReportsMissingTestSetForRealRun(t *testing.T)
 	faltantes, _ := result["faltantes"].([]string)
 	if !dianTestContainsString(faltantes, "test_set_id") {
 		t.Fatalf("expected top-level faltantes to include test_set_id, got %#v", result["faltantes"])
+	}
+}
+
+func TestRunDIANPruebasHabilitacionRequiresSavedPortalObjective(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{"simular": false})
+	if err != nil {
+		t.Fatalf("run pruebas returned err=%v", err)
+	}
+	if status != http.StatusConflict || !parseTruthy(genericStringValue(result["bloqueado"])) {
+		t.Fatalf("expected blocked response without saved portal objective, got status=%d result=%#v", status, result)
+	}
+	if result["paso"] != "confirmar_objetivo_portal" {
+		t.Fatalf("expected portal objective gate, got %#v", result)
+	}
+}
+
+func TestDIANConfiguredSetCountsNeverInventsPortalObjective(t *testing.T) {
+	facturas, debito, credito, total := dianConfiguredSetCounts(map[string]interface{}{})
+	if facturas != 0 || debito != 0 || credito != 0 || total != 0 {
+		t.Fatalf("empty config must not infer a DIAN set, got %d/%d/%d total=%d", facturas, debito, credito, total)
+	}
+}
+
+func TestRunDIANPruebasHabilitacionDoesNotOverrideSavedPortalObjective(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	cfg["set_documentos_requeridos"] = 2
+	cfg["set_facturas_requeridas"] = 2
+	delete(cfg, "test_set_id")
+	payload := map[string]interface{}{
+		"simular":               false,
+		"facturas_electronicas": 1,
+		"notas_debito":          4,
+		"notas_credito":         3,
+		"total_documentos":      8,
+	}
+	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, payload)
+	if err != nil {
+		t.Fatalf("run pruebas returned err=%v", err)
+	}
+	if status != http.StatusConflict || !parseTruthy(genericStringValue(result["bloqueado"])) {
+		t.Fatalf("expected credential gate after using saved objective, got status=%d result=%#v", status, result)
+	}
+	if payload["facturas_electronicas"] != 2 || payload["notas_debito"] != 0 || payload["notas_credito"] != 0 || payload["total_documentos"] != 2 {
+		t.Fatalf("payload must be normalized to saved portal objective, got %#v", payload)
 	}
 }
 
@@ -542,6 +640,10 @@ func TestRunDIANPruebasHabilitacionTwoEachRealSOAPWithStatusZip(t *testing.T) {
 	defer server.Close()
 
 	cfg := testDIANValidConfig(t, server.URL)
+	cfg["set_documentos_requeridos"] = 6
+	cfg["set_facturas_requeridas"] = 2
+	cfg["set_notas_debito_requeridas"] = 2
+	cfg["set_notas_credito_requeridas"] = 2
 	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
 		"simular":                false,
 		"facturas_electronicas":  2,
@@ -584,13 +686,13 @@ func TestRunDIANPruebasHabilitacionTwoEachRealSOAPWithStatusZip(t *testing.T) {
 	}
 }
 
-func TestDIANDefaultSetRequirementUsesSoftwarePropioProveedorTarget(t *testing.T) {
+func TestDIANDefaultSetRequirementRequiresPortalConfirmation(t *testing.T) {
 	got := dianDefaultSetRequirement()
-	if got["facturas_electronicas"] != 30 || got["notas_debito"] != 10 || got["notas_credito"] != 10 || got["total_documentos"] != 50 {
+	if got["facturas_electronicas"] != 0 || got["notas_debito"] != 0 || got["notas_credito"] != 0 || got["total_documentos"] != 0 {
 		t.Fatalf("unexpected default DIAN set requirement: %#v", got)
 	}
-	if !strings.Contains(genericStringValue(got["nota"]), "software propio") {
-		t.Fatalf("expected default note to explain software mode, got %#v", got)
+	if parseTruthy(genericStringValue(got["objetivo_confirmado"])) || !strings.Contains(genericStringValue(got["nota"]), "no presupone") {
+		t.Fatalf("expected unconfirmed portal objective requirement, got %#v", got)
 	}
 }
 
@@ -777,7 +879,7 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 }
 
 func TestSignDIANXMLXAdESBaseUsesOfficialFEVPolicyAndDataObjectProperties(t *testing.T) {
-	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc")
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc", 1)
 	result, status, err := generateDIANUBLBase(cfg, 1, map[string]interface{}{
 		"documento_codigo": "SETP1",
 		"cliente_nombre":   "Cliente Test",
@@ -795,6 +897,11 @@ func TestSignDIANXMLXAdESBaseUsesOfficialFEVPolicyAndDataObjectProperties(t *tes
 	})
 	if signErr != nil || signStatus != http.StatusOK {
 		t.Fatalf("signDIANXMLXAdESBase status=%d err=%v result=%#v", signStatus, signErr, signResp)
+	}
+	if outputPath := strings.TrimSpace(os.Getenv("PCS_TEST_DIAN_HABILITACION_XML_OUTPUT")); outputPath != "" {
+		if err := os.WriteFile(outputPath, []byte(genericStringValue(signResp["xml_firmado"])), 0o600); err != nil {
+			t.Fatalf("guardar XML de habilitacion para QA: %v", err)
+		}
 	}
 	signatureXML := genericStringValue(signResp["xml_signature"])
 	for _, expected := range []string{
@@ -866,6 +973,22 @@ func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 		if strings.Contains(xmlPayload, "<cac:InvoiceLine>") || strings.Contains(xmlPayload, "PrePaidAmount") {
 			t.Fatalf("%s must not use InvoiceLine: %s", tc.docType, xmlPayload)
 		}
+	}
+}
+
+func TestDIANDocumentProfileIDUsesOfficialFamilyLiterals(t *testing.T) {
+	cases := map[string]string{
+		"Invoice":    "DIAN 2.1: Factura Electrónica de Venta",
+		"CreditNote": "DIAN 2.1: Nota Crédito de Factura Electrónica de Venta",
+		"DebitNote":  "DIAN 2.1: Nota Débito de Factura Electrónica de Venta",
+	}
+	for root, expected := range cases {
+		if got := dianDocumentProfileID(root); got != expected {
+			t.Fatalf("%s ProfileID=%q; esperado %q", root, got, expected)
+		}
+	}
+	if got := dianDocumentProfileID("Unknown"); got != "" {
+		t.Fatalf("familia UBL desconocida no debe inventar ProfileID: %q", got)
 	}
 }
 
@@ -1095,6 +1218,21 @@ func TestResolveDIANAcuseFromStatusDescriptionPending(t *testing.T) {
 	}
 	if mensaje != "Batch en proceso de validacion." {
 		t.Fatalf("expected DIAN status description as message, got %q", mensaje)
+	}
+}
+
+func TestResolveDIANAcuseAcceptsOfficialSetStatusDescriptionEvenWhenIsValidFalse(t *testing.T) {
+	response := map[string]interface{}{
+		"is_valid":           "false",
+		"status_code":        "00",
+		"status_description": "Set de prueba con identificador example-test-set se encuentra Aceptado.",
+	}
+	estado, mensaje := resolveDIANAcuseFromResponse(http.StatusOK, response)
+	if estado != "aceptado" {
+		t.Fatalf("expected accepted official set status, got estado=%s mensaje=%s", estado, mensaje)
+	}
+	if !strings.Contains(strings.ToLower(mensaje), "acept") {
+		t.Fatalf("expected accepted message, got %q", mensaje)
 	}
 }
 

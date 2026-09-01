@@ -116,6 +116,16 @@ const (
 	maxAsientosWorkerRetries       = 50
 )
 
+// empresaEventoContableSinAsientoSQL lists audited operational milestones that
+// are intentionally excluded from the event-to-journal reconciliation. They
+// are marked processed without a journal entry by empresaEventoContableRequiereAsiento.
+const empresaEventoContableSinAsientoSQL = `(
+	(LOWER(COALESCE(modulo, '')) = 'ventas' AND LOWER(COALESCE(evento, '')) IN ('venta_sesion_activada', 'venta_activada', 'venta_suspendida', 'venta_reabierta'))
+	OR (LOWER(COALESCE(modulo, '')) = 'compras' AND LOWER(COALESCE(evento, '')) IN ('orden_compra_creada', 'orden_compra_actualizada', 'orden_compra_pendiente_aprobacion', 'orden_compra_aprobacion_parcial', 'orden_compra_aprobada', 'orden_compra_rechazada', 'orden_compra_activada', 'orden_compra_desactivada', 'orden_compra_eliminada', 'compra_recepcion_parcial', 'compra_documentos_validados', 'compra_documentos_inconsistentes', 'proveedor_registrado', 'proveedor_actualizado', 'proveedor_activado', 'proveedor_desactivado', 'proveedor_eliminado'))
+	OR (LOWER(COALESCE(modulo, '')) = 'facturacion' AND LOWER(COALESCE(evento, '')) IN ('configuracion_facturacion_actualizada', 'factura_integracion_enviada', 'factura_integracion_fallida', 'factura_contingencia_activada'))
+	OR (LOWER(COALESCE(modulo, '')) = 'finanzas' AND LOWER(COALESCE(evento, '')) IN ('periodo_contable_cerrado', 'periodo_contable_reabierto'))
+)`
+
 // EmpresaAsientosWorkerResumen resume una corrida global del worker de asientos.
 type EmpresaAsientosWorkerResumen struct {
 	EmpresasConPendientes int      `json:"empresas_con_pendientes"`
@@ -797,7 +807,8 @@ func GetEmpresaConciliacionContablePorPeriodo(dbConn *sql.DB, empresaID int64, f
 		COALESCE(SUM(CASE WHEN COALESCE(procesado, 0) = 1 THEN COALESCE(monto_total, 0) ELSE 0 END), 0),
 		COALESCE(MAX(fecha_evento), '')
 	FROM empresa_eventos_contables
-	WHERE empresa_id = ?`
+	WHERE empresa_id = ?
+		AND NOT ` + empresaEventoContableSinAsientoSQL
 	argsEventos := []interface{}{empresaID}
 	if !f.IncludeInactive {
 		queryEventos += ` AND COALESCE(estado, 'activo') = 'activo'`
@@ -981,6 +992,21 @@ func ProcessEmpresaEventosContablesPendientesConPolitica(dbConn *sql.DB, empresa
 	result.EventosRevisados = len(eventos)
 
 	for _, evento := range eventos {
+		// Some operational milestones are deliberately auditable but do not
+		// represent a financial posting. Marking them as failed makes the
+		// reconciliation report retry an impossible double entry forever.
+		if !empresaEventoContableRequiereAsiento(evento) {
+			if err := markEmpresaEventoContableProcessed(dbConn, evento.ID, 0); err != nil {
+				_ = markEmpresaEventoContableFailed(dbConn, evento.ID, err)
+				result.Fallidos++
+				if len(result.Errores) < 20 {
+					result.Errores = append(result.Errores, fmt.Sprintf("evento_id=%d: %s", evento.ID, trimProcessingError(err)))
+				}
+				continue
+			}
+			result.EventosProcesados++
+			continue
+		}
 		asientoID, creado, err := ensureEmpresaAsientoContableFromEvento(dbConn, evento, procesadoPor)
 		if err != nil {
 			_ = markEmpresaEventoContableFailed(dbConn, evento.ID, err)
@@ -1416,12 +1442,18 @@ func empresaEventoContableRequiereAsiento(evento EmpresaEventoContable) bool {
 	modulo := normalizeEventoContableModulo(evento.Modulo)
 	nombre := normalizeEventoContableNombre(evento.Evento)
 	switch modulo {
+	case "ventas":
+		switch nombre {
+		case "venta_sesion_activada", "venta_activada", "venta_suspendida", "venta_reabierta":
+			return false
+		}
 	case "compras":
 		switch nombre {
 		case "orden_compra_creada", "orden_compra_actualizada", "orden_compra_pendiente_aprobacion",
 			"orden_compra_aprobacion_parcial", "orden_compra_aprobada", "orden_compra_rechazada",
 			"orden_compra_activada", "orden_compra_desactivada", "orden_compra_eliminada",
-			"compra_recepcion_parcial", "compra_documentos_validados", "compra_documentos_inconsistentes":
+			"compra_recepcion_parcial", "compra_documentos_validados", "compra_documentos_inconsistentes",
+			"proveedor_registrado", "proveedor_actualizado", "proveedor_activado", "proveedor_desactivado", "proveedor_eliminado":
 			return false
 		}
 	case "facturacion":
@@ -1895,13 +1927,7 @@ func resolveEmpresaCuentaPorCategoria(rawMap, categoria, fallback, fallbackDefau
 }
 
 func parseEventoPayload(raw string) map[string]interface{} {
-	out := map[string]interface{}{}
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return out
-	}
-	_ = json.Unmarshal([]byte(raw), &out)
-	return out
+	return decodeRepositoryJSONMap(raw)
 }
 
 func payloadString(payload map[string]interface{}, keys ...string) string {

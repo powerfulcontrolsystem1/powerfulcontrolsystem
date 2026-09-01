@@ -290,6 +290,19 @@ func EnsureNuevasPlantillasProduccionMasivaLicencias(dbConn *sql.DB, usuario str
 	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
 		return 0, 0, err
 	}
+	return ProvisionNuevasPlantillasProduccionMasivaLicencias(dbConn, usuario)
+}
+
+// ProvisionNuevasPlantillasProduccionMasivaLicencias sincroniza únicamente
+// datos de negocio desde la acción administrativa. El esquema es autoridad de
+// pcs-migrate y se valida antes de cualquier escritura.
+func ProvisionNuevasPlantillasProduccionMasivaLicencias(dbConn *sql.DB, usuario string) (tiposAsegurados, licenciasAseguradas int, err error) {
+	if err := PlantillasLicenciasSchemaReady(dbConn); err != nil {
+		return 0, 0, err
+	}
+	if err := SyncCanonicalTiposEmpresaPreconfigurables(dbConn); err != nil {
+		return 0, 0, err
+	}
 	for _, modulo := range NuevasPlantillasProduccionMasivaSeleccionados() {
 		item, ok := getNuevoVerticalTipoEmpresaByModulo(modulo)
 		if !ok {
@@ -304,7 +317,7 @@ func EnsureNuevasPlantillasProduccionMasivaLicencias(dbConn *sql.DB, usuario str
 			return tiposAsegurados, licenciasAseguradas, err
 		}
 	}
-	licenciasAseguradas, err = EnsureLicenciasCatalogoGlobal(dbConn, usuario)
+	licenciasAseguradas, err = SyncLicenciasCatalogoGlobal(dbConn, usuario)
 	if err != nil {
 		return tiposAsegurados, 0, err
 	}

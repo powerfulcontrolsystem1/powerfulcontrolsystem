@@ -1,33 +1,124 @@
-2026-08-31: Auditoria empresarial verificable y retencion protegida.
-- Backend: la consulta y exportacion forense siguen bajo `auditoria:R`; las
-  acciones destructivas `retener` y `purgar` ahora se resuelven como
-  `auditoria:D` en el wrapper, aun si se invocan fuera de la interfaz.
-- Exportacion: `action=export_forense` entrega JSON o CSV con manifiesto
-  SHA-256, hashes por registro y cadena de custodia para la pagina filtrada.
-  El manifiesto distingue `total_coincidencias` de los registros incluidos;
-  las exportaciones de vista conservan el contenido normal de la pagina.
-- UX: Auditoria separa claramente exportaciones de vista y forenses, para no
-  presentar un CSV sin hashes como evidencia de cadena de custodia.
-- Datos: la busqueda operacional usa filtros parametrizados e indices por
-  empresa; no crea una tabla virtual FTS en PostgreSQL.
+2026-08-26: Nomina electronica mensual DIAN desde liquidaciones pagadas.
+- Modulos afectados: `nomina_sueldos`, `facturacion_electronica`, `DIAN
+  Colombia`, `permisos` y `seguridad_multiempresa`.
+- PCS consolida por trabajador/mes cerrado todas las liquidaciones activas con
+  pagos reales. Perfil fiscal incompleto, solapes, periodos cruzados, pagos
+  ambiguos, diferencias o intervalos horarios ausentes bloquean sin numerar.
+- La configuracion de familia es independiente de factura. La reserva atomica
+  sella fuente/configuracion, genera `NominaIndividual`, CUNE SHA-384 y XAdES,
+  valida el XSD oficial y transmite produccion mediante `SendNominaSync`.
+- La UI de Nomina administra perfil fiscal, periodicidad/configuracion,
+  candidatos mensuales, preflight y confirmacion exacta. El preflight no
+  reserva ni transmite.
+- Facturacion + Nomina son una frontera compuesta para lectura, configuracion,
+  artefactos, emision y reenvio. El listado general oculta nomina cuando falta
+  permiso adicional y la cola manual no la transmite.
+- `NominaIndividualDeAjuste`, habilitacion automatica y entrega/PDF dedicado
+  siguen bloqueados. QA local y XSD oficial quedaron verdes; no hubo emision
+  real ni despliegue en este candidato.
 
-2026-08-25: Productos, Servicios, Inventario y Compras avanzadas.
-- Backend: recepción de compra, existencia, costo, lote opcional y Kardex forman
-  una sola transacción; `FOR UPDATE`, cantidades condicionales y UPSERT de
-  existencias protegen concurrencia y sobre-recepción.
-- Multiempresa: requisición, item, cotización, producto, proveedor y bodega se
-  validan por `empresa_id`; las mutaciones web críticas exigen idempotencia
-  durable después del wrapper de permisos/licencia.
-- Frontend: productos y bodegas se eligen desde catálogos activos; recepción
-  parte del item pendiente, muestra lote y explicita que actualiza inventario.
-- Impresoras: la cola toma trabajos concurrentes con `FOR UPDATE SKIP LOCKED`,
-  exige propietario para cerrar, reinicia intentos al reintentar y protege la
-  creación web con idempotencia durable. El carrito comparte un solo resolver
-  para orden de servicio, cajón monedero y ticket.
-- QA: recorrido real y visual de productos, servicios, categorías, bodegas,
-  Kardex, lotes, reservas, IA, recetas e impresoras. Suite Go global, vet,
-  sintaxis y auditoría de duplicados aprobadas. Candidato local para staging;
-  NO-GO de producción hasta PostgreSQL/staging, carga IA real y hardware físico.
+2026-08-26: Documento soporte DIAN 1.1 desde fuente contable estructurada.
+- Modulos afectados: `contabilidad_colombia_avanzada`,
+  `facturacion_electronica`, `DIAN Colombia`, `permisos` y
+  `seguridad_multiempresa`.
+- El formulario crea solo borradores con vendedor, ubicación, pago y líneas;
+  el servidor recalcula importes y elimina número, CUDS, respuesta y estado
+  fiscal suministrados por el navegador.
+- El preflight es de solo lectura. La emisión dedicada requiere configuración
+  separada válida, fuente sellada, confirmación escrita y reserva atómica por
+  `(empresa_id,documento_soporte_id)` antes de generar CUDS, firmar XAdES y usar
+  `SendBillSync`.
+- La numeración admite prefijo opcional de hasta cuatro caracteres y no puede
+  retroceder. La autorización usa 14 dígitos, vigencia completa y rango máximo
+  999999999. La caja DIAN 1.1 aporta el catálogo exacto de 1.093 unidades
+  UN/ECE Revision 4 validado en backend.
+- XML, acuse y representación usan el almacenamiento fiscal privado existente;
+  el espejo contable solo acepta CUDS SHA-384 del XML firmado o del acuse.
+- La emisión libre del Centro DIAN permanece deshabilitada. Nota de ajuste de
+  soporte, nómina, equivalentes, contingencia y RADIAN siguen bloqueados.
+- QA local: pruebas enfocadas, XSD/Schematron oficial, catálogo unidad por
+  unidad y preflight profesional correctos. Una prueba real requiere primero
+  un borrador de compra genuino y configuración propia de la empresa; no se
+  fabrican datos fiscales para forzarla. Esta actualización sustituye solo las
+  afirmaciones históricas que listaban documento soporte entre las familias sin
+  adaptador.
+
+2026-08-26: Facturacion electronica - reconciliacion local de acuses aceptados.
+- Nueva accion `reconciliar_aceptados_local` para reparar exclusivamente el
+  documento y la cola locales desde un acuse DIAN ya aceptado/reconciliado.
+- No consulta ni retransmite XML, no procesa pendientes y conserva intentos y
+  fechas fiscales. Requiere `facturacion:A` y mantiene aislamiento por
+  `empresa_id` resuelto en backend.
+
+2026-08-25: Cierre seguro de facturacion electronica Colombia.
+- Modulos afectados: `facturacion_electronica`, `carritos`, `permisos`,
+  `nomina`, `correo_fiscal` y `seguridad_multiempresa`.
+- La factura solo se crea desde una venta pagada y demuestra su fuente fiscal
+  inmutable antes de reservar numeracion. El endpoint generico no fabrica
+  facturas, notas ni otras familias desde payload libre.
+- La nota credito total nace de una factura aceptada con CUFE, se serializa por
+  documento origen, inicia pendiente y solo anula la factura cuando documento y
+  cola conservan el mismo CUDE oficial y acuse aceptado.
+- Acciones de envio, reintento, credenciales, rangos, firma e importacion fiscal
+  exigen aprobacion efectiva; la anulacion conserva `facturacion:D`. Las
+  consultas de vencimiento sin notificacion usan lectura y toda accion GET DIAN
+  desconocida falla antes de exponer el CRUD interno.
+- La bandeja exige CUFE oficial para habilitar anulacion y permite consultar
+  artefactos privados de factura y nota credito. Tambien verifica la existencia
+  de la fuente inmutable y mantiene en solo lectura los documentos historicos
+  que no la conservan.
+- La reconciliacion repara estado y CUFE/CUDE locales de una cola ya aceptada o
+  reconciliada antes de cualquier despacho, sin aumentar intentos ni volver a
+  transmitir. Nomina solo prepara el lote; no llama el adaptador de factura ni
+  transmite a DIAN.
+
+2026-08-25: RUT DIAN separado y revisable por empresa.
+- Modulos afectados: `facturacion_electronica`, `configuracion_avanzada`,
+  `IA empresarial` y `seguridad_multiempresa`.
+- La configuracion DIAN Colombia muestra un control independiente para el
+  Formulario 001 RUT; no reutiliza ni confunde el importador de autorizacion de
+  numeracion Formulario 1876.
+- El backend resuelve la empresa desde el wrapper de facturacion, limita la
+  carga a PDF real de 12 MB, extrae NIT/DV, nombre legal, ubicacion, codigos
+  DANE y responsabilidades con GPT-5.5, y normaliza los valores fiscales antes
+  de devolverlos.
+- El PDF se procesa temporalmente y no se conserva. La extraccion solo llena
+  controles en pantalla; el administrador debe revisar y guardar por separado
+  DIAN Colombia y Configuracion avanzada. No emite, firma ni transmite ningun
+  documento fiscal.
+
+2026-08-24: Facturacion electronica Colombia, alcance comercial verificable.
+- Factura electronica de venta es la unica familia disponible para emision.
+- La fuente fiscal privada conserva lineas, partes, pago y totales reales por
+  `empresa_id`; el UBL no acepta defaults ni datos comerciales del request.
+- Nota credito/debito, soporte, nomina, equivalentes, contingencia y RADIAN se
+  muestran bloqueados hasta implementar su contrato documental propio.
+- Estado: candidato local con XSD y XMLDSig independientes aprobados. Las
+  pruebas PostgreSQL aisladas y Schematron DIAN siguen pendientes de un DSN y
+  procesador XSLT 3 compatibles; NO-GO hasta completar esas puertas, clon del
+  esquema vigente, prueba visual autenticada, acuse DIAN, despliegue y emision
+  real controlada.
+
+2026-08-21: Cierre especifico de facturacion electronica Colombia.
+- Backend/worker: la conectividad GET es de solo lectura; reintentos manuales
+  usan POST y el worker consulta acuses pendientes con bloqueo por empresa.
+- Datos/seguridad: consecutivos bajo `FOR UPDATE`, montos `NUMERIC(18,2)` y
+  artefactos XML/acuse/PDF privados con SHA-256 y filtro obligatorio por
+  `empresa_id`.
+- Frontend/correo: no hay preset DIAN; la bandeja descarga artefactos y el
+  correo de produccion espera aceptacion y exige XML/PDF integros. En Colombia
+  no se persiste ni muestra un hash local como CUFE: el valor nace del XML/acuse
+  DIAN y debe cumplir SHA-384.
+
+2026-08-11: Plan 110 / guardia de fuente canónica CxP.
+- Módulos afectados: `finanzas`, `cartera de proveedores`, `contabilidad
+  avanzada` y `outbox CxP`.
+- Cambio funcional: la capa de datos bloquea nuevas CxP y abonos CxP en
+  `empresa_contabilidad_cartera_cxp`, incluso fuera del handler; las nuevas
+  obligaciones y pagos deben usar `empresa_cuentas_por_pagar` y
+  `empresa_cxp_pagos` por empresa.
+- Seguridad: la guardia conserva CxC histórico, no permite eludir la fuente
+  canónica mediante una llamada interna y no altera datos existentes.
 
 2026-08-09: Dialogos verificables para acciones CxP/IA.
 - Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria` y
@@ -310,7 +401,9 @@
 - Navegacion: `Administrar empresa > Finanzas y cumplimiento > Nomina` abre `web/administrar_empresa/nomina_menu.html`.
 - Submenu propio: Centro, Empleados de nomina, Configuracion legal, Liquidaciones, Pagos y PILA, Nomina electronica DIAN y Tutorial de nomina.
 - Operacion: las subpaginas reutilizan `nomina_sueldos.html?seccion=...` para no duplicar formularios ni reglas; el filtro visual solo cambia la superficie mostrada.
-- DIAN: el boton `Enviar nomina electronica a DIAN` prepara el lote, valida requisitos pendientes y usa el flujo fiscal existente de facturacion electronica por `empresa_id`.
+- DIAN: esta entrada es historica. La preparacion sigue siendo un preflight sin
+  efectos, pero desde la actualizacion 2026-08-26 la emision ordinaria usa el
+  adaptador dedicado `NominaIndividual`, no el XML/PDF de factura.
 
 2026-06-10: E-mail Corporativo independiente
 - Modulo afectado: `Email corporativo Mailu`.
@@ -421,11 +514,14 @@
 - Frontend: la pagina muestra avisos de campos obligatorios en configuracion DIAN y configuracion por pais, marca labels con asterisco y resalta campos faltantes en tiempo real.
 - UX: la opcion de envio automatico de factura electronica al correo del cliente queda visible solo en la seccion principal; configuracion avanzada conserva el valor oculto para compatibilidad de payload.
 
-2026-06-09: Eventos RADIAN operativos en facturacion electronica
+2026-06-09: Eventos RADIAN declarados operativos en facturacion electronica (historico, corregido 2026-08-21)
 - Modulo afectado: `facturacion_electronica`.
 - Backend: el catalogo DIAN Colombia marca `eventos_radian_recepcion` como `operativo`, con firma requerida, bandera de evento y alcance de habilitacion mientras la empresa no active produccion.
 - Frontend: el resumen de cobertura esencial muestra RADIAN como operativo en habilitacion y enlaza al Centro de habilitacion DIAN para registrar el evento documental.
 - Alcance: RADIAN sigue separado de factura, nota, documento soporte y nomina; opera sobre facturas electronicas existentes y no crea una venta nueva.
+- Correccion vigente: esa declaracion no correspondia al generador disponible.
+  RADIAN queda `bloqueado_contrato` hasta implementar ApplicationResponse,
+  AttachedDocument, CUDE, eventos y habilitacion propios.
 
 2026-06-18: Centro de mando super con reinicio de indicadores.
 - Modulo afectado: `super_administrador`.
@@ -684,7 +780,7 @@
 2026-06-06: Set DIAN completo sin timeout de proxy
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
 - Frontend: el boton `Ejecutar set automatico` divide el set completo en tandas reales de 3 documentos cuando no hay limite manual, para evitar `504 Gateway Time-out`.
-- Operacion: cada tanda mantiene TestSetId, firma y envio real a habilitacion; la pantalla acumula resultados para cubrir las 30 facturas, 10 notas debito y 10 notas credito del portal DIAN.
+- Operacion historica: cada tanda mantenia TestSetId, firma y envio real a habilitacion. Desde 2026-08-21 la pantalla acumula exclusivamente el objetivo exacto guardado para la empresa; las cantidades observadas en ejecuciones anteriores no son presets.
 - Seguridad: no se agrega simulacion ni se exponen secretos en la consola.
 
 2026-06-06: Resumen portal DIAN en centro de pruebas
@@ -715,7 +811,7 @@
 
 2026-06-05: Set automatico DIAN configurable por empresa
 - Modulo afectado: `facturacion_electronica`, `DIAN`, `licencias`.
-- Cambio funcional: el preset principal del `Centro de habilitación DIAN` queda alineado con el objetivo de habilitacion de Powerful Control System (30 facturas, 10 notas debito, 10 notas credito, minimo aceptado 1 factura), y el backend usa el objetivo guardado por cada empresa antes de ejecutar `action=pruebas_dian`.
+- Cambio historico: en esa fecha el Centro mostraba el objetivo observado de Powerful Control System. Desde 2026-08-21 el preset fue retirado y el backend bloquea `action=pruebas_dian` hasta que exista un objetivo exacto guardado por la empresa.
 - Operacion: el flujo vigente de pruebas DIAN exige `test_set_id`, firma y acuse aceptado; la simulacion queda bloqueada para `action=pruebas_dian` y `action=enviar_set_pruebas`.
 - Licencias: se documenta que el correo unificado solo adjunta factura electronica cuando el pago comercial aprobado es mayor que cero; descuento total o valor cero no emite factura.
 
@@ -1765,9 +1861,13 @@
 2026-05-17: Revision de facturacion electronica por pais y DIAN Colombia.
 - La configuracion principal de facturacion electronica conserva perfiles separados por `empresa_id + pais_codigo` para Colombia, Ecuador, Panama, Costa Rica, Argentina y Venezuela.
 - Colombia muestra configuracion DIAN propia dentro de la pagina principal y envia las pruebas, diagnostico, cola y emision documental manual a `facturacion_electronica_pruebas_dian.html`.
-- El set base DIAN para software propio/proveedor tecnologico queda en 60 facturas, 20 notas debito y 20 notas credito, editable segun el objetivo que DIAN asigne en habilitacion.
-- Los documentos electronicos soportados por el flujo operativo son `factura_electronica`, `nota_credito`, `nota_debito`, `documento_soporte`, `nomina_electronica` y `documento_equivalente_pos`.
-- El correo automatico actual informa los datos fiscales principales del documento; queda como brecha de producto adjuntar XML/PDF certificado cuando la integracion DIAN/proveedor produzca artefactos finales.
+- En esa revision se documento un set numerico hoy historico. Desde 2026-08-21 no existe set base local: gobierna exclusivamente el objetivo asignado y guardado por empresa desde el portal DIAN.
+- En esa revision los documentos operativos eran factura, nota credito y nota
+  debito. Ese alcance fue sustituido el 2026-08-24: solo
+  `factura_electronica` puede emitirse; nota credito/debito, soporte, nomina,
+  equivalentes y RADIAN quedan catalogados/bloqueados con HTTP 422 antes de
+  generar XML, consumir consecutivo o persistir una emision.
+- Esa revision no adjuntaba XML/PDF. Desde 2026-08-21 Colombia produccion exige aceptacion DIAN y artefactos XML/PDF privados e integros antes de enviar el correo fiscal.
 
 2026-05-17: Estaciones con primer clic solo activa.
 - Modulo: `estaciones`, `carritos`, `configuracion`.
@@ -2602,11 +2702,11 @@
 2026-05-06: Inventario avanzado
 - Modulos afectados: `inventario`, `productos`, `bodegas`, `roles/licencias`, `administrar_empresa`.
 - Cambio funcional: se amplia `Inventario` sin crear un modulo paralelo, agregando lotes, seriales, reservas, vencimientos y valorizacion por producto/bodega.
-- Backend: nueva API `/api/empresa/inventario_avanzado` con acciones `dashboard`, `lotes`, `seriales`, `reservas`, `valorizacion`, `lote`, `serial`, `reserva`, `confirmar_reserva` y `seed_demo`.
+- Backend: API `/api/empresa/inventario_avanzado` con acciones productivas `dashboard`, `lotes`, `seriales`, `reservas`, `valorizacion`, `lote`, `serial`, `reserva` y `confirmar_reserva`; la accion de datos demo fue retirada de la superficie productiva.
 - Base de datos: nuevas tablas `empresa_inventario_lotes_avanzados`, `empresa_inventario_seriales_avanzados` y `empresa_inventario_reservas_avanzadas`, todas con `empresa_id`.
 - Integracion: la entrada de lote alimenta `inventario_existencias` e `inventario_movimientos`, para conservar kardex, reportes y reposicion.
 - Seguridad: se reutiliza la licencia y permiso `inventario`; la pagina `linkInventarioAvanzado` queda protegida por `WithEmpresaInventarioPermissions`.
-- Frontend: `web/administrar_empresa/inventario_avanzado.html` queda enlazada desde `web/administrar_empresa/administrar_productos_menu.html`.
+- Frontend: `web/administrar_empresa/inventario_avanzado.html` queda enlazada desde `web/administrar_empresa/administrar_productos_menu.html` y usa selectores descriptivos de productos, bodegas, lotes, seriales y reservas en lugar de exigir IDs internos.
 - Documentacion: se agrega `documentos/inventario_avanzado.md`.
 
 2026-05-06: Compras avanzadas
@@ -2616,6 +2716,9 @@
 - Base de datos: nuevas tablas `empresa_compras_requisiciones`, `empresa_compras_requisicion_items`, `empresa_compras_cotizaciones`, `empresa_compras_aprobaciones`, `empresa_compras_recepciones_avanzadas` y `empresa_compras_recepcion_items_avanzadas`, todas con `empresa_id`.
 - Seguridad: se reutiliza la licencia y permiso `compras`; la pagina `linkComprasAvanzadas` queda protegida por `WithEmpresaComprasPermissions`.
 - Frontend: `web/administrar_empresa/compras_avanzadas.html` queda enlazada desde el submenu `web/administrar_empresa/compras_menu.html`.
+- Requisicion y recepcion: la pantalla usa borradores dinamicos para una cantidad
+  abierta de productos; la recepcion envia varios items pendientes atomica e
+  idempotentemente bajo un mismo documento y bodega, conservando lote por item.
 - Documentacion: se agrega `documentos/compras_avanzadas.md`.
 
 2026-05-06: Importaciones y costeo de nacionalizacion
@@ -4504,6 +4607,26 @@ Captura inteligente de compras y gastos
 - Importacion: valida nombre, campos obligatorios configurados, duplicados por SKU/codigo de barras/nombre, bodega para stock inicial y categorias por empresa.
 - Seguridad: no crea tablas nuevas, no usa SQLite, no introduce dependencias externas y conserva aislamiento por `empresa_id`.
 
+2026-08-26 - Servicios: nombre unico y seguro para concurrencia
+- Modulos afectados: `productos`, `servicios`, `inventario`, `administrar_empresa`.
+- El catalogo central admite varios servicios sin codigo, pero no permite repetir
+  el mismo nombre normalizado dentro de una empresa; otra empresa puede usarlo
+  de forma independiente.
+- La regla vive en PostgreSQL mediante migracion versionada y se presenta como
+  HTTP 409 seguro en altas o ediciones concurrentes.
+
+2026-08-26 - Categorias y proveedores: nombres normalizados por empresa
+- Modulos afectados: `productos`, `categorias_productos`, `proveedores`,
+  `inventario`, `administrar_empresa`.
+- PostgreSQL impide que mayusculas o espacios exteriores eludan la unicidad del
+  nombre dentro de un tenant; el mismo nombre continua permitido en otra
+  empresa.
+- La migracion inspecciona primero ambos catalogos y falla sin aplicar indices
+  parciales si una instalacion historica contiene colisiones que requieren
+  reconciliacion explicita.
+- Las altas y ediciones exponen el conflicto como HTTP 409 seguro, sin SQL ni
+  nombres internos de restricciones.
+
 2026-06-11 - Finanzas: Pagos Bre-B QR
 - Modulos afectados: `finanzas`, `carritos`, `caja`, `bancos_pagos`.
 - Cambio funcional: el centro financiero incorpora una pagina profesional `Pagos Bre-B QR` con configuracion de QR por empresa, cuentas receptoras por caja, payload oficial/plantilla, alertas operativas, registro manual de pagos recibidos y tabla de ventas/abonos Bre-B.
@@ -4818,84 +4941,59 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - Seguridad: tokens solo como SHA-256, empresa derivada del dispositivo y
   regeneracion del instalador revoca el token anterior.
 
+2026-08-12: Domotica como destino operativo de estaciones
+- Configuracion carrito incorpora el check empresarial `Abrir equipos
+  electronicos al entrar a una estacion o a Venta directa`.
+- Desactivado, conserva el carrito y la facturacion como destino predeterminado.
+  Activado, cada estacion/habitacion abre su pagina de equipos y Venta directa
+  abre la consola consolidada de Domotica.
+- La preferencia se persiste en
+  `empresa_estacion_prefs.estaciones_config.carrito_ui_global`, se aplica por
+  `empresa_id` y reutiliza las rutas y permisos existentes de `control_electrico`.
 2026-08-13: Domotica y Energia Solar - gobierno operativo
 - Navegación empresarial independiente con configuración, equipos, panel solar y tutorial.
 - Alerta empresarial de Raspberry desconectada con gracia, correo y buzón/campanita.
 - Cuota mensual del túnel por empresa, advertencia y bloqueo administrados exclusivamente por Super Administrador.
 - Entradas GPIO con salida normal, temporizada o condicionada a la agenda del aparato, siempre aisladas por empresa/Raspberry y dentro de la cola de encendidos.
 
-2026-08-23: Retiro y consolidacion de modulos verticales
-- Retirados: Gimnasio, Taxi System, Apartamentos turisticos, Propiedad horizontal y Odontologia.
-- Consolidado: Drogueria/Farmacia deja de ser modulo/licencia/pagina independiente y usa Inventario, productos, compras, ventas y facturacion centrales.
-- Se conservan en Inventario las capacidades reutilizables de lotes, fechas de vencimiento, alertas y trazabilidad por producto.
-- El catalogo de plantillas vigente queda en 13 entradas: cuatro clasicas y nueve nuevas.
+2026-08-21: Proteccion movil para controles de Domotica
+- La vista operativa `carrito_control_electrico.html` bloquea temporalmente el acceso flotante de IA en el shell empresarial. Al cambiar a otra pagina, el acceso IA se restaura. Esto evita que su capa modal intercepte los toques de Encender/Apagar de equipos en celular.
 
-2026-08-23: Portal publico alineado con el catalogo vigente
-- `web/index.html` y `/api/public/informacion_de_modulos` muestran el corte de 52 modulos activos y enumeran las 13 plantillas vigentes.
-- `web/descripcion_de_los_sistemas.html` y `web/descripcion_de_los_sistemas.ht` agregan fichas para las cuatro plantillas clasicas y las nueve nuevas, sin duplicar una plantilla que ya exista en la configuracion dinamica.
-- `backend/handlers/pagina_principal_handlers.go` elimina de la respuesta y del guardado tarjetas heredadas de elementos retirados; el frontend aplica la misma defensa antes de renderizar.
-- Drogueria/Farmacia solo puede presentarse como tipo de negocio servido por Inventario, no como licencia, permiso, pagina o tarjeta modular independiente.
+2026-08-21: Acceso Domotica por tarjeta de estacion
+- `control_electrico.html` permite habilitar por empresa el acceso visual de Domotica en las tarjetas de estaciones mediante `control_electrico?action=station_card_ui`. La preferencia vive en `estaciones_config.station_card_ui.mostrar_boton_domotica`.
+- `estaciones.html` muestra el boton cuadrado con rayo en el extremo inferior derecho de cada estacion habilitada; su destino conserva `empresa_id` y `estacion_id` hacia `carrito_control_electrico.html`.
+- `carrito_control_electrico.html` informa de forma accionable cuando un equipo no puede encenderse, apagarse o temporizarse porque su Raspberry no tiene túnel conectado reciente.
 
-2026-08-23: Apertura rapida del carrito POS
-- La vista del carrito presenta primero su estructura visual y carga en paralelo
-  las lecturas independientes de empresa, permisos, configuracion operativa,
-  clientes, descuentos, cajas y carrito.
-- La identidad de sesion se consulta una sola vez durante la apertura y se
-  elimina el segundo listado del carrito canonico cuando no hubo una mutacion de
-  ciclo de vida.
-- La configuracion `estacion_prefs` se comparte con `estaciones_labels.js` para
-  no solicitar dos veces las mismas preferencias al abrir la venta.
-- Pagar permanece deshabilitado hasta completar items, abonos y reglas de cobro;
-  no cambian endpoints, contratos, permisos ni aislamiento por `empresa_id`.
+2026-08-23: Auditoria integral de Domotica por empresa
+- Cada alta, cambio o desactivacion de configuracion, Raspberry, equipo, foto, regla, escena, lectura, señal de sensor, prueba GPIO, operacion de Raspberry, temporizador, programacion y comando de relay se conserva en `empresa_control_electrico_eventos` con `empresa_id`, actor, origen, estación, equipo y Raspberry cuando aplican.
+- Cada evento de esa bitacora genera tambien un espejo seguro en `empresa_auditoria_eventos` bajo el modulo tecnico `control_electrico`; no replica IP, respuesta del dispositivo, token ni otros secretos. La vista `Auditoria` ya permite filtrar `Domotica` y conserva el aislamiento por empresa.
 
-2026-08-24: Administrar disco VPS en Super administrador
+2026-08-23: Reporte filtrable de seguimiento Domotica
+- `Administrar empresa > Domotica y Energia Solar > Reportes` incorpora el bloque **Seguimiento de eventos** para filtrar la bitácora por estación, equipo, Raspberry Pi, tipo de evento, resultado y rango de fecha/hora.
+- La consulta usa `GET /api/empresa/control_electrico?action=eventos` y siempre resuelve el `empresa_id` desde el contexto autorizado; el backend valida los IDs de equipo, Raspberry y estación dentro de la misma empresa antes de consultar.
 
-- La nueva vista de Plataforma solo está disponible para `super_administrador`
-  y no forma parte de permisos/licencias empresariales.
-- Muestra categorías Docker recuperables sin revelar IDs, rutas ni secretos y
-  requiere la frase exacta `LIBERAR ESPACIO` antes de cualquier eliminación.
-- La operación nunca incluye PostgreSQL, datos de empresa, archivos privados,
-  respaldos, certificados, configuración, código o volúmenes conectados.
-2026-08-25: Chat IA simple, multimodal y con historial por usuario.
-- Modulos afectados: `chat IA`, `super`, `configuracion avanzada`, `seguridad multiempresa` y `frontend_ux`.
-- El drawer elimina selectores y configuración redundantes, conserva voz, adjuntos, nuevo chat e historial, y repara la apertura cuando el elemento estaba marcado `hidden`.
-- Fotos y documentos se procesan con el mismo modelo global para preparar borradores de compras, productos o cartas; ninguna mutación se ejecuta sin permisos y confirmación.
-- El historial normal se filtra por cuenta autenticada y empresa; los administradores autorizados pueden alternar a todos los usuarios de su propia empresa.
-- El único `Agente PCS` permanece activo sin interruptor en chat, Centro IA y Pedidos IA; decide la ayuda por intención, pero no amplía permisos ni ejecuta escrituras sin confirmación.
+2026-08-13: Domotica 1.4 / recuperación, escenas y conexión solar local
+- Los comandos GPIO durables usan instantes con zona horaria, ACK visible y
+  recuperación por arranque real; el estado lógico no se declara aplicado hasta
+  que la Raspberry lo confirma.
+- Controladores ofrece descarga saliente y una alternativa SSH administrada. El
+  perfil visible contiene IP, puerto, usuario y huella; las claves permanecen
+  cifradas en servidor y solo se resuelven dentro del tenant autorizado.
+- Automatizaciones incorpora escenas con varios aparatos y estado objetivo. La
+  activación usa la cola empresarial existente.
+- Energía solar recibe telemetría VE.Direct autenticada desde la Raspberry y
+  presenta disponibilidad, batería, panel, producción y estado del cargador. El
+  SOC queda explícitamente no disponible cuando el hardware no lo mide.
 
-2026-08-26: Idempotencia transversal de operaciones criticas.
-- Modulos afectados: pagos/licencias, carrito y caja, ventas offline, CxP,
-  facturacion electronica, Rappi, venta publica, IA empresarial y plataforma de
-  outbox/jobs.
-- Los flujos financieros y externos usan replay durable, transaccion, claim o
-  restriccion unica segun la naturaleza del efecto.
-- Un resultado remoto ambiguo queda bloqueado para conciliacion; no se sacrifica
-  la seguridad de cobro o comunicacion por un reintento automatico.
-2026-08-31: Vida personal
+2026-08-13: Plataforma interna - normalización y guardas HTTP
+- `internal/platform/valueutil` concentra utilidades puras reutilizadas por DB, handlers, worker y herramientas sin dependencias externas ni estado empresarial.
+- `internal/platform/httpguard` unifica el contrato GET/HEAD de health checks de API y worker.
+- `internal/platform/runtimeconfig` pasa a ser la fuente canónica para variables de entorno, flags desactivados y reescritura de DSN PostgreSQL por túnel.
 
-Ampliacion 2026-08-31: agrega historial de precios por producto/codigo de
-barras, lector movil nativo con fallback manual y carga de facturas por IA. El
-clic `IA: leer y registrar factura` autoriza el alta automatica del gasto y sus
-lineas personales; no integra datos con cuentas o modulos empresariales.
-- Nuevo modulo universal para cuentas empresariales autenticadas, independiente
-  de caja, compras, inventario, contabilidad, impuestos y documentos fiscales.
-- Registra gastos cotidianos por categoria, comercio, fecha, valor y medio de
-  pago; permite foto desde el movil o comprobante PDF privado con confirmacion
-  manual de los datos.
-- Resume el mes, promedio diario, categorias y costo proyectado de
-  suscripciones. Las suscripciones admiten periodicidad y alertas para renovar,
-  cancelar o ambas acciones.
-- Cada registro pertenece a `empresa_id + usuario_id`. No existe consulta de
-  todos los usuarios y la licencia comercial no puede bloquear el modulo.
-- El menu muestra alertas y puede emitir Notification API si la persona concede
-  permiso; requiere PCS abierto y no contacta al proveedor automaticamente.
-- La migracion sigue pendiente de `pcs-migrate`; cambio local sin despliegue.
-- El catalogo publico actual pasa de 52 a 53 modulos; las 13 plantillas no
-  cambian.
-2026-08-31: Raspberry multiplexada para sensores de puertas.
-- Modulo visible: Domotica y Configuracion de sensores; claves tecnicas `control_electrico` y `sensor_puertas`.
-- Cada controlador Raspberry elige uso exclusivo. El modo puertas genera 4 canales por cada una de 1–16 salidas y permite asignarlos a estaciones/habitaciones existentes.
-- El agente Python stdlib pulsa GPIO 4–19 de uno en uno y lee GPIO 0–3, con delay empresarial, filtro estable, estado completo periódico, autoarranque systemd y reconexión HTTPS.
-- El tutorial dedicado muestra el esquema de conexión 4×16, equivalencias BCM/pin físico y advierte que los GPIO son de 3,3 V, la interfaz de entrada debe usar contacto seco/optoacoplador y el selector debe ser activo en alto.
-- El backend deriva empresa/controlador de la identidad del túnel, bloquea cargas o reglas Domótica en una placa de puertas y conserva auditoría completa sin secretos.
-- Persistencia y migración: `20260831-002-raspberry-door-sensor-v1`; sin ejecución ni despliegue en esta tarea.
+2026-08-25: Autenticación administrativa - guard de reCAPTCHA
+- Login, registro y recuperación conservan el mismo endpoint y contrato público,
+  pero una configuración incompleta ya no puede activarse desde Super
+  administración.
+- El backend comprueba que la clave pública y la clave privada sean utilizables
+  y persiste la configuración compuesta atómicamente; la interfaz distingue una
+  clave cifrada almacenada de una clave realmente descifrable.

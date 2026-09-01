@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -407,11 +406,7 @@ func superDockerPortableShouldExclude(rel string, isDir bool) bool {
 }
 
 func superDockerPortableJSON(v interface{}) string {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return "{}"
-	}
-	return string(b)
+	return jsonString(v)
 }
 
 func superDockerPortableAssertReadyForTests(root string) error {

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	secure "github.com/you/pos-backend/secure"
 )
 
@@ -207,15 +208,7 @@ func makeRequestID() string {
 }
 
 func parsePositiveInt64(raw string) int64 {
-	v := strings.TrimSpace(raw)
-	if v == "" {
-		return 0
-	}
-	n, err := strconv.ParseInt(v, 10, 64)
-	if err != nil || n <= 0 {
-		return 0
-	}
-	return n
+	return valueutil.ParsePositiveInt64(raw)
 }
 
 func extractEmpresaIDFromBody(raw []byte) int64 {
@@ -327,26 +320,11 @@ func RequestFromTrustedProxy(r *http.Request) bool {
 }
 
 func firstForwardedHeaderValue(raw string) string {
-	parts := strings.Split(strings.TrimSpace(raw), ",")
-	if len(parts) == 0 {
-		return ""
-	}
-	return strings.TrimSpace(parts[0])
+	return valueutil.FirstForwardedValue(raw)
 }
 
 func requestHostWithoutPort(rawHost string) string {
-	trimmed := strings.TrimSpace(rawHost)
-	if trimmed == "" {
-		return ""
-	}
-	hostOnly, _, err := net.SplitHostPort(trimmed)
-	if err == nil {
-		return strings.TrimSpace(hostOnly)
-	}
-	if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
-		return strings.Trim(strings.TrimSpace(trimmed), "[]")
-	}
-	return trimmed
+	return valueutil.HostWithoutPort(rawHost)
 }
 
 func resolveRequestHost(r *http.Request) string {
@@ -622,14 +600,14 @@ func cspJoinSources(base []string, extra ...string) string {
 // controlled separately so staging can observe a strict report-only policy
 // before enforcement changes.
 func securityContentSecurityPolicyWithInline(allowInline bool) string {
-	providerScripts := []string{"'self'", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
+	providerScripts := []string{"'self'", "https://accounts.google.com", "https://www.google.com", "https://www.gstatic.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
 	providerStyles := []string{"'self'"}
 	if allowInline {
 		providerScripts = append(providerScripts, "'unsafe-inline'")
 		providerStyles = append(providerStyles, "'unsafe-inline'")
 	}
-	providerConnect := []string{"'self'", "https://api.openai.com", "https://accounts.google.com", "https://checkout.epayco.co", "https://secure.epayco.co", "https://checkout.wompi.co"}
-	providerFrames := []string{"'self'", "https://mail.powerfulcontrolsystem.com", "https://accounts.google.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
+	providerConnect := []string{"'self'", "https://api.openai.com", "https://accounts.google.com", "https://www.google.com", "https://www.gstatic.com", "https://checkout.epayco.co", "https://secure.epayco.co", "https://checkout.wompi.co"}
+	providerFrames := []string{"'self'", "https://mail.powerfulcontrolsystem.com", "https://accounts.google.com", "https://www.google.com", "https://www.gstatic.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
 	providerImages := []string{"'self'", "data:", "blob:", "https://lh3.googleusercontent.com"}
 
 	documentOrigins := cspOriginsFromEnv("ONLYOFFICE_DOCUMENT_SERVER_URL", "NEXTCLOUD_BASE_URL")
@@ -663,6 +641,18 @@ func securityContentSecurityPolicy() string {
 	return securityContentSecurityPolicyWithInline(true)
 }
 
+const googleOAuthResponseCSP = "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+
+func securityContentSecurityPolicyForRequest(r *http.Request) string {
+	if r != nil && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/auth/google/") {
+		// OAuth only emits redirects or plain-text errors. A compact deny-all
+		// policy preserves browser protections without exceeding the default
+		// reverse-proxy response-header buffer once state/PKCE cookies are added.
+		return googleOAuthResponseCSP
+	}
+	return securityContentSecurityPolicy()
+}
+
 func securityStrictReportOnlyEnabled() bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("PCS_CSP_REPORT_ONLY_STRICT"))) {
 	case "1", "true", "yes", "on":
@@ -679,10 +669,10 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self), payment=(self)")
-		csp := securityContentSecurityPolicy()
+		csp := securityContentSecurityPolicyForRequest(r)
 		w.Header().Set("Content-Security-Policy", csp)
 		reportOnlyCSP := csp
-		if securityStrictReportOnlyEnabled() {
+		if csp != googleOAuthResponseCSP && securityStrictReportOnlyEnabled() {
 			reportOnlyCSP = securityContentSecurityPolicyWithInline(false)
 		}
 		w.Header().Set("Content-Security-Policy-Report-Only", reportOnlyCSP)
@@ -1024,6 +1014,48 @@ func allowSuperControlRoute(path, method, role string) bool {
 	}
 }
 
+func enforceMaintenanceAccess(dbSuper *sql.DB, w http.ResponseWriter, r *http.Request) bool {
+	if !getCachedMaintenanceActive(dbSuper) {
+		return true
+	}
+	path := r.URL.Path
+	isAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
+	isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || path == "/estilos.css" || path == "/menu.js" || path == "/manifest.webmanifest" || path == "/sw.js"
+	if !isAllowed && !isStatic {
+		http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
+		return false
+	}
+	return true
+}
+
+func validateSessionPrincipalAccess(w http.ResponseWriter, path string, sess *dbpkg.Session) (string, bool) {
+	principalType := strings.ToLower(strings.TrimSpace(sess.PrincipalType))
+	if principalType == "" {
+		principalType = "admin"
+	}
+	if principalType == "empresa_usuario" {
+		if sess.PrincipalID <= 0 || sess.EmpresaID <= 0 || strings.TrimSpace(sess.PrincipalRole) == "" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return "", false
+		}
+		if path == "/super_administrador.html" || strings.HasPrefix(path, "/super/") {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return "", false
+		}
+	} else if principalType != "admin" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return "", false
+	}
+	return principalType, true
+}
+
+func withSessionPrincipalContext(ctx context.Context, sess *dbpkg.Session, principalType string) context.Context {
+	ctx = context.WithValue(ctx, "sessionPrincipalType", principalType)
+	ctx = context.WithValue(ctx, "sessionPrincipalID", sess.PrincipalID)
+	ctx = context.WithValue(ctx, "sessionEmpresaID", sess.EmpresaID)
+	return context.WithValue(ctx, "sessionPrincipalRole", strings.TrimSpace(sess.PrincipalRole))
+}
+
 // AuthMiddleware protege rutas usando la tabla sesiones y administradores en la BD superadministrador.
 // Permite un conjunto público de rutas (login/callback/activos). Para rutas que comienzan con /super/
 // exige rol 'super_administrador'. Añade `adminEmail` en el contexto de la petición.
@@ -1031,15 +1063,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
-		// Verificación de Modo Mantenimiento
-		if getCachedMaintenanceActive(dbSuper) {
-			// Rutas permitidas durante el mantenimiento (acceso de administradores y assets estáticos)
-			isMntAllowed := path == "/mantenimiento.html" || strings.HasPrefix(path, "/super/") || strings.HasPrefix(path, "/auth/") || path == "/login.html" || path == "/registrar_nuevo_usuario_administrador.html"
-			isStatic := strings.HasPrefix(path, "/img/") || strings.HasPrefix(path, "/css/") || strings.HasPrefix(path, "/js/") || path == "/estilos.css" || path == "/menu.js" || path == "/manifest.webmanifest" || path == "/sw.js"
-			if !isMntAllowed && !isStatic {
-				http.Redirect(w, r, "/mantenimiento.html", http.StatusTemporaryRedirect)
-				return
-			}
+		if !enforceMaintenanceAccess(dbSuper, w, r) {
+			return
 		}
 
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
@@ -1187,6 +1212,10 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
+		principalType, principalOK := validateSessionPrincipalAccess(w, path, sess)
+		if !principalOK {
+			return
+		}
 
 		admin, err := getCachedAdminByEmailFull(dbSuper, sess.AdminEmail)
 		if err != nil {
@@ -1212,6 +1241,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 
 		// Propagar información del admin en el contexto
 		ctx := context.WithValue(r.Context(), "adminEmail", admin.Email)
+		ctx = withSessionPrincipalContext(ctx, sess, principalType)
 		r = r.WithContext(ctx)
 		// Añadir cabecera informativa
 		r.Header.Set("X-Admin-Email", admin.Email)

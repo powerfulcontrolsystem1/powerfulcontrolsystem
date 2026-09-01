@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 // EmpresaGenericListFilter define filtros de listado para tablas genericas por empresa.
@@ -1062,17 +1064,7 @@ func isAllowedGenericTable(table string) bool {
 }
 
 func isSafeSQLIdentifier(v string) bool {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return false
-	}
-	for _, ch := range v {
-		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
-			continue
-		}
-		return false
-	}
-	return true
+	return valueutil.IsSafeSQLIdentifier(v)
 }
 
 func normalizeGenericLimitOffset(limit, offset int) (int, int) {
@@ -1186,16 +1178,6 @@ func floatFromGenericValue(v interface{}) float64 {
 	}
 }
 
-func firstNonBlankString(values ...string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
-}
-
 func carteraPeriodoFromPayload(payload map[string]interface{}) string {
 	if payload == nil {
 		return ""
@@ -1298,7 +1280,7 @@ func normalizeCarteraPayloadValues(payload map[string]interface{}, current map[s
 
 	periodo := carteraPeriodoFromPayload(payload)
 	if periodo == "" && current != nil {
-		periodo = normalizePeriodoContable(firstNonBlankString(fmt.Sprintf("%v", current["periodo_contable"]), fmt.Sprintf("%v", current["fecha_emision"])))
+		periodo = normalizePeriodoContable(firstNonBlankValue(fmt.Sprintf("%v", current["periodo_contable"]), fmt.Sprintf("%v", current["fecha_emision"])))
 	}
 	if periodo == "" {
 		periodo = time.Now().In(time.Local).Format("2006-01")
@@ -1486,7 +1468,7 @@ func UpdateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID, id int64, 
 		if err != nil {
 			return err
 		}
-		periodoActual := normalizePeriodoContable(firstNonBlankString(fmt.Sprintf("%v", current["periodo_contable"]), fmt.Sprintf("%v", current["fecha_emision"])))
+		periodoActual := normalizePeriodoContable(firstNonBlankValue(fmt.Sprintf("%v", current["periodo_contable"]), fmt.Sprintf("%v", current["fecha_emision"])))
 		if err := ensureCarteraPeriodoEditable(dbConn, empresaID, periodoActual); err != nil {
 			return err
 		}

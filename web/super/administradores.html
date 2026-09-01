@@ -67,9 +67,27 @@
       return String(value || '').trim().toLowerCase();
     }
 
+    function readCookieValue(name){
+      const escaped = String(name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const match = String(document.cookie || '').match(new RegExp('(?:^|;\\s*)' + escaped + '=([^;]*)'));
+      return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function adminFetch(url, options){
+      const requestOptions = Object.assign({ credentials: 'same-origin' }, options || {});
+      const method = String(requestOptions.method || 'GET').trim().toUpperCase();
+      if(method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS'){
+        const headers = new Headers(requestOptions.headers || {});
+        const token = readCookieValue('pcs_csrf');
+        if(token && !headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+        requestOptions.headers = headers;
+      }
+      return fetch(url, requestOptions);
+    }
+
     async function loadCurrentAdminScope(){
       try{
-        const res = await fetch('/me', { credentials: 'same-origin' });
+        const res = await adminFetch('/me');
         if(!res.ok) throw new Error('No se pudo leer la sesion');
         const data = await res.json();
         const role = normalizeRole((data && (data.role || (data.admin && data.admin.role))) || '');
@@ -103,7 +121,7 @@
 
     async function load(){
       try{
-        const res = await fetch('/super/api/administradores' + scopedQuery());
+        const res = await adminFetch('/super/api/administradores' + scopedQuery());
         if(!res.ok) throw new Error('failed to query administradores');
         const data = await res.json();
         const table = document.createElement('table');
@@ -128,7 +146,7 @@
           if(!confirm('Eliminar administrador?')) return;
           const id = b.getAttribute('data-id');
           const sep = currentAdminScope.scopedPrincipal ? '&' : '?';
-          await ensureOK(await fetch('/super/api/administradores' + scopedQuery() + sep + 'id='+encodeURIComponent(id), { method: 'DELETE' }));
+          await ensureOK(await adminFetch('/super/api/administradores' + scopedQuery() + sep + 'id='+encodeURIComponent(id), { method: 'DELETE' }));
           load();
         });
       }catch(err){ document.getElementById('list').innerText = 'Error cargando administradores: '+(err.message||err); }
@@ -185,7 +203,7 @@
       };
       try{
         if(!payload.Email){ document.getElementById('msg').innerText='Email requerido'; return }
-        const result = await ensureOK(await fetch('/super/api/administradores' + scopedQuery(), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
+        const result = await ensureOK(await adminFetch('/super/api/administradores' + scopedQuery(), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
         const body = await result.json().catch(()=> null);
         resetForm();
         document.getElementById('form').style.display = 'none';

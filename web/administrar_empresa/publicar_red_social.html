@@ -63,7 +63,7 @@
           <label>Video de YouTube (URL)</label>
           <input type="text" id="pubYoutube" placeholder="https://www.youtube.com/watch?v=...">
         </div>
-        <button class="btn" onclick="crearPublicacion()">Publicar post</button>
+        <button id="btnCrearPublicacion" class="btn" type="button">Publicar post</button>
       </div>
       <div class="preview-card">
         <div id="previewImg" class="preview-img">Vista previa</div>
@@ -207,7 +207,7 @@
                 <strong>${p.nombre}</strong><br>
                 <small>${p.descripcion}</small>
               </div>
-              <button onclick="eliminarPublicacion(${p.id})" class="pub-delete-btn">Eliminar</button>
+              <button type="button" data-publicacion-id="${Number(p.id)}" class="pub-delete-btn">Eliminar</button>
             </div>
           `;
         });
@@ -294,6 +294,11 @@
       update();
     }
     bindPreview();
+    document.getElementById('btnCrearPublicacion').addEventListener('click', crearPublicacion);
+    document.getElementById('misPublicaciones').addEventListener('click', function (event) {
+      const button = event.target && event.target.closest ? event.target.closest('[data-publicacion-id]') : null;
+      if (button) eliminarPublicacion(Number(button.dataset.publicacionId || 0));
+    });
     cargarPublicaciones();
 
     // Subida de imagen desde archivo (celular/PC)

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/you/pos-backend/internal/platform/valueutil"
+
 	dbpkg "github.com/you/pos-backend/db"
 )
 
@@ -353,11 +355,7 @@ func isPDFHeading(input string) bool {
 }
 
 func emptyPDFValue(value, fallback string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return fallback
-	}
-	return value
+	return valueutil.NonBlankOr(value, fallback)
 }
 
 func licenciaSoftwarePDFFilename(companyName string, empresaID int64) string {

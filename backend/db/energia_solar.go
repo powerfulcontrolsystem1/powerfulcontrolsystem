@@ -314,7 +314,7 @@ func UpsertEmpresaEnergiaSolarSistema(dbConn *sql.DB, item EmpresaEnergiaSolarSi
 			strings.TrimSpace(item.ApiBaseURL), strings.TrimSpace(item.ApiKeyRef),
 			strings.TrimSpace(item.InstalacionRef), strings.TrimSpace(item.LocalGatewayURL), item.IntervaloSegundos,
 			strings.TrimSpace(item.EmailAlertas), emailInt, activeInt, strings.TrimSpace(item.UsuarioCreador),
-			firstNonBlankDB(item.Estado, "activo"), strings.TrimSpace(item.Observaciones), item.EmpresaID, item.ID)
+			firstNonBlankValue(item.Estado, "activo"), strings.TrimSpace(item.Observaciones), item.EmpresaID, item.ID)
 		return item.ID, err
 	}
 	var id int64
@@ -330,7 +330,7 @@ func UpsertEmpresaEnergiaSolarSistema(dbConn *sql.DB, item EmpresaEnergiaSolarSi
 		strings.TrimSpace(item.ApiBaseURL), strings.TrimSpace(item.ApiKeyRef),
 		strings.TrimSpace(item.InstalacionRef), strings.TrimSpace(item.LocalGatewayURL), item.IntervaloSegundos,
 		strings.TrimSpace(item.EmailAlertas), emailInt, activeInt, strings.TrimSpace(item.UsuarioCreador),
-		firstNonBlankDB(item.Estado, "activo"), strings.TrimSpace(item.Observaciones)).Scan(&id)
+		firstNonBlankValue(item.Estado, "activo"), strings.TrimSpace(item.Observaciones)).Scan(&id)
 	return id, err
 }
 
@@ -403,12 +403,12 @@ func UpsertEmpresaEnergiaSolarAlerta(dbConn *sql.DB, it EmpresaEnergiaSolarAlert
 	}
 	if it.ID > 0 {
 		_, err := execSQLCompat(dbConn, `UPDATE empresa_energia_solar_alertas SET tipo=?, nombre=?, operador=?, umbral=?, umbral_secundario=?, severidad=?, enviar_email=?, activo=?, fecha_actualizacion=CAST(CURRENT_TIMESTAMP AS TEXT), usuario_creador=?, estado=? WHERE empresa_id=? AND id=?`,
-			strings.TrimSpace(it.Tipo), strings.TrimSpace(it.Nombre), strings.TrimSpace(it.Operador), it.Umbral, it.UmbralSecundario, strings.TrimSpace(it.Severidad), emailInt, activeInt, strings.TrimSpace(it.UsuarioCreador), firstNonBlankDB(it.Estado, "activo"), it.EmpresaID, it.ID)
+			strings.TrimSpace(it.Tipo), strings.TrimSpace(it.Nombre), strings.TrimSpace(it.Operador), it.Umbral, it.UmbralSecundario, strings.TrimSpace(it.Severidad), emailInt, activeInt, strings.TrimSpace(it.UsuarioCreador), firstNonBlankValue(it.Estado, "activo"), it.EmpresaID, it.ID)
 		return it.ID, err
 	}
 	var id int64
 	err := queryRowSQLCompat(dbConn, `INSERT INTO empresa_energia_solar_alertas (empresa_id, sistema_id, tipo, nombre, operador, umbral, umbral_secundario, severidad, enviar_email, activo, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-		it.EmpresaID, it.SistemaID, strings.TrimSpace(it.Tipo), strings.TrimSpace(it.Nombre), strings.TrimSpace(it.Operador), it.Umbral, it.UmbralSecundario, strings.TrimSpace(it.Severidad), emailInt, activeInt, strings.TrimSpace(it.UsuarioCreador), firstNonBlankDB(it.Estado, "activo")).Scan(&id)
+		it.EmpresaID, it.SistemaID, strings.TrimSpace(it.Tipo), strings.TrimSpace(it.Nombre), strings.TrimSpace(it.Operador), it.Umbral, it.UmbralSecundario, strings.TrimSpace(it.Severidad), emailInt, activeInt, strings.TrimSpace(it.UsuarioCreador), firstNonBlankValue(it.Estado, "activo")).Scan(&id)
 	return id, err
 }
 
@@ -502,7 +502,7 @@ func InsertEmpresaEnergiaSolarEvento(dbConn *sql.DB, it EmpresaEnergiaSolarEvent
 		emailInt = 1
 	}
 	err := queryRowSQLCompat(dbConn, `INSERT INTO empresa_energia_solar_eventos (empresa_id, sistema_id, alerta_id, lectura_id, tipo, severidad, mensaje, email_enviado, email_error, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-		it.EmpresaID, it.SistemaID, it.AlertaID, it.LecturaID, strings.TrimSpace(it.Tipo), firstNonBlankDB(it.Severidad, "media"), strings.TrimSpace(it.Mensaje), emailInt, strings.TrimSpace(it.EmailError), strings.TrimSpace(it.UsuarioCreador), firstNonBlankDB(it.Estado, "activo")).Scan(&id)
+		it.EmpresaID, it.SistemaID, it.AlertaID, it.LecturaID, strings.TrimSpace(it.Tipo), firstNonBlankValue(it.Severidad, "media"), strings.TrimSpace(it.Mensaje), emailInt, strings.TrimSpace(it.EmailError), strings.TrimSpace(it.UsuarioCreador), firstNonBlankValue(it.Estado, "activo")).Scan(&id)
 	return id, err
 }
 
@@ -533,13 +533,4 @@ func ListEmpresaEnergiaSolarEventos(dbConn *sql.DB, empresaID, sistemaID int64, 
 		items = append(items, it)
 	}
 	return items, rows.Err()
-}
-
-func firstNonBlankDB(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
 }

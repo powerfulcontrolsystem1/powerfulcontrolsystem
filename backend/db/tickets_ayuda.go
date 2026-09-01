@@ -176,8 +176,8 @@ func CreateAyudaTicket(dbConn *sql.DB, req AyudaTicketCreateRequest) (AyudaTicke
 	}
 	req.Categoria = normalizeAyudaCategoria(req.Categoria)
 	req.Prioridad = normalizeAyudaPrioridad(req.Prioridad)
-	req.Origen = firstNonEmptyDB(strings.TrimSpace(req.Origen), "sistema")
-	req.UsuarioCreador = firstNonEmptyDB(strings.TrimSpace(req.UsuarioCreador), strings.TrimSpace(req.SolicitanteEmail), "sistema")
+	req.Origen = firstNonBlankValue(strings.TrimSpace(req.Origen), "sistema")
+	req.UsuarioCreador = firstNonBlankValue(strings.TrimSpace(req.UsuarioCreador), strings.TrimSpace(req.SolicitanteEmail), "sistema")
 	req.ContactoPreferido = normalizeAyudaContactoPreferido(req.ContactoPreferido)
 	contextoJSON := normalizeAyudaContextoJSON(req.Contexto)
 	codigo := nextAyudaTicketCodigo(dbConn)
@@ -318,7 +318,7 @@ func AddAyudaTicketMensaje(dbConn *sql.DB, ticketID int64, msg AyudaTicketMensaj
 		return fmt.Errorf("ticket y mensaje son obligatorios")
 	}
 	msg.AutorTipo = normalizeAyudaAutorTipo(msg.AutorTipo)
-	msg.UsuarioCreador = firstNonEmptyDB(strings.TrimSpace(msg.UsuarioCreador), strings.TrimSpace(msg.AutorEmail), "sistema")
+	msg.UsuarioCreador = firstNonBlankValue(strings.TrimSpace(msg.UsuarioCreador), strings.TrimSpace(msg.AutorEmail), "sistema")
 	msg.AutorEmail = truncateTextDB(strings.TrimSpace(strings.ToLower(msg.AutorEmail)), 180)
 	msg.AutorNombre = truncateTextDB(strings.TrimSpace(msg.AutorNombre), 140)
 	interno := msg.Interno
@@ -358,7 +358,7 @@ func UpdateAyudaTicketEstado(dbConn *sql.DB, ticketID int64, estado, prioridad, 
 		return GetAyudaTicket(dbConn, ticketID)
 	}
 	assign := truncateTextDB(strings.TrimSpace(asignadoA), 180)
-	usuario = firstNonEmptyDB(strings.TrimSpace(usuario), "sistema")
+	usuario = firstNonBlankValue(strings.TrimSpace(usuario), "sistema")
 	if estado == "cerrado" {
 		_, err := ExecCompat(dbConn, `UPDATE super_tickets_ayuda
 			SET estado = CASE WHEN ? = '' THEN estado ELSE ? END,
@@ -485,15 +485,6 @@ func normalizeAyudaContextoJSON(value map[string]interface{}) string {
 		return ""
 	}
 	return truncateTextDB(string(b), 2500)
-}
-
-func firstNonEmptyDB(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
 }
 
 func truncateTextDB(value string, max int) string {

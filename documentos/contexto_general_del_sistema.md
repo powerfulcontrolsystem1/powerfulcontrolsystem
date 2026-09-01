@@ -1,38 +1,124 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-08-31.
+Estado: vigente. Ultima actualizacion: 2026-08-25.
 
-## Actualizacion 2026-08-31 - modulo Vida personal
+## Actualizacion 2026-08-25 - cierre seguro integral DIAN
 
-- `Vida` registra gastos cotidianos, comprobantes privados y suscripciones por
-  `empresa_id + usuario_id`; no alimenta la contabilidad empresarial.
-- Esta disponible para toda cuenta empresarial autenticada sin depender del
-  catalogo comercial de la licencia. Ningun rol obtiene acceso a registros
-  personales ajenos.
-- Los comprobantes aceptan JPEG, PNG, WebP o PDF, maximo 10 MiB, fuera de la
-  raiz web y con descarga que valida empresa, usuario y gasto.
-- El catalogo vigente pasa a 53 modulos de permiso y 13 plantillas
-  empresariales. La migracion `20260831-001-vida-personal-v1` pertenece a
-  `pcs-migrate` y no se ejecuto en esta tarea.
-- Contrato completo: `documentos/vida.md`.
+- La factura electronica comercial solo nace de una venta pagada con fuente
+  fiscal privada e inmutable comprobada antes de reservar numeracion. La
+  emision generica desde payload libre queda cerrada.
+- La nota credito solo cubre anulacion total de una factura aceptada. Se
+  serializa por factura origen, inicia pendiente y exige que documento y cola
+  coincidan en CUDE oficial y acuse aceptado/reconciliado antes de anular.
+- El listado expone `fuente_fiscal_disponible` sin ruta ni contenido privado.
+  Los documentos historicos sin snapshot permanecen consultables, pero no
+  ofrecen una anulacion que obligaria a inventar datos fiscales.
+- Acciones fiscales con efectos requieren aprobacion; la anulacion conserva
+  permiso de borrado. GET DIAN desconocidos fallan antes del CRUD interno y el
+  correo productivo espera aceptacion oficial.
+- La accion exclusiva `reconciliar_aceptados_local` completa estado y CUFE/CUDE
+  locales de acuses ya aceptados antes de cualquier despacho, omite el resto de
+  la cola y no retransmite XML ni aumenta intentos.
+  Nomina, soporte, nota debito, equivalentes, contingencia y RADIAN siguen
+  bloqueados hasta sus fuentes y adaptadores propios.
+- Evidencia real: `1PCS8` conserva acuse aceptado, CUFE oficial y un intento; la
+  factura `1PCS7` y su nota credito total tambien fueron aceptadas por DIAN. La
+  evidencia de esas rutas no habilita por extension las familias bloqueadas.
 
-## Actualizacion 2026-08-23 - catalogo publico simplificado
+## Actualizacion 2026-08-25 - disponibilidad del login y reCAPTCHA
 
-- El catalogo vigente contenia 52 modulos de permiso y 13 plantillas
-  empresariales: cuatro clasicas y nueve nuevas.
-- `web/index.html`, `web/descripcion_de_los_sistemas.html` y la compatibilidad
-  `web/descripcion_de_los_sistemas.ht` comparten ese alcance.
-- `/api/public/pagina_principal` y `/api/public/informacion_de_modulos`
-  normalizan configuraciones antiguas para impedir que una tarjeta o resumen
-  guardado vuelva a publicar modulos o plantillas retirados.
-- Droguerias y farmacias usan Inventario, productos, compras, ventas y
-  facturacion centrales; no se anuncian como modulo separado.
-- Esta actualizacion es local: no ejecuta `rs`, despliegue ni migraciones.
+- Login, registro y recuperación administrativos comparten el guard público de
+  reCAPTCHA; una activación incompleta puede bloquear los tres flujos antes de
+  validar credenciales.
+- La clave privada histórica se recuperó desde un respaldo autorizado, se validó
+  sin exponerla y se volvió a cifrar con la clave activa y formato versionado.
+  El throttle durable continuó activo y salud/readiness permanecieron en HTTP
+  200 durante la recuperación.
+- El candidato valida que las claves sean utilizables antes de activar y
+  persiste toda la configuración en una transacción. La CSP estática y la del
+  backend autorizan únicamente los orígenes exactos de Google requeridos por
+  reCAPTCHA; no se usan comodines de Google.
+- Los clientes de login, registro y recuperación no muestran cuerpos HTML de un
+  proxy ante HTTP 5xx: presentan un mensaje operativo genérico y conservan el
+  detalle JSON controlado para los errores funcionales.
+- Las respuestas `/auth/google/*` usan una CSP compacta `deny-all`: son
+  redirecciones o errores de texto y no necesitan la política extensa de las
+  páginas. Esto conserva margen bajo el buffer de cabeceras del proxy después
+  de agregar cookies state/PKCE y evita convertir el redirect válido en 502.
 
-## Actualizacion 2026-07-24 - Plan 106 P0 en ejecucion controlada
+## Actualizacion 2026-08-25 - nota credito de anulacion total trazable
 
-- `documentos/plan_106.md` sustituye al Plan 105 como hoja de ruta principal
-  para certificar la entrada en produccion. Su veredicto inicial es `NO-GO`.
+- `nota_credito` dispone de una unica ruta comercial: anular totalmente una
+  factura electronica DIAN aceptada. El servidor deriva otra
+  `fuente_fiscal_json` inmutable con las mismas lineas, impuestos y partes, mas
+  numero legal, CUFE y fecha fiscal de la factura original.
+- El UBL `CreditNote` usa consecutivo interno de nota, `CustomizationID=20`,
+  `CreditNoteTypeCode=91`, CUDE SHA-384, `DiscrepancyResponse` y
+  `BillingReference`. La factura solo cambia a anulada despues del acuse DIAN
+  aceptado.
+- La emision generica/parcial de nota credito y toda nota debito continúan
+  bloqueadas. Documento soporte, nomina, equivalentes, contingencia y RADIAN
+  tampoco cambian de estado en esta actualizacion.
+- QA de esa iteracion: fuente derivada multilinea, preflight, XSD UBL 2.1 de
+  CreditNote y firma XMLDSig correctos. La prueba real posterior de `1PCS7` y su
+  nota total supero esa compuerta; el alcance sigue limitado a anulacion total.
+
+## Actualizacion 2026-08-24 - candidato DIAN desde fuente fiscal real
+
+- La única familia comercial habilitada por el candidato es factura electrónica
+  de venta. Nota crédito y nota débito quedan visibles pero bloqueadas hasta
+  implementar una fuente inmutable de ajuste y referencia a la factura original.
+- La factura se construye desde el carrito pagado, su cliente y la configuración
+  fiscal del emisor cargados por servidor y aislados por `empresa_id`; no acepta
+  líneas, partes, direcciones ni identificadores suministrados libremente.
+- Emisor y adquiriente deben tener país `CO` y códigos DANE coherentes de 2 y 5
+  dígitos. La migración agrega esos campos sin inferir Bogotá ni alterar maestros
+  existentes.
+- El candidato aprobó PostgreSQL 17.11 aislado, XSD UBL 2.1, XMLDSig y
+  Schematron DIAN sobre una factura multilínea firmada. Permanece `NO-GO` hasta
+  validar el migrador sobre un clon del esquema vigente, autenticación visual de
+  PCS, acuse DIAN, despliegue y emisión controlada.
+
+## Actualizacion 2026-08-21 - trabajo autorizado por temas especificos
+
+- Por instruccion del usuario, `documentos/plan_110.md` deja de ser una hoja de
+  ruta activa. Cada modulo debe auditarse, implementarse y cerrarse mediante el
+  alcance especifico autorizado, manteniendo las compuertas generales de
+  seguridad, migracion, pruebas y despliegue.
+- Los planes 105 a 110 y sus evidencias se conservan como historia tecnica; no
+  autorizan por si mismos despliegues, pruebas reales, proveedores ni cambios de
+  datos.
+- Para facturacion electronica gobiernan el contrato y runbook especificos de
+  `documentos/gobernanza_tecnica/`, junto con seguridad multiempresa y el
+  migrador `pcs-migrate`.
+- La auditoria real del 2026-08-21 comprobo que produccion aun publicaba como
+  operativas siete familias aunque el generador solo implementaba
+  Invoice/CreditNote/DebitNote. Ese candidato fue endurecido el 2026-08-24: solo
+  factura permite emisión comercial; notas, soporte, nómina, equivalentes y
+  RADIAN fallan cerrado con 422 hasta tener fuente y adaptador propios.
+- En la consulta documental, `comprobante_pago` y su factura asociada son dos
+  piezas distintas. La UI no debe renombrar ni contabilizar el comprobante
+  `CP-*` como una segunda factura fiscal.
+
+## Historico 2026-08-13 - Plan 110 vigente y NO-GO
+
+- En esa fecha `documentos/plan_110.md` era la hoja de ruta para el cierre de
+  producción. Hoy permanece solo como historial y fuente de evidencia.
+- El avance formal documentado es 38,5 % de implementación, 0 % de
+  certificación del candidato y veredicto `NO-GO`.
+- P110-001A incorpora el saneamiento obligatorio de fuentes duplicadas,
+  autoridad DDL, handlers monolíticos, acceso DB sin contexto, errores
+  descartados y repetición frontend antes de congelar el candidato final.
+- La aplicación móvil nativa quedaba fuera de ese piloto. La web responsive,
+  PWA, domótica y las pruebas reales se rigen hoy por el alcance especifico
+  autorizado y sus compuertas aplicables.
+- Las actualizaciones de Planes 106/108 que aparecen más abajo son históricas y
+  no reemplazan esta sección.
+
+## Historico 2026-07-24 - Plan 106 P0 en ejecucion controlada
+
+- En esa fecha, `documentos/plan_106.md` sustituyó al Plan 105 como hoja de ruta.
+  Hoy solo conserva evidencia histórica; no existe una ruta general activa.
 - El plan exige consolidar la cartera de proveedores porque hoy existen dos
   fuentes de verdad, probar todos los modulos/funciones/botones, cubrir todos
   los controles IA y ejecutar varias cajas simultaneas en una prueba real
@@ -288,13 +374,12 @@ Abrir `documentos/contexto_especifico_del_sistema.md`. Ese documento enlaza los
 mapas de modulos, flujos, datos, seguridad, comandos, decisiones, integraciones
 y runbooks vigentes.
 
-## Plan vigente de entrada en producción
+## Histórico - Plan 108 de entrada en producción
 
-- `documentos/plan_108.md` es la hoja de ruta consolidada vigente para el cierre
-  de producción. Integra los pendientes de los planes 106, 107, IA, 104, 105 y
-  del plan final histórico sin convertir evidencia local en certificación.
+- `documentos/plan_108.md` fue la hoja de ruta consolidada de ese ciclo. Sus
+  pendientes fueron absorbidos por Planes 109/110 y no constituyen una orden
+  vigente.
 - Su estado inicial es `NO-GO`. La primera fase ejecutable es `P108-000`, que
   exige un candidato limpio, inmutable y reproducible antes de staging o
   pruebas reales.
-- Los planes anteriores se conservan como antecedentes y requisitos de detalle;
-  el avance nuevo se registra contra identificadores `P108-*`.
+- Sus identificadores `P108-*` se conservan como trazabilidad histórica.

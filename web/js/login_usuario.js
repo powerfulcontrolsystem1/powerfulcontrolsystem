@@ -96,9 +96,9 @@
     }
     if (!empresaContextHint) return;
     if (state.empresaID > 0) {
-      empresaContextHint.textContent = "Referencia de empresa detectada desde un enlace anterior. Tambien puedes entrar solo con tu correo y clave.";
+      empresaContextHint.textContent = "Empresa validada desde tu enlace de invitacion. Tu acceso quedara limitado a esta empresa.";
     } else {
-      empresaContextHint.textContent = "El sistema abrirá automáticamente la empresa asociada a tu correo y cargará tus roles asignados.";
+      empresaContextHint.textContent = "Para proteger tus datos, abre el enlace de invitacion de la empresa antes de iniciar sesion.";
     }
   }
 
@@ -196,12 +196,12 @@
 
   function googleErrorMessage(code) {
     switch (String(code || "").trim()) {
+	  case "empresa_requerida":
+		return "Abre el enlace de invitacion de la empresa para iniciar sesion con Google.";
       case "sin_invitacion":
         return "Este correo de Google no tiene una invitacion activa de una empresa. Pide al administrador que cree tu usuario y te envie la invitacion.";
       case "invitacion_pendiente":
         return "Tu usuario existe, pero debes abrir la invitacion enviada por el administrador para completar el primer acceso.";
-      case "correo_ambiguo":
-        return "Este correo esta asociado a mas de una empresa. Abre el enlace de invitacion de la empresa correcta para entrar con Google.";
       case "contrato_requerido":
         return "Para entrar con Google desde la invitacion primero debes aceptar el contrato vigente en esta pantalla.";
       case "usuario_inactivo":
@@ -217,6 +217,12 @@
 
   function updateGoogleUsuarioHref() {
     if (!googleUsuarioBtn) return;
+	if (state.empresaID <= 0 && !state.invitationToken) {
+	  googleUsuarioBtn.href = "/login_usuario.html";
+	  googleUsuarioBtn.setAttribute("aria-disabled", "true");
+	  return;
+	}
+	googleUsuarioBtn.removeAttribute("aria-disabled");
     try {
       var target = new URL("/auth/google/usuario/login", window.location.origin);
       if (state.empresaID > 0) {
@@ -381,19 +387,21 @@
 
   function withBasePayload(payload) {
     var out = payload || {};
-    if (state.empresaID > 0) {
-      out.empresa_id = state.empresaID;
+    if (state.empresaID <= 0) {
+      throw new Error("Abre el enlace de invitacion de la empresa para continuar.");
     }
+    out.empresa_id = state.empresaID;
     return out;
   }
 
   function readResponsePayload(response) {
-    var contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
-    if (contentType.indexOf("application/json") >= 0) {
-      return response.json();
-    }
-    return response.text().then(function (text) {
-      return { message: text || ("HTTP " + response.status) };
+    return window.PCSAuthResponse.read(response).then(function (parsed) {
+      if (parsed.json) {
+        return parsed.json;
+      }
+      return {
+        message: window.PCSAuthResponse.getMessage(parsed, "HTTP " + response.status)
+      };
     });
   }
 

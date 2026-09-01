@@ -19,8 +19,8 @@ esa estacion, sus estados y la Raspberry asignada, sin activar el carrito.
 ## Flujo de instalacion desde la Raspberry
 
 1. Abrir PCS en el navegador de la Raspberry e iniciar sesion en la empresa.
-2. Entrar en `Administrar empresa > Analisis y control > Domotica > Raspberry`.
-3. Registrar la Raspberry con su IP local y presionar `Generar instalador`.
+2. Entrar en `Administrar empresa > Domotica y Energia Solar > Configuracion de domotica > Controladores`.
+3. Registrar la Raspberry; la IP local es opcional para el túnel saliente. Presionar `Generar instalador`.
 4. Ejecutar una sola vez el archivo descargado:
 
    ```sh
@@ -51,7 +51,9 @@ y detecta `pinctrl`, `raspi-gpio` o GPIO sysfs.
   `/etc/pcs-domotica/agent.json` con modo `0600`.
 - El endpoint publico deriva `empresa_id` y `raspberry_id` de la identidad
   autenticada; nunca acepta que el dispositivo elija empresa.
-- Regenerar el instalador rota el token operativo anterior.
+- Regenerar el instalador crea un enrolamiento nuevo sin desconectar el agente
+  vigente. El token operativo anterior solo se sustituye cuando el nuevo agente
+  completa correctamente el enrolamiento.
 - El servicio usa `NoNewPrivileges`, `ProtectHome` y `ProtectSystem=strict`.
 
 ## Canal y comandos
@@ -65,6 +67,8 @@ La Raspberry hace long polling mediante `POST /api/public/domotica/tunnel`:
 - `action=input`: cambio estable de GPIO despues del debounce y evaluacion de
   reglas de la misma empresa y Raspberry.
 - `action=telemetry`: lecturas asociadas a aparatos que pertenecen al dispositivo.
+- `action=solar_telemetry`: bloques VE.Direct validados y asociados a la empresa
+  y Raspberry derivadas del token del túnel.
 
 La cola `empresa_control_electrico_comandos` reintenta entregas no confirmadas,
 expira comandos antiguos y procesa ACK repetidos/concurrentes sin duplicar el
@@ -100,12 +104,21 @@ cargas críticas conectadas.
 - `empresa_control_electrico_eventos` y `empresa_control_electrico_lecturas`:
   auditoria e historial por empresa.
 - `empresa_control_electrico_trafico_diario`: RX, TX y solicitudes por dia.
+- `empresa_control_electrico_escenas` y
+  `empresa_control_electrico_escena_items`: estados agrupados de varios aparatos.
+- Las columnas `ssh_*_enc` de la Raspberry conservan opcionalmente password y
+  sudo cifrados; no forman parte de las respuestas JSON.
 
 ## Variables y operacion
 
 `PCS_DOMOTICA_PUBLIC_BASE_URL` puede fijar el origen publico incluido en el
 instalador. Debe ser HTTPS, excepto loopback para pruebas locales. Si no existe,
 se usa `https://powerfulcontrolsystem.com`.
+
+`PCS_DOMOTICA_SSH_ALLOWED_CIDRS` contiene una lista separada por comas de redes
+privadas que el VPS puede alcanzar realmente por VPN o ruta dedicada. Si una IP
+privada no pertenece a esa allowlist, la instalación SSH se rechaza para evitar
+acceso lateral a la infraestructura del VPS.
 
 Comandos utiles en la Raspberry:
 
@@ -126,10 +139,37 @@ usa reinicio permanente y limite de arranque desactivado para recuperar tambien
 un cierre inesperado o el reinicio de la Raspberry. No requiere intervencion
 manual ni una IP publica en la empresa.
 
-En cada arranque el agente genera un identificador efimero de inicio. El VPS
+En cada arranque el agente lee `/proc/sys/kernel/random/boot_id`. El VPS
 solo una vez por ese identificador reconstruye las salidas que quedaron
-confirmadas en estado `on`, ordenadas por estación/GPIO. El agente espera un
-segundo entre confirmaciones, evitando energizar todos los relés a la vez.
+confirmadas en estado `on`, ordenadas por estación/GPIO. La cola usa el retardo
+configurado por empresa, un segundo de forma predeterminada, evitando energizar
+todos los relés a la vez.
+
+## Instalación alternativa por SSH
+
+- `Instalar por SSH` está reservado a usuarios con aprobación efectiva de
+  Domótica y siempre filtra `empresa_id + raspberry_id`.
+- El primer contacto devuelve la huella SHA-256 del host; no envía contraseña ni
+  instalador hasta que el usuario la confirma.
+- Password y sudo pueden guardarse con AES-GCM usando `CONFIG_ENC_KEY`. El
+  propósito criptográfico contiene empresa, Raspberry y tipo de secreto, por lo
+  que un ciphertext de otro tenant o dispositivo no puede reutilizarse.
+- El instalador viaja a un nombre aleatorio en `/tmp`, modo `umask 077`, se
+  ejecuta mediante sudo por stdin y se elimina al finalizar. Los secretos no se
+  incluyen en argumentos, logs, auditoría o respuestas.
+
+## Victron VE.Direct
+
+El agente 1.4 autodetecta adaptadores VE.Direct entre rutas estables
+`/dev/serial/by-id` y puertos `ttyUSB`/`ttyACM`. Configura 19200 baudios, 8 bits,
+sin paridad, un stop bit y sin control de flujo. Solo acepta un bloque con PID,
+voltaje de batería, voltaje de panel y checksum módulo 256 válido.
+
+Cada 15 segundos publica potencia/voltaje del panel, corriente/voltaje de
+batería, producción diaria, etapa del cargador, error, firmware, serial y puerto.
+El dashboard considera desconectado un sistema sin lecturas recientes. Una
+BlueSolar MPPT no mide SOC: PCS conserva `No disponible` hasta recibir esa
+métrica desde un BMV, SmartShunt o BMS compatible.
 
 ## Gobierno de transferencia y alertas (2026-08-13)
 
@@ -139,67 +179,3 @@ segundo entre confirmaciones, evitando energizar todos los relés a la vez.
 - La empresa puede activar `disconnect_alert_enabled`, registrar correo y definir `disconnect_grace_minutes`. El worker espera ese período y publica una alerta de buzón/campanita y correo una sola vez por valor de `last_seen`.
 - La identidad `RPI-` contiene 128 bits aleatorios, tiene índice único global y el secreto plano solo aparece en el instalador de un uso. El agente no envía ni elige `empresa_id`; PostgreSQL lo deriva del `device_uid` y token autenticados.
 - Para la primera instalación no es necesaria una IP local: se crea el controlador, se genera el instalador desde la página abierta en la Raspberry y el agente inicia el túnel HTTPS saliente.
-
-## Modalidad sensores de puertas multiplexados (2026-08-31)
-
-Al agregar una Raspberry, la empresa elige uno de dos usos mutuamente
-excluyentes: `domotica` o `sensor_puertas`. Una placa de puertas reserva sus
-GPIO para el barrido y no admite aparatos, pruebas manuales ni reglas GPIO de
-Domotica. Reiniciar, apagar, telemetria de conexion y cuotas del tunel siguen
-disponibles.
-
-El cableado logico solicitado usa numeracion BCM:
-
-```text
-Entradas: GPIO0=IN1, GPIO1=IN2, GPIO2=IN3, GPIO3=IN4
-Selectores: GPIO4=OUT1, GPIO5=OUT2, ... GPIO19=OUT16
-
-OUT1 alto -> esperar delay -> leer IN1..IN4 -> OUT1 bajo
-OUT2 alto -> esperar delay -> leer IN1..IN4 -> OUT2 bajo
-...
-```
-
-La empresa configura entre 1 y 16 salidas y un retardo de 10 a 5000 ms. PCS
-crea automaticamente cuatro canales por salida, hasta 64, con identidad
-determinista por empresa/Raspberry/salida/entrada. Desde Configuracion de
-sensores cada canal se asocia a una habitacion. Un nivel alto se registra como
-`open` y uno bajo como `closed`; los cambios se guardan en
-`empresa_sensor_puertas_messages` y actualizan el indicador vigente de la
-estacion.
-
-El agente mantiene todas las salidas bajas, eleva solo una, espera el retardo,
-lee las cuatro entradas y vuelve esa salida a bajo antes de avanzar. Exige dos
-observaciones consecutivas antes de publicar un cambio y envia un estado
-completo periodico para mantener `last_seen` fresco.
-
-Advertencias de hardware: un modulo de cuatro reles no es por si mismo un
-modulo de entrada. Las entradas deben entregar contactos secos o logica segura
-de 3,3 V; nunca aplicar 5 V a un GPIO. GPIO 0/1 suelen reservarse para EEPROM
-HAT y GPIO 2/3 para I2C, por lo que se debe confirmar que esas funciones esten
-libres. La prueba fisica requiere masa comun, fuente dimensionada, polaridad y
-aislamiento verificados antes de conectar puertas reales.
-
-La descarga sigue necesitando una ejecucion local visible:
-
-```sh
-sudo sh ~/Downloads/instalar-pcs-sensores-puertas-*.sh
-```
-
-Un navegador no puede ejecutar root de forma silenciosa. Despues de ese unico
-paso, `pcs-domotica-agent` queda habilitado en `systemd`, autoarranca y se
-reconecta sin intervención.
-
-## Auditoria de Raspberry (2026-08-31)
-
-La bitacora de Domotica registra por `empresa_id` y `raspberry_id`:
-
-- alta y configuracion, con valores anteriores/nuevos saneados;
-- generacion o rotacion del instalador y enrolamiento efectivo;
-- cambio de uso, numero de salidas y retardo;
-- asociacion de canal fisico con habitacion;
-- reinicio/apagado y resultados del tunel;
-- desactivacion logica de la Raspberry.
-
-Los metadatos no incluyen tokens, credenciales ni secretos. Desactivar es
-recuperable a nivel de datos: no borra la bitacora ni las transiciones
-historicas de puertas.

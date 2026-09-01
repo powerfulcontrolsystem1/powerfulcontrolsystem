@@ -84,6 +84,16 @@
     .nomina-readiness-bar{height:12px;border-radius:999px;background:color-mix(in srgb,var(--border) 70%,transparent);overflow:hidden}
     .nomina-readiness-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#16a34a,#2563eb)}
     .nomina-readiness-list{margin:0;padding-left:18px;color:var(--muted);display:grid;gap:4px}
+    .nomina-dian-dialog{border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);padding:0;width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 32px)}
+    .nomina-dian-dialog::backdrop{background:rgba(15,23,42,.64)}
+    .nomina-dian-dialog form{display:grid;gap:14px;padding:18px}
+    .nomina-dian-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+    .nomina-dian-dialog-head h2{margin:0}
+    .nomina-dian-dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .nomina-dian-dialog-grid .span-2{grid-column:1/-1}
+    .nomina-dian-dialog-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+    .nomina-dian-blockers{margin:6px 0 0;padding-left:18px;color:var(--danger,#b91c1c)}
+    @media (max-width:640px){.nomina-dian-dialog-grid{grid-template-columns:1fr}.nomina-dian-dialog-grid .span-2{grid-column:auto}.nomina-dian-dialog-actions .btn{width:100%}}
   </style>
 </head>
 <body class="empresa-subpage nomina-page">
@@ -170,7 +180,7 @@
         </a>
         <a class="nomina-subnav-card" data-nomina-nav="tutorial" href="/administrar_empresa/nomina_tutorial.html">
           <strong>Tutorial de nomina</strong>
-          <span>Guia paso a paso para preparar nomina y enviarla a DIAN con trazabilidad.</span>
+          <span>Guia paso a paso para preparar, revisar y emitir cada nómina únicamente cuando su preflight DIAN esté completo.</span>
         </a>
       </div>
     </section>
@@ -242,6 +252,19 @@
           <div class="form-col">
             <label class="form-label" for="cfgDiasMes">Dias nomina mes</label>
             <input id="cfgDiasMes" class="form-input" type="number" min="1" max="31" step="1" value="30">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgPeriodoNominaDian">Periodicidad de pago DIAN</label>
+            <select id="cfgPeriodoNominaDian" class="form-input" required>
+              <option value="0">Selecciona antes de emitir</option>
+              <option value="1">1 - Semanal</option>
+              <option value="2">2 - Decenal</option>
+              <option value="3">3 - Catorcenal</option>
+              <option value="4">4 - Quincenal</option>
+              <option value="5">5 - Mensual</option>
+              <option value="6">6 - Otro</option>
+            </select>
+            <span class="form-help">Describe cada cu&aacute;nto se paga; DIAN recibe un documento consolidado por trabajador y mes.</span>
           </div>
           <div class="form-col">
             <label class="form-label" for="cfgDivisorHora">Divisor hora ordinaria</label>
@@ -768,15 +791,81 @@
         <div class="nomina-demo-panel">
           <div>
             <strong>Nomina electronica DIAN</strong>
-            <span id="nomCoDianResumen" class="form-help">Consulta liquidaciones y prepara el lote por empleado para firma, CUNE y envio documental.</span>
+            <span id="nomCoDianResumen" class="form-help">Consulta liquidaciones pagadas, completa el perfil fiscal de cada empleado y ejecuta el preflight antes de emitir.</span>
           </div>
           <div class="form-actions" style="margin:0;">
             <button id="nomCoDianVerBtn" type="button" class="btn secondary">Ver estado DIAN</button>
-            <button id="nomCoDianPrepararBtn" type="button" class="btn">Preparar lote DIAN</button>
-            <button id="nomCoDianEnviarBtn" type="button" class="btn primary">Enviar nomina electronica a DIAN</button>
+            <button id="nomCoDianPrepararBtn" type="button" class="btn">Ejecutar preflight</button>
+            <button id="nomCoDianEnviarBtn" type="button" class="btn primary" disabled title="La emisión se confirma individualmente en cada fila">Emisión por empleado</button>
           </div>
         </div>
+        <form id="nomCoDianConfigForm" class="form nomina-result-summary" autocomplete="off">
+          <div class="empresa-section-header">
+            <div>
+              <h3>Configuraci&oacute;n DIAN separada de n&oacute;mina electr&oacute;nica</h3>
+              <p class="form-help">La secuencia es interna del empleador. No reutiliza la resoluci&oacute;n ni el rango autorizado de facturas de venta.</p>
+            </div>
+            <button id="nomCoDianConfigReloadBtn" type="button" class="btn secondary">Recargar configuraci&oacute;n</button>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigEstado">Estado</label><select id="nomCoDianConfigEstado" class="form-input"><option value="configurando">Configurando</option><option value="habilitacion">Habilitaci&oacute;n</option><option value="activo">Activo</option><option value="suspendido">Suspendido</option></select></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigAmbiente">Ambiente</label><select id="nomCoDianConfigAmbiente" class="form-input"><option value="habilitacion">Habilitaci&oacute;n</option><option value="produccion">Producci&oacute;n</option></select></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigPrefijo">Prefijo interno</label><input id="nomCoDianConfigPrefijo" class="form-input" maxlength="20" pattern="[A-Za-z0-9]+" placeholder="NE" required></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigConsecutivo">Pr&oacute;ximo consecutivo</label><input id="nomCoDianConfigConsecutivo" class="form-input" type="number" min="1" max="999999999999" step="1" value="1" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigModo">C&oacute;digo modo operaci&oacute;n (opcional)</label><input id="nomCoDianConfigModo" class="form-input" maxlength="120"></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigTestSet">TestSetId (habilitaci&oacute;n)</label><input id="nomCoDianConfigTestSet" class="form-input" maxlength="36" autocomplete="off" placeholder="00000000-0000-0000-0000-000000000000"></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigURL">Endpoint oficial alterno (opcional)</label><input id="nomCoDianConfigURL" class="form-input" type="url" maxlength="2048" placeholder="https://vpfe.dian.gov.co/WcfDianCustomerServices.svc"></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigObservaciones">Observaciones</label><input id="nomCoDianConfigObservaciones" class="form-input" maxlength="2000"></div>
+          </div>
+          <div class="form-actions"><button type="submit" class="btn">Guardar configuraci&oacute;n de n&oacute;mina</button></div>
+          <p id="nomCoDianConfigMsg" class="form-help" role="status"></p>
+        </form>
         <div id="nomCoDianPanel" class="nomina-result-summary">Sin lote DIAN consultado.</div>
+        <dialog id="nomCoDianPerfilDialog" class="nomina-dian-dialog" aria-labelledby="nomCoDianPerfilTitle">
+          <form id="nomCoDianPerfilForm">
+            <div class="nomina-dian-dialog-head">
+              <div><h2 id="nomCoDianPerfilTitle">Perfil fiscal DIAN del empleado</h2><p id="nomCoDianPerfilHelp" class="form-help">Estos datos se usan únicamente para NominaIndividual.</p></div>
+              <button type="button" class="btn secondary" data-dian-dialog-close="perfil">Cerrar</button>
+            </div>
+            <input id="nomCoDianPerfilEmpleadoID" type="hidden">
+            <div class="nomina-dian-dialog-grid">
+              <label>Tipo documento DIAN<select id="nomCoDianPerfilTipoDocumento" class="form-input" required><option value="">Selecciona</option><option value="13">Cédula de ciudadanía</option><option value="21">Tarjeta de extranjería</option><option value="22">Cédula de extranjería</option><option value="31">NIT</option><option value="41">Pasaporte</option><option value="47">Permiso especial</option><option value="50">NIT extranjero</option><option value="91">NUIP</option></select></label>
+              <label>Tipo trabajador DIAN<input id="nomCoDianPerfilTipoTrabajador" class="form-input" maxlength="2" placeholder="01" required></label>
+              <label>Primer nombre<input id="nomCoDianPerfilPrimerNombre" class="form-input" required></label>
+              <label>Otros nombres<input id="nomCoDianPerfilOtrosNombres" class="form-input"></label>
+              <label>Primer apellido<input id="nomCoDianPerfilPrimerApellido" class="form-input" required></label>
+              <label>Segundo apellido<input id="nomCoDianPerfilSegundoApellido" class="form-input" required></label>
+              <label>Subtipo trabajador<select id="nomCoDianPerfilSubtipo" class="form-input" required><option value="00">00 - No aplica</option><option value="01">01 - Dependiente pensionado</option></select></label>
+              <label>Tipo contrato<select id="nomCoDianPerfilContrato" class="form-input" required><option value="">Selecciona</option><option value="1">1 - Término fijo</option><option value="2">2 - Término indefinido</option><option value="3">3 - Obra o labor</option><option value="4">4 - Aprendizaje</option><option value="5">5 - Prácticas/pasantías</option></select></label>
+              <label>Fecha retiro<input id="nomCoDianPerfilFechaRetiro" class="form-input" type="date"></label>
+              <label>Método de pago DIAN<input id="nomCoDianPerfilMetodoPago" class="form-input" maxlength="3" placeholder="42" required></label>
+              <label>País lugar trabajo<input id="nomCoDianPerfilPais" class="form-input" maxlength="2" value="CO" required></label>
+              <label>Departamento DANE<input id="nomCoDianPerfilDepartamento" class="form-input" maxlength="2" placeholder="11" required></label>
+              <label>Municipio DANE<input id="nomCoDianPerfilMunicipio" class="form-input" maxlength="5" placeholder="11001" required></label>
+              <label class="span-2">Dirección lugar de trabajo<input id="nomCoDianPerfilDireccion" class="form-input" required></label>
+              <label>Banco<input id="nomCoDianPerfilBanco" class="form-input"></label>
+              <label>Tipo cuenta<input id="nomCoDianPerfilTipoCuenta" class="form-input" placeholder="Ahorros"></label>
+              <label class="span-2">Número cuenta<input id="nomCoDianPerfilNumeroCuenta" class="form-input"></label>
+              <label><input id="nomCoDianPerfilIntegral" type="checkbox"> Salario integral</label>
+              <label><input id="nomCoDianPerfilAltoRiesgo" type="checkbox"> Alto riesgo pensión</label>
+            </div>
+            <p id="nomCoDianPerfilMsg" class="form-help" role="status"></p>
+            <div class="nomina-dian-dialog-actions"><button type="button" class="btn secondary" data-dian-dialog-close="perfil">Cancelar</button><button type="submit" class="btn primary">Guardar perfil fiscal</button></div>
+          </form>
+        </dialog>
+        <dialog id="nomCoDianEmitDialog" class="nomina-dian-dialog" aria-labelledby="nomCoDianEmitTitle">
+          <form id="nomCoDianEmitForm">
+            <div class="nomina-dian-dialog-head"><div><h2 id="nomCoDianEmitTitle">Emitir nómina electrónica</h2><p id="nomCoDianEmitSummary" class="form-help"></p></div><button type="button" class="btn secondary" data-dian-dialog-close="emitir">Cerrar</button></div>
+            <input id="nomCoDianEmitLiquidacionID" type="hidden">
+            <div class="nomina-alert-item">Esta acci&oacute;n firma, numera y puede transmitir un documento fiscal mensual real a la DIAN. Revisa empleado, mes, liquidaciones, fechas de pago y neto antes de continuar.</div>
+            <label><input id="nomCoDianEmitConfirmCheck" type="checkbox"> Confirmo que todas las liquidaciones y pagos reales del mes est&aacute;n revisados.</label>
+            <label>Escribe <strong>EMITIR NOMINA ELECTRONICA DIAN</strong><input id="nomCoDianEmitPhrase" class="form-input" autocomplete="off" spellcheck="false"></label>
+            <p id="nomCoDianEmitMsg" class="form-help" role="status"></p>
+            <div class="nomina-dian-dialog-actions"><button type="button" class="btn secondary" data-dian-dialog-close="emitir">Cancelar</button><button id="nomCoDianEmitSubmit" type="submit" class="btn primary" disabled>Emitir a DIAN</button></div>
+          </form>
+        </dialog>
         <div class="table-wrap">
           <table class="table nomina-table">
             <thead>
@@ -1079,6 +1168,7 @@
         document.getElementById('cfgHorasSemana').value = toNumber(item.horas_ordinarias_semana, 42);
         document.getElementById('cfgHorasDia').value = toNumber(item.horas_ordinarias_dia, 8);
         document.getElementById('cfgDiasMes').value = toNumber(item.dias_nomina_mes, 30);
+		document.getElementById('cfgPeriodoNominaDian').value = String(Math.max(0, Math.min(6, Math.round(toNumber(item.periodo_nomina_dian, 0)))));
         document.getElementById('cfgDivisorHora').value = toNumber(item.divisor_hora_ordinaria, 210);
         document.getElementById('cfgNocDesde').value = normalize(item.hora_nocturna_desde || '19:00:00');
         document.getElementById('cfgNocHasta').value = normalize(item.hora_nocturna_hasta || '06:00:00');
@@ -1125,6 +1215,7 @@
           horas_ordinarias_semana: toNumber(document.getElementById('cfgHorasSemana').value, 42),
           horas_ordinarias_dia: toNumber(document.getElementById('cfgHorasDia').value, 8),
           dias_nomina_mes: Math.max(1, Math.round(toNumber(document.getElementById('cfgDiasMes').value, 30))),
+		  periodo_nomina_dian: Math.max(0, Math.min(6, Math.round(toNumber(document.getElementById('cfgPeriodoNominaDian').value, 0)))),
           divisor_hora_ordinaria: toNumber(document.getElementById('cfgDivisorHora').value, 210),
           hora_nocturna_desde: normalize(document.getElementById('cfgNocDesde').value),
           hora_nocturna_hasta: normalize(document.getElementById('cfgNocHasta').value),
@@ -1941,7 +2032,7 @@
           { ok: pagos.length > 0 || Number((state.dashboard || {}).pagos_generados || 0) > 0, label: 'Generar o registrar pagos de nomina' },
           { ok: toNumber(provisiones.costo_empresa_estimado || (state.dashboard || {}).costo_empresa_estimado || 0, 0) > 0, label: 'Revisar provisiones y costo empresa' },
           { ok: liquidaciones.some(function (l) { return normalize(l.estado || '').toLowerCase() !== 'borrador'; }), label: 'Revisar/guardar liquidaciones definitivas' },
-          { ok: state.nominaDianReady === true || liquidaciones.length > 0, label: 'Preparar lote de nomina electronica DIAN' }
+          { ok: state.nominaDianReady === true, label: 'Superar preflight de al menos una nomina electronica DIAN' }
         ];
         const done = items.filter(function (item) { return item.ok; }).length;
         const pctValue = Math.round((done / items.length) * 100);
@@ -1954,7 +2045,7 @@
           const missing = items.filter(function (item) { return !item.ok; });
           list.innerHTML = missing.length
             ? missing.map(function (item) { return '<li>' + escapeNominaReadinessHTML(item.label) + '</li>'; }).join('')
-            : '<li>Listo para revisar y enviar nomina electronica segun configuracion DIAN.</li>';
+            : '<li>Listo para revisión y emisión individual controlada.</li>';
         }
       }
 
@@ -2231,7 +2322,7 @@
   </script>
   <script>
     (function () {
-      const state = { empresaID: 0, moneda: 'COP' };
+      const state = { empresaID: 0, moneda: 'COP', dianNomina: null, dianNominaConfig: null };
 
       function qp(name) {
         return new URLSearchParams(window.location.search).get(name);
@@ -2267,7 +2358,10 @@
           try { body = JSON.parse(raw); } catch (_) {}
         }
         if (!resp.ok) {
-          throw new Error(typeof body === 'string' ? body : ((body && (body.error || body.message)) || ('HTTP ' + resp.status)));
+		  const error = new Error(typeof body === 'string' ? body : ((body && (body.error || body.message)) || ('HTTP ' + resp.status)));
+		  error.status = resp.status;
+		  error.data = body;
+		  throw error;
         }
         return body;
       }
@@ -2278,6 +2372,72 @@
         el.textContent = text || '';
         el.className = kind === 'error' ? 'error' : (kind === 'success' ? 'success' : 'form-help');
       }
+
+      function setNominaDianConfigMessage(text, kind) {
+		const el = document.getElementById('nomCoDianConfigMsg');
+		if (!el) return;
+		el.textContent = text || '';
+		el.className = kind === 'error' ? 'error' : (kind === 'success' ? 'success' : 'form-help');
+	  }
+
+	  function setNominaDianConfigForm(item) {
+		item = item || {};
+		state.dianNominaConfig = item && item.id ? item : null;
+		const set = function (id, value) {
+		  const el = document.getElementById(id);
+		  if (el) el.value = value == null ? '' : String(value);
+		};
+		set('nomCoDianConfigEstado', item.estado || 'configurando');
+		set('nomCoDianConfigAmbiente', item.tipo_ambiente || 'habilitacion');
+		set('nomCoDianConfigPrefijo', item.prefijo || 'NE');
+		set('nomCoDianConfigConsecutivo', Number(item.consecutivo_actual || 1));
+		set('nomCoDianConfigModo', item.modo_operacion_codigo || '');
+		set('nomCoDianConfigTestSet', item.test_set_id || '');
+		set('nomCoDianConfigURL', item.url_dian_override || '');
+		set('nomCoDianConfigObservaciones', item.observaciones || '');
+	  }
+
+	  async function loadNominaDianConfig() {
+		if (!state.empresaID) return null;
+		const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'configuracion_documentos_dian' });
+		const data = await requestJSON('/api/empresa/facturacion_electronica?' + params.toString());
+		const items = data && Array.isArray(data.items) ? data.items : [];
+		const item = items.find(function (row) { return txt(row && row.tipo_documento) === 'nomina_electronica'; }) || null;
+		setNominaDianConfigForm(item || {});
+		setNominaDianConfigMessage(item ? 'Configuración separada cargada.' : 'Aún no existe configuración separada para nómina electrónica.', item ? 'success' : '');
+		return item;
+	  }
+
+	  async function saveNominaDianConfig(ev) {
+		if (ev) ev.preventDefault();
+		const prefix = txt(document.getElementById('nomCoDianConfigPrefijo').value).toUpperCase();
+		const consecutive = Number(document.getElementById('nomCoDianConfigConsecutivo').value || 0);
+		const environment = txt(document.getElementById('nomCoDianConfigAmbiente').value);
+		const testSetID = txt(document.getElementById('nomCoDianConfigTestSet').value);
+		if (!/^[A-Z0-9]{1,20}$/.test(prefix)) throw new Error('El prefijo interno debe ser alfanumérico y tener máximo 20 caracteres.');
+		if (!Number.isSafeInteger(consecutive) || consecutive < 1 || consecutive > 999999999999) throw new Error('El próximo consecutivo interno no es válido.');
+		if (environment === 'habilitacion' && !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(testSetID)) throw new Error('El TestSetId de habilitación debe ser un UUID DIAN válido.');
+		const payload = {
+		  empresa_id: state.empresaID,
+		  tipo_documento: 'nomina_electronica',
+		  estado: txt(document.getElementById('nomCoDianConfigEstado').value),
+		  tipo_ambiente: environment,
+		  modo_operacion_codigo: txt(document.getElementById('nomCoDianConfigModo').value),
+		  test_set_id: testSetID, prefijo: prefix, resolucion_numero: '', resolucion_fecha_desde: '', resolucion_fecha_hasta: '',
+		  rango_desde: 0, rango_hasta: 0, consecutivo_actual: consecutive,
+		  url_dian_override: txt(document.getElementById('nomCoDianConfigURL').value),
+		  observaciones: txt(document.getElementById('nomCoDianConfigObservaciones').value)
+		};
+		setNominaDianConfigMessage('Guardando configuración separada...', '');
+		const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'configuracion_documentos_dian' });
+		const data = await requestJSON('/api/empresa/facturacion_electronica?' + params.toString(), {
+		  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+		});
+		setNominaDianConfigForm(data && data.item ? data.item : payload);
+		setNominaDianConfigMessage('Configuración separada de nómina guardada.', 'success');
+		await cargarNominaDian(false);
+		return data;
+	  }
 
       function periodo() {
         return {
@@ -2377,7 +2537,7 @@
       function renderNominaDian(data) {
         state.dianNomina = data || null;
         if (typeof window.PCSNominaReadinessSetDianReady === 'function') {
-          window.PCSNominaReadinessSetDianReady(!!(data && typeof data === 'object' && Array.isArray(data.documentos_preparados) && data.documentos_preparados.length > 0 && !(Array.isArray(data.requisitos_pendientes) && data.requisitos_pendientes.length)));
+          window.PCSNominaReadinessSetDianReady(!!(data && typeof data === 'object' && Array.isArray(data.documentos_preparados) && data.documentos_preparados.some(function (item) { return item && item.puede_emitir === true; })));
         }
         const panel = document.getElementById('nomCoDianPanel');
         const resumen = document.getElementById('nomCoDianResumen');
@@ -2390,14 +2550,19 @@
         const docs = Array.isArray(data.documentos_preparados) ? data.documentos_preparados : [];
         const pendientes = Array.isArray(data.requisitos_pendientes) ? data.requisitos_pendientes : [];
         resumen.textContent = 'Estado: ' + txt(data.estado || '-') + ' | Documentos: ' + Number(data.total_documentos || docs.length || 0) + ' | Neto: ' + money(data.total_neto || 0);
-        const docsHTML = docs.slice(0, 8).map(function (item) {
+        const docsHTML = docs.slice(0, 50).map(function (item) {
+          const blockers = Array.isArray(item.bloqueos) ? item.bloqueos : [];
+          const blockersHTML = blockers.length ? '<ul class="nomina-dian-blockers">' + blockers.map(function (blocker) { return '<li>' + esc(blocker) + '</li>'; }).join('') + '</ul>' : '';
+          const emitDisabled = item.puede_emitir === true ? '' : ' disabled';
+          const emitTitle = blockers.length ? ' title="' + esc(blockers.join(' | ')) + '"' : '';
           return '<tr>' +
             '<td>' + esc(item.empleado_nombre || '-') + '<br><small>' + esc(item.empleado_documento || item.empleado_codigo || '-') + '</small></td>' +
-            '<td>' + esc(item.sede_nombre || 'Sede principal') + '<br><small>' + esc(item.centro_costo || item.sede_codigo || '-') + '</small></td>' +
+            '<td>' + esc(item.sede_nombre || 'Sede principal') + '<br><small>' + esc(item.periodo_reporte || '-') + ' | ' + Number(Array.isArray(item.liquidacion_ids) ? item.liquidacion_ids.length : 1) + ' liquidaci&oacute;n(es)</small></td>' +
             '<td>' + esc(money(item.devengado_total)) + '</td>' +
             '<td>' + esc(money(item.deduccion_total)) + '</td>' +
             '<td><strong>' + esc(money(item.neto_pagar)) + '</strong></td>' +
-            '<td>' + esc(item.estado_documental || '-') + '</td>' +
+            '<td>' + esc(item.estado_documental || '-') + (item.numero_legal ? '<br><small>' + esc(item.numero_legal) + '</small>' : '') + blockersHTML + '</td>' +
+            '<td><div class="form-actions" style="margin:0"><button type="button" class="btn secondary" data-dian-perfil="' + Number(item.empleado_nomina_id || 0) + '" data-dian-liquidacion="' + Number(item.liquidacion_id || 0) + '">Perfil fiscal</button><button type="button" class="btn primary" data-dian-emitir="' + Number(item.liquidacion_id || 0) + '"' + emitDisabled + emitTitle + '>Emitir</button></div></td>' +
           '</tr>';
         }).join('');
         const pendientesHTML = pendientes.length
@@ -2408,8 +2573,8 @@
           '<div class="form-help">Endpoint documental sugerido: ' + esc(data.endpoint_envio_sugerido || '-') + '</div>' +
           '<div class="form-help">Totales: Devengado ' + esc(money(data.total_devengado || 0)) + ' | Deducciones ' + esc(money(data.total_deducciones || 0)) + ' | Neto ' + esc(money(data.total_neto || 0)) + '</div>' +
           pendientesHTML +
-          '<div class="table-wrap" style="margin-top:10px;"><table class="table nomina-table"><thead><tr><th>Empleado</th><th>Sede</th><th>Devengado</th><th>Deducciones</th><th>Neto</th><th>Estado</th></tr></thead><tbody>' +
-          (docsHTML || '<tr><td colspan="6">Sin documentos preparados.</td></tr>') +
+          '<div class="table-wrap" style="margin-top:10px;"><table class="table nomina-table"><thead><tr><th>Empleado</th><th>Sede</th><th>Devengado</th><th>Deducciones</th><th>Neto</th><th>Estado / bloqueos</th><th>Acciones</th></tr></thead><tbody>' +
+          (docsHTML || '<tr><td colspan="7">Sin documentos preparados.</td></tr>') +
           '</tbody></table></div>';
       }
 
@@ -2423,7 +2588,7 @@
             body: JSON.stringify({ empresa_id: state.empresaID, periodo_desde: desde, periodo_hasta: hasta })
           });
           renderNominaDian(data);
-          msg('Lote de nomina electronica preparado para revision documental.', 'success');
+          msg('Preflight de nomina electronica ejecutado sin reservar consecutivos.', 'success');
           return data;
         }
         const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'documentos_electronicos_colombia', periodo_desde: desde, periodo_hasta: hasta });
@@ -2432,50 +2597,129 @@
         return data;
       }
 
-      function nominaDianDocumentoCodigo(desde, hasta) {
-        const base = (txt(desde) || txt(hasta) || new Date().toISOString().slice(0, 10)).slice(0, 7).replace(/[^0-9]/g, '');
-        return 'NE-' + (base || 'PERIODO') + '-' + String(state.empresaID || 0);
+      function nominaDianDocumentoPorLiquidacion(liquidacionID) {
+        const docs = state.dianNomina && Array.isArray(state.dianNomina.documentos_preparados) ? state.dianNomina.documentos_preparados : [];
+        return docs.find(function (item) { return Number(item && item.liquidacion_id || 0) === Number(liquidacionID || 0); }) || null;
       }
 
-      async function enviarNominaElectronicaDian() {
-        const desde = txt(document.getElementById('calcDesde').value);
-        const hasta = txt(document.getElementById('calcHasta').value);
-        if (!desde || !hasta) {
-          throw new Error('Debes indicar periodo desde y hasta antes de enviar nomina electronica.');
+      function setDianProfileValue(id, value) {
+        const input = document.getElementById(id);
+        if (input) input.value = value == null ? '' : String(value);
+      }
+
+      async function abrirPerfilNominaDian(empleadoNominaID, liquidacionID) {
+        const dialog = document.getElementById('nomCoDianPerfilDialog');
+        const help = document.getElementById('nomCoDianPerfilHelp');
+        const status = document.getElementById('nomCoDianPerfilMsg');
+        if (!dialog || !empleadoNominaID) throw new Error('Empleado de nómina inválido.');
+        document.getElementById('nomCoDianPerfilForm').reset();
+        setDianProfileValue('nomCoDianPerfilEmpleadoID', empleadoNominaID);
+        setDianProfileValue('nomCoDianPerfilPais', 'CO');
+        setDianProfileValue('nomCoDianPerfilSubtipo', '00');
+        status.textContent = '';
+        const doc = nominaDianDocumentoPorLiquidacion(liquidacionID);
+        help.textContent = (doc ? (doc.empleado_nombre || 'Empleado') + ' | ' + (doc.periodo_desde || '-') + ' a ' + (doc.periodo_hasta || '-') : 'Empleado ' + empleadoNominaID) + '. No se infieren apellidos ni catálogos fiscales.';
+        try {
+          const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'perfil_dian', empleado_nomina_id: String(empleadoNominaID) });
+          const profile = await requestJSON('/api/empresa/nomina?' + params.toString());
+          setDianProfileValue('nomCoDianPerfilTipoDocumento', profile.tipo_documento_dian);
+          setDianProfileValue('nomCoDianPerfilTipoTrabajador', profile.tipo_trabajador_dian);
+          setDianProfileValue('nomCoDianPerfilPrimerNombre', profile.primer_nombre);
+          setDianProfileValue('nomCoDianPerfilOtrosNombres', profile.otros_nombres);
+          setDianProfileValue('nomCoDianPerfilPrimerApellido', profile.primer_apellido);
+          setDianProfileValue('nomCoDianPerfilSegundoApellido', profile.segundo_apellido);
+          setDianProfileValue('nomCoDianPerfilSubtipo', profile.subtipo_trabajador_dian || '00');
+          setDianProfileValue('nomCoDianPerfilContrato', profile.tipo_contrato_dian);
+          setDianProfileValue('nomCoDianPerfilFechaRetiro', profile.fecha_retiro);
+          setDianProfileValue('nomCoDianPerfilMetodoPago', profile.metodo_pago_dian);
+          setDianProfileValue('nomCoDianPerfilPais', profile.lugar_trabajo_pais || 'CO');
+          setDianProfileValue('nomCoDianPerfilDepartamento', profile.lugar_trabajo_departamento_codigo_dane);
+          setDianProfileValue('nomCoDianPerfilMunicipio', profile.lugar_trabajo_municipio_codigo_dane);
+          setDianProfileValue('nomCoDianPerfilDireccion', profile.lugar_trabajo_direccion);
+          setDianProfileValue('nomCoDianPerfilBanco', profile.banco);
+          setDianProfileValue('nomCoDianPerfilTipoCuenta', profile.tipo_cuenta);
+          setDianProfileValue('nomCoDianPerfilNumeroCuenta', profile.numero_cuenta);
+          document.getElementById('nomCoDianPerfilIntegral').checked = profile.salario_integral === true;
+          document.getElementById('nomCoDianPerfilAltoRiesgo').checked = profile.alto_riesgo_pension === true;
+		} catch (err) {
+		  if (Number(err && err.status || 0) !== 404) throw err;
+		  status.textContent = 'No existe un perfil guardado; completa todos los campos fiscales obligatorios.';
         }
-        if (!window.confirm('Esto enviara la nomina electronica a la DIAN usando la configuracion fiscal de esta empresa. Verifica periodo, empleados, liquidaciones y firma digital. Continuar?')) {
-          return;
-        }
-        msg('Preparando lote antes del envio DIAN...', 'success');
-        const lote = await cargarNominaDian(true);
-        const pendientes = Array.isArray(lote && lote.requisitos_pendientes) ? lote.requisitos_pendientes : [];
-        if (pendientes.length) {
-          throw new Error('No se envia a DIAN porque hay requisitos pendientes: ' + pendientes.slice(0, 3).join(' | '));
-        }
-        const codigo = nominaDianDocumentoCodigo(desde, hasta);
+        dialog.showModal();
+      }
+
+      async function guardarPerfilNominaDian(ev) {
+        ev.preventDefault();
+        const status = document.getElementById('nomCoDianPerfilMsg');
         const payload = {
           empresa_id: state.empresaID,
-          tipo_documento: 'nomina_electronica',
-          documento_codigo: codigo,
-          pais_codigo: 'CO',
-          monto_total: Number(lote && lote.total_neto || 0),
-          moneda: 'COP',
-          periodo_contable: desde.slice(0, 7),
-          observaciones: 'Documento soporte de pago de nomina electronica periodo ' + desde + ' a ' + hasta,
-          mensaje_confirmacion_dian: 'Envio solicitado desde modulo de nomina'
+          empleado_nomina_id: Number(document.getElementById('nomCoDianPerfilEmpleadoID').value || 0),
+          tipo_documento_dian: txt(document.getElementById('nomCoDianPerfilTipoDocumento').value),
+          primer_apellido: txt(document.getElementById('nomCoDianPerfilPrimerApellido').value),
+          segundo_apellido: txt(document.getElementById('nomCoDianPerfilSegundoApellido').value),
+          primer_nombre: txt(document.getElementById('nomCoDianPerfilPrimerNombre').value),
+          otros_nombres: txt(document.getElementById('nomCoDianPerfilOtrosNombres').value),
+          tipo_trabajador_dian: txt(document.getElementById('nomCoDianPerfilTipoTrabajador').value),
+          subtipo_trabajador_dian: txt(document.getElementById('nomCoDianPerfilSubtipo').value),
+          alto_riesgo_pension: document.getElementById('nomCoDianPerfilAltoRiesgo').checked,
+          salario_integral: document.getElementById('nomCoDianPerfilIntegral').checked,
+          fecha_retiro: txt(document.getElementById('nomCoDianPerfilFechaRetiro').value),
+          lugar_trabajo_pais: txt(document.getElementById('nomCoDianPerfilPais').value),
+          lugar_trabajo_departamento_codigo_dane: txt(document.getElementById('nomCoDianPerfilDepartamento').value),
+          lugar_trabajo_municipio_codigo_dane: txt(document.getElementById('nomCoDianPerfilMunicipio').value),
+          lugar_trabajo_direccion: txt(document.getElementById('nomCoDianPerfilDireccion').value),
+          tipo_contrato_dian: txt(document.getElementById('nomCoDianPerfilContrato').value),
+          metodo_pago_dian: txt(document.getElementById('nomCoDianPerfilMetodoPago').value),
+          banco: txt(document.getElementById('nomCoDianPerfilBanco').value),
+          tipo_cuenta: txt(document.getElementById('nomCoDianPerfilTipoCuenta').value),
+          numero_cuenta: txt(document.getElementById('nomCoDianPerfilNumeroCuenta').value),
+          estado: 'activo'
         };
-        msg('Enviando nomina electronica a DIAN...', 'success');
-        const data = await requestJSON('/api/empresa/facturacion_electronica?action=nomina_electronica&empresa_id=' + encodeURIComponent(String(state.empresaID)), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        status.textContent = 'Guardando perfil fiscal...';
+        await requestJSON('/api/empresa/nomina?action=perfil_dian', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        status.textContent = 'Perfil fiscal guardado.';
+        document.getElementById('nomCoDianPerfilDialog').close();
+        await cargarNominaDian(false);
+        msg('Perfil fiscal DIAN del empleado actualizado.', 'success');
+      }
+
+      function actualizarGuardEmisionNominaDian() {
+        const checked = document.getElementById('nomCoDianEmitConfirmCheck').checked;
+        const phrase = document.getElementById('nomCoDianEmitPhrase').value.trim();
+        document.getElementById('nomCoDianEmitSubmit').disabled = !(checked && phrase === 'EMITIR NOMINA ELECTRONICA DIAN');
+      }
+
+      async function abrirEmisionNominaDian(liquidacionID) {
+        const doc = nominaDianDocumentoPorLiquidacion(liquidacionID);
+		if (!doc || doc.puede_emitir !== true) throw new Error('La nómina mensual no superó el preflight DIAN.');
+        const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'nomina_electronica_preflight', liquidacion_id: String(liquidacionID) });
+        const preflight = await requestJSON('/api/empresa/nomina?' + params.toString());
+        if (!preflight || preflight.ok !== true || preflight.bloqueado === true) throw new Error((preflight && preflight.error) || 'El preflight DIAN bloqueó la emisión.');
+        document.getElementById('nomCoDianEmitLiquidacionID').value = String(liquidacionID);
+		document.getElementById('nomCoDianEmitSummary').textContent = (doc.empleado_nombre || 'Empleado') + ' | mes ' + (doc.periodo_reporte || '-') + ' | ' + Number(Array.isArray(doc.liquidacion_ids) ? doc.liquidacion_ids.length : 1) + ' liquidación(es) | Neto ' + money(doc.neto_pagar || 0);
+        document.getElementById('nomCoDianEmitConfirmCheck').checked = false;
+        document.getElementById('nomCoDianEmitPhrase').value = '';
+        document.getElementById('nomCoDianEmitMsg').textContent = '';
+        actualizarGuardEmisionNominaDian();
+        document.getElementById('nomCoDianEmitDialog').showModal();
+      }
+
+      async function enviarNominaElectronicaDian(ev) {
+        ev.preventDefault();
+        actualizarGuardEmisionNominaDian();
+        const submit = document.getElementById('nomCoDianEmitSubmit');
+        if (submit.disabled) throw new Error('Confirma la operación y escribe la frase exacta.');
+        submit.disabled = true;
+        const status = document.getElementById('nomCoDianEmitMsg');
+        status.textContent = 'Firmando y enviando la nómina electrónica...';
+        const result = await requestJSON('/api/empresa/facturacion_electronica?action=emitir_nomina_electronica', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: state.empresaID, liquidacion_id: Number(document.getElementById('nomCoDianEmitLiquidacionID').value || 0), confirmar_emision: true, mensaje_confirmacion_dian: 'EMITIR NOMINA ELECTRONICA DIAN' })
         });
-        const fiscal = data && data.integracion_fiscal ? data.integracion_fiscal : {};
-        renderNominaDian(Object.assign({}, lote || {}, {
-          estado: fiscal.estado_envio || data.estado_nuevo || 'enviado',
-          mensajes: ['Documento ' + codigo + ' enviado al flujo fiscal. Estado DIAN/proveedor: ' + (fiscal.estado_envio || 'registrado') + '.']
-        }));
-        msg('Nomina electronica enviada al flujo DIAN. Documento: ' + codigo + '.', fiscal.estado_envio === 'fallido' ? 'error' : 'success');
+        status.textContent = result && result.ok ? 'DIAN recibió o aceptó el documento.' : 'La emisión quedó pendiente de revisión.';
+        document.getElementById('nomCoDianEmitDialog').close();
+        await cargarNominaDian(false);
+        msg(result && result.ok ? 'Nómina electrónica procesada por el flujo DIAN.' : 'Revisa el estado DIAN de la nómina.', result && result.ok ? 'success' : 'error');
       }
 
       async function seedParametros() {
@@ -2537,13 +2781,47 @@
         const dianVer = document.getElementById('nomCoDianVerBtn');
         const dianPreparar = document.getElementById('nomCoDianPrepararBtn');
         const dianEnviar = document.getElementById('nomCoDianEnviarBtn');
+		const dianConfigForm = document.getElementById('nomCoDianConfigForm');
+		const dianConfigReload = document.getElementById('nomCoDianConfigReloadBtn');
         if (refresh) refresh.addEventListener('click', function () { loadDashboard(false).catch(function (err) { msg(err.message, 'error'); }); });
         if (seed) seed.addEventListener('click', function () { seedParametros().catch(function (err) { msg(err.message, 'error'); }); });
         if (seedPro) seedPro.addEventListener('click', function () { seedNominaProfesional().catch(function (err) { msg(err.message, 'error'); }); });
         if (pila) pila.addEventListener('click', function () { generarPila().catch(function (err) { msg(err.message, 'error'); }); });
         if (dianVer) dianVer.addEventListener('click', function () { cargarNominaDian(false).catch(function (err) { msg(err.message, 'error'); }); });
         if (dianPreparar) dianPreparar.addEventListener('click', function () { cargarNominaDian(true).catch(function (err) { msg(err.message, 'error'); }); });
-        if (dianEnviar) dianEnviar.addEventListener('click', function () { enviarNominaElectronicaDian().catch(function (err) { msg(err.message, 'error'); }); });
+		if (dianEnviar) dianEnviar.addEventListener('click', function () { msg('Selecciona Emitir en la fila mensual de un empleado que haya superado el preflight.', 'error'); });
+		if (dianConfigForm) dianConfigForm.addEventListener('submit', function (ev) { saveNominaDianConfig(ev).catch(function (err) { setNominaDianConfigMessage(err.message || 'No se pudo guardar la configuración de nómina.', 'error'); }); });
+		if (dianConfigReload) dianConfigReload.addEventListener('click', function () { loadNominaDianConfig().catch(function (err) { setNominaDianConfigMessage(err.message || 'No se pudo cargar la configuración de nómina.', 'error'); }); });
+        const dianPanel = document.getElementById('nomCoDianPanel');
+        if (dianPanel) {
+          dianPanel.addEventListener('click', function (ev) {
+            const profileButton = ev.target.closest('button[data-dian-perfil]');
+            if (profileButton) {
+              abrirPerfilNominaDian(Number(profileButton.getAttribute('data-dian-perfil') || 0), Number(profileButton.getAttribute('data-dian-liquidacion') || 0)).catch(function (err) { msg(err.message || 'No se pudo abrir el perfil fiscal.', 'error'); });
+              return;
+            }
+            const emitButton = ev.target.closest('button[data-dian-emitir]');
+            if (emitButton && !emitButton.disabled) {
+              abrirEmisionNominaDian(Number(emitButton.getAttribute('data-dian-emitir') || 0)).catch(function (err) { msg(err.message || 'No se pudo abrir la emisión DIAN.', 'error'); });
+            }
+          });
+        }
+        const profileForm = document.getElementById('nomCoDianPerfilForm');
+        if (profileForm) profileForm.addEventListener('submit', function (ev) { guardarPerfilNominaDian(ev).catch(function (err) { document.getElementById('nomCoDianPerfilMsg').textContent = err.message || 'No se pudo guardar el perfil fiscal.'; }); });
+        const emitForm = document.getElementById('nomCoDianEmitForm');
+        if (emitForm) emitForm.addEventListener('submit', function (ev) { enviarNominaElectronicaDian(ev).catch(function (err) { document.getElementById('nomCoDianEmitMsg').textContent = err.message || 'No se pudo emitir la nómina electrónica.'; actualizarGuardEmisionNominaDian(); }); });
+        ['nomCoDianEmitConfirmCheck', 'nomCoDianEmitPhrase'].forEach(function (id) {
+          const input = document.getElementById(id);
+          if (input) input.addEventListener('input', actualizarGuardEmisionNominaDian);
+          if (input) input.addEventListener('change', actualizarGuardEmisionNominaDian);
+        });
+        document.querySelectorAll('[data-dian-dialog-close]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            const target = button.getAttribute('data-dian-dialog-close') === 'perfil' ? 'nomCoDianPerfilDialog' : 'nomCoDianEmitDialog';
+            const dialog = document.getElementById(target);
+            if (dialog && dialog.open) dialog.close();
+          });
+        });
         const novedadesBody = document.getElementById('nomCoNovedadesBody');
         if (novedadesBody) {
           novedadesBody.addEventListener('click', function (ev) {
@@ -2558,6 +2836,7 @@
 
       state.empresaID = Number(qp('empresa_id') || 0);
       bind();
+	  loadNominaDianConfig().catch(function (err) { setNominaDianConfigMessage(err.message || 'No se pudo cargar la configuración de nómina.', 'error'); });
       loadDashboard(true).catch(function (err) { msg(err.message || 'No se pudo cargar nomina Colombia avanzada.', 'error'); });
     })();
   </script>

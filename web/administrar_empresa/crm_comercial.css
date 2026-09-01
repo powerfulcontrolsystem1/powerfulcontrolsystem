@@ -272,4 +272,66 @@
       padding: 18px;
       border: 1px solid color-mix(in srgb, var(--border) 72%, var(--accent) 28%);
       border-radius: 8px;
-      background: color-mix(in srgb, var(--surface) 86%, …19356 tokens truncated…css?v=20260813-p110-csp">
+      background: color-mix(in srgb, var(--surface) 86%, var(--accent) 14%);
+    }
+    .crm-help-hero h2 {
+      margin: 0;
+      color: var(--text);
+    }
+    .crm-help-hero p {
+      margin: 0;
+      max-width: 92ch;
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .crm-help-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .crm-help-list li + li {
+      margin-top: 7px;
+    }
+    .crm-help-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 1080px) {
+      .crm-head,
+      .crm-main,
+      .crm-grid-2,
+      .crm-grid-3,
+      .crm-help-grid {
+        grid-template-columns: 1fr;
+      }
+      .crm-submenu {
+        position: static;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 720px) {
+      .crm-shell {
+        width: min(100% - 18px, 1480px);
+        padding-top: 12px;
+      }
+      .crm-head-actions,
+      .crm-inline-actions,
+      .crm-toolbar {
+        align-items: stretch;
+      }
+      .crm-head-actions .btn,
+      .crm-inline-actions .btn,
+      .crm-toolbar .btn {
+        width: 100%;
+      }
+      .crm-form-grid,
+      .crm-submenu {
+        grid-template-columns: 1fr;
+      }
+      .crm-card {
+        padding: 14px;
+      }
+    }

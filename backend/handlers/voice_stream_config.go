@@ -236,7 +236,7 @@ func voiceStreamResolveAuthToken(dbSuper *sql.DB) (string, bool, error) {
 	return "", false, nil
 }
 
-func voiceStreamEnsureAuthToken(dbSuper *sql.DB) (bool, error) {
+func voiceStreamProvisionAuthToken(dbSuper *sql.DB) (bool, error) {
 	token, _, err := voiceStreamResolveAuthToken(dbSuper)
 	if err != nil {
 		return false, err
@@ -346,7 +346,7 @@ func SuperVoiceStreamConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 						return
 					}
 				}
-				if _, err := voiceStreamEnsureAuthToken(dbSuper); err != nil {
+				if _, err := voiceStreamProvisionAuthToken(dbSuper); err != nil {
 					writeVoiceStreamPublicError(w, r, http.StatusInternalServerError, "activate_auth_token", "voice_stream_config_error", err)
 					return
 				}

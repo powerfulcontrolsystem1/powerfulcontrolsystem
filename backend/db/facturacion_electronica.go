@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -65,16 +66,18 @@ type FacturacionEcuadorFuenteNormativa struct {
 
 // FacturacionDianDocumentoCatalogItem describe documentos y eventos del SFE Colombia.
 type FacturacionDianDocumentoCatalogItem struct {
-	Codigo               string `json:"codigo"`
-	Titulo               string `json:"titulo"`
-	Categoria            string `json:"categoria"`
-	Alcance              string `json:"alcance"`
-	ModuloSugerido       string `json:"modulo_sugerido"`
-	EstadoImplementacion string `json:"estado_implementacion"`
-	RequiereNumeracion   bool   `json:"requiere_numeracion"`
-	RequiereFirma        bool   `json:"requiere_firma"`
-	EsEvento             bool   `json:"es_evento"`
-	Observacion          string `json:"observacion"`
+	Codigo                   string `json:"codigo"`
+	Titulo                   string `json:"titulo"`
+	Categoria                string `json:"categoria"`
+	Alcance                  string `json:"alcance"`
+	ModuloSugerido           string `json:"modulo_sugerido"`
+	EstadoImplementacion     string `json:"estado_implementacion"`
+	RequiereNumeracion       bool   `json:"requiere_numeracion"`
+	RequiereFirma            bool   `json:"requiere_firma"`
+	EsEvento                 bool   `json:"es_evento"`
+	DisponibleEmision        bool   `json:"disponible_emision"`
+	DisponibleAnulacionTotal bool   `json:"disponible_anulacion_total,omitempty"`
+	Observacion              string `json:"observacion"`
 }
 
 // FacturacionDianObligacionContableItem lista obligaciones que suelen preparar contadores.
@@ -274,13 +277,14 @@ type FacturacionElectronicaRetryItem struct {
 
 // FacturacionElectronicaRetryFilter define filtros para consultar cola de reintentos FE.
 type FacturacionElectronicaRetryFilter struct {
-	TipoDocumento   string
-	EstadoEnvio     string
-	DocumentoQuery  string
-	SoloVencidos    bool
-	IncludeInactive bool
-	Limit           int
-	Offset          int
+	TipoDocumento         string
+	ExcluirTiposDocumento []string
+	EstadoEnvio           string
+	DocumentoQuery        string
+	SoloVencidos          bool
+	IncludeInactive       bool
+	Limit                 int
+	Offset                int
 }
 
 func supportedPaisesFacturacionMap() map[string]PaisFacturacion {
@@ -323,7 +327,7 @@ func EmpresaFacturacionElectronicaSchemaReady(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return fmt.Errorf("db connection is nil")
 	}
-	for _, table := range []string{"facturacion_electronica_pais", "facturacion_electronica_reintentos"} {
+	for _, table := range []string{"facturacion_electronica_pais", "facturacion_electronica_reintentos", "empresa_facturacion_artefactos"} {
 		var registered sql.NullString
 		if err := queryRowSQLCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&registered); err != nil {
 			return fmt.Errorf("verify electronic invoicing table %s: %w", table, err)
@@ -573,35 +577,37 @@ func DefaultFacturacionDianDocumentosSoportados() []string {
 	items := ListFacturacionDianDocumentosElectronicos()
 	out := make([]string, 0, len(items))
 	for _, item := range items {
-		out = append(out, item.Codigo)
+		if item.DisponibleEmision {
+			out = append(out, item.Codigo)
+		}
 	}
 	return out
 }
 
 func ListFacturacionDianDocumentosElectronicos() []FacturacionDianDocumentoCatalogItem {
 	return []FacturacionDianDocumentoCatalogItem{
-		{Codigo: "factura_electronica", Titulo: "Factura electronica de venta", Categoria: "Venta", Alcance: "Venta de bienes o servicios validada previamente por DIAN.", ModuloSugerido: "ventas_simple/carritos", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "base_operativa", RequiereFirma: true},
-		{Codigo: "nota_debito", Titulo: "Nota debito electronica", Categoria: "Ajustes de venta", Alcance: "Aumenta o corrige valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "base_operativa", RequiereFirma: true},
-		{Codigo: "factura_talonario_contingencia", Titulo: "Reporte de factura de talonario o papel por contingencia", Categoria: "Contingencia", Alcance: "Reporte para validacion posterior cuando hubo inconveniente tecnologico del facturador.", ModuloSugerido: "facturacion_electronica/offline", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_soporte", Titulo: "Documento soporte en adquisiciones a no obligados", Categoria: "Compras", Alcance: "Soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.", ModuloSugerido: "compras", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "nota_ajuste_documento_soporte", Titulo: "Nota de ajuste del documento soporte", Categoria: "Compras", Alcance: "Ajusta o corrige un documento soporte de adquisiciones.", ModuloSugerido: "compras", EstadoImplementacion: "catalogado", RequiereFirma: true},
-		{Codigo: "nomina_electronica", Titulo: "Documento soporte de pago de nomina electronica", Categoria: "Nomina", Alcance: "Soporta valores devengados, deducidos y pagados a empleados.", ModuloSugerido: "nomina", EstadoImplementacion: "base_operativa", RequiereFirma: true},
-		{Codigo: "nota_ajuste_nomina_electronica", Titulo: "Nota de ajuste de nomina electronica", Categoria: "Nomina", Alcance: "Ajusta o corrige documentos soporte de pago de nomina electronica.", ModuloSugerido: "nomina", EstadoImplementacion: "catalogado", RequiereFirma: true},
-		{Codigo: "documento_equivalente_pos", Titulo: "Documento equivalente electronico POS", Categoria: "Documentos equivalentes", Alcance: "Tiquete de maquina registradora con sistema POS transmitido para validacion.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "nota_ajuste_documento_equivalente", Titulo: "Nota de ajuste del documento equivalente electronico", Categoria: "Documentos equivalentes", Alcance: "Ajusta errores aritmeticos o de contenido en documentos equivalentes electronicos.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "catalogado", RequiereFirma: true},
-		{Codigo: "documento_equivalente_servicios_publicos", Titulo: "Documento equivalente electronico de servicios publicos", Categoria: "Documentos equivalentes", Alcance: "Documento electronico aplicable a servicios publicos domiciliarios.", ModuloSugerido: "plantillas/servicios_publicos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_transporte_pasajeros", Titulo: "Documento equivalente electronico de transporte de pasajeros", Categoria: "Documentos equivalentes", Alcance: "Tiquete de transporte de pasajeros cuando aplique la modalidad equivalente.", ModuloSugerido: "plantillas/transporte", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_extracto", Titulo: "Documento equivalente electronico extracto", Categoria: "Documentos equivalentes", Alcance: "Extracto reconocido como documento equivalente electronico segun actividad.", ModuloSugerido: "contabilidad", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_transporte_aereo", Titulo: "Documento equivalente electronico de transporte aereo", Categoria: "Documentos equivalentes", Alcance: "Tiquete o billete de transporte aereo de pasajeros.", ModuloSugerido: "plantillas/transporte", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_juegos_suerte_azar", Titulo: "Documento equivalente electronico de juegos de suerte y azar", Categoria: "Documentos equivalentes", Alcance: "Boleta, fraccion, formulario, carton, billete o instrumento de juegos de suerte y azar no localizados.", ModuloSugerido: "plantillas/juegos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_juegos_localizados", Titulo: "Documento equivalente electronico de juegos localizados", Categoria: "Documentos equivalentes", Alcance: "Documento emitido para juegos localizados segun la actividad.", ModuloSugerido: "plantillas/juegos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_peajes", Titulo: "Documento equivalente electronico de peajes", Categoria: "Documentos equivalentes", Alcance: "Documento expedido para cobro de peajes.", ModuloSugerido: "plantillas/peajes", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_bolsa_valores", Titulo: "Comprobante electronico de Bolsa de Valores", Categoria: "Documentos equivalentes", Alcance: "Comprobante de liquidacion de operaciones expedido por la Bolsa de Valores.", ModuloSugerido: "contabilidad/tesoreria", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_bolsa_agropecuaria", Titulo: "Documento electronico de bolsa agropecuaria y commodities", Categoria: "Documentos equivalentes", Alcance: "Operaciones de bolsa agropecuaria y de otros commodities.", ModuloSugerido: "contabilidad/tesoreria", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_espectaculos", Titulo: "Documento equivalente electronico de espectaculos publicos", Categoria: "Documentos equivalentes", Alcance: "Boleta de ingreso a espectaculos publicos de artes escenicas y otros espectaculos.", ModuloSugerido: "plantillas/eventos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "documento_equivalente_cine", Titulo: "Documento equivalente electronico de cine", Categoria: "Documentos equivalentes", Alcance: "Boleta de ingreso a cine.", ModuloSugerido: "plantillas/eventos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
-		{Codigo: "eventos_radian_recepcion", Titulo: "Eventos de recepcion y aceptacion RADIAN", Categoria: "Eventos", Alcance: "Acuse de recibo, recibo de bienes o servicios, aceptacion, reclamo y trazabilidad de factura como titulo valor.", ModuloSugerido: "facturacion_electronica/radian", EstadoImplementacion: "operativo", RequiereFirma: true, EsEvento: true, Observacion: "Disponible como evento documental firmado desde el Centro de habilitacion DIAN mientras la empresa no active produccion; no es una venta nueva."},
+		{Codigo: "factura_electronica", Titulo: "Factura electronica de venta", Categoria: "Venta", Alcance: "Venta de bienes o servicios validada previamente por DIAN.", ModuloSugerido: "ventas_simple/carritos", EstadoImplementacion: "operativo", RequiereNumeracion: true, RequiereFirma: true, DisponibleEmision: true},
+		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "operativo_anulacion_total", RequiereFirma: true, DisponibleAnulacionTotal: true, Observacion: "Anulacion total operativa desde una factura DIAN aceptada: deriva lineas, impuestos, CUFE y fecha de su fuente fiscal inmutable. La emision generica o parcial permanece bloqueada."},
+		{Codigo: "nota_debito", Titulo: "Nota debito electronica", Categoria: "Ajustes de venta", Alcance: "Aumenta o corrige valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emision bloqueada: falta una fuente fiscal inmutable de ajuste con lineas y referencia a una factura DIAN aceptada; no se reutiliza el UBL sintetico de habilitacion."},
+		{Codigo: "factura_talonario_contingencia", Titulo: "Reporte de factura de talonario o papel por contingencia", Categoria: "Contingencia", Alcance: "Reporte para validacion posterior cuando hubo inconveniente tecnologico del facturador.", ModuloSugerido: "facturacion_electronica/offline", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere flujo de contingencia, reporte y validación DIAN propios."},
+		{Codigo: "documento_soporte", Titulo: "Documento soporte en adquisiciones a no obligados", Categoria: "Compras", Alcance: "Soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.", ModuloSugerido: "contabilidad_colombia_avanzada", EstadoImplementacion: "operativo_anexo_1_1", RequiereNumeracion: true, RequiereFirma: true, DisponibleEmision: true, Observacion: "Emision dedicada desde borrador estructurado, fuente fiscal inmutable, CUDS, firma XAdES y SendBillSync conforme al Anexo Tecnico Documento Soporte 1.1."},
+		{Codigo: "nota_ajuste_documento_soporte", Titulo: "Nota de ajuste del documento soporte", Categoria: "Compras", Alcance: "Ajusta o corrige un documento soporte de adquisiciones.", ModuloSugerido: "compras", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador de ajuste ligado a un documento soporte aceptado."},
+		{Codigo: "nomina_electronica", Titulo: "Documento soporte de pago de nomina electronica", Categoria: "Nomina", Alcance: "Soporta valores devengados, deducidos y pagados a empleados.", ModuloSugerido: "nomina", EstadoImplementacion: "operativo_anexo_nomina_1_0", RequiereNumeracion: true, RequiereFirma: true, DisponibleEmision: true, Observacion: "Emision mensual por trabajador desde liquidaciones pagadas acumuladas, perfil fiscal explicito, fuente inmutable, CUNE SHA-384, firma XAdES y SendNominaSync conforme al Anexo Tecnico de Nomina Electronica."},
+		{Codigo: "nota_ajuste_nomina_electronica", Titulo: "Nota de ajuste de nomina electronica", Categoria: "Nomina", Alcance: "Ajusta o corrige documentos soporte de pago de nomina electronica.", ModuloSugerido: "nomina", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador de ajuste y CUNE de nómina previo."},
+		{Codigo: "documento_equivalente_pos", Titulo: "Documento equivalente electronico POS", Categoria: "Documentos equivalentes", Alcance: "Tiquete de maquina registradora con sistema POS transmitido para validacion.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emision bloqueada: requiere adaptador del Anexo Tecnico de Documento Equivalente Electronico 1.0."},
+		{Codigo: "nota_ajuste_documento_equivalente", Titulo: "Nota de ajuste del documento equivalente electronico", Categoria: "Documentos equivalentes", Alcance: "Ajusta errores aritmeticos o de contenido en documentos equivalentes electronicos.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador de ajuste del documento equivalente."},
+		{Codigo: "documento_equivalente_servicios_publicos", Titulo: "Documento equivalente electronico de servicios publicos", Categoria: "Documentos equivalentes", Alcance: "Documento electronico aplicable a servicios publicos domiciliarios.", ModuloSugerido: "plantillas/servicios_publicos", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_transporte_pasajeros", Titulo: "Documento equivalente electronico de transporte de pasajeros", Categoria: "Documentos equivalentes", Alcance: "Tiquete de transporte de pasajeros cuando aplique la modalidad equivalente.", ModuloSugerido: "plantillas/transporte", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_extracto", Titulo: "Documento equivalente electronico extracto", Categoria: "Documentos equivalentes", Alcance: "Extracto reconocido como documento equivalente electronico segun actividad.", ModuloSugerido: "contabilidad", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_transporte_aereo", Titulo: "Documento equivalente electronico de transporte aereo", Categoria: "Documentos equivalentes", Alcance: "Tiquete o billete de transporte aereo de pasajeros.", ModuloSugerido: "plantillas/transporte", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_juegos_suerte_azar", Titulo: "Documento equivalente electronico de juegos de suerte y azar", Categoria: "Documentos equivalentes", Alcance: "Boleta, fraccion, formulario, carton, billete o instrumento de juegos de suerte y azar no localizados.", ModuloSugerido: "plantillas/juegos", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_juegos_localizados", Titulo: "Documento equivalente electronico de juegos localizados", Categoria: "Documentos equivalentes", Alcance: "Documento emitido para juegos localizados segun la actividad.", ModuloSugerido: "plantillas/juegos", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_peajes", Titulo: "Documento equivalente electronico de peajes", Categoria: "Documentos equivalentes", Alcance: "Documento expedido para cobro de peajes.", ModuloSugerido: "plantillas/peajes", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_bolsa_valores", Titulo: "Comprobante electronico de Bolsa de Valores", Categoria: "Documentos equivalentes", Alcance: "Comprobante de liquidacion de operaciones expedido por la Bolsa de Valores.", ModuloSugerido: "contabilidad/tesoreria", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_bolsa_agropecuaria", Titulo: "Documento electronico de bolsa agropecuaria y commodities", Categoria: "Documentos equivalentes", Alcance: "Operaciones de bolsa agropecuaria y de otros commodities.", ModuloSugerido: "contabilidad/tesoreria", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_espectaculos", Titulo: "Documento equivalente electronico de espectaculos publicos", Categoria: "Documentos equivalentes", Alcance: "Boleta de ingreso a espectaculos publicos de artes escenicas y otros espectaculos.", ModuloSugerido: "plantillas/eventos", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "documento_equivalente_cine", Titulo: "Documento equivalente electronico de cine", Categoria: "Documentos equivalentes", Alcance: "Boleta de ingreso a cine.", ModuloSugerido: "plantillas/eventos", EstadoImplementacion: "bloqueado_contrato", RequiereNumeracion: true, RequiereFirma: true, Observacion: "Emisión bloqueada: requiere adaptador propio de documento equivalente."},
+		{Codigo: "eventos_radian_recepcion", Titulo: "Eventos de recepcion y aceptacion RADIAN", Categoria: "Eventos", Alcance: "Acuse de recibo, recibo de bienes o servicios, aceptacion, reclamo y trazabilidad de factura como titulo valor.", ModuloSugerido: "facturacion_electronica/radian", EstadoImplementacion: "bloqueado_contrato", RequiereFirma: true, EsEvento: true, Observacion: "Emision bloqueada: RADIAN requiere ApplicationResponse/AttachedDocument, eventos, CUDE y habilitacion propios; no es una venta nueva."},
 	}
 }
 
@@ -617,9 +623,13 @@ func ListFacturacionDianObligacionesContadores() []FacturacionDianObligacionCont
 func ListFacturacionDianFuentesNormativas() []FacturacionDianFuenteNormativa {
 	return []FacturacionDianFuenteNormativa{
 		{Titulo: "DIAN - Abece Sistema de Factura Electronica", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/abece-sistema-de-factura-electronica/"},
+		{Titulo: "DIAN - Anexo Tecnico Documento Soporte No Obligados 1.1", URL: "https://www.dian.gov.co/impuestos/factura-electronica/Documents/Anexo-Tecnico-Documento-Soporte-No-Obligados.pdf"},
+		{Titulo: "DIAN - Documentacion Tecnica Nomina Electronica", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/documentacion-tecnica-soporte-de-pago-nomina-electronica/"},
 		{Titulo: "DIAN - Documento Equivalente Electronico", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/documento-equivalente-electronico/"},
+		{Titulo: "DIAN - Anexo Tecnico Documento Equivalente Electronico 1.0", URL: "https://www.dian.gov.co/impuestos/factura-electronica/Documents/Anexo-Tecnico-Documento-Equivalente-Electronico-V1-0-final.pdf"},
 		{Titulo: "DIAN - Resolucion 000165 de 2023 compilada", URL: "https://normograma.dian.gov.co/dian/compilacion/docs/resolucion_dian_0165_2023.htm"},
 		{Titulo: "DIAN - RADIAN", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/radian/"},
+		{Titulo: "DIAN - Anexo Tecnico RADIAN 1.0", URL: "https://www.dian.gov.co/impuestos/factura-electronica/Documents/Anexo-Tecnico-RADIAN.pdf"},
 	}
 }
 
@@ -683,7 +693,7 @@ func defaultCamposPaisJSON(paisCodigo string) string {
 		fields["integracion"] = "dian_ubl_2_1"
 		fields["documentos_soportados"] = DefaultFacturacionDianDocumentosSoportados()
 		fields["documentos_contadores_colombia"] = []string{"declaraciones_tributarias", "informacion_exogena", "certificados_retencion", "conciliacion_fiscal"}
-		fields["documentos_dian_catalogo_version"] = "2026-05-20"
+		fields["documentos_dian_catalogo_version"] = "2026-08-21"
 		fields["documentos_siigo_referencia"] = []string{"documento_soporte", "nota_credito_ventas", "nota_debito_ventas", "nomina_electronica", "pos_electronico"}
 	}
 	raw, _ := json.Marshal(fields)
@@ -751,7 +761,7 @@ func applyFacturacionPaisDefaults(cfg *FacturacionElectronicaPaisConfig) {
 	}
 }
 
-func hydrateFacturacionFromEmpresaConfig(dbConn *sql.DB, cfg *FacturacionElectronicaPaisConfig) error {
+func hydrateFacturacionFromEmpresaConfig(ctx context.Context, dbConn *sql.DB, cfg *FacturacionElectronicaPaisConfig) error {
 	if cfg == nil || cfg.EmpresaID <= 0 {
 		return nil
 	}
@@ -766,7 +776,7 @@ func hydrateFacturacionFromEmpresaConfig(dbConn *sql.DB, cfg *FacturacionElectro
 	var resolucionNumero string
 	var ambienteFE string
 
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		COALESCE(tipo_documento_emisor, ''),
 		COALESCE(nit, ''),
 		COALESCE(razon_social, ''),
@@ -880,6 +890,11 @@ func normalizeFacturacionConfig(payload *FacturacionElectronicaPaisConfig) {
 
 // UpsertFacturacionElectronicaPaisConfig crea o actualiza configuración por empresa/pais.
 func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionElectronicaPaisConfig) (int64, error) {
+	return UpsertFacturacionElectronicaPaisConfigContext(context.Background(), dbConn, payload)
+}
+
+// UpsertFacturacionElectronicaPaisConfigContext conserva cancelacion y plazo del flujo solicitante.
+func UpsertFacturacionElectronicaPaisConfigContext(ctx context.Context, dbConn *sql.DB, payload FacturacionElectronicaPaisConfig) (int64, error) {
 	if payload.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -933,7 +948,7 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`
 
-	if _, err := dbConn.Exec(stmt,
+	if _, err := dbConn.ExecContext(ctx, stmt,
 		payload.EmpresaID,
 		payload.PaisCodigo,
 		payload.PaisNombre,
@@ -958,12 +973,16 @@ func UpsertFacturacionElectronicaPaisConfig(dbConn *sql.DB, payload FacturacionE
 		return 0, err
 	}
 
-	return getFacturacionElectronicaPaisID(dbConn, payload.EmpresaID, payload.PaisCodigo)
+	return getFacturacionElectronicaPaisIDContext(ctx, dbConn, payload.EmpresaID, payload.PaisCodigo)
 }
 
 func getFacturacionElectronicaPaisID(dbConn *sql.DB, empresaID int64, paisCodigo string) (int64, error) {
+	return getFacturacionElectronicaPaisIDContext(context.Background(), dbConn, empresaID, paisCodigo)
+}
+
+func getFacturacionElectronicaPaisIDContext(ctx context.Context, dbConn *sql.DB, empresaID int64, paisCodigo string) (int64, error) {
 	var id int64
-	err := dbConn.QueryRow(`SELECT id FROM facturacion_electronica_pais WHERE empresa_id = ? AND pais_codigo = ? LIMIT 1`, empresaID, normalizePaisCodigo(paisCodigo)).Scan(&id)
+	err := dbConn.QueryRowContext(ctx, `SELECT id FROM facturacion_electronica_pais WHERE empresa_id = ? AND pais_codigo = ? LIMIT 1`, empresaID, normalizePaisCodigo(paisCodigo)).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -972,13 +991,18 @@ func getFacturacionElectronicaPaisID(dbConn *sql.DB, empresaID int64, paisCodigo
 
 // GetFacturacionElectronicaPaisConfig obtiene configuración por empresa y país.
 func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCodigo string) (*FacturacionElectronicaPaisConfig, error) {
+	return GetFacturacionElectronicaPaisConfigContext(context.Background(), dbConn, empresaID, paisCodigo)
+}
+
+// GetFacturacionElectronicaPaisConfigContext obtiene configuracion respetando el contexto del request.
+func GetFacturacionElectronicaPaisConfigContext(ctx context.Context, dbConn *sql.DB, empresaID int64, paisCodigo string) (*FacturacionElectronicaPaisConfig, error) {
 	paisCodigo = normalizePaisCodigo(paisCodigo)
 	if empresaID <= 0 || paisCodigo == "" {
 		return nil, fmt.Errorf("empresa_id y pais_codigo son obligatorios")
 	}
 
 	cfg := defaultFacturacionConfig(empresaID, paisCodigo)
-	row := dbConn.QueryRow(`SELECT
+	row := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(pais_codigo, ''),
@@ -1033,7 +1057,7 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 		&cfg.Observaciones,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			if hErr := hydrateFacturacionFromEmpresaConfig(dbConn, &cfg); hErr != nil {
+			if hErr := hydrateFacturacionFromEmpresaConfig(ctx, dbConn, &cfg); hErr != nil {
 				return nil, hErr
 			}
 			normalizeFacturacionConfig(&cfg)
@@ -1049,6 +1073,11 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 
 // ListFacturacionElectronicaPaisConfigs lista configuraciones FE por empresa.
 func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incluirInactivas bool) ([]FacturacionElectronicaPaisConfig, error) {
+	return ListFacturacionElectronicaPaisConfigsContext(context.Background(), dbConn, empresaID, incluirInactivas)
+}
+
+// ListFacturacionElectronicaPaisConfigsContext lista configuraciones respetando cancelacion.
+func ListFacturacionElectronicaPaisConfigsContext(ctx context.Context, dbConn *sql.DB, empresaID int64, incluirInactivas bool) ([]FacturacionElectronicaPaisConfig, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1084,7 +1113,7 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 	}
 	query += " ORDER BY pais_codigo ASC"
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1125,15 +1154,19 @@ func ListFacturacionElectronicaPaisConfigs(dbConn *sql.DB, empresaID int64, incl
 		cfg.EnviarFacturaEmailClienteAuto = enviarFacturaEmailClienteAutoInt == 1
 		out = append(out, cfg)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // getPaisFacturacionDesdeLicenciaActiva toma pais_codigo de la licencia activa vinculada a la empresa (señal fuerte de jurisdicción comercial).
 func getPaisFacturacionDesdeLicenciaActiva(dbConn *sql.DB, empresaID int64) (string, error) {
+	return getPaisFacturacionDesdeLicenciaActivaContext(context.Background(), dbConn, empresaID)
+}
+
+func getPaisFacturacionDesdeLicenciaActivaContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (string, error) {
 	if dbConn == nil || empresaID <= 0 {
 		return "", nil
 	}
-	ok, err := tableExists(dbConn, "licencias")
+	ok, err := tableExistsContext(ctx, dbConn, "licencias")
 	if err != nil {
 		return "", err
 	}
@@ -1141,7 +1174,7 @@ func getPaisFacturacionDesdeLicenciaActiva(dbConn *sql.DB, empresaID int64) (str
 		return "", nil
 	}
 	var pais sql.NullString
-	err = queryRowSQLCompat(dbConn, `SELECT COALESCE(pais_codigo, '') FROM licencias
+	err = queryRowSQLCompatContext(ctx, dbConn, `SELECT COALESCE(pais_codigo, '') FROM licencias
 		WHERE empresa_id = ? AND COALESCE(activo, 0) = 1
 		ORDER BY id DESC
 		LIMIT 1`, empresaID).Scan(&pais)
@@ -1199,9 +1232,14 @@ func detectPaisByLanguage(lang string) string {
 
 // DetectFacturacionPais determina país FE para una empresa usando configuración y señales del cliente.
 func DetectFacturacionPais(dbConn *sql.DB, empresaID int64, timezone, language string) (PaisFacturacion, string, error) {
+	return DetectFacturacionPaisContext(context.Background(), dbConn, empresaID, timezone, language)
+}
+
+// DetectFacturacionPaisContext determina la jurisdiccion conservando el contexto del flujo.
+func DetectFacturacionPaisContext(ctx context.Context, dbConn *sql.DB, empresaID int64, timezone, language string) (PaisFacturacion, string, error) {
 	if empresaID > 0 {
 		var paisCfg sql.NullString
-		err := dbConn.QueryRow(`SELECT COALESCE(pais_codigo, '') FROM empresa_configuracion_avanzada WHERE empresa_id = ? LIMIT 1`, empresaID).Scan(&paisCfg)
+		err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(pais_codigo, '') FROM empresa_configuracion_avanzada WHERE empresa_id = ? LIMIT 1`, empresaID).Scan(&paisCfg)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return PaisFacturacion{}, "", err
 		}
@@ -1210,7 +1248,7 @@ func DetectFacturacionPais(dbConn *sql.DB, empresaID int64, timezone, language s
 		}
 
 		var paisFE sql.NullString
-		err = dbConn.QueryRow(`SELECT COALESCE(pais_codigo, '') FROM facturacion_electronica_pais WHERE empresa_id = ? ORDER BY fecha_actualizacion DESC, id DESC LIMIT 1`, empresaID).Scan(&paisFE)
+		err = dbConn.QueryRowContext(ctx, `SELECT COALESCE(pais_codigo, '') FROM facturacion_electronica_pais WHERE empresa_id = ? ORDER BY fecha_actualizacion DESC, id DESC LIMIT 1`, empresaID).Scan(&paisFE)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return PaisFacturacion{}, "", err
 		}
@@ -1218,7 +1256,7 @@ func DetectFacturacionPais(dbConn *sql.DB, empresaID int64, timezone, language s
 			return paisFacturacionByCodigo(paisFE.String), "facturacion_electronica", nil
 		}
 
-		pc, errLic := getPaisFacturacionDesdeLicenciaActiva(dbConn, empresaID)
+		pc, errLic := getPaisFacturacionDesdeLicenciaActivaContext(ctx, dbConn, empresaID)
 		if errLic != nil {
 			return PaisFacturacion{}, "", errLic
 		}
@@ -1270,6 +1308,11 @@ func buildFacturaCodigoValidacion(empresaID int64, paisCodigo, documentoCodigo, 
 
 // PrepareFacturacionDocumentoLegal valida cumplimiento y reserva consecutivo para emisión legal.
 func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodigo, documentoCodigo string, montoTotal float64, moneda string) (*FacturacionDocumentoLegal, error) {
+	return PrepareFacturacionDocumentoLegalContext(context.Background(), dbConn, empresaID, paisCodigo, documentoCodigo, montoTotal, moneda)
+}
+
+// PrepareFacturacionDocumentoLegalContext reserva el consecutivo dentro del contexto solicitante.
+func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB, empresaID int64, paisCodigo, documentoCodigo string, montoTotal float64, moneda string) (*FacturacionDocumentoLegal, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1284,14 +1327,14 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 
 	paisCodigo = normalizePaisCodigo(paisCodigo)
 	if paisCodigo == "" {
-		paisDetectado, _, err := DetectFacturacionPais(dbConn, empresaID, "", "")
+		paisDetectado, _, err := DetectFacturacionPaisContext(ctx, dbConn, empresaID, "", "")
 		if err != nil {
 			return nil, err
 		}
 		paisCodigo = paisDetectado.Codigo
 	}
 
-	cfg, err := GetFacturacionElectronicaPaisConfig(dbConn, empresaID, paisCodigo)
+	cfg, err := GetFacturacionElectronicaPaisConfigContext(ctx, dbConn, empresaID, paisCodigo)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
@@ -1302,7 +1345,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 		return nil, fmt.Errorf("la configuracion de facturacion electronica esta inactiva para %s", cfg.PaisCodigo)
 	}
 
-	tx, err := dbConn.Begin()
+	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1320,7 +1363,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 	var consecutivoHasta int64
 	var proximoConsecutivo int64
 
-	err = tx.QueryRow(`SELECT
+	err = tx.QueryRowContext(ctx, `SELECT
 		COALESCE(tipo_documento_emisor, ''),
 		COALESCE(nit, ''),
 		COALESCE(razon_social, ''),
@@ -1334,7 +1377,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 		COALESCE(proximo_consecutivo, 1)
 	FROM empresa_configuracion_avanzada
 	WHERE empresa_id = ?
-	LIMIT 1`, empresaID).Scan(
+	FOR UPDATE`, empresaID).Scan(
 		&tipoDocumentoEmisor,
 		&nit,
 		&razonSocial,
@@ -1426,7 +1469,7 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 		return nil, fmt.Errorf("rango de consecutivos agotado para facturacion")
 	}
 
-	if _, err := tx.Exec(`UPDATE empresa_configuracion_avanzada
+	if _, err := tx.ExecContext(ctx, `UPDATE empresa_configuracion_avanzada
 		SET proximo_consecutivo = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ?`, proximoConsecutivo+1, empresaID); err != nil {
@@ -1457,6 +1500,12 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 		cfg.ResolucionNumero,
 		fechaEmisionLegal,
 	)
+	// En Colombia el codigo fiscal visible debe ser exclusivamente el CUFE/CUDE
+	// SHA-384 del XML/acuse DIAN. El hash local sirve para otras jurisdicciones,
+	// pero no puede presentarse ni persistirse como si fuera una validacion DIAN.
+	if strings.EqualFold(strings.TrimSpace(cfg.PaisCodigo), "CO") {
+		codigoValidacion = ""
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -1486,6 +1535,8 @@ func normalizeFacturacionRetryEstado(raw string) string {
 		return "pendiente"
 	case "fallido":
 		return "fallido"
+	case "fallido_terminal":
+		return "fallido_terminal"
 	case "enviado":
 		return "enviado"
 	case "aceptado":
@@ -1560,6 +1611,11 @@ func facturacionColombiaLocation() *time.Location {
 
 // GetFacturacionElectronicaRetryByDocumento consulta el estado de integracion fiscal por documento FE.
 func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*FacturacionElectronicaRetryItem, error) {
+	return GetFacturacionElectronicaRetryByDocumentoContext(context.Background(), dbConn, empresaID, tipoDocumento, documentoCodigo)
+}
+
+// GetFacturacionElectronicaRetryByDocumentoContext consulta el reintento respetando cancelacion.
+func GetFacturacionElectronicaRetryByDocumentoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*FacturacionElectronicaRetryItem, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1571,7 +1627,7 @@ func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, 
 
 	item := FacturacionElectronicaRetryItem{}
 	var contingenciaActivaRaw int64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(tipo_documento, ''),
@@ -1636,6 +1692,11 @@ func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, 
 
 // UpsertFacturacionElectronicaRetry crea/actualiza un registro de cola de reintentos FE por documento.
 func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectronicaRetryItem) (*FacturacionElectronicaRetryItem, error) {
+	return UpsertFacturacionElectronicaRetryContext(context.Background(), dbConn, payload)
+}
+
+// UpsertFacturacionElectronicaRetryContext persiste el estado fiscal dentro del contexto solicitante.
+func UpsertFacturacionElectronicaRetryContext(ctx context.Context, dbConn *sql.DB, payload FacturacionElectronicaRetryItem) (*FacturacionElectronicaRetryItem, error) {
 	if payload.EmpresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1695,7 +1756,7 @@ func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectr
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`
 
-	if _, err := dbConn.Exec(stmt,
+	if _, err := dbConn.ExecContext(ctx, stmt,
 		payload.EmpresaID,
 		payload.TipoDocumento,
 		payload.DocumentoCodigo,
@@ -1722,7 +1783,7 @@ func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectr
 		return nil, err
 	}
 
-	return GetFacturacionElectronicaRetryByDocumento(dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+	return GetFacturacionElectronicaRetryByDocumentoContext(ctx, dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
 }
 
 func buildFacturacionRetryQueryPattern(raw string) string {
@@ -1737,6 +1798,11 @@ func buildFacturacionRetryQueryPattern(raw string) string {
 
 // ListFacturacionElectronicaRetriesByEmpresa lista la cola de reintentos FE por empresa.
 func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64, filter FacturacionElectronicaRetryFilter) ([]FacturacionElectronicaRetryItem, error) {
+	return ListFacturacionElectronicaRetriesByEmpresaContext(context.Background(), dbConn, empresaID, filter)
+}
+
+// ListFacturacionElectronicaRetriesByEmpresaContext lista la cola fiscal con contexto cancelable.
+func ListFacturacionElectronicaRetriesByEmpresaContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter FacturacionElectronicaRetryFilter) ([]FacturacionElectronicaRetryItem, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1778,6 +1844,14 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 		query += " AND tipo_documento = ?"
 		args = append(args, tipoDocumento)
 	}
+	for _, rawExcludedType := range filter.ExcluirTiposDocumento {
+		excludedType := normalizeDocumentoTransaccionalTipo(rawExcludedType, "")
+		if excludedType == "" || excludedType == tipoDocumento {
+			continue
+		}
+		query += " AND tipo_documento <> ?"
+		args = append(args, excludedType)
+	}
 
 	estadoEnvio := normalizeFacturacionRetryEstado(filter.EstadoEnvio)
 	if strings.TrimSpace(filter.EstadoEnvio) != "" {
@@ -1792,7 +1866,7 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 	}
 
 	if filter.SoloVencidos {
-		query += " AND estado_envio IN ('pendiente','fallido','contingencia') AND (COALESCE(proximo_intento, '') = '' OR proximo_intento <= CURRENT_TIMESTAMP)"
+		query += " AND estado_envio IN ('pendiente','fallido','contingencia') AND COALESCE(intentos, 0) < COALESCE(max_intentos, 5) AND (COALESCE(proximo_intento, '') = '' OR CASE WHEN proximo_intento ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T]' THEN CAST(proximo_intento AS TIMESTAMPTZ) ELSE CURRENT_TIMESTAMP END <= CURRENT_TIMESTAMP)"
 	}
 
 	if !filter.IncludeInactive {
@@ -1811,10 +1885,10 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 		offset = 0
 	}
 
-	query += " ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 WHEN 'contingencia' THEN 2 WHEN 'enviado' THEN 3 WHEN 'aceptado' THEN 4 ELSE 5 END, COALESCE(proximo_intento, ''), id DESC LIMIT ? OFFSET ?"
+	query += " ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 WHEN 'contingencia' THEN 2 WHEN 'fallido_terminal' THEN 3 WHEN 'enviado' THEN 4 WHEN 'aceptado' THEN 5 ELSE 6 END, COALESCE(proximo_intento, ''), id DESC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1858,13 +1932,57 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 		items = append(items, it)
 	}
 
-	return items, nil
+	return items, rows.Err()
+}
+
+// ListFacturacionElectronicaRetryEmpresaIDsDueContext lista tenants con trabajo
+// fiscal vencido para que pcs-worker procese cada cola de forma aislada.
+func ListFacturacionElectronicaRetryEmpresaIDsDueContext(ctx context.Context, dbConn *sql.DB, limit int) ([]int64, error) {
+	if dbConn == nil {
+		return nil, fmt.Errorf("conexion empresarial no disponible")
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	rows, err := dbConn.QueryContext(ctx, `SELECT DISTINCT empresa_id
+		FROM facturacion_electronica_reintentos
+		WHERE estado = 'activo'
+		  AND estado_envio IN ('pendiente','fallido','contingencia')
+		  AND COALESCE(intentos, 0) < COALESCE(max_intentos, 5)
+		  AND (COALESCE(proximo_intento, '') = '' OR CASE WHEN proximo_intento ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T]' THEN CAST(proximo_intento AS TIMESTAMPTZ) ELSE CURRENT_TIMESTAMP END <= CURRENT_TIMESTAMP)
+		ORDER BY empresa_id
+		LIMIT $1`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]int64, 0)
+	for rows.Next() {
+		var empresaID int64
+		if err := rows.Scan(&empresaID); err != nil {
+			return nil, err
+		}
+		if empresaID > 0 {
+			items = append(items, empresaID)
+		}
+	}
+	return items, rows.Err()
 }
 
 // ClaimFacturacionElectronicaRetriesByEmpresa reserves due fiscal documents
 // with PostgreSQL row locks. Concurrent workers cannot send the same document;
 // an abandoned claim becomes eligible only after its lease expires.
 func ClaimFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64, limit int, owner string) ([]FacturacionElectronicaRetryItem, error) {
+	return ClaimFacturacionElectronicaRetriesByEmpresaWithScope(dbConn, empresaID, limit, owner, true)
+}
+
+// ClaimFacturacionElectronicaRetriesByEmpresaWithScope preserves the atomic
+// claim while allowing the generic invoice worker to leave payroll documents
+// for the separately authorized payroll processor.
+func ClaimFacturacionElectronicaRetriesByEmpresaWithScope(dbConn *sql.DB, empresaID int64, limit int, owner string, includeNomina bool) ([]FacturacionElectronicaRetryItem, error) {
 	if dbConn == nil {
 		return nil, fmt.Errorf("db connection is nil")
 	}
@@ -1888,6 +2006,7 @@ func ClaimFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64
 		WHERE empresa_id = ?
 			AND estado = 'activo'
 			AND estado_envio IN ('pendiente','fallido','contingencia')
+			AND (? = TRUE OR LOWER(TRIM(COALESCE(tipo_documento, ''))) NOT IN ('nomina_electronica','nota_ajuste_nomina_electronica'))
 			AND (COALESCE(proximo_intento, '') = '' OR proximo_intento <= CAST(CURRENT_TIMESTAMP AS TEXT))
 			AND (lease_until IS NULL OR lease_until < CURRENT_TIMESTAMP)
 		ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 ELSE 2 END,
@@ -1908,7 +2027,7 @@ func ClaimFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64
 		COALESCE(retry.codigo_validacion, ''), COALESCE(retry.fecha_emision_legal, ''), COALESCE(retry.fecha_creacion, ''),
 		COALESCE(retry.fecha_actualizacion, ''), COALESCE(retry.usuario_creador, ''), COALESCE(retry.estado, 'activo'),
 		COALESCE(retry.observaciones, ''), COALESCE(retry.lease_token, ''), COALESCE(CAST(retry.lease_until AS TEXT), '')`,
-		empresaID, limit, leaseToken)
+		empresaID, includeNomina, limit, leaseToken)
 	if err != nil {
 		return nil, err
 	}
@@ -1948,13 +2067,7 @@ func ReleaseFacturacionElectronicaRetryClaim(dbConn *sql.DB, empresaID, retryID 
 }
 
 func facturacionPanamaJSONMap(raw string) map[string]interface{} {
-	out := map[string]interface{}{}
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return out
-	}
-	_ = json.Unmarshal([]byte(raw), &out)
-	return out
+	return decodeRepositoryJSONMap(raw)
 }
 
 func facturacionPanamaString(extra map[string]interface{}, keys ...string) string {

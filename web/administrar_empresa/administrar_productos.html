@@ -304,7 +304,7 @@
     <section class="card empresa-section" data-view-section="bodegas">
       <div class="empresa-section-header">
         <h2>Bodegas</h2>
-        <button id="btnNuevaBodega" type="button" class="btn secondary" onclick="return window.PCSInventarioNuevoBodega ? window.PCSInventarioNuevoBodega(event) : true;">Nueva</button>
+        <button id="btnNuevaBodega" type="button" class="btn secondary">Nueva</button>
       </div>
 
       <form id="bodegaForm" class="form is-hidden">
@@ -360,7 +360,7 @@
     <section class="card empresa-section" data-view-section="proveedores">
       <div class="empresa-section-header">
         <h2>Proveedores</h2>
-        <button id="btnNuevoProveedor" type="button" class="btn secondary" onclick="return window.PCSInventarioNuevoProveedor ? window.PCSInventarioNuevoProveedor(event) : true;">Nuevo</button>
+        <button id="btnNuevoProveedor" type="button" class="btn secondary">Nuevo</button>
       </div>
 
       <form id="proveedorForm" class="form is-hidden">
@@ -443,7 +443,7 @@
         <div class="empresa-inline-actions">
           <input id="filtroCategoriasProducto" class="form-input" placeholder="Buscar por nombre/código">
           <button id="btnBuscarCategoriasProducto" type="button" class="btn secondary">Buscar</button>
-          <button id="btnNuevaCategoriaProducto" type="button" class="btn secondary" onclick="return window.PCSInventarioNuevaCategoriaProducto ? window.PCSInventarioNuevaCategoriaProducto(event) : false;">Nueva</button>
+          <button id="btnNuevaCategoriaProducto" type="button" class="btn secondary">Nueva</button>
         </div>
       </div>
 
@@ -516,7 +516,7 @@
           </select>
           <input id="filtroProductos" class="form-input" placeholder="Buscar por nombre/SKU/código de barras">
           <button id="btnBuscarProductos" class="btn secondary" type="button">Buscar</button>
-          <button id="btnNuevoProducto" class="btn secondary" type="button" onclick="return window.PCSInventarioNuevoProducto ? window.PCSInventarioNuevoProducto(event) : false;">Nuevo producto</button>
+          <button id="btnNuevoProducto" class="btn secondary" type="button">Nuevo producto</button>
         </div>
       </div>
 
@@ -733,7 +733,7 @@
     <section class="card empresa-section" data-view-section="productos">
       <div class="empresa-section-header">
         <h2>Servicios Vendibles</h2>
-        <button id="btnNuevoServicio" class="btn secondary" type="button" onclick="return window.PCSInventarioNuevoServicio ? window.PCSInventarioNuevoServicio(event) : true;">Nuevo</button>
+        <button id="btnNuevoServicio" class="btn secondary" type="button">Nuevo</button>
       </div>
 
       <form id="servicioForm" class="form is-hidden">
@@ -1157,7 +1157,7 @@
         <p id="inventarioProyeccionContexto" class="form-help">Proyección: cargando...</p>
 
       </section>
-	</section>
+    </section>
 
     <section class="card empresa-section" data-view-section="compras">
       <div class="empresa-section-header">
@@ -1429,11 +1429,14 @@
     }
 
     function publicAPIError(data, contentType, status, fallback) {
+      let text = '';
       if (data && typeof data === 'object' && typeof data.error === 'string') {
-        return data.error;
+        text = data.error.trim();
+      } else if (typeof data === 'string') {
+        text = data.trim();
       }
-      const text = typeof data === 'string' ? data.trim() : '';
-      if (contentType.includes('text/plain') && text && text.length <= 300 && !/<\/?[a-z][\s\S]*>/i.test(text)) {
+      const looksInternal = /<\/?[a-z][\s\S]*>|sqlstate|\bpq:|\bselect\s+.+\bfrom\b|stack trace|runtime error/i.test(text);
+      if (text && text.length <= 300 && !looksInternal && (contentType.includes('application/json') || contentType.includes('text/plain'))) {
         return text;
       }
       if (status === 401) return 'La sesión expiró. Ingresa nuevamente.';
@@ -1453,7 +1456,7 @@
         data = await resp.text();
       }
       if (!resp.ok) {
-		throw new Error(publicAPIError(data, contentType, resp.status));
+        throw new Error(publicAPIError(data, contentType, resp.status));
       }
       return data;
     }
@@ -1590,7 +1593,8 @@
     function abrirCartaPreciosIA() {
       const prompt = 'Como Agente PCS, analiza la foto, PDF o imagen de una carta/lista de precios. Extrae productos, categorias, precios, impuestos y costos si aparecen, y presenta una tabla para revision humana. No guardes nada hasta que yo confirme. Si falta SKU o categoria, propon valores seguros dentro de la empresa activa.';
       try {
-        window.postMessage({
+        const chatHost = window.top && window.top !== window ? window.top : window;
+        chatHost.postMessage({
           type: 'pcs-ai-drawer-open',
           mode: 'operativo',
           agent_id: 'agente_pcs',
@@ -3125,11 +3129,11 @@
 
       const resumen = await requestJSON('/api/empresa/inventario/resumen?' + params.toString());
 
-	  document.getElementById('kpiProductos').textContent = String(Number(resumen.productos_total || 0));
-	  document.getElementById('kpiProductosVencimiento').textContent = String(Number(resumen.productos_por_vencer || 0));
-	  document.getElementById('kpiBodegas').textContent = String(Number(resumen.bodegas_total || 0));
-	  document.getElementById('kpiServicios').textContent = String(Number(resumen.servicios_total || 0));
-	  document.getElementById('kpiCategoriasProductos').textContent = String(Number(resumen.categorias_total || 0));
+      document.getElementById('kpiProductos').textContent = String(Number(resumen.productos_total || 0));
+      document.getElementById('kpiProductosVencimiento').textContent = String(Number(resumen.productos_por_vencer || 0));
+      document.getElementById('kpiBodegas').textContent = String(Number(resumen.bodegas_total || 0));
+      document.getElementById('kpiServicios').textContent = String(Number(resumen.servicios_total || 0));
+      document.getElementById('kpiCategoriasProductos').textContent = String(Number(resumen.categorias_total || 0));
       document.getElementById('kpiInventarioAlertas').textContent = String(Number(resumen.alertas_total || 0));
       document.getElementById('kpiInventarioSinStock').textContent = String(Number(resumen.alertas_sin_stock || 0));
       document.getElementById('kpiInventarioMovPeriodo').textContent = String(Number(resumen.movimientos_total || 0));
@@ -4390,6 +4394,7 @@
         await loadInventarioConfiguracion();
         await loadProductos();
         await loadServicios();
+        await loadInventarioResumen();
       }
     }
 

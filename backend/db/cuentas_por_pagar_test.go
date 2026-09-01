@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"math"
 	"os"
 	"strings"
@@ -132,6 +133,11 @@ func TestRegistrarEmpresaCxPAbonoKeepsTenantScopedAtomicInvariants(t *testing.T)
 	}
 	body := string(raw)
 	for _, required := range []string{
+		"func RegistrarEmpresaCxPAbonoContext(ctx context.Context",
+		"BeginTx(ctx, nil)",
+		"queryRowTxSQLCompatContext(ctx, tx",
+		"execTxSQLCompatContext(ctx, tx",
+		"insertTxSQLCompatContext(ctx, tx",
 		"FROM empresa_cuentas_por_pagar WHERE empresa_id = ? AND id = ? FOR UPDATE",
 		"FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?",
 		"INSERT INTO empresa_cxp_pagos",
@@ -224,6 +230,25 @@ func TestCxPSupplierCatalogIsTenantFilteredAndActiveOnly(t *testing.T) {
 		if !strings.Contains(body, required) {
 			t.Fatalf("CxP supplier catalog must preserve %q", required)
 		}
+	}
+}
+
+func TestLegacyAccountingCXPRejectsNewWritesBeforeDatabase(t *testing.T) {
+	t.Parallel()
+	_, err := CreateEmpresaCarteraCXP(&sql.DB{}, EmpresaCarteraCXP{
+		EmpresaID:     12,
+		Tipo:          "cxp",
+		TerceroNombre: "Proveedor de prueba",
+		Documento:     "P110-CXP-LEGACY",
+	})
+	if !errors.Is(err, ErrEmpresaCarteraCXPHistoricaReadOnly) {
+		t.Fatalf("legacy CxP write must be rejected before SQL, got %v", err)
+	}
+	if err := rejectEmpresaCarteraCXPHistorica(" CxP "); !errors.Is(err, ErrEmpresaCarteraCXPHistoricaReadOnly) {
+		t.Fatalf("legacy CxP type must remain read-only, got %v", err)
+	}
+	if err := rejectEmpresaCarteraCXPHistorica("cxc"); err != nil {
+		t.Fatalf("CXC history must remain available, got %v", err)
 	}
 }
 

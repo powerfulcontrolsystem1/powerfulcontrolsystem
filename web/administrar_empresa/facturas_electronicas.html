@@ -8,6 +8,7 @@
   <script src="/js/empresa_submenu_context.js"></script>
   <script src="/vendor/qrcode.min.js"></script>
   <script src="/js/print_documents.js"></script>
+  <script src="/js/ui_event_controls.js" defer></script>
   <style>
     .fe-compact-header{padding:14px 16px}
     .fe-compact-header h1,.fe-compact-header h2{margin:3px 0 5px}
@@ -268,7 +269,7 @@
       <div id="feCancelMessage" class="form-help" role="status" aria-live="polite"></div>
       <div class="form-actions">
         <button id="feCancelDismiss" type="button" class="btn secondary">Cancelar</button>
-        <button id="feCancelSubmit" type="submit" class="btn danger">Confirmar anulación</button>
+        <button id="feCancelSubmit" type="submit" class="btn danger" disabled>Confirmar anulación</button>
       </div>
     </form>
   </dialog>
@@ -282,6 +283,10 @@
 
       function normalize(value) {
         return String(value || "").trim();
+      }
+
+      function isOfficialDIANDocumentKey(value) {
+        return /^[0-9a-f]{96}$/i.test(normalize(value));
       }
 
       function documentCustomerLabel(item) {
@@ -359,7 +364,7 @@
       }
 
       function visibleTypeLabel(item) {
-        if (facturaAsociadaParaVenta(item)) return "Factura electrónica";
+		if (facturaAsociadaParaVenta(item)) return "Venta (factura asociada)";
         return typeLabel(item && item.tipo_documento);
       }
 
@@ -745,7 +750,6 @@
 
         state.items.forEach(function (item) {
           var tipo = normalize(item.tipo_documento).toLowerCase();
-          if (facturaAsociadaParaVenta(item)) tipo = "factura_electronica";
           var estadoDoc = normalize(item.estado_documento).toLowerCase();
           var estado = normalize(item.estado).toLowerCase();
           var amount = Number(item.monto_total || 0);
@@ -841,6 +845,8 @@
         if (tipo !== "factura_electronica") return false;
         if (estado !== "emitida") return false;
         if (normalize(item && item.estado).toLowerCase() === "inactivo") return false;
+        if (!isOfficialDIANDocumentKey(item && item.codigo_validacion)) return false;
+        if (item && item.fuente_fiscal_disponible !== true) return false;
         return true;
       }
 
@@ -862,7 +868,14 @@
         }
         if (tipo === "factura_electronica") {
           if (canCancelInvoice(item)) return { enabled: true, visible: true, reason: "Anular factura electronica con nota credito." };
-          return { enabled: false, visible: true, reason: estadoDoc === "anulada" ? "Factura ya anulada." : "Solo se anulan facturas electronicas emitidas." };
+          if (estadoDoc === "anulada") return { enabled: false, visible: true, reason: "Factura ya anulada." };
+          if (estadoDoc === "emitida" && !isOfficialDIANDocumentKey(item && item.codigo_validacion)) {
+            return { enabled: false, visible: true, reason: "La factura aún no tiene un CUFE oficial DIAN para relacionar la nota crédito." };
+          }
+          if (estadoDoc === "emitida" && item && item.fuente_fiscal_disponible !== true) {
+            return { enabled: false, visible: true, reason: "Documento histórico sin fuente fiscal inmutable; no se puede fabricar una nota crédito segura." };
+          }
+          return { enabled: false, visible: true, reason: "Solo se anulan facturas electronicas emitidas y aceptadas por DIAN." };
         }
         if (tipo === "comprobante_pago") {
           if (canCancelSale(item)) return { enabled: true, visible: true, reason: "Anular venta simple." };
@@ -938,9 +951,16 @@
         var empresaLabel = normalize(state.empresaNombre) || normalize(cfg.razon_social) || normalize(cfg.nombre_comercial) || ("Empresa #" + String(empresaID || ""));
         var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
         var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
-        var logoHtml = window.PCSPrint && window.PCSPrint.resolveDocumentLogos && window.PCSPrint.logosHTML
-          ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg, "factura"))
-          : (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '');
+        var systemLogoUrl = window.location.origin.replace(/\/$/, "") + "/img/logo.png";
+        var resolvedLogos = window.PCSPrint && window.PCSPrint.resolveDocumentLogos
+          ? window.PCSPrint.resolveDocumentLogos(cfg, "factura")
+          : (logoUrl ? [{ src: logoUrl, alt: "Logo empresa" }] : []);
+        if (!resolvedLogos.length && showLogo) resolvedLogos = [{ src: systemLogoUrl, alt: "Logo del sistema" }];
+        var logoHtml = resolvedLogos.map(function(logo) {
+          var src = safeUrl(logo && logo.src);
+          if (!src) return "";
+          return '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml((logo && logo.alt) || "Logo") + '" data-fallback-src="' + escapeHtml(systemLogoUrl) + '">';
+        }).join("");
         var legalBlock = showLegal ? buildLegalBlock(cfg) : "";
         var observaciones = normalize(item && item.observaciones) || "Sin observaciones registradas.";
         var qrBlock = printFieldEnabled(printItems, "qr_dian", item) ? printableQRHTML(getPrintableDocumentQR(item)) : "";
@@ -1075,7 +1095,8 @@
             '<meta name="viewport" content="width=device-width,initial-scale=1">' +
             '<title>' + escapeHtml((item && item.documento_codigo) || "Recibo") + '</title>' +
             '<style>body{font-family:monospace;padding:12px;color:#111;font-size:' + facturaPrintFontSize(cfg, "pos") + 'px}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}.factura-print-qr{text-align:center;border-top:1px dashed #999;margin-top:10px;padding-top:8px}.factura-print-qr img{width:92px;height:92px;display:block;margin:0 auto 5px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;font-size:9px;overflow-wrap:anywhere}</style>' +
-            '</head><body>' +
+            '<script src="/js/ui_event_controls.js" defer><\/script>' +
+            '</head><body data-auto-print-delay="250">' +
             (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo">') : '') +
             '<h1>' + escapeHtml(getPrintableDocumentMeta(item).title) + '</h1>' +
             (lines.length ? ('<p><strong>' + escapeHtml(lines[0]) + '</strong><br><small>' + escapeHtml(lines.slice(1).join(" | ")) + '</small></p>') : '') +
@@ -1086,7 +1107,6 @@
             (notas ? ('<hr><small>' + escapeHtml(notas) + '</small>') : '') +
             (pie ? ('<p><small>' + escapeHtml(pie) + '</small></p>') : '') +
             qrBlock +
-            '<script>setTimeout(function(){try{window.print()}catch(e){}},250)<\/script>' +
             '</body></html>';
         }
 
@@ -1095,17 +1115,28 @@
           '<title>' + escapeHtml((item && item.documento_codigo) || "Documento") + '</title>' +
           '<link rel="stylesheet" href="' + escapeHtml(window.location.origin.replace(/\/$/, "") + "/estilos.css") + '">' +
           '<style>' +
-            'body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light;font-size:' + facturaPrintFontSize(cfg, formato) + 'px;}' +
+            '*{box-sizing:border-box}html{background:#fff}body{margin:0;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;color-scheme:light;font-size:' + facturaPrintFontSize(cfg, formato) + 'px;line-height:1.38}' +
             '.factura-print-shell{max-width:' + (formato === "compacta" ? "780" : "1120") + 'px;margin:0 auto;padding:28px 18px 42px;background:#fff;}' +
             '.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;}' +
+            '.factura-print-sheet{border:1px solid #111827;border-top:4px solid #111827;background:#fff;color:#111827;overflow:hidden}' +
+            '.factura-print-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:20px 22px 16px;border-bottom:1px solid #111827}' +
+            '.factura-print-logo{display:flex;align-items:flex-start;gap:14px;min-width:0}.factura-print-logo img{display:block;width:auto;max-width:112px;max-height:58px;object-fit:contain;flex:0 0 auto}' +
+            '.factura-print-kicker{display:inline-block;border:1px solid #111827;padding:3px 7px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}' +
+            '.factura-print-head h3{margin:7px 0 3px;font-size:22px;line-height:1.15}.factura-print-head p{margin:0;color:#374151}' +
+            '.factura-print-company{flex:0 1 42%;min-width:210px;text-align:right}.factura-print-company strong,.factura-print-company span{display:block;overflow-wrap:anywhere}.factura-print-company span{margin-top:4px;font-size:10px;color:#374151;line-height:1.45}' +
+            '.factura-print-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid #111827}.factura-print-strip div{min-width:0;padding:10px 12px;border-right:1px solid #d1d5db}.factura-print-strip div:last-child{border-right:0}.factura-print-strip span{display:block;font-size:9px;color:#4b5563;text-transform:uppercase}.factura-print-strip strong{display:block;margin-top:2px;overflow-wrap:anywhere;word-break:break-word}' +
+            '.factura-print-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px 16px 0}.factura-print-panel{min-width:0;border:1px solid #9ca3af;padding:11px 12px;background:#fff}.factura-print-panel--full{margin:12px 16px 0}.factura-print-panel h4{margin:0 0 7px;font-size:11px;text-transform:uppercase}.factura-print-panel dl,.factura-print-doc-meta{margin:0}.factura-print-panel dl>div,.factura-print-doc-meta>div{display:grid;grid-template-columns:minmax(92px,34%) minmax(0,1fr);gap:10px;padding:5px 0;border-top:1px solid #e5e7eb}.factura-print-panel dl>div:first-child,.factura-print-doc-meta>div:first-child{border-top:0}.factura-print-panel dt,.factura-print-doc-meta dt{color:#4b5563}.factura-print-panel dd,.factura-print-doc-meta dd{min-width:0;margin:0;text-align:right;font-weight:700;overflow-wrap:anywhere;word-break:break-word}' +
+            '.factura-print-table{width:calc(100% - 48px)!important;max-width:calc(100% - 48px)!important;margin:12px 24px!important;border-collapse:collapse;table-layout:fixed;font-size:10px}.factura-print-table th,.factura-print-table td{border:1px solid #111827;padding:7px 6px;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}.factura-print-table th{background:#eef2f7;font-size:8px;text-transform:uppercase}.factura-print-table th:nth-child(1){width:21%}.factura-print-table th:nth-child(2){width:33%}.factura-print-table th:nth-child(3){width:9%}.factura-print-table th:nth-child(4),.factura-print-table th:nth-child(5){width:18.5%}.factura-print-table th:nth-child(n+3),.factura-print-table td:nth-child(n+3){text-align:right}' +
+            '.factura-print-total-table{width:310px;max-width:calc(100% - 32px);margin:0 16px 0 auto;border-collapse:collapse}.factura-print-total-table th,.factura-print-total-table td{border:1px solid #111827;padding:7px 9px}.factura-print-total-table th{text-align:left;background:#eef2f7;font-size:9px;text-transform:uppercase}.factura-print-total-table td{text-align:right;font-weight:800}' +
+            '.factura-print-note,.factura-print-legal{margin:12px 16px 0;padding:10px 12px;border:1px dashed #9ca3af;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.factura-print-note p{margin:4px 0 0}' +
             '.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}' +
-            '.factura-print-qr{text-align:center;border-top:1px dashed #9ca3af;margin-top:16px;padding-top:14px;color:#111827}.factura-print-qr img{width:132px;height:132px;object-fit:contain;display:block;margin:0 auto 7px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.35;overflow-wrap:anywhere}' +
-            '@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{padding:0}}' +
-          '</style></head><body>' +
+            '.factura-print-qr{text-align:center;border-top:1px dashed #9ca3af;margin-top:16px;padding:14px 12px 0;color:#111827}.factura-print-qr img{width:132px;height:132px;object-fit:contain;display:block;margin:0 auto 7px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;max-width:100%;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.35;overflow-wrap:anywhere;word-break:break-word}' +
+            '@page{size:A4;margin:11mm}@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{max-width:none;padding:0}.factura-print-head,.factura-print-grid,.factura-print-panel,.factura-print-table tr,.factura-print-total-table,.factura-print-note,.factura-print-qr{break-inside:avoid;page-break-inside:avoid}}' +
+          '</style><script src="/js/ui_event_controls.js" defer><\/script></head><body>' +
           '<div class="factura-print-shell">' +
             '<div class="factura-print-toolbar">' +
-              '<button type="button" class="btn" onclick="window.print()">Imprimir ahora</button>' +
-              '<button type="button" class="btn secondary" onclick="window.close()">Cerrar</button>' +
+              '<button type="button" class="btn" data-window-action="print">Imprimir ahora</button>' +
+              '<button type="button" class="btn secondary" data-window-action="close">Cerrar</button>' +
             '</div>' +
             buildPrintableDocumentBody(item, formato) +
           '</div></body></html>';
@@ -1189,6 +1220,10 @@
           var retryInfo = retryDIANAvailability(item);
           var retryActionHTML = retryInfo.visible === false ? '' :
             '<button type="button" class="btn fe-only-action" data-action="reenviar_dian" data-key="' + escapeHtml(key) + '"' + (retryInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(retryInfo.reason) + '"><img class="icon" src="/img/invoice.svg" alt="">Reenviar DIAN</button>';
+          var artifactType = normalize(item.tipo_documento).toLowerCase();
+          var artifactActionHTML = (artifactType === "factura_electronica" || artifactType === "nota_credito")
+            ? '<button type="button" class="btn secondary fe-only-action" data-action="artefactos" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/invoice.svg" alt="">Archivos fiscales</button>'
+            : '';
           return '<tr data-key="' + escapeHtml(key) + '">' +
             '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
             '<td>' + escapeHtml(visibleTypeLabel(item)) + '</td>' +
@@ -1201,6 +1236,7 @@
             '<td>' + escapeHtml(item.estado || "activo") + '</td>' +
             '<td class="fe-actions-cell">' +
               '<button type="button" class="btn secondary fe-only-action" data-action="imprimir" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/print-color.svg" alt="">Visualizar</button>' +
+              artifactActionHTML +
               retryActionHTML +
               cancelActionHTML +
               ' <details class="fe-share-dropdown">' +
@@ -1479,6 +1515,36 @@
         });
       }
 
+      function downloadFiscalArtifacts(item) {
+        if (!item) return;
+        var params = new URLSearchParams();
+        params.set("action", "artefactos");
+        params.set("empresa_id", String(empresaID));
+        params.set("tipo_documento", normalize(item.tipo_documento) || "factura_electronica");
+        params.set("documento_codigo", normalize(item.documento_codigo));
+        apiRequest("/api/empresa/facturacion_electronica?" + params.toString()).then(function(out) {
+          var items = Array.isArray(out && out.items) ? out.items : [];
+          if (!items.length) {
+            showMessage("Este documento todavía no tiene XML, acuse o PDF fiscal persistido.", "error");
+            return;
+          }
+          items.forEach(function(artifact, index) {
+            window.setTimeout(function() {
+              var link = document.createElement("a");
+              link.href = artifact.download_url;
+              link.download = "";
+              link.rel = "noopener";
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            }, index * 180);
+          });
+          showMessage("Descarga de " + items.length + " archivo(s) fiscal(es) iniciada.", "ok");
+        }).catch(function(err) {
+          showMessage(err.message || "No se pudieron descargar los archivos fiscales", "error");
+        });
+      }
+
       function shareInvoice(item, channel) {
         if (!item) return;
         var docUrl = new URL("/administrar_empresa/facturas_electronicas.html", window.location.origin);
@@ -1519,10 +1585,19 @@
         box.style.color = isError ? "#ef5350" : "";
       }
 
+      function updateCancelSubmitState() {
+        var submitButton = document.getElementById("feCancelSubmit");
+        if (!submitButton) return;
+        var confirmation = normalize(document.getElementById("feCancelConfirmation").value);
+        var motivo = normalize(document.getElementById("feCancelReason").value);
+        submitButton.disabled = cancelDialogBusy || !cancelDialogItem || confirmation !== "ANULAR" || motivo.length < 10;
+      }
+
       function closeCancelDialog() {
         if (cancelDialogBusy) return;
         var dialog = document.getElementById("feCancelDialog");
         cancelDialogItem = null;
+        updateCancelSubmitState();
         if (dialog && dialog.open) dialog.close();
       }
 
@@ -1544,6 +1619,7 @@
         document.getElementById("feCancelConfirmation").value = "";
         document.getElementById("feCancelReason").value = "";
         setCancelDialogMessage("", false);
+        updateCancelSubmitState();
         if (dialog && typeof dialog.showModal === "function") {
           dialog.showModal();
           document.getElementById("feCancelConfirmation").focus();
@@ -1569,9 +1645,8 @@
         var tipo = normalize(item.tipo_documento).toLowerCase();
         var code = normalize(item.numero_legal) || normalize(item.documento_codigo);
         var facturaElectronica = tipo === "factura_electronica";
-        var submitButton = document.getElementById("feCancelSubmit");
         cancelDialogBusy = true;
-        submitButton.disabled = true;
+        updateCancelSubmitState();
         setCancelDialogMessage(facturaElectronica ? "Generando nota crédito de anulación..." : "Anulando venta...", false);
         showMessage(facturaElectronica ? "Generando nota credito de anulacion..." : "Anulando venta...");
         var action = facturaElectronica ? "anular_factura_nota_credito" : "anular_venta";
@@ -1587,7 +1662,6 @@
         }).then(function(out) {
           var nota = out && out.nota_credito ? out.nota_credito : null;
           cancelDialogBusy = false;
-          submitButton.disabled = false;
           closeCancelDialog();
           if (facturaElectronica && !(out && out.anulacion_confirmada_dian === true)) {
             var estadoDIAN = normalize(out && out.integracion_fiscal && out.integracion_fiscal.estado_envio) || "pendiente";
@@ -1599,7 +1673,7 @@
           return runSearch();
         }).catch(function(err) {
           cancelDialogBusy = false;
-          submitButton.disabled = false;
+          updateCancelSubmitState();
           var message = err.message || "No se pudo anular el documento.";
           setCancelDialogMessage(message, true);
           showMessage(message, "error");
@@ -1703,6 +1777,10 @@
           retryInvoiceDIAN(item);
           return;
         }
+        if (action === "artefactos") {
+          downloadFiscalArtifacts(item);
+          return;
+        }
         if (action === "compartir_whatsapp") {
           shareInvoice(item, "whatsapp");
           return;
@@ -1775,15 +1853,21 @@
 
       document.getElementById("feCancelForm").addEventListener("submit", submitCancelInvoice);
       document.getElementById("feCancelDismiss").addEventListener("click", closeCancelDialog);
+      document.getElementById("feCancelConfirmation").addEventListener("input", updateCancelSubmitState);
+      document.getElementById("feCancelReason").addEventListener("input", updateCancelSubmitState);
       document.getElementById("feCancelDialog").addEventListener("cancel", function (event) {
         if (cancelDialogBusy) {
           event.preventDefault();
           return;
         }
         cancelDialogItem = null;
+        updateCancelSubmitState();
       });
       document.getElementById("feCancelDialog").addEventListener("close", function () {
-        if (!cancelDialogBusy) cancelDialogItem = null;
+        if (!cancelDialogBusy) {
+          cancelDialogItem = null;
+          updateCancelSubmitState();
+        }
       });
 
       function init() {

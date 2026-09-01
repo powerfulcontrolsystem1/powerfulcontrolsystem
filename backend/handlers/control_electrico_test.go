@@ -27,12 +27,12 @@ func TestBuildControlElectricoEndpoint(t *testing.T) {
 }
 
 func TestControlElectricoTestableGPIO(t *testing.T) {
-	for _, pin := range []int{2, 17, 27} {
+	for _, pin := range []int{0, 1, 2, 17, 27} {
 		if !controlElectricoTestableGPIO(pin) {
 			t.Fatalf("GPIO %d debe estar habilitado para diagnostico", pin)
 		}
 	}
-	for _, pin := range []int{-1, 0, 1, 28} {
+	for _, pin := range []int{-1, 28} {
 		if controlElectricoTestableGPIO(pin) {
 			t.Fatalf("GPIO %d no debe estar habilitado para diagnostico", pin)
 		}

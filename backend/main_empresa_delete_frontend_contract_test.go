@@ -30,7 +30,10 @@ func TestEditarEmpresaDeleteButtonRequiresSafeConfirmation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read editar_empresa.js: %v", err)
 	}
-	js := string(jsRaw)
+	// The repository is checked out on Windows and Linux. Normalize line endings
+	// before asserting the multi-line confirmation contract so a CRLF checkout
+	// cannot turn a real safety regression test into a platform-specific failure.
+	js := strings.ReplaceAll(string(jsRaw), "\r\n", "\n")
 	requiredJS := []string{
 		"function getDeleteValidationState()",
 		"function confirmDownloadBeforeEmpresaDelete()",

@@ -184,12 +184,13 @@ func EnsureEmpresasComprasSchema(dbConn *sql.DB) error {
 }
 
 func CreateEmpresaProveedor(dbConn *sql.DB, p EmpresaProveedor) (int64, error) {
-	stmt := `INSERT INTO empresa_proveedores (empresa_id, nit, nombre_comercial, razon_social, direccion, telefono, email, cuenta_bancaria, plazo_dias_pago, usuario_creador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	res, err := dbConn.Exec(stmt, p.EmpresaID, p.NIT, p.NombreComercial, p.RazonSocial, p.Direccion, p.Telefono, p.Email, p.CuentaBancaria, p.PlazoDiasPago, p.UsuarioCreador)
+	stmt := `INSERT INTO empresa_proveedores (empresa_id, nit, nombre_comercial, razon_social, direccion, telefono, email, cuenta_bancaria, plazo_dias_pago, usuario_creador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+	var id int64
+	err := dbConn.QueryRow(stmt, p.EmpresaID, p.NIT, p.NombreComercial, p.RazonSocial, p.Direccion, p.Telefono, p.Email, p.CuentaBancaria, p.PlazoDiasPago, p.UsuarioCreador).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func UpdateEmpresaProveedor(dbConn *sql.DB, p EmpresaProveedor) error {

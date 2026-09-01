@@ -35,8 +35,8 @@ jobs:
         with:
           # El proyecto conserva compatibilidad de lenguaje con Go 1.20, pero
           # el analisis de vulnerabilidades debe ejecutarse con una biblioteca
-          # estandar corregida (Go 1.25 o posterior).
-          go-version: "1.25.12"
+          # estandar corregida por CVE-2026-46600.
+          go-version: "1.26.6"
           cache-dependency-path: backend/go.sum
 
       - name: Setup Node
@@ -58,9 +58,14 @@ jobs:
           go test ./...
           go vet ./...
 
-      - name: Go race detector
+      - name: Structural code quality gate
         working-directory: backend
-        run: go test -race ./...
+        run: go run ./tools/code_quality_audit -root . -baseline ../documentos/calidad/code_quality_baseline.json -out ../documentos/reportes_profesionales/code_quality.json
+
+      - name: Go race detector
+        timeout-minutes: 12
+        working-directory: backend
+        run: go test -race -timeout 10m ./...
 
       - name: Go vulnerability scan
         working-directory: backend
@@ -133,6 +138,9 @@ jobs:
       - name: UX consistency audit
         run: node tools/ux_consistency_audit.mjs --out documentos/reportes_profesionales
 
+      - name: CSP inline regression gate
+        run: node tools/qa_csp_inline_inventory.mjs web documentos/reportes_profesionales/csp-inline documentos/seguridad/csp_inline_baseline.json
+
       - name: Documentation normalization audit
         run: node tools/docs_normalization_audit.mjs --out documentos/reportes_profesionales
 
@@ -161,7 +169,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
-          go-version: "1.25.12"
+          go-version: "1.26.6"
           cache-dependency-path: backend/go.sum
 
       - name: Secret scan
@@ -186,6 +194,7 @@ jobs:
         run: jq -e '[.runs[].results[]?] | length == 0' security-artifacts/trivy-filesystem.sarif
 
       - name: Build modified runtime images
+        timeout-minutes: 20
         run: |
           docker build -f deploy/docker/backend.Dockerfile -t pcs-backend:ci .
           docker build -f deploy/docker/frontend.Dockerfile -t pcs-frontend:ci .

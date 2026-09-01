@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type empresaReporteCatalogoItem struct {
@@ -51,6 +53,7 @@ type empresaReportesSuiteResponse struct {
 }
 
 type reportesBuilder struct {
+	ctx              context.Context
 	db               *sql.DB
 	empresaID        int64
 	desde            string
@@ -68,6 +71,13 @@ type reportesBuilder struct {
 	tableroCache *dbpkg.EmpresaReportesTableroResumen
 	ventasCache  []dbpkg.CarritoCompra
 	itemsCache   map[int64][]dbpkg.CarritoCompraItem
+}
+
+func (b *reportesBuilder) requestContext() context.Context {
+	if b != nil && b.ctx != nil {
+		return b.ctx
+	}
+	return context.Background()
 }
 
 // empresaReportePersonalizadoSpec es una definicion declarativa y de solo
@@ -532,6 +542,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 		includeInactive := queryBool(r, "include_inactive")
 
 		builder := &reportesBuilder{
+			ctx:              r.Context(),
 			db:               dbEmp,
 			empresaID:        empresaID,
 			desde:            desde,
@@ -1464,7 +1475,7 @@ func (b *reportesBuilder) getTableroResumen() (*dbpkg.EmpresaReportesTableroResu
 	if b.tableroCache != nil {
 		return b.tableroCache, nil
 	}
-	tablero, err := dbpkg.GetEmpresaReportesTableroResumen(b.db, b.empresaID, b.desde, b.hasta)
+	tablero, err := dbpkg.GetEmpresaReportesTableroResumenContext(b.requestContext(), b.db, b.empresaID, b.desde, b.hasta)
 	if err != nil {
 		return nil, err
 	}
@@ -2142,17 +2153,7 @@ func reportesBuildStateFilterClause(stateColumn string, states []string) (string
 }
 
 func reportesSafeSQLIdentifier(v string) bool {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return false
-	}
-	for _, ch := range v {
-		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
-			continue
-		}
-		return false
-	}
-	return true
+	return valueutil.IsSafeSQLIdentifier(v)
 }
 
 func (b *reportesBuilder) getVentasCerradasFiltradas() ([]dbpkg.CarritoCompra, error) {
@@ -3613,6 +3614,7 @@ func (b *reportesBuilder) buildOperativoVentasEmbudoConversionDataset() (empresa
 	})
 
 	snapshot, err := buildVentasEmbudoConversionSnapshot(
+		b.requestContext(),
 		b.db,
 		b.empresaID,
 		b.desde,
@@ -7704,13 +7706,7 @@ func reportesNormalizeMetodoPagoFinanzas(v string) string {
 }
 
 func reportesFirstNonBlank(values ...string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func reportesEstadoStock(cantidad, minimo, maximo float64) (string, int) {

@@ -310,18 +310,18 @@ func UpsertEmpresaSensorDevice(dbConn *sql.DB, p *EmpresaSensorDevice) (int64, e
 	}
 
 	if tokenHash.Valid {
-		res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, device_token_hash, device_token_enc, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, tokenHash.String, tokenEnc.String, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
+		id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, device_token_hash, device_token_enc, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, tokenHash.String, tokenEnc.String, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
 		if err != nil {
 			return 0, err
 		}
-		return res.LastInsertId()
+		return id, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_sensor_puertas_devices (empresa_id, device_id, estacion_id, last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, NULLIF(?,0), ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`, p.EmpresaID, device, p.EstacionID, p.LastState, p.LastSeen, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones))
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // UpdateDeviceHeartbeat actualiza el estado y last_seen del dispositivo y devuelve la empresa/estacion asociada
@@ -366,11 +366,7 @@ func InsertEmpresaSensorMessage(dbConn *sql.DB, deviceID, messageText string) (i
 		return 0, 0, 0, err
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_sensor_puertas_messages (empresa_id, device_id, estacion_id, message_text, raw_text, received_at) VALUES (?, ?, NULLIF(?,0), ?, ?, CURRENT_TIMESTAMP)`, dev.EmpresaID, dev.DeviceID, dev.EstacionID, messageText, messageText)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-	id, err := res.LastInsertId()
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_sensor_puertas_messages (empresa_id, device_id, estacion_id, message_text, raw_text, received_at) VALUES (?, ?, NULLIF(?,0), ?, ?, CURRENT_TIMESTAMP)`, dev.EmpresaID, dev.DeviceID, dev.EstacionID, messageText, messageText)
 	if err != nil {
 		return 0, 0, 0, err
 	}

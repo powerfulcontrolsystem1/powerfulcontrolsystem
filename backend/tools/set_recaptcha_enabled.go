@@ -8,42 +8,18 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net"
-	"net/url"
 	"os"
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/runtimeconfig"
 	"github.com/you/pos-backend/utils"
 )
 
 func rewriteRuntimePostgresDSNForTunnel(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return raw
-	}
-	if strings.TrimSpace(os.Getenv("DB_VPS_TUNNEL_ENABLED")) != "1" {
-		return raw
-	}
-	localPort := strings.TrimSpace(os.Getenv("DB_VPS_LOCAL_PORT"))
-	if localPort == "" {
-		return raw
-	}
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return raw
-	}
-	hostname := parsed.Hostname()
-	if hostname == "" {
-		hostname = "127.0.0.1"
-	}
-	if hostname != "127.0.0.1" && hostname != "localhost" {
-		return raw
-	}
-	parsed.Host = net.JoinHostPort("127.0.0.1", localPort)
-	return parsed.String()
+	return runtimeconfig.RewritePostgresDSNForTunnel(raw, os.Getenv)
 }
 
 func main() {

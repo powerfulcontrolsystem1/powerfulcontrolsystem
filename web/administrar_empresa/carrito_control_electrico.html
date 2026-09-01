@@ -106,6 +106,7 @@
       grid-template-rows: 1fr auto;
       position: relative;
       transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+      touch-action: manipulation;
     }
 
     .device-card.is-on {
@@ -260,6 +261,7 @@
     .device-footer.has-photo { grid-template-columns: minmax(0, 1fr) 42px; }
 
     .device-footer .btn { grid-column: 1; width: 100%; min-height: 34px; }
+    .device-footer .btn { position: relative; z-index: 2; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .device-footer.has-photo .device-photo { grid-column: 2; grid-row: 3; justify-self: end; }
     .device-toggle-action { font-weight: 800; }
     .device-toggle-action.is-on { background: var(--cart-electric-success); color: #fff; border-color: var(--cart-electric-success); }
@@ -542,6 +544,20 @@
       return item ? (normalize(item.nombre) || normalize(item.codigo) || ('Raspberry #' + id)) : (id ? ('Raspberry #' + id) : 'Raspberry no asignada');
     }
 
+    function relayRaspberryConnected(rele) {
+      const raspberryID = Number(rele && rele.raspberry_id || 0);
+      const item = state.raspberryPIs.find(function(pi) { return Number(pi && pi.id) === raspberryID; });
+      return raspberryOnline(item);
+    }
+
+    function explainDisconnectedRelay(rele, action) {
+      const device = normalize(rele && (rele.relay_name || rele.tipo_carga)) || 'este equipo';
+      const raspberry = raspberryLabel(rele && rele.raspberry_id);
+      const operation = normalize(action) || 'controlarlo';
+      setMessage('No se puede ' + operation + ' ' + device + ' porque ' + raspberry + ' está desconectada. Verifica energía, Wi-Fi o Internet de la Raspberry y espera a que el túnel se reconecte.', 'error');
+      return false;
+    }
+
     function raspberryStatusHTML(id) {
       const item = state.raspberryPIs.find(function(pi) { return Number(pi && pi.id) === Number(id || 0); });
       const online = raspberryOnline(item);
@@ -631,7 +647,7 @@
         // ultimo heartbeat: el equipo fue ordenado a encenderse y el control
         // principal debe ofrecer apagarlo de inmediato.
         const isOn = info.cls === 'is-on' || timer.active;
-        const disabled = state.sendingID > 0 || !cfg.habilitado;
+        const disabled = state.sendingID === Number(rele.id) || !cfg.habilitado;
         const hasPhoto = !!normalize(rele.imagen_url);
         return '<article class="device-card' + (isOn ? ' is-on' : '') + '">' +
           '<div class="device-body">' +
@@ -656,6 +672,18 @@
       grid.innerHTML = devicesHTML + sensorsHTML;
     }
 
+    // En móvil no se reemplaza el grid cada segundo: esa reconstrucción podía
+    // cancelar un toque justo antes del click y dejar la vista bajo el menú
+    // flotante. Solo se actualiza el texto vivo del temporizador; el estado
+    // completo sigue refrescándose al confirmar el comando o al pulsar Actualizar.
+    function refreshLiveTimerLabels() {
+      const grid = document.getElementById('cartElectricGrid');
+      if (!grid) return;
+      grid.querySelectorAll('[data-control-timer][data-rele-id]').forEach(function(button) {
+        button.textContent = timerText(button.getAttribute('data-rele-id'));
+      });
+    }
+
     async function ensureOk(res) {
       if (res && res.ok) return;
       let text = '';
@@ -665,13 +693,13 @@
       throw new Error(text || 'No se pudo completar la solicitud.');
     }
 
-    async function fetchControls() {
+    async function fetchControls(silent) {
       if (!state.empresaID || (!state.allStations && !state.estacionID)) {
         setMessage('No se pudo identificar la empresa o la estación.', 'error');
         render();
         return;
       }
-      setMessage('Cargando aparatos...', '');
+      if (!silent) setMessage('Cargando aparatos...', '');
       if (state.allStations) {
         const base = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=';
         const responses = await Promise.all(['config', 'reles', 'reglas', 'eventos', 'raspberry_pis'].map(function(action) {
@@ -683,7 +711,7 @@
         state.eventos = Array.isArray(responses[3]) ? responses[3] : [];
         state.raspberryPIs = Array.isArray(responses[4]) ? responses[4] : [];
         populateStationFilter();
-        setMessage('', '');
+        if (!silent) setMessage('', '');
         render();
         return;
       }
@@ -699,8 +727,25 @@
       state.sensores = Array.isArray(payload.sensores) ? payload.sensores : [];
       state.eventos = Array.isArray(payload.eventos) ? payload.eventos : [];
       state.raspberryPIs = Array.isArray(payload.raspberry_pis) ? payload.raspberry_pis : [];
-      setMessage('', '');
+      if (!silent) setMessage('', '');
       render();
+    }
+
+    function relayStateMatches(releID, estado) {
+      const rele = state.reles.find(function(item) { return Number(item.id) === Number(releID); });
+      if (!rele) return false;
+      const current = normalize(rele.ultimo_estado).toLowerCase();
+      if (estado === 'on') return current === 'on' || current === 'encendido';
+      return current === 'off' || current === 'apagado';
+    }
+
+    async function waitForRelayConfirmation(releID, estado) {
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        await new Promise(function(resolve) { window.setTimeout(resolve, 1500); });
+        await fetchControls(true);
+        if (relayStateMatches(releID, estado)) return true;
+      }
+      return false;
     }
 
     async function sendCommand(releID, estado) {
@@ -709,12 +754,16 @@
         setMessage('Selecciona un aparato valido.', 'error');
         return;
       }
+        const rele = state.reles.find(function(item) { return Number(item.id) === id; }) || {};
+        if (!relayRaspberryConnected(rele)) {
+          explainDisconnectedRelay(rele, estado === 'on' ? 'encender' : 'apagar');
+          return;
+        }
       try {
 		if (estado === 'off' && state.timers[String(id)]) { delete state.timers[String(id)]; localStorage.setItem('pcsDomoticaTimers', JSON.stringify(state.timers)); }
         state.sendingID = id;
         setMessage(estado === 'on' ? 'Encendiendo aparato...' : 'Apagando aparato...', '');
         render();
-        const rele = state.reles.find(function(item) { return Number(item.id) === id; }) || {};
         const url = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=probar_rele';
         const res = await fetch(url, {
           method: 'POST',
@@ -724,8 +773,20 @@
         });
         await ensureOk(res);
         const result = await res.json();
-        await fetchControls();
-        setMessage(result && result.skipped ? (result.message || 'Comando omitido.') : (estado === 'on' ? 'Aparato encendido.' : 'Aparato apagado.'), result && result.skipped ? 'error' : 'success');
+        if (result && result.skipped) {
+          await fetchControls(true);
+          setMessage(result.message || 'Comando omitido.', 'error');
+          return;
+        }
+        if (result && result.pending) {
+          setMessage('Comando enviado; esperando confirmación de la Raspberry...', '');
+          const confirmed = await waitForRelayConfirmation(id, estado);
+          setMessage(confirmed ? (estado === 'on' ? 'Aparato encendido.' : 'Aparato apagado.') : 'El comando sigue en cola. Revisa la conexión de la Raspberry.', confirmed ? 'success' : 'error');
+          return;
+        }
+        await fetchControls(true);
+        const confirmed = relayStateMatches(id, estado);
+        setMessage(confirmed ? (estado === 'on' ? 'Aparato encendido.' : 'Aparato apagado.') : 'La Raspberry respondió, pero el estado todavía no se actualizó.', confirmed ? 'success' : 'error');
       } catch (err) {
         setMessage(err.message || 'No se pudo enviar el comando electrico.', 'error');
       } finally {
@@ -841,14 +902,24 @@
         const schedule = ev.target && ev.target.closest ? ev.target.closest('[data-control-schedule]') : null;
         if (schedule) { openSchedule(schedule.getAttribute('data-rele-id')); return; }
 		const timer = ev.target && ev.target.closest ? ev.target.closest('[data-control-timer]') : null;
-		if (timer) { state.selectedReleID=parsePositiveInt(timer.getAttribute('data-rele-id')); const r=state.reles.find(x=>Number(x.id)===state.selectedReleID); document.getElementById('cartElectricTimerTitle').textContent=(r&&r.relay_name)||'Equipo'; document.getElementById('cartElectricTimerDialog').showModal(); return; }
+        if (timer) {
+          state.selectedReleID = parsePositiveInt(timer.getAttribute('data-rele-id'));
+          const r = state.reles.find(function(item) { return Number(item.id) === state.selectedReleID; });
+          if (!relayRaspberryConnected(r)) {
+            explainDisconnectedRelay(r, 'iniciar el temporizador de');
+            return;
+          }
+          document.getElementById('cartElectricTimerTitle').textContent = (r && r.relay_name) || 'Equipo';
+          document.getElementById('cartElectricTimerDialog').showModal();
+          return;
+        }
         const toggle = ev.target && ev.target.closest ? ev.target.closest('[data-control-toggle]') : null;
         if (toggle) { sendCommand(toggle.getAttribute('data-rele-id'), toggle.getAttribute('data-control-toggle')); return; }
       });
       document.getElementById('cartElectricScheduleForm').addEventListener('submit', function(ev) { ev.preventDefault(); saveSchedule().catch(function(err) { setMessage(err.message || 'No se pudo guardar programación.', 'error'); }); });
 		document.getElementById('cartElectricTimerForm').addEventListener('click', function(ev){const p=ev.target.closest('[data-timer-preset]');if(!p)return;const n=Number(p.getAttribute('data-timer-preset'));document.getElementById('cartElectricTimerHours').value=Math.floor(n/3600);document.getElementById('cartElectricTimerMinutes').value=Math.floor(n%3600/60);document.getElementById('cartElectricTimerSeconds').value=n%60;});
-		document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const rele=state.reles.find(x=>Number(x.id)===state.selectedReleID)||{}; const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:Number(rele.estacion_id||state.estacionID||0),rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); rele.ultimo_estado='on'; state.timers[String(state.selectedReleID)]=Date.now()+sec*1000;localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers));document.getElementById('cartElectricTimerDialog').close(); render(); await fetchControls(); setMessage('Temporizador iniciado; el equipo quedara encendido hasta finalizar.','success'); });
-		setInterval(function(){ if(Object.keys(state.timers).length || state.reles.some(function(rele){return rele.programacion_habilitada;})) render(); },1000);
+        document.getElementById('cartElectricTimerForm').addEventListener('submit', async function(ev) { ev.preventDefault(); const sec=Number(document.getElementById('cartElectricTimerHours').value||0)*3600+Number(document.getElementById('cartElectricTimerMinutes').value||0)*60+Number(document.getElementById('cartElectricTimerSeconds').value||0); if(sec<1) throw new Error('Indica una duración válida.'); const rele=state.reles.find(x=>Number(x.id)===state.selectedReleID)||{}; if(!relayRaspberryConnected(rele)){explainDisconnectedRelay(rele,'iniciar el temporizador de');return;} const res=await fetch('/api/empresa/control_electrico?empresa_id='+encodeURIComponent(state.empresaID)+'&action=temporizador_rele',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({estacion_id:Number(rele.estacion_id||state.estacionID||0),rele_id:state.selectedReleID,duracion_segundos:sec})}); await ensureOk(res); rele.ultimo_estado='on'; state.timers[String(state.selectedReleID)]=Date.now()+sec*1000;localStorage.setItem('pcsDomoticaTimers',JSON.stringify(state.timers));document.getElementById('cartElectricTimerDialog').close(); render(); await fetchControls(); setMessage('Temporizador iniciado; el equipo quedara encendido hasta finalizar.','success'); });
+		setInterval(function(){ if(Object.keys(state.timers).length) refreshLiveTimerLabels(); },1000);
 
       fetchControls().catch(function(err) {
         setMessage(err.message || 'No se pudieron cargar aparatos.', 'error');

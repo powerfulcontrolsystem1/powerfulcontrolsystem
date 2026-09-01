@@ -113,12 +113,12 @@ func superSoporteRemotoEmpresasGet(w http.ResponseWriter, r *http.Request, dbEmp
 				continue
 			}
 		}
-		cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresa.EmpresaID)
+		cfg, err := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresa.EmpresaID)
 		if err != nil {
 			continue
 		}
 		applyRustDeskDownloadDefaults(&cfg)
-		uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresa.EmpresaID)
+		uso, err := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresa.EmpresaID)
 		if err != nil {
 			continue
 		}
@@ -128,23 +128,7 @@ func superSoporteRemotoEmpresasGet(w http.ResponseWriter, r *http.Request, dbEmp
 }
 
 func superSoporteRemotoConfigGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
-	empresaID, err := parseEmpresaIDQuery(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
-	if err != nil {
-		http.Error(w, "No se pudo consultar configuracion de soporte remoto", http.StatusInternalServerError)
-		return
-	}
-	applyRustDeskDownloadDefaults(&cfg)
-	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
-	if err != nil {
-		http.Error(w, "No se pudo consultar consumo de soporte remoto", http.StatusInternalServerError)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg, "uso": uso})
+	empresaSoporteRemotoConfigGet(w, r, dbEmp)
 }
 
 func superSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -158,23 +142,23 @@ func superSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, dbEm
 		http.Error(w, "JSON invalido", http.StatusBadRequest)
 		return
 	}
-	current, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	current, err := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion actual", http.StatusInternalServerError)
 		return
 	}
 	empresaSoporteRemotoApplyConfigPayload(&current, payload, adminEmailFromRequest(r))
-	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp, current); err != nil {
+	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, current); err != nil {
 		http.Error(w, "No se pudo guardar configuracion de soporte remoto", http.StatusBadRequest)
 		return
 	}
-	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar", http.StatusInternalServerError)
 		return
 	}
 	applyRustDeskDownloadDefaults(&cfg)
-	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	uso, err := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar el consumo", http.StatusInternalServerError)
 		return
@@ -198,7 +182,7 @@ func superSoporteRemotoDispositivosGet(w http.ResponseWriter, r *http.Request, d
 		http.Error(w, "offset invalido", http.StatusBadRequest)
 		return
 	}
-	rows, total, err := dbpkg.ListEmpresaSoporteRemotoDispositivos(dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoDispositivoFilter{
+	rows, total, err := dbpkg.ListEmpresaSoporteRemotoDispositivosContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoDispositivoFilter{
 		IncludeInactive: queryBool(r, "include_inactive"),
 		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
 		Limit:           limit,
@@ -208,7 +192,7 @@ func superSoporteRemotoDispositivosGet(w http.ResponseWriter, r *http.Request, d
 		http.Error(w, "No se pudieron consultar dispositivos", http.StatusInternalServerError)
 		return
 	}
-	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "total": total, "rows": rows, "uso": uso})
 }
 
@@ -228,7 +212,7 @@ func superSoporteRemotoSesionesGet(w http.ResponseWriter, r *http.Request, dbEmp
 		http.Error(w, "offset invalido", http.StatusBadRequest)
 		return
 	}
-	rows, total, err := dbpkg.ListEmpresaSoporteRemotoSesiones(dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoSessionFilter{
+	rows, total, err := dbpkg.ListEmpresaSoporteRemotoSesionesContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaSoporteRemotoSessionFilter{
 		IncludeInactive: queryBool(r, "include_inactive"),
 		EstadoSesion:    strings.TrimSpace(r.URL.Query().Get("estado_sesion")),
 		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
@@ -239,7 +223,7 @@ func superSoporteRemotoSesionesGet(w http.ResponseWriter, r *http.Request, dbEmp
 		http.Error(w, "No se pudieron consultar sesiones", http.StatusInternalServerError)
 		return
 	}
-	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresaID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "total": total, "rows": rows, "uso": uso})
 }
 
@@ -260,11 +244,11 @@ func superSoporteRemotoReporteGet(w http.ResponseWriter, r *http.Request, dbEmp 
 		if q != "" && !strings.Contains(haystack, q) {
 			continue
 		}
-		cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresa.EmpresaID)
+		cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, empresa.EmpresaID)
 		if cfgErr != nil {
 			continue
 		}
-		uso, usoErr := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresa.EmpresaID)
+		uso, usoErr := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, empresa.EmpresaID)
 		if usoErr != nil {
 			continue
 		}
@@ -337,7 +321,7 @@ func superSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, dbEm
 			return
 		}
 	}
-	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, payload.EmpresaID)
+	cfg, err := dbpkg.GetEmpresaSoporteRemotoConfigContext(r.Context(), dbEmp, payload.EmpresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar la configuracion remota", http.StatusInternalServerError)
 		return
@@ -346,10 +330,10 @@ func superSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, dbEm
 		http.Error(w, "El soporte remoto esta deshabilitado para esta empresa", http.StatusPreconditionFailed)
 		return
 	}
-	session, err := dbpkg.CreateEmpresaSoporteRemotoSession(dbEmp, payload.EmpresaID, payload.DispositivoID, adminEmailFromRequest(r), payload.OperadorNombre, payload.OperadorEmail, payload.Motivo, payload.DuracionMin, cfg.RequiereAprobacionOperador)
+	session, err := dbpkg.CreateEmpresaSoporteRemotoSessionContext(r.Context(), dbEmp, payload.EmpresaID, payload.DispositivoID, adminEmailFromRequest(r), payload.OperadorNombre, payload.OperadorEmail, payload.Motivo, payload.DuracionMin, cfg.RequiereAprobacionOperador)
 	if err != nil {
 		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
-			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, payload.EmpresaID)
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, payload.EmpresaID)
 			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
 			return
 		}
@@ -357,7 +341,7 @@ func superSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, dbEm
 		return
 	}
 	viewerURL := empresaSoporteRemotoBuildViewerURL(r, payload.EmpresaID, session.CodigoSesion, session.TokenVisualizacionRaw)
-	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, payload.EmpresaID)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, payload.EmpresaID)
 	writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "session": session, "viewer_url": viewerURL, "portal_publico_url": empresaSoporteRemotoBuildPublicPortalURL(r, payload.EmpresaID, session.CodigoSesion, session.TokenVisualizacionRaw), "uso": uso})
 }
 
@@ -380,20 +364,20 @@ func superSoporteRemotoSesionEstado(w http.ResponseWriter, r *http.Request, dbEm
 		http.Error(w, "empresa_id y codigo_sesion son obligatorios", http.StatusBadRequest)
 		return
 	}
-	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbEmp, payload.EmpresaID, payload.CodigoSesion, estado, payload.Observaciones); err != nil {
+	if err := dbpkg.SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, payload.CodigoSesion, estado, payload.Observaciones); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "sesion no encontrada", http.StatusNotFound)
 			return
 		}
 		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
-			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, payload.EmpresaID)
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, payload.EmpresaID)
 			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
 			return
 		}
 		http.Error(w, "No se pudo actualizar la sesion", http.StatusInternalServerError)
 		return
 	}
-	session, _ := dbpkg.GetEmpresaSoporteRemotoSessionByCodigo(dbEmp, payload.EmpresaID, payload.CodigoSesion)
-	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, payload.EmpresaID)
+	session, _ := dbpkg.GetEmpresaSoporteRemotoSessionByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, payload.CodigoSesion)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUsoContext(r.Context(), dbEmp, payload.EmpresaID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "session": session, "uso": uso})
 }

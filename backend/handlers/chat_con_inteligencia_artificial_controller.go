@@ -23,6 +23,7 @@ import (
 
 	aipkg "github.com/you/pos-backend/ai"
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type openAIStreamEvent struct {
@@ -996,25 +997,17 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 					}
 				}
 				if len(tools) > 0 && enterpriseAIAgentModeEnabled() && enterpriseAIWriteToolEnabled(aipkg.ToolCatalogCreateProduct) {
-					toolUsageReserved := false
-					respuesta, promptTokens, completionTokens, err = c.callOpenAIResponsesWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt, nil, tools, func(call openAIResponsesFunctionCall) (string, error) {
-						if !toolUsageReserved {
-							if _, _, reserveErr := reserveAgenteInternetLightUsage(c.dbEmp, c.dbSuper, payload.EmpresaID, googleAccount); reserveErr != nil {
-								agentToolUsageErr = reserveErr
-								return "", reserveErr
-							}
-							toolUsageReserved = true
-						}
+					respuesta, promptTokens, completionTokens, err = c.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, payload.Pregunta, payload.Historial, systemPrompt, nil, tools, func(call openAIResponsesFunctionCall) (string, error) {
 						return dispatchEnterpriseAIResponsesFunctionCall(c.dbEmp, r, ctx, call)
 					}, empresaAISafetyIdentifier(googleAccount))
 				} else {
-					respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt, empresaAISafetyIdentifier(googleAccount))
+					respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPromptContext(r.Context(), model, payload.Pregunta, payload.Historial, systemPrompt)
 				}
 			} else {
-				respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt, empresaAISafetyIdentifier(googleAccount))
+				respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPromptContext(r.Context(), model, payload.Pregunta, payload.Historial, systemPrompt)
 			}
 		} else {
-			respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPrompt(model, payload.Pregunta, payload.Historial, systemPrompt, empresaAISafetyIdentifier(googleAccount))
+			respuesta, promptTokens, completionTokens, err = c.generateResponseWithSystemPromptContext(r.Context(), model, payload.Pregunta, payload.Historial, systemPrompt)
 		}
 		if err != nil {
 			if agentToolUsageErr != nil {
@@ -1273,7 +1266,7 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	if memory := empresaAIMemoryPrompt(c.dbEmp, empresaID, googleAccount); memory != "" {
 		systemPrompt += "\n\n" + memory
 	}
-	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptAndAttachment(model, preguntaFinal, historial, systemPrompt, att, empresaAISafetyIdentifier(googleAccount))
+	respuesta, promptTokens, completionTokens, err := c.generateResponseWithSystemPromptAndAttachmentContext(r.Context(), model, preguntaFinal, historial, systemPrompt, att)
 	if err != nil {
 		http.Error(w, publicAIProviderError(err), http.StatusBadGateway)
 		return
@@ -1711,24 +1704,38 @@ func empresaAIMemoryPrompt(dbConn *sql.DB, empresaID int64, usuarioID string) st
 }
 
 func (c *EmpresaAIChatController) generateResponseWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, safetyIdentifiers ...string) (string, int64, int64, error) {
+	return c.generateResponseWithSystemPromptContext(context.Background(), model, pregunta, historial, systemPrompt, safetyIdentifiers...)
+}
+
+func (c *EmpresaAIChatController) generateResponseWithSystemPromptContext(ctx context.Context, model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, safetyIdentifiers ...string) (string, int64, int64, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if strings.EqualFold(model.Provider, "google") {
-		return c.callGoogleGeminiWithSystemPrompt(model, pregunta, historial, systemPrompt)
+		return c.callGoogleGeminiWithSystemPromptContext(ctx, model, pregunta, historial, systemPrompt)
 	}
 	if strings.EqualFold(model.Provider, "openai") {
 		// Si el modelo apunta al endpoint de Responses, usar el flujo nuevo.
 		if strings.Contains(strings.ToLower(model.Endpoint), "/v1/responses") {
-			return c.callOpenAIResponsesWithSystemPrompt(model, pregunta, historial, systemPrompt, nil, nil, nil, safetyIdentifiers...)
+			return c.callOpenAIResponsesWithSystemPromptContext(ctx, model, pregunta, historial, systemPrompt, nil, nil, nil, safetyIdentifiers...)
 		}
-		return c.callOpenAIWithSystemPrompt(model, pregunta, historial, systemPrompt)
+		return c.callOpenAIWithSystemPromptContext(ctx, model, pregunta, historial, systemPrompt)
 	}
 	return "", 0, 0, fmt.Errorf("proveedor no soportado")
 }
 
-func (c *EmpresaAIChatController) generateResponseWithSystemPromptAndAttachment(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, att *aiAttachment, safetyIdentifiers ...string) (string, int64, int64, error) {
-	if strings.EqualFold(model.Provider, "openai") {
-		return c.callOpenAIResponsesWithSystemPrompt(model, pregunta, historial, systemPrompt, att, nil, nil, safetyIdentifiers...)
+func (c *EmpresaAIChatController) generateResponseWithSystemPromptAndAttachment(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, att *aiAttachment) (string, int64, int64, error) {
+	return c.generateResponseWithSystemPromptAndAttachmentContext(context.Background(), model, pregunta, historial, systemPrompt, att)
+}
+
+func (c *EmpresaAIChatController) generateResponseWithSystemPromptAndAttachmentContext(ctx context.Context, model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, att *aiAttachment) (string, int64, int64, error) {
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	return c.generateResponseWithSystemPrompt(model, pregunta, historial, systemPrompt, safetyIdentifiers...)
+	if strings.EqualFold(model.Provider, "openai") {
+		return c.callOpenAIResponsesWithSystemPromptContext(ctx, model, pregunta, historial, systemPrompt, att, nil, nil)
+	}
+	return c.generateResponseWithSystemPromptContext(ctx, model, pregunta, historial, systemPrompt)
 }
 
 func (c *EmpresaAIChatController) callOpenAIResponsesWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string, att *aiAttachment, tools []map[string]interface{}, dispatch func(openAIResponsesFunctionCall) (string, error), safetyIdentifiers ...string) (string, int64, int64, error) {
@@ -2074,6 +2081,13 @@ func empresaAISafetyIdentifier(scope string) string {
 }
 
 func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
+	return c.callOpenAIWithSystemPromptContext(context.Background(), model, pregunta, historial, systemPrompt)
+}
+
+func (c *EmpresaAIChatController) callOpenAIWithSystemPromptContext(ctx context.Context, model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	apiKey, err := c.resolveModelAPIKey(model)
 	if err != nil {
 		return "", 0, 0, err
@@ -2107,7 +2121,7 @@ func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIMode
 	}
 	payload, _ := json.Marshal(body)
 
-	req, err := http.NewRequest(http.MethodPost, model.Endpoint, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, model.Endpoint, bytes.NewReader(payload))
 	if err != nil {
 		return "", 0, 0, fmt.Errorf("no se pudo crear solicitud al proveedor")
 	}
@@ -2116,7 +2130,7 @@ func (c *EmpresaAIChatController) callOpenAIWithSystemPrompt(model empresaAIMode
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %v", err)
+		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -2332,6 +2346,13 @@ func (c *EmpresaAIChatController) callGoogleGemini(model empresaAIModelDef, preg
 }
 
 func (c *EmpresaAIChatController) callGoogleGeminiWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
+	return c.callGoogleGeminiWithSystemPromptContext(context.Background(), model, pregunta, historial, systemPrompt)
+}
+
+func (c *EmpresaAIChatController) callGoogleGeminiWithSystemPromptContext(ctx context.Context, model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	apiKey, err := c.resolveModelAPIKey(model)
 	if err != nil {
 		return "", 0, 0, err
@@ -2357,7 +2378,7 @@ func (c *EmpresaAIChatController) callGoogleGeminiWithSystemPrompt(model empresa
 	}
 	payload, _ := json.Marshal(body)
 
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
 	if err != nil {
 		return "", 0, 0, fmt.Errorf("no se pudo crear solicitud al proveedor")
 	}
@@ -2365,7 +2386,7 @@ func (c *EmpresaAIChatController) callGoogleGeminiWithSystemPrompt(model empresa
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %v", err)
+		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -2514,14 +2535,7 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 }
 
 func truncateText(v string, max int) string {
-	if max <= 0 {
-		return ""
-	}
-	r := []rune(strings.TrimSpace(v))
-	if len(r) <= max {
-		return string(r)
-	}
-	return string(r[:max])
+	return valueutil.Truncate(v, max)
 }
 
 func isProviderLimitError(err error) bool {

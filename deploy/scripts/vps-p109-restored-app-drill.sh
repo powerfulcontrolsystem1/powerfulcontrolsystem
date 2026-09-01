@@ -8,6 +8,7 @@ SOURCE_ENV="${SOURCE_ENV:-$PROJECT_DIR/deploy/.env.platform}"
 BACKUP_DIR="${BACKUP_DIR:-}"
 PCS_API_IMAGE_DIGEST="${PCS_API_IMAGE_DIGEST:-}"
 PCS_MIGRATE_IMAGE_DIGEST="${PCS_MIGRATE_IMAGE_DIGEST:-}"
+PCS_CLAMAV_IMAGE_DIGEST="${PCS_CLAMAV_IMAGE_DIGEST:-}"
 P109_DRILL_ID="${P109_DRILL_ID:-p109-restore-app-$(date +%s)}"
 P109_HOST_PORT="${P109_HOST_PORT:-18083}"
 RESTORE_IMAGE="${RESTORE_IMAGE:-postgres:16.14-alpine}"
@@ -40,6 +41,8 @@ json_escape() {
   fail "PCS_API_IMAGE_DIGEST debe usar repositorio@sha256:<64 hex>."
 [[ "$PCS_MIGRATE_IMAGE_DIGEST" =~ ^[^[:space:]@]+@sha256:[a-f0-9]{64}$ ]] ||
   fail "PCS_MIGRATE_IMAGE_DIGEST debe usar repositorio@sha256:<64 hex>."
+[[ "$PCS_CLAMAV_IMAGE_DIGEST" =~ ^[^[:space:]@]+@sha256:[a-f0-9]{64}$ ]] ||
+  fail "PCS_CLAMAV_IMAGE_DIGEST debe usar repositorio@sha256:<64 hex>."
 [[ "$P109_HOST_PORT" =~ ^[0-9]+$ ]] || fail "P109_HOST_PORT debe ser numerico."
 ((P109_HOST_PORT >= 1024 && P109_HOST_PORT <= 65535)) ||
   fail "P109_HOST_PORT debe estar entre 1024 y 65535."
@@ -68,6 +71,8 @@ docker image inspect "$PCS_API_IMAGE_DIGEST" >/dev/null 2>&1 ||
   fail "La imagen API exacta no esta disponible localmente."
 docker image inspect "$PCS_MIGRATE_IMAGE_DIGEST" >/dev/null 2>&1 ||
   fail "La imagen de migracion exacta no esta disponible localmente."
+docker image inspect "$PCS_CLAMAV_IMAGE_DIGEST" >/dev/null 2>&1 ||
+  fail "La imagen ClamAV exacta no esta disponible localmente."
 
 backup_root="$PROJECT_DIR/backups/vps-snapshots"
 if [ -z "$BACKUP_DIR" ]; then
@@ -86,12 +91,13 @@ postgres="${P109_DRILL_ID}-postgres"
 api="${P109_DRILL_ID}-api"
 api_replica="${P109_DRILL_ID}-api-replica"
 migrate="${P109_DRILL_ID}-migrate"
+clamav="${P109_DRILL_ID}-clamav"
 workdir="/tmp/${P109_DRILL_ID}"
 runtime_user="pcs_restore_runtime"
 restore_password="$(openssl rand -hex 24)"
 runtime_password="$(openssl rand -hex 24)"
 
-for container in "$postgres" "$migrate" "$api" "$api_replica"; do
+for container in "$postgres" "$migrate" "$api" "$api_replica" "$clamav"; do
   docker container inspect "$container" >/dev/null 2>&1 &&
     fail "El contenedor aislado ya existe y no sera sobrescrito: $container"
 done
@@ -106,7 +112,7 @@ fi
 [ ! -e "$workdir" ] || fail "El directorio temporal ya existe: $workdir"
 
 cleanup() {
-  docker rm -f "$api" "$api_replica" "$migrate" "$postgres" >/dev/null 2>&1 || true
+  docker rm -f "$api" "$api_replica" "$migrate" "$postgres" "$clamav" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
   if [[ "$workdir" == /tmp/p109-restore-app-* ]]; then
     rm -rf -- "$workdir"
@@ -118,6 +124,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 mkdir -p "$workdir/private_storage"
+mkdir -p "$workdir/clamav-db"
 tar -xzf "$private_tar" -C "$workdir/private_storage"
 private_root="$workdir/private_storage"
 if [ -d "$private_root/_data" ]; then
@@ -128,6 +135,34 @@ fi
 chown -R 10001:10001 "$private_root"
 
 docker network create "$network" >/dev/null
+echo "[RUN] Arrancando ClamAV exacto en la red aislada."
+docker run -d \
+  --name "$clamav" \
+  --network "$network" \
+  --network-alias clamav \
+  --security-opt no-new-privileges:true \
+  --cap-drop ALL \
+  --cap-add CHOWN \
+  --cap-add DAC_OVERRIDE \
+  --cap-add FOWNER \
+  --cap-add SETGID \
+  --cap-add SETUID \
+  --pids-limit 128 \
+  --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+  --tmpfs /run:rw,noexec,nosuid,size=16m \
+  -v "$workdir/clamav-db:/var/lib/clamav" \
+  "$PCS_CLAMAV_IMAGE_DIGEST" >/dev/null
+for attempt in $(seq 1 90); do
+  if docker exec "$clamav" clamdscan --ping 1 >/dev/null 2>&1; then
+    break
+  fi
+  [ "$(docker inspect -f '{{.State.Running}}' "$clamav" 2>/dev/null || true)" = "true" ] || {
+    docker logs --tail 80 "$clamav" >&2 || true
+    fail "ClamAV aislado termino antes de quedar listo."
+  }
+  [ "$attempt" -lt 90 ] || fail "ClamAV aislado no alcanzo readiness."
+  sleep 2
+done
 docker run -d \
   --name "$postgres" \
   --network "$network" \

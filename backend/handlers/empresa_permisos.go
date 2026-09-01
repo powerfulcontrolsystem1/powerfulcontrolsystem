@@ -15,6 +15,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -200,6 +201,7 @@ var permissionUniversalGroupLabels = map[string]string{
 	"Operacion y ventas":                            "Operacion universal y ventas",
 	"Operacion diaria y ventas":                     "Operaci\u00f3n universal y ventas",
 	"Operacion y venta":                             "Operaci\u00f3n universal y ventas",
+	"Acceso personal":                               "Acceso universal personal",
 	"Permisos base de ventas":                       "Permisos universales base de ventas",
 	"Canales digitales y colaboracion":              "Canales digitales universales y colaboraci\u00f3n",
 	"Plantillas de negocio":                         "Soluciones universales por negocio",
@@ -224,14 +226,14 @@ var permissionUniversalGroupLabels = map[string]string{
 	"Facturacion DIAN":                              "Facturaci\u00f3n electr\u00f3nica universal",
 	"Gesti\u00f3n de Relaciones con Clientes (CRM)": "CRM universal y clientes",
 	"Gestion de Relaciones con Clientes (CRM)":      "CRM universal y clientes",
-	"Clientes":                   "CRM universal y clientes",
-	"Personas y activos":         "Personas y activos universales",
-	"An\u00e1lisis y control":    "An\u00e1lisis universal y control",
-	"Analisis y control":         "An\u00e1lisis universal y control",
-	"Documentos, nube y soporte": "Documentos universales, nube y soporte",
-	"Domotica":                   "Administraci\u00f3n universal y configuraci\u00f3n",
-	"Domotica y Energia Solar":   "Domotica universal y energia solar",
-	"Licencia":                   "Administraci\u00f3n universal y configuraci\u00f3n",
+	"Clientes":                                      "CRM universal y clientes",
+	"Personas y activos":                            "Personas y activos universales",
+	"An\u00e1lisis y control":                       "An\u00e1lisis universal y control",
+	"Analisis y control":                            "An\u00e1lisis universal y control",
+	"Documentos, nube y soporte":                    "Documentos universales, nube y soporte",
+	"Domotica":                                      "Administraci\u00f3n universal y configuraci\u00f3n",
+	"Domotica y Energia Solar":                      "Domotica universal y energia solar",
+	"Licencia":                                      "Administraci\u00f3n universal y configuraci\u00f3n",
 }
 
 var permissionUniversalModuleLabels = map[string]string{
@@ -813,8 +815,8 @@ func resolveAdminPermissionRoleForContext(dbSuper *sql.DB, adminEmail, rawRole s
 // EmpresaPermisosFinosHandler administra el techo fino de modulos, acciones y paginas para una empresa.
 func EmpresaPermisosFinosHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := dbpkg.EnsureEmpresaPermisosFinosSchema(dbSuper); err != nil {
-			http.Error(w, "failed to ensure empresa permisos finos schema: "+err.Error(), http.StatusInternalServerError)
+		if err := dbpkg.EmpresaPermisosFinosSchemaReady(dbSuper); err != nil {
+			http.Error(w, "el esquema migrado de permisos finos no esta disponible", http.StatusInternalServerError)
 			return
 		}
 
@@ -1237,7 +1239,7 @@ func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		empresaID := extractEmpresaIDForPermissions(r)
 		if empresaID <= 0 {
-			next.ServeHTTP(w, r)
+			http.Error(w, "empresa_id es obligatorio para este acceso de usuario", http.StatusBadRequest)
 			return
 		}
 		if err := validateEmpresaIDConsistency(r, empresaID); err != nil {
@@ -1544,6 +1546,59 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 	}
 }
 
+func empresaPermissionSnapshotAllowsAdditionalModule(snapshot empresaPermissionSnapshot, module, action, pageKey string) (bool, string) {
+	module = strings.ToLower(strings.TrimSpace(module))
+	action = normalizePermissionAction(action, permActionRead)
+	pageKey = strings.TrimSpace(pageKey)
+	if !snapshot.CanAccess {
+		return false, "empresa fuera del alcance del usuario autenticado"
+	}
+	if module == "" || !isModuloPermitidoByLicencia(module, snapshot.AllowedModules) {
+		return false, "módulo adicional no habilitado por la licencia activa"
+	}
+	if !snapshot.RoleModuleActions[permissionModuleActionKey(module, action)] {
+		return false, "rol sin permiso para la acción del módulo adicional"
+	}
+	if pageKey != "" && !snapshot.AllowedPages[pageKey] {
+		return false, "rol sin acceso a la funcionalidad del módulo adicional"
+	}
+	return true, ""
+}
+
+func inspectEmpresaAdditionalModulePermission(r *http.Request, dbEmp, dbSuper *sql.DB, module, action, pageKey string) (bool, int, string, error) {
+	tenant, ok := TenantContextFromRequest(r)
+	if !ok || tenant.EmpresaID <= 0 || strings.TrimSpace(tenant.AdminEmail) == "" {
+		return false, http.StatusUnauthorized, "unauthenticated", nil
+	}
+	snapshot, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, strings.ToLower(strings.TrimSpace(tenant.AdminEmail)), tenant.EmpresaID)
+	if err != nil {
+		return false, http.StatusInternalServerError, "No se pudo validar el permiso adicional requerido", err
+	}
+	allowed, reason := empresaPermissionSnapshotAllowsAdditionalModule(snapshot, module, action, pageKey)
+	if !allowed {
+		return false, http.StatusForbidden, "forbidden: " + reason, nil
+	}
+	return true, http.StatusOK, "", nil
+}
+
+// requireEmpresaAdditionalModulePermission is used by operations that join two
+// security domains. Electronic payroll emission requires both the fiscal
+// approval already enforced by the outer route and payroll approval here.
+func requireEmpresaAdditionalModulePermission(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, module, action, pageKey string) bool {
+	allowed, status, message, err := inspectEmpresaAdditionalModulePermission(r, dbEmp, dbSuper, module, action, pageKey)
+	if err != nil {
+		tenant, _ := TenantContextFromRequest(r)
+		log.Printf("[authz] additional module=%s empresa_id=%d error: %v", module, tenant.EmpresaID, err)
+	}
+	if !allowed {
+		tenant, _ := TenantContextFromRequest(r)
+		log.Printf("[authz] additional module denied module=%s action=%s empresa_id=%d status=%d", module, action, tenant.EmpresaID, status)
+		http.Error(w, message, status)
+		return false
+	}
+	return true
+}
+
 func extractEmpresaIDForPermissions(r *http.Request) int64 {
 	if id, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && id > 0 {
 		return id
@@ -1621,6 +1676,12 @@ func extractEmpresaIDFromJSONBody(r *http.Request) int64 {
 func validateEmpresaIDConsistency(r *http.Request, empresaID int64) error {
 	if r == nil || empresaID <= 0 {
 		return nil
+	}
+	if principalType, _ := r.Context().Value("sessionPrincipalType").(string); strings.EqualFold(strings.TrimSpace(principalType), "empresa_usuario") {
+		sessionEmpresaID, _ := r.Context().Value("sessionEmpresaID").(int64)
+		if sessionEmpresaID <= 0 || sessionEmpresaID != empresaID {
+			return fmt.Errorf("empresa_id no coincide con la empresa de la sesion")
+		}
 	}
 	if r.URL != nil {
 		if err := validateEmpresaIDValues(r.URL.Query()["empresa_id"], empresaID, "query"); err != nil {
@@ -1733,24 +1794,11 @@ func toPositiveInt64(v interface{}) int64 {
 }
 
 func parsePositiveInt64(raw string) int64 {
-	v := strings.TrimSpace(raw)
-	if v == "" {
-		return 0
-	}
-	n, err := strconv.ParseInt(v, 10, 64)
-	if err != nil || n <= 0 {
-		return 0
-	}
-	return n
+	return valueutil.ParsePositiveInt64(raw)
 }
 
 func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if trimmed := strings.TrimSpace(value); trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func trimWithLimit(raw string, maxLen int) string {
@@ -2070,7 +2118,7 @@ func resolveSoportesComprasIAPermissionAction(r *http.Request) string {
 		return permActionUpdate
 	case "eliminar", "purgar":
 		return permActionDelete
-	case "radicar", "seed_demo":
+	case "radicar":
 		return permActionCreate
 	}
 	return defaultPermissionActionFromMethod(r.Method)
@@ -2168,7 +2216,33 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 	if action == "activar" || action == "desactivar" {
 		return permActionUpdate
 	}
-	if (action == "procesar_reintentos" || action == "reconciliar_estados" || action == "firmar_xml_real" || action == "firmar_xml_xades_base" || action == "validar_documento_dian" || action == "enviar_documento_real" || action == "reconexion_dian" || action == "consultar_acuse_real" || action == "pruebas_dian" || action == "pruebas_habilitacion" || action == "enviar_set_pruebas" || action == "activar_produccion_local") && (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {
+	if action == "configuracion_documentos_dian" {
+		if r.Method == http.MethodGet {
+			return permActionRead
+		}
+		return permActionApprove
+	}
+	if action == "vencimiento_certificado" || action == "verificar_vencimiento_certificado" || action == "alerta_certificado" ||
+		action == "vencimiento_resolucion" || action == "verificar_vencimiento_resolucion" || action == "alerta_resolucion" {
+		notificar := strings.TrimSpace(r.URL.Query().Get("notificar"))
+		if notificar == "" || parseTruthy(notificar) {
+			return permActionApprove
+		}
+		return permActionRead
+	}
+	if action == "procesar_reintentos" || action == "reconciliar_estados" || action == "reconciliar_aceptados_local" ||
+		action == "facturar_desde_venta" || action == "emitir_documento_soporte" || action == "emitir_nomina_electronica" || action == "reenviar_dian" || action == "reintentar_dian" || action == "enviar_dian" ||
+		action == "firmar_xml_real" || action == "firmar_xml_xades_base" || action == "validar_documento_dian" || action == "preflight_documento" || action == "validar_previo_envio" || action == "enviar_documento_real" ||
+		action == "reconexion_dian" || action == "consultar_acuse_real" || action == "consultar_rango_numeracion" || action == "get_numbering_range" || action == "consultar_clave_tecnica" ||
+		action == "validar_credenciales" || action == "validar_secretos" || action == "pruebas_dian" || action == "pruebas_habilitacion" || action == "test_habilitacion" ||
+		action == "enviar_set_pruebas" || action == "enviar_set_habilitacion" || action == "activar_produccion_local" || action == "pasar_a_produccion_local" || action == "subir_firma" || action == "upload_firma" ||
+		action == "analizar_captura_dian" || action == "leer_captura_dian" || action == "ocr_captura_dian" ||
+		action == "importar_rut_pdf_ia" || action == "leer_rut_pdf_ia" || action == "extraer_rut_pdf_ia" ||
+		action == "importar_numeracion_pdf_ia" || action == "importar_formulario_1876_ia" || action == "leer_numeracion_pdf_ia" ||
+		action == "importar_numeracion_pdf" || action == "importar_formulario_1876" || action == "leer_numeracion_pdf" {
+		return permActionApprove
+	}
+	if action == "" && strings.Contains(strings.ToLower(r.URL.Path), "/facturacion_electronica/dian") && (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {
 		return permActionApprove
 	}
 	if action == "aprobar" || action == "emitir" || action == "emitir_factura" || action == "emitir_documento" || action == "nota_credito" || action == "emitir_nota_credito" {
@@ -2250,9 +2324,9 @@ func resolveEmpresaAuditoriaPermissionAction(r *http.Request) string {
 func resolveControlElectricoPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "config", "raspberry_pi", "rele", "rele_foto":
+	case "config", "station_card_ui", "raspberry_pi", "rele", "rele_foto", "escena":
 		return defaultPermissionActionFromMethod(r.Method)
-	case "probar_rele", "sincronizar", "ejecutar_programacion", "provisionar_tunel":
+	case "probar_rele", "sincronizar", "ejecutar_programacion", "provisionar_tunel", "instalar_ssh", "ssh_config", "ejecutar_escena":
 		return permActionApprove
 	case "activar", "desactivar":
 		return permActionUpdate
@@ -3837,7 +3911,7 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkTarifasMotel"
 	case path == "/api/empresa/hotel_tarjetas_acceso":
 		return "linkHotelTarjetasAcceso"
-	case path == "/api/empresa/nomina_sueldos":
+	case path == "/api/empresa/nomina" || path == "/api/empresa/nomina_sueldos":
 		return "linkNominaSueldos"
 	case path == "/api/empresa/horarios_trabajadores":
 		return "linkHorariosTrabajadores"

@@ -3,6 +3,9 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"io"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,7 +14,7 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
-func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
@@ -28,7 +31,16 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 		case http.MethodGet:
 			switch action {
 			case "dashboard":
-				row, err := dbpkg.BuildEmpresaContabilidadAvanzadaDashboard(dbEmp, empresaID)
+				includeNomina, status, message, permissionErr := inspectEmpresaAdditionalModulePermission(r, dbEmp, dbSuper, permModuleNominaSueldos, permActionRead, "linkNominaSueldos")
+				if permissionErr != nil {
+					http.Error(w, "No se pudo validar el acceso a nómina", http.StatusInternalServerError)
+					return
+				}
+				if !includeNomina && status != http.StatusForbidden {
+					http.Error(w, message, status)
+					return
+				}
+				row, err := dbpkg.BuildEmpresaContabilidadAvanzadaDashboardScoped(dbEmp, empresaID, includeNomina)
 				if err != nil {
 					http.Error(w, "No se pudo consultar la suite contable Colombia", http.StatusInternalServerError)
 					return
@@ -52,12 +64,55 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 				writeJSON(w, http.StatusOK, rows)
 				return
 			case "nomina_electronica":
+				if !requireEmpresaAdditionalModulePermission(w, r, dbEmp, dbSuper, permModuleNominaSueldos, permActionRead, "linkNominaSueldos") {
+					return
+				}
 				rows, err := dbpkg.ListEmpresaNominaElectronica(dbEmp, empresaID, r.URL.Query().Get("periodo"))
 				if err != nil {
 					http.Error(w, "No se pudo listar nomina electronica", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, rows)
+				return
+			case "nomina_electronica_preflight":
+				if !requireEmpresaAdditionalModulePermission(w, r, dbEmp, dbSuper, permModuleNominaSueldos, permActionRead, "linkNominaSueldos") {
+					return
+				}
+				nominaID, err := parseInt64QueryOptional(r, "nomina_id")
+				if err != nil || nominaID <= 0 {
+					http.Error(w, "nomina_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				nomina, err := dbpkg.GetEmpresaNominaElectronicaByIDContext(r.Context(), dbEmp, empresaID, nominaID)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "nómina electrónica no encontrada", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar la nómina electrónica", http.StatusInternalServerError)
+					return
+				}
+				if nomina.LiquidacionID <= 0 {
+					writeJSON(w, http.StatusOK, map[string]interface{}{
+						"ok": false, "bloqueado": true, "empresa_id": empresaID, "nomina_id": nomina.ID,
+						"error": "el registro histórico no tiene una liquidación fuente; no puede reconstruirse ni emitirse automáticamente",
+					})
+					return
+				}
+				preflightContext, preflightErr := loadNominaElectronicaPreflightContext(r.Context(), dbEmp, empresaID, nomina.LiquidacionID, false)
+				resultado := map[string]interface{}{
+					"ok": preflightErr == nil, "bloqueado": preflightErr != nil,
+					"empresa_id": empresaID, "nomina_id": nomina.ID, "liquidacion_id": nomina.LiquidacionID,
+				}
+				if preflightContext != nil && preflightContext.preflight != nil {
+					for key, value := range preflightContext.preflight {
+						resultado[key] = value
+					}
+				}
+				if preflightErr != nil {
+					resultado["error"] = preflightErr.Error()
+				}
+				writeJSON(w, http.StatusOK, resultado)
 				return
 			case "documentos_soporte":
 				rows, err := dbpkg.ListEmpresaDocumentosSoporte(dbEmp, empresaID, r.URL.Query().Get("periodo"))
@@ -66,6 +121,53 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 					return
 				}
 				writeJSON(w, http.StatusOK, rows)
+				return
+			case "documento_soporte_preflight":
+				documentoSoporteID, err := parseInt64QueryOptional(r, "documento_soporte_id")
+				if err != nil || documentoSoporteID <= 0 {
+					http.Error(w, "documento_soporte_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				documento, err := dbpkg.GetEmpresaDocumentoSoporteByIDContext(r.Context(), dbEmp, empresaID, documentoSoporteID)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "documento soporte no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar el documento soporte", http.StatusInternalServerError)
+					return
+				}
+				var configuracion *dbpkg.EmpresaDIANDocumentoConfiguracion
+				configuracionPendiente := ""
+				if err := dbpkg.EmpresaDIANDocumentosConfiguracionSchemaReady(dbEmp); err != nil {
+					configuracionPendiente = "La tabla de configuración DIAN por documento no está disponible; ejecute pcs-migrate."
+				} else {
+					configuracion, err = dbpkg.GetEmpresaDIANDocumentoConfiguracionContext(r.Context(), dbEmp, empresaID, "documento_soporte")
+					if err != nil && !errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "No se pudo consultar la configuración DIAN de documento soporte", http.StatusInternalServerError)
+						return
+					}
+					if errors.Is(err, sql.ErrNoRows) {
+						configuracionPendiente = "No existe configuración DIAN separada para documento soporte."
+					}
+				}
+				var empresa *dbpkg.EmpresaConfiguracionAvanzada
+				empresa, err = dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, empresaID)
+				if err != nil && !errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "No se pudo consultar la configuración fiscal empresarial", http.StatusInternalServerError)
+					return
+				}
+				configuracionPrincipal, configErr := getEmpresaDIANConfig(dbEmp, empresaID)
+				if configErr != nil && !errors.Is(configErr, sql.ErrNoRows) {
+					http.Error(w, "No se pudo consultar la configuración DIAN principal", http.StatusInternalServerError)
+					return
+				}
+				resultado := buildDocumentoSoporteDIANPreflight(documento, configuracion, empresa, configuracionPrincipal)
+				if configuracionPendiente != "" {
+					resultado.Bloqueos = append(resultado.Bloqueos, configuracionPendiente)
+					resultado.PuedeEmitir = false
+				}
+				writeJSON(w, http.StatusOK, resultado)
 				return
 			case "activos_fijos":
 				rows, err := dbpkg.ListEmpresaActivosFijos(dbEmp, empresaID, r.URL.Query().Get("estado"))
@@ -124,7 +226,7 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 				writeJSON(w, http.StatusOK, rows)
 				return
 			case "libros_resumen":
-				row, err := dbpkg.BuildEmpresaContabilidadAvanzadaDashboard(dbEmp, empresaID)
+				row, err := dbpkg.BuildEmpresaContabilidadAvanzadaDashboardScoped(dbEmp, empresaID, false)
 				if err != nil {
 					http.Error(w, "No se pudo generar resumen de libros", http.StatusInternalServerError)
 					return
@@ -192,24 +294,24 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "creados": created})
 				return
 			case "nomina_electronica":
-				var payload dbpkg.EmpresaNominaElectronica
-				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-					http.Error(w, "JSON invalido", http.StatusBadRequest)
+				if !requireEmpresaAdditionalModulePermission(w, r, dbEmp, dbSuper, permModuleNominaSueldos, permActionApprove, "linkNominaSueldos") {
 					return
 				}
-				payload.EmpresaID = empresaID
-				payload.UsuarioCreador = usuario
-				id, err := dbpkg.CreateEmpresaNominaElectronica(dbEmp, payload)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id, "referencia": dbpkg.FormatEmpresaDocumentoElectronicoRef("NE", empresaID, id)})
+				writeJSON(w, http.StatusConflict, map[string]interface{}{
+					"ok": false, "bloqueado": true, "codigo": "nomina_manual_no_permitida",
+					"error": "la nómina electrónica no se crea manualmente; use Nómina y sueldos con liquidaciones y pagos reales para construir la fuente mensual",
+				})
 				return
 			case "documentos_soporte":
 				var payload dbpkg.EmpresaDocumentoSoporteElectronico
-				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-					http.Error(w, "JSON invalido", http.StatusBadRequest)
+				decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+				decoder.DisallowUnknownFields()
+				if err := decoder.Decode(&payload); err != nil {
+					http.Error(w, "JSON de documento soporte invalido", http.StatusBadRequest)
+					return
+				}
+				if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+					http.Error(w, "JSON de documento soporte invalido", http.StatusBadRequest)
 					return
 				}
 				payload.EmpresaID = empresaID
@@ -396,6 +498,110 @@ func EmpresaContabilidadColombiaAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc 
 		}
 		http.Error(w, "Metodo o accion no permitida", http.StatusMethodNotAllowed)
 	}
+}
+
+type documentoSoporteDIANPreflight struct {
+	EmpresaID           int64    `json:"empresa_id"`
+	DocumentoSoporteID  int64    `json:"documento_soporte_id"`
+	TipoDocumento       string   `json:"tipo_documento"`
+	Estado              string   `json:"estado"`
+	PuedeEmitir         bool     `json:"puede_emitir"`
+	Bloqueos            []string `json:"bloqueos"`
+	Advertencias        []string `json:"advertencias"`
+	EstadoConfiguracion string   `json:"estado_configuracion,omitempty"`
+	Ambiente            string   `json:"ambiente,omitempty"`
+}
+
+// buildDocumentoSoporteDIANPreflight validates every server-side prerequisite
+// without reserving a legal number, generating XML, signing, or transmitting.
+func buildDocumentoSoporteDIANPreflight(documento *dbpkg.EmpresaDocumentoSoporteElectronico, configuracion *dbpkg.EmpresaDIANDocumentoConfiguracion, empresa *dbpkg.EmpresaConfiguracionAvanzada, configuracionPrincipal map[string]interface{}) documentoSoporteDIANPreflight {
+	resultado := documentoSoporteDIANPreflight{
+		TipoDocumento: "documento_soporte",
+		Estado:        "bloqueado_preflight",
+		Bloqueos:      make([]string, 0),
+		Advertencias:  make([]string, 0),
+	}
+	addBlock := func(message string) {
+		message = strings.TrimSpace(message)
+		if message == "" {
+			return
+		}
+		for _, existing := range resultado.Bloqueos {
+			if existing == message {
+				return
+			}
+		}
+		resultado.Bloqueos = append(resultado.Bloqueos, message)
+	}
+	if documento == nil {
+		addBlock("No se encontró el borrador contable de documento soporte.")
+		return resultado
+	}
+	resultado.EmpresaID = documento.EmpresaID
+	resultado.DocumentoSoporteID = documento.ID
+	switch strings.ToLower(strings.TrimSpace(documento.EstadoDIAN)) {
+	case "", "borrador", "preparado", "pendiente", "fallido", "contingencia":
+	case "aceptado":
+		addBlock("El documento soporte ya fue aceptado por DIAN y no puede emitirse de nuevo.")
+	default:
+		addBlock("El estado actual del documento soporte no permite una nueva emisión.")
+	}
+	if strings.TrimSpace(documento.Documento) == "" {
+		addBlock("Falta el documento del vendedor no obligado.")
+	}
+	if strings.TrimSpace(documento.NombreProveedor) == "" {
+		addBlock("Falta el nombre del vendedor no obligado.")
+	}
+	if strings.TrimSpace(documento.FechaDocumento) == "" {
+		addBlock("Falta la fecha de emisión del documento soporte.")
+	}
+	if strings.TrimSpace(documento.Concepto) == "" || documento.Subtotal <= 0 || documento.Total <= 0 {
+		addBlock("Falta concepto o importes positivos del documento soporte.")
+	}
+	if math.Abs((documento.Subtotal+documento.IVA)-documento.Total) > 0.01 || math.Abs((documento.Total-documento.Retenciones)-documento.TotalNetoContable) > 0.01 {
+		addBlock("Los importes no cuadran: total DIAN debe ser subtotal + IVA y el neto contable debe restar las retenciones.")
+	}
+	if documento.ProveedorID <= 0 {
+		resultado.Advertencias = append(resultado.Advertencias, "El borrador no está vinculado a un proveedor empresarial; revise identidad y datos de contacto antes de emitir.")
+	}
+	if empresa == nil {
+		addBlock("No existe configuración fiscal empresarial completa para identificar al adquirente.")
+	} else if empresa.EmpresaID != documento.EmpresaID {
+		addBlock("La configuración fiscal empresarial no pertenece a la empresa del documento soporte.")
+	} else if _, err := buildDocumentoSoporteFuenteFiscal(documento, empresa); err != nil {
+		addBlock(err.Error())
+	}
+	if configuracion == nil {
+		addBlock("No existe configuración DIAN separada para documento soporte.")
+		return resultado
+	}
+	resultado.EstadoConfiguracion = configuracion.Estado
+	resultado.Ambiente = configuracion.TipoAmbiente
+	if configuracion.EmpresaID > 0 && configuracion.EmpresaID != documento.EmpresaID {
+		addBlock("La configuración DIAN de documento soporte no pertenece a la empresa.")
+	} else if err := dbpkg.ValidateEmpresaDocumentoSoporteConfigForEmission(*configuracion, time.Now()); err != nil {
+		addBlock(err.Error())
+	}
+	if len(configuracionPrincipal) == 0 {
+		addBlock("No existe configuración DIAN principal para firma y transporte.")
+	} else {
+		merged := documentoSoporteMergeDIANConfig(configuracionPrincipal, documentoSoporteConfigSnapshotFromRow(configuracion))
+		for _, field := range missingDIANFieldsForDocument(merged, "documento_soporte", documento.EmpresaID) {
+			addBlock("Configuración DIAN incompleta: " + field + ".")
+		}
+		if empresa != nil {
+			nitConfig := dianOnlyDigits(genericStringValue(merged["nit"]))
+			nitEmpresa := dianOnlyDigits(empresa.NIT)
+			if nitConfig != "" && nitEmpresa != "" && nitConfig != nitEmpresa {
+				addBlock("El NIT de la configuración DIAN principal no coincide con el NIT fiscal de la empresa.")
+			}
+		}
+	}
+	if len(resultado.Bloqueos) == 0 {
+		resultado.Estado = "listo_para_emision"
+		resultado.PuedeEmitir = true
+	}
+	return resultado
 }
 
 func intQuery(r *http.Request, key string) int {

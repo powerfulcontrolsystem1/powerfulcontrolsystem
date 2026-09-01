@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 // EmpresaCredito representa una linea de credito empresarial por cliente.
@@ -396,19 +399,6 @@ func creditoWorkflowNormalizeEstado(raw string) string {
 	}
 }
 
-func creditoWorkflowNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
 func creditoWorkflowDefaultCodigo(empresaID, id int64, tipo string) string {
 	prefix := "WF"
 	switch creditoWorkflowNormalizeTipo(tipo) {
@@ -421,20 +411,11 @@ func creditoWorkflowDefaultCodigo(empresaID, id int64, tipo string) string {
 }
 
 func creditoParseJSONMap(raw string) map[string]interface{} {
-	out := map[string]interface{}{}
-	if strings.TrimSpace(raw) == "" {
-		return out
-	}
-	_ = json.Unmarshal([]byte(raw), &out)
-	return out
+	return decodeRepositoryJSONMap(raw)
 }
 
 func creditoMarshalJSON(v interface{}, fallback string) string {
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return fallback
-	}
-	return string(raw)
+	return valueutil.MarshalJSONOr(v, fallback)
 }
 
 func creditoAppendObservacion(actual, extra string) string {
@@ -447,19 +428,6 @@ func creditoAppendObservacion(actual, extra string) string {
 		return extra
 	}
 	return actual + " | " + extra
-}
-
-func creditoNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
 }
 
 func creditoRound(v float64) float64 {
@@ -532,14 +500,6 @@ func creditoResolveClasificacion(estadoCredito, fechaVencimiento string, saldo f
 		return "vencido"
 	}
 	return "al_dia"
-}
-
-func creditoLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
 }
 
 func creditoDefaultCodigo(empresaID int64, id int64) string {
@@ -1273,6 +1233,10 @@ func scanEmpresaCredito(scanner interface {
 }
 
 func creditoHydrateCuotaStatus(dbConn *sql.DB, empresaID int64, row *EmpresaCredito) {
+	creditoHydrateCuotaStatusContext(context.Background(), dbConn, empresaID, row)
+}
+
+func creditoHydrateCuotaStatusContext(ctx context.Context, dbConn *sql.DB, empresaID int64, row *EmpresaCredito) {
 	if dbConn == nil || row == nil || empresaID <= 0 || row.ID <= 0 {
 		return
 	}
@@ -1281,7 +1245,7 @@ func creditoHydrateCuotaStatus(dbConn *sql.DB, empresaID int64, row *EmpresaCred
 	var fechaMasAntigua string
 	var fechaProxima string
 	today := time.Now().In(time.Local).Format("2006-01-02")
-	err := queryRowSQLCompat(dbConn, `SELECT
+	err := queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 THEN 1 ELSE 0 END), 0),
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? THEN 1 ELSE 0 END), 0),
 		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? THEN fecha_vencimiento ELSE NULL END), ''),
@@ -1309,12 +1273,20 @@ func creditoHydrateCuotaStatus(dbConn *sql.DB, empresaID int64, row *EmpresaCred
 }
 
 func creditoHydrateCuotaStatusRows(dbConn *sql.DB, empresaID int64, rows []EmpresaCredito) {
+	creditoHydrateCuotaStatusRowsContext(context.Background(), dbConn, empresaID, rows)
+}
+
+func creditoHydrateCuotaStatusRowsContext(ctx context.Context, dbConn *sql.DB, empresaID int64, rows []EmpresaCredito) {
 	for idx := range rows {
-		creditoHydrateCuotaStatus(dbConn, empresaID, &rows[idx])
+		creditoHydrateCuotaStatusContext(ctx, dbConn, empresaID, &rows[idx])
 	}
 }
 
 func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, orderSQL string, args []interface{}, limit int) ([]EmpresaCredito, error) {
+	return listEmpresaCreditosByWhereContext(context.Background(), dbConn, empresaID, whereSQL, orderSQL, args, limit)
+}
+
+func listEmpresaCreditosByWhereContext(ctx context.Context, dbConn *sql.DB, empresaID int64, whereSQL, orderSQL string, args []interface{}, limit int) ([]EmpresaCredito, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1374,7 +1346,7 @@ func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, order
 	queryArgs = append(queryArgs, args...)
 	queryArgs = append(queryArgs, limit)
 
-	rows, err := dbConn.Query(query, queryArgs...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, queryArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -1392,12 +1364,18 @@ func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, order
 		return nil, err
 	}
 
-	creditoHydrateCuotaStatusRows(dbConn, empresaID, out)
+	creditoHydrateCuotaStatusRowsContext(ctx, dbConn, empresaID, out)
 	return out, nil
 }
 
 // GetEmpresaCreditoByID obtiene un credito puntual por empresa.
 func GetEmpresaCreditoByID(dbConn *sql.DB, empresaID, creditoID int64) (*EmpresaCredito, error) {
+	return GetEmpresaCreditoByIDContext(context.Background(), dbConn, empresaID, creditoID)
+}
+
+// GetEmpresaCreditoByIDContext obtiene un credito puntual y conserva la
+// cancelacion del llamador hasta PostgreSQL, incluida la hidratacion de cuotas.
+func GetEmpresaCreditoByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64) (*EmpresaCredito, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1405,7 +1383,7 @@ func GetEmpresaCreditoByID(dbConn *sql.DB, empresaID, creditoID int64) (*Empresa
 		return nil, errors.New("empresa_id o credito_id invalido")
 	}
 
-	row := dbConn.QueryRow(`SELECT
+	row := queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo, ''),
@@ -1446,7 +1424,7 @@ func GetEmpresaCreditoByID(dbConn *sql.DB, empresaID, creditoID int64) (*Empresa
 	if err != nil {
 		return nil, err
 	}
-	creditoHydrateCuotaStatus(dbConn, empresaID, credito)
+	creditoHydrateCuotaStatusContext(ctx, dbConn, empresaID, credito)
 	return credito, nil
 }
 
@@ -1478,7 +1456,7 @@ func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
 		args = append(args, strings.TrimSpace(filter.Hasta))
 	}
 	if strings.TrimSpace(filter.Q) != "" {
-		pattern := creditoLikePattern(filter.Q)
+		pattern := escapedContainsPattern(filter.Q)
 		clauses = append(clauses, "(LOWER(COALESCE(codigo, '')) LIKE LOWER(?) ESCAPE '!' OR LOWER(COALESCE(cliente_nombre, '')) LIKE LOWER(?) ESCAPE '!' OR LOWER(COALESCE(documento_origen, '')) LIKE LOWER(?) ESCAPE '!')")
 		args = append(args, pattern, pattern, pattern)
 	}
@@ -1508,6 +1486,12 @@ func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
 
 // ListEmpresaCreditos lista creditos por empresa con filtros y total.
 func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoFilter) ([]EmpresaCredito, int64, error) {
+	return ListEmpresaCreditosContext(context.Background(), dbConn, empresaID, filter)
+}
+
+// ListEmpresaCreditosContext lista creditos y conserva la cancelacion del
+// llamador durante conteo, listado e hidratacion de cuotas.
+func ListEmpresaCreditosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaCreditoFilter) ([]EmpresaCredito, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -1520,11 +1504,11 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 	countArgs := append([]interface{}{empresaID}, whereArgs...)
 
 	var total int64
-	if err := dbConn.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
+	if err := queryRowSQLCompatContext(ctx, dbConn, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	limit, offset := creditoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 1000)
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
@@ -1565,7 +1549,7 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 	args := append([]interface{}{empresaID}, whereArgs...)
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1583,12 +1567,18 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 		return nil, 0, err
 	}
 
-	creditoHydrateCuotaStatusRows(dbConn, empresaID, out)
+	creditoHydrateCuotaStatusRowsContext(ctx, dbConn, empresaID, out)
 	return out, total, nil
 }
 
 // ListEmpresaCreditoCuotas lista cuotas de un credito ordenadas por numero.
 func ListEmpresaCreditoCuotas(dbConn *sql.DB, empresaID, creditoID int64, includeInactive bool) ([]EmpresaCreditoCuota, error) {
+	return ListEmpresaCreditoCuotasContext(context.Background(), dbConn, empresaID, creditoID, includeInactive)
+}
+
+// ListEmpresaCreditoCuotasContext lista cuotas y conserva la cancelacion del
+// llamador hasta PostgreSQL.
+func ListEmpresaCreditoCuotasContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, includeInactive bool) ([]EmpresaCreditoCuota, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1624,7 +1614,7 @@ func ListEmpresaCreditoCuotas(dbConn *sql.DB, empresaID, creditoID int64, includ
 	}
 	query += ` ORDER BY numero_cuota ASC, id ASC`
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1682,6 +1672,12 @@ func ListEmpresaCreditoCuotas(dbConn *sql.DB, empresaID, creditoID int64, includ
 
 // ListEmpresaCreditoMovimientos lista movimientos de un credito.
 func ListEmpresaCreditoMovimientos(dbConn *sql.DB, empresaID, creditoID int64, includeInactive bool, limit int) ([]EmpresaCreditoMovimiento, error) {
+	return ListEmpresaCreditoMovimientosContext(context.Background(), dbConn, empresaID, creditoID, includeInactive, limit)
+}
+
+// ListEmpresaCreditoMovimientosContext lista movimientos y conserva la
+// cancelacion del llamador hasta PostgreSQL.
+func ListEmpresaCreditoMovimientosContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, includeInactive bool, limit int) ([]EmpresaCreditoMovimiento, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1725,7 +1721,7 @@ func ListEmpresaCreditoMovimientos(dbConn *sql.DB, empresaID, creditoID int64, i
 	query += ` ORDER BY pcs_ts(COALESCE(fecha_movimiento, fecha_creacion)) DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -2055,6 +2051,12 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 
 // SetEmpresaCreditoEstado ajusta estado operativo del credito.
 func SetEmpresaCreditoEstado(dbConn *sql.DB, empresaID, creditoID int64, estadoCredito string) error {
+	return SetEmpresaCreditoEstadoContext(context.Background(), dbConn, empresaID, creditoID, estadoCredito)
+}
+
+// SetEmpresaCreditoEstadoContext actualiza el estado de negocio y conserva la
+// cancelacion del llamador hasta PostgreSQL.
+func SetEmpresaCreditoEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, estadoCredito string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -2062,24 +2064,36 @@ func SetEmpresaCreditoEstado(dbConn *sql.DB, empresaID, creditoID int64, estadoC
 		return errors.New("empresa_id o credito_id invalido")
 	}
 	estado := creditoNormalizeEstado(estadoCredito)
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado_credito = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, creditoID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET estado_credito = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, estado, empresaID, creditoID)
 	return err
 }
 
 // SetEmpresaCreditoRowEstado activa o desactiva el registro del credito.
 func SetEmpresaCreditoRowEstado(dbConn *sql.DB, empresaID, creditoID int64, estado string) error {
+	return SetEmpresaCreditoRowEstadoContext(context.Background(), dbConn, empresaID, creditoID, estado)
+}
+
+// SetEmpresaCreditoRowEstadoContext activa o desactiva un crédito y conserva
+// la cancelacion del llamador hasta PostgreSQL.
+func SetEmpresaCreditoRowEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, creditoID int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	if empresaID <= 0 || creditoID <= 0 {
 		return errors.New("empresa_id o credito_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, creditoNormalizeRowEstado(estado), empresaID, creditoID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?`, creditoNormalizeRowEstado(estado), empresaID, creditoID)
 	return err
 }
 
 // UpdateEmpresaCredito actualiza metadata operativa del credito sin afectar historico de movimientos.
 func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
+	return UpdateEmpresaCreditoContext(context.Background(), dbConn, payload)
+}
+
+// UpdateEmpresaCreditoContext actualiza un crédito conservando la cancelación
+// de la ruta HTTP hasta PostgreSQL.
+func UpdateEmpresaCreditoContext(ctx context.Context, dbConn *sql.DB, payload EmpresaCredito) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -2114,7 +2128,7 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 		return err
 	}
 
-	_, err := dbConn.Exec(`UPDATE empresa_creditos SET
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos SET
 		codigo = ?,
 		cliente_id = ?,
 		cliente_nombre = ?,
@@ -2178,6 +2192,12 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 
 // GetEmpresaCreditoClienteLimite obtiene limite puntual por cliente.
 func GetEmpresaCreditoClienteLimite(dbConn *sql.DB, empresaID, clienteID int64, includeInactive bool) (*EmpresaCreditoClienteLimite, error) {
+	return GetEmpresaCreditoClienteLimiteContext(context.Background(), dbConn, empresaID, clienteID, includeInactive)
+}
+
+// GetEmpresaCreditoClienteLimiteContext obtiene el limite puntual y conserva
+// la cancelacion del llamador hasta PostgreSQL.
+func GetEmpresaCreditoClienteLimiteContext(ctx context.Context, dbConn *sql.DB, empresaID, clienteID int64, includeInactive bool) (*EmpresaCreditoClienteLimite, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -2205,11 +2225,17 @@ func GetEmpresaCreditoClienteLimite(dbConn *sql.DB, empresaID, clienteID int64, 
 	}
 	query += ` LIMIT 1`
 
-	return scanEmpresaCreditoClienteLimite(dbConn.QueryRow(query, args...))
+	return scanEmpresaCreditoClienteLimite(queryRowSQLCompatContext(ctx, dbConn, query, args...))
 }
 
 // GetEmpresaCreditoClienteDisponibilidad calcula cupo disponible filtrado por empresa y cliente.
 func GetEmpresaCreditoClienteDisponibilidad(dbConn *sql.DB, empresaID, clienteID int64) (*EmpresaCreditoClienteDisponibilidad, error) {
+	return GetEmpresaCreditoClienteDisponibilidadContext(context.Background(), dbConn, empresaID, clienteID)
+}
+
+// GetEmpresaCreditoClienteDisponibilidadContext calcula cupo disponible y
+// conserva la cancelacion del llamador hasta PostgreSQL.
+func GetEmpresaCreditoClienteDisponibilidadContext(ctx context.Context, dbConn *sql.DB, empresaID, clienteID int64) (*EmpresaCreditoClienteDisponibilidad, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -2217,7 +2243,7 @@ func GetEmpresaCreditoClienteDisponibilidad(dbConn *sql.DB, empresaID, clienteID
 		return nil, errors.New("empresa_id o cliente_id invalido")
 	}
 
-	limite, err := GetEmpresaCreditoClienteLimite(dbConn, empresaID, clienteID, false)
+	limite, err := GetEmpresaCreditoClienteLimiteContext(ctx, dbConn, empresaID, clienteID, false)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &EmpresaCreditoClienteDisponibilidad{
@@ -2232,7 +2258,7 @@ func GetEmpresaCreditoClienteDisponibilidad(dbConn *sql.DB, empresaID, clienteID
 
 	var creditosActivos int
 	var saldoActual float64
-	err = dbConn.QueryRow(`SELECT
+	err = queryRowSQLCompatContext(ctx, dbConn, `SELECT
 		COUNT(1),
 		COALESCE(SUM(COALESCE(saldo_actual, 0)), 0)
 	FROM empresa_creditos
@@ -2330,6 +2356,12 @@ func GetEmpresaCreditoByVentaOrigenID(dbConn *sql.DB, empresaID, ventaOrigenID i
 
 // ListEmpresaCreditoClienteLimites lista limites por cliente con filtros.
 func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoClienteLimiteFilter) ([]EmpresaCreditoClienteLimite, int64, error) {
+	return ListEmpresaCreditoClienteLimitesContext(context.Background(), dbConn, empresaID, filter)
+}
+
+// ListEmpresaCreditoClienteLimitesContext conserva cancelación del llamador en
+// conteo y listado de límites por cliente.
+func ListEmpresaCreditoClienteLimitesContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaCreditoClienteLimiteFilter) ([]EmpresaCreditoClienteLimite, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -2355,11 +2387,11 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 	countQuery := "SELECT COUNT(1) FROM empresa_creditos_clientes_limites WHERE empresa_id = ?" + whereSQL
 	countArgs := append([]interface{}{empresaID}, args...)
 	var total int64
-	if err := dbConn.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
+	if err := queryRowSQLCompatContext(ctx, dbConn, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	limit, offset := creditoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 1000)
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
@@ -2381,7 +2413,7 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 	queryArgs := append([]interface{}{empresaID}, args...)
 	queryArgs = append(queryArgs, limit, offset)
 
-	rows, err := dbConn.Query(query, queryArgs...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, queryArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -2404,6 +2436,12 @@ func ListEmpresaCreditoClienteLimites(dbConn *sql.DB, empresaID int64, filter Em
 
 // UpsertEmpresaCreditoClienteLimite crea/actualiza limites de credito por cliente.
 func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoClienteLimite) (int64, error) {
+	return UpsertEmpresaCreditoClienteLimiteContext(context.Background(), dbConn, payload)
+}
+
+// UpsertEmpresaCreditoClienteLimiteContext conserva la cancelacion del
+// llamador durante el alta o actualización del límite por cliente.
+func UpsertEmpresaCreditoClienteLimiteContext(ctx context.Context, dbConn *sql.DB, payload EmpresaCreditoClienteLimite) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -2413,13 +2451,13 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 	creditoClienteLimiteNormalize(&payload)
 
 	var existingID int64
-	err := dbConn.QueryRow(`SELECT id FROM empresa_creditos_clientes_limites WHERE empresa_id = ? AND cliente_id = ? LIMIT 1`, payload.EmpresaID, payload.ClienteID).Scan(&existingID)
+	err := queryRowSQLCompatContext(ctx, dbConn, `SELECT id FROM empresa_creditos_clientes_limites WHERE empresa_id = ? AND cliente_id = ? LIMIT 1`, payload.EmpresaID, payload.ClienteID).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 
 	if err == sql.ErrNoRows {
-		id, insertErr := insertSQLCompat(dbConn, `INSERT INTO empresa_creditos_clientes_limites (
+		id, insertErr := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_creditos_clientes_limites (
 			empresa_id,
 			cliente_id,
 			limite_saldo_total,
@@ -2446,7 +2484,7 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 		return id, nil
 	}
 
-	_, err = dbConn.Exec(`UPDATE empresa_creditos_clientes_limites SET
+	_, err = execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos_clientes_limites SET
 		limite_saldo_total = ?,
 		max_creditos_activos = ?,
 		requiere_aprobacion_exceso = ?,
@@ -2473,18 +2511,30 @@ func UpsertEmpresaCreditoClienteLimite(dbConn *sql.DB, payload EmpresaCreditoCli
 
 // SetEmpresaCreditoClienteLimiteRowEstado activa o desactiva una regla de limite por cliente.
 func SetEmpresaCreditoClienteLimiteRowEstado(dbConn *sql.DB, empresaID, clienteID int64, estado string) error {
+	return SetEmpresaCreditoClienteLimiteRowEstadoContext(context.Background(), dbConn, empresaID, clienteID, estado)
+}
+
+// SetEmpresaCreditoClienteLimiteRowEstadoContext conserva la cancelacion del
+// llamador durante la activación o desactivación del límite.
+func SetEmpresaCreditoClienteLimiteRowEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID, clienteID int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	if empresaID <= 0 || clienteID <= 0 {
 		return errors.New("empresa_id o cliente_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_creditos_clientes_limites SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND cliente_id = ?`, creditoNormalizeRowEstado(estado), empresaID, clienteID)
+	_, err := execSQLCompatContext(ctx, dbConn, `UPDATE empresa_creditos_clientes_limites SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND cliente_id = ?`, creditoNormalizeRowEstado(estado), empresaID, clienteID)
 	return err
 }
 
 // GetEmpresaCreditosCarteraResumen retorna agregados ejecutivos de cartera.
 func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeInactive bool) (*EmpresaCreditoCarteraResumen, error) {
+	return GetEmpresaCreditosCarteraResumenContext(context.Background(), dbConn, empresaID, includeInactive)
+}
+
+// GetEmpresaCreditosCarteraResumenContext retorna agregados ejecutivos de cartera
+// y conserva la cancelacion del llamador hasta PostgreSQL.
+func GetEmpresaCreditosCarteraResumenContext(ctx context.Context, dbConn *sql.DB, empresaID int64, includeInactive bool) (*EmpresaCreditoCarteraResumen, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -2529,7 +2579,7 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 	}
 
 	var out EmpresaCreditoCarteraResumen
-	if err := queryRowSQLCompat(dbConn, query, args...).Scan(
+	if err := queryRowSQLCompatContext(ctx, dbConn, query, args...).Scan(
 		&out.TotalCreditos,
 		&out.CreditosActivos,
 		&out.CreditosVencidos,
@@ -2549,6 +2599,12 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 
 // GetEmpresaCreditosMoraDashboard retorna alertas proactivas y ranking de morosidad.
 func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProximos, top int, includeInactive bool) (*EmpresaCreditosMoraDashboard, error) {
+	return GetEmpresaCreditosMoraDashboardContext(context.Background(), dbConn, empresaID, diasProximos, top, includeInactive)
+}
+
+// GetEmpresaCreditosMoraDashboardContext conserva la cancelacion durante las
+// consultas de ranking y agregados de mora.
+func GetEmpresaCreditosMoraDashboardContext(ctx context.Context, dbConn *sql.DB, empresaID int64, diasProximos, top int, includeInactive bool) (*EmpresaCreditosMoraDashboard, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -2577,7 +2633,7 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	maxDate := time.Now().In(time.Local).AddDate(0, 0, diasProximos).Format("2006-01-02")
 
 	proximosWhere := baseWhere + " AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) >= ? AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) <= ?"
-	proximosRows, err := listEmpresaCreditosByWhere(
+	proximosRows, err := listEmpresaCreditosByWhereContext(ctx,
 		dbConn,
 		empresaID,
 		proximosWhere,
@@ -2600,7 +2656,7 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 		  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 	)`
 	vencidosWhere := baseWhere + " AND (COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? OR " + cuotaVencidaSQL + ")"
-	vencidosRows, err := listEmpresaCreditosByWhere(
+	vencidosRows, err := listEmpresaCreditosByWhereContext(ctx,
 		dbConn,
 		empresaID,
 		vencidosWhere,
@@ -2613,7 +2669,7 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	}
 
 	rankingWhere := baseWhere + " AND (COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? OR " + cuotaVencidaSQL + ")"
-	rankingRows, err := listEmpresaCreditosByWhere(
+	rankingRows, err := listEmpresaCreditosByWhereContext(ctx,
 		dbConn,
 		empresaID,
 		rankingWhere,
@@ -2667,7 +2723,7 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	var totalVenc int64
 	var montoProx float64
 	var montoVenc float64
-	if err := dbConn.QueryRow(countQuery, countArgs...).Scan(&totalProx, &totalVenc, &montoProx, &montoVenc); err != nil {
+	if err := queryRowSQLCompatContext(ctx, dbConn, countQuery, countArgs...).Scan(&totalProx, &totalVenc, &montoProx, &montoVenc); err != nil {
 		return nil, err
 	}
 
@@ -2838,7 +2894,7 @@ func ListEmpresaCreditoWorkflows(dbConn *sql.DB, empresaID int64, filter Empresa
 		return nil, 0, err
 	}
 
-	limit, offset := creditoWorkflowNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 1000)
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
@@ -3223,7 +3279,7 @@ func executeEmpresaCreditoReversoWorkflowTx(tx *sql.Tx, workflow *EmpresaCredito
 	WHERE empresa_id = ?
 	  AND credito_id = ?
 	  AND LOWER(COALESCE(tipo_movimiento, '')) = 'reverso'
-	  AND LOWER(COALESCE(observaciones, '')) LIKE LOWER(?) ESCAPE '!'`, workflow.EmpresaID, workflow.CreditoID, creditoLikePattern(fmt.Sprintf("movimiento_origen=%d", workflow.MovimientoOrigenID))).Scan(&reversosExistentes); err != nil {
+	  AND LOWER(COALESCE(observaciones, '')) LIKE LOWER(?) ESCAPE '!'`, workflow.EmpresaID, workflow.CreditoID, escapedContainsPattern(fmt.Sprintf("movimiento_origen=%d", workflow.MovimientoOrigenID))).Scan(&reversosExistentes); err != nil {
 		return 0, nil, err
 	}
 	if reversosExistentes > 0 {

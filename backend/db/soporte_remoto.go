@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -11,6 +12,8 @@ import (
 	"math"
 	"strings"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 
 	"github.com/you/pos-backend/secure"
 )
@@ -240,27 +243,6 @@ func soporteRemotoNormalizePlanLimit(raw int) int {
 		return 100000
 	}
 	return raw
-}
-
-func soporteRemotoNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 500 {
-		limit = 500
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
-func soporteRemotoLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
 }
 
 func soporteRemotoBoolToInt(v bool) int {
@@ -684,6 +666,10 @@ func SeedEmpresaSoporteRemotoDefaults(dbEmp, dbSuper *sql.DB) (created, updated 
 
 // GetEmpresaSoporteRemotoConfig consulta configuracion de soporte remoto por empresa.
 func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSoporteRemotoConfig, error) {
+	return GetEmpresaSoporteRemotoConfigContext(context.Background(), dbConn, empresaID)
+}
+
+func GetEmpresaSoporteRemotoConfigContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (EmpresaSoporteRemotoConfig, error) {
 	if dbConn == nil {
 		return EmpresaSoporteRemotoConfig{}, errors.New("db connection is nil")
 	}
@@ -695,7 +681,7 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 	var habilitado sql.NullInt64
 	var requiereAprobacion sql.NullInt64
 	var portalPublico sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(habilitado, 1),
@@ -800,6 +786,10 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 
 // UpsertEmpresaSoporteRemotoConfig crea o actualiza la configuracion de soporte remoto por empresa.
 func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoConfig) (int64, error) {
+	return UpsertEmpresaSoporteRemotoConfigContext(context.Background(), dbConn, cfg)
+}
+
+func UpsertEmpresaSoporteRemotoConfigContext(ctx context.Context, dbConn *sql.DB, cfg EmpresaSoporteRemotoConfig) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -830,13 +820,13 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 	}
 
 	var existingID int64
-	err := dbConn.QueryRow(`SELECT id FROM empresa_soporte_remoto_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
+	err := dbConn.QueryRowContext(ctx, `SELECT id FROM empresa_soporte_remoto_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
 	}
 
 	if existingID > 0 {
-		_, err = dbConn.Exec(`UPDATE empresa_soporte_remoto_configuracion
+		_, err = dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_configuracion
 			SET habilitado = ?,
 				proveedor_preferido = ?,
 				modo_operacion = ?,
@@ -893,7 +883,7 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 		return existingID, nil
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_soporte_remoto_configuracion (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_soporte_remoto_configuracion (
 		empresa_id,
 		habilitado,
 		proveedor_preferido,
@@ -947,15 +937,15 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
 	return id, nil
 }
 
 // CreateEmpresaSoporteRemotoDispositivo registra un dispositivo remoto por empresa.
 func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRemotoDispositivo, accesoPINPlano string) (int64, error) {
+	return CreateEmpresaSoporteRemotoDispositivoContext(context.Background(), dbConn, item, accesoPINPlano)
+}
+
+func CreateEmpresaSoporteRemotoDispositivoContext(ctx context.Context, dbConn *sql.DB, item EmpresaSoporteRemotoDispositivo, accesoPINPlano string) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -982,8 +972,12 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		item.Estado = "activo"
 	}
 
-	if cfg, err := GetEmpresaSoporteRemotoConfig(dbConn, item.EmpresaID); err == nil && cfg.MaxDispositivos > 0 {
-		activeDevices, countErr := soporteRemotoCountActiveDevices(dbConn, item.EmpresaID)
+	cfg, err := GetEmpresaSoporteRemotoConfigContext(ctx, dbConn, item.EmpresaID)
+	if err != nil {
+		return 0, err
+	}
+	if cfg.MaxDispositivos > 0 {
+		activeDevices, countErr := soporteRemotoCountActiveDevicesContext(ctx, dbConn, item.EmpresaID)
 		if countErr != nil {
 			return 0, countErr
 		}
@@ -1005,7 +999,7 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		}
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_soporte_remoto_dispositivos (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_soporte_remoto_dispositivos (
 		empresa_id,
 		codigo_dispositivo,
 		nombre_equipo,
@@ -1047,22 +1041,26 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
 	return id, nil
 }
 
 func soporteRemotoCountActiveDevices(dbConn *sql.DB, empresaID int64) (int64, error) {
+	return soporteRemotoCountActiveDevicesContext(context.Background(), dbConn, empresaID)
+}
+
+func soporteRemotoCountActiveDevicesContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (int64, error) {
 	var total int64
-	err := dbConn.QueryRow(`SELECT COUNT(1)
+	err := dbConn.QueryRowContext(ctx, `SELECT COUNT(1)
 		FROM empresa_soporte_remoto_dispositivos
 		WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'inactivo'`, empresaID).Scan(&total)
 	return total, err
 }
 
 func GetEmpresaSoporteRemotoUso(dbConn *sql.DB, empresaID int64) (EmpresaSoporteRemotoUso, error) {
+	return GetEmpresaSoporteRemotoUsoContext(context.Background(), dbConn, empresaID)
+}
+
+func GetEmpresaSoporteRemotoUsoContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (EmpresaSoporteRemotoUso, error) {
 	if dbConn == nil {
 		return EmpresaSoporteRemotoUso{}, errors.New("db connection is nil")
 	}
@@ -1070,7 +1068,7 @@ func GetEmpresaSoporteRemotoUso(dbConn *sql.DB, empresaID int64) (EmpresaSoporte
 		return EmpresaSoporteRemotoUso{}, errors.New("empresa_id invalido")
 	}
 
-	cfg, err := GetEmpresaSoporteRemotoConfig(dbConn, empresaID)
+	cfg, err := GetEmpresaSoporteRemotoConfigContext(ctx, dbConn, empresaID)
 	if err != nil {
 		return EmpresaSoporteRemotoUso{}, err
 	}
@@ -1085,7 +1083,7 @@ func GetEmpresaSoporteRemotoUso(dbConn *sql.DB, empresaID int64) (EmpresaSoporte
 		MaxDispositivos:       int64(cfg.MaxDispositivos),
 	}
 
-	err = dbConn.QueryRow(`SELECT
+	err = dbConn.QueryRowContext(ctx, `SELECT
 		COALESCE(SUM(CASE WHEN COALESCE(estado, 'activo') <> 'inactivo' THEN 1 ELSE 0 END), 0),
 		COALESCE(SUM(CASE WHEN COALESCE(estado, 'activo') <> 'inactivo' AND COALESCE(estado_conexion, 'offline') = 'online' THEN 1 ELSE 0 END), 0)
 		FROM empresa_soporte_remoto_dispositivos
@@ -1094,7 +1092,7 @@ func GetEmpresaSoporteRemotoUso(dbConn *sql.DB, empresaID int64) (EmpresaSoporte
 		return EmpresaSoporteRemotoUso{}, err
 	}
 
-	rows, err := dbConn.Query(`SELECT
+	rows, err := dbConn.QueryContext(ctx, `SELECT
 		COALESCE(s.fecha_creacion, ''),
 		COALESCE(s.estado_sesion, 'pendiente'),
 		COALESCE(s.iniciada_en, ''),
@@ -1179,11 +1177,15 @@ func GetEmpresaSoporteRemotoUso(dbConn *sql.DB, empresaID int64) (EmpresaSoporte
 }
 
 func validateEmpresaSoporteRemotoSessionMonthlyPlan(dbConn *sql.DB, empresaID int64, duracionMinutos int) (EmpresaSoporteRemotoUso, EmpresaSoporteRemotoConfig, error) {
-	cfg, err := GetEmpresaSoporteRemotoConfig(dbConn, empresaID)
+	return validateEmpresaSoporteRemotoSessionMonthlyPlanContext(context.Background(), dbConn, empresaID, duracionMinutos)
+}
+
+func validateEmpresaSoporteRemotoSessionMonthlyPlanContext(ctx context.Context, dbConn *sql.DB, empresaID int64, duracionMinutos int) (EmpresaSoporteRemotoUso, EmpresaSoporteRemotoConfig, error) {
+	cfg, err := GetEmpresaSoporteRemotoConfigContext(ctx, dbConn, empresaID)
 	if err != nil {
 		return EmpresaSoporteRemotoUso{}, EmpresaSoporteRemotoConfig{}, err
 	}
-	uso, err := GetEmpresaSoporteRemotoUso(dbConn, empresaID)
+	uso, err := GetEmpresaSoporteRemotoUsoContext(ctx, dbConn, empresaID)
 	if err != nil {
 		return EmpresaSoporteRemotoUso{}, EmpresaSoporteRemotoConfig{}, err
 	}
@@ -1197,15 +1199,19 @@ func validateEmpresaSoporteRemotoSessionMonthlyPlan(dbConn *sql.DB, empresaID in
 }
 
 func validateEmpresaSoporteRemotoSessionDailyRustDeskLimit(dbConn *sql.DB, empresaID, dispositivoID int64, duracionMinutos int) (EmpresaSoporteRemotoUso, EmpresaSoporteRemotoConfig, error) {
-	cfg, err := GetEmpresaSoporteRemotoConfig(dbConn, empresaID)
+	return validateEmpresaSoporteRemotoSessionDailyRustDeskLimitContext(context.Background(), dbConn, empresaID, dispositivoID, duracionMinutos)
+}
+
+func validateEmpresaSoporteRemotoSessionDailyRustDeskLimitContext(ctx context.Context, dbConn *sql.DB, empresaID, dispositivoID int64, duracionMinutos int) (EmpresaSoporteRemotoUso, EmpresaSoporteRemotoConfig, error) {
+	cfg, err := GetEmpresaSoporteRemotoConfigContext(ctx, dbConn, empresaID)
 	if err != nil {
 		return EmpresaSoporteRemotoUso{}, EmpresaSoporteRemotoConfig{}, err
 	}
-	device, err := GetEmpresaSoporteRemotoDispositivoByID(dbConn, empresaID, dispositivoID)
+	device, err := GetEmpresaSoporteRemotoDispositivoByIDContext(ctx, dbConn, empresaID, dispositivoID)
 	if err != nil {
 		return EmpresaSoporteRemotoUso{}, EmpresaSoporteRemotoConfig{}, err
 	}
-	uso, err := GetEmpresaSoporteRemotoUso(dbConn, empresaID)
+	uso, err := GetEmpresaSoporteRemotoUsoContext(ctx, dbConn, empresaID)
 	if err != nil {
 		return EmpresaSoporteRemotoUso{}, EmpresaSoporteRemotoConfig{}, err
 	}
@@ -1218,8 +1224,8 @@ func validateEmpresaSoporteRemotoSessionDailyRustDeskLimit(dbConn *sql.DB, empre
 	return uso, cfg, nil
 }
 
-func createEmpresaSoporteRemotoBlockedAttempt(dbConn *sql.DB, empresaID, dispositivoID int64, solicitadaPor, operadorNombre, operadorEmail, motivo string, duracionMinutos int, observaciones string) {
-	_, _ = dbConn.Exec(`INSERT INTO empresa_soporte_remoto_sesiones (
+func createEmpresaSoporteRemotoBlockedAttemptContext(ctx context.Context, dbConn *sql.DB, empresaID, dispositivoID int64, solicitadaPor, operadorNombre, operadorEmail, motivo string, duracionMinutos int, observaciones string) error {
+	_, err := dbConn.ExecContext(ctx, `INSERT INTO empresa_soporte_remoto_sesiones (
 		empresa_id,
 		dispositivo_id,
 		codigo_sesion,
@@ -1247,10 +1253,15 @@ func createEmpresaSoporteRemotoBlockedAttempt(dbConn *sql.DB, empresaID, disposi
 		strings.TrimSpace(solicitadaPor),
 		strings.TrimSpace(observaciones),
 	)
+	return err
 }
 
 // UpdateEmpresaSoporteRemotoDispositivo actualiza metadata de un dispositivo.
 func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRemotoDispositivo, accesoPINPlano string) error {
+	return UpdateEmpresaSoporteRemotoDispositivoContext(context.Background(), dbConn, item, accesoPINPlano)
+}
+
+func UpdateEmpresaSoporteRemotoDispositivoContext(ctx context.Context, dbConn *sql.DB, item EmpresaSoporteRemotoDispositivo, accesoPINPlano string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -1290,7 +1301,7 @@ func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		}
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_dispositivos
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_dispositivos
 		SET codigo_dispositivo = ?,
 			nombre_equipo = ?,
 			alias_operativo = ?,
@@ -1346,13 +1357,17 @@ func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 
 // SetEmpresaSoporteRemotoDispositivoEstadoByID activa/desactiva un dispositivo por empresa.
 func SetEmpresaSoporteRemotoDispositivoEstadoByID(dbConn *sql.DB, empresaID, deviceID int64, estado string) error {
+	return SetEmpresaSoporteRemotoDispositivoEstadoByIDContext(context.Background(), dbConn, empresaID, deviceID, estado)
+}
+
+func SetEmpresaSoporteRemotoDispositivoEstadoByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, deviceID int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
 	if empresaID <= 0 || deviceID <= 0 {
 		return errors.New("empresa_id/id invalidos")
 	}
-	res, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_dispositivos
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_dispositivos
 		SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND empresa_id = ?`, soporteRemotoNormalizeEstado(estado), deviceID, empresaID)
 	if err != nil {
@@ -1370,6 +1385,10 @@ func SetEmpresaSoporteRemotoDispositivoEstadoByID(dbConn *sql.DB, empresaID, dev
 
 // GetEmpresaSoporteRemotoDispositivoByID obtiene un dispositivo por empresa e ID.
 func GetEmpresaSoporteRemotoDispositivoByID(dbConn *sql.DB, empresaID, deviceID int64) (EmpresaSoporteRemotoDispositivo, error) {
+	return GetEmpresaSoporteRemotoDispositivoByIDContext(context.Background(), dbConn, empresaID, deviceID)
+}
+
+func GetEmpresaSoporteRemotoDispositivoByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, deviceID int64) (EmpresaSoporteRemotoDispositivo, error) {
 	if dbConn == nil {
 		return EmpresaSoporteRemotoDispositivo{}, errors.New("db connection is nil")
 	}
@@ -1379,7 +1398,7 @@ func GetEmpresaSoporteRemotoDispositivoByID(dbConn *sql.DB, empresaID, deviceID 
 
 	var out EmpresaSoporteRemotoDispositivo
 	var publico sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo_dispositivo, ''),
@@ -1437,6 +1456,10 @@ func GetEmpresaSoporteRemotoDispositivoByID(dbConn *sql.DB, empresaID, deviceID 
 
 // GetEmpresaSoporteRemotoDispositivoByCodigo obtiene un dispositivo por codigo y empresa.
 func GetEmpresaSoporteRemotoDispositivoByCodigo(dbConn *sql.DB, empresaID int64, codigoDispositivo string) (EmpresaSoporteRemotoDispositivo, error) {
+	return GetEmpresaSoporteRemotoDispositivoByCodigoContext(context.Background(), dbConn, empresaID, codigoDispositivo)
+}
+
+func GetEmpresaSoporteRemotoDispositivoByCodigoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, codigoDispositivo string) (EmpresaSoporteRemotoDispositivo, error) {
 	if dbConn == nil {
 		return EmpresaSoporteRemotoDispositivo{}, errors.New("db connection is nil")
 	}
@@ -1450,7 +1473,7 @@ func GetEmpresaSoporteRemotoDispositivoByCodigo(dbConn *sql.DB, empresaID int64,
 
 	var out EmpresaSoporteRemotoDispositivo
 	var publico sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo_dispositivo, ''),
@@ -1508,7 +1531,11 @@ func GetEmpresaSoporteRemotoDispositivoByCodigo(dbConn *sql.DB, empresaID int64,
 
 // ValidateEmpresaSoporteRemotoDispositivoAccess valida PIN de acceso del dispositivo.
 func ValidateEmpresaSoporteRemotoDispositivoAccess(dbConn *sql.DB, empresaID int64, codigoDispositivo, accesoPIN string) (EmpresaSoporteRemotoDispositivo, error) {
-	item, err := GetEmpresaSoporteRemotoDispositivoByCodigo(dbConn, empresaID, codigoDispositivo)
+	return ValidateEmpresaSoporteRemotoDispositivoAccessContext(context.Background(), dbConn, empresaID, codigoDispositivo, accesoPIN)
+}
+
+func ValidateEmpresaSoporteRemotoDispositivoAccessContext(ctx context.Context, dbConn *sql.DB, empresaID int64, codigoDispositivo, accesoPIN string) (EmpresaSoporteRemotoDispositivo, error) {
+	item, err := GetEmpresaSoporteRemotoDispositivoByCodigoContext(ctx, dbConn, empresaID, codigoDispositivo)
 	if err != nil {
 		return EmpresaSoporteRemotoDispositivo{}, err
 	}
@@ -1526,7 +1553,11 @@ func ValidateEmpresaSoporteRemotoDispositivoAccess(dbConn *sql.DB, empresaID int
 
 // RegisterEmpresaSoporteRemotoDispositivoHeartbeat actualiza latido/estado de conexion para un dispositivo.
 func RegisterEmpresaSoporteRemotoDispositivoHeartbeat(dbConn *sql.DB, empresaID int64, codigoDispositivo, accesoPIN, streamURL, sistemaOperativo, agenteVersion string) (EmpresaSoporteRemotoDispositivo, error) {
-	device, err := ValidateEmpresaSoporteRemotoDispositivoAccess(dbConn, empresaID, codigoDispositivo, accesoPIN)
+	return RegisterEmpresaSoporteRemotoDispositivoHeartbeatContext(context.Background(), dbConn, empresaID, codigoDispositivo, accesoPIN, streamURL, sistemaOperativo, agenteVersion)
+}
+
+func RegisterEmpresaSoporteRemotoDispositivoHeartbeatContext(ctx context.Context, dbConn *sql.DB, empresaID int64, codigoDispositivo, accesoPIN, streamURL, sistemaOperativo, agenteVersion string) (EmpresaSoporteRemotoDispositivo, error) {
+	device, err := ValidateEmpresaSoporteRemotoDispositivoAccessContext(ctx, dbConn, empresaID, codigoDispositivo, accesoPIN)
 	if err != nil {
 		return EmpresaSoporteRemotoDispositivo{}, err
 	}
@@ -1536,7 +1567,7 @@ func RegisterEmpresaSoporteRemotoDispositivoHeartbeat(dbConn *sql.DB, empresaID 
 		stream = device.StreamURL
 	}
 
-	_, err = dbConn.Exec(`UPDATE empresa_soporte_remoto_dispositivos
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_dispositivos
 		SET stream_url = ?,
 			sistema_operativo = CASE WHEN ? = '' THEN sistema_operativo ELSE ? END,
 			agente_version = CASE WHEN ? = '' THEN agente_version ELSE ? END,
@@ -1553,12 +1584,23 @@ func RegisterEmpresaSoporteRemotoDispositivoHeartbeat(dbConn *sql.DB, empresaID 
 	if err != nil {
 		return EmpresaSoporteRemotoDispositivo{}, err
 	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return EmpresaSoporteRemotoDispositivo{}, err
+	}
+	if affected <= 0 {
+		return EmpresaSoporteRemotoDispositivo{}, sql.ErrNoRows
+	}
 
-	return GetEmpresaSoporteRemotoDispositivoByID(dbConn, empresaID, device.ID)
+	return GetEmpresaSoporteRemotoDispositivoByIDContext(ctx, dbConn, empresaID, device.ID)
 }
 
 // ListEmpresaSoporteRemotoDispositivos lista dispositivos remotos por empresa.
 func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filter EmpresaSoporteRemotoDispositivoFilter) ([]EmpresaSoporteRemotoDispositivo, int64, error) {
+	return ListEmpresaSoporteRemotoDispositivosContext(context.Background(), dbConn, empresaID, filter)
+}
+
+func ListEmpresaSoporteRemotoDispositivosContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaSoporteRemotoDispositivoFilter) ([]EmpresaSoporteRemotoDispositivo, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -1566,7 +1608,7 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 		return nil, 0, errors.New("empresa_id invalido")
 	}
 
-	limit, offset := soporteRemotoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := "WHERE empresa_id = ?"
 	args := make([]interface{}, 0)
 	args = append(args, empresaID)
@@ -1575,7 +1617,7 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 		where += " AND COALESCE(estado, 'activo') <> 'inactivo'"
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
-		pattern := soporteRemotoLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += ` AND (
 			LOWER(COALESCE(codigo_dispositivo, '')) LIKE LOWER(?) ESCAPE '!' OR
 			LOWER(COALESCE(nombre_equipo, '')) LIKE LOWER(?) ESCAPE '!' OR
@@ -1586,12 +1628,12 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 	}
 
 	var total int64
-	if err := dbConn.QueryRow("SELECT COUNT(1) FROM empresa_soporte_remoto_dispositivos "+where, args...).Scan(&total); err != nil {
+	if err := dbConn.QueryRowContext(ctx, "SELECT COUNT(1) FROM empresa_soporte_remoto_dispositivos "+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
-	rows, err := dbConn.Query(`SELECT
+	rows, err := dbConn.QueryContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo_dispositivo, ''),
@@ -1663,6 +1705,10 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 
 // CreateEmpresaSoporteRemotoSession crea una sesion de visualizacion remota y retorna token de vista.
 func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID int64, solicitadaPor, operadorNombre, operadorEmail, motivo string, duracionMinutos int, requiereAprobacion bool) (EmpresaSoporteRemotoSession, error) {
+	return CreateEmpresaSoporteRemotoSessionContext(context.Background(), dbConn, empresaID, dispositivoID, solicitadaPor, operadorNombre, operadorEmail, motivo, duracionMinutos, requiereAprobacion)
+}
+
+func CreateEmpresaSoporteRemotoSessionContext(ctx context.Context, dbConn *sql.DB, empresaID, dispositivoID int64, solicitadaPor, operadorNombre, operadorEmail, motivo string, duracionMinutos int, requiereAprobacion bool) (EmpresaSoporteRemotoSession, error) {
 	if dbConn == nil {
 		return EmpresaSoporteRemotoSession{}, errors.New("db connection is nil")
 	}
@@ -1670,7 +1716,7 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 		return EmpresaSoporteRemotoSession{}, errors.New("empresa_id/dispositivo_id invalidos")
 	}
 
-	device, err := GetEmpresaSoporteRemotoDispositivoByID(dbConn, empresaID, dispositivoID)
+	device, err := GetEmpresaSoporteRemotoDispositivoByIDContext(ctx, dbConn, empresaID, dispositivoID)
 	if err != nil {
 		return EmpresaSoporteRemotoSession{}, err
 	}
@@ -1682,16 +1728,20 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 	}
 
 	duracion := soporteRemotoNormalizeAutoCerrar(duracionMinutos)
-	if _, _, err := validateEmpresaSoporteRemotoSessionMonthlyPlan(dbConn, empresaID, duracion); err != nil {
+	if _, _, err := validateEmpresaSoporteRemotoSessionMonthlyPlanContext(ctx, dbConn, empresaID, duracion); err != nil {
 		if errors.Is(err, ErrSoporteRemotoPlanLimit) {
-			createEmpresaSoporteRemotoBlockedAttempt(dbConn, empresaID, dispositivoID, solicitadaPor, operadorNombre, operadorEmail, motivo, duracion, err.Error())
+			if auditErr := createEmpresaSoporteRemotoBlockedAttemptContext(ctx, dbConn, empresaID, dispositivoID, solicitadaPor, operadorNombre, operadorEmail, motivo, duracion, err.Error()); auditErr != nil {
+				return EmpresaSoporteRemotoSession{}, fmt.Errorf("%w (no se pudo registrar intento bloqueado: %v)", err, auditErr)
+			}
 		}
 		return EmpresaSoporteRemotoSession{}, err
 	}
 	if !requiereAprobacion {
-		if _, _, err := validateEmpresaSoporteRemotoSessionDailyRustDeskLimit(dbConn, empresaID, dispositivoID, duracion); err != nil {
+		if _, _, err := validateEmpresaSoporteRemotoSessionDailyRustDeskLimitContext(ctx, dbConn, empresaID, dispositivoID, duracion); err != nil {
 			if errors.Is(err, ErrSoporteRemotoPlanLimit) {
-				createEmpresaSoporteRemotoBlockedAttempt(dbConn, empresaID, dispositivoID, solicitadaPor, operadorNombre, operadorEmail, motivo, duracion, err.Error())
+				if auditErr := createEmpresaSoporteRemotoBlockedAttemptContext(ctx, dbConn, empresaID, dispositivoID, solicitadaPor, operadorNombre, operadorEmail, motivo, duracion, err.Error()); auditErr != nil {
+					return EmpresaSoporteRemotoSession{}, fmt.Errorf("%w (no se pudo registrar intento bloqueado: %v)", err, auditErr)
+				}
 			}
 			return EmpresaSoporteRemotoSession{}, err
 		}
@@ -1710,7 +1760,7 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 	}
 	tokenHash := soporteRemotoHash(tokenRaw)
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_soporte_remoto_sesiones (
+	id, err := insertSQLCompatContext(ctx, dbConn, `INSERT INTO empresa_soporte_remoto_sesiones (
 		empresa_id,
 		dispositivo_id,
 		codigo_sesion,
@@ -1749,12 +1799,7 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 	if err != nil {
 		return EmpresaSoporteRemotoSession{}, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return EmpresaSoporteRemotoSession{}, err
-	}
-
-	session, err := GetEmpresaSoporteRemotoSessionByID(dbConn, empresaID, id)
+	session, err := GetEmpresaSoporteRemotoSessionByIDContext(ctx, dbConn, empresaID, id)
 	if err != nil {
 		return EmpresaSoporteRemotoSession{}, err
 	}
@@ -1764,6 +1809,10 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 
 // GetEmpresaSoporteRemotoSessionByID consulta una sesion por ID.
 func GetEmpresaSoporteRemotoSessionByID(dbConn *sql.DB, empresaID, sessionID int64) (EmpresaSoporteRemotoSession, error) {
+	return GetEmpresaSoporteRemotoSessionByIDContext(context.Background(), dbConn, empresaID, sessionID)
+}
+
+func GetEmpresaSoporteRemotoSessionByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, sessionID int64) (EmpresaSoporteRemotoSession, error) {
 	if dbConn == nil {
 		return EmpresaSoporteRemotoSession{}, errors.New("db connection is nil")
 	}
@@ -1773,7 +1822,7 @@ func GetEmpresaSoporteRemotoSessionByID(dbConn *sql.DB, empresaID, sessionID int
 
 	var out EmpresaSoporteRemotoSession
 	var blocked sql.NullInt64
-	err := dbConn.QueryRow(`SELECT
+	err := dbConn.QueryRowContext(ctx, `SELECT
 		s.id,
 		s.empresa_id,
 		s.dispositivo_id,
@@ -1838,6 +1887,10 @@ func GetEmpresaSoporteRemotoSessionByID(dbConn *sql.DB, empresaID, sessionID int
 
 // GetEmpresaSoporteRemotoSessionByCodigo consulta una sesion por codigo.
 func GetEmpresaSoporteRemotoSessionByCodigo(dbConn *sql.DB, empresaID int64, codigoSesion string) (EmpresaSoporteRemotoSession, error) {
+	return GetEmpresaSoporteRemotoSessionByCodigoContext(context.Background(), dbConn, empresaID, codigoSesion)
+}
+
+func GetEmpresaSoporteRemotoSessionByCodigoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, codigoSesion string) (EmpresaSoporteRemotoSession, error) {
 	if dbConn == nil {
 		return EmpresaSoporteRemotoSession{}, errors.New("db connection is nil")
 	}
@@ -1850,15 +1903,19 @@ func GetEmpresaSoporteRemotoSessionByCodigo(dbConn *sql.DB, empresaID int64, cod
 	}
 
 	var sessionID int64
-	if err := dbConn.QueryRow(`SELECT id FROM empresa_soporte_remoto_sesiones WHERE empresa_id = ? AND trim(codigo_sesion) = trim(?) LIMIT 1`, empresaID, codigoSesion).Scan(&sessionID); err != nil {
+	if err := dbConn.QueryRowContext(ctx, `SELECT id FROM empresa_soporte_remoto_sesiones WHERE empresa_id = ? AND trim(codigo_sesion) = trim(?) LIMIT 1`, empresaID, codigoSesion).Scan(&sessionID); err != nil {
 		return EmpresaSoporteRemotoSession{}, err
 	}
-	return GetEmpresaSoporteRemotoSessionByID(dbConn, empresaID, sessionID)
+	return GetEmpresaSoporteRemotoSessionByIDContext(ctx, dbConn, empresaID, sessionID)
 }
 
 // ResolveEmpresaSoporteRemotoViewerSession valida token de vista para una sesion.
 func ResolveEmpresaSoporteRemotoViewerSession(dbConn *sql.DB, empresaID int64, codigoSesion, tokenVisualizacion string) (EmpresaSoporteRemotoSession, error) {
-	session, err := GetEmpresaSoporteRemotoSessionByCodigo(dbConn, empresaID, codigoSesion)
+	return ResolveEmpresaSoporteRemotoViewerSessionContext(context.Background(), dbConn, empresaID, codigoSesion, tokenVisualizacion)
+}
+
+func ResolveEmpresaSoporteRemotoViewerSessionContext(ctx context.Context, dbConn *sql.DB, empresaID int64, codigoSesion, tokenVisualizacion string) (EmpresaSoporteRemotoSession, error) {
+	session, err := GetEmpresaSoporteRemotoSessionByCodigoContext(ctx, dbConn, empresaID, codigoSesion)
 	if err != nil {
 		return EmpresaSoporteRemotoSession{}, err
 	}
@@ -1872,11 +1929,13 @@ func ResolveEmpresaSoporteRemotoViewerSession(dbConn *sql.DB, empresaID int64, c
 		return EmpresaSoporteRemotoSession{}, sql.ErrNoRows
 	}
 	if expiry, ok := soporteRemotoParseDateTime(session.ExpiraEn); ok && !time.Now().Before(expiry) {
-		_ = SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn, empresaID, session.CodigoSesion, "expirada", "sesion expirada automaticamente")
+		if err := SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(ctx, dbConn, empresaID, session.CodigoSesion, "expirada", "sesion expirada automaticamente"); err != nil {
+			return EmpresaSoporteRemotoSession{}, fmt.Errorf("expirar sesion de soporte remoto: %w", err)
+		}
 		return EmpresaSoporteRemotoSession{}, sql.ErrNoRows
 	}
 	usedAt := time.Now().UTC().Format(time.RFC3339Nano)
-	result, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_sesiones
+	result, err := dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_sesiones
 		SET token_visualizacion_usado_en = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ? AND COALESCE(token_visualizacion_usado_en, '') = ''`,
 		usedAt, empresaID, session.ID)
@@ -1892,20 +1951,17 @@ func ResolveEmpresaSoporteRemotoViewerSession(dbConn *sql.DB, empresaID int64, c
 }
 
 func soporteRemotoNormalizeSignalingRole(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "host":
-		return "host"
-	case "viewer":
-		return "viewer"
-	default:
-		return ""
-	}
+	return valueutil.NormalizeAllowed(raw, "host", "viewer")
 }
 
 // CreateEmpresaSoporteRemotoSignalingCredential crea una credencial corta y
 // de un solo uso para abrir un WebSocket de senalizacion. Invalida cualquier
 // credencial anterior no consumida para la misma sesion y rol.
 func CreateEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID int64, codigoSesion, role, actor string) (EmpresaSoporteRemotoSignalingCredential, error) {
+	return CreateEmpresaSoporteRemotoSignalingCredentialContext(context.Background(), dbConn, empresaID, codigoSesion, role, actor)
+}
+
+func CreateEmpresaSoporteRemotoSignalingCredentialContext(ctx context.Context, dbConn *sql.DB, empresaID int64, codigoSesion, role, actor string) (EmpresaSoporteRemotoSignalingCredential, error) {
 	if dbConn == nil || empresaID <= 0 {
 		return EmpresaSoporteRemotoSignalingCredential{}, ErrSoporteRemotoSignalingCredential
 	}
@@ -1913,7 +1969,7 @@ func CreateEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID int
 	if role == "" {
 		return EmpresaSoporteRemotoSignalingCredential{}, ErrSoporteRemotoSignalingCredential
 	}
-	session, err := GetEmpresaSoporteRemotoSessionByCodigo(dbConn, empresaID, codigoSesion)
+	session, err := GetEmpresaSoporteRemotoSessionByCodigoContext(ctx, dbConn, empresaID, codigoSesion)
 	if err != nil || (session.EstadoSesion != "activa" && session.EstadoSesion != "aprobada") || strings.EqualFold(session.Estado, "inactivo") {
 		return EmpresaSoporteRemotoSignalingCredential{}, ErrSoporteRemotoSignalingCredential
 	}
@@ -1932,19 +1988,19 @@ func CreateEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID int
 	expiresAt := time.Now().UTC().Add(2 * time.Minute).Format(time.RFC3339Nano)
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 
-	tx, err := dbConn.Begin()
+	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return EmpresaSoporteRemotoSignalingCredential{}, err
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.Exec(`UPDATE empresa_soporte_remoto_signaling_tokens
+	if _, err := tx.ExecContext(ctx, `UPDATE empresa_soporte_remoto_signaling_tokens
 		SET revocado_en = ?
 		WHERE empresa_id = ? AND sesion_id = ? AND role = ?
 			AND COALESCE(usado_en, '') = '' AND COALESCE(revocado_en, '') = ''`,
 		now, empresaID, session.ID, role); err != nil {
 		return EmpresaSoporteRemotoSignalingCredential{}, err
 	}
-	if _, err := tx.Exec(`INSERT INTO empresa_soporte_remoto_signaling_tokens (
+	if _, err := tx.ExecContext(ctx, `INSERT INTO empresa_soporte_remoto_signaling_tokens (
 		empresa_id, sesion_id, role, token_hash, nonce_hash, expira_en, creado_por
 	) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		empresaID, session.ID, role, soporteRemotoHash(tokenRaw), soporteRemotoHash(nonceRaw), expiresAt, strings.TrimSpace(actor)); err != nil {
@@ -1959,6 +2015,10 @@ func CreateEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID int
 // ConsumeEmpresaSoporteRemotoSignalingCredential valida y marca la credencial
 // como usada de forma atomica. Un segundo intento siempre falla.
 func ConsumeEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID int64, codigoSesion, role, tokenRaw, nonceRaw string) (EmpresaSoporteRemotoSession, error) {
+	return ConsumeEmpresaSoporteRemotoSignalingCredentialContext(context.Background(), dbConn, empresaID, codigoSesion, role, tokenRaw, nonceRaw)
+}
+
+func ConsumeEmpresaSoporteRemotoSignalingCredentialContext(ctx context.Context, dbConn *sql.DB, empresaID int64, codigoSesion, role, tokenRaw, nonceRaw string) (EmpresaSoporteRemotoSession, error) {
 	if dbConn == nil || empresaID <= 0 {
 		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
 	}
@@ -1966,14 +2026,14 @@ func ConsumeEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID in
 	if role == "" || strings.TrimSpace(tokenRaw) == "" || strings.TrimSpace(nonceRaw) == "" {
 		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
 	}
-	session, err := GetEmpresaSoporteRemotoSessionByCodigo(dbConn, empresaID, codigoSesion)
+	session, err := GetEmpresaSoporteRemotoSessionByCodigoContext(ctx, dbConn, empresaID, codigoSesion)
 	if err != nil || (session.EstadoSesion != "activa" && session.EstadoSesion != "aprobada") || strings.EqualFold(session.Estado, "inactivo") {
 		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
 	}
 
 	var credentialID int64
 	var tokenHash, nonceHash, expiresAt string
-	err = dbConn.QueryRow(`SELECT id, token_hash, nonce_hash, expira_en
+	err = dbConn.QueryRowContext(ctx, `SELECT id, token_hash, nonce_hash, expira_en
 		FROM empresa_soporte_remoto_signaling_tokens
 		WHERE empresa_id = ? AND sesion_id = ? AND role = ?
 			AND COALESCE(usado_en, '') = '' AND COALESCE(revocado_en, '') = ''
@@ -1986,7 +2046,7 @@ func ConsumeEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID in
 		return EmpresaSoporteRemotoSession{}, ErrSoporteRemotoSignalingCredential
 	}
 	usedAt := time.Now().UTC().Format(time.RFC3339Nano)
-	result, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_signaling_tokens
+	result, err := dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_signaling_tokens
 		SET usado_en = ?
 		WHERE id = ? AND empresa_id = ? AND COALESCE(usado_en, '') = '' AND COALESCE(revocado_en, '') = ''`,
 		usedAt, credentialID, empresaID)
@@ -2001,11 +2061,15 @@ func ConsumeEmpresaSoporteRemotoSignalingCredential(dbConn *sql.DB, empresaID in
 }
 
 func IsEmpresaSoporteRemotoSessionActive(dbConn *sql.DB, empresaID, sessionID int64) bool {
+	return IsEmpresaSoporteRemotoSessionActiveContext(context.Background(), dbConn, empresaID, sessionID)
+}
+
+func IsEmpresaSoporteRemotoSessionActiveContext(ctx context.Context, dbConn *sql.DB, empresaID, sessionID int64) bool {
 	if dbConn == nil || empresaID <= 0 || sessionID <= 0 {
 		return false
 	}
 	var state, status, expiresAt string
-	if err := dbConn.QueryRow(`SELECT COALESCE(estado_sesion, ''), COALESCE(estado, ''), COALESCE(expira_en, '')
+	if err := dbConn.QueryRowContext(ctx, `SELECT COALESCE(estado_sesion, ''), COALESCE(estado, ''), COALESCE(expira_en, '')
 		FROM empresa_soporte_remoto_sesiones WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, sessionID).Scan(&state, &status, &expiresAt); err != nil {
 		return false
 	}
@@ -2019,10 +2083,14 @@ func IsEmpresaSoporteRemotoSessionActive(dbConn *sql.DB, empresaID, sessionID in
 }
 
 func RevokeEmpresaSoporteRemotoSignalingCredentials(dbConn *sql.DB, empresaID, sessionID int64) error {
+	return RevokeEmpresaSoporteRemotoSignalingCredentialsContext(context.Background(), dbConn, empresaID, sessionID)
+}
+
+func RevokeEmpresaSoporteRemotoSignalingCredentialsContext(ctx context.Context, dbConn *sql.DB, empresaID, sessionID int64) error {
 	if dbConn == nil || empresaID <= 0 || sessionID <= 0 {
 		return nil
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_signaling_tokens
+	_, err := dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_signaling_tokens
 		SET revocado_en = ?
 		WHERE empresa_id = ? AND sesion_id = ? AND COALESCE(revocado_en, '') = ''`,
 		time.Now().UTC().Format(time.RFC3339Nano), empresaID, sessionID)
@@ -2031,6 +2099,10 @@ func RevokeEmpresaSoporteRemotoSignalingCredentials(dbConn *sql.DB, empresaID, s
 
 // SetEmpresaSoporteRemotoSessionEstadoByCodigo actualiza estado de una sesion por codigo.
 func SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn *sql.DB, empresaID int64, codigoSesion, estadoSesion, observaciones string) error {
+	return SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(context.Background(), dbConn, empresaID, codigoSesion, estadoSesion, observaciones)
+}
+
+func SetEmpresaSoporteRemotoSessionEstadoByCodigoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, codigoSesion, estadoSesion, observaciones string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -2043,12 +2115,12 @@ func SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn *sql.DB, empresaID int6
 	}
 
 	estado := soporteRemotoNormalizeSesionEstado(estadoSesion)
-	current, err := GetEmpresaSoporteRemotoSessionByCodigo(dbConn, empresaID, codigoSesion)
+	current, err := GetEmpresaSoporteRemotoSessionByCodigoContext(ctx, dbConn, empresaID, codigoSesion)
 	if err != nil {
 		return err
 	}
 	if (estado == "activa" || estado == "aprobada") && strings.TrimSpace(current.IniciadaEn) == "" && !current.BloqueadaPorLimite {
-		if _, _, err := validateEmpresaSoporteRemotoSessionDailyRustDeskLimit(dbConn, empresaID, current.DispositivoID, current.DuracionMinSolicitada); err != nil {
+		if _, _, err := validateEmpresaSoporteRemotoSessionDailyRustDeskLimitContext(ctx, dbConn, empresaID, current.DispositivoID, current.DuracionMinSolicitada); err != nil {
 			return err
 		}
 	}
@@ -2069,7 +2141,7 @@ func SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn *sql.DB, empresaID int6
 		}
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_sesiones
+	res, err := dbConn.ExecContext(ctx, `UPDATE empresa_soporte_remoto_sesiones
 		SET estado_sesion = ?,
 			iniciada_en = CASE WHEN ? = '' THEN iniciada_en ELSE ? END,
 			finalizada_en = CASE WHEN ? = '' THEN finalizada_en ELSE ? END,
@@ -2096,7 +2168,7 @@ func SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn *sql.DB, empresaID int6
 		return sql.ErrNoRows
 	}
 	if estado == "finalizada" || estado == "rechazada" || estado == "expirada" {
-		if err := RevokeEmpresaSoporteRemotoSignalingCredentials(dbConn, empresaID, current.ID); err != nil {
+		if err := RevokeEmpresaSoporteRemotoSignalingCredentialsContext(ctx, dbConn, empresaID, current.ID); err != nil {
 			return err
 		}
 	}
@@ -2105,6 +2177,10 @@ func SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn *sql.DB, empresaID int6
 
 // ListEmpresaSoporteRemotoSesiones lista sesiones de soporte remoto por empresa.
 func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter EmpresaSoporteRemotoSessionFilter) ([]EmpresaSoporteRemotoSession, int64, error) {
+	return ListEmpresaSoporteRemotoSesionesContext(context.Background(), dbConn, empresaID, filter)
+}
+
+func ListEmpresaSoporteRemotoSesionesContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaSoporteRemotoSessionFilter) ([]EmpresaSoporteRemotoSession, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -2112,7 +2188,7 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 		return nil, 0, errors.New("empresa_id invalido")
 	}
 
-	limit, offset := soporteRemotoNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 500)
 	where := "WHERE s.empresa_id = ?"
 	args := make([]interface{}, 0)
 	args = append(args, empresaID)
@@ -2125,7 +2201,7 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 		args = append(args, estado)
 	}
 	if q := strings.TrimSpace(filter.Q); q != "" {
-		pattern := soporteRemotoLikePattern(q)
+		pattern := escapedContainsPattern(q)
 		where += ` AND (
 			LOWER(COALESCE(s.codigo_sesion, '')) LIKE LOWER(?) ESCAPE '!' OR
 			LOWER(COALESCE(s.solicitada_por, '')) LIKE LOWER(?) ESCAPE '!' OR
@@ -2136,14 +2212,14 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 	}
 
 	var total int64
-	if err := dbConn.QueryRow(`SELECT COUNT(1)
+	if err := dbConn.QueryRowContext(ctx, `SELECT COUNT(1)
 		FROM empresa_soporte_remoto_sesiones s
 		LEFT JOIN empresa_soporte_remoto_dispositivos d ON d.id = s.dispositivo_id `+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
-	rows, err := dbConn.Query(`SELECT
+	rows, err := dbConn.QueryContext(ctx, `SELECT
 		s.id,
 		s.empresa_id,
 		s.dispositivo_id,

@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -68,5 +70,40 @@ func TestUnwrappedSuperHandlersRequireSuperAdmin(t *testing.T) {
 				t.Fatalf("status = %d, want %d", res.Code, http.StatusUnauthorized)
 			}
 		})
+	}
+}
+
+func TestVentaDigitalHTTPPropagaContextoDBYProveedor(t *testing.T) {
+	raw, err := os.ReadFile("venta_digital.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, forbidden := range []string{
+		"dbpkg.GetSuperVentaDigitalConfig(dbSuper",
+		"dbpkg.GetSuperVentaDigitalItemByID(dbSuper",
+		"dbpkg.ListSuperVentaDigitalItems(dbSuper",
+		"dbpkg.CreateSuperVentaDigitalOrder(dbSuper",
+		"dbpkg.UpdateSuperVentaDigitalOrderPayment(dbSuper",
+		"dbpkg.GetSuperVentaDigitalOrderByCodigo(dbSuper",
+		"http.NewRequest(http.MethodPost, apiURL",
+		"http.NewRequest(http.MethodGet, statusURL",
+	} {
+		if strings.Contains(source, forbidden) {
+			t.Fatalf("digital sales bypasses request context with %q", forbidden)
+		}
+	}
+	for _, expected := range []string{
+		"GetSuperVentaDigitalConfigContext(r.Context()",
+		"GetSuperVentaDigitalItemByIDContext(r.Context()",
+		"CreateSuperVentaDigitalOrderContext(r.Context()",
+		"UpdateSuperVentaDigitalOrderPaymentContext(r.Context()",
+		"GetSuperVentaDigitalOrderByCodigoContext(r.Context()",
+		"http.NewRequestWithContext(r.Context(), http.MethodPost, apiURL",
+		"http.NewRequestWithContext(r.Context(), http.MethodGet, statusURL",
+	} {
+		if !strings.Contains(source, expected) {
+			t.Fatalf("digital sales is missing cancellable operation %q", expected)
+		}
 	}
 }

@@ -5,30 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Guia de Domotica</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    :root { --guide-bg: var(--surface-page, #f4f7fb); --guide-card: var(--surface-card, #fff); --guide-text: var(--text-primary, #152033); --guide-muted: var(--text-secondary, #5f6b7c); --guide-line: var(--border-color, #dce3ed); --guide-accent: var(--primary, #1769e0); --guide-good: #16834b; --guide-warn: #a85d00; }
-    @media (prefers-color-scheme: dark) { :root { --guide-bg: #101722; --guide-card: #182231; --guide-text: #edf3fb; --guide-muted: #b5c0d0; --guide-line: #334257; --guide-accent: #75adff; } }
-    body { background: var(--guide-bg); color: var(--guide-text); }
-    .guide-shell { max-width: 1060px; margin: 0 auto; padding: 28px 18px 52px; }
-    .guide-head { display:flex; gap:18px; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
-    .guide-kicker { margin:0 0 5px; color:var(--guide-accent); font-weight:800; letter-spacing:.06em; text-transform:uppercase; font-size:.76rem; }
-    h1 { margin:0; font-size:clamp(1.55rem, 3vw, 2.25rem); } .guide-intro { margin:8px 0 0; max-width:720px; color:var(--guide-muted); line-height:1.55; }
-    .guide-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:20px 0; }
-    .guide-card, .guide-note { background:var(--guide-card); border:1px solid var(--guide-line); border-radius:14px; padding:18px; box-shadow:0 5px 16px rgba(17,35,63,.06); }
-    .guide-card h2 { margin:0 0 8px; font-size:1rem; } .guide-card p, .guide-card li, .guide-step p { color:var(--guide-muted); line-height:1.5; }
-    .guide-num { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:var(--guide-accent); color:#fff; font-weight:800; margin-bottom:10px; }
-    .guide-step { display:grid; grid-template-columns:44px 1fr; gap:14px; align-items:start; padding:17px 0; border-bottom:1px solid var(--guide-line); }
-    .guide-step:last-child { border-bottom:0; } .guide-step h2 { margin:2px 0 6px; font-size:1.08rem; }
-    .guide-step .guide-num { margin:0; } code { background:color-mix(in srgb, var(--guide-accent) 12%, transparent); color:var(--guide-text); border-radius:5px; padding:2px 5px; }
-    .guide-note { margin-top:18px; border-left:4px solid var(--guide-warn); } .guide-note strong { color:var(--guide-warn); }
-    .guide-ok { border-left-color:var(--guide-good); } .guide-ok strong { color:var(--guide-good); }
-    .guide-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; } .guide-actions .btn { text-decoration:none; }
-    .guide-figure { margin:20px 0; } .guide-figure img { display:block; width:100%; height:auto; border:1px solid var(--guide-line); border-radius:12px; background:#f5f8fb; }
-    .guide-figure figcaption { margin-top:8px; color:var(--guide-muted); line-height:1.45; font-size:.92rem; }
-    .guide-pin-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(260px,.9fr); gap:16px; align-items:start; }
-    .guide-example { margin:0; padding-left:20px; color:var(--guide-muted); line-height:1.55; }
-    @media (max-width:720px) { .guide-head { display:block; } .guide-head .btn { margin-top:14px; } .guide-grid,.guide-pin-grid { grid-template-columns:1fr; } .guide-shell { padding:18px 14px 38px; } }
-  </style>
+  <link rel="stylesheet" href="/administrar_empresa/tutorial_domotica.css">
 </head>
 <body class="empresa-subpage">
   <main class="guide-shell">
@@ -78,12 +55,19 @@
 
     <section class="guide-card" aria-label="Pasos para instalar y configurar Domótica">
 	  <article class="guide-step"><div class="guide-num">1</div><div><h2>Registre la Raspberry</h2><p>En <strong>Domótica y Energía Solar &gt; Configuración de domótica &gt; Controladores</strong>, agregue la Raspberry de esta empresa. La IP local es opcional cuando se usa el túnel saliente. Cada placa debe tener su propio registro e instalador.</p></div></article>
-	  <article class="guide-step"><div class="guide-num">2</div><div><h2>Descargue y ejecute el programa inicial</h2><p>Desde el navegador de esa Raspberry pulse <strong>Generar instalador</strong>. Ejecute una única vez <code>sudo sh ~/Downloads/instalar-pcs-domotica-*.sh</code>. El servicio <code>pcs-domotica-agent</code> queda habilitado para iniciar automáticamente después de cada encendido.</p></div></article>
-	  <article class="guide-step"><div class="guide-num">3</div><div><h2>Confirme conexión y recuperación</h2><p>El túnel HTTPS sale desde la Raspberry al VPS y se reconecta solo ante pérdida de red, Internet o reinicio. Tras reiniciar, PCS recupera únicamente los relés que estaban confirmados encendidos, de uno en uno y con un segundo entre cada activación.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">2</div><div><h2>Instale el agente: descarga o SSH</h2><p><strong>Método recomendado:</strong> desde el navegador de esa Raspberry pulse <strong>Generar instalador</strong> y ejecute <code>sudo sh ~/Downloads/instalar-pcs-domotica-*.sh</code>. <strong>Método alternativo:</strong> pulse <strong>Instalar por SSH</strong>, confirme la huella del equipo y suministre la credencial. El VPS solo puede usar una IP pública o una red VPN incluida explícitamente en <code>PCS_DOMOTICA_SSH_ALLOWED_CIDRS</code>; una IP LAN sin ruta no es alcanzable. Si decide guardar la credencial, las claves quedan cifradas y no vuelven a mostrarse.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">3</div><div><h2>Confirme conexión y recuperación</h2><p>El túnel HTTPS sale desde la Raspberry al VPS y se reconecta solo ante pérdida de red, Internet o reinicio. Tras reiniciar, PCS recupera únicamente los relés que estaban confirmados encendidos, de uno en uno y con el retardo configurado para la empresa (un segundo de forma predeterminada).</p></div></article>
 	  <article class="guide-step"><div class="guide-num">4</div><div><h2>Identifique cada salida GPIO</h2><p>En la tarjeta de la Raspberry pulse <strong>Probar GPIO</strong>. Cada botón envía un pulso de un segundo y vuelve a apagar la salida; úselo primero sin carga crítica. El pulso usa polaridad <strong>activa-baja</strong>, apropiada para el módulo PCS de 16 relés.</p></div></article>
 	  <article class="guide-step"><div class="guide-num">5</div><div><h2>Agregue el equipo</h2><p>En <strong>Estaciones y aparatos</strong>, seleccione la estación y pulse <strong>Agregar aparato</strong>. Indique nombre, categoría, descripción, potencia nominal en watts y una foto opcional.</p></div></article>
 	  <article class="guide-step"><div class="guide-num">6</div><div><h2>Asigne Raspberry y GPIO</h2><p>Elija la Raspberry y el GPIO BCM que llega al relé. Un GPIO solo puede pertenecer a un aparato activo de esa Raspberry. Verifique también la polaridad: para el módulo PCS de 16 relés normalmente se usa salida <strong>activa-baja</strong>.</p></div></article>
 	  <article class="guide-step"><div class="guide-num">7</div><div><h2>Programe y audite</h2><p>Programe fechas y horas si aplica. El reporte de Domótica permite filtrar consumo por categoría/equipo y la bitácora conserva cada encendido, apagado y prueba técnica.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">8</div><div><h2>Cree escenas</h2><p>En <strong>Automatizaciones</strong> cree una escena para dejar varios aparatos encendidos o apagados con una sola acción, por ejemplo “Cierre del local”. Los encendidos de la escena usan la misma cola eléctrica empresarial.</p></div></article>
+    </section>
+
+    <section class="guide-card" aria-labelledby="victronTitle">
+      <h2 id="victronTitle">Controladora solar Victron por VE.Direct</h2>
+      <p>Conecte el cable VE.Direct a USB en la Raspberry. El agente identifica automáticamente puertos serie válidos a <strong>19200 baudios, 8N1</strong>, valida el checksum de cada bloque y envía por el túnel voltaje de batería y panel, corriente, potencia solar, producción del día, etapa de carga y errores. Consulte <strong>Domótica y Energía Solar &gt; Paneles solares</strong>: el estado aparece verde como <strong>Conectado</strong> cuando hay telemetría reciente y rojo como <strong>Desconectado</strong> cuando deja de recibirse.</p>
+      <p>Una BlueSolar MPPT 75/15 no calcula por sí sola el porcentaje de carga SOC de la batería. PCS mostrará <strong>No disponible</strong>; para SOC real debe añadir un monitor Victron BMV o SmartShunt compatible.</p>
     </section>
 
     <aside class="guide-note"><strong>Seguridad eléctrica:</strong> no conecte cargas de red directamente a los pines GPIO. Use módulos de relé adecuados, fuente aislada, protección eléctrica y un instalador calificado para cargas de potencia.</aside>

@@ -146,7 +146,7 @@ func CreateSuperCorreoNotificacionPrueba(dbConn *sql.DB, payload SuperCorreoNoti
 		payload.FechaEvento = time.Now().Format("2006-01-02 15:04:05")
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO super_correo_notificaciones_prueba (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO super_correo_notificaciones_prueba (
 		tipo,
 		empresa_id,
 		destinatario,
@@ -176,7 +176,7 @@ func CreateSuperCorreoNotificacionPrueba(dbConn *sql.DB, payload SuperCorreoNoti
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListSuperCorreoNotificacionesPrueba lista notificaciones capturadas en modo pruebas.

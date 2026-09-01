@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -57,14 +59,7 @@ var soporteRemotoSignalingHub = struct {
 }{peers: make(map[string]*soporteRemotoSignalingPeer)}
 
 func soporteRemotoSignalingRole(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "host":
-		return "host"
-	case "viewer":
-		return "viewer"
-	default:
-		return ""
-	}
+	return valueutil.NormalizeAllowed(raw, "host", "viewer")
 }
 
 func soporteRemotoSignalingPeerKey(empresaID int64, codigoSesion, role string) string {
@@ -180,7 +175,7 @@ func SoporteRemotoSignalingHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 		}()
 
-		session, err := dbpkg.ConsumeEmpresaSoporteRemotoSignalingCredential(dbEmp, empresaID, codigoSesion, role, tokenRaw, nonceRaw)
+		session, err := dbpkg.ConsumeEmpresaSoporteRemotoSignalingCredentialContext(r.Context(), dbEmp, empresaID, codigoSesion, role, tokenRaw, nonceRaw)
 		if err != nil {
 			registrarAuditoriaSignalingNoBloqueante(dbEmp, r, empresaID, 0, "signaling_rechazado", http.StatusUnauthorized)
 			http.Error(w, "credencial de senalizacion invalida", http.StatusUnauthorized)
@@ -258,7 +253,10 @@ func soporteRemotoMonitorSignalingPeer(dbEmp *sql.DB, peer *soporteRemotoSignali
 				peer.closeWithReason(websocket.CloseNormalClosure, "inactividad")
 				return
 			}
-			if !dbpkg.IsEmpresaSoporteRemotoSessionActive(dbEmp, peer.empresaID, peer.sessionID) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			active := dbpkg.IsEmpresaSoporteRemotoSessionActiveContext(ctx, dbEmp, peer.empresaID, peer.sessionID)
+			cancel()
+			if !active {
 				peer.closeWithReason(websocket.ClosePolicyViolation, "sesion revocada")
 				return
 			}

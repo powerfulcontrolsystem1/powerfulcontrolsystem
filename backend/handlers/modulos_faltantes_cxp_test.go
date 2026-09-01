@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -49,7 +50,7 @@ func TestCxPConfigurationRequiresCanonicalRegisteredSupplier(t *testing.T) {
 	if cfgCxP.ValidatePayload == nil {
 		t.Fatal("CxP must validate its supplier payload")
 	}
-	for _, required := range []string{"proveedor_id", "proveedor_nombre", "documento_codigo"} {
+	for _, required := range []string{"proveedor_id", "documento_codigo"} {
 		found := false
 		for _, column := range cfgCxP.RequiredOnCreate {
 			if column == required {
@@ -59,6 +60,11 @@ func TestCxPConfigurationRequiresCanonicalRegisteredSupplier(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("CxP creation must require %q", required)
+		}
+	}
+	for _, required := range cfgCxP.RequiredOnCreate {
+		if required == "proveedor_nombre" {
+			t.Fatal("supplier name must be derived from the tenant-scoped proveedor_id, not supplied by the client")
 		}
 	}
 }
@@ -75,5 +81,21 @@ func TestCxPConcurrentNoBalanceIsReportedAsConflict(t *testing.T) {
 	}
 	if got := registrarPagoCxPErrorStatus(http.ErrBodyNotAllowed); got != http.StatusBadRequest {
 		t.Fatalf("generic error status = %d, want %d", got, http.StatusBadRequest)
+	}
+}
+
+func TestCxPCanonicalPaymentPropagatesRequestContextAndChecksReload(t *testing.T) {
+	raw, err := os.ReadFile("modulos_faltantes.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		"RegistrarEmpresaCxPAbonoContext(r.Context(), dbEmp",
+		"El pago fue confirmado pero no se pudo recargar la cuenta por pagar",
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("el pago canónico CxP debe conservar %q", required)
+		}
 	}
 }

@@ -251,7 +251,7 @@ func EnsureSuperAlertasSchema(dbConn *sql.DB) error {
 }
 
 func GetSuperAlertasConfig(dbConn *sql.DB) (SuperAlertaConfig, error) {
-	if err := EnsureSuperAlertasSchema(dbConn); err != nil {
+	if err := SuperAlertasSchemaReady(dbConn); err != nil {
 		return SuperAlertaConfig{}, err
 	}
 	cfg := SuperAlertaConfig{}
@@ -280,7 +280,7 @@ func GetSuperAlertasConfig(dbConn *sql.DB) (SuperAlertaConfig, error) {
 }
 
 func SaveSuperAlertasConfig(dbConn *sql.DB, cfg SuperAlertaConfig) error {
-	if err := EnsureSuperAlertasSchema(dbConn); err != nil {
+	if err := SuperAlertasSchemaReady(dbConn); err != nil {
 		return err
 	}
 	cfg.normalize()
@@ -339,7 +339,7 @@ func superAlertBoolInt(v bool) int {
 }
 
 func CreateSuperAlertaEvento(dbConn *sql.DB, item SuperAlertaEvento) (int64, error) {
-	if err := EnsureSuperAlertasSchema(dbConn); err != nil {
+	if err := SuperAlertasSchemaReady(dbConn); err != nil {
 		return 0, err
 	}
 	item.normalize()
@@ -376,7 +376,7 @@ func (item *SuperAlertaEvento) normalize() {
 }
 
 func ListSuperAlertaEventos(dbConn *sql.DB, limit int) ([]SuperAlertaEvento, error) {
-	if err := EnsureSuperAlertasSchema(dbConn); err != nil {
+	if err := SuperAlertasSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if limit <= 0 || limit > 500 {
@@ -404,7 +404,7 @@ func SuperAlertaRecentlySent(dbConn *sql.DB, tipo string, cooldownMinutes int64)
 	if cooldownMinutes <= 0 {
 		return false, nil
 	}
-	if err := EnsureSuperAlertasSchema(dbConn); err != nil {
+	if err := SuperAlertasSchemaReady(dbConn); err != nil {
 		return false, err
 	}
 	var raw string

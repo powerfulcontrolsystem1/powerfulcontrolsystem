@@ -7,6 +7,8 @@ import (
 	"math"
 	"strings"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type EmpresaProduccionMRPConfig struct {
@@ -1215,23 +1217,11 @@ func normalizeOneOfProduccion(v, fallback string, allowed ...string) string {
 }
 
 func normalizeSlugProduccion(v, fallback string) string {
-	s := strings.ToLower(strings.TrimSpace(v))
-	s = strings.ReplaceAll(s, " ", "_")
-	s = strings.ReplaceAll(s, "-", "_")
-	if s == "" {
-		return fallback
-	}
-	return s
+	return normalizeRepositorySlug(v, fallback)
 }
 
 func clampProduccion(v, min, max float64) float64 {
-	if v < min {
-		return min
-	}
-	if v > max {
-		return max
-	}
-	return v
+	return valueutil.Clamp(v, min, max)
 }
 
 func roundMoneyProduccion(v float64) float64 {

@@ -1,7 +1,9 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -26,6 +28,16 @@ func TestListPaisesFacturacionDisponiblesIncluyePerfilesMultiPais(t *testing.T) 
 	}
 	if len(want) != 0 {
 		t.Fatalf("missing countries: %#v", want)
+	}
+}
+
+func TestDetectFacturacionPaisContextSinEmpresa(t *testing.T) {
+	pais, source, err := DetectFacturacionPaisContext(context.Background(), nil, 0, "America/Panama", "es-PA")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pais.Codigo != "PA" || source != "timezone" {
+		t.Fatalf("expected PA/timezone, got %s/%s", pais.Codigo, source)
 	}
 }
 
@@ -101,17 +113,7 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 		t.Fatalf("expected documentos_soportados array, got %#v", extra["documentos_soportados"])
 	}
 	wantDocs := map[string]bool{
-		"factura_electronica":                      false,
-		"nota_credito":                             false,
-		"nota_debito":                              false,
-		"documento_soporte":                        false,
-		"nota_ajuste_documento_soporte":            false,
-		"nomina_electronica":                       false,
-		"nota_ajuste_nomina_electronica":           false,
-		"documento_equivalente_pos":                false,
-		"nota_ajuste_documento_equivalente":        false,
-		"documento_equivalente_servicios_publicos": false,
-		"eventos_radian_recepcion":                 false,
+		"factura_electronica": false,
 	}
 	for _, raw := range docsRaw {
 		if _, exists := wantDocs[raw.(string)]; exists {
@@ -137,12 +139,40 @@ func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.
 			continue
 		}
 		foundRadian = true
-		if item.EstadoImplementacion != "operativo" || !item.EsEvento || !item.RequiereFirma {
-			t.Fatalf("expected operational signed RADIAN event, got %#v", item)
+		if item.EstadoImplementacion != "bloqueado_contrato" || item.DisponibleEmision || !item.EsEvento || !item.RequiereFirma {
+			t.Fatalf("expected blocked signed RADIAN catalog event, got %#v", item)
 		}
 	}
 	if !foundRadian {
 		t.Fatalf("missing RADIAN events in DIAN catalog")
+	}
+}
+
+func TestCatalogoDianSoloDeclaraOperativasFamiliasConAdaptador(t *testing.T) {
+	operativos := map[string]string{
+		"factura_electronica": "operativo",
+		"documento_soporte":   "operativo_anexo_1_1",
+		"nomina_electronica":  "operativo_anexo_nomina_1_0",
+	}
+	for _, item := range ListFacturacionDianDocumentosElectronicos() {
+		if item.Codigo == "nota_credito" {
+			if item.DisponibleEmision || !item.DisponibleAnulacionTotal || item.EstadoImplementacion != "operativo_anulacion_total" {
+				t.Fatalf("nota credito debe limitarse a anulacion total trazable: %#v", item)
+			}
+			continue
+		}
+		if estadoEsperado, operativo := operativos[item.Codigo]; operativo {
+			if !item.DisponibleEmision || item.EstadoImplementacion != estadoEsperado || !item.RequiereFirma || !item.RequiereNumeracion {
+				t.Fatalf("documento con adaptador no está operativo: %#v", item)
+			}
+			continue
+		}
+		if item.DisponibleEmision || item.EstadoImplementacion != "bloqueado_contrato" {
+			t.Fatalf("familia sin adaptador se presentó como operativa: %#v", item)
+		}
+		if strings.TrimSpace(item.Observacion) == "" {
+			t.Fatalf("familia bloqueada sin explicación visible: %#v", item)
+		}
 	}
 }
 

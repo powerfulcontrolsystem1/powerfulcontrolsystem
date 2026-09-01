@@ -422,9 +422,17 @@
               <label class="form-label" for="quickClienteDepartamento">Departamento</label>
               <input id="quickClienteDepartamento" class="form-input" autocomplete="off" placeholder="Ej: Atlantico">
             </div>
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteDepartamentoDANE">DANE departamento</label>
+              <input id="quickClienteDepartamentoDANE" class="form-input" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="08">
+            </div>
             <div class="form-col">
               <label class="form-label" for="quickClienteMunicipio">Municipio</label>
               <input id="quickClienteMunicipio" class="form-input" autocomplete="off" placeholder="Ej: Barranquilla">
+            </div>
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteMunicipioDANE">DANE municipio</label>
+              <input id="quickClienteMunicipioDANE" class="form-input" autocomplete="off" inputmode="numeric" maxlength="5" placeholder="08001">
             </div>
             <div class="form-col maxw-180">
               <label class="form-label" for="quickClienteCodigoPostal">Codigo postal</label>
@@ -1010,7 +1018,7 @@
             <h3 id="carritoTotalsTitle" class="section-heading">Totales y detalles</h3>
             <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
             <div class="carrito-summary-pay-actions">
-              <button type="button" id="btnPagarCarrito" class="btn w-full" disabled title="El carrito se esta cargando." onclick="handlePagarCarritoClick(event)">Pagar y cerrar carrito</button>
+              <button type="button" id="btnPagarCarrito" class="btn w-full" disabled title="El carrito se esta cargando.">Pagar y cerrar carrito</button>
             </div>
           </aside>
         </div>
@@ -6574,7 +6582,7 @@
             'Regresa al carrito y vuelve a agregar el producto.'
           ],
           actions: [
-            { label: 'Abrir bodegas', url: '/administrar_empresa/bodega.html?empresa_id=' + encodeURIComponent(state.empresaID || 0) },
+            { label: 'Abrir bodegas', url: '/administrar_empresa/administrar_productos.html?view=bodegas&empresa_id=' + encodeURIComponent(state.empresaID || 0) },
             { label: 'Abrir productos', url: '/administrar_empresa/administrar_productos.html?empresa_id=' + encodeURIComponent(state.empresaID || 0) }
           ]
         };
@@ -7215,7 +7223,9 @@
         await ensureOk(res);
         const payResp = await res.json().catch(function() { return null; });
         const documentoVenta = payResp && payResp.documento_venta && typeof payResp.documento_venta === 'object' ? payResp.documento_venta : null;
-        const facturaElectronica = payResp && payResp.factura_electronica && typeof payResp.factura_electronica === 'object' ? payResp.factura_electronica : null;
+        const facturaElectronicaDirecta = payResp && payResp.factura_electronica && typeof payResp.factura_electronica === 'object' ? payResp.factura_electronica : null;
+        const facturaElectronicaAnidada = documentoVenta && documentoVenta.factura_electronica && typeof documentoVenta.factura_electronica === 'object' ? documentoVenta.factura_electronica : null;
+        const facturaElectronica = facturaElectronicaDirecta || facturaElectronicaAnidada;
         const creditoVenta = payResp && payResp.credito_venta && typeof payResp.credito_venta === 'object' ? payResp.credito_venta : null;
         pay.creditoVenta = creditoVenta;
         pay.propinaResultado = payResp && payResp.propina && typeof payResp.propina === 'object' ? payResp.propina : null;
@@ -7248,7 +7258,11 @@
         if (facturaElectronica && normalize(facturaElectronica.documento_codigo)) {
           successMsg += ' Factura electrónica: ' + normalize(facturaElectronica.documento_codigo) + '.';
         }
-        setStationPaymentPersistentMessage(successMsg, false);
+        const facturaWarning = normalize(facturaElectronica && facturaElectronica.warning);
+        if (facturaWarning) {
+          successMsg += ' Aviso factura electrónica: ' + facturaWarning + '.';
+        }
+        setStationPaymentPersistentMessage(successMsg, Boolean(facturaWarning));
         printTargets = preparePaymentPrintTargets();
         try {
           await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot, printTargets && printTargets.receipt, facturaElectronica || documentoVenta);
@@ -8483,7 +8497,9 @@
       setValue('quickClienteDireccion', normalize(cliente.direccion));
       setValue('quickClientePais', normalize(cliente.pais) || 'CO');
       setValue('quickClienteDepartamento', normalize(cliente.departamento));
+      setValue('quickClienteDepartamentoDANE', normalize(cliente.departamento_codigo_dane));
       setValue('quickClienteMunicipio', normalize(cliente.municipio));
+      setValue('quickClienteMunicipioDANE', normalize(cliente.municipio_codigo_dane));
       setValue('quickClienteCodigoPostal', normalize(cliente.codigo_postal));
       setValue('quickClienteObservaciones', normalize(cliente.observaciones));
       syncQuickClienteFiscalDefaults('tipo_documento');
@@ -8669,14 +8685,16 @@
         direccion: normalize(document.getElementById('quickClienteDireccion').value),
         pais: normalize(document.getElementById('quickClientePais').value) || 'CO',
         departamento: normalize(document.getElementById('quickClienteDepartamento').value),
+        departamento_codigo_dane: normalize(document.getElementById('quickClienteDepartamentoDANE').value),
         municipio: normalize(document.getElementById('quickClienteMunicipio').value),
+        municipio_codigo_dane: normalize(document.getElementById('quickClienteMunicipioDANE').value),
         codigo_postal: normalize(document.getElementById('quickClienteCodigoPostal').value),
         observaciones: normalize(document.getElementById('quickClienteObservaciones').value) || 'Creado desde el boton Clientes del carrito'
       };
     }
 
     function resetQuickClienteFormAfterSave() {
-      ['quickClienteDocumento', 'quickClienteDV', 'quickClienteNombreComercial', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
+      ['quickClienteDocumento', 'quickClienteDV', 'quickClienteNombreComercial', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClienteDepartamento', 'quickClienteDepartamentoDANE', 'quickClienteMunicipio', 'quickClienteMunicipioDANE', 'quickClienteCodigoPostal', 'quickClienteObservaciones'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.value = '';
       });
@@ -11212,9 +11230,8 @@
       if (state.directSaleMode) {
         url.searchParams.set('modo', 'venta_directa');
         url.searchParams.set('perm_page', 'linkVentaDirecta');
-        if (filterBySelectedCode !== false && state.selectedCarritoCode) {
-          url.searchParams.set('carrito_codigo', state.selectedCarritoCode);
-        }
+        // Carga tambien VENTA-DIRECTA-<empresa> para reconciliar carritos
+        // heredados antes de intentar crear el canonico terminado en -0.
       } else if (state.stationMode) {
         url.searchParams.set('perm_page', 'linkEstaciones');
         if (state.stationID > 0) {
@@ -12050,7 +12067,7 @@
         }
       });
     }
-    ['quickClienteTipoPersona', 'quickClienteTipoDoc', 'quickClienteDocumento', 'quickClienteDV', 'quickClienteNombre', 'quickClienteNombreComercial', 'quickClienteRegimenFiscal', 'quickClienteResponsabilidad', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClientePais', 'quickClienteDepartamento', 'quickClienteMunicipio', 'quickClienteCodigoPostal', 'quickClienteObservaciones', 'quickClienteCupoCredito', 'quickClienteMaxCreditosActivos'].forEach(function(id) {
+    ['quickClienteTipoPersona', 'quickClienteTipoDoc', 'quickClienteDocumento', 'quickClienteDV', 'quickClienteNombre', 'quickClienteNombreComercial', 'quickClienteRegimenFiscal', 'quickClienteResponsabilidad', 'quickClienteTelefono', 'quickClienteEmail', 'quickClienteDireccion', 'quickClientePais', 'quickClienteDepartamento', 'quickClienteDepartamentoDANE', 'quickClienteMunicipio', 'quickClienteMunicipioDANE', 'quickClienteCodigoPostal', 'quickClienteObservaciones', 'quickClienteCupoCredito', 'quickClienteMaxCreditosActivos'].forEach(function(id) {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('keydown', function(e) {

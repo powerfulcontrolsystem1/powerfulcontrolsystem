@@ -39,6 +39,7 @@
     .dian-readable-detail summary{cursor:pointer;font-weight:850;color:var(--text)}
     .dian-readable-detail pre{margin:8px 0 0;max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)}
     .dian-capture-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-capture-actions{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
     .dian-ai-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;border:1px solid color-mix(in srgb,#38bdf8 45%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 12%,var(--surface));color:var(--text);font-weight:950;font-size:.78rem;letter-spacing:.02em}
     .dian-capture-guide{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
     .dian-capture-step{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;min-height:112px}
@@ -172,6 +173,24 @@
         <input type="hidden" id="dian_set_facturas_aceptadas_requeridas">
         <input type="hidden" id="dian_set_notas_debito_aceptadas_requeridas">
         <input type="hidden" id="dian_set_notas_credito_aceptadas_requeridas">
+        <div class="dian-capture-panel" id="dianRutPanel">
+          <div class="dian-capture-head">
+            <div>
+              <h3>Registro &Uacute;nico Tributario (RUT) de la empresa</h3>
+              <p class="form-help">Carga el Formulario 001 de esta empresa para detectar identidad fiscal, ubicaci&oacute;n, c&oacute;digos DANE y responsabilidades. El PDF se procesa temporalmente: solo se guardan los datos que revises, apliques y confirmes en los formularios.</p>
+            </div>
+            <span class="dian-chip">RUT por empresa</span>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dianRutPdfInput">PDF del RUT</label><input id="dianRutPdfInput" type="file" accept="application/pdf,.pdf" class="form-input"></div>
+            <div class="form-col dian-capture-actions">
+              <button id="btnDianRutPdf" type="button" class="btn secondary" data-ai-button="true">Cargar RUT con IA GPT-5.5</button>
+              <button id="btnDianRutAplicar" type="button" class="btn" disabled>Aplicar datos revisados</button>
+            </div>
+          </div>
+          <div id="dianRutPdfMsg" class="form-help"></div>
+          <div id="dianRutPdfResultado" class="dian-readable-result is-empty"></div>
+        </div>
         <div class="dian-capture-panel" id="dianNumeracion1876Panel">
           <div class="dian-capture-head">
             <div>
@@ -203,12 +222,32 @@
         <div class="form-row">
           <div class="form-col"><label class="form-label">Ambiente DIAN</label><select id="dian_tipo_ambiente" class="form-input"><option value="habilitacion">Habilitación</option><option value="produccion">Producción</option></select></div>
           <div class="form-col"><label class="form-label">URL DIAN / proveedor</label><input id="dian_url" class="form-input" placeholder="https://vpfe-hab.dian.gov.co"></div>
-          <div class="form-col"><label class="form-label">TestSetId</label><input id="dian_test_set_id" class="form-input" placeholder="Obligatorio en habilitación"></div>
+          <div class="form-col"><label class="form-label" for="dian_test_set_id">TestSetId</label><input id="dian_test_set_id" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_test_set_id_estado"><div id="dian_test_set_id_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
         </div>
         <div class="form-row">
-          <div class="form-col"><label class="form-label">Software ID</label><input id="dian_software_id" class="form-input" placeholder="ID entregado por DIAN"></div>
-          <div class="form-col"><label class="form-label">Software PIN</label><input id="dian_software_pin" class="form-input" type="password" autocomplete="new-password" placeholder="PIN entregado por DIAN"></div>
+          <div class="form-col"><label class="form-label" for="dian_software_id">Software ID</label><input id="dian_software_id" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_software_id_estado"><div id="dian_software_id_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_software_pin">Software PIN</label><input id="dian_software_pin" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_software_pin_estado"><div id="dian_software_pin_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
           <div class="form-col"><div class="form-help" style="margin-top:28px;"><label><input id="dian_usar_software_compartido" type="checkbox"> Usar software compartido SaaS</label></div></div>
+        </div>
+        <div class="dian-capture-panel" id="dianSoftwareProveedorPanel">
+          <div class="dian-capture-head">
+            <div>
+              <h3>Identidad del proveedor del software DIAN</h3>
+              <p class="form-help">Obligatoria para n&oacute;mina electr&oacute;nica cuando PCS usa software compartido SaaS. No contiene el PIN ni sustituye la identidad fiscal del empleador.</p>
+            </div>
+            <span class="dian-chip">Proveedor XML</span>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_nit">NIT proveedor</label><input id="dian_software_proveedor_nit" class="form-input" inputmode="numeric" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_dv">DV proveedor</label><input id="dian_software_proveedor_dv" class="form-input" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_razon_social">Raz&oacute;n social proveedor</label><input id="dian_software_proveedor_razon_social" class="form-input" autocomplete="organization"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_primer_apellido">Primer apellido (persona natural)</label><input id="dian_software_proveedor_primer_apellido" class="form-input" autocomplete="family-name"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_segundo_apellido">Segundo apellido (persona natural)</label><input id="dian_software_proveedor_segundo_apellido" class="form-input" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_primer_nombre">Primer nombre (persona natural)</label><input id="dian_software_proveedor_primer_nombre" class="form-input" autocomplete="given-name"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_otros_nombres">Otros nombres (opcional)</label><input id="dian_software_proveedor_otros_nombres" class="form-input" autocomplete="additional-name"></div>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-col"><label class="form-label">Prefijo</label><input id="dian_prefijo" class="form-input" placeholder="FE"></div>
@@ -226,10 +265,10 @@
           <div class="form-col"><div id="feDianResolutionExpiryText" class="form-help">Resoluci&oacute;n sin verificar.</div></div>
         </div>
         <div class="form-row">
-          <div class="form-col"><label class="form-label">Llave t&eacute;cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" placeholder="Llave t&eacute;cnica del rango de numeraci&oacute;n"></div>
-          <div class="form-col"><label class="form-label">Token proveedor/API (opcional en DIAN oficial)</label><input id="dian_token_emisor_ref" class="form-input" placeholder="Solo si usa proveedor/API bearer: env:DIAN_TOKEN_EMPRESA_1"></div>
-          <div class="form-col"><label class="form-label">Certificado X.509</label><input id="dian_certificado_url" class="form-input" placeholder="Se completa al cargar P12/PFX o PEM con certificado"></div>
-          <div class="form-col"><label class="form-label">Llave privada</label><input id="dian_certificado_clave_ref" class="form-input" placeholder="Se completa al cargar firma"></div>
+          <div class="form-col"><label class="form-label" for="dian_llave_tecnica">Llave t&eacute;cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_llave_tecnica_estado"><div id="dian_llave_tecnica_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_token_emisor_ref">Token proveedor/API (opcional en DIAN oficial)</label><input id="dian_token_emisor_ref" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor o referencia PCS_DIAN_*" aria-describedby="dian_token_emisor_ref_estado"><div id="dian_token_emisor_ref_estado" class="form-help dian-secret-status" role="status">No configurado (opcional).</div></div>
+          <div class="form-col"><label class="form-label" for="dian_certificado_url">Certificado X.509</label><input id="dian_certificado_url" class="form-input" type="password" readonly placeholder="Se administra únicamente con Cargar firma" aria-describedby="dian_certificado_url_estado"><div id="dian_certificado_url_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_certificado_clave_ref">Llave privada</label><input id="dian_certificado_clave_ref" class="form-input" type="password" readonly placeholder="Se administra únicamente con Cargar firma" aria-describedby="dian_certificado_clave_ref_estado"><div id="dian_certificado_clave_ref_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
         </div>
         <div class="form-row"><div class="form-col"><label class="form-label">Observaciones DIAN</label><textarea id="dian_observaciones" class="form-textarea" placeholder="Notas internas de habilitación, producción o soporte"></textarea></div></div>
         <div class="form-actions">
@@ -247,7 +286,7 @@
 
     <div id="feDianDocumentosCard" class="card is-hidden">
       <h2>Documentos electronicos DIAN Colombia</h2>
-      <p class="form-help">Activa los documentos del Sistema de Facturación Electrónica que la empresa usará. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.</p>
+	  <p class="form-help">Selecciona únicamente los tipos con emisión disponible. Los demás se muestran como catálogo y permanecen bloqueados hasta contar con su adaptador DIAN específico.</p>
       <div id="feDianEssentialDocs" class="dian-essential-grid"></div>
       <div id="feRadianStatus" class="fe-radian-panel is-hidden"></div>
       <div class="form-row">
@@ -262,7 +301,7 @@
       </div>
       <div id="feDianFuentesList" class="form-help"></div>
       <div class="form-actions">
-        <button id="feDianSelectAllDocs" class="btn secondary" type="button">Activar todos</button>
+		<button id="feDianSelectAllDocs" class="btn secondary" type="button">Seleccionar operativos</button>
         <button id="feDianApplyDocs" class="btn" type="button">Aplicar seleccion al JSON</button>
       </div>
       <div id="feDianDocumentosMsg" class="form-help"></div>
@@ -518,6 +557,44 @@
 
         <div class="form-row">
           <div class="form-col">
+            <label class="form-label" for="adv_tipo_persona_fiscal">Tipo de persona fiscal</label>
+            <select id="adv_tipo_persona_fiscal" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="persona_natural">Persona natural</option>
+              <option value="persona_juridica">Persona jurídica</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_regimen_tributario_colombia">Régimen tributario Colombia</label>
+            <select id="adv_regimen_tributario_colombia" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="ordinario">Renta régimen ordinario</option>
+              <option value="simple">Régimen Simple de Tributación</option>
+              <option value="especial">Régimen Tributario Especial</option>
+              <option value="ingresos_patrimonio">Ingresos y patrimonio</option>
+              <option value="no_declarante_pn">Persona natural no obligada a declarar</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_iva_responsabilidad">Responsabilidad IVA</label>
+            <select id="adv_iva_responsabilidad" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="responsable_iva">Responsable de IVA</option>
+              <option value="no_responsable_iva">No responsable de IVA</option>
+              <option value="pj_no_responsable_iva_simple">Persona jurídica no responsable por SIMPLE</option>
+              <option value="bienes_exentos">Productor/exportador de bienes exentos</option>
+              <option value="servicios_exterior">Servicios desde el exterior</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_responsabilidades_rut_codigos">Códigos de responsabilidades RUT</label>
+            <input id="adv_responsabilidades_rut_codigos" class="form-input" inputmode="numeric" placeholder="49, 52">
+            <p class="form-help">Códigos visibles en el campo 53 del RUT, separados por coma.</p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
             <label class="form-label">Correo facturación</label>
             <input id="adv_email_facturacion" type="email" class="form-input" placeholder="facturacion@empresa.com">
           </div>
@@ -537,8 +614,16 @@
             <input id="adv_departamento" class="form-input" placeholder="Antioquia">
           </div>
           <div class="form-col">
+            <label class="form-label">Código DANE departamento</label>
+            <input id="adv_departamento_codigo_dane" class="form-input" inputmode="numeric" maxlength="2" placeholder="05">
+          </div>
+          <div class="form-col">
             <label class="form-label">Municipio</label>
             <input id="adv_municipio" class="form-input" placeholder="Medellín">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Código DANE municipio</label>
+            <input id="adv_municipio_codigo_dane" class="form-input" inputmode="numeric" maxlength="5" placeholder="05001">
           </div>
         </div>
 
@@ -672,6 +757,7 @@
       catalog: [],
       dianConfig: null,
       dianCatalogo: null,
+      dianRutImport: null,
       dianNumeracionImport: null,
     };
 
@@ -749,6 +835,10 @@
         adv_nombre_comercial: "Nombre de marca visible en factura o comprobantes, si difiere de la razon social.",
         adv_regimen_fiscal: "Regimen tributario del emisor, por ejemplo Responsable de IVA o SIMPLE.",
         adv_responsabilidad_tributaria: "Codigo o descripcion de responsabilidad tributaria exigida por la normativa aplicable.",
+        adv_tipo_persona_fiscal: "Clasificacion de la empresa como persona natural o juridica segun el RUT.",
+        adv_regimen_tributario_colombia: "Regimen de renta visible o verificable en el RUT. Si el PDF no lo determina, revisalo con el contador.",
+        adv_iva_responsabilidad: "Responsabilidad frente al IVA segun los codigos del campo 53 del RUT.",
+        adv_responsabilidades_rut_codigos: "Codigos numericos visibles en el campo 53 del RUT, separados por coma.",
         adv_email_facturacion: "Correo usado como contacto de facturacion en la configuracion avanzada.",
         adv_telefono_facturacion: "Telefono fiscal o administrativo del emisor.",
         adv_direccion_fiscal: "Direccion principal que se imprime o usa como direccion fiscal del emisor.",
@@ -793,7 +883,7 @@
     }
 
     function isSensitiveDianResultKey(key) {
-      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|llave_tecnica|software_pin|certificado_clave/i.test(String(key || ""));
+      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|llave_tecnica|software_id|software_pin|test_set_id|certificado_url|certificado_clave/i.test(String(key || ""));
     }
 
     function sanitizeDianResultValue(value, key) {
@@ -866,6 +956,29 @@
         return JSON.stringify(parsed);
       } catch (_) {
         return null;
+      }
+    }
+
+    function responsabilidadesRUTCodesFromInput(raw) {
+      var seen = {};
+      return txt(raw).split(/[\s,;]+/).map(function(code) {
+        var digits = String(code || "").replace(/\D+/g, "");
+        if (digits.length === 1) digits = "0" + digits;
+        return digits;
+      }).filter(function(code) {
+        if (code.length !== 2 || seen[code]) return false;
+        seen[code] = true;
+        return true;
+      }).sort();
+    }
+
+    function responsabilidadesRUTCodesFromJSON(raw) {
+      if (Array.isArray(raw)) return responsabilidadesRUTCodesFromInput(raw.join(","));
+      try {
+        var parsed = JSON.parse(txt(raw) || "[]");
+        return Array.isArray(parsed) ? responsabilidadesRUTCodesFromInput(parsed.join(",")) : [];
+      } catch (_) {
+        return responsabilidadesRUTCodesFromInput(raw);
       }
     }
 
@@ -987,11 +1100,17 @@
       document.getElementById("adv_nombre_comercial").value = txt(cfg.nombre_comercial);
       document.getElementById("adv_regimen_fiscal").value = txt(cfg.regimen_fiscal);
       document.getElementById("adv_responsabilidad_tributaria").value = txt(cfg.responsabilidad_tributaria);
+      document.getElementById("adv_tipo_persona_fiscal").value = txt(cfg.tipo_persona_fiscal);
+      document.getElementById("adv_regimen_tributario_colombia").value = txt(cfg.regimen_tributario_colombia);
+      document.getElementById("adv_iva_responsabilidad").value = txt(cfg.iva_responsabilidad);
+      document.getElementById("adv_responsabilidades_rut_codigos").value = responsabilidadesRUTCodesFromJSON(cfg.responsabilidades_rut_json).join(", ");
       document.getElementById("adv_email_facturacion").value = txt(cfg.email_facturacion);
       document.getElementById("adv_telefono_facturacion").value = txt(cfg.telefono_facturacion);
       document.getElementById("adv_direccion_fiscal").value = txt(cfg.direccion_fiscal);
       document.getElementById("adv_departamento").value = txt(cfg.departamento);
+      document.getElementById("adv_departamento_codigo_dane").value = txt(cfg.departamento_codigo_dane);
       document.getElementById("adv_municipio").value = txt(cfg.municipio);
+      document.getElementById("adv_municipio_codigo_dane").value = txt(cfg.municipio_codigo_dane);
       document.getElementById("adv_pais_codigo").value = txt(cfg.pais_codigo) || "CO";
       document.getElementById("adv_codigo_postal").value = txt(cfg.codigo_postal);
       document.getElementById("adv_ambiente_fe").value = txt(cfg.ambiente_fe) || "habilitacion";
@@ -1030,11 +1149,17 @@
         nombre_comercial: txt(document.getElementById("adv_nombre_comercial").value),
         regimen_fiscal: txt(document.getElementById("adv_regimen_fiscal").value),
         responsabilidad_tributaria: txt(document.getElementById("adv_responsabilidad_tributaria").value),
+        tipo_persona_fiscal: txt(document.getElementById("adv_tipo_persona_fiscal").value),
+        regimen_tributario_colombia: txt(document.getElementById("adv_regimen_tributario_colombia").value),
+        iva_responsabilidad: txt(document.getElementById("adv_iva_responsabilidad").value),
+        responsabilidades_rut_json: JSON.stringify(responsabilidadesRUTCodesFromInput(document.getElementById("adv_responsabilidades_rut_codigos").value)),
         email_facturacion: txt(document.getElementById("adv_email_facturacion").value),
         telefono_facturacion: txt(document.getElementById("adv_telefono_facturacion").value),
         direccion_fiscal: txt(document.getElementById("adv_direccion_fiscal").value),
         departamento: txt(document.getElementById("adv_departamento").value),
+        departamento_codigo_dane: txt(document.getElementById("adv_departamento_codigo_dane").value),
         municipio: txt(document.getElementById("adv_municipio").value),
+        municipio_codigo_dane: txt(document.getElementById("adv_municipio_codigo_dane").value),
         pais_codigo: txt(document.getElementById("adv_pais_codigo").value) || "CO",
         codigo_postal: txt(document.getElementById("adv_codigo_postal").value),
         ambiente_fe: txt(document.getElementById("adv_ambiente_fe").value) || "habilitacion",
@@ -1232,6 +1357,114 @@
       return el ? txt(el.value) : "";
     }
 
+    function setDianRutPdfMessage(text, isError) {
+      var el = document.getElementById("dianRutPdfMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function renderDianRutPdfResult(data) {
+      var box = document.getElementById("dianRutPdfResultado");
+      var applyBtn = document.getElementById("btnDianRutAplicar");
+      if (!box) return;
+      var fields = data && (data.campos_detectados || data.valores_configuracion);
+      state.dianRutImport = fields || null;
+      if (applyBtn) applyBtn.disabled = !fields;
+      if (!fields) {
+        box.innerHTML = "";
+        box.classList.add("is-empty");
+        return;
+      }
+      var responsibilities = responsabilidadesRUTCodesFromJSON(fields.responsabilidades_rut_json);
+      var rows = [
+        ["NIT", fields.nit],
+        ["DV", fields.dv || fields.digito_verificacion],
+        ["Nombre legal", fields.razon_social],
+        ["Tipo de persona", fields.tipo_persona_fiscal === "persona_natural" ? "Persona natural" : (fields.tipo_persona_fiscal === "persona_juridica" ? "Persona juridica" : fields.tipo_persona_fiscal)],
+        ["Ubicacion", [fields.departamento, fields.municipio].filter(Boolean).join(" / ")],
+        ["Codigos DANE", [fields.departamento_codigo_dane, fields.municipio_codigo_dane].filter(Boolean).join(" / ")],
+        ["Responsabilidades RUT", responsibilities.join(", ")],
+        ["Responsabilidad FE", fields.responsabilidad_tributaria],
+        ["Concepto del RUT", fields.concepto],
+        ["Fecha del documento", fields.fecha_generacion]
+      ];
+      var html = '<div class="dian-readable-grid">';
+      rows.forEach(function(row) {
+        if (!txt(row[1])) return;
+        html += '<div><strong>' + escapeHTML(row[0]) + '</strong><span>' + escapeHTML(row[1]) + '</span></div>';
+      });
+      html += "</div>";
+      if (Array.isArray(data.advertencias) && data.advertencias.length) {
+        html += '<p class="form-help error">' + escapeHTML(data.advertencias.join(" ")) + "</p>";
+      }
+      box.classList.remove("is-empty");
+      box.innerHTML = html;
+    }
+
+    function applyDianRutPdfValues() {
+      var fields = state.dianRutImport || {};
+      if (!Object.keys(fields).length) {
+        setDianRutPdfMessage("Primero carga el PDF del RUT de esta empresa.", true);
+        return;
+      }
+      function setReviewedValue(id, value) {
+        if (!txt(value)) return;
+        setInputValue(id, value);
+      }
+      setReviewedValue("dian_nit", fields.nit);
+      setReviewedValue("dian_dv", fields.dv || fields.digito_verificacion);
+      setReviewedValue("dian_razon_social", fields.razon_social);
+      setReviewedValue("adv_tipo_documento_emisor", fields.tipo_documento_emisor || (fields.nit ? "NIT" : ""));
+      setReviewedValue("adv_nit", fields.nit);
+      setReviewedValue("adv_digito_verificacion", fields.dv || fields.digito_verificacion);
+      setReviewedValue("adv_razon_social", fields.razon_social);
+      setReviewedValue("adv_nombre_comercial", fields.nombre_comercial);
+      setReviewedValue("adv_tipo_persona_fiscal", fields.tipo_persona_fiscal);
+      setReviewedValue("adv_regimen_tributario_colombia", fields.regimen_tributario_colombia);
+      setReviewedValue("adv_regimen_fiscal", fields.regimen_tributario_colombia);
+      setReviewedValue("adv_iva_responsabilidad", fields.iva_responsabilidad);
+      setReviewedValue("adv_responsabilidad_tributaria", fields.responsabilidad_tributaria);
+      setReviewedValue("adv_responsabilidades_rut_codigos", responsabilidadesRUTCodesFromJSON(fields.responsabilidades_rut_json).join(", "));
+      setReviewedValue("adv_email_facturacion", fields.email_facturacion);
+      setReviewedValue("adv_telefono_facturacion", fields.telefono_facturacion);
+      setReviewedValue("adv_direccion_fiscal", fields.direccion_fiscal);
+      setReviewedValue("adv_departamento", fields.departamento);
+      setReviewedValue("adv_departamento_codigo_dane", fields.departamento_codigo_dane);
+      setReviewedValue("adv_municipio", fields.municipio);
+      setReviewedValue("adv_municipio_codigo_dane", fields.municipio_codigo_dane);
+      setReviewedValue("adv_pais_codigo", fields.pais_codigo || "CO");
+      setReviewedValue("adv_codigo_postal", fields.codigo_postal);
+      renderDianSetupProgress();
+      setDianRutPdfMessage("Datos aplicados en pantalla. Revisa y guarda por separado DIAN Colombia y Configuracion avanzada; todavia no se ha modificado la empresa.", false);
+    }
+
+    async function uploadDianRutPdf() {
+      var input = document.getElementById("dianRutPdfInput");
+      if (!input || !input.files || !input.files.length) {
+        setDianRutPdfMessage("Selecciona el PDF del RUT de esta empresa.", true);
+        return null;
+      }
+      var file = input.files[0];
+      if (!/\.pdf$/i.test(file.name || "")) {
+        setDianRutPdfMessage("Solo se permite PDF.", true);
+        return null;
+      }
+      if (file.size > 12 * 1024 * 1024) {
+        setDianRutPdfMessage("El PDF supera el limite de 12 MB.", true);
+        return null;
+      }
+      var formData = new FormData();
+      formData.append("archivo", file);
+      formData.append("empresa_id", String(state.empresaID || ""));
+      var url = "/api/empresa/facturacion_electronica/dian?action=importar_rut_pdf_ia&empresa_id=" + encodeURIComponent(state.empresaID || "");
+      var res = await fetch(url, { method: "POST", credentials: "same-origin", body: formData });
+      var data = await readJSONResponse(res);
+      renderDianRutPdfResult(data);
+      setDianRutPdfMessage("RUT leido. Revisa los valores detectados antes de aplicarlos; el PDF no quedo almacenado.", false);
+      return data;
+    }
+
     function setDianNumeracionPdfMessage(text, isError) {
       var el = document.getElementById("dianNumeracionPdfMsg");
       if (!el) return;
@@ -1335,6 +1568,20 @@
       return Number.isFinite(n) ? n : 0;
     }
 
+    function dianSecretConfigured(field, inputID) {
+      return !!(state.dianConfig && asBool(state.dianConfig[field + "_configurado"])) || !!dianFieldValue(inputID);
+    }
+
+    function dianSoftwareProviderIdentityComplete() {
+      var nit = dianFieldValue("dian_software_proveedor_nit");
+      var dv = dianFieldValue("dian_software_proveedor_dv");
+      var legalName = dianFieldValue("dian_software_proveedor_razon_social");
+      var naturalName = dianFieldValue("dian_software_proveedor_primer_apellido") &&
+        dianFieldValue("dian_software_proveedor_segundo_apellido") &&
+        dianFieldValue("dian_software_proveedor_primer_nombre");
+      return /^\d+$/.test(nit) && /^\d$/.test(dv) && !!(legalName || naturalName);
+    }
+
     function dianSetupChecks() {
       var ambiente = dianFieldValue("dian_tipo_ambiente").toLowerCase();
       var softwareCompartido = !!(document.getElementById("dian_usar_software_compartido") && document.getElementById("dian_usar_software_compartido").checked);
@@ -1348,17 +1595,18 @@
         { group: "Identidad fiscal", label: "Razón social", done: !!dianFieldValue("dian_razon_social") },
         { group: "Ambiente y conexión", label: "Ambiente DIAN", done: !!dianFieldValue("dian_tipo_ambiente") },
         { group: "Ambiente y conexión", label: "URL DIAN / proveedor", done: !!dianFieldValue("dian_url") },
-        { group: "Ambiente y conexión", label: "TestSetId de habilitación", done: !testSetRequired || !!dianFieldValue("dian_test_set_id") },
-        { group: "Software", label: "Software ID", done: !!dianFieldValue("dian_software_id") },
-        { group: "Software", label: "Software PIN o software compartido SaaS", done: softwareCompartido || !!dianFieldValue("dian_software_pin") },
+        { group: "Ambiente y conexión", label: "TestSetId de habilitación", done: !testSetRequired || dianSecretConfigured("test_set_id", "dian_test_set_id") },
+        { group: "Software", label: "Software ID", done: dianSecretConfigured("software_id", "dian_software_id") },
+        { group: "Software", label: "Software PIN o software compartido SaaS", done: softwareCompartido || dianSecretConfigured("software_pin", "dian_software_pin") },
+        { group: "Software", label: "Identidad del proveedor del software compartido", done: !softwareCompartido || dianSoftwareProviderIdentityComplete() },
         { group: "Numeración", label: "Prefijo", done: !!dianFieldValue("dian_prefijo") },
         { group: "Numeración", label: "Resolución", done: !!dianFieldValue("dian_resolucion_numero") },
         { group: "Numeración", label: "Fechas de resolución", done: !!dianFieldValue("dian_resolucion_fecha_desde") && !!dianFieldValue("dian_resolucion_fecha_hasta") },
         { group: "Numeración", label: "Rango autorizado", done: rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde },
         { group: "Numeración", label: "Consecutivo actual válido", done: consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta) },
-        { group: "Llave y firma", label: "Llave técnica DIAN", done: !!dianFieldValue("dian_llave_tecnica") },
-        { group: "Llave y firma", label: "Certificado X.509", done: !!dianFieldValue("dian_certificado_url") },
-        { group: "Llave y firma", label: "Referencia de llave privada", done: !!dianFieldValue("dian_certificado_clave_ref") }
+        { group: "Llave y firma", label: "Llave técnica DIAN", done: dianSecretConfigured("llave_tecnica", "dian_llave_tecnica") },
+        { group: "Llave y firma", label: "Certificado X.509", done: dianSecretConfigured("certificado_url", "dian_certificado_url") },
+        { group: "Llave y firma", label: "Referencia de llave privada", done: dianSecretConfigured("certificado_clave_ref", "dian_certificado_clave_ref") }
       ];
       if (!testSetRequired) {
         checks = checks.map(function(item) {
@@ -1449,15 +1697,26 @@
       var rangoDesde = dianNumberValue("dian_rango_desde");
       var rangoHasta = dianNumberValue("dian_rango_hasta");
       var consecutivo = dianNumberValue("dian_consecutivo_actual");
+      var providerNameMissing = softwareCompartido && !dianFieldValue("dian_software_proveedor_razon_social") && !(
+        dianFieldValue("dian_software_proveedor_primer_apellido") &&
+        dianFieldValue("dian_software_proveedor_segundo_apellido") &&
+        dianFieldValue("dian_software_proveedor_primer_nombre")
+      );
       var dianRequired = {
         dian_nit: !dianFieldValue("dian_nit"),
         dian_dv: !dianFieldValue("dian_dv"),
         dian_razon_social: !dianFieldValue("dian_razon_social"),
         dian_tipo_ambiente: !dianFieldValue("dian_tipo_ambiente"),
         dian_url: !dianFieldValue("dian_url"),
-        dian_test_set_id: ambiente !== "produccion" && !dianFieldValue("dian_test_set_id"),
-        dian_software_id: !dianFieldValue("dian_software_id"),
-        dian_software_pin: !softwareCompartido && !dianFieldValue("dian_software_pin"),
+        dian_test_set_id: ambiente !== "produccion" && !dianSecretConfigured("test_set_id", "dian_test_set_id"),
+        dian_software_id: !dianSecretConfigured("software_id", "dian_software_id"),
+        dian_software_pin: !softwareCompartido && !dianSecretConfigured("software_pin", "dian_software_pin"),
+        dian_software_proveedor_nit: softwareCompartido && !/^\d+$/.test(dianFieldValue("dian_software_proveedor_nit")),
+        dian_software_proveedor_dv: softwareCompartido && !/^\d$/.test(dianFieldValue("dian_software_proveedor_dv")),
+        dian_software_proveedor_razon_social: providerNameMissing,
+        dian_software_proveedor_primer_apellido: providerNameMissing,
+        dian_software_proveedor_segundo_apellido: providerNameMissing,
+        dian_software_proveedor_primer_nombre: providerNameMissing,
         dian_prefijo: !dianFieldValue("dian_prefijo"),
         dian_resolucion_numero: !dianFieldValue("dian_resolucion_numero"),
         dian_consecutivo_actual: !(consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta)),
@@ -1465,9 +1724,9 @@
         dian_resolucion_fecha_hasta: !dianFieldValue("dian_resolucion_fecha_hasta"),
         dian_rango_desde: !(rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde),
         dian_rango_hasta: !(rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde),
-        dian_llave_tecnica: !dianFieldValue("dian_llave_tecnica"),
-        dian_certificado_url: !dianFieldValue("dian_certificado_url"),
-        dian_certificado_clave_ref: !dianFieldValue("dian_certificado_clave_ref")
+        dian_llave_tecnica: !dianSecretConfigured("llave_tecnica", "dian_llave_tecnica"),
+        dian_certificado_url: !dianSecretConfigured("certificado_url", "dian_certificado_url"),
+        dian_certificado_clave_ref: !dianSecretConfigured("certificado_clave_ref", "dian_certificado_clave_ref")
       };
       Object.keys(dianRequired).forEach(function(id) {
         markFieldRequired(id);
@@ -1520,16 +1779,23 @@
       var ids = [
         "dian_nit", "dian_dv", "dian_razon_social", "dian_tipo_ambiente",
         "dian_url", "dian_test_set_id", "dian_software_id", "dian_software_pin",
-        "dian_usar_software_compartido", "dian_prefijo", "dian_resolucion_numero",
+        "dian_usar_software_compartido", "dian_software_proveedor_nit", "dian_software_proveedor_dv",
+        "dian_software_proveedor_razon_social", "dian_software_proveedor_primer_apellido",
+        "dian_software_proveedor_segundo_apellido", "dian_software_proveedor_primer_nombre",
+        "dian_software_proveedor_otros_nombres", "dian_prefijo", "dian_resolucion_numero",
         "dian_consecutivo_actual", "dian_resolucion_fecha_desde",
         "dian_resolucion_fecha_hasta", "dian_rango_desde", "dian_rango_hasta",
-        "dian_llave_tecnica", "dian_certificado_url", "dian_certificado_clave_ref"
+        "dian_llave_tecnica", "dian_token_emisor_ref", "dian_certificado_url", "dian_certificado_clave_ref"
       ];
       ids.forEach(function(id) {
         var el = document.getElementById(id);
         if (!el) return;
-        el.addEventListener("input", renderDianSetupProgress);
-        el.addEventListener("change", renderDianSetupProgress);
+        var refresh = function() {
+          if (dianSecretInputFields[id]) renderDianSecretInputState(id, dianSecretInputFields[id], state.dianConfig);
+          renderDianSetupProgress();
+        };
+        el.addEventListener("input", refresh);
+        el.addEventListener("change", refresh);
       });
       renderDianSetupProgress();
     }
@@ -1660,6 +1926,11 @@
       input.className = cssClass;
       input.value = item.codigo || "";
       input.checked = !!checked;
+	  if (Object.prototype.hasOwnProperty.call(item, "disponible_emision") && item.disponible_emision !== true) {
+		input.disabled = true;
+		input.checked = false;
+		label.title = item.observacion || "Emision fiscal no disponible para este tipo documental.";
+	  }
       label.appendChild(input);
       label.appendChild(document.createTextNode(" " + (item.titulo || item.codigo || "")));
       if (item.categoria || item.tipo) {
@@ -1720,7 +1991,9 @@
         var found = item.codes.map(function(code) { return catalog[code]; }).filter(Boolean);
         var allFound = found.length === item.codes.length;
         var allOperational = allFound && found.every(isDianEssentialOperational);
-        var status = allOperational ? "Operativo" : (allFound ? "Catalogado" : "Pendiente");
+        var partial = allFound && found.some(function(doc) { return doc && doc.disponible_anulacion_total === true; });
+		var blocked = allFound && found.some(function(doc) { return txt(doc && doc.estado_implementacion).toLowerCase() === "bloqueado_contrato"; });
+		var status = allOperational ? "Operativo" : (partial ? "Parcial" : (blocked ? "Bloqueado" : (allFound ? "Catalogado" : "Pendiente")));
         var card = document.createElement("div");
         card.className = "dian-essential-card";
         var title = document.createElement("strong");
@@ -1729,7 +2002,8 @@
         badge.className = allOperational ? "ok" : (allFound ? "warn" : "");
         badge.textContent = status;
         var note = document.createElement("p");
-        note.textContent = item.note;
+		var detail = found.map(function(doc) { return txt(doc && doc.observacion); }).filter(Boolean).join(" ");
+		note.textContent = detail || item.note;
         card.appendChild(title);
         card.appendChild(badge);
         card.appendChild(note);
@@ -1739,8 +2013,7 @@
     }
 
     function isDianEssentialOperational(doc) {
-      var estado = txt(doc && doc.estado_implementacion).toLowerCase();
-      return estado === "base_operativa" || estado === "operativo" || estado === "implementado";
+	  return !!(doc && doc.disponible_emision === true);
     }
 
     function renderRadianStatus(item) {
@@ -1755,7 +2028,7 @@
 
       var text = document.createElement("div");
       var title = document.createElement("strong");
-      title.textContent = "Eventos RADIAN operativos en habilitacion";
+	  title.textContent = item.disponible_emision === true ? "Eventos RADIAN operativos" : "Eventos RADIAN no disponibles";
       var note = document.createElement("p");
       note.textContent = item.observacion || "Registra acuse, recibo, aceptacion o reclamo sobre facturas electronicas existentes en ambiente de pruebas.";
       text.appendChild(title);
@@ -1791,6 +2064,10 @@
       var contador = {};
       listFromValue(extra.documentos_contadores_colombia).forEach(function(code) { contador[code] = true; });
       document.querySelectorAll(".fe-dian-doc-check").forEach(function(input) {
+		if (input.disabled) {
+		  input.checked = false;
+		  return;
+		}
         input.checked = !!docs[input.value] || (!extra.documentos_soportados && input.checked);
       });
       document.querySelectorAll(".fe-dian-contador-check").forEach(function(input) {
@@ -1806,7 +2083,7 @@
       } catch (e) { extra = {}; }
       extra.documentos_soportados = selectedValues(".fe-dian-doc-check");
       extra.documentos_contadores_colombia = selectedValues(".fe-dian-contador-check");
-      extra.documentos_dian_catalogo_version = "2026-05-20";
+	  extra.documentos_dian_catalogo_version = "2026-08-21";
       document.getElementById("campos_pais_json").value = JSON.stringify(extra, null, 2);
       setDianDocumentosMessage("Seleccion aplicada al JSON. Guarda la configuracion para persistirla.", false);
     }
@@ -1817,8 +2094,73 @@
       return s === "1" || s === "true" || s === "si" || s === "yes" || s === "activo";
     }
 
-    function setDianConfigFormData(cfg) {
+    var dianSecretInputFields = {
+      dian_test_set_id: "test_set_id",
+      dian_software_id: "software_id",
+      dian_software_pin: "software_pin",
+      dian_llave_tecnica: "llave_tecnica",
+      dian_token_emisor_ref: "token_emisor_ref",
+      dian_certificado_url: "certificado_url",
+      dian_certificado_clave_ref: "certificado_clave_ref"
+    };
+
+    function renderDianSecretInputState(inputID, field, cfg) {
+      var el = document.getElementById(inputID);
+      var status = document.getElementById(inputID + "_estado");
+      if (!el) return;
       cfg = cfg || {};
+      var configured = asBool(cfg[field + "_configurado"]);
+      var pending = !el.readOnly && !!txt(el.value);
+      el.setAttribute("data-server-configured", configured ? "true" : "false");
+      if (el.readOnly) {
+        el.placeholder = configured ? "Configurado; referencia no visible" : "Se administra únicamente con Cargar firma";
+      } else if (configured) {
+        el.placeholder = "Configurado; escribe solo para reemplazar";
+      } else {
+        el.placeholder = inputID === "dian_token_emisor_ref" ? "Nuevo valor o referencia PCS_DIAN_*" : "Nuevo valor; el guardado no se vuelve a mostrar";
+      }
+      if (!status) return;
+      status.setAttribute("data-configured", configured ? "true" : "false");
+      if (pending) {
+        status.textContent = configured ? "Configurado; hay un reemplazo pendiente de guardar." : "Nuevo valor pendiente de guardar.";
+      } else if (configured) {
+        status.textContent = "Configurado; el valor no se muestra por seguridad.";
+      } else if (inputID === "dian_token_emisor_ref") {
+        status.textContent = "No configurado (opcional).";
+      } else {
+        status.textContent = "No configurado.";
+      }
+    }
+
+    function resetDianSecretInputs(cfg) {
+      Object.keys(dianSecretInputFields).forEach(function(inputID) {
+        var el = document.getElementById(inputID);
+        if (el) el.value = "";
+        renderDianSecretInputState(inputID, dianSecretInputFields[inputID], cfg);
+      });
+    }
+
+    function dianConfigForUI(raw) {
+      var blocked = {
+        software_id: true,
+        software_pin: true,
+        software_id_compartido_ref: true,
+        software_pin_compartido_ref: true,
+        test_set_id: true,
+        llave_tecnica: true,
+        token_emisor_ref: true,
+        certificado_url: true,
+        certificado_clave_ref: true
+      };
+      var safe = {};
+      Object.keys(raw || {}).forEach(function(key) {
+        if (!blocked[key]) safe[key] = raw[key];
+      });
+      return safe;
+    }
+
+    function setDianConfigFormData(cfg) {
+      cfg = dianConfigForUI(cfg);
       state.dianConfig = cfg && cfg.id ? cfg : null;
       var set = function(id, value) {
         var el = document.getElementById(id);
@@ -1839,11 +2181,15 @@
       set("dian_nit", cfg.nit || document.getElementById("adv_nit") && document.getElementById("adv_nit").value || document.getElementById("identificador_fiscal") && document.getElementById("identificador_fiscal").value);
       set("dian_dv", cfg.digito_verificacion || document.getElementById("adv_digito_verificacion") && document.getElementById("adv_digito_verificacion").value);
       set("dian_razon_social", cfg.razon_social || document.getElementById("adv_razon_social") && document.getElementById("adv_razon_social").value || document.getElementById("razon_social") && document.getElementById("razon_social").value);
+	  set("dian_software_proveedor_nit", cfg.software_proveedor_nit);
+	  set("dian_software_proveedor_dv", cfg.software_proveedor_dv);
+	  set("dian_software_proveedor_razon_social", cfg.software_proveedor_razon_social);
+	  set("dian_software_proveedor_primer_apellido", cfg.software_proveedor_primer_apellido);
+	  set("dian_software_proveedor_segundo_apellido", cfg.software_proveedor_segundo_apellido);
+	  set("dian_software_proveedor_primer_nombre", cfg.software_proveedor_primer_nombre);
+	  set("dian_software_proveedor_otros_nombres", cfg.software_proveedor_otros_nombres);
       set("dian_tipo_ambiente", cfg.tipo_ambiente || document.getElementById("adv_ambiente_fe") && document.getElementById("adv_ambiente_fe").value || "habilitacion");
       set("dian_url", cfg.url_dian || "https://vpfe-hab.dian.gov.co");
-      set("dian_test_set_id", cfg.test_set_id);
-      set("dian_software_id", cfg.software_id);
-      set("dian_software_pin", cfg.software_pin);
       set("dian_prefijo", cfg.prefijo || document.getElementById("adv_prefijo_factura") && document.getElementById("adv_prefijo_factura").value || document.getElementById("prefijo_factura") && document.getElementById("prefijo_factura").value);
       set("dian_resolucion_numero", cfg.resolucion_numero || document.getElementById("adv_resolucion_numero") && document.getElementById("adv_resolucion_numero").value || document.getElementById("resolucion_numero") && document.getElementById("resolucion_numero").value);
       set("dian_resolucion_fecha_desde", asDateValue(cfg.resolucion_fecha_desde || document.getElementById("adv_resolucion_fecha_desde") && document.getElementById("adv_resolucion_fecha_desde").value));
@@ -1852,10 +2198,7 @@
       set("dian_rango_hasta", cfg.rango_hasta || document.getElementById("adv_consecutivo_hasta") && document.getElementById("adv_consecutivo_hasta").value);
       set("dian_consecutivo_actual", cfg.consecutivo_actual || document.getElementById("adv_proximo_consecutivo") && document.getElementById("adv_proximo_consecutivo").value || 1);
       set("dian_resolucion_alerta_dias", cfg.resolucion_alerta_dias || 30);
-      set("dian_llave_tecnica", cfg.llave_tecnica);
-      set("dian_token_emisor_ref", cfg.token_emisor_ref);
-      set("dian_certificado_url", cfg.certificado_url);
-      set("dian_certificado_clave_ref", cfg.certificado_clave_ref);
+      resetDianSecretInputs(cfg);
       set("dian_observaciones", cfg.observaciones);
       renderFirmaLastUpload(cfg);
       var shared = document.getElementById("dian_usar_software_compartido");
@@ -1878,14 +2221,18 @@
         nit: txt(document.getElementById("dian_nit").value),
         digito_verificacion: txt(document.getElementById("dian_dv").value),
         razon_social: txt(document.getElementById("dian_razon_social").value),
+		software_proveedor_nit: dianFieldValue("dian_software_proveedor_nit"),
+		software_proveedor_dv: dianFieldValue("dian_software_proveedor_dv"),
+		software_proveedor_razon_social: dianFieldValue("dian_software_proveedor_razon_social"),
+		software_proveedor_primer_apellido: dianFieldValue("dian_software_proveedor_primer_apellido"),
+		software_proveedor_segundo_apellido: dianFieldValue("dian_software_proveedor_segundo_apellido"),
+		software_proveedor_primer_nombre: dianFieldValue("dian_software_proveedor_primer_nombre"),
+		software_proveedor_otros_nombres: dianFieldValue("dian_software_proveedor_otros_nombres"),
         tipo_ambiente: txt(document.getElementById("dian_tipo_ambiente").value) || "habilitacion",
-        software_id: txt(document.getElementById("dian_software_id").value),
-        software_pin: txt(document.getElementById("dian_software_pin").value),
         usar_software_compartido: !!document.getElementById("dian_usar_software_compartido").checked,
         modo_operacion_descripcion: hiddenValue("dian_modo_operacion_descripcion"),
         modo_operacion_fecha_inicio: hiddenValue("dian_modo_operacion_fecha_inicio"),
         modo_operacion_fecha_termino: hiddenValue("dian_modo_operacion_fecha_termino"),
-        test_set_id: txt(document.getElementById("dian_test_set_id").value),
         prefijo: txt(document.getElementById("dian_prefijo").value),
         resolucion_numero: txt(document.getElementById("dian_resolucion_numero").value),
         resolucion_fecha_desde: txt(document.getElementById("dian_resolucion_fecha_desde").value),
@@ -1902,14 +2249,20 @@
         set_facturas_aceptadas_requeridas: hiddenNumber("dian_set_facturas_aceptadas_requeridas"),
         set_notas_debito_aceptadas_requeridas: hiddenNumber("dian_set_notas_debito_aceptadas_requeridas"),
         set_notas_credito_aceptadas_requeridas: hiddenNumber("dian_set_notas_credito_aceptadas_requeridas"),
-        llave_tecnica: txt(document.getElementById("dian_llave_tecnica").value),
         url_dian: txt(document.getElementById("dian_url").value),
-        token_emisor_ref: txt(document.getElementById("dian_token_emisor_ref").value),
-        certificado_url: txt(document.getElementById("dian_certificado_url").value),
-        certificado_clave_ref: txt(document.getElementById("dian_certificado_clave_ref").value),
         observaciones: txt(document.getElementById("dian_observaciones").value),
         estado: "activo"
       };
+      [
+        { field: "software_id", inputID: "dian_software_id" },
+        { field: "software_pin", inputID: "dian_software_pin" },
+        { field: "test_set_id", inputID: "dian_test_set_id" },
+        { field: "llave_tecnica", inputID: "dian_llave_tecnica" },
+        { field: "token_emisor_ref", inputID: "dian_token_emisor_ref" }
+      ].forEach(function(secret) {
+        var value = dianFieldValue(secret.inputID);
+        if (value) payload[secret.field] = value;
+      });
       if (id > 0) payload.id = id;
       return payload;
     }
@@ -1922,7 +2275,7 @@
       var item = Array.isArray(data) && data.length ? data[0] : null;
       setDianConfigFormData(item || {});
       if (item && item.id) {
-        verificarDianFirmaVencimiento(true).catch(function() {});
+        verificarDianFirmaVencimiento(false).catch(function() {});
         verificarDianResolucionVencimiento(true).catch(function() {});
       } else {
         renderFirmaExpiry({ configurado: false });
@@ -2025,8 +2378,8 @@
             setMsg("Selecciona un archivo de firma .pem, .key, .p12 o .pfx.", true);
             return;
           }
-          var oldKeyRef = txt(document.getElementById("dian_certificado_clave_ref") && document.getElementById("dian_certificado_clave_ref").value);
-          if (oldKeyRef) {
+          var hasStoredPrivateKey = !!(state.dianConfig && asBool(state.dianConfig.certificado_clave_ref_configurado));
+          if (hasStoredPrivateKey) {
             var reemplazar = confirm("Ya existe una firma electronica registrada para esta empresa. Por seguridad, PCS no descarga la llave privada anterior desde el navegador. Si continuas, la nueva firma se cargara y la anterior se eliminara de la carpeta segura de la empresa. Deseas continuar?");
             if (!reemplazar) {
               setMsg("Carga cancelada. La firma anterior se conserva.", false);
@@ -2116,7 +2469,7 @@
         var contadorSeleccionados = selectedValues(".fe-dian-contador-check");
         if (docsSeleccionados.length) extra.documentos_soportados = docsSeleccionados;
         if (contadorSeleccionados.length) extra.documentos_contadores_colombia = contadorSeleccionados;
-        if (docsSeleccionados.length || contadorSeleccionados.length) extra.documentos_dian_catalogo_version = "2026-05-20";
+		if (docsSeleccionados.length || contadorSeleccionados.length) extra.documentos_dian_catalogo_version = "2026-08-21";
         delete extra.modo_offline_dian_activo;
         delete extra.modo_offline_preguntar;
         delete extra.modo_offline_auto_reintentar;
@@ -2420,6 +2773,26 @@
       });
     }
 
+    var btnDianRutPdf = document.getElementById("btnDianRutPdf");
+    if (btnDianRutPdf) {
+      btnDianRutPdf.addEventListener("click", function() {
+        btnDianRutPdf.disabled = true;
+        btnDianRutPdf.textContent = "Leyendo RUT con IA...";
+        uploadDianRutPdf().catch(function(err) {
+          renderDianRutPdfResult(null);
+          setDianRutPdfMessage(err && err.message ? err.message : "No se pudo leer el RUT PDF.", true);
+        }).finally(function() {
+          btnDianRutPdf.disabled = false;
+          btnDianRutPdf.textContent = "Cargar RUT con IA GPT-5.5";
+        });
+      });
+    }
+
+    var btnDianRutAplicar = document.getElementById("btnDianRutAplicar");
+    if (btnDianRutAplicar) {
+      btnDianRutAplicar.addEventListener("click", applyDianRutPdfValues);
+    }
+
     var btnDianNumeracionPdf = document.getElementById("btnDianNumeracionPdf");
     if (btnDianNumeracionPdf) {
       btnDianNumeracionPdf.addEventListener("click", function() {
@@ -2456,7 +2829,7 @@
     if (btnDianSelectAllDocs) {
       btnDianSelectAllDocs.addEventListener("click", function() {
         document.querySelectorAll(".fe-dian-doc-check, .fe-dian-contador-check").forEach(function(input) {
-          input.checked = true;
+		  input.checked = !input.disabled;
         });
         applyDianCatalogToJson();
       });

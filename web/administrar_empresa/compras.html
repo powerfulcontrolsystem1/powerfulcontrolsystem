@@ -357,6 +357,46 @@
       return null;
     }
 
+    function soporteCompraTieneExtraccion(soporte) {
+      if (!soporte) return false;
+      return !!(
+        normalizeText(soporte.documento_numero) ||
+        normalizeText(soporte.proveedor_nit) ||
+        normalizeText(soporte.extraccion_json) ||
+        normalizeText(soporte.respuesta_ia) ||
+        Number(soporte.total || soporte.subtotal || 0) > 0
+      );
+    }
+
+    async function resolverSoporteCompraDuplicado(soporte) {
+      var actual = soporte || {};
+      if (normalizeText(actual.estado_soporte).toLowerCase() !== 'duplicado') {
+        return { soporte: actual, reutilizado: false };
+      }
+
+      var listado = await apiRequest('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaID)) + '&action=soportes&registro=activo');
+      var soportes = listado && Array.isArray(listado.soportes) ? listado.soportes : [];
+      var porID = {};
+      soportes.forEach(function (item) {
+        if (item && Number(item.id || 0) > 0) porID[Number(item.id)] = item;
+      });
+
+      var visitados = {};
+      for (var salto = 0; salto < 20 && normalizeText(actual.estado_soporte).toLowerCase() === 'duplicado'; salto += 1) {
+        var originalID = Number(actual.duplicado_soporte_id || 0);
+        if (!originalID || visitados[originalID] || !porID[originalID]) {
+          throw new Error('La factura ya fue radicada, pero su soporte original no esta disponible para reutilizar la extraccion.');
+        }
+        visitados[originalID] = true;
+        actual = porID[originalID];
+      }
+
+      if (normalizeText(actual.estado_soporte).toLowerCase() === 'duplicado') {
+        throw new Error('No se pudo resolver de forma segura la cadena de soportes duplicados.');
+      }
+      return { soporte: actual, reutilizado: true };
+    }
+
     function openAIChatWithCompra(file, summary) {
       var payload = {
         file: file,
@@ -402,14 +442,26 @@
           method: 'POST',
           body: formData
         });
-        var soporteId = radicado && radicado.soporte && radicado.soporte.id ? radicado.soporte.id : 0;
+        var soporteRadicado = radicado && radicado.soporte ? radicado.soporte : {};
+        var soporteId = soporteRadicado && soporteRadicado.id ? soporteRadicado.id : 0;
         if (!soporteId) throw new Error('No se pudo radicar el soporte para IA.');
-        var extraido = await apiRequest('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaID)) + '&action=extraer_ia', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ soporte_id: soporteId })
-        });
-        var soporte = extraido && extraido.soporte ? extraido.soporte : {};
+        var resuelto = await resolverSoporteCompraDuplicado(soporteRadicado);
+        var soporte = resuelto.soporte || {};
+        var estadoSoporte = normalizeText(soporte.estado_soporte).toLowerCase();
+        if (!resuelto.reutilizado || !soporteCompraTieneExtraccion(soporte)) {
+          if (['radicado', 'extraido', 'en_revision'].indexOf(estadoSoporte) < 0) {
+            throw new Error('El soporte encontrado no permite extraer ni reutilizar datos de la factura.');
+          }
+          var extraido = await apiRequest('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaID)) + '&action=extraer_ia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ soporte_id: Number(soporte.id || soporteId) })
+          });
+          soporte = extraido && extraido.soporte ? extraido.soporte : {};
+        }
+        if (!soporteCompraTieneExtraccion(soporte)) {
+          throw new Error('La extraccion IA no devolvio datos verificables para preparar la compra.');
+        }
         var proveedor = findProveedorByExtraction(soporte);
         if (proveedor && proveedor.id) {
           proveedorSelect.value = String(proveedor.id);
@@ -427,7 +479,7 @@
         if (soporte.observaciones) notes.push(normalizeText(soporte.observaciones));
         document.getElementById('observaciones').value = notes.join('\n');
         openAIChatWithCompra(file, 'Datos extraidos desde IA. Revisa la compra antes de guardar');
-        showMessage('Datos cargados desde IA. Revisa proveedor, monto y periodo antes de guardar. El chat IA quedo abierto con el archivo para validar novedades.', 'ok');
+        showMessage((resuelto.reutilizado ? 'Factura reconocida: se reutilizo de forma segura una extraccion IA existente. ' : 'Datos cargados desde IA. ') + 'Revisa proveedor, monto y periodo antes de guardar. El chat IA quedo abierto con el archivo para validar novedades.', 'ok');
       } catch (err) {
         showMessage(err.message || 'No se pudo analizar la compra con IA.', 'error');
       } finally {

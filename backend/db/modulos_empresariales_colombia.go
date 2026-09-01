@@ -2255,12 +2255,7 @@ func sanitizeModuloColombiaURL(v string) string {
 }
 
 func decodeModuloColombiaMetadata(raw string) map[string]interface{} {
-	out := map[string]interface{}{}
-	if strings.TrimSpace(raw) == "" {
-		return out
-	}
-	_ = json.Unmarshal([]byte(raw), &out)
-	return out
+	return decodeRepositoryJSONMap(raw)
 }
 
 func validarEmpresaModuloColombiaRegistroExiste(dbConn *sql.DB, empresaID int64, modulo string, registroID int64) error {

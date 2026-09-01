@@ -14,6 +14,19 @@
     #configuracionImpresoraAtajo {
       display: none !important;
     }
+    .empresa-config-grid > .form {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      margin-left: 0;
+      margin-right: 0;
+    }
+    .empresa-config-grid .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
     .print-items-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1002,7 +1015,7 @@
       <div class="empresa-config-grid">
         <div class="form">
           <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Agente local y cola de impresion</h3>
-          <p class="form-help">Cada computador de caja puede tomar trabajos pendientes y enviarlos a su impresora fisica configurada.</p>
+          <p class="form-help">Este panel encola y reclama trabajos; reclamar no imprime por si solo. El agente local del computador debe enviarlos a la impresora fisica y, solo tras comprobar el papel, confirmar el resultado en la cola.</p>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="printerAgentId">Agente local</label>
@@ -1044,7 +1057,7 @@
           </div>
           <div class="form-actions">
             <button id="btnCrearTrabajoImpresion" type="button" class="btn secondary">Enviar prueba a cola</button>
-            <button id="btnTomarTrabajosImpresion" type="button" class="btn secondary">Tomar pendientes</button>
+            <button id="btnTomarTrabajosImpresion" type="button" class="btn secondary">Reclamar pendientes (sin imprimir)</button>
           </div>
         </div>
 
@@ -2414,6 +2427,7 @@
         btn.addEventListener('click', function() {
           const id = Number(btn.getAttribute('data-id') || 0);
           if (!id) return;
+          if (!window.confirm('Confirma que el papel de este trabajo salio correctamente antes de cerrarlo como impreso.')) return;
           actualizarTrabajoImpresion(id, 'impreso');
         });
       });
@@ -2422,6 +2436,7 @@
         btn.addEventListener('click', function() {
           const id = Number(btn.getAttribute('data-id') || 0);
           if (!id) return;
+          if (!window.confirm('Reintentar puede producir una segunda copia si el papel ya salio. Confirma que no hubo impresion fisica antes de continuar.')) return;
           reintentarTrabajoImpresion(id);
         });
       });
@@ -2533,8 +2548,8 @@
             const doc = String(item.titulo || item.tipo_documento || item.funcionalidad || 'Trabajo de impresion');
             const actions = estado === 'impreso'
               ? '<span class="muted">Cerrado</span>'
-              : '<button type="button" class="btn secondary printer-job-done" data-id="' + id + '">Marcar impreso</button> ' +
-                '<button type="button" class="btn secondary printer-job-retry" data-id="' + id + '">Reintentar</button>';
+              : '<button type="button" class="btn secondary printer-job-done" data-id="' + id + '">Confirmar papel impreso</button> ' +
+                '<button type="button" class="btn secondary printer-job-retry" data-id="' + id + '">Reintentar si no salio</button>';
             return '<tr>' +
               '<td>' + id + '</td>' +
               '<td>' + escapeConfigHtml(estado) + '</td>' +
@@ -2957,7 +2972,7 @@
         const out = await readPrinterResponse(res);
         const trabajos = out && Array.isArray(out.trabajos) ? out.trabajos : [];
         await loadImpresorasConfig(false);
-        setImpresorasMessage(trabajos.length ? ('Agente tomo ' + trabajos.length + ' trabajo(s).') : 'No hay trabajos pendientes para este agente.', trabajos.length ? 'success' : '');
+        setImpresorasMessage(trabajos.length ? (trabajos.length + ' trabajo(s) reclamado(s). Esta accion no imprime: procesalos con el agente local y confirma el papel antes de cerrarlos.') : 'No hay trabajos pendientes para este agente.', trabajos.length ? 'success' : '');
       } catch (err) {
         setImpresorasMessage('No se pudieron tomar trabajos: ' + (err && err.message ? err.message : err), 'error');
       }

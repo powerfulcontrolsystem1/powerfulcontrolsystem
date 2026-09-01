@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 type reportesHTTPError struct {
@@ -138,11 +140,7 @@ func reportesDecodeJSONMap(raw string) map[string]interface{} {
 }
 
 func reportesMarshalJSON(v interface{}, fallback string) string {
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return fallback
-	}
-	return string(raw)
+	return valueutil.MarshalJSONOr(v, fallback)
 }
 
 func reportesHashBytes(raw []byte) string {
@@ -378,7 +376,7 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 		}
 		query += " ORDER BY codigo ASC, version DESC, id DESC LIMIT 500"
 
-		rows, err := dbEmp.Query(query, args...)
+		rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 		if err != nil {
 			return err
 		}
@@ -514,7 +512,7 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 
 		targetID := payload.ID
 		if targetID <= 0 && r.Method == http.MethodPut && payload.Version > 0 {
-			err := dbEmp.QueryRow(`
+			err := dbEmp.QueryRowContext(r.Context(), `
 				SELECT id
 				FROM empresa_reportes_plantillas
 				WHERE empresa_id = ? AND lower(codigo) = lower(?) AND version = ?
@@ -527,7 +525,7 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 
 		if targetID > 0 {
 			if vigente {
-				if _, err := dbEmp.Exec(`
+				if _, err := dbEmp.ExecContext(r.Context(), `
 					UPDATE empresa_reportes_plantillas
 					SET vigente = 0, fecha_actualizacion = ?
 					WHERE empresa_id = ? AND lower(codigo) = lower(?) AND id <> ?
@@ -536,7 +534,7 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 				}
 			}
 
-			if _, err := dbEmp.Exec(`
+			if _, err := dbEmp.ExecContext(r.Context(), `
 				UPDATE empresa_reportes_plantillas
 				SET
 					nombre = ?,
@@ -554,7 +552,7 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 				return err
 			}
 
-			item, err := getReportePlantillaByID(dbEmp, empresaID, targetID)
+			item, err := getReportePlantillaByID(r.Context(), dbEmp, empresaID, targetID)
 			if err != nil {
 				return err
 			}
@@ -567,7 +565,7 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 		}
 
 		var maxVersion int64
-		if err := dbEmp.QueryRow(`
+		if err := dbEmp.QueryRowContext(r.Context(), `
 			SELECT COALESCE(MAX(version), 0)
 			FROM empresa_reportes_plantillas
 			WHERE empresa_id = ? AND lower(codigo) = lower(?)
@@ -580,7 +578,7 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 		}
 
 		if vigente {
-			if _, err := dbEmp.Exec(`
+			if _, err := dbEmp.ExecContext(r.Context(), `
 				UPDATE empresa_reportes_plantillas
 				SET vigente = 0, fecha_actualizacion = ?
 				WHERE empresa_id = ? AND lower(codigo) = lower(?)
@@ -589,22 +587,20 @@ func handleEmpresaReportesPlantillasAction(w http.ResponseWriter, r *http.Reques
 			}
 		}
 
-		res, err := dbEmp.Exec(`
+		var insertID int64
+		insertErr := dbEmp.QueryRowContext(r.Context(), `
 			INSERT INTO empresa_reportes_plantillas (
 				empresa_id, codigo, nombre, dataset_key, version, formato,
 				columnas_json, config_json, vigente, hash_contenido,
 				fecha_actualizacion, usuario_creador, estado, observaciones
 			)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
-		`, empresaID, codigo, nombre, datasetKey, version, formato, columnasJSON, configJSON, reportesBoolToInt(vigente), hashContenido, ahora, usuario, strings.TrimSpace(payload.Observaciones))
-		if err != nil {
-			return err
+			RETURNING id
+		`, empresaID, codigo, nombre, datasetKey, version, formato, columnasJSON, configJSON, reportesBoolToInt(vigente), hashContenido, ahora, usuario, strings.TrimSpace(payload.Observaciones)).Scan(&insertID)
+		if insertErr != nil {
+			return insertErr
 		}
-		insertID, err := res.LastInsertId()
-		if err != nil {
-			return err
-		}
-		item, err := getReportePlantillaByID(dbEmp, empresaID, insertID)
+		item, err := getReportePlantillaByID(r.Context(), dbEmp, empresaID, insertID)
 		if err != nil {
 			return err
 		}
@@ -647,7 +643,7 @@ func reportesValidateCustomSpecTemplate(datasetKey string, config map[string]int
 	return nil
 }
 
-func getReportePlantillaByID(dbEmp *sql.DB, empresaID, id int64) (map[string]interface{}, error) {
+func getReportePlantillaByID(ctx context.Context, dbEmp *sql.DB, empresaID, id int64) (map[string]interface{}, error) {
 	var (
 		rowID, empID, version                 int64
 		codigo, nombre, datasetKey, formato   string
@@ -657,7 +653,7 @@ func getReportePlantillaByID(dbEmp *sql.DB, empresaID, id int64) (map[string]int
 		fechaCreacion, fechaActualizacion     string
 		usuarioCreador, estado, observaciones sql.NullString
 	)
-	err := dbEmp.QueryRow(`
+	err := dbEmp.QueryRowContext(ctx, `
 		SELECT
 			id, empresa_id, codigo, nombre, dataset_key, version, formato,
 			columnas_json, config_json, vigente, hash_contenido,
@@ -692,7 +688,7 @@ func getReportePlantillaByID(dbEmp *sql.DB, empresaID, id int64) (map[string]int
 	}, nil
 }
 
-func resolveReportePlantilla(dbEmp *sql.DB, empresaID int64, codigo string, version int64) (map[string]interface{}, error) {
+func resolveReportePlantilla(ctx context.Context, dbEmp *sql.DB, empresaID int64, codigo string, version int64) (map[string]interface{}, error) {
 	codigo = strings.TrimSpace(codigo)
 	if codigo == "" {
 		return nil, sql.ErrNoRows
@@ -723,7 +719,7 @@ func resolveReportePlantilla(dbEmp *sql.DB, empresaID int64, codigo string, vers
 		fechaCreacion, fechaActualizacion      string
 		usuarioCreador, estado, observaciones  sql.NullString
 	)
-	err := dbEmp.QueryRow(query, args...).Scan(
+	err := dbEmp.QueryRowContext(ctx, query, args...).Scan(
 		&id, &empID, &rowCodigo, &nombre, &datasetKey, &rowVersion, &formato,
 		&columnasJSON, &configJSON, &vigente, &hashContenido,
 		&fechaCreacion, &fechaActualizacion, &usuarioCreador, &estado, &observaciones,
@@ -803,7 +799,7 @@ func reportesApplyTemplateFromRequest(dbEmp *sql.DB, empresaID int64, r *http.Re
 	if err != nil {
 		return ds, newReportesHTTPError(http.StatusBadRequest, "template_version invalido")
 	}
-	plantilla, err := resolveReportePlantilla(dbEmp, empresaID, templateCodigo, templateVersion)
+	plantilla, err := resolveReportePlantilla(r.Context(), dbEmp, empresaID, templateCodigo, templateVersion)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ds, newReportesHTTPError(http.StatusBadRequest, "plantilla de exportacion no encontrada")
@@ -850,7 +846,7 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 		query += " ORDER BY id DESC LIMIT ?"
 		args = append(args, limit)
 
-		rows, err := dbEmp.Query(query, args...)
+		rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 		if err != nil {
 			return err
 		}
@@ -972,7 +968,7 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 		templateCodigo := strings.TrimSpace(payload.TemplateCodigo)
 		templateVersion := payload.TemplateVersion
 		if templateCodigo != "" {
-			plantilla, err := resolveReportePlantilla(dbEmp, empresaID, templateCodigo, templateVersion)
+			plantilla, err := resolveReportePlantilla(r.Context(), dbEmp, empresaID, templateCodigo, templateVersion)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					return newReportesHTTPError(http.StatusBadRequest, "plantilla de exportacion no encontrada")
@@ -1014,7 +1010,7 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 		}
 
 		if targetID > 0 {
-			if _, err := dbEmp.Exec(`
+			if _, err := dbEmp.ExecContext(r.Context(), `
 				UPDATE empresa_reportes_programaciones
 				SET
 					nombre = ?,
@@ -1058,7 +1054,7 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 			); err != nil {
 				return err
 			}
-			item, err := getReporteProgramacionByID(dbEmp, empresaID, targetID)
+			item, err := getReporteProgramacionByID(r.Context(), dbEmp, empresaID, targetID)
 			if err != nil {
 				return err
 			}
@@ -1070,7 +1066,8 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 			return nil
 		}
 
-		res, err := dbEmp.Exec(`
+		var insertID int64
+		insertErr := dbEmp.QueryRowContext(r.Context(), `
 			INSERT INTO empresa_reportes_programaciones (
 				empresa_id, nombre, dataset_key, nivel, formatos, parametros_json,
 				template_codigo, template_version, frecuencia, hora_envio, timezone,
@@ -1078,6 +1075,7 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 				fecha_actualizacion, usuario_creador, estado, observaciones
 			)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
+			RETURNING id
 		`,
 			empresaID,
 			nombre,
@@ -1097,15 +1095,11 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 			ahora,
 			usuario,
 			strings.TrimSpace(payload.Observaciones),
-		)
-		if err != nil {
-			return err
+		).Scan(&insertID)
+		if insertErr != nil {
+			return insertErr
 		}
-		insertID, err := res.LastInsertId()
-		if err != nil {
-			return err
-		}
-		item, err := getReporteProgramacionByID(dbEmp, empresaID, insertID)
+		item, err := getReporteProgramacionByID(r.Context(), dbEmp, empresaID, insertID)
 		if err != nil {
 			return err
 		}
@@ -1121,7 +1115,7 @@ func handleEmpresaReportesProgramacionAction(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func getReporteProgramacionByID(dbEmp *sql.DB, empresaID, id int64) (map[string]interface{}, error) {
+func getReporteProgramacionByID(ctx context.Context, dbEmp *sql.DB, empresaID, id int64) (map[string]interface{}, error) {
 	var (
 		rowID, empID, templateVersion                    int64
 		nombre, datasetKey, nivel                        string
@@ -1133,7 +1127,7 @@ func getReporteProgramacionByID(dbEmp *sql.DB, empresaID, id int64) (map[string]
 		fechaCreacion, fechaActualizacion                string
 		usuarioCreador, estado, observaciones            sql.NullString
 	)
-	err := dbEmp.QueryRow(`
+	err := dbEmp.QueryRowContext(ctx, `
 		SELECT
 			id, empresa_id, nombre, dataset_key, nivel, formatos, parametros_json,
 			template_codigo, template_version, frecuencia, hora_envio, timezone,
@@ -1219,7 +1213,7 @@ func handleEmpresaReportesEjecucionesAction(w http.ResponseWriter, r *http.Reque
 	query += " ORDER BY id DESC LIMIT ?"
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		return err
 	}
@@ -1309,7 +1303,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 		templateVersion                                      int64
 		validarConsistencia                                  int
 	)
-	err := dbEmp.QueryRow(`
+	err := dbEmp.QueryRowContext(r.Context(), `
 		SELECT
 			dataset_key, formatos, parametros_json,
 			template_codigo, template_version,
@@ -1331,6 +1325,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 	}
 
 	scheduleBuilder := &reportesBuilder{
+		ctx:              r.Context(),
 		db:               baseBuilder.db,
 		empresaID:        baseBuilder.empresaID,
 		desde:            baseBuilder.desde,
@@ -1392,7 +1387,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 
 	var plantilla map[string]interface{}
 	if strings.TrimSpace(templateCodigo) != "" {
-		plantilla, err = resolveReportePlantilla(dbEmp, baseBuilder.empresaID, templateCodigo, templateVersion)
+		plantilla, err = resolveReportePlantilla(r.Context(), dbEmp, baseBuilder.empresaID, templateCodigo, templateVersion)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return newReportesHTTPError(http.StatusBadRequest, "plantilla asociada no encontrada")
@@ -1451,7 +1446,8 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 	salidaResumenJSON := reportesMarshalJSON(salidaResumen, "{}")
 	formatosPersist := reportesMarshalJSON(formats, "[\"json\"]")
 
-	res, err := dbEmp.Exec(`
+	var ejecucionID int64
+	err = dbEmp.QueryRowContext(r.Context(), `
 		INSERT INTO empresa_reportes_ejecuciones (
 			empresa_id, programacion_id, dataset_key, referencia,
 			formato_principal, formatos_json, estado_ejecucion, ejecutado_en,
@@ -1459,6 +1455,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 			fecha_actualizacion, usuario_creador, estado, observaciones
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
+		RETURNING id
 	`,
 		baseBuilder.empresaID,
 		programacionID,
@@ -1474,11 +1471,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 		now,
 		usuario,
 		"Ejecucion programada de reportes",
-	)
-	if err != nil {
-		return err
-	}
-	ejecucionID, err := res.LastInsertId()
+	).Scan(&ejecucionID)
 	if err != nil {
 		return err
 	}
@@ -1492,7 +1485,7 @@ func handleEmpresaReportesExecuteProgramacionAction(w http.ResponseWriter, r *ht
 	}
 	proximo := reportesComputeNextExecution(time.Now(), frecuencia, horaEnvio)
 
-	if _, err := dbEmp.Exec(`
+	if _, err := dbEmp.ExecContext(r.Context(), `
 		UPDATE empresa_reportes_programaciones
 		SET
 			ultimo_ejecutado_en = ?,
@@ -1571,7 +1564,7 @@ func handleEmpresaReportesConsistenciaAction(w http.ResponseWriter, r *http.Requ
 		}
 	}
 	if templateCodigo != "" {
-		plantilla, err := resolveReportePlantilla(dbEmp, baseBuilder.empresaID, templateCodigo, templateVersion)
+		plantilla, err := resolveReportePlantilla(r.Context(), dbEmp, baseBuilder.empresaID, templateCodigo, templateVersion)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return newReportesHTTPError(http.StatusBadRequest, "plantilla no encontrada")

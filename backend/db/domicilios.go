@@ -1233,29 +1233,7 @@ func scanDomicilioOrder(s domicilioScanner) (EmpresaDomicilioOrder, error) {
 }
 
 func domicilioCoreCode(prefix string, parts ...string) string {
-	var b strings.Builder
-	for _, part := range parts {
-		for _, r := range strings.ToUpper(strings.TrimSpace(part)) {
-			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
-				b.WriteRune(r)
-				continue
-			}
-			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
-				b.WriteRune('-')
-			}
-		}
-		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
-			b.WriteRune('-')
-		}
-	}
-	code := strings.Trim(b.String(), "-")
-	if code == "" {
-		code = fmt.Sprintf("%d", time.Now().UnixNano())
-	}
-	if len(code) > 42 {
-		code = code[:42]
-	}
-	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + strings.Trim(code, "-")
+	return repositoryCoreCode(prefix, parts...)
 }
 
 func ensureDomicilioClienteCore(dbConn *sql.DB, order EmpresaDomicilioOrder, usuario string) (int64, error) {
@@ -1558,11 +1536,7 @@ func domicilioBoolToInt(v bool) int {
 }
 func defaultTrueDomicilio(v bool) bool { return v }
 func firstDomicilioState(v, fallback string) string {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return fallback
-	}
-	return v
+	return firstNonBlankValue(v, fallback)
 }
 func roundDomicilio(v float64) float64 { return math.Round(v*100) / 100 }
 func haversineDomicilio(lat1, lon1, lat2, lon2 float64) float64 {

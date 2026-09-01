@@ -158,6 +158,7 @@
             <label>Modo de provision
               <select id="provisionMode">
                 <option value="manual">Manual / pendiente</option>
+                <option value="mailu_api">Mailu API interna</option>
                 <option value="mailu_direct">Mailu directo VPS</option>
               </select>
             </label>
@@ -314,9 +315,11 @@
         var accounts = diagnostics.accounts || {};
         var directReady = diagnostics.provision_mode === "mailu_direct" && apiProvisionEnabled;
         diagModulo.textContent = diagnostics.enabled ? "Activo" : "Desactivado";
-        diagMailu.textContent = diagnostics.provision_mode === "mailu_direct"
-          ? (directReady ? "Directo VPS" : "Directo incompleto")
-          : "Manual";
+        diagMailu.textContent = diagnostics.provision_mode === "mailu_api"
+          ? (apiProvisionEnabled ? "API interna" : "API incompleta")
+          : (diagnostics.provision_mode === "mailu_direct"
+            ? (directReady ? "Directo VPS" : "Directo incompleto")
+            : "Manual");
         diagWebmail.textContent = webmail.checked
           ? ((webmail.status ? ("HTTP " + webmail.status + " - ") : "") + (webmail.message || "Consultado"))
           : (webmail.message || "Sin verificar");

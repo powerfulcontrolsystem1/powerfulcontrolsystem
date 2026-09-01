@@ -208,7 +208,7 @@ func ensureNextcloudCompanyAccount(dbEmp *sql.DB, empresaID, quotaMB int64) (nex
 	if dbEmp == nil || empresaID <= 0 {
 		return account, fmt.Errorf("empresa invalida")
 	}
-	if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmp); err != nil {
+	if err := dbpkg.EmpresaNextcloudSchemaReady(dbEmp); err != nil {
 		return account, err
 	}
 	user := "pcs_empresa_" + strconv.FormatInt(empresaID, 10)
@@ -222,11 +222,11 @@ func ensureNextcloudCompanyAccount(dbEmp *sql.DB, empresaID, quotaMB int64) (nex
 	return account, err
 }
 
-// EnsureNextcloudAssignmentsForAll creates or refreshes local assignments with
+// SyncNextcloudAssignmentsForAll creates or refreshes local assignments with
 // the configured quota. It never contacts the external service, so remote OCS
 // provisioning remains an explicit administrator action per company.
-func EnsureNextcloudAssignmentsForAll(dbEmp, dbSuper *sql.DB) (int64, error) {
-	return dbpkg.EnsureEmpresaNextcloudAssignmentsForAll(dbEmp, nextcloudQuotaMB(dbSuper))
+func SyncNextcloudAssignmentsForAll(dbEmp, dbSuper *sql.DB) (int64, error) {
+	return dbpkg.SyncEmpresaNextcloudAssignmentsForAll(dbEmp, nextcloudQuotaMB(dbSuper))
 }
 
 func nextcloudAccessURLs(account nextcloudCompanyAccount, baseURL string) (webURL, webDAVURL string) {
@@ -630,7 +630,7 @@ func NextcloudConfigHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		if payload.Enabled {
-			if _, err := EnsureNextcloudAssignmentsForAll(dbEmp, dbSuper); err != nil {
+			if _, err := SyncNextcloudAssignmentsForAll(dbEmp, dbSuper); err != nil {
 				http.Error(w, "No se pudieron asignar los espacios Nextcloud a las empresas", http.StatusInternalServerError)
 				return
 			}

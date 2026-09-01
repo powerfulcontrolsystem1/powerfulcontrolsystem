@@ -2104,8 +2104,8 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:max(var(--fl
   .radio-country-panel{grid-template-columns:1fr}
   .radio-custom-fields{grid-template-columns:1fr}
 }
-.ai-chat-drawer{position:fixed;z-index:1650;display:flex;flex-direction:column;overflow:visible;pointer-events:none;opacity:0;transition:opacity .22s ease,transform .28s cubic-bezier(.2,.8,.2,1)}
-.ai-chat-drawer.open{pointer-events:auto;opacity:1}
+.ai-chat-drawer{position:fixed;z-index:1650;display:flex;flex-direction:column;overflow:visible;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .22s ease,transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s linear .28s}
+.ai-chat-drawer.open{pointer-events:auto;opacity:1;visibility:visible;transition-delay:0s}
 .ai-chat-drawer.minimized:not(.open){opacity:1;pointer-events:none}
 .ai-chat-minibar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:999px;box-shadow:0 12px 36px rgba(3,10,20,.28);pointer-events:auto}
 .ai-chat-drawer.minimized .ai-chat-minibar{display:flex}
@@ -2122,12 +2122,12 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:max(var(--fl
     border-radius:20px;
     border:1px solid var(--border);
     box-shadow:0 24px 60px rgba(3,10,20,.35);
-    transform:translateY(calc(100% + 100px)) scale(.96);
+    transform:scale(.96);
   }
   .ai-chat-drawer.open{transform:translateY(0) scale(1)}
   .ai-chat-drawer.minimized{
     right:24px;bottom:24px;width:auto;height:auto;max-height:none;
-    background:transparent;border:none;box-shadow:none;transform:none;opacity:1;pointer-events:none;
+    background:transparent;border:none;box-shadow:none;transform:none;opacity:1;visibility:visible;pointer-events:none;
     align-items:flex-end
   }
   .ai-chat-drawer.minimized .ai-chat-minibar{pointer-events:auto}
@@ -2135,7 +2135,7 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:max(var(--fl
 @media (max-width: 860px){
   .ai-chat-drawer{
     inset:0;width:100%;height:100%;height:100dvh;max-width:none;border-radius:0;
-    transform:translateY(110%);
+    transform:scale(.98);
     box-shadow:none;border:none;
   }
   .ai-chat-drawer.open{transform:translateY(0)}
@@ -8604,6 +8604,7 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   flex-wrap:wrap;
   margin-bottom:10px;
 }
+.empresa-section-header--spaced{margin-top:18px}
 .empresa-section-header > h2{
   margin:0;
   font-size:0.9rem;
@@ -21222,6 +21223,85 @@ body.carrito-flat-page #carritosList{
   gap: 14px;
 }
 
+.solar-realtime-panel { margin-bottom: 14px; }
+
+.solar-realtime-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 10px;
+}
+
+.solar-live-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border-color, var(--border, #d8e0ea));
+  border-left: 4px solid var(--status-danger, #dc2626);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card-bg, var(--surface, #fff)) 94%, var(--status-danger, #dc2626) 6%);
+  padding: 12px;
+}
+
+.solar-live-card.is-connected {
+  border-left-color: var(--status-success, #16a34a);
+  background: color-mix(in srgb, var(--card-bg, var(--surface, #fff)) 94%, var(--status-success, #16a34a) 6%);
+}
+
+.solar-live-head,
+.solar-live-head > div {
+  display: flex;
+  gap: 6px;
+}
+
+.solar-live-head { align-items: flex-start; justify-content: space-between; }
+.solar-live-head > div { min-width: 0; flex-direction: column; }
+.solar-live-head strong { overflow-wrap: anywhere; }
+.solar-live-head small,
+.solar-live-footer { color: var(--muted-text, var(--muted, #617083)); }
+
+.solar-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: color-mix(in srgb, var(--status-danger, #dc2626) 12%, var(--card-bg, var(--surface, #fff)));
+  color: var(--status-danger, #b91c1c) !important;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.solar-connection.is-connected {
+  background: color-mix(in srgb, var(--status-success, #16a34a) 12%, var(--card-bg, var(--surface, #fff)));
+  color: var(--status-success, #15803d) !important;
+}
+
+.solar-connection i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.solar-live-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.solar-live-metrics span {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--border-color, var(--border, #d8e0ea));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--card-bg, var(--surface, #fff)) 88%, transparent);
+  padding: 8px;
+}
+
+.solar-live-metrics small { color: var(--muted-text, var(--muted, #617083)); }
+.solar-live-metrics strong { font-size: .95rem; overflow-wrap: anywhere; }
+
 .empty-state {
   margin: 0;
   padding: 12px;
@@ -21247,6 +21327,7 @@ body.carrito-flat-page #carritosList{
   .solar-form-readings {
     grid-template-columns: 1fr;
   }
+  .solar-live-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 560px) {
@@ -21260,6 +21341,7 @@ body.carrito-flat-page #carritosList{
     align-items: stretch;
     flex-direction: column;
   }
+  .solar-realtime-grid { grid-template-columns: 1fr; }
 }
 
 /* POS touch mode: enabled per company from estaciones_config.carrito_ui_global. */

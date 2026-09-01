@@ -789,7 +789,8 @@
           return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
             '<title>'+esc((item && item.documento_codigo) || "Tiquete")+'</title>' +
             '<style>body{font-family:monospace;padding:12px;color:#111;font-size:'+facturaPrintFontSize(cfg, "pos")+'px}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}</style>' +
-            '</head><body>' +
+            '<script src="/js/ui_event_controls.js" defer><\/script>' +
+            '</head><body data-auto-print-delay="250">' +
             (logoUrl ? ('<img src="'+esc(logoUrl)+'" alt="Logo">') : '') +
             '<h1>Recibo de venta</h1>' +
             (lines.length ? ('<p><strong>'+esc(lines[0])+'</strong><br><small>'+esc(lines.slice(1).join(" | "))+'</small></p>') : '') +
@@ -799,7 +800,6 @@
             '<p><strong>Total:</strong> '+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</p>' +
             (notas ? ('<hr><small>'+esc(notas)+'</small>') : '') +
             (pie ? ('<p><small>'+esc(pie)+'</small></p>') : '') +
-            '<script>setTimeout(function(){try{window.print()}catch(e){}},250)<\/script>' +
             '</body></html>';
         }
 
@@ -807,9 +807,10 @@
           '<title>'+esc((item && item.documento_codigo) || "Venta")+'</title>' +
           '<link rel="stylesheet" href="/estilos.css">' +
           '<style>body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light;font-size:'+facturaPrintFontSize(cfg, formato)+'px}.factura-print-shell{max-width:'+(formato==="compacta"?"780":"1120")+'px;margin:0 auto;padding:28px 18px 42px;background:#fff}.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{padding:0}}</style>' +
+          '<script src="/js/ui_event_controls.js" defer><\/script>' +
           '</head><body><div class="factura-print-shell"><div class="factura-print-toolbar">' +
-          '<button type="button" class="btn" onclick="window.print()">Imprimir ahora</button>' +
-          '<button type="button" class="btn secondary" onclick="window.close()">Cerrar</button>' +
+          '<button type="button" class="btn" data-window-action="print">Imprimir ahora</button>' +
+          '<button type="button" class="btn secondary" data-window-action="close">Cerrar</button>' +
           '</div>' + buildPreviewBody(item) + '</div></body></html>';
       }
 

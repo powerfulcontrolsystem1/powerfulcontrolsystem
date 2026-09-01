@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -69,27 +70,6 @@ func normalizeEmpresaCalculadoraEstado(raw string) string {
 		return "inactivo"
 	}
 	return "activo"
-}
-
-func calcNormalizeLimitOffset(limit, offset int) (int, int) {
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return limit, offset
-}
-
-func calcLikePattern(raw string) string {
-	value := strings.TrimSpace(raw)
-	value = strings.ReplaceAll(value, "!", "!!")
-	value = strings.ReplaceAll(value, "%", "!%")
-	value = strings.ReplaceAll(value, "_", "!_")
-	return "%" + value + "%"
 }
 
 func calcNormalizeEtiquetas(values []string) []string {
@@ -246,8 +226,15 @@ func EnsureEmpresaCalculadoraSchema(dbConn *sql.DB) error {
 	return nil
 }
 
-// GetEmpresaCalculadoraConfiguracion obtiene configuracion por empresa y crea default si no existe.
+// GetEmpresaCalculadoraConfiguracion conserva compatibilidad para procesos sin
+// solicitud HTTP. Los handlers deben usar la variante Context.
 func GetEmpresaCalculadoraConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaCalculadoraConfiguracion, error) {
+	return GetEmpresaCalculadoraConfiguracionContext(context.Background(), dbConn, empresaID)
+}
+
+// GetEmpresaCalculadoraConfiguracionContext obtiene configuracion por empresa.
+// Si no existe devuelve el valor predeterminado sin mutar la base desde GET.
+func GetEmpresaCalculadoraConfiguracionContext(ctx context.Context, dbConn *sql.DB, empresaID int64) (*EmpresaCalculadoraConfiguracion, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -255,7 +242,7 @@ func GetEmpresaCalculadoraConfiguracion(dbConn *sql.DB, empresaID int64) (*Empre
 		return nil, errors.New("empresa_id invalido")
 	}
 
-	row := dbConn.QueryRow(`SELECT
+	row := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(integrar_carritos, 1),
@@ -285,11 +272,6 @@ func GetEmpresaCalculadoraConfiguracion(dbConn *sql.DB, empresaID int64) (*Empre
 	)
 	if err == sql.ErrNoRows {
 		defaultCfg := defaultEmpresaCalculadoraConfiguracion(empresaID)
-		id, upsertErr := UpsertEmpresaCalculadoraConfiguracion(dbConn, defaultCfg)
-		if upsertErr != nil {
-			return nil, upsertErr
-		}
-		defaultCfg.ID = id
 		return &defaultCfg, nil
 	}
 	if err != nil {
@@ -305,6 +287,11 @@ func GetEmpresaCalculadoraConfiguracion(dbConn *sql.DB, empresaID int64) (*Empre
 
 // UpsertEmpresaCalculadoraConfiguracion crea o actualiza configuracion por empresa.
 func UpsertEmpresaCalculadoraConfiguracion(dbConn *sql.DB, cfg EmpresaCalculadoraConfiguracion) (int64, error) {
+	return UpsertEmpresaCalculadoraConfiguracionContext(context.Background(), dbConn, cfg)
+}
+
+// UpsertEmpresaCalculadoraConfiguracionContext persiste la configuración con cancelación.
+func UpsertEmpresaCalculadoraConfiguracionContext(ctx context.Context, dbConn *sql.DB, cfg EmpresaCalculadoraConfiguracion) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -314,13 +301,14 @@ func UpsertEmpresaCalculadoraConfiguracion(dbConn *sql.DB, cfg EmpresaCalculador
 
 	cfg.Estado = normalizeEmpresaCalculadoraEstado(cfg.Estado)
 	var existingID int64
-	err := dbConn.QueryRow("SELECT id FROM empresa_calculadora_configuracion WHERE empresa_id = ? LIMIT 1", cfg.EmpresaID).Scan(&existingID)
+	err := dbConn.QueryRowContext(ctx, "SELECT id FROM empresa_calculadora_configuracion WHERE empresa_id = ? LIMIT 1", cfg.EmpresaID).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 
 	if err == sql.ErrNoRows {
-		res, insertErr := dbConn.Exec(`INSERT INTO empresa_calculadora_configuracion (
+		var insertID int64
+		insertErr := dbConn.QueryRowContext(ctx, `INSERT INTO empresa_calculadora_configuracion (
 			empresa_id,
 			integrar_carritos,
 			integrar_cotizaciones,
@@ -334,21 +322,22 @@ func UpsertEmpresaCalculadoraConfiguracion(dbConn *sql.DB, cfg EmpresaCalculador
 			CURRENT_TIMESTAMP,
 			CURRENT_TIMESTAMP,
 			?, ?, ?
-		)`,
+		)
+		RETURNING id`,
 			cfg.EmpresaID,
 			calcBoolToInt(cfg.IntegrarCarritos),
 			calcBoolToInt(cfg.IntegrarCotizaciones),
 			strings.TrimSpace(cfg.UsuarioCreador),
 			cfg.Estado,
 			strings.TrimSpace(cfg.Observaciones),
-		)
+		).Scan(&insertID)
 		if insertErr != nil {
 			return 0, insertErr
 		}
-		return res.LastInsertId()
+		return insertID, nil
 	}
 
-	_, updateErr := dbConn.Exec(`UPDATE empresa_calculadora_configuracion SET
+	_, updateErr := dbConn.ExecContext(ctx, `UPDATE empresa_calculadora_configuracion SET
 		integrar_carritos = ?,
 		integrar_cotizaciones = ?,
 		fecha_actualizacion = CURRENT_TIMESTAMP,
@@ -372,6 +361,11 @@ func UpsertEmpresaCalculadoraConfiguracion(dbConn *sql.DB, cfg EmpresaCalculador
 
 // CreateEmpresaCalculadoraOperacion registra una operacion en historial empresarial.
 func CreateEmpresaCalculadoraOperacion(dbConn *sql.DB, op EmpresaCalculadoraOperacion) (int64, error) {
+	return CreateEmpresaCalculadoraOperacionContext(context.Background(), dbConn, op)
+}
+
+// CreateEmpresaCalculadoraOperacionContext registra una operación cancelable.
+func CreateEmpresaCalculadoraOperacionContext(ctx context.Context, dbConn *sql.DB, op EmpresaCalculadoraOperacion) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -410,7 +404,8 @@ func CreateEmpresaCalculadoraOperacion(dbConn *sql.DB, op EmpresaCalculadoraOper
 		op.CotizacionID = 0
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_calculadora_operaciones (
+	var insertID int64
+	err = dbConn.QueryRowContext(ctx, `INSERT INTO empresa_calculadora_operaciones (
 		empresa_id,
 		expresion,
 		resultado,
@@ -437,7 +432,8 @@ func CreateEmpresaCalculadoraOperacion(dbConn *sql.DB, op EmpresaCalculadoraOper
 		CURRENT_TIMESTAMP,
 		CURRENT_TIMESTAMP,
 		?, ?, ?
-	)`,
+	)
+	RETURNING id`,
 		op.EmpresaID,
 		op.Expresion,
 		op.Resultado,
@@ -453,12 +449,12 @@ func CreateEmpresaCalculadoraOperacion(dbConn *sql.DB, op EmpresaCalculadoraOper
 		strings.TrimSpace(op.UsuarioCreador),
 		op.Estado,
 		strings.TrimSpace(op.Observaciones),
-	)
+	).Scan(&insertID)
 	if err != nil {
 		return 0, err
 	}
 
-	return res.LastInsertId()
+	return insertID, nil
 }
 
 func calcBuildOperacionesFilterClause(filter EmpresaCalculadoraOperacionFilter, includeInactive bool) (string, []interface{}) {
@@ -487,7 +483,7 @@ func calcBuildOperacionesFilterClause(filter EmpresaCalculadoraOperacionFilter, 
 	}
 	if strings.TrimSpace(filter.Etiqueta) != "" {
 		clauses = append(clauses, "LOWER(COALESCE(etiquetas_json, '')) LIKE LOWER(?) ESCAPE '!'")
-		args = append(args, calcLikePattern(filter.Etiqueta))
+		args = append(args, escapedContainsPattern(filter.Etiqueta))
 	}
 
 	if len(clauses) == 0 {
@@ -498,6 +494,11 @@ func calcBuildOperacionesFilterClause(filter EmpresaCalculadoraOperacionFilter, 
 
 // ListEmpresaCalculadoraOperaciones lista historial filtrable por empresa.
 func ListEmpresaCalculadoraOperaciones(dbConn *sql.DB, empresaID int64, filter EmpresaCalculadoraOperacionFilter) ([]EmpresaCalculadoraOperacion, int64, error) {
+	return ListEmpresaCalculadoraOperacionesContext(context.Background(), dbConn, empresaID, filter)
+}
+
+// ListEmpresaCalculadoraOperacionesContext lista historial con cancelación.
+func ListEmpresaCalculadoraOperacionesContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaCalculadoraOperacionFilter) ([]EmpresaCalculadoraOperacion, int64, error) {
 	if dbConn == nil {
 		return nil, 0, errors.New("db connection is nil")
 	}
@@ -513,11 +514,11 @@ func ListEmpresaCalculadoraOperaciones(dbConn *sql.DB, empresaID int64, filter E
 	countArgs = append(countArgs, whereArgs...)
 
 	var total int64
-	if err := dbConn.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
+	if err := dbConn.QueryRowContext(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	limit, offset := calcNormalizeLimitOffset(filter.Limit, filter.Offset)
+	limit, offset := normalizeListLimitOffset(filter.Limit, filter.Offset, 100, 1000)
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
 	query := `SELECT
 		id,
@@ -548,7 +549,7 @@ func ListEmpresaCalculadoraOperaciones(dbConn *sql.DB, empresaID int64, filter E
 	args = append(args, whereArgs...)
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := dbConn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -590,6 +591,11 @@ func ListEmpresaCalculadoraOperaciones(dbConn *sql.DB, empresaID int64, filter E
 
 // GetEmpresaCalculadoraOperacionByID obtiene un registro puntual por empresa.
 func GetEmpresaCalculadoraOperacionByID(dbConn *sql.DB, empresaID, operacionID int64) (*EmpresaCalculadoraOperacion, error) {
+	return GetEmpresaCalculadoraOperacionByIDContext(context.Background(), dbConn, empresaID, operacionID)
+}
+
+// GetEmpresaCalculadoraOperacionByIDContext obtiene una operación con cancelación.
+func GetEmpresaCalculadoraOperacionByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, operacionID int64) (*EmpresaCalculadoraOperacion, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -597,7 +603,7 @@ func GetEmpresaCalculadoraOperacionByID(dbConn *sql.DB, empresaID, operacionID i
 		return nil, errors.New("empresa_id u operacion_id invalido")
 	}
 
-	row := dbConn.QueryRow(`SELECT
+	row := dbConn.QueryRowContext(ctx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(expresion, ''),
@@ -652,6 +658,11 @@ func GetEmpresaCalculadoraOperacionByID(dbConn *sql.DB, empresaID, operacionID i
 
 // SetEmpresaCalculadoraOperacionEstadoByID ajusta estado de un registro puntual.
 func SetEmpresaCalculadoraOperacionEstadoByID(dbConn *sql.DB, empresaID, operacionID int64, estado string) error {
+	return SetEmpresaCalculadoraOperacionEstadoByIDContext(context.Background(), dbConn, empresaID, operacionID, estado)
+}
+
+// SetEmpresaCalculadoraOperacionEstadoByIDContext actualiza una operación con cancelación.
+func SetEmpresaCalculadoraOperacionEstadoByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, operacionID int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -659,7 +670,7 @@ func SetEmpresaCalculadoraOperacionEstadoByID(dbConn *sql.DB, empresaID, operaci
 		return errors.New("empresa_id u operacion_id invalido")
 	}
 
-	_, err := dbConn.Exec(`UPDATE empresa_calculadora_operaciones SET
+	_, err := dbConn.ExecContext(ctx, `UPDATE empresa_calculadora_operaciones SET
 		estado = ?,
 		fecha_actualizacion = CURRENT_TIMESTAMP
 	WHERE empresa_id = ? AND id = ?`, normalizeEmpresaCalculadoraEstado(estado), empresaID, operacionID)
@@ -668,6 +679,11 @@ func SetEmpresaCalculadoraOperacionEstadoByID(dbConn *sql.DB, empresaID, operaci
 
 // SetEmpresaCalculadoraOperacionesEstado aplica estado por filtro (limpieza logica del historial).
 func SetEmpresaCalculadoraOperacionesEstado(dbConn *sql.DB, empresaID int64, filter EmpresaCalculadoraOperacionFilter, estado string) (int64, error) {
+	return SetEmpresaCalculadoraOperacionesEstadoContext(context.Background(), dbConn, empresaID, filter, estado)
+}
+
+// SetEmpresaCalculadoraOperacionesEstadoContext aplica limpieza lógica cancelable.
+func SetEmpresaCalculadoraOperacionesEstadoContext(ctx context.Context, dbConn *sql.DB, empresaID int64, filter EmpresaCalculadoraOperacionFilter, estado string) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -682,7 +698,7 @@ func SetEmpresaCalculadoraOperacionesEstado(dbConn *sql.DB, empresaID int64, fil
 	args = append(args, normalizeEmpresaCalculadoraEstado(estado), empresaID)
 	args = append(args, whereArgs...)
 
-	res, err := dbConn.Exec(query, args...)
+	res, err := dbConn.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}

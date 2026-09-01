@@ -29,12 +29,13 @@ services:
       - --config.file=/etc/alertmanager/alertmanager.yml
       - --storage.path=/alertmanager
     volumes:
-      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./alertmanager.runtime.yml:/etc/alertmanager/alertmanager.yml:ro
       - pcs_alertmanager_data:/alertmanager
     ports:
       - "${ALERTMANAGER_BIND:-127.0.0.1}:${ALERTMANAGER_PORT:-9093}:9093"
     networks:
       - pcs_monitoring
+      - pcs_mailu_internal
 
   grafana:
     image: grafana/grafana:11.4.0
@@ -90,6 +91,8 @@ networks:
   pcs_internal:
     external: true
   pcs_staging_internal:
+    external: true
+  pcs_mailu_internal:
     external: true
 
 volumes:

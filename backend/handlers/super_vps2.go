@@ -650,12 +650,7 @@ func stringAt(parts []string, idx int) string {
 }
 
 func firstNonEmptyVPS2(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func shellQuote(value string) string {

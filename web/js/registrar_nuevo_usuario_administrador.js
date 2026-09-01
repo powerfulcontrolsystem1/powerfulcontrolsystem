@@ -110,6 +110,15 @@
     return String(value || '').trim();
   }
 
+  function passwordPolicyError(password) {
+    if (String(password || '').length < 8) return 'La contraseña debe tener mínimo 8 caracteres.';
+    if (!/[A-ZÁÉÍÓÚÑ]/.test(password)) return 'La contraseña debe incluir una letra mayúscula.';
+    if (!/[a-záéíóúñ]/.test(password)) return 'La contraseña debe incluir una letra minúscula.';
+    if (!/[0-9]/.test(password)) return 'La contraseña debe incluir un número.';
+    if (/\s/.test(password)) return 'La contraseña no debe contener espacios.';
+    return '';
+  }
+
   function hasCountry(code) {
     for (var index = 0; index < countries.length; index += 1) {
       if (countries[index].code === code) {
@@ -279,18 +288,7 @@
   }
 
   function getResponseMessage(response, fallback) {
-    if (response && response.json) {
-      if (response.json.message) {
-        return String(response.json.message);
-      }
-      if (response.json.error) {
-        return String(response.json.error);
-      }
-    }
-    if (response && response.text) {
-      return String(response.text);
-    }
-    return fallback;
+    return window.PCSAuthResponse.getMessage(response, fallback);
   }
 
   async function postJson(url, body) {
@@ -300,12 +298,7 @@
       body: JSON.stringify(body),
       credentials: 'same-origin'
     });
-    var text = await response.text();
-    try {
-      return {ok: response.ok, status: response.status, json: JSON.parse(text)};
-    } catch (error) {
-      return {ok: response.ok, status: response.status, text: text};
-    }
+    return window.PCSAuthResponse.read(response);
   }
 
   async function ensureRecaptcha() {
@@ -342,8 +335,9 @@
       showMessage('Debes completar todos los campos del registro.', true);
       return;
     }
-    if (password.length < 8) {
-      showMessage('La contraseña debe tener mínimo 8 caracteres.', true);
+    var passwordError = passwordPolicyError(password);
+    if (passwordError) {
+	  showMessage(passwordError, true);
       return;
     }
     if (password !== passwordConfirm) {

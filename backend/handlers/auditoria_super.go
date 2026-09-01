@@ -146,6 +146,53 @@ func WithSuperAuditoria(dbSuper *sql.DB, modulo string, next http.HandlerFunc) h
 	}
 }
 
+// WithAdminAuditoria conserva la trazabilidad de endpoints globales que forman
+// parte del panel de cuenta (selector, empresas compartidas y licencias propias)
+// sin convertirlos accidentalmente en superficies exclusivas del super admin.
+// La autorizacion fina de empresa y de cada mutacion permanece en el handler.
+func WithAdminAuditoria(dbSuper *sql.DB, modulo string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if principalType, _ := r.Context().Value("sessionPrincipalType").(string); strings.EqualFold(strings.TrimSpace(principalType), "empresa_usuario") {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		admin, _, err := resolveRequesterAdminScope(dbSuper, r)
+		if err != nil {
+			http.Error(w, "failed to resolve admin session", http.StatusInternalServerError)
+			return
+		}
+		if admin == nil {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		if !strings.EqualFold(strings.TrimSpace(admin.Estado), "activo") || admin.EmailConfirmado != 1 {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		start := time.Now()
+		rw := &auditCaptureResponseWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rw, r)
+		if rw.status == 0 {
+			rw.status = http.StatusOK
+		}
+		registrarSuperAuditoriaNoBloqueante(dbSuper, r, modulo, rw.status, time.Since(start))
+	}
+}
+
+// WithAdminReadSuperWriteAuditoria permite consultar catalogos necesarios para
+// crear una empresa, pero conserva sus mutaciones exclusivamente para super admin.
+func WithAdminReadSuperWriteAuditoria(dbSuper *sql.DB, modulo string, next http.HandlerFunc) http.HandlerFunc {
+	adminHandler := WithAdminAuditoria(dbSuper, modulo, next)
+	superHandler := WithSuperAuditoria(dbSuper, modulo, next)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet || r.Method == http.MethodHead {
+			adminHandler.ServeHTTP(w, r)
+			return
+		}
+		superHandler.ServeHTTP(w, r)
+	}
+}
+
 func registrarSuperAuditoriaNoBloqueante(dbSuper *sql.DB, r *http.Request, modulo string, statusCode int, elapsed time.Duration) {
 	if dbSuper == nil || r == nil {
 		return
@@ -427,10 +474,5 @@ func toString(value interface{}) string {
 }
 
 func firstNonBlank(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }

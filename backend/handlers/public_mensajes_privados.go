@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -28,20 +27,7 @@ func (l *publicPrivMsgLimiter) allow(key string, max int, window time.Duration) 
 }
 
 func publicClientIP(r *http.Request) string {
-	if v := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); v != "" {
-		parts := strings.Split(v, ",")
-		if len(parts) > 0 {
-			return strings.TrimSpace(parts[0])
-		}
-	}
-	if v := strings.TrimSpace(r.Header.Get("X-Real-IP")); v != "" {
-		return v
-	}
-	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
-	if err == nil && host != "" {
-		return host
-	}
-	return strings.TrimSpace(r.RemoteAddr)
+	return portalChatClientIP(r)
 }
 
 func randomPublicMessageID() string {

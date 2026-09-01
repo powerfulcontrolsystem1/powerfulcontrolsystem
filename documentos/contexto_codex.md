@@ -9,51 +9,30 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
-## Actualizacion 2026-08-31 - Vida personal
+## Actualizacion 2026-08-21 - trabajo separado por temas
 
-- `/administrar_empresa/vida.html` y `/api/empresa/vida` registran gastos,
-  comprobantes privados y suscripciones de la cuenta autenticada dentro de una
-  empresa.
-- Toda persistencia usa `empresa_id + usuario_id`; el usuario se deriva de la
-  sesion y nunca del payload. Vida no escribe contabilidad, caja, compras ni
-  inventario empresarial.
-- El modulo ignora la lista comercial de licencia para estar disponible en
-  todas las empresas, pero conserva sesion, rol y permisos efectivos.
-- La migracion `20260831-001-vida-personal-v1` solo puede ejecutarla
-  `pcs-migrate`. El candidato es local y se documenta en `vida.md`.
+- Por instruccion del usuario, el Plan 110 deja de ser la ruta activa. Cada modulo se revisa y cierra mediante un alcance especifico autorizado.
+- Para facturacion electronica gobiernan el contrato y runbook especificos bajo `documentos/gobernanza_tecnica/`, junto con las reglas generales de seguridad multiempresa y migraciones.
+- Las referencias a planes 106-110 que siguen son solo historial y no autorizan ejecucion, despliegue ni pruebas reales.
 
-## Actualizacion 2026-08-25 - carga inicial de Administrar empresa
+## Historico 2026-08-13 - Plan 110
 
-- `web/administrar_empresa.html` conserva el gate de permisos antes de elegir la
-  pagina inicial, pero obtiene en paralelo catalogo, sesion, URLs, preferencias
-  y contexto de permisos.
-- `menu.js` expone `PCSRequestCache`, una cache efimera de promesas GET que
-  comparte `/me`, `estacion_prefs` y preferencias del chat dentro de la misma
-  pagina. Las escrituras invalidan la entrada relacionada y nunca sustituyen la
-  autorizacion backend ni el aislamiento por `empresa_id`.
-- El panel embebido reutiliza durante el arranque las lecturas del contenedor
-  para sesion, permisos, configuracion guiada y buzon. Si se abre directamente,
-  conserva sus lecturas propias.
-- El puente de ayuda ya no se inyecta en el iframe transitorio `about:blank`.
-- Cambio local: no se ejecuto `rs` ni despliegue.
+- En esa fecha `documentos/plan_110.md` era la ruta general de entrada en
+  producción. Ya no es una hoja vigente.
+- Estado formal: 38,5 % de implementación, 0 % de certificación del candidato y
+  `NO-GO`.
+- P110-001A exige caracterizar y sanear duplicación, ownership de esquema,
+  funciones críticas, contextos DB, errores descartados y deuda frontend sin
+  perder aislamiento por `empresa_id`, permisos ni cobertura.
+- No ejecutar `rs`, desplegar ni mutar PCS solo por leer este contexto; aplicar
+  la autorización y las compuertas ambientales vigentes del Plan 110.
+- Las secciones de Planes 106/108 que siguen se conservan únicamente como
+  historial técnico.
 
-## Actualizacion 2026-08-23 - catalogo publico vigente
+## Historico 2026-07-24 - Plan 106 P0 en ejecucion controlada
 
-- El corte operativo de esa fecha era de 52 modulos y 13 plantillas empresariales.
-- La fuente funcional de plantillas es
-  `documentos/matriz_integracion_plantillas.md`; cuatro son clasicas y nueve
-  provienen del catalogo de plantillas nuevas.
-- `index.html`, `descripcion_de_los_sistemas.html` y la compatibilidad `.ht`
-  filtran tarjetas retiradas y evitan duplicar plantillas por clave `module`.
-- El backend repite el filtro al leer o guardar configuracion de pagina
-  principal. Drogueria/Farmacia pertenece a Inventario y no es modulo propio.
-- No se ha desplegado este cambio ni ejecutado su migracion de retiro.
-
-## Actualizacion 2026-07-24 - Plan 106 P0 en ejecucion controlada
-
-- `documentos/plan_106.md` es el plan vigente para certificar produccion
-  general. Permanece en `NO-GO` para produccion; el usuario autorizo ejecutar
-  fases acotadas, sin `rs` ni efectos externos.
+- En esa fecha `documentos/plan_106.md` era el plan de certificación. Hoy es un
+  antecedente del Plan 110 y no debe ejecutarse como hoja vigente.
 - El ejecutor recomendado es GPT-5.6 Terra alto, una fase P106 por vez; las
   decisiones P0 y el GO final deben revisarse con GPT-5.6 Sol alto.
 - El plan prioriza la unificacion de las dos fuentes CxP, la cobertura total de
@@ -191,9 +170,11 @@ decisiones en cada tarea.
   nomina electronica DIAN y tutorial.
 - Las subpaginas reutilizan `nomina_sueldos.html?seccion=...` para no duplicar
   reglas ni APIs; la vista antigua sin `seccion` conserva pantalla completa.
-- El boton `Enviar nomina electronica a DIAN` prepara el lote, bloquea requisitos
-  pendientes y llama el endpoint fiscal existente de facturacion electronica con
-  `tipo_documento=nomina_electronica` y `empresa_id`.
+- El boton historico de envio aparece como `Envio DIAN no disponible` y queda
+  deshabilitado. `Preparar lote DIAN` es solo preflight; no genera XML ni llama
+  el endpoint fiscal. `tipo_documento=nomina_electronica` sigue en 422 hasta que
+  exista un adaptador conforme al anexo tecnico de nomina. No se permite usar el
+  generador de factura de venta como sustituto.
 
 ## Actualizacion 2026-06-10 - IA flotante activa para todas las empresas
 
@@ -281,16 +262,15 @@ decisiones en cada tarea.
   (`empresa_id=12`) con sesion real o login API autorizado por el usuario.
 - El flujo rapido reproducible es: autenticar, verificar configuracion DIAN,
   crear venta/factura de una `menta`, emitir o reenviar por
-  `/api/empresa/facturacion_electronica?action=emitir|reenviar_dian&empresa_id=12`
+  `/api/empresa/facturacion_electronica?action=facturar_desde_venta|reenviar_dian&empresa_id=12`
   y revisar `integracion_fiscal`, `cola_reintentos` y acuse DIAN saneado.
 - No imprimir contrasenas, PIN, certificado, llave tecnica ni token. Se puede
   mostrar numero legal, prefijo, resolucion, ambiente, codigo de regla DIAN y
   estado `aceptado/rechazado/contingencia`.
-- La resolucion vigente de PCS registrada el 2026-06-16 usa prefijo `PCS`,
-  rango `1-1000000` y ambiente produccion. DIAN rechazo las pruebas `PCS1/PCS2`
-  despues de llegar a `SendBillSync` por `FAB05c` (Software ID no corresponde
-  al rango de numeracion) y `FAD06` (CUFE no calculado correctamente); ya no
-  hay rechazo por guion/rango tras normalizar el numero legal a `PCS1`, `PCS2`.
+- La configuracion productiva vigente usa prefijo `1PCS`, rango `1-100000` y
+  ambiente produccion. Los folios `PCS1/PCS2` quedan como evidencia historica
+  rechazada; la evidencia actual `1PCS8` tiene acuse aceptado, CUFE oficial y un
+  unico intento.
 - Actualizacion 2026-06-17: la nueva Autorizacion de Numeracion DIAN Formulario
   1876 `18764111318575` para PCS usa prefijo `1PCS`, rango `1-100000`, fecha
   inicial `2026-06-17`, vigencia 24 meses y fecha final `2028-06-17`. El PDF de
@@ -391,14 +371,15 @@ decisiones en cada tarea.
 - `GetStatusZip` ahora toma `StatusDescription` del SOAP DIAN para distinguir
   `Batch en proceso de validacion` como acuse pendiente, no aceptacion final.
 
-## Actualizacion 2026-06-08 - DIAN sin preset reducido
+## Historico 2026-06-08 - DIAN sin preset reducido
 
 - `facturacion_electronica_pruebas_dian.html` no debe mostrar boton ni preset
   rapido 2+2+2/pequeno para habilitacion DIAN.
-- El Centro de habilitacion DIAN conserva el objetivo del portal
-  `30 + 10 + 10`, el historico excepcional `60 + 20 + 20` y `Personalizado`.
-- Si llega un valor viejo de preset reducido, la pantalla lo normaliza al
-  objetivo real del portal para evitar envios parciales accidentales.
+- En esa fecha el Centro conservaba presets `30 + 10 + 10`, `60 + 20 + 20` y
+  `Personalizado`. Desde 2026-08-21 esos presets fueron retirados: PCS solo usa
+  el objetivo exacto guardado por empresa desde su portal DIAN.
+- Un valor viejo no se normaliza a una cifra asumida; sin objetivo confirmado,
+  el backend bloquea el envio automatico.
 
 ## Actualizacion 2026-06-08 - Centro de habilitacion DIAN
 
@@ -589,11 +570,9 @@ decisiones en cada tarea.
   System ya reciben HTTP 200, TrackId/ZipKey y respuesta
   `Batch en proceso de validacion`; el bloqueo de transporte `InvalidSecurity`
   queda superado.
-- Lo pendiente para cerrar habilitacion no es simular ni rehacer el transporte:
-  falta reconciliar cada TrackId con `GetStatusZip` hasta acuse final
-  aceptado/rechazado, persistir el estado final por documento/lote, resumirlo en
-  la pantalla y habilitar produccion local solo cuando se cumplan los minimos
-  aceptados configurados por empresa.
+- Los TrackId pendientes se reconcilian mediante `pcs-worker` con `GetStatusZip`
+  hasta acuse final, sin regenerar el XML firmado. La activacion local sigue
+  condicionada a los minimos aceptados configurados por empresa.
 - No documentar PIN, claves tecnicas, certificados, contrasenas ni tokens. El
   TestSetId y demas datos operativos deben leerse de `empresa_dian_configuracion`
   por `empresa_id`, no copiarse como secretos en guias o logs.
@@ -604,11 +583,9 @@ decisiones en cada tarea.
   guardar por empresa el objetivo exacto que muestra el portal DIAN:
   `test_set_id`, facturas, notas debito, notas credito, total requerido y
   minimos aceptados.
-- El preset principal de software propio/proveedor queda en 30 facturas, 10
-  notas debito y 10 notas credito, con minimo aceptado total 1 y minimo de
-  facturas 1, porque ese es el set registrado para la empresa interna Powerful
-  Control System. El boton automatico usa siempre lo guardado por empresa, por
-  lo que otra empresa puede tener otro objetivo.
+- El registro historico de Powerful Control System fue 30 facturas, 10 notas
+  debito y 10 notas credito. No es un preset vigente: el boton automatico exige
+  el objetivo exacto guardado por cada empresa y se bloquea si no existe.
 - En endpoint oficial SOAP/WCF DIAN no se exige `token_emisor_ref`; ese campo
   solo aplica cuando la empresa usa proveedor/API con bearer token. En
   habilitacion real si es obligatorio `test_set_id`.
@@ -696,6 +673,25 @@ decisiones en cada tarea.
   `certificado_vencimiento`, `certificado_vencimiento_en`,
   `certificado_alerta_dias`, `certificado_alerta_ultimo_envio` y
   `certificado_alerta_email` en `empresa_dian_configuracion`.
+
+### Estado de candidato DIAN al 2026-08-24
+
+- La factura comercial Colombia usa exclusivamente la fuente fiscal inmutable
+  capturada al pagar el carrito. No reutilizar `generar_xml_ubl_base` para una
+  venta: esa acción solo produce fixtures explícitos de habilitación.
+- Emisor y cliente requieren códigos DANE válidos; no inferir Bogotá ni otro
+  municipio a partir del nombre. Una venta capturada antes de completar esos
+  datos permanece bloqueada y debe conciliarse, no reescribirse.
+- Nota crédito/débito, soporte, nómina, equivalentes, contingencia y RADIAN no
+  están habilitados para emisión comercial. Mantener `bloqueado_contrato` hasta
+  implementar y probar el adaptador y fuente específicos.
+- Antes de producción ejecutar migraciones, pruebas PostgreSQL con
+  `PCS_TEST_POSTGRES_DSN`, `go test ./...`, `go vet ./...`, validación XSD,
+  XMLDSig independiente y Schematron DIAN sobre la factura de regresión. A la
+  fecha del candidato, XSD y XMLDSig aprobaron; PostgreSQL y Schematron siguen
+  pendientes de un DSN aislado y de un procesador XSLT 3 compatible con la
+  herramienta oficial. También se exige clon del esquema vigente y un acuse
+  oficial controlado.
 - La ultima carga de firma conserva metadatos seguros
   (`certificado_ultima_carga_en`, archivo original, formato, titular, emisor,
   serial y estado de clave). La clave del P12/PFX nunca debe guardarse ni
@@ -891,7 +887,11 @@ botones, desde handlers estaticos del backend.
 - Configuracion carrito: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`,
   `/api/empresa/estacion_prefs`; la visibilidad automatica de la tarjeta
   Domotica se guarda como `mostrar_tarjeta_domotica_carrito` dentro de
-  `carrito_ui_global` o del override por estacion.
+  `carrito_ui_global` o del override por estacion. La preferencia empresarial
+  `carrito_ui_global.abrir_domotica_al_entrar_estacion` es `false` por defecto;
+  cuando se activa, las tarjetas de estaciones/habitaciones abren directamente
+  sus equipos electronicos y el enlace `Venta directa` abre la consola
+  consolidada de equipos. No elimina ni cambia los permisos de venta.
 - Estaciones: `web/administrar_empresa/estaciones.html`,
   `/api/empresa/carritos_compra`.
 - Carrito y venta directa: `web/administrar_empresa/carrito_de_compras.html`,
@@ -1196,18 +1196,16 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
   no deben repetirse como cinco entradas del submenu. La pagina unica concentra
   proveedor, credencial, reglas, contexto, chat global y voz.
 
-## Plan 108 de entrada en producción 2026-07-25
+## Histórico - Plan 108 de entrada en producción 2026-07-25
 
-- `documentos/plan_108.md` reemplaza como hoja de ruta activa la ejecución
-  separada de los planes 106, 107 e IA y absorbe también los pendientes
-  vigentes de los planes 104, 105 y del plan final histórico.
+- `documentos/plan_108.md` reemplazó temporalmente la ejecución separada de los
+  planes 106, 107 e IA. Plan 110 absorbió después esos pendientes como antecedente.
 - El estado es `NO-GO`: existe preflight local satisfactorio, pero todavía falta
   candidato inmutable, staging integral, migraciones fuera del runtime,
   aislamiento A/B, consistencia financiera, cierre contable e IA, pruebas
   visuales/impresas, concurrencia de cajas, proveedores, recuperación y piloto.
-- GPT-5.6 Terra medio debe comenzar por `P108-000`, conservar secretos fuera de
-  la documentación y no sumar certificación productiva antes de fijar SHA y
-  digest.
+- Esta orden se conserva solo como historia. Desde 2026-08-21 el trabajo se
+  autoriza y cierra por temas especificos; Plan 110 no es una ruta activa.
 
 ## Domótica y Energía Solar 2026-08-13
 
@@ -1215,11 +1213,3 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
 - Las desconexiones se notifican por worker después de la gracia empresarial; Super Administrador controla cuota mensual RX+TX, advertencia y bloqueo del túnel por empresa.
 - La primera instalación no requiere IP local: la Raspberry descarga un instalador de un uso, recibe ID global aleatorio y abre HTTPS hacia el VPS.
 - En sensores, `encender_temporizado` usa la duración de la regla y `encender_programado` solo enciende si la agenda del aparato está activa.
-
-## Raspberry para sensores de puertas 2026-08-31
-
-- `empresa_control_electrico_raspberry_pis.uso_tipo` separa `domotica` de `sensor_puertas`; no se mezclan cargas y barrido en la misma placa.
-- El modo puertas usa entradas BCM 0–3 y 1–16 salidas BCM 4–19, con `puerta_delay_ms` empresarial y cuatro canales automáticos por salida.
-- `POST /api/public/domotica/tunnel?action=door_scan` acepta lotes únicamente del dispositivo autenticado y deriva empresa/Raspberry en servidor.
-- Los canales reutilizan `empresa_sensor_puertas_devices` y su asignación a estación; las transiciones se guardan en `empresa_sensor_puertas_messages`.
-- Alta, configuración antes/después, instalador, enrolamiento, asignación y desactivación quedan en `empresa_control_electrico_eventos`, sin secretos.

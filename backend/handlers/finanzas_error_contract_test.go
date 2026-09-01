@@ -55,3 +55,51 @@ func TestFinanzasOpensPrintPreviewBeforeAsyncPrinterResolution(t *testing.T) {
 		t.Fatal("print preview must render a visible loading state while resolving its printer")
 	}
 }
+
+func TestFinanzasHTTPPropagaContextoAlRepositorio(t *testing.T) {
+	raw, err := os.ReadFile("finanzas.go")
+	if err != nil {
+		t.Fatalf("read finance handler: %v", err)
+	}
+	source := string(raw)
+	for _, forbidden := range []string{
+		"dbpkg.ListEmpresaFinanzasMovimientos(dbEmp",
+		"dbpkg.CreateEmpresaFinanzasMovimiento(dbEmp",
+		"dbpkg.UpdateEmpresaFinanzasMovimiento(dbEmp",
+		"dbpkg.DeleteEmpresaFinanzasMovimiento(dbEmp",
+		"dbpkg.GetEmpresaFinanzasConfiguracion(dbEmp",
+		"dbpkg.UpsertEmpresaFinanzasConfiguracion(dbEmp",
+		"dbpkg.ListEmpresaFinanzasPeriodos(dbEmp",
+		"dbpkg.UpsertEmpresaFinanzasPeriodo(dbEmp",
+		"dbpkg.ListEmpresaCierresCaja(dbEmp",
+		"dbpkg.CreateEmpresaCierreCaja(dbEmp",
+		"dbpkg.SetEmpresaCierreCajaEstado(dbEmp",
+		"dbpkg.UpdateEmpresaCierreCaja(dbEmp",
+		"dbpkg.DeleteEmpresaCierreCaja(dbEmp",
+		"dbpkg.GetEmpresaConciliacionBancariaPorPeriodo(dbEmp",
+		"dbpkg.ListEmpresaFinanzasMovimientosBancarios(dbEmp",
+		"dbpkg.UpsertEmpresaFinanzasMovimientosBancarios(dbEmp",
+		"dbpkg.ConciliarEmpresaMovimientosBancariosAutomatico(dbEmp",
+	} {
+		if strings.Contains(source, forbidden) {
+			t.Fatalf("finance handler bypasses request context with %q", forbidden)
+		}
+	}
+	for _, expected := range []string{
+		"ListEmpresaFinanzasMovimientosContext(r.Context()",
+		"CreateEmpresaFinanzasMovimientoContext(r.Context()",
+		"UpdateEmpresaFinanzasMovimientoContext(r.Context()",
+		"UpsertEmpresaFinanzasPeriodoContext(r.Context()",
+		"ListEmpresaCierresCajaContext(r.Context()",
+		"CreateEmpresaCierreCajaContext(r.Context()",
+		"SetEmpresaCierreCajaEstadoContext(",
+		"GetEmpresaConciliacionBancariaPorPeriodoContext(r.Context()",
+		"ListEmpresaFinanzasMovimientosBancariosContext(r.Context()",
+		"UpsertEmpresaFinanzasMovimientosBancariosContext(r.Context()",
+		"ConciliarEmpresaMovimientosBancariosAutomaticoContext(r.Context()",
+	} {
+		if !strings.Contains(source, expected) {
+			t.Fatalf("missing cancellable finance operation %q", expected)
+		}
+	}
+}

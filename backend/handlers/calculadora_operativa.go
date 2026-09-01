@@ -125,7 +125,7 @@ func calcEmpresaHandleGetConfig(w http.ResponseWriter, r *http.Request, dbEmp *s
 		return
 	}
 
-	cfg, err := dbpkg.GetEmpresaCalculadoraConfiguracion(dbEmp, empresaID)
+	cfg, err := dbpkg.GetEmpresaCalculadoraConfiguracionContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion de calculadora", http.StatusInternalServerError)
 		return
@@ -155,7 +155,7 @@ func calcEmpresaHandleUpsertConfig(w http.ResponseWriter, r *http.Request, dbEmp
 		return
 	}
 
-	current, err := dbpkg.GetEmpresaCalculadoraConfiguracion(dbEmp, empresaID)
+	current, err := dbpkg.GetEmpresaCalculadoraConfiguracionContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion actual", http.StatusInternalServerError)
 		return
@@ -176,12 +176,12 @@ func calcEmpresaHandleUpsertConfig(w http.ResponseWriter, r *http.Request, dbEmp
 	current.EmpresaID = empresaID
 	current.UsuarioCreador = calcEmpresaUsuarioFromRequest(r)
 
-	if _, err := dbpkg.UpsertEmpresaCalculadoraConfiguracion(dbEmp, *current); err != nil {
+	if _, err := dbpkg.UpsertEmpresaCalculadoraConfiguracionContext(r.Context(), dbEmp, *current); err != nil {
 		http.Error(w, "No se pudo actualizar configuracion de calculadora", http.StatusInternalServerError)
 		return
 	}
 
-	updated, err := dbpkg.GetEmpresaCalculadoraConfiguracion(dbEmp, empresaID)
+	updated, err := dbpkg.GetEmpresaCalculadoraConfiguracionContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion actualizada", http.StatusInternalServerError)
 		return
@@ -211,7 +211,7 @@ func calcEmpresaHandleCreateOperacion(w http.ResponseWriter, r *http.Request, db
 		return
 	}
 
-	cfg, err := dbpkg.GetEmpresaCalculadoraConfiguracion(dbEmp, empresaID)
+	cfg, err := dbpkg.GetEmpresaCalculadoraConfiguracionContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion de calculadora", http.StatusInternalServerError)
 		return
@@ -317,13 +317,13 @@ func calcEmpresaHandleCreateOperacion(w http.ResponseWriter, r *http.Request, db
 		Observaciones:   strings.TrimSpace(payload.Observaciones),
 	}
 
-	id, err := dbpkg.CreateEmpresaCalculadoraOperacion(dbEmp, op)
+	id, err := dbpkg.CreateEmpresaCalculadoraOperacionContext(r.Context(), dbEmp, op)
 	if err != nil {
 		http.Error(w, "No se pudo registrar operacion en calculadora", http.StatusInternalServerError)
 		return
 	}
 
-	created, err := dbpkg.GetEmpresaCalculadoraOperacionByID(dbEmp, empresaID, id)
+	created, err := dbpkg.GetEmpresaCalculadoraOperacionByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		http.Error(w, "operacion creada pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -351,7 +351,7 @@ func calcEmpresaHandleToggleOperacion(w http.ResponseWriter, r *http.Request, db
 	if action == "desactivar" {
 		state = "inactivo"
 	}
-	if err := dbpkg.SetEmpresaCalculadoraOperacionEstadoByID(dbEmp, empresaID, operacionID, state); err != nil {
+	if err := dbpkg.SetEmpresaCalculadoraOperacionEstadoByIDContext(r.Context(), dbEmp, empresaID, operacionID, state); err != nil {
 		http.Error(w, "No se pudo actualizar estado de la operacion", http.StatusInternalServerError)
 		return
 	}
@@ -378,7 +378,7 @@ func calcEmpresaHandleList(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB
 		return
 	}
 
-	rows, total, err := dbpkg.ListEmpresaCalculadoraOperaciones(dbEmp, empresaID, filter)
+	rows, total, err := dbpkg.ListEmpresaCalculadoraOperacionesContext(r.Context(), dbEmp, empresaID, filter)
 	if err != nil {
 		http.Error(w, "No se pudo consultar historial de calculadora", http.StatusInternalServerError)
 		return
@@ -442,7 +442,7 @@ func calcEmpresaHandleClear(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 		filter.Etiqueta = strings.TrimSpace(payload.Etiqueta)
 	}
 
-	removed, err := dbpkg.SetEmpresaCalculadoraOperacionesEstado(dbEmp, empresaID, filter, "inactivo")
+	removed, err := dbpkg.SetEmpresaCalculadoraOperacionesEstadoContext(r.Context(), dbEmp, empresaID, filter, "inactivo")
 	if err != nil {
 		http.Error(w, "No se pudo limpiar historial de calculadora", http.StatusInternalServerError)
 		return
@@ -472,7 +472,7 @@ func calcEmpresaHandleExport(w http.ResponseWriter, r *http.Request, dbEmp *sql.
 	filter.Limit = limit
 	filter.Offset = offset
 
-	rows, total, err := dbpkg.ListEmpresaCalculadoraOperaciones(dbEmp, empresaID, filter)
+	rows, total, err := dbpkg.ListEmpresaCalculadoraOperacionesContext(r.Context(), dbEmp, empresaID, filter)
 	if err != nil {
 		http.Error(w, "No se pudo consultar historial para exportacion", http.StatusInternalServerError)
 		return
@@ -570,7 +570,7 @@ func calcEmpresaHandleReferences(w http.ResponseWriter, r *http.Request, dbEmp *
 	}
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 
-	cfg, err := dbpkg.GetEmpresaCalculadoraConfiguracion(dbEmp, empresaID)
+	cfg, err := dbpkg.GetEmpresaCalculadoraConfiguracionContext(r.Context(), dbEmp, empresaID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion de calculadora", http.StatusInternalServerError)
 		return

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -208,7 +209,7 @@ func handleEmpresaCreditosPazYSalvo(w http.ResponseWriter, r *http.Request, dbEm
 		http.Error(w, "credito_id invalido", http.StatusBadRequest)
 		return
 	}
-	credito, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, creditoID)
+	credito, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, creditoID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "credito no encontrado", http.StatusNotFound)
@@ -229,10 +230,17 @@ func handleEmpresaCreditosPazYSalvo(w http.ResponseWriter, r *http.Request, dbEm
 	}
 	var documentoCliente string
 	if credito.ClienteID > 0 {
-		_ = dbEmp.QueryRow(`SELECT COALESCE(numero_documento,'') FROM clientes WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, credito.ClienteID).Scan(&documentoCliente)
+		err = dbEmp.QueryRowContext(r.Context(), `SELECT COALESCE(numero_documento,'') FROM clientes WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, credito.ClienteID).Scan(&documentoCliente)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "No se pudo consultar el documento del cliente", http.StatusInternalServerError)
+			return
+		}
 	}
 	var totalPagado float64
-	_ = dbEmp.QueryRow(`SELECT COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado,'activo'))='activo' AND LOWER(COALESCE(tipo_movimiento,'')) IN ('abono','pago') THEN monto ELSE 0 END),0) FROM empresa_creditos_movimientos WHERE empresa_id=? AND credito_id=?`, empresaID, creditoID).Scan(&totalPagado)
+	if err := dbEmp.QueryRowContext(r.Context(), `SELECT COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado,'activo'))='activo' AND LOWER(COALESCE(tipo_movimiento,'')) IN ('abono','pago') THEN monto ELSE 0 END),0) FROM empresa_creditos_movimientos WHERE empresa_id=? AND credito_id=?`, empresaID, creditoID).Scan(&totalPagado); err != nil {
+		http.Error(w, "No se pudo conciliar el total pagado", http.StatusInternalServerError)
+		return
+	}
 
 	now := time.Now().In(time.Local)
 	digest := sha256.Sum256([]byte(fmt.Sprintf("%d|%d|%s|%s", empresaID, creditoID, credito.Codigo, now.Format(time.RFC3339Nano))))
@@ -352,7 +360,7 @@ func handleEmpresaCreditosCreate(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 
-	row, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	row, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		http.Error(w, "credito creado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -407,7 +415,7 @@ func handleEmpresaCreditosLimitesCliente(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	rows, total, err := dbpkg.ListEmpresaCreditoClienteLimites(dbEmp, empresaID, dbpkg.EmpresaCreditoClienteLimiteFilter{
+	rows, total, err := dbpkg.ListEmpresaCreditoClienteLimitesContext(r.Context(), dbEmp, empresaID, dbpkg.EmpresaCreditoClienteLimiteFilter{
 		ClienteID:       clienteID,
 		IncludeInactive: includeInactive,
 		Limit:           limit,
@@ -445,7 +453,7 @@ func handleEmpresaCreditosDisponibilidadCliente(w http.ResponseWriter, r *http.R
 		http.Error(w, "No se pudo validar cliente", http.StatusInternalServerError)
 		return
 	}
-	disponibilidad, err := dbpkg.GetEmpresaCreditoClienteDisponibilidad(dbEmp, empresaID, clienteID)
+	disponibilidad, err := dbpkg.GetEmpresaCreditoClienteDisponibilidadContext(r.Context(), dbEmp, empresaID, clienteID)
 	if err != nil {
 		http.Error(w, "No se pudo consultar cupo de credito del cliente", http.StatusInternalServerError)
 		return
@@ -487,14 +495,14 @@ func handleEmpresaCreditosUpsertLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	_, prevErr := dbpkg.GetEmpresaCreditoClienteLimite(dbEmp, empresaID, payload.ClienteID, true)
+	_, prevErr := dbpkg.GetEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, empresaID, payload.ClienteID, true)
 	if prevErr != nil && prevErr != sql.ErrNoRows {
 		http.Error(w, "No se pudo validar limite actual del cliente", http.StatusInternalServerError)
 		return
 	}
 	created := prevErr == sql.ErrNoRows
 
-	id, err := dbpkg.UpsertEmpresaCreditoClienteLimite(dbEmp, dbpkg.EmpresaCreditoClienteLimite{
+	id, err := dbpkg.UpsertEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, dbpkg.EmpresaCreditoClienteLimite{
 		EmpresaID:                empresaID,
 		ClienteID:                payload.ClienteID,
 		LimiteSaldoTotal:         payload.LimiteSaldoTotal,
@@ -509,7 +517,7 @@ func handleEmpresaCreditosUpsertLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	row, err := dbpkg.GetEmpresaCreditoClienteLimite(dbEmp, empresaID, payload.ClienteID, true)
+	row, err := dbpkg.GetEmpresaCreditoClienteLimiteContext(r.Context(), dbEmp, empresaID, payload.ClienteID, true)
 	if err != nil {
 		http.Error(w, "limite guardado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -564,7 +572,7 @@ func handleEmpresaCreditosDeleteLimiteCliente(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := dbpkg.SetEmpresaCreditoClienteLimiteRowEstado(dbEmp, empresaID, clienteID, "inactivo"); err != nil {
+	if err := dbpkg.SetEmpresaCreditoClienteLimiteRowEstadoContext(r.Context(), dbEmp, empresaID, clienteID, "inactivo"); err != nil {
 		http.Error(w, "No se pudo eliminar limite de cliente", http.StatusInternalServerError)
 		return
 	}
@@ -632,7 +640,7 @@ func handleEmpresaCreditosList(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		return
 	}
 
-	rows, total, err := dbpkg.ListEmpresaCreditos(dbEmp, empresaID, filter)
+	rows, total, err := dbpkg.ListEmpresaCreditosContext(r.Context(), dbEmp, empresaID, filter)
 	if err != nil {
 		http.Error(w, "No se pudo consultar creditos", http.StatusInternalServerError)
 		return
@@ -681,7 +689,7 @@ func handleEmpresaCreditosDetail(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 
-	row, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	row, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "credito no encontrado", http.StatusNotFound)
@@ -709,7 +717,7 @@ func handleEmpresaCreditosCuotas(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	rows, err := dbpkg.ListEmpresaCreditoCuotas(dbEmp, empresaID, id, queryBool(r, "include_inactive"))
+	rows, err := dbpkg.ListEmpresaCreditoCuotasContext(r.Context(), dbEmp, empresaID, id, queryBool(r, "include_inactive"))
 	if err != nil {
 		http.Error(w, "No se pudo consultar cuotas", http.StatusInternalServerError)
 		return
@@ -739,7 +747,7 @@ func handleEmpresaCreditosMovimientos(w http.ResponseWriter, r *http.Request, db
 		http.Error(w, "limit invalido", http.StatusBadRequest)
 		return
 	}
-	rows, err := dbpkg.ListEmpresaCreditoMovimientos(dbEmp, empresaID, id, queryBool(r, "include_inactive"), limit)
+	rows, err := dbpkg.ListEmpresaCreditoMovimientosContext(r.Context(), dbEmp, empresaID, id, queryBool(r, "include_inactive"), limit)
 	if err != nil {
 		http.Error(w, "No se pudo consultar movimientos", http.StatusInternalServerError)
 		return
@@ -764,7 +772,7 @@ func handleEmpresaCreditosEstadoCuenta(w http.ResponseWriter, r *http.Request, d
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	credito, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	credito, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "credito no encontrado", http.StatusNotFound)
@@ -773,12 +781,12 @@ func handleEmpresaCreditosEstadoCuenta(w http.ResponseWriter, r *http.Request, d
 		http.Error(w, "No se pudo consultar credito", http.StatusInternalServerError)
 		return
 	}
-	cuotas, err := dbpkg.ListEmpresaCreditoCuotas(dbEmp, empresaID, id, false)
+	cuotas, err := dbpkg.ListEmpresaCreditoCuotasContext(r.Context(), dbEmp, empresaID, id, false)
 	if err != nil {
 		http.Error(w, "No se pudo consultar cuotas", http.StatusInternalServerError)
 		return
 	}
-	movs, err := dbpkg.ListEmpresaCreditoMovimientos(dbEmp, empresaID, id, false, 200)
+	movs, err := dbpkg.ListEmpresaCreditoMovimientosContext(r.Context(), dbEmp, empresaID, id, false, 200)
 	if err != nil {
 		http.Error(w, "No se pudo consultar movimientos", http.StatusInternalServerError)
 		return
@@ -799,7 +807,7 @@ func handleEmpresaCreditosResumen(w http.ResponseWriter, r *http.Request, dbEmp 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	resumen, err := dbpkg.GetEmpresaCreditosCarteraResumen(dbEmp, empresaID, queryBool(r, "include_inactive"))
+	resumen, err := dbpkg.GetEmpresaCreditosCarteraResumenContext(r.Context(), dbEmp, empresaID, queryBool(r, "include_inactive"))
 	if err != nil {
 		http.Error(w, "No se pudo calcular resumen de cartera", http.StatusInternalServerError)
 		return
@@ -849,7 +857,7 @@ func handleEmpresaCreditosAlertasMora(w http.ResponseWriter, r *http.Request, db
 		return
 	}
 
-	alertas, err := dbpkg.GetEmpresaCreditosMoraDashboard(dbEmp, empresaID, diasProximos, top, queryBool(r, "include_inactive"))
+	alertas, err := dbpkg.GetEmpresaCreditosMoraDashboardContext(r.Context(), dbEmp, empresaID, diasProximos, top, queryBool(r, "include_inactive"))
 	if err != nil {
 		http.Error(w, "No se pudo consultar alertas de morosidad", http.StatusInternalServerError)
 		return
@@ -978,8 +986,8 @@ func handleEmpresaCreditosAbono(w http.ResponseWriter, r *http.Request, dbEmp *s
 	}
 
 	if policy.RegistrarEventoContable {
-		if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
-			integracionContable["error_evento_contable"] = "no se pudo preparar esquema de eventos contables"
+		if err := dbpkg.EmpresaEventosContablesSchemaReady(dbEmp); err != nil {
+			integracionContable["error_evento_contable"] = "el esquema migrado de eventos contables no esta disponible"
 		} else {
 			movimiento, okMov := creditosFindMovimientoByID(dbEmp, empresaID, payload.CreditoID, movID)
 			montoEvento := payload.Monto
@@ -1121,11 +1129,11 @@ func handleEmpresaCreditosEstado(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, "estado_credito es obligatorio", http.StatusBadRequest)
 		return
 	}
-	if err := dbpkg.SetEmpresaCreditoEstado(dbEmp, empresaID, id, estado); err != nil {
+	if err := dbpkg.SetEmpresaCreditoEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	row, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	row, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		http.Error(w, "estado actualizado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -1152,7 +1160,7 @@ func handleEmpresaCreditosActivacion(w http.ResponseWriter, r *http.Request, dbE
 	if action == "desactivar" {
 		estado = "inactivo"
 	}
-	if err := dbpkg.SetEmpresaCreditoRowEstado(dbEmp, empresaID, id, estado); err != nil {
+	if err := dbpkg.SetEmpresaCreditoRowEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 		http.Error(w, "No se pudo actualizar estado", http.StatusInternalServerError)
 		return
 	}
@@ -1176,7 +1184,7 @@ func handleEmpresaCreditosUpdate(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 
-	current, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	current, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "credito no encontrado", http.StatusNotFound)
@@ -1260,12 +1268,12 @@ func handleEmpresaCreditosUpdate(w http.ResponseWriter, r *http.Request, dbEmp *
 	}
 	current.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 
-	if err := dbpkg.UpdateEmpresaCredito(dbEmp, *current); err != nil {
+	if err := dbpkg.UpdateEmpresaCreditoContext(r.Context(), dbEmp, *current); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	updated, err := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, id)
+	updated, err := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, id)
 	if err != nil {
 		http.Error(w, "actualizado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -1303,7 +1311,7 @@ func handleEmpresaCreditosReporte(w http.ResponseWriter, r *http.Request, dbEmp 
 			http.Error(w, paramsErr.Error(), http.StatusBadRequest)
 			return
 		}
-		alertas, alertErr := dbpkg.GetEmpresaCreditosMoraDashboard(dbEmp, empresaID, diasProximos, top, filter.IncludeInactive)
+		alertas, alertErr := dbpkg.GetEmpresaCreditosMoraDashboardContext(r.Context(), dbEmp, empresaID, diasProximos, top, filter.IncludeInactive)
 		if alertErr != nil {
 			http.Error(w, "No se pudo calcular reporte de morosidad", http.StatusInternalServerError)
 			return
@@ -1328,12 +1336,12 @@ func handleEmpresaCreditosReporte(w http.ResponseWriter, r *http.Request, dbEmp 
 		return
 	}
 
-	rows, total, err := dbpkg.ListEmpresaCreditos(dbEmp, empresaID, filter)
+	rows, total, err := dbpkg.ListEmpresaCreditosContext(r.Context(), dbEmp, empresaID, filter)
 	if err != nil {
 		http.Error(w, "No se pudo consultar creditos para reporte", http.StatusInternalServerError)
 		return
 	}
-	resumen, err := dbpkg.GetEmpresaCreditosCarteraResumen(dbEmp, empresaID, filter.IncludeInactive)
+	resumen, err := dbpkg.GetEmpresaCreditosCarteraResumenContext(r.Context(), dbEmp, empresaID, filter.IncludeInactive)
 	if err != nil {
 		http.Error(w, "No se pudo calcular resumen de cartera", http.StatusInternalServerError)
 		return
@@ -1454,7 +1462,7 @@ func handleEmpresaCreditosWorkflows(w http.ResponseWriter, r *http.Request, dbEm
 			http.Error(w, "No se pudo consultar workflow", http.StatusInternalServerError)
 			return
 		}
-		credito, _ := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, row.CreditoID)
+		credito, _ := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, row.CreditoID)
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":         true,
 			"empresa_id": empresaID,
@@ -1742,7 +1750,7 @@ func handleEmpresaCreditosAprobarWorkflow(w http.ResponseWriter, r *http.Request
 		"aprobado_por":            aprobadoPor,
 	}, payload.Observaciones)
 
-	credito, _ := dbpkg.GetEmpresaCreditoByID(dbEmp, empresaID, workflow.CreditoID)
+	credito, _ := dbpkg.GetEmpresaCreditoByIDContext(r.Context(), dbEmp, empresaID, workflow.CreditoID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":         true,
 		"empresa_id": empresaID,

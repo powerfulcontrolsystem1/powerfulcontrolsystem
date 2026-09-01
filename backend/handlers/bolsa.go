@@ -77,7 +77,7 @@ func EmpresaBolsaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		pais, paisFuente, err := dbpkg.DetectFacturacionPais(dbEmp, empresaID, r.URL.Query().Get("tz"), r.URL.Query().Get("lang"))
+		pais, paisFuente, err := dbpkg.DetectFacturacionPaisContext(r.Context(), dbEmp, empresaID, r.URL.Query().Get("tz"), r.URL.Query().Get("lang"))
 		if err != nil || strings.TrimSpace(pais.Codigo) == "" {
 			pais = dbpkg.PaisFacturacion{Codigo: "CO", Nombre: "Colombia", Bandera: "CO", Moneda: "COP"}
 			paisFuente = "fallback"

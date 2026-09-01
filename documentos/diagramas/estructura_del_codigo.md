@@ -1,17 +1,36 @@
-## Actualizacion 2026-08-25 - Chat IA global multimodal e historial
+## Actualizacion 2026-08-26 - Adaptador mensual de nomina electronica DIAN
 
-- `web/js/ai_chat_drawer.js` abre y cierra el drawer de forma consistente,
-  agrupa el historial por `conversation_id` y envía texto, fotos o documentos
-  desde un compositor único.
-- `chat_con_inteligencia_artificial_controller.go` fuerza el modelo principal
-  configurado globalmente, persiste la conversación y separa alcance
-  `usuario` de `empresa` con autorización administrativa en servidor.
-- `ai_config_handlers.go` expone una sola selección de modelo y razonamiento:
-  Super Administrador -> política global -> todas las empresas. Las acciones
-  siguen pasando por wrappers, permisos y confirmación independiente.
-- El frontend no envía una elección de agente. Chat, Centro IA y Pedidos IA ->
-  `agente_pcs` impuesto por backend -> intención/contexto -> respuesta o una
-  propuesta cerrada de máximo una operación -> confirmación humana.
+- `backend/db/dian_nomina_electronica.go` construye/valida la fuente mensual,
+  administra perfiles fiscales y reserva numero/fuente por
+  empresa-trabajador-mes.
+- `backend/db/dian_nomina_electronica_migration.go` es la autoridad versionada
+  del esquema; handlers y runtime solo verifican disponibilidad.
+- `backend/handlers/dian_nomina_electronica.go` genera
+  `NominaIndividual`, CUNE, XAdES y el despacho `SendNominaSync`; la ruta comun
+  solo lo invoca mediante `action=emitir_nomina_electronica`.
+- `backend/handlers/nomina_sueldos.go` expone perfil, candidatos y preflight sin
+  efectos. `web/administrar_empresa/nomina_sueldos.html` es la superficie
+  operativa dedicada.
+- `backend/handlers/empresa_permisos.go` y
+  `backend/handlers/facturacion_electronica.go` cruzan Facturacion + Nomina para
+  impedir exposicion o retransmision desde superficies genericas.
+
+```text
+liquidaciones + pagos + perfil + configuracion
+                  |
+                  v
+        fuente mensual validada (GET preflight)
+                  |
+        confirmacion + doble permiso
+                  |
+                  v
+ reserva/sellado -> NominaIndividual -> CUNE/XAdES/XSD -> SendNominaSync
+                  |                                      |
+                  +-> documento/artefactos privados <----+
+                                      |
+                                      v
+                              cola durable / worker
+```
 
 ## Actualizacion 2026-06-18 - DIAN produccion PCS validada
 
@@ -6770,25 +6789,23 @@ Super -> API auditada -> consumo agrupado -> umbral/límite/bloqueo por empresa
 ```
 
 `control_electrico_governance.go` concentra política y estado; `control_electrico_monitoring.go` ejecuta alertas desde `pcs-worker`. La API empresarial conserva su wrapper de permisos y todas las consultas/mutaciones usan el `empresa_id` efectivo.
+- Domotica 1.4: `handlers/control_electrico_ssh_install.go` coordina instalación
+  SSH y delega secretos a `db/control_electrico_ssh_credentials.go`; las escenas
+  viajan de `control_electrico.html` al handler y vuelven al dispatcher canónico
+  de la cola. El agente Raspberry valida VE.Direct y publica telemetría al túnel,
+  que deriva empresa/dispositivo antes de escribir en Energía Solar.
 
-## Actualizacion 2026-08-23: simplificacion de verticales
-
-Se retiraron las ramas completas de Gimnasio, Taxi System, Apartamentos turisticos, Propiedad horizontal y Odontologia. Drogueria/Farmacia ya no tiene handler, pagina, permiso ni licencia propios: su configuracion comercial termina en Inventario y los modulos centrales. `nullableID`, antes alojado accidentalmente en Taxi System, se movio al paquete DB comun para conservar la independencia de Alquileres y Construccion.
-
-El portal aplica dos barreras contra configuracion historica: `paginaPrincipalNormalizeConfig` e `informacionModulosNormalizeConfig` filtran en backend; `normalizeCards` repite la validacion en las tres superficies publicas antes de renderizar. La landing canonica es `.html` y `.ht` permanece como ruta compatible.
-## Actualizacion 2026-08-31 - flujo Raspberry de puertas
+## Actualización 2026-08-13 - utilidades internas canónicas
 
 ```text
-Admin empresa -> control_electrico.html -> wrapper control_electrico:A
-      -> raspberry uso= sensor_puertas -> pcs-migrate/configuracion PostgreSQL
-      -> N salidas x 4 entradas -> empresa_sensor_puertas_devices
-Raspberry systemd -> tunnel poll autenticado -> config GPIO 0..3 / 4..(3+N)
-      -> OUTn alto -> delay -> IN1..IN4 -> OUTn bajo
-      -> door_scan autenticado -> tenant/controlador resueltos en servidor
-      -> estado + last_seen + messages -> estaciones / autoactivacion
-      -> eventos ciclo de vida y configuracion -> bitacora Domotica
+db / handlers / utils / cmd / tools
+        |-> internal/platform/valueutil   (texto, JSON, fechas, host, límites)
+        |-> internal/platform/runtimeconfig (entorno, flags y DSN de túnel)
+API health + worker health
+        |-> internal/platform/httpguard   (GET/HEAD o HTTP 405)
 ```
 
-`control_electrico_door_sensor.go` concentra invariantes y persistencia;
-`control_electrico_tunnel.go` limita el contrato HTTP autenticado; el agente
-embebido solo recibe coordenadas permitidas y nunca `empresa_id`.
+Los paquetes son puros, usan únicamente la biblioteca estándar y no conocen
+`empresa_id`, sesiones ni persistencia. Los wrappers de dominio conservan sus
+nombres para evitar cambios de contrato mientras eliminan implementaciones
+duplicadas.

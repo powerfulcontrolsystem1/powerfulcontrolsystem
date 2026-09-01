@@ -33,6 +33,17 @@ func TestFrontendStaticResourcesExist(t *testing.T) {
 	}
 }
 
+func TestBackendDefaultsToStrictCSPObservationWithoutBlockingCompatibility(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.platform.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	compose := string(raw)
+	if !strings.Contains(compose, `PCS_CSP_REPORT_ONLY_STRICT: ${PCS_CSP_REPORT_ONLY_STRICT:-1}`) {
+		t.Fatal("backend must observe strict CSP by default before enforcing removal of unsafe-inline")
+	}
+}
+
 func TestPublicDownloadsAreExplicitlyAllowlisted(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "nginx", "pcs.conf"))
 	if err != nil {
@@ -115,8 +126,10 @@ func TestNextcloudFramePolicyUsesExactOrigins(t *testing.T) {
 		`Content-Security-Policy-Report-Only`,
 		`img-src 'self' data: blob: https://lh3.googleusercontent.com`,
 		`style-src 'self' https://unpkg.com https://fonts.googleapis.com`,
-		`script-src 'self' https://accounts.google.com`,
+		`script-src 'self' https://accounts.google.com https://www.google.com https://www.gstatic.com`,
 		`connect-src 'self' https://api.openai.com`,
+		`https://www.google.com`,
+		`https://www.gstatic.com`,
 	} {
 		if !strings.Contains(reportOnlyHeader, required) {
 			t.Fatalf("static strict report-only CSP is missing %q", required)
@@ -177,6 +190,42 @@ func TestMenuThemeObserverGuardsItsTarget(t *testing.T) {
 	}
 }
 
+func TestAuthenticationPagesUseSafeGatewayResponseHelper(t *testing.T) {
+	helperRaw, err := os.ReadFile(filepath.Join("..", "web", "js", "auth_response.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	helper := string(helperRaw)
+	for _, required := range []string{
+		"Number(response.status) >= 500",
+		"El servicio no está disponible en este momento.",
+		"/<\\/?(?:html|head|title|body|center|hr|script|style)\\b/i",
+		"global.PCSAuthResponse",
+	} {
+		if !strings.Contains(helper, required) {
+			t.Fatalf("safe authentication response helper missing %q", required)
+		}
+	}
+
+	pages := map[string]string{
+		"login.html": "login.js",
+		"registrar_nuevo_usuario_administrador.html": "registrar_nuevo_usuario_administrador.js",
+		"login_usuario.html":                         "login_usuario.js",
+	}
+	for page, flowScript := range pages {
+		raw, readErr := os.ReadFile(filepath.Join("..", "web", page))
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		content := string(raw)
+		helperIndex := strings.Index(content, "/js/auth_response.js")
+		flowIndex := strings.Index(content, "/js/"+flowScript)
+		if helperIndex < 0 || flowIndex < 0 || helperIndex > flowIndex {
+			t.Fatalf("%s must load auth_response.js before %s", page, flowScript)
+		}
+	}
+}
+
 func TestStagingEdgeKeepsOnlyTransportHeaders(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-configure-staging-nginx.sh"))
 	if err != nil {
@@ -225,10 +274,12 @@ func TestStagingDigestPromotionRequiresAllExactImagesBeforeRecreate(t *testing.T
 	for _, required := range []string{
 		"PLATFORM_COMPOSE_FILE",
 		"STAGING_COMPOSE_FILE",
+		"STAGING_ANTIVIRUS_COMPOSE_FILE",
 		"RELEASE_COMPOSE_FILE",
+		"PCS_CLAMAV_IMAGE_DIGEST",
 		`config --images`,
 		`grep -Fqx "$image"`,
-		`up -d --no-build postgres migrate backend worker frontend`,
+		`up -d --no-build postgres migrate clamav backend worker frontend`,
 	} {
 		if !strings.Contains(script, required) {
 			t.Fatalf("staging digest promotion must enforce %q", required)
@@ -236,6 +287,113 @@ func TestStagingDigestPromotionRequiresAllExactImagesBeforeRecreate(t *testing.T
 	}
 	if strings.Contains(script, `"${compose[@]}" up -d --no-build`+"\n") {
 		t.Fatal("staging digest promotion must not recreate the entire platform stack")
+	}
+}
+
+func TestImmutableReleasePinsUploadPermissionsToAPIImage(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.release.yml"))
+	if err != nil {
+		t.Fatalf("read immutable release compose: %v", err)
+	}
+	compose := string(raw)
+	uploadPermissions := strings.Index(compose, "  upload-permissions:")
+	migrate := strings.Index(compose, "  migrate:")
+	if uploadPermissions < 0 || migrate <= uploadPermissions {
+		t.Fatal("immutable release compose must declare upload-permissions before migrate")
+	}
+	block := compose[uploadPermissions:migrate]
+	for _, required := range []string{
+		"build: null",
+		"image: ${PCS_API_IMAGE_DIGEST:",
+	} {
+		if !strings.Contains(block, required) {
+			t.Fatalf("upload-permissions must use the immutable API image; missing %q", required)
+		}
+	}
+	if strings.Contains(block, "pcs-backend:") {
+		t.Fatal("upload-permissions must not fall back to a mutable local backend tag")
+	}
+}
+
+func TestStagingUploadPermissionsUsesOnlyStagingNameAndVolume(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.staging.yml"))
+	if err != nil {
+		t.Fatalf("read staging compose: %v", err)
+	}
+	compose := string(raw)
+	for _, required := range []string{
+		"upload-permissions:",
+		"container_name: pcs-staging-upload-permissions",
+		"pcs_staging_web_uploads:/app/web/uploads",
+	} {
+		if !strings.Contains(compose, required) {
+			t.Fatalf("staging upload-permissions isolation missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"- pcs_web_uploads:/app/web/uploads",
+		"- pcs_private_storage:/app/private_storage",
+		"- pcs_backups:/app/backup",
+		"- pcs_backend_logs:/app/backend/logs",
+	} {
+		if strings.Contains(compose, forbidden) {
+			t.Fatalf("staging compose must not retain inherited platform volume %q", forbidden)
+		}
+	}
+	for _, required := range []string{
+		"- pcs_staging_backend_logs:/app/backend/logs",
+		"- pcs_staging_private_storage:/app/private_storage",
+		"- pcs_staging_backups:/app/backup",
+	} {
+		if !strings.Contains(compose, required) {
+			t.Fatalf("staging worker and migrate isolation missing %q", required)
+		}
+	}
+}
+
+func TestRestoredAppDrillUsesExplicitStagingEnvironmentAndBackendDigest(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "scripts", "vps_p109_restore_app_validation.ps1"))
+	if err != nil {
+		t.Fatalf("read restored app drill runner: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"[string]$SourceEnv = \"\"",
+		`if ([string]::IsNullOrWhiteSpace($SourceEnv)) { $SourceEnv = "$RemotePath/deploy/.env.staging" }`,
+		"[string]$BackupDir = \"\"",
+		`if ([string]::IsNullOrWhiteSpace($BackupDir)) { $BackupDir = "$RemotePath/backups/vps-snapshots" }`,
+		"source_env=$sourceEnvLit",
+		"backup_dir=$backupDirLit",
+		`latest_snapshot="` + "`$" + `(find "` + "`$" + `backup_dir" -mindepth 1 -maxdepth 1 -type d`,
+		`BACKUP_DIR="` + "`$" + `backup_dir"`,
+		"pcs-staging-backend) env_name=PCS_API_IMAGE_DIGEST",
+		"pcs-staging-clamav) env_name=PCS_CLAMAV_IMAGE_DIGEST",
+		"PCS_CLAMAV_IMAGE_DIGEST=\"`$clamav_image\"",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("restored app drill must enforce %q", required)
+		}
+	}
+	if strings.Contains(script, `if [ ! -f "$source_env" ]; then source_env="$remote_path/deploy/.env.platform"; fi`) {
+		t.Fatal("restored app drill must not fall back from isolated staging to platform configuration")
+	}
+}
+
+func TestRestoredAppDrillKeepsClamAVRequiredInsideIsolatedNetwork(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-p109-restored-app-drill.sh"))
+	if err != nil {
+		t.Fatalf("read restored app drill: %v", err)
+	}
+	script := string(raw)
+	for _, required := range []string{
+		"PCS_CLAMAV_IMAGE_DIGEST=\"${PCS_CLAMAV_IMAGE_DIGEST:-}\"",
+		"--network-alias clamav",
+		"clamdscan --ping 1",
+		"ClamAV aislado no alcanzo readiness.",
+	} {
+		if !strings.Contains(script, required) {
+			t.Fatalf("restored app drill must keep required ClamAV isolation %q", required)
+		}
 	}
 }
 
@@ -300,6 +458,28 @@ func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	}
 }
 
+func TestSuperAdministradoresMutationsIncludeCSRF(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "web", "super", "administradores.html"))
+	if err != nil {
+		t.Fatalf("read super administradores page: %v", err)
+	}
+	content := string(page)
+	for _, required := range []string{
+		"adminFetch",
+		"readCookieValue('pcs_csrf')",
+		"X-CSRF-Token",
+		"method: 'DELETE'",
+		"method:'POST'",
+	} {
+		if !strings.Contains(content, required) {
+			t.Fatalf("super administradores mutations must include CSRF support; missing %q", required)
+		}
+	}
+	if strings.Contains(content, "await fetch('/super/api/administradores") {
+		t.Fatal("super administradores mutations must use the CSRF-aware request helper")
+	}
+}
+
 func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T) {
 	contextScript, err := os.ReadFile(filepath.Join("..", "web", "js", "empresa_submenu_context.js"))
 	if err != nil {
@@ -318,6 +498,140 @@ func TestEmpresaSubmenuContextInstallsCSRFForDirectOperationalPages(t *testing.T
 	}
 	if !strings.Contains(string(carrito), "/js/empresa_submenu_context.js") {
 		t.Fatal("carrito must load the shared empresa context before operational mutations")
+	}
+}
+
+func TestProductosMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing.T) {
+	menu, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "administrar_productos_menu.html"))
+	if err != nil {
+		t.Fatalf("read products menu: %v", err)
+	}
+	content := string(menu)
+	framePattern := regexp.MustCompile(`<iframe[^>]+id="productosContentFrame"[^>]*>`)
+	frame := framePattern.FindString(content)
+	if frame == "" {
+		t.Fatal("products menu must keep the products content frame")
+	}
+	if strings.Contains(frame, ` src=`) {
+		t.Fatal("products content frame must not navigate before empresa_id is resolved")
+	}
+	if !strings.Contains(frame, ` data-src="/administrar_empresa/administrar_productos.html?view=productos`) {
+		t.Fatal("products content frame must declare its deferred tenant-aware destination")
+	}
+
+	script, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "administrar_productos_menu.js"))
+	if err != nil {
+		t.Fatalf("read products menu script: %v", err)
+	}
+	scriptContent := string(script)
+	for _, required := range []string{"frame.getAttribute('data-src')", "withEmpresaAndVersion(deferredSrc)", "frame.setAttribute('data-src'"} {
+		if !strings.Contains(scriptContent, required) {
+			t.Fatalf("products menu must prepare one deferred tenant-aware frame destination; missing %q", required)
+		}
+	}
+	if strings.Contains(scriptContent, "frame.setAttribute('src'") {
+		t.Fatal("products menu script must leave the only frame navigation to the shared company controller")
+	}
+
+	sharedScript, err := os.ReadFile(filepath.Join("..", "web", "js", "administrar_empresa.js"))
+	if err != nil {
+		t.Fatalf("read shared company controller: %v", err)
+	}
+	if !strings.Contains(string(sharedScript), `frame.getAttribute("data-src")`) {
+		t.Fatal("shared company controller must resolve deferred frame destinations")
+	}
+}
+
+func TestComprasMenuDefersInitialFrameUntilEmpresaContextIsResolved(t *testing.T) {
+	menu, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "compras_menu.html"))
+	if err != nil {
+		t.Fatalf("read purchases menu: %v", err)
+	}
+	content := string(menu)
+	framePattern := regexp.MustCompile(`<iframe[^>]+id="comprasContentFrame"[^>]*>`)
+	frame := framePattern.FindString(content)
+	if frame == "" {
+		t.Fatal("purchases menu must keep the purchases content frame")
+	}
+	if strings.Contains(frame, ` src=`) {
+		t.Fatal("purchases content frame must not navigate before empresa_id is resolved")
+	}
+	if !strings.Contains(frame, ` data-src="/administrar_empresa/compras.html"`) {
+		t.Fatal("purchases content frame must declare its deferred tenant-aware destination")
+	}
+
+	sharedScript, err := os.ReadFile(filepath.Join("..", "web", "js", "administrar_empresa.js"))
+	if err != nil {
+		t.Fatalf("read shared company controller: %v", err)
+	}
+	if !strings.Contains(string(sharedScript), `frame.getAttribute("data-src")`) {
+		t.Fatal("shared company controller must resolve deferred frame destinations")
+	}
+	for _, required := range []string{
+		`"admin_empresa:last_page:"`,
+		`String(frameTargetName || "contentFrame")`,
+	} {
+		if !strings.Contains(string(sharedScript), required) {
+			t.Fatalf("company menus must scope restored frame state by frame target; missing %q", required)
+		}
+	}
+}
+
+func TestPurchaseAISupportsShrinkInsideNestedPurchasesFrame(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "soportes_compras_ia.html"))
+	if err != nil {
+		t.Fatalf("read purchase AI supports page: %v", err)
+	}
+	content := string(page)
+	for _, required := range []string{
+		`.capture-shell,.capture-shell>*`,
+		`.capture-overview>*`,
+		`.capture-box{min-width:0}`,
+		`.capture-table-wrap{min-width:0;max-width:100%;overflow:auto`,
+	} {
+		if !strings.Contains(content, required) {
+			t.Fatalf("purchase AI supports must shrink inside the nested purchases frame; missing %q", required)
+		}
+	}
+}
+
+func TestBodegasLegacyRoutesDelegateToUnifiedInventoryView(t *testing.T) {
+	root := filepath.Join("..", "web", "administrar_empresa")
+	for _, rel := range []string{"bodega.html", filepath.Join("productos", "bodegas.html")} {
+		page, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("read legacy warehouses page %s: %v", rel, err)
+		}
+		content := string(page)
+		if !strings.Contains(content, "/administrar_empresa/productos/bodegas.js") {
+			t.Fatalf("legacy warehouses page %s must delegate to the unified redirect", rel)
+		}
+		for _, duplicate := range []string{"function renderBodegas", "/api/empresa/bodegas", "id=\"bodegaForm\""} {
+			if strings.Contains(content, duplicate) {
+				t.Fatalf("legacy warehouses page %s must not keep duplicate CRUD code %q", rel, duplicate)
+			}
+		}
+	}
+
+	redirect, err := os.ReadFile(filepath.Join(root, "productos", "bodegas.js"))
+	if err != nil {
+		t.Fatalf("read unified warehouses redirect: %v", err)
+	}
+	redirectContent := string(redirect)
+	if !strings.Contains(redirectContent, "'/administrar_empresa/administrar_productos.html'") || !strings.Contains(redirectContent, "target.searchParams.set('view', 'bodegas')") {
+		t.Fatal("warehouses compatibility redirect must target the unified inventory view")
+	}
+
+	cart, err := os.ReadFile(filepath.Join(root, "carrito_de_compras.html"))
+	if err != nil {
+		t.Fatalf("read cart page: %v", err)
+	}
+	cartContent := string(cart)
+	if strings.Contains(cartContent, "/administrar_empresa/bodega.html") {
+		t.Fatal("cart must not route new warehouse navigation through the legacy CRUD")
+	}
+	if !strings.Contains(cartContent, "/administrar_empresa/administrar_productos.html?view=bodegas&empresa_id=") {
+		t.Fatal("cart must open the unified warehouses and inventory view")
 	}
 }
 
@@ -374,6 +688,10 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 			t.Fatalf("products keeps corrupted query separator %q", corrupted)
 		}
 	}
+	if !strings.Contains(string(products), "const chatHost = window.top") ||
+		!strings.Contains(string(products), "chatHost.postMessage({") {
+		t.Fatal("nested products page must open the company AI drawer in the top-level shell")
+	}
 
 	moduleScript, err := os.ReadFile(filepath.Join(root, "web", "js", "modulo_colombia_admin.js"))
 	if err != nil {
@@ -415,6 +733,8 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 		"https://cdn.jsdelivr.net",
 		"https://fonts.googleapis.com",
 		"https://fonts.gstatic.com",
+		"https://www.google.com",
+		"https://www.gstatic.com",
 	} {
 		if !strings.Contains(string(staticHeaders), origin) {
 			t.Fatalf("frontend CSP must allow the pinned visual resource origin %s", origin)
@@ -430,6 +750,27 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 	}
 	if !strings.Contains(string(domicilios), "function asArray(v)") || !strings.Contains(string(domicilios), "state.menu=asArray(menuData)") {
 		t.Fatal("Domicilios must render an empty menu response as an empty list")
+	}
+}
+
+func TestFinanceCxPIAStartsEditableDraftWithoutBlockingConfirm(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "finanzas.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(raw)
+	if strings.Contains(content, "window.confirm('La lectura IA crea un borrador de cuenta por pagar") {
+		t.Fatal("CxP IA file selection must not depend on a blocking browser confirm")
+	}
+	for _, expected := range []string{
+		"tipoInput.value = 'cxp'",
+		"syncCarteraProveedorUI();",
+		"podrás revisar y editar los datos antes de guardar",
+		"document.getElementById('carteraSoporteIAArchivo').click();",
+	} {
+		if !strings.Contains(content, expected) {
+			t.Fatalf("CxP IA accessible draft contract is missing %q", expected)
+		}
 	}
 }
 
@@ -514,7 +855,7 @@ type staticResourceReference struct {
 }
 
 func collectFrontendStaticResourceReferences(webDir string) ([]staticResourceReference, error) {
-	htmlAttrPattern := regexp.MustCompile(`(?i)(?:href|src|action)\s*=\s*["']([^"']+)["']`)
+	htmlAttrPattern := regexp.MustCompile(`(?i)(?:^|\s)(?:href|src|action)\s*=\s*["']([^"']+)["']`)
 	cssURLPattern := regexp.MustCompile(`(?i)url\(\s*["']?([^"')]+)["']?\s*\)`)
 	scriptBlockPattern := regexp.MustCompile(`(?is)<script[\s\S]*?</script>`)
 	templateBlockPattern := regexp.MustCompile(`(?is)<template[\s\S]*?</template>`)

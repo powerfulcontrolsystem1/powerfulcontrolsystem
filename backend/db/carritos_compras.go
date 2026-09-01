@@ -951,45 +951,11 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		},
 	}
 	for tableName, columns := range requiredColumns {
-		ok, err := empresaCarritosColumnsExist(dbConn, tableName, columns)
+		ok, err := requiredTableColumnsExist(dbConn, tableName, columns)
 		if err != nil {
 			return false, err
 		}
 		if !ok {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func empresaCarritosColumnsExist(dbConn *sql.DB, tableName string, columns []string) (bool, error) {
-	if len(columns) == 0 {
-		return true, nil
-	}
-	found := make(map[string]bool, len(columns))
-	rows, err := querySQLCompat(dbConn, `
-		SELECT column_name
-		FROM information_schema.columns
-		WHERE table_schema = ANY (current_schemas(false))
-		  AND table_name = ?
-	`, strings.TrimSpace(tableName))
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var columnName string
-		if err := rows.Scan(&columnName); err != nil {
-			return false, err
-		}
-		found[strings.ToLower(strings.TrimSpace(columnName))] = true
-	}
-	if err := rows.Err(); err != nil {
-		return false, err
-	}
-	for _, columnName := range columns {
-		if !found[strings.ToLower(strings.TrimSpace(columnName))] {
 			return false, nil
 		}
 	}
@@ -1034,11 +1000,7 @@ func defaultCanalVenta(v string) string {
 }
 
 func defaultMoneda(v string) string {
-	v = strings.TrimSpace(strings.ToUpper(v))
-	if v == "" {
-		return "COP"
-	}
-	return v
+	return normalizeRepositoryCurrency(v, "COP", 0)
 }
 
 func defaultMonedaEmpresa(dbConn *sql.DB, empresaID int64, payloadMoneda string) string {
@@ -1072,11 +1034,7 @@ func defaultTipoItem(v string) string {
 }
 
 func defaultUnidadCarrito(v string) string {
-	v = strings.TrimSpace(strings.ToLower(v))
-	if v == "" {
-		return "unidad"
-	}
-	return v
+	return normalizeRepositoryUnit(v)
 }
 
 func defaultImpuestoCodigo(v string) string {
@@ -1164,22 +1122,7 @@ func normalizeCarritoStationMetricEvent(v string) string {
 }
 
 func parseCarritoStationID(referenciaExterna, codigo string, empresaID int64) int64 {
-	ref := strings.ToUpper(strings.TrimSpace(referenciaExterna))
-	if strings.HasPrefix(ref, "ESTACION_") {
-		n, err := strconv.ParseInt(strings.TrimPrefix(ref, "ESTACION_"), 10, 64)
-		if err == nil && n > 0 {
-			return n
-		}
-	}
-	prefix := strings.ToUpper(fmt.Sprintf("EST-%d-", empresaID))
-	code := strings.ToUpper(strings.TrimSpace(codigo))
-	if strings.HasPrefix(code, prefix) {
-		n, err := strconv.ParseInt(strings.TrimPrefix(code, prefix), 10, 64)
-		if err == nil && n > 0 {
-			return n
-		}
-	}
-	return 0
+	return parseRepositoryStationID(referenciaExterna, codigo, empresaID)
 }
 
 // ResolveCarritoStationIdentity obtiene metadatos de estacion desde un carrito de ventas.

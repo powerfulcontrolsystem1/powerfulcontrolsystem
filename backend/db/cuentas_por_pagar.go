@@ -103,6 +103,12 @@ func empresaCxPAtomicSchemaStatements() []string {
 // RegistrarEmpresaCxPAbono rejects overpayments rather than silently reducing
 // them. A retry with the same key returns the original committed result.
 func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (EmpresaCxPAbonoResult, error) {
+	return RegistrarEmpresaCxPAbonoContext(context.Background(), dbConn, input)
+}
+
+// RegistrarEmpresaCxPAbonoContext aplica el pago canónico conservando la
+// cancelación desde el handler hasta cada operación de la transacción.
+func RegistrarEmpresaCxPAbonoContext(ctx context.Context, dbConn *sql.DB, input EmpresaCxPAbonoInput) (EmpresaCxPAbonoResult, error) {
 	var result EmpresaCxPAbonoResult
 	if dbConn == nil || input.EmpresaID <= 0 || input.CuentaPorPagarID <= 0 {
 		return result, fmt.Errorf("empresa_id e id de cuenta por pagar son obligatorios")
@@ -144,7 +150,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 		"usuario":             input.Usuario,
 	})
 	requestHash := empresaCxPIdempotencyHash(string(requestPayload))
-	tx, err := dbConn.Begin()
+	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
 		return result, err
 	}
@@ -152,7 +158,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 
 	var existing EmpresaCxPAbonoResult
 	var existingRequestHash string
-	err = queryRowTxSQLCompat(tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto, COALESCE(request_hash, '')
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto, COALESCE(request_hash, '')
 		FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?`, input.EmpresaID, keyHash).
 		Scan(&existing.CuentaPorPagarID, &existing.PagoID, &existing.MovimientoFinanzasID, &existing.MontoAplicado, &existingRequestHash)
 	if err == nil {
@@ -161,7 +167,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 		}
 		var saldo float64
 		var estado string
-		if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(saldo, 0), COALESCE(estado_cartera, 'pendiente')
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(saldo, 0), COALESCE(estado_cartera, 'pendiente')
 			FROM empresa_cuentas_por_pagar WHERE empresa_id = ? AND id = ?`, input.EmpresaID, input.CuentaPorPagarID).
 			Scan(&saldo, &estado); err != nil {
 			return result, err
@@ -181,7 +187,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 
 	var codigo, proveedorNombre, documentoCodigo, moneda, fechaVencimiento string
 	var valorOriginal, valorPagado, saldoAnterior float64
-	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(codigo, ''), COALESCE(proveedor_nombre, ''),
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(codigo, ''), COALESCE(proveedor_nombre, ''),
 		COALESCE(documento_codigo, ''), COALESCE(moneda, 'COP'), COALESCE(fecha_vencimiento, ''),
 		COALESCE(valor_original, 0), COALESCE(valor_pagado, 0), COALESCE(saldo, 0)
 		FROM empresa_cuentas_por_pagar WHERE empresa_id = ? AND id = ? FOR UPDATE`, input.EmpresaID, input.CuentaPorPagarID).
@@ -195,7 +201,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	// unique constraint after creating a duplicate financial movement attempt.
 	var concurrentReplay EmpresaCxPAbonoResult
 	var concurrentRequestHash string
-	err = queryRowTxSQLCompat(tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto, COALESCE(request_hash, '')
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto, COALESCE(request_hash, '')
 		FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?`, input.EmpresaID, keyHash).
 		Scan(&concurrentReplay.CuentaPorPagarID, &concurrentReplay.PagoID, &concurrentReplay.MovimientoFinanzasID, &concurrentReplay.MontoAplicado, &concurrentRequestHash)
 	if err == nil {
@@ -223,7 +229,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	}
 
 	var periodoEstado string
-	err = queryRowTxSQLCompat(tx, `SELECT COALESCE(estado, 'abierto') FROM empresa_finanzas_periodos
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado, 'abierto') FROM empresa_finanzas_periodos
 		WHERE empresa_id = ? AND periodo = ? FOR UPDATE`, input.EmpresaID, input.PeriodoContable).Scan(&periodoEstado)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return result, err
@@ -265,7 +271,7 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	if err != nil {
 		return result, err
 	}
-	movementID, err := insertEmpresaFinanzasMovimientoTx(tx, movement)
+	movementID, err := insertEmpresaFinanzasMovimientoTx(ctx, tx, movement)
 	if err != nil {
 		return result, err
 	}
@@ -273,21 +279,24 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	saldoNuevo := roundReportesMoney(saldoAnterior - input.Monto)
 	valorPagadoNuevo := roundReportesMoney(valorPagado + input.Monto)
 	estadoNuevo := empresaCxPEstado(saldoNuevo, fechaVencimiento)
-	if _, err := execTxSQLCompat(tx, `UPDATE empresa_cuentas_por_pagar SET valor_pagado = ?, saldo = ?,
+	if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_cuentas_por_pagar SET valor_pagado = ?, saldo = ?,
 		estado_cartera = ?, dias_mora = ?, periodo_contable = ?, fecha_ultimo_pago = CURRENT_TIMESTAMP,
 		conciliado_en = CURRENT_TIMESTAMP, conciliado_por = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE empresa_id = ? AND id = ?`, valorPagadoNuevo, saldoNuevo, estadoNuevo,
 		empresaCxPDiasMora(fechaVencimiento, saldoNuevo), input.PeriodoContable, input.Usuario, input.EmpresaID, input.CuentaPorPagarID); err != nil {
 		return result, err
 	}
-	pagoID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_cxp_pagos
-		(empresa_id, cuenta_por_pagar_id, movimiento_finanzas_id, monto, metodo_pago, referencia_externa, concepto, observaciones, usuario_creador, idempotency_key_hash, request_hash)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, input.EmpresaID, input.CuentaPorPagarID, movementID, input.Monto,
-		input.MetodoPago, input.ReferenciaExterna, input.Concepto, input.Observaciones, input.Usuario, keyHash, requestHash)
+	pagoID, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_cxp_pagos
+		(empresa_id, cuenta_por_pagar_id, movimiento_finanzas_id, monto, metodo_pago, referencia_externa, concepto, observaciones, usuario_creador, idempotency_key_hash)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, input.EmpresaID, input.CuentaPorPagarID, movementID, input.Monto,
+		input.MetodoPago, input.ReferenciaExterna, input.Concepto, input.Observaciones, input.Usuario, keyHash)
 	if err != nil {
 		return result, err
 	}
-	payload, _ := json.Marshal(map[string]interface{}{"cuenta_por_pagar_id": input.CuentaPorPagarID, "pago_id": pagoID, "movimiento_finanzas_id": movementID, "monto": input.Monto})
+	payload, err := json.Marshal(map[string]interface{}{"cuenta_por_pagar_id": input.CuentaPorPagarID, "pago_id": pagoID, "movimiento_finanzas_id": movementID, "monto": input.Monto})
+	if err != nil {
+		return result, fmt.Errorf("no se pudo serializar el evento outbox CxP: %w", err)
+	}
 	if err := InsertOutboxEvent(tx, OutboxEvent{EmpresaID: input.EmpresaID, Topic: EmpresaCxPPaymentOutboxTopic, PayloadJSON: string(payload), IdempotencyKey: "cxp-outbox:" + keyHash}); err != nil {
 		return result, err
 	}
@@ -335,7 +344,7 @@ func ProcessEmpresaCxPPaymentAccounting(ctx context.Context, dbConn *sql.DB, emp
 		periodoContable, moneda      string
 		fechaMovimiento              string
 	)
-	err = queryRowTxSQLCompat(tx, `SELECT
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT
 		COALESCE(p.monto, 0), COALESCE(p.metodo_pago, ''), COALESCE(p.referencia_externa, ''),
 		COALESCE(c.codigo, ''), COALESCE(c.documento_codigo, ''),
 		COALESCE(m.periodo_contable, ''), COALESCE(m.moneda, 'COP'),
@@ -374,7 +383,7 @@ func ProcessEmpresaCxPPaymentAccounting(ctx context.Context, dbConn *sql.DB, emp
 	}
 
 	result = EmpresaCxPPaymentAccountingResult{EmpresaID: empresaID, PagoID: payload.PagoID}
-	err = queryRowTxSQLCompat(tx, `SELECT id
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT id
 		FROM empresa_eventos_contables
 		WHERE empresa_id = ? AND modulo = 'finanzas' AND evento = 'abono_proveedor_registrado'
 		  AND entidad = 'empresa_cxp_pagos' AND entidad_id = ?
@@ -406,7 +415,7 @@ func ProcessEmpresaCxPPaymentAccounting(ctx context.Context, dbConn *sql.DB, emp
 	if err != nil {
 		return EmpresaCxPPaymentAccountingResult{}, err
 	}
-	result.EventoContableID, err = insertTxSQLCompat(tx, `INSERT INTO empresa_eventos_contables (
+	result.EventoContableID, err = insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_eventos_contables (
 		empresa_id, modulo, evento, entidad, entidad_id, documento_tipo, documento_codigo,
 		periodo_contable, monto_total, moneda, payload_json, origen, fecha_evento,
 		procesado, fecha_procesado, fecha_creacion, fecha_actualizacion,
@@ -442,8 +451,8 @@ func normalizeEmpresaCxPMetodoPago(raw string) (string, error) {
 	return metodo, nil
 }
 
-func insertEmpresaFinanzasMovimientoTx(tx *sql.Tx, m EmpresaFinanzasMovimiento) (int64, error) {
-	return insertTxSQLCompat(tx, `INSERT INTO empresa_finanzas_movimientos (
+func insertEmpresaFinanzasMovimientoTx(ctx context.Context, tx *sql.Tx, m EmpresaFinanzasMovimiento) (int64, error) {
+	return insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_finanzas_movimientos (
 		empresa_id, tipo_movimiento, codigo, fecha_movimiento, periodo_contable, categoria, subcategoria, concepto, descripcion,
 		metodo_pago, moneda, monto, impuesto, retencion_fuente, retencion_ica, retencion_iva, total_retenciones, total, total_neto,
 		tercero_nombre, tercero_documento, tipo_comprobante, numero_comprobante, comprobante_url, referencia_externa,

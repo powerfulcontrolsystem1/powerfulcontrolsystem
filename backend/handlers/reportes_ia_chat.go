@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
@@ -113,7 +114,7 @@ func handleEmpresaReportesIATexto(w http.ResponseWriter, r *http.Request, dbEmp,
 		return
 	}
 
-	builder := newReportesAIBuilder(dbEmp, empresaID, desde, hasta)
+	builder := newReportesAIBuilder(r.Context(), dbEmp, empresaID, desde, hasta)
 	contexto, err := buildReportesAITextContext(builder)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto de reportes", http.StatusInternalServerError)
@@ -121,7 +122,7 @@ func handleEmpresaReportesIATexto(w http.ResponseWriter, r *http.Request, dbEmp,
 	}
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
 	system := "Eres un analista de reportes del sistema POS multiempresa. Responde en espanol, breve y con datos del contexto. No inventes cifras fuera del contexto. Si el usuario pide generar/exportar un archivo, indica que use el modo Reporte IA.\n\n" + contexto
-	resp, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, pregunta, sanitizeHistorial(historial, 6), system, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
+	resp, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 6), system)
 	if err != nil {
 		http.Error(w, publicAIProviderError(err), http.StatusBadGateway)
 		return
@@ -163,11 +164,11 @@ func handleEmpresaReportesIAReporte(w http.ResponseWriter, r *http.Request, dbEm
 		return
 	}
 
-	builder := newReportesAIBuilder(dbEmp, empresaID, desde, hasta)
+	builder := newReportesAIBuilder(r.Context(), dbEmp, empresaID, desde, hasta)
 	contexto := buildReportesIAReportContext(dataset, format)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 60 * time.Second}}
 	system := "Eres un asistente de reportes. Debes elegir el dataset y formato mas apropiado para exportar. Responde SOLO JSON valido con keys: dataset, format, title, message. No uses markdown. Si el usuario ya envio dataset/format validos, respetalos.\n\n" + contexto
-	raw, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, pregunta, sanitizeHistorial(historial, 4), system)
+	raw, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 4), system)
 	if err != nil {
 		http.Error(w, "No se pudo interpretar la respuesta de IA. Intenta de nuevo.", http.StatusBadGateway)
 		return
@@ -235,10 +236,10 @@ func handleEmpresaReportesIANuevo(w http.ResponseWriter, r *http.Request, dbEmp,
 		return
 	}
 
-	builder := newReportesAIBuilder(dbEmp, empresaID, desde, hasta)
+	builder := newReportesAIBuilder(r.Context(), dbEmp, empresaID, desde, hasta)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 60 * time.Second}}
 	system := "Eres un asistente contable de PCS. Genera un reporte nuevo SOLO como JSON valido con keys title, message, report_spec. report_spec debe incluir source_dataset, columns opcional, filters opcional, group_by opcional, metrics opcional, formulas opcional, order_by opcional y limit. No escribas SQL, no propongas otra empresa, no inventes campos y usa solo el catalogo semantico entregado. Si falta informacion, devuelve report_spec vacio y explica que aclaracion necesitas.\n\n" + buildReportesIANuevoContext()
-	raw, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, pregunta, sanitizeHistorial(historial, 4), system)
+	raw, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 4), system)
 	if err != nil {
 		http.Error(w, "No se pudo interpretar la respuesta de IA. Intenta de nuevo.", http.StatusBadGateway)
 		return
@@ -316,8 +317,8 @@ func parseReportesIANuevoChoice(raw string) reportesIANuevoChoice {
 	return choice
 }
 
-func newReportesAIBuilder(dbEmp *sql.DB, empresaID int64, desde, hasta string) *reportesBuilder {
-	return &reportesBuilder{db: dbEmp, empresaID: empresaID, desde: strings.TrimSpace(desde), hasta: strings.TrimSpace(hasta), maxRows: 120, itemsCache: make(map[int64][]dbpkg.CarritoCompraItem)}
+func newReportesAIBuilder(ctx context.Context, dbEmp *sql.DB, empresaID int64, desde, hasta string) *reportesBuilder {
+	return &reportesBuilder{ctx: ctx, db: dbEmp, empresaID: empresaID, desde: strings.TrimSpace(desde), hasta: strings.TrimSpace(hasta), maxRows: 120, itemsCache: make(map[int64][]dbpkg.CarritoCompraItem)}
 }
 
 func buildReportesAITextContext(builder *reportesBuilder) (string, error) {

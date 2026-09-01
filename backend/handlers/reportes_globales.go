@@ -359,7 +359,7 @@ func superReportesBuildTablero(dbEmp *sql.DB, adminEmail string, empresas []dbpk
 	}
 
 	for _, empresa := range empresas {
-		builder := &reportesBuilder{db: dbEmp, empresaID: empresa.ID, desde: desde, hasta: hasta, maxRows: 200, itemsCache: make(map[int64][]dbpkg.CarritoCompraItem)}
+		builder := &reportesBuilder{ctx: r.Context(), db: dbEmp, empresaID: empresa.ID, desde: desde, hasta: hasta, maxRows: 200, itemsCache: make(map[int64][]dbpkg.CarritoCompraItem)}
 		tablero, err := builder.getTableroResumen()
 		if err != nil {
 			return superReportesTableroResponse{}, err
@@ -462,6 +462,7 @@ func superReportesBuildDatasetResponse(dbEmp *sql.DB, adminEmail string, empresa
 
 	for _, empresa := range empresas {
 		builder := &reportesBuilder{
+			ctx:              r.Context(),
 			db:               dbEmp,
 			empresaID:        empresa.ID,
 			desde:            desde,

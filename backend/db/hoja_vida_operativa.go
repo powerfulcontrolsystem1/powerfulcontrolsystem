@@ -228,7 +228,7 @@ func hojaVidaIntToBool(v int) bool {
 func CreateEmpresaHojaVidaEntidad(dbConn *sql.DB, item EmpresaHojaVidaEntidad) (int64, error) {
 	item.TipoEntidad = normalizeHojaVidaTipo(item.TipoEntidad)
 	item.EstadoOperativo = normalizeHojaVidaEstadoOperativo(item.EstadoOperativo)
-	res, err := dbConn.Exec(`INSERT INTO empresa_hoja_vida_entidades (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_hoja_vida_entidades (
 		empresa_id, tipo_entidad, codigo, nombre, cliente_id, cliente_nombre, identificacion,
 		marca, modelo, serie, color, fecha_nacimiento, fecha_ingreso, estado_operativo,
 		metadata_json, usuario_creador, estado, observaciones
@@ -241,7 +241,7 @@ func CreateEmpresaHojaVidaEntidad(dbConn *sql.DB, item EmpresaHojaVidaEntidad) (
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // UpdateEmpresaHojaVidaEntidad actualiza una hoja de vida.
@@ -334,7 +334,7 @@ func CreateEmpresaHojaVidaEvento(dbConn *sql.DB, item EmpresaHojaVidaEvento) (in
 	if strings.TrimSpace(item.TipoEvento) == "" {
 		item.TipoEvento = "evento"
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_hoja_vida_eventos (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_hoja_vida_eventos (
 		empresa_id, entidad_id, tipo_evento, titulo, descripcion, fecha_evento, fecha_proxima,
 		costo, responsable, documento_referencia, adjunto_url, recurrente, recurrencia_dias,
 		usuario_creador, estado, observaciones
@@ -347,8 +347,10 @@ func CreateEmpresaHojaVidaEvento(dbConn *sql.DB, item EmpresaHojaVidaEvento) (in
 	if err != nil {
 		return 0, err
 	}
-	_ = refreshEmpresaHojaVidaEntidadDates(dbConn, item.EmpresaID, item.EntidadID)
-	return res.LastInsertId()
+	if err := refreshEmpresaHojaVidaEntidadDates(dbConn, item.EmpresaID, item.EntidadID); err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 // ListEmpresaHojaVidaEventos lista eventos por entidad.
@@ -400,7 +402,7 @@ func CreateEmpresaHojaVidaAlerta(dbConn *sql.DB, item EmpresaHojaVidaAlerta) (in
 	if strings.TrimSpace(item.EstadoAlerta) == "" {
 		item.EstadoAlerta = "pendiente"
 	}
-	res, err := dbConn.Exec(`INSERT INTO empresa_hoja_vida_alertas (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_hoja_vida_alertas (
 		empresa_id, entidad_id, titulo, descripcion, fecha_programada, prioridad,
 		estado_alerta, responsable, usuario_creador, estado, observaciones
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)`,
@@ -410,7 +412,7 @@ func CreateEmpresaHojaVidaAlerta(dbConn *sql.DB, item EmpresaHojaVidaAlerta) (in
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListEmpresaHojaVidaAlertas lista alertas por entidad o empresa.

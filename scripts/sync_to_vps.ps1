@@ -711,8 +711,21 @@ if [ -f "$compose_env_file" ]; then
       fail "INVALID_RUNTIME_SCHEMA_BOOTSTRAP valor no permitido en deploy/.env.platform";
       ;;
   esac;
+  current_mailu_version="$(grep -E '^MAILU_VERSION=' "$compose_env_file" | tail -n1 | cut -d= -f2- || true)";
+  case "$current_mailu_version" in
+    '' )
+      upsert_compose_env MAILU_VERSION 2024.06;
+      ok "MAILU_VERSION fijada en deploy/.env.platform";
+      ;;
+    [0-9][0-9][0-9][0-9].[0-9][0-9])
+      ok "MAILU_VERSION existente conservada en deploy/.env.platform";
+      ;;
+    *)
+      fail "INVALID_MAILU_VERSION formato esperado YYYY.MM en deploy/.env.platform";
+      ;;
+  esac;
 else
-  warn "COMPOSE_ENV_MISSING no existe deploy/.env.platform; no se puede asegurar PCS_RUNTIME_SCHEMA_BOOTSTRAP";
+  warn "COMPOSE_ENV_MISSING no existe deploy/.env.platform; no se puede asegurar PCS_RUNTIME_SCHEMA_BOOTSTRAP ni MAILU_VERSION";
 fi;
 if [ -n "$effective_dbdialect" ]; then
   upsert_env DB_DIALECT "$effective_dbdialect";
@@ -1071,6 +1084,7 @@ function Invoke-ExternalWithRetry {
     [Parameter(Mandatory=$true)][string]$Label,
     [Parameter(Mandatory=$true)][string]$CommandPath,
     [Parameter(Mandatory=$true)][string[]]$Arguments,
+    [AllowNull()][string]$StandardInput = $null,
     [int]$MaxAttempts = 3,
     [switch]$RetryOnTimeoutOnly
   )
@@ -1081,7 +1095,15 @@ function Invoke-ExternalWithRetry {
 
   for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
     Write-Host ("[INFO] " + $Label + " (intento " + $attempt + "/" + $MaxAttempts + ")...")
-    $output = & $CommandPath @Arguments 2>&1
+    # OpenSSH on Windows can alter shell metacharacters when a long bootstrap
+    # script is passed as a command-line argument. Sending the script through
+    # stdin keeps it out of the process arguments and lets bash parse it
+    # exactly as generated.
+    if ($null -ne $StandardInput) {
+      $output = $StandardInput | & $CommandPath @Arguments 2>&1
+    } else {
+      $output = & $CommandPath @Arguments 2>&1
+    }
     $exitCode = $LASTEXITCODE
     if ($output) {
       $output | ForEach-Object { Write-TaggedExternalOutput -Line "$_" }
@@ -1583,6 +1605,7 @@ function Invoke-PuttySync {
   $extractArgs = @()
   $bootstrapCmd = ""
   $bootstrapArgs = @()
+  $bootstrapStandardInput = $null
   $restartCmd = ""
   $restartArgs = @()
   $tempCommandFiles = @()
@@ -1655,8 +1678,9 @@ function Invoke-PuttySync {
         '-p', "$Port",
         '-i', $identityResolved,
         $remoteTarget,
-        $bootstrapCmd
+        'bash -s'
       )
+      $bootstrapStandardInput = $bootstrapCmd
     }
   }
 
@@ -1738,7 +1762,7 @@ function Invoke-PuttySync {
     Invoke-ExternalWithRetry -Label "extracción remota" -CommandPath $extractCommandPath -Arguments $extractArgs -MaxAttempts $Retries -RetryOnTimeoutOnly
 
     if ($RunBootstrap) {
-      Invoke-ExternalWithRetry -Label "bootstrap remoto" -CommandPath $bootstrapCommandPath -Arguments $bootstrapArgs -MaxAttempts $Retries -RetryOnTimeoutOnly
+      Invoke-ExternalWithRetry -Label "bootstrap remoto" -CommandPath $bootstrapCommandPath -Arguments $bootstrapArgs -StandardInput $bootstrapStandardInput -MaxAttempts $Retries -RetryOnTimeoutOnly
     }
 
     if ($RestartServer) {

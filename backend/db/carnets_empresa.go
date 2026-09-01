@@ -455,11 +455,7 @@ func MarkEmpresaCarnetImpreso(dbConn *sql.DB, empresaID, id int64, usuario strin
 }
 
 func detailOrDefault(v, fallback string) string {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return fallback
-	}
-	return v
+	return firstNonBlankValue(v, fallback)
 }
 
 func ListEmpresaCarnets(dbConn *sql.DB, empresaID int64, includeInactive bool, estadoCarnet, tipoPersona, q string, limit int) ([]EmpresaCarnet, error) {

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/runtimeconfig"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -195,12 +196,7 @@ func corporateEmailAutomaticProvisioningEnabled(cfg CorporateEmailConfig) bool {
 }
 
 func firstNonEmptyEnv(keys ...string) string {
-	for _, key := range keys {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-			return value
-		}
-	}
-	return ""
+	return runtimeconfig.FirstNonEmptyEnv(os.Getenv, keys...)
 }
 
 func corporateEmailEnvBool(keys []string, fallback bool) bool {
@@ -634,7 +630,7 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 	return nil
 }
 
-func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, empresaNombre, usuario string) (*dbpkg.EmpresaEmailCorporativo, error) {
+func ProvisionEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, empresaNombre, usuario string) (*dbpkg.EmpresaEmailCorporativo, error) {
 	if dbSuper == nil || empresaID <= 0 {
 		return nil, nil
 	}
@@ -741,7 +737,7 @@ func DeleteEmpresaCorporateEmailAccounts(ctx context.Context, dbSuper *sql.DB, e
 	return nil
 }
 
-func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuario string) (int, error) {
+func SyncCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuario string) (int, error) {
 	if dbSuper == nil || dbEmp == nil {
 		return 0, nil
 	}
@@ -749,14 +745,14 @@ func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuari
 	if !cfg.AutoCreate {
 		return 0, nil
 	}
-	return dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario, normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
+	return dbpkg.SyncEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario, normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
 }
 
-// EnsureCorporateEmailProvisioningForExistingCompanies finishes the idempotent
+// ProvisionCorporateEmailForExistingCompanies finishes the idempotent
 // Mailu setup for rows created before the corporate-email service was enabled.
 // Passwords are generated only when absent and are persisted encrypted by the
 // existing provision helper; neither the password nor command output is logged.
-func EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper *sql.DB) (int, error) {
+func ProvisionCorporateEmailForExistingCompanies(dbSuper *sql.DB) (int, error) {
 	if dbSuper == nil {
 		return 0, nil
 	}
@@ -1100,13 +1096,27 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 
 func corporateEmailIMAPAddress() string {
 	value := strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_IMAP_ADDR", "MAILU_IMAP_ADDR"))
+	if strings.EqualFold(value, "mailu-imap:143") {
+		// AUTH_REQUIRE_TOKENS pertenece al salto interno front -> imap. Una
+		// credencial normal de buzon debe entrar por el front de Mailu, incluso
+		// cuando un despliegue anterior dejo configurado el servicio imap directo.
+		value = "mailu-front:10143"
+	}
 	if value == "" {
-		value = "mailu-imap:143"
+		// Mailu reserva el puerto interno 10143 del front para conexiones del
+		// webmail. Con AUTH_REQUIRE_TOKENS activo, consultar directamente
+		// mailu-imap:143 rechaza la clave normal aunque el buzon sea valido.
+		value = "mailu-front:10143"
 	}
 	if !strings.Contains(value, ":") {
 		value += ":143"
 	}
 	return value
+}
+
+func shouldReconcileCorporateEmailProvision(account *dbpkg.EmpresaEmailCorporativo, unread corporateEmailUnreadStatus) bool {
+	return account != nil && account.EmpresaID > 0 && unread.Checked && unread.OK &&
+		!strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado")
 }
 
 func corporateEmailIMAPQuote(value string) string {
@@ -1394,7 +1404,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if action == "sync" {
 				cfg := getCorporateEmailConfig(dbSuper)
-				count, err := dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, adminEmailFromRequest(r), normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
+				count, err := dbpkg.SyncEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, adminEmailFromRequest(r), normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
 				if err != nil {
 					http.Error(w, "No se pudo sincronizar empresas: "+err.Error(), http.StatusInternalServerError)
 					return
@@ -1538,12 +1548,38 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			var payload struct {
 				AutoOpen        *bool  `json:"auto_open"`
 				NoAutoOpen      *bool  `json:"no_auto_open"`
+				Reconcile       bool   `json:"reconcile"`
 				Password        string `json:"password"`
 				NewPassword     string `json:"new_password"`
 				ConfirmPassword string `json:"confirm_password"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.Reconcile {
+				account, accountErr := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
+				if accountErr != nil || account == nil {
+					http.Error(w, "No se encontro el buzon corporativo de esta empresa", http.StatusNotFound)
+					return
+				}
+				unread := corporateEmailUnreadStatusFromIMAP(dbSuper, account)
+				if !shouldReconcileCorporateEmailProvision(account, unread) {
+					if strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") && unread.OK {
+						writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Buzon verificado en Mailu", checkWebmail, true, theme, prefs))
+						return
+					}
+					writeJSON(w, http.StatusConflict, map[string]interface{}{"ok": false, "error": "Mailu no pudo autenticar el INBOX del buzon; el estado anterior se conserva"})
+					return
+				}
+				if err := dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, empresaID, "provisionado", "", true); err != nil {
+					http.Error(w, "No se pudo reconciliar el estado del buzon", http.StatusInternalServerError)
+					return
+				}
+				if refreshed, refreshErr := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID); refreshErr == nil && refreshed != nil {
+					account = refreshed
+				}
+				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Buzon reconciliado con Mailu", checkWebmail, true, theme, prefs))
 				return
 			}
 			if payload.AutoOpen != nil {
@@ -1637,24 +1673,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 		account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				if cfg.AutoCreate && dbEmp != nil {
-					if empresa, empresaErr := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); empresaErr == nil && empresa != nil {
-						if created, createErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, empresa.EmpresaID, empresa.Nombre, adminEmailFromRequest(r)); createErr == nil {
-							account = created
-						} else {
-							writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "No se pudo generar el email corporativo", checkWebmail, checkUnread, theme, prefs))
-							return
-						}
-					}
-				}
-				if account != nil {
-					if account.WebmailURL == "" {
-						account.WebmailURL = cfg.WebmailURL
-					}
-					writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Email corporativo generado", checkWebmail, checkUnread, theme, prefs))
-					return
-				}
-				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo generado", checkWebmail, checkUnread, theme, prefs))
+				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo asignado; un administrador debe crearlo o sincronizarlo", checkWebmail, checkUnread, theme, prefs))
 				return
 			}
 			http.Error(w, "No se pudo consultar email corporativo: "+err.Error(), http.StatusInternalServerError)
@@ -1794,6 +1813,13 @@ func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password, t
 	req.Header.Set("User-Agent", "PowerfulControlSystem-MailAutologin/1.0")
 	req.Header.Set("X-Remote-User", email)
 	req.Header.Set("X-Remote-User-Token", password)
+	if publicURL, parseErr := url.Parse(strings.TrimSpace(cfg.WebmailURL)); parseErr == nil && publicURL.Host != "" {
+		req.Host = publicURL.Host
+		req.Header.Set("X-Forwarded-Host", publicURL.Host)
+		if publicURL.Scheme != "" {
+			req.Header.Set("X-Forwarded-Proto", publicURL.Scheme)
+		}
+	}
 	res, err := client.Do(req)
 	if err != nil {
 		return "", nil, fmt.Errorf("SnappyMail rechazo la conexion")

@@ -98,17 +98,7 @@ func ventaDigitalNormalizeAction(raw string) string {
 }
 
 func ventaDigitalMapWompiStatus(raw string) string {
-	status := strings.ToUpper(strings.TrimSpace(raw))
-	switch status {
-	case "APPROVED":
-		return "aprobado"
-	case "DECLINED", "VOIDED", "ERROR":
-		return "rechazado"
-	case "PENDING":
-		return "pendiente"
-	default:
-		return "pendiente"
-	}
+	return ventaPublicaMapWompiStatus(raw)
 }
 
 func sanitizeVentaDigitalConfigForPublic(cfg dbpkg.SuperVentaDigitalConfig) map[string]interface{} {
@@ -251,7 +241,7 @@ func sendVentaDigitalDeliveryEmail(r *http.Request, dbSuper *sql.DB, order dbpkg
 }
 
 func syncVentaDigitalDeliveryIfApproved(r *http.Request, dbSuper *sql.DB, orderCode string) (bool, string, error) {
-	order, err := dbpkg.GetSuperVentaDigitalOrderByCodigo(dbSuper, orderCode)
+	order, err := dbpkg.GetSuperVentaDigitalOrderByCodigoContext(r.Context(), dbSuper, orderCode)
 	if err != nil {
 		return false, "order_not_found", err
 	}
@@ -268,19 +258,21 @@ func syncVentaDigitalDeliveryIfApproved(r *http.Request, dbSuper *sql.DB, orderC
 		if len(errMsg) > 300 {
 			errMsg = errMsg[:300]
 		}
-		_ = dbpkg.SetSuperVentaDigitalOrderDelivery(dbSuper, order.CodigoOrden, false, "", errMsg, "", "")
+		if markErr := dbpkg.SetSuperVentaDigitalOrderDeliveryContext(r.Context(), dbSuper, order.CodigoOrden, false, "", errMsg, "", ""); markErr != nil {
+			return false, "delivery_error_unrecorded", fmt.Errorf("%w; no se pudo registrar fallo de entrega: %v", err, markErr)
+		}
 		return false, "delivery_error", err
 	}
 
 	deliveredAt := time.Now().In(time.Local).Format("2006-01-02 15:04:05")
-	if err := dbpkg.SetSuperVentaDigitalOrderDelivery(dbSuper, order.CodigoOrden, true, deliveredAt, "", order.LicenciaCodigoEnviado, order.InstruccionesArchivoURL); err != nil {
+	if err := dbpkg.SetSuperVentaDigitalOrderDeliveryContext(r.Context(), dbSuper, order.CodigoOrden, true, deliveredAt, "", order.LicenciaCodigoEnviado, order.InstruccionesArchivoURL); err != nil {
 		return false, "delivery_mark_error", err
 	}
 	return true, "delivered", nil
 }
 
 func processVentaDigitalPaymentStatusUpdate(r *http.Request, dbSuper *sql.DB, transactionID, reference, providerStatus, providerPayload string) (bool, bool, string, error) {
-	order, found, err := dbpkg.FindSuperVentaDigitalOrderByPaymentContext(dbSuper, transactionID, reference)
+	order, found, err := dbpkg.FindSuperVentaDigitalOrderByPaymentWithContext(r.Context(), dbSuper, transactionID, reference)
 	if err != nil {
 		return false, false, "lookup_error", err
 	}
@@ -293,7 +285,7 @@ func processVentaDigitalPaymentStatusUpdate(r *http.Request, dbSuper *sql.DB, tr
 	if localStatus == "aprobado" {
 		pagadoEn = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
 	}
-	if err := dbpkg.UpdateSuperVentaDigitalOrderPayment(dbSuper, order.CodigoOrden, localStatus, transactionID, reference, providerPayload, pagadoEn, "status_sync"); err != nil {
+	if err := dbpkg.UpdateSuperVentaDigitalOrderPaymentContext(r.Context(), dbSuper, order.CodigoOrden, localStatus, transactionID, reference, providerPayload, pagadoEn, "status_sync"); err != nil {
 		return true, false, "update_error", err
 	}
 
@@ -378,7 +370,7 @@ func handleSuperVentaDigitalList(w http.ResponseWriter, r *http.Request, dbSuper
 		return
 	}
 
-	rows, total, err := dbpkg.ListSuperVentaDigitalItems(dbSuper, dbpkg.SuperVentaDigitalItemsFilter{
+	rows, total, err := dbpkg.ListSuperVentaDigitalItemsContext(r.Context(), dbSuper, dbpkg.SuperVentaDigitalItemsFilter{
 		IncludeInactive: queryBool(r, "include_inactive"),
 		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
 		Limit:           limit,
@@ -402,7 +394,7 @@ func handleSuperVentaDigitalDetail(w http.ResponseWriter, r *http.Request, dbSup
 		http.Error(w, "id es obligatorio", http.StatusBadRequest)
 		return
 	}
-	item, err := dbpkg.GetSuperVentaDigitalItemByID(dbSuper, itemID)
+	item, err := dbpkg.GetSuperVentaDigitalItemByIDContext(r.Context(), dbSuper, itemID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "item no encontrado", http.StatusNotFound)
@@ -424,7 +416,7 @@ func handleSuperVentaDigitalCreate(w http.ResponseWriter, r *http.Request, dbSup
 		return
 	}
 
-	id, err := dbpkg.CreateSuperVentaDigitalItem(dbSuper, dbpkg.SuperVentaDigitalItem{
+	id, err := dbpkg.CreateSuperVentaDigitalItemContext(r.Context(), dbSuper, dbpkg.SuperVentaDigitalItem{
 		CodigoPublico:           payload.CodigoPublico,
 		Nombre:                  payload.Nombre,
 		Descripcion:             payload.Descripcion,
@@ -443,7 +435,7 @@ func handleSuperVentaDigitalCreate(w http.ResponseWriter, r *http.Request, dbSup
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	item, err := dbpkg.GetSuperVentaDigitalItemByID(dbSuper, id)
+	item, err := dbpkg.GetSuperVentaDigitalItemByIDContext(r.Context(), dbSuper, id)
 	if err != nil {
 		http.Error(w, "item creado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -470,7 +462,7 @@ func handleSuperVentaDigitalUpdate(w http.ResponseWriter, r *http.Request, dbSup
 		return
 	}
 
-	err := dbpkg.UpdateSuperVentaDigitalItem(dbSuper, dbpkg.SuperVentaDigitalItem{
+	err := dbpkg.UpdateSuperVentaDigitalItemContext(r.Context(), dbSuper, dbpkg.SuperVentaDigitalItem{
 		ID:                      payload.ID,
 		CodigoPublico:           payload.CodigoPublico,
 		Nombre:                  payload.Nombre,
@@ -494,7 +486,7 @@ func handleSuperVentaDigitalUpdate(w http.ResponseWriter, r *http.Request, dbSup
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	item, err := dbpkg.GetSuperVentaDigitalItemByID(dbSuper, payload.ID)
+	item, err := dbpkg.GetSuperVentaDigitalItemByIDContext(r.Context(), dbSuper, payload.ID)
 	if err != nil {
 		http.Error(w, "item actualizado pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -515,7 +507,7 @@ func handleSuperVentaDigitalToggle(w http.ResponseWriter, r *http.Request, dbSup
 	if action == "desactivar" {
 		estado = "inactivo"
 	}
-	if err := dbpkg.SetSuperVentaDigitalItemEstadoByID(dbSuper, itemID, estado); err != nil {
+	if err := dbpkg.SetSuperVentaDigitalItemEstadoByIDContext(r.Context(), dbSuper, itemID, estado); err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "item no encontrado", http.StatusNotFound)
 			return
@@ -523,15 +515,15 @@ func handleSuperVentaDigitalToggle(w http.ResponseWriter, r *http.Request, dbSup
 		http.Error(w, "No se pudo actualizar estado", http.StatusInternalServerError)
 		return
 	}
-	item, _ := dbpkg.GetSuperVentaDigitalItemByID(dbSuper, itemID)
+	item, _ := dbpkg.GetSuperVentaDigitalItemByIDContext(r.Context(), dbSuper, itemID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":   true,
 		"item": item,
 	})
 }
 
-func handleSuperVentaDigitalConfigGet(w http.ResponseWriter, _ *http.Request, dbSuper *sql.DB) {
-	cfg, err := dbpkg.GetSuperVentaDigitalConfig(dbSuper)
+func handleSuperVentaDigitalConfigGet(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB) {
+	cfg, err := dbpkg.GetSuperVentaDigitalConfigContext(r.Context(), dbSuper)
 	if err != nil {
 		http.Error(w, "No se pudo consultar configuracion", http.StatusInternalServerError)
 		return
@@ -554,7 +546,7 @@ func handleSuperVentaDigitalConfigUpsert(w http.ResponseWriter, r *http.Request,
 		wompiActivo = *payload.WompiActivo
 	}
 
-	_, err := dbpkg.UpsertSuperVentaDigitalConfig(dbSuper, dbpkg.SuperVentaDigitalConfig{
+	_, err := dbpkg.UpsertSuperVentaDigitalConfigContext(r.Context(), dbSuper, dbpkg.SuperVentaDigitalConfig{
 		NombreTienda:      payload.NombreTienda,
 		DescripcionTienda: payload.DescripcionTienda,
 		LogoURL:           payload.LogoURL,
@@ -571,7 +563,7 @@ func handleSuperVentaDigitalConfigUpsert(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	cfg, err := dbpkg.GetSuperVentaDigitalConfig(dbSuper)
+	cfg, err := dbpkg.GetSuperVentaDigitalConfigContext(r.Context(), dbSuper)
 	if err != nil {
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar", http.StatusInternalServerError)
 		return
@@ -593,7 +585,7 @@ func handleSuperVentaDigitalOrders(w http.ResponseWriter, r *http.Request, dbSup
 		http.Error(w, "offset invalido", http.StatusBadRequest)
 		return
 	}
-	rows, total, err := dbpkg.ListSuperVentaDigitalOrders(dbSuper, dbpkg.SuperVentaDigitalOrdersFilter{
+	rows, total, err := dbpkg.ListSuperVentaDigitalOrdersContext(r.Context(), dbSuper, dbpkg.SuperVentaDigitalOrdersFilter{
 		IncludeInactive: queryBool(r, "include_inactive"),
 		EstadoPago:      strings.TrimSpace(r.URL.Query().Get("estado_pago")),
 		Q:               strings.TrimSpace(r.URL.Query().Get("q")),
@@ -660,11 +652,16 @@ func handleSuperVentaDigitalUploadImage(w http.ResponseWriter, r *http.Request, 
 
 	imageURL := "/uploads/venta_digital/imagenes/" + fileName
 	if itemID > 0 {
-		item, err := dbpkg.GetSuperVentaDigitalItemByID(dbSuper, itemID)
-		if err == nil {
-			item.ImagenURL = imageURL
-			item.UsuarioCreador = adminEmailFromRequest(r)
-			_ = dbpkg.UpdateSuperVentaDigitalItem(dbSuper, item)
+		item, err := dbpkg.GetSuperVentaDigitalItemByIDContext(r.Context(), dbSuper, itemID)
+		if err != nil {
+			http.Error(w, "imagen guardada, pero no se pudo consultar el item", http.StatusInternalServerError)
+			return
+		}
+		item.ImagenURL = imageURL
+		item.UsuarioCreador = adminEmailFromRequest(r)
+		if err := dbpkg.UpdateSuperVentaDigitalItemContext(r.Context(), dbSuper, item); err != nil {
+			http.Error(w, "imagen guardada, pero no se pudo asociar al item", http.StatusInternalServerError)
+			return
 		}
 	}
 
@@ -728,11 +725,16 @@ func handleSuperVentaDigitalUploadInstructions(w http.ResponseWriter, r *http.Re
 
 	fileURL := "/uploads/venta_digital/instrucciones/" + fileName
 	if itemID > 0 {
-		item, err := dbpkg.GetSuperVentaDigitalItemByID(dbSuper, itemID)
-		if err == nil {
-			item.InstruccionesArchivoURL = fileURL
-			item.UsuarioCreador = adminEmailFromRequest(r)
-			_ = dbpkg.UpdateSuperVentaDigitalItem(dbSuper, item)
+		item, err := dbpkg.GetSuperVentaDigitalItemByIDContext(r.Context(), dbSuper, itemID)
+		if err != nil {
+			http.Error(w, "archivo guardado, pero no se pudo consultar el item", http.StatusInternalServerError)
+			return
+		}
+		item.InstruccionesArchivoURL = fileURL
+		item.UsuarioCreador = adminEmailFromRequest(r)
+		if err := dbpkg.UpdateSuperVentaDigitalItemContext(r.Context(), dbSuper, item); err != nil {
+			http.Error(w, "archivo guardado, pero no se pudo asociar al item", http.StatusInternalServerError)
+			return
 		}
 	}
 
@@ -775,13 +777,13 @@ func PublicVentaDigitalHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-func handleVentaDigitalCatalogoPublico(w http.ResponseWriter, _ *http.Request, dbSuper *sql.DB) {
-	cfg, err := dbpkg.GetSuperVentaDigitalConfig(dbSuper)
+func handleVentaDigitalCatalogoPublico(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB) {
+	cfg, err := dbpkg.GetSuperVentaDigitalConfigContext(r.Context(), dbSuper)
 	if err != nil {
 		http.Error(w, "No se pudo cargar configuracion de tienda", http.StatusInternalServerError)
 		return
 	}
-	items, err := dbpkg.ListSuperVentaDigitalItemsPublic(dbSuper)
+	items, err := dbpkg.ListSuperVentaDigitalItemsPublicContext(r.Context(), dbSuper)
 	if err != nil {
 		http.Error(w, "No se pudo cargar catalogo digital", http.StatusInternalServerError)
 		return
@@ -825,7 +827,7 @@ func handleVentaDigitalCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	item, err := dbpkg.GetSuperVentaDigitalItemByID(dbSuper, payload.ItemID)
+	item, err := dbpkg.GetSuperVentaDigitalItemByIDContext(r.Context(), dbSuper, payload.ItemID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "item no encontrado", http.StatusNotFound)
@@ -844,7 +846,7 @@ func handleVentaDigitalCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 	}
 
 	orderCode := fmt.Sprintf("VD-ORD-%d", time.Now().UnixNano())
-	orderID, err := dbpkg.CreateSuperVentaDigitalOrder(dbSuper, dbpkg.SuperVentaDigitalOrder{
+	orderID, err := dbpkg.CreateSuperVentaDigitalOrderContext(r.Context(), dbSuper, dbpkg.SuperVentaDigitalOrder{
 		CodigoOrden:             orderCode,
 		ItemID:                  item.ID,
 		ItemNombre:              item.Nombre,
@@ -865,7 +867,7 @@ func handleVentaDigitalCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	cfg, err := dbpkg.GetSuperVentaDigitalConfig(dbSuper)
+	cfg, err := dbpkg.GetSuperVentaDigitalConfigContext(r.Context(), dbSuper)
 	if err != nil {
 		http.Error(w, "No se pudo cargar configuracion de venta digital", http.StatusInternalServerError)
 		return
@@ -960,7 +962,7 @@ func handleVentaDigitalCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 
 	bodyBytes, _ := json.Marshal(reqBody)
 	apiURL := strings.TrimRight(baseURL, "/") + "/transactions"
-	request, err := http.NewRequest(http.MethodPost, apiURL, bytes.NewBuffer(bodyBytes))
+	request, err := http.NewRequestWithContext(r.Context(), http.MethodPost, apiURL, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		http.Error(w, "No se pudo preparar solicitud Wompi", http.StatusInternalServerError)
 		return
@@ -977,7 +979,10 @@ func handleVentaDigitalCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
-		_ = dbpkg.UpdateSuperVentaDigitalOrderPayment(dbSuper, orderCode, "error", "", reference, string(respBody), "", "wompi_error")
+		if updateErr := dbpkg.UpdateSuperVentaDigitalOrderPaymentContext(r.Context(), dbSuper, orderCode, "error", "", reference, string(respBody), "", "wompi_error"); updateErr != nil {
+			http.Error(w, "Wompi rechazo la transaccion y no se pudo registrar el estado", http.StatusInternalServerError)
+			return
+		}
 		http.Error(w, "Wompi API error: "+string(respBody), http.StatusBadGateway)
 		return
 	}
@@ -1003,7 +1008,11 @@ func handleVentaDigitalCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 		http.Error(w, "No se pudo actualizar orden: "+processErr.Error(), http.StatusInternalServerError)
 		return
 	}
-	order, _ := dbpkg.GetSuperVentaDigitalOrderByCodigo(dbSuper, orderCode)
+	order, err := dbpkg.GetSuperVentaDigitalOrderByCodigoContext(r.Context(), dbSuper, orderCode)
+	if err != nil {
+		http.Error(w, "La orden fue procesada, pero no se pudo consultar", http.StatusInternalServerError)
+		return
+	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":                      true,
@@ -1032,8 +1041,7 @@ func handleVentaDigitalEstadoPagoPublico(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "order_code es obligatorio", http.StatusBadRequest)
 		return
 	}
-
-	order, err := dbpkg.GetSuperVentaDigitalOrderByCodigo(dbSuper, orderCode)
+	order, err := dbpkg.GetSuperVentaDigitalOrderByCodigoContext(r.Context(), dbSuper, orderCode)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "orden no encontrada", http.StatusNotFound)
@@ -1042,13 +1050,11 @@ func handleVentaDigitalEstadoPagoPublico(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "No se pudo consultar orden", http.StatusInternalServerError)
 		return
 	}
-
-	cfg, err := dbpkg.GetSuperVentaDigitalConfig(dbSuper)
+	cfg, err := dbpkg.GetSuperVentaDigitalConfigContext(r.Context(), dbSuper)
 	if err != nil {
 		http.Error(w, "No se pudo cargar configuracion", http.StatusInternalServerError)
 		return
 	}
-
 	transactionID := strings.TrimSpace(r.URL.Query().Get("transaction_id"))
 	if transactionID == "" {
 		transactionID = strings.TrimSpace(order.TransactionID)
@@ -1073,7 +1079,7 @@ func handleVentaDigitalEstadoPagoPublico(w http.ResponseWriter, r *http.Request,
 			statusURL := strings.TrimRight(baseURL, "/") + "/transactions/" + url.PathEscape(transactionID)
 
 			fetchStatus := func(authKey string) ([]byte, int, error) {
-				req, reqErr := http.NewRequest(http.MethodGet, statusURL, nil)
+				req, reqErr := http.NewRequestWithContext(r.Context(), http.MethodGet, statusURL, nil)
 				if reqErr != nil {
 					return nil, 0, reqErr
 				}
@@ -1104,8 +1110,10 @@ func handleVentaDigitalEstadoPagoPublico(w http.ResponseWriter, r *http.Request,
 						if statusWompi == "" || statusWompi == "<nil>" {
 							statusWompi = "PENDING"
 						}
-						_, deliverySent, deliveryStage, _ = processVentaDigitalPaymentStatusUpdate(r, dbSuper, transactionID, order.ReferenciaExterna, statusWompi, string(respBody))
-						order, _ = dbpkg.GetSuperVentaDigitalOrderByCodigo(dbSuper, orderCode)
+						if order, deliverySent, deliveryStage, err = syncAndRefreshVentaDigitalOrder(r, dbSuper, order, transactionID, statusWompi, string(respBody)); err != nil {
+							http.Error(w, "No se pudo sincronizar el estado de la orden", http.StatusInternalServerError)
+							return
+						}
 					}
 				}
 			}
@@ -1121,4 +1129,20 @@ func handleVentaDigitalEstadoPagoPublico(w http.ResponseWriter, r *http.Request,
 		"delivery_stage": deliveryStage,
 		"data":           data,
 	})
+}
+
+func refreshVentaDigitalOrder(r *http.Request, dbSuper *sql.DB, current dbpkg.SuperVentaDigitalOrder) dbpkg.SuperVentaDigitalOrder {
+	refreshed, err := dbpkg.GetSuperVentaDigitalOrderByCodigoContext(r.Context(), dbSuper, current.CodigoOrden)
+	if err != nil {
+		return current
+	}
+	return refreshed
+}
+
+func syncAndRefreshVentaDigitalOrder(r *http.Request, dbSuper *sql.DB, current dbpkg.SuperVentaDigitalOrder, transactionID, providerStatus, providerPayload string) (dbpkg.SuperVentaDigitalOrder, bool, string, error) {
+	_, delivered, stage, err := processVentaDigitalPaymentStatusUpdate(r, dbSuper, transactionID, current.ReferenciaExterna, providerStatus, providerPayload)
+	if err != nil {
+		return current, false, stage, err
+	}
+	return refreshVentaDigitalOrder(r, dbSuper, current), delivered, stage, nil
 }

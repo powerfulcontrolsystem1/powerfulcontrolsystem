@@ -433,10 +433,5 @@ func truncateWhatsAppMessage(message string) string {
 }
 
 func firstNonEmptyWhatsApp(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }

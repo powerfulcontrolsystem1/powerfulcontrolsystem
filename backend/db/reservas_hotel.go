@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 var (
@@ -252,29 +254,13 @@ func reservasHotelSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		"ix_reservas_hotel_empresa_confirmadas_entrada",
 	}
 	for _, indexName := range requiredIndexes {
-		indexOK, idxErr := reservasHotelIndexExists(dbConn, indexName)
+		indexOK, idxErr := currentSchemaIndexExists(dbConn, indexName)
 		if idxErr != nil || !indexOK {
 			return false, idxErr
 		}
 	}
 
 	return true, nil
-}
-
-func reservasHotelIndexExists(dbConn *sql.DB, indexName string) (bool, error) {
-	var exists bool
-	err := queryRowSQLCompat(dbConn, `
-		SELECT EXISTS (
-			SELECT 1
-			FROM pg_indexes
-			WHERE schemaname = ANY (current_schemas(false))
-			  AND indexname = ?
-		)
-	`, indexName).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
 
 func nextReservaHotelCodigo() string {
@@ -360,22 +346,7 @@ func normalizeReservaHotelDateRange(fechaEntrada, fechaSalida string) (string, s
 }
 
 func parseReservaHotelEstacionID(referenciaExterna, codigo string, empresaID int64) int64 {
-	ref := strings.ToUpper(strings.TrimSpace(referenciaExterna))
-	if strings.HasPrefix(ref, "ESTACION_") {
-		n, err := strconv.ParseInt(strings.TrimPrefix(ref, "ESTACION_"), 10, 64)
-		if err == nil && n > 0 {
-			return n
-		}
-	}
-	prefix := strings.ToUpper(fmt.Sprintf("EST-%d-", empresaID))
-	code := strings.ToUpper(strings.TrimSpace(codigo))
-	if strings.HasPrefix(code, prefix) {
-		n, err := strconv.ParseInt(strings.TrimPrefix(code, prefix), 10, 64)
-		if err == nil && n > 0 {
-			return n
-		}
-	}
-	return 0
+	return parseRepositoryStationID(referenciaExterna, codigo, empresaID)
 }
 
 func resolveReservaHotelStation(dbConn *sql.DB, empresaID, estacionID int64) (int64, string, string, string, error) {
@@ -1469,11 +1440,5 @@ func ListReservasHotelEstacionesDisponibles(dbConn *sql.DB, empresaID int64, fec
 }
 
 func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		trim := strings.TrimSpace(v)
-		if trim != "" {
-			return trim
-		}
-	}
-	return ""
+	return valueutil.FirstNonBlank(values...)
 }

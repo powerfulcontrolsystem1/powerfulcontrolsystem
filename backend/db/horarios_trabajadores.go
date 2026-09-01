@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 var (
@@ -1032,11 +1034,7 @@ func flattenHorarioResumen(source map[string]*HorarioTrabajadorResumen) []Horari
 }
 
 func normalizeHorarioKey(value, fallback string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return fallback
-	}
-	return value
+	return valueutil.NonBlankOr(value, fallback)
 }
 
 func buildHorarioSemaforo(clave, titulo string, ratio float64, detalle string) HorarioTrabajadorSemaforo {

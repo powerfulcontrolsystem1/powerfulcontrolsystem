@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -542,30 +541,7 @@ func resolveRuntimePostgresDSN(primary string, fallbackKeys ...string) string {
 }
 
 func rewriteRuntimePostgresDSNForTunnel(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return raw
-	}
-	if strings.TrimSpace(os.Getenv("DB_VPS_TUNNEL_ENABLED")) != "1" {
-		return raw
-	}
-	localPort := strings.TrimSpace(os.Getenv("DB_VPS_LOCAL_PORT"))
-	if localPort == "" {
-		return raw
-	}
-	u, err := url.Parse(raw)
-	if err != nil {
-		return raw
-	}
-	hostname := u.Hostname()
-	if hostname == "" {
-		hostname = "127.0.0.1"
-	}
-	if hostname != "127.0.0.1" && hostname != "localhost" {
-		return raw
-	}
-	u.Host = net.JoinHostPort("127.0.0.1", localPort)
-	return u.String()
+	return runtimeconfig.RewritePostgresDSNForTunnel(raw, os.Getenv)
 }
 
 func openAndPingRuntimeDB(driverName, dsn, label string) (*sql.DB, error) {
@@ -1266,7 +1242,7 @@ func main() {
 			startupTrace("after_empresa_email_corporativo_env")
 			if strings.TrimSpace(os.Getenv("PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC")) == "1" {
 				log.Printf("INFO: sincronizacion inicial de emails corporativos omitida por PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC=1")
-			} else if created, err := handlers.EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
+			} else if created, err := handlers.SyncCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
 				log.Printf("warning: no se pudieron generar emails corporativos para empresas existentes: %v", err)
 			} else if created > 0 {
 				log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
@@ -1274,7 +1250,7 @@ func main() {
 			startupTrace("after_empresa_email_corporativo_existing_companies")
 			if migrationSkipsExternalSync {
 				log.Printf("INFO: aprovisionamiento Mailu externo omitido durante migracion")
-			} else if provisioned, err := handlers.EnsureCorporateEmailProvisioningForExistingCompanies(dbSuper); err != nil {
+			} else if provisioned, err := handlers.ProvisionCorporateEmailForExistingCompanies(dbSuper); err != nil {
 				log.Printf("warning: no se pudieron aprovisionar todos los emails corporativos existentes: %v", err)
 			} else if provisioned > 0 {
 				log.Printf("INFO: emails corporativos aprovisionados para empresas existentes: %d", provisioned)
@@ -1288,7 +1264,7 @@ func main() {
 				log.Printf("warning: no se pudo preparar Nextcloud empresarial: %v", err)
 			} else if migrationSkipsExternalSync {
 				log.Printf("INFO: aprovisionamiento Nextcloud externo omitido durante migracion")
-			} else if assigned, err := handlers.EnsureNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
+			} else if assigned, err := handlers.SyncNextcloudAssignmentsForAll(dbEmpresas, dbSuper); err != nil {
 				log.Printf("warning: no se pudieron asignar espacios Nextcloud a empresas existentes: %v", err)
 			} else if assigned > 0 {
 				log.Printf("INFO: espacios Nextcloud asignados a empresas existentes: %d", assigned)
@@ -1593,7 +1569,7 @@ func main() {
 	http.HandleFunc("/api/user/configuracion", handlers.UserConfiguracionHandler(dbSuper))
 
 	// Endpoints CRUD para tipos de empresas
-	http.HandleFunc("/super/api/tipos_empresas", handlers.WithSuperAuditoria(dbSuper, "tipos_empresas", handlers.TiposEmpresasHandler(dbSuper)))
+	http.HandleFunc("/super/api/tipos_empresas", handlers.WithAdminReadSuperWriteAuditoria(dbSuper, "tipos_empresas", handlers.TiposEmpresasHandler(dbSuper)))
 	http.HandleFunc("/super/api/tipos_empresas/preconfiguracion", handlers.SuperTipoEmpresaPreconfiguracionHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresListHandler(dbSuper)))
 	http.HandleFunc("/super/api/servidores/toggle", handlers.WithSuperAuditoria(dbSuper, "super_servidores", handlers.SuperServidoresToggleHandler(dbSuper)))
@@ -1605,10 +1581,10 @@ func main() {
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
-	http.HandleFunc("/super/api/empresas", handlers.WithSuperAuditoria(dbSuper, "selector_empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas", handlers.WithAdminAuditoria(dbSuper, "selector_empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/empresas_estado", handlers.WithSuperAuditoria(dbSuper, "super_empresas_estado", handlers.SuperEmpresasEstadoHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/super/api/empresas/compartidos", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas/compartidos", handlers.WithAdminAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.WithAdminAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/email_corporativo", handlers.WithSuperAuditoria(dbSuper, "super_email_corporativo", handlers.SuperEmailCorporativoHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/api/internal/email_corporativo/autologin", handlers.EmpresaEmailCorporativoAutologinHandler(dbSuper))
 	// Endpoints para asesores comerciales y comisiones de licencias.
@@ -1772,7 +1748,7 @@ func main() {
 	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/contabilidad_colombia", handlers.WithEmpresaContabilidadColombiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/contabilidad_colombia_avanzada", handlers.WithEmpresaContabilidadColombiaAvanzadaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaAvanzadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/contabilidad_colombia_avanzada", handlers.WithEmpresaContabilidadColombiaAvanzadaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaAvanzadaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/activos_fijos_niif_fiscal", handlers.WithEmpresaActivosFijosNIIFPermissions(dbEmpresas, dbSuper, handlers.EmpresaActivosFijosNIIFiscalHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/centros_costo", handlers.WithEmpresaCentrosCostoPermissions(dbEmpresas, dbSuper, handlers.EmpresaCentrosCostoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/cierre_fiscal", handlers.WithEmpresaCierreFiscalPermissions(dbEmpresas, dbSuper, handlers.EmpresaCierreFiscalHandler(dbEmpresas)))
@@ -1843,7 +1819,7 @@ func main() {
 	http.HandleFunc("/super/api/administradores/solicitar_recuperacion", handlers.AdminRequestPasswordRecoveryHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/restablecer_password", handlers.AdminResetPasswordHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
-	http.HandleFunc("/super/api/licencias", handlers.WithSuperAuditoria(dbSuper, "licencias", handlers.LicenciasHandler(dbSuper)))
+	http.HandleFunc("/super/api/licencias", handlers.WithAdminAuditoria(dbSuper, "licencias", handlers.LicenciasHandler(dbSuper)))
 	http.HandleFunc("/super/api/licencias/ventas_resumen", handlers.WithSuperAuditoria(dbSuper, "super_licencias_ventas_resumen", handlers.SuperLicenciasVentasResumenHandler(dbSuper)))
 	http.HandleFunc("/super/api/licencias/configuracion", handlers.WithSuperAuditoria(dbSuper, "super_config_licencias", handlers.SuperLicenciasConfiguracionHandler(dbSuper)))
 	http.HandleFunc("/super/api/licencias/codigos_descuento", handlers.WithSuperAuditoria(dbSuper, "licencias_codigos_descuento", handlers.SuperLicenciasCodigosDescuentoHandler(dbSuper)))

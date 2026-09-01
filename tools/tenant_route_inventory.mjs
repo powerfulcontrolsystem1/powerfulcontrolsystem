@@ -10,6 +10,10 @@ function normalizeLineEndings(value) {
   return String(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
 
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function walk(relativeDir) {
   const root = path.join(repoRoot, relativeDir);
   const files = [];
@@ -25,7 +29,7 @@ function walk(relativeDir) {
       }
     }
   }
-  return files.sort();
+  return files.sort(compareText);
 }
 
 function sourceLocation(fullPath, source, index) {
@@ -85,7 +89,7 @@ for (const fullPath of walk("backend")) {
   }
 }
 
-routes.sort((a, b) => a.path.localeCompare(b.path) || a.file.localeCompare(b.file) || a.line - b.line);
+routes.sort((a, b) => compareText(a.path, b.path) || compareText(a.file, b.file) || a.line - b.line);
 const duplicateRoutes = routes.filter((route, index) => index > 0 && routes[index - 1].path === route.path);
 const protectedRoutes = routes.filter((route) => route.status === "protegida").length;
 const manualRoutes = routes.length - protectedRoutes;

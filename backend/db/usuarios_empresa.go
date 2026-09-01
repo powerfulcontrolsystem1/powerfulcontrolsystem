@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
 var (
@@ -330,9 +332,6 @@ func CreateEmpresaUsuario(
 	controlAseoEstaciones int,
 	rolNombre, observaciones, usuarioCreador, confirmToken, confirmExpira string,
 ) (int64, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return 0, err
-	}
 	confirmToken = hashOneTimeSecret(confirmToken)
 	insertUser := func() (int64, error) {
 		return insertSQLCompat(dbConn, `INSERT INTO users (
@@ -387,9 +386,6 @@ func normalizeEmpresaUsuarioBinaryFlag(value int) int {
 
 // GetEmpresaUsuarios lista usuarios por empresa.
 func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) ([]EmpresaUsuario, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return nil, err
-	}
 	query := `SELECT
 		id,
 		empresa_id,
@@ -462,9 +458,6 @@ func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) 
 
 // GetEmpresaUsuarioByID obtiene un usuario por id dentro de una empresa.
 func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return nil, err
-	}
 	row := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
@@ -530,9 +523,6 @@ func ResolveEmpresaUsuarioByReference(dbConn *sql.DB, empresaID int64, reference
 		return nil, sql.ErrNoRows
 	}
 	lookupReference := normalizeEmpresaUsuarioReferenceLookup(reference)
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return nil, err
-	}
 
 	scan := func(row *sql.Row) (*EmpresaUsuario, error) {
 		var item EmpresaUsuario
@@ -617,9 +607,6 @@ func resolveEmpresaUsuarioIDByReferenceSilent(dbConn *sql.DB, empresaID, current
 
 // GetEmpresaUsuarioByEmailScoped obtiene un usuario por correo con alcance opcional por empresa.
 func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int64) (*EmpresaUsuario, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return nil, err
-	}
 	query := `SELECT
 		id,
 		empresa_id,
@@ -709,9 +696,6 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 
 // GetEmpresaUsuariosByEmail lista todas las cuentas asociadas a un correo sin asumir empresa.
 func GetEmpresaUsuariosByEmail(dbConn *sql.DB, email string) ([]EmpresaUsuario, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return nil, err
-	}
 	rows, err := ExecQueryCompat(dbConn, `SELECT
 		id,
 		empresa_id,
@@ -808,9 +792,6 @@ func GetEmpresaUsuarioByEmail(dbConn *sql.DB, email string) (*EmpresaUsuario, er
 
 // GetEmpresaUsuarioByConfirmToken obtiene la invitacion pendiente asociada a un token.
 func GetEmpresaUsuarioByConfirmToken(dbConn *sql.DB, token string) (*EmpresaUsuario, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return nil, err
-	}
 	token = strings.TrimSpace(token)
 	if token == "" {
 		return nil, sql.ErrNoRows
@@ -890,9 +871,6 @@ func GetEmpresaUsuarioByConfirmToken(dbConn *sql.DB, token string) (*EmpresaUsua
 
 // SetEmpresaUsuarioPassword define la contraseña de acceso para un usuario de empresa.
 func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash, passwordSalt string) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET password_hash = ?,
 			password_salt = ?,
@@ -911,9 +889,6 @@ func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash
 
 // CompleteEmpresaUsuarioInvitationPassword consume la invitacion, confirma el correo y define la contrasena inicial.
 func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int64, passwordHash, passwordSalt string) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	res, err := execSQLCompat(dbConn, `UPDATE users
 		SET password_hash = ?,
 			password_salt = ?,
@@ -944,9 +919,6 @@ func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int6
 // CompleteEmpresaUsuarioInvitationGoogle consume la invitacion cuando el usuario
 // valida su correo con Google y decide entrar sin crear contrasena local.
 func CompleteEmpresaUsuarioInvitationGoogle(dbConn *sql.DB, empresaID, id int64) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET email_confirmado = 1,
 			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CAST(CURRENT_TIMESTAMP AS TEXT) ELSE email_confirmado_en END,
@@ -966,9 +938,6 @@ func CompleteEmpresaUsuarioInvitationGoogle(dbConn *sql.DB, empresaID, id int64)
 
 // SetEmpresaUsuarioPasswordResetToken registra un token temporal para recuperacion de contrasena.
 func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, token, expira string) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET password_reset_token = ?,
 			password_reset_expira = ?,
@@ -980,9 +949,6 @@ func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, to
 
 // ClearEmpresaUsuarioPasswordResetToken invalida el token de recuperación actual de un usuario.
 func ClearEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET password_reset_token = '',
 			password_reset_expira = '',
@@ -994,9 +960,6 @@ func ClearEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64) 
 
 // RegisterEmpresaUsuarioLoginFailure incrementa intentos fallidos y aplica bloqueo temporal.
 func RegisterEmpresaUsuarioLoginFailure(dbConn *sql.DB, empresaID, id int64, maxAttempts int, window, lockDuration time.Duration) (int, string, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return 0, "", err
-	}
 	if maxAttempts <= 0 {
 		maxAttempts = 5
 	}
@@ -1060,9 +1023,6 @@ func RegisterEmpresaUsuarioLoginFailure(dbConn *sql.DB, empresaID, id int64, max
 
 // ClearEmpresaUsuarioLoginFailures limpia contador y bloqueo de intentos fallidos.
 func ClearEmpresaUsuarioLoginFailures(dbConn *sql.DB, empresaID, id int64) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET login_failed_attempts = 0,
 			login_failed_last_at = '',
@@ -1091,21 +1051,7 @@ func IsEmpresaUsuarioLocked(item *EmpresaUsuario, now time.Time) (bool, string) 
 }
 
 func parseDateTimeLocal(raw string) (time.Time, bool) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return time.Time{}, false
-	}
-	layouts := []string{
-		"2006-01-02 15:04:05",
-		time.RFC3339,
-		"2006-01-02T15:04:05",
-	}
-	for _, layout := range layouts {
-		if parsed, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
-			return parsed, true
-		}
-	}
-	return time.Time{}, false
+	return valueutil.ParseDateTimeLocal(raw)
 }
 
 // UpdateEmpresaUsuario actualiza los datos de un usuario de empresa.
@@ -1119,9 +1065,6 @@ func UpdateEmpresaUsuario(
 	resetConfirmacion bool,
 	confirmToken, confirmExpira string,
 ) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	if resetConfirmacion {
 		_, err := execSQLCompat(dbConn, `UPDATE users
 			SET email = ?,
@@ -1178,9 +1121,6 @@ func UpdateEmpresaUsuario(
 
 // UpdateEmpresaUsuarioFoto actualiza la foto de perfil de un usuario dentro de su empresa.
 func UpdateEmpresaUsuarioFoto(dbConn *sql.DB, empresaID, id int64, fotoURL string) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	res, err := execSQLCompat(dbConn, `UPDATE users
 		SET foto_url = ?,
 			fecha_actualizacion = CURRENT_TIMESTAMP
@@ -1201,18 +1141,12 @@ func UpdateEmpresaUsuarioFoto(dbConn *sql.DB, empresaID, id int64, fotoURL strin
 
 // DeleteEmpresaUsuario elimina un usuario de empresa.
 func DeleteEmpresaUsuario(dbConn *sql.DB, empresaID, id int64) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `DELETE FROM users WHERE id = ? AND empresa_id = ?`, id, empresaID)
 	return err
 }
 
 // DeleteEmpresaUsuariosPreconfiguracion elimina usuarios guia creados por una preconfiguracion.
 func DeleteEmpresaUsuariosPreconfiguracion(dbConn *sql.DB, empresaID int64, marker string) (int64, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return 0, err
-	}
 	marker = strings.TrimSpace(marker)
 	if marker == "" {
 		return 0, nil
@@ -1232,18 +1166,12 @@ func DeleteEmpresaUsuariosPreconfiguracion(dbConn *sql.DB, empresaID int64, mark
 
 // SetEmpresaUsuarioEstado activa o desactiva un usuario de empresa.
 func SetEmpresaUsuarioEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `UPDATE users SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ? AND empresa_id = ?`, estado, id, empresaID)
 	return err
 }
 
 // SetEmpresaUsuarioConfirmToken actualiza token de confirmación para reenvíos.
 func SetEmpresaUsuarioConfirmToken(dbConn *sql.DB, empresaID, id int64, confirmToken, confirmExpira string) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET email_confirm_token = ?,
 			email_confirm_expira = ?,
@@ -1254,10 +1182,13 @@ func SetEmpresaUsuarioConfirmToken(dbConn *sql.DB, empresaID, id int64, confirmT
 
 // ConfirmEmpresaUsuarioByToken confirma el correo de un usuario usando su token.
 func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+	tokenHash := hashOneTimeSecret(token)
+	tx, err := dbConn.Begin()
+	if err != nil {
 		return 0, err
 	}
-	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(email_confirm_expira, '') FROM users WHERE email_confirm_token = ? LIMIT 1`, hashOneTimeSecret(token))
+	defer rollbackTransaction(tx)
+	row := queryRowTxSQLCompat(tx, `SELECT id, empresa_id, COALESCE(email_confirm_expira, '') FROM users WHERE email_confirm_token = ? LIMIT 1 FOR UPDATE`, tokenHash)
 	var id int64
 	var empresaID int64
 	var expiraRaw string
@@ -1265,25 +1196,58 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 		return 0, err
 	}
 
-	if expiraRaw != "" {
-		expiraAt, err := time.ParseInLocation("2006-01-02 15:04:05", expiraRaw, time.Local)
-		if err == nil && time.Now().After(expiraAt) {
-			return 0, fmt.Errorf("token de confirmacion expirado")
+	expiraAt, validExpiry := parseAuthTokenExpiration(expiraRaw)
+	if !validExpiry || time.Now().After(expiraAt) {
+		if _, clearErr := execTxSQLCompat(tx, `UPDATE users SET email_confirm_token = '', email_confirm_expira = '' WHERE id = ? AND empresa_id = ? AND email_confirm_token = ?`, id, empresaID, tokenHash); clearErr != nil {
+			return 0, clearErr
 		}
+		if commitErr := tx.Commit(); commitErr != nil {
+			return 0, commitErr
+		}
+		return 0, fmt.Errorf("token de confirmacion invalido o expirado")
 	}
 
-	_, err := execSQLCompat(dbConn, `UPDATE users
+	result, err := execTxSQLCompat(tx, `UPDATE users
 		SET email_confirmado = 1,
 			email_confirmado_en = CAST(CURRENT_TIMESTAMP AS TEXT),
 			estado = 'activo',
 			email_confirm_token = '',
 			email_confirm_expira = '',
 			fecha_actualizacion = CURRENT_TIMESTAMP
-		WHERE id = ?`, id)
+		WHERE id = ? AND empresa_id = ? AND email_confirm_token = ?`, id, empresaID, tokenHash)
 	if err != nil {
 		return 0, err
 	}
+	affected, err := result.RowsAffected()
+	if err != nil || affected != 1 {
+		return 0, sql.ErrNoRows
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
 	return empresaID, nil
+}
+
+func SetEmpresaUsuarioPasswordFromResetToken(dbConn *sql.DB, empresaID, id int64, token, passwordHash, passwordSalt string) error {
+	result, err := execSQLCompat(dbConn, `UPDATE users
+		SET password_hash = ?, password_salt = ?, password_set = 1,
+			password_actualizada_en = CAST(CURRENT_TIMESTAMP AS TEXT),
+			password_reset_token = '', password_reset_expira = '', password_reset_requested_en = '',
+			login_failed_attempts = 0, login_failed_last_at = '', login_locked_until = '',
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ? AND password_reset_token = ?`,
+		passwordHash, passwordSalt, id, empresaID, hashOneTimeSecret(token))
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // EmpresaUsuarioTokenMatches compares an original browser/email token with the
@@ -1344,9 +1308,6 @@ func MigrateEmpresaUsuarioTemporaryTokens(dbConn *sql.DB, dryRun bool) (int, err
 }
 
 func SetEmpresaUsuarioContratoAceptado(dbConn *sql.DB, empresaID, id int64, version int) error {
-	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
-		return err
-	}
 	_, err := execSQLCompat(dbConn, `UPDATE users
 		SET acepta_contrato = 1,
 			contrato_version_aceptada = ?,

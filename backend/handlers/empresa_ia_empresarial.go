@@ -139,15 +139,15 @@ func normalizeEmpresaIAAccion(raw string) string {
 		return ""
 	case "factura", "factura_borrador", "borrador_factura", "cotizacion":
 		return "borrador_factura"
-	case "cobranza", "pagos", "record_payment":
+	case "cobranza", "pagos", "record_payment", "cobranza_pagos":
 		return "cobranza_pagos"
-	case "inventario", "productos", "stock":
+	case "inventario", "productos", "stock", "inventario_productos":
 		return "inventario_productos"
 	case "conciliacion", "conciliacion_bancaria", "bancos":
 		return "conciliacion_bancaria"
-	case "cumplimiento", "dian", "impuestos":
+	case "cumplimiento", "dian", "impuestos", "cumplimiento_dian":
 		return "cumplimiento_dian"
-	case "compras", "gastos", "soportes":
+	case "compras", "gastos", "soportes", "compras_gastos":
 		return "compras_gastos"
 	case "diagnostico", "diagnostico_erp", "analisis":
 		return "diagnostico_erp"
@@ -299,7 +299,7 @@ func buildEmpresaIAEmpresarialResponse(r *http.Request, dbEmp, dbSuper *sql.DB, 
 	system := "Eres un agente IA ERP y contable para Powerful Control System. Responde en espanol profesional y accionable. Usa solo el snapshot real filtrado por empresa_id; no inventes cifras, NIT, estados DIAN ni registros. No ejecutes mutaciones: si el usuario pide factura, pago, cliente o producto, entrega un borrador revisable, datos faltantes y siguiente boton/ruta sugerida. No digas que emitiste, registraste o conciliaste algo. Entrega secciones cortas: diagnostico, hallazgos, riesgos, siguiente accion y datos faltantes. Si la accion es borrador_factura, usa formato JSON visible con cliente, items, impuestos sugeridos, faltantes y advertencias.\n\nACCION_SOLICITADA: " + payload.Accion + "\nSNAPSHOT_REAL_JSON:\n" + truncateText(string(raw), 9000)
 	system += "\n\n" + buildEmpresaAIChatAgentInstruction(payload.AgentID)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
-	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, consulta, nil, system, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
+	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, consulta, nil, system)
 	if err != nil {
 		return map[string]interface{}{"ok": false, "code": "ai_error", "error": publicAIProviderError(err)}
 	}

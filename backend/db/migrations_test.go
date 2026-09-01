@@ -66,6 +66,78 @@ func TestEmpresaCatalogIncludesNextcloudSchemaMigration(t *testing.T) {
 	t.Fatal("nextcloud migration is missing from empresas catalog")
 }
 
+func TestEmpresaCatalogIncludesProductosInventarioMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260826-001-productos-inventario-v1" {
+			if migration.Body != empresaProductosInventarioSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("products and inventory migration must be immutable and executable")
+			}
+			const publishedChecksum = "8042b7fa9915a23ebf76cbb9702d890796dc5c655f597e97f32587da94a006a2"
+			if got := MigrationChecksum(platformMigrationScope, migration); got != publishedChecksum {
+				t.Fatalf("published products and inventory v1 checksum=%s, want %s", got, publishedChecksum)
+			}
+			return
+		}
+	}
+	t.Fatal("products and inventory migration is missing from empresas catalog")
+}
+
+func TestEmpresaCatalogIncludesProductosInventarioLegacyWarehouseMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260826-002-productos-inventario-recepcion-bodega-v2" {
+			if migration.Body != empresaProductosInventarioLegacyWarehouseSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("legacy receipt warehouse migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("legacy receipt warehouse migration is missing from empresas catalog")
+}
+
+func TestEmpresaCatalogIncludesServiciosNombreUniqueMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260826-003-servicios-nombre-unico-v1" {
+			if migration.Body != empresaServiciosNombreUniqueSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("normalized service-name uniqueness migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("normalized service-name uniqueness migration is missing from empresas catalog")
+}
+
+func TestEmpresaCatalogIncludesCatalogosNombreUniqueMigration(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version == "20260826-004-catalogos-nombre-unico-v1" {
+			if migration.Body != empresaCatalogosNombreUniqueSchemaFingerprint || migration.Apply == nil {
+				t.Fatal("normalized category/provider-name uniqueness migration must be immutable and executable")
+			}
+			return
+		}
+	}
+	t.Fatal("normalized category/provider-name uniqueness migration is missing from empresas catalog")
+}
+
 func TestEmpresaCatalogIncludesNextcloudLegacyRepairMigration(t *testing.T) {
 	t.Parallel()
 	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
@@ -208,7 +280,7 @@ func TestEmpresaCatalogIncludesRetiredVerticalModulesCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, migration := range migrations {
-		if migration.Version != "20260823-002-retire-vertical-modules-v1" {
+		if migration.Version != "20260901-001-retire-vertical-modules-v1" {
 			continue
 		}
 		if migration.Apply == nil || migration.Body != empresaVerticalModulesDecommissionFingerprint {

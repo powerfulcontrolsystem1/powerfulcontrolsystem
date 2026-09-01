@@ -2,9 +2,30 @@ package db
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestProductionRepositoriesDoNotUseLastInsertID(t *testing.T) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") || name == "runtime_schema_guard.go" {
+			continue
+		}
+		raw, err := os.ReadFile(filepath.Clean(name))
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		if strings.Contains(string(raw), "LastInsertId(") {
+			t.Fatalf("%s no debe usar LastInsertId; PostgreSQL requiere RETURNING id", name)
+		}
+	}
+}
 
 func TestConfiguracionOperativaWritesUsePostgresReturningID(t *testing.T) {
 	raw, err := os.ReadFile("configuracion_operativa.go")

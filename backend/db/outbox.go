@@ -1,9 +1,8 @@
 package db
 
 import (
-	"crypto/sha256"
+	"context"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -132,11 +131,21 @@ func outboxSchemaStatements() []string {
 // InsertOutboxEvent performs an atomic, idempotent insert using the caller's
 // business transaction. The raw idempotency key is hashed before persistence.
 func InsertOutboxEvent(tx *sql.Tx, event OutboxEvent) error {
-	_, _, err := InsertOutboxEventIdempotent(tx, event)
+	return InsertOutboxEventContext(context.Background(), tx, event)
+}
+
+// InsertOutboxEventContext keeps an outbox insert in the caller request
+// context while preserving the same transaction and idempotency contract.
+func InsertOutboxEventContext(ctx context.Context, tx *sql.Tx, event OutboxEvent) error {
+	_, _, err := InsertOutboxEventIdempotentContext(ctx, tx, event)
 	return err
 }
 
 func InsertOutboxEventIdempotent(tx *sql.Tx, event OutboxEvent) (*OutboxEvent, bool, error) {
+	return InsertOutboxEventIdempotentContext(context.Background(), tx, event)
+}
+
+func InsertOutboxEventIdempotentContext(ctx context.Context, tx *sql.Tx, event OutboxEvent) (*OutboxEvent, bool, error) {
 	if tx == nil {
 		return nil, false, fmt.Errorf("transaction required")
 	}
@@ -163,7 +172,7 @@ func InsertOutboxEventIdempotent(tx *sql.Tx, event OutboxEvent) (*OutboxEvent, b
 	if event.AvailableAt.IsZero() {
 		event.AvailableAt = time.Now().UTC()
 	}
-	result, err := execTxSQLCompat(tx, `INSERT INTO pcs_outbox_events
+	result, err := execTxSQLCompatContext(ctx, tx, `INSERT INTO pcs_outbox_events
 		(empresa_id, topic, version, payload_json, status, attempts, max_attempts, idempotency_key_hash, available_at, created_at, updated_at)
 		VALUES (?, ?, ?, ?, 'pending', 0, ?, NULLIF(?, ''), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		ON CONFLICT DO NOTHING`, event.EmpresaID, event.Topic, event.Version, event.PayloadJSON, event.MaxAttempts,
@@ -178,7 +187,7 @@ func InsertOutboxEventIdempotent(tx *sql.Tx, event OutboxEvent) (*OutboxEvent, b
 		return nil, false, fmt.Errorf("outbox event was not created")
 	}
 	var existing OutboxEvent
-	err = queryRowTxSQLCompat(tx, `SELECT id, empresa_id, topic, version, payload_json, status, attempts, max_attempts,
+	err = queryRowTxSQLCompatContext(ctx, tx, `SELECT id, empresa_id, topic, version, payload_json, status, attempts, max_attempts,
 		COALESCE(idempotency_key_hash, ''), available_at
 		FROM pcs_outbox_events WHERE empresa_id = ? AND topic = ? AND idempotency_key_hash = ?`,
 		event.EmpresaID, event.Topic, event.IdempotencyKeyHash).
@@ -313,10 +322,5 @@ func RecoverExpiredOutboxEvents(dbConn *sql.DB) (int64, error) {
 }
 
 func hashOutboxKey(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return ""
-	}
-	sum := sha256.Sum256([]byte(value))
-	return hex.EncodeToString(sum[:])
+	return hashRepositoryKey(value)
 }

@@ -525,7 +525,7 @@ func aplicarDatafonoAlPOS(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID, tx
 		return false, "pago aprobado, pero el saldo o la moneda del carrito cambiaron antes del cierre"
 	}
 	usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
-	cierreCaja, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
+	cierreCaja, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(r.Context(), dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 	if err != nil {
 		return false, "pago aprobado, pero no hay caja abierta para aplicar el cierre en POS"
 	}
@@ -740,12 +740,7 @@ func datafonoProviderPublicError(err error) string {
 }
 
 func firstNonEmptyDatafono(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func roundMoneyDatafono(v float64) float64 {

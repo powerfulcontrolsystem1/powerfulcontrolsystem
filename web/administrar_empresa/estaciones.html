@@ -13,6 +13,10 @@
     .camera-station-empty{font-size:.86rem;line-height:1.35}
     .camera-station-card .station-data{display:grid;gap:4px}
     .camera-station-card .btn{align-self:flex-start;margin-top:4px}
+    #estacionesGrid .station-domotica-action{display:flex;justify-content:flex-end;margin-top:auto;padding-top:8px}
+    #estacionesGrid .station-domotica-button{width:46px;height:46px;min-width:46px;padding:0;display:inline-grid;place-items:center;border:1px solid color-mix(in srgb,var(--primary-color,#2563eb) 65%,var(--border-color,#d9e1ea));border-radius:8px;background:color-mix(in srgb,var(--primary-color,#2563eb) 13%,var(--card-bg,#fff));color:var(--primary-color,#2563eb);font-size:1.35rem;font-weight:800;line-height:1;cursor:pointer;touch-action:manipulation}
+    #estacionesGrid .station-domotica-button:hover,#estacionesGrid .station-domotica-button:focus-visible{background:var(--primary-color,#2563eb);color:#fff;outline:2px solid color-mix(in srgb,var(--primary-color,#2563eb) 45%,transparent);outline-offset:2px}
+    @media (max-width:640px){#estacionesGrid .station-domotica-button{width:48px;height:48px;min-width:48px}}
     #estacionesGrid:not(.estaciones-thumb-mobile){grid-template-columns:repeat(auto-fit,minmax(250px,1fr));grid-auto-rows:auto}
     #estacionesGrid:not(.estaciones-thumb-mobile) .portal-card.station-launch-card{height:auto;min-height:170px}
     #estacionesGrid:not(.estaciones-thumb-mobile) .station-data-row{align-items:flex-start}
@@ -107,7 +111,8 @@
         marcar_sucia_al_pagar: true,
         solo_activar_primer_clic: false,
         abrir_carrito_al_activar: true,
-        mostrar_boton_domotica: true
+        mostrar_boton_domotica: false,
+        abrir_domotica_al_entrar_estacion: false
       },
       dirtyByEstacion: {},
       camaras: [],
@@ -298,7 +303,8 @@
           mostrar_propina: false,
           mostrar_comision: false,
           permitir_pago_mixto: true,
-          mostrar_resumen_productos: true
+          mostrar_resumen_productos: true,
+          abrir_domotica_al_entrar_estacion: false
         };
       }
 
@@ -324,7 +330,8 @@
           mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : toBool(src.mostrar_propina),
           mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : toBool(src.mostrar_comision),
           permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : toBool(src.permitir_pago_mixto),
-          mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : toBool(src.mostrar_resumen_productos)
+          mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : toBool(src.mostrar_resumen_productos),
+          abrir_domotica_al_entrar_estacion: src.abrir_domotica_al_entrar_estacion === undefined ? base.abrir_domotica_al_entrar_estacion : toBool(src.abrir_domotica_al_entrar_estacion)
         });
       }
 
@@ -681,6 +688,7 @@
         if (!parsed) return null;
         const normalized = normalizeConfig(parsed);
         const ui = normalized.station_card_ui && typeof normalized.station_card_ui === 'object' ? normalized.station_card_ui : {};
+        const carritoUI = normalized.carrito_ui_global && typeof normalized.carrito_ui_global === 'object' ? normalized.carrito_ui_global : {};
         state.stationCardUI = Object.assign({}, state.stationCardUI, {
           mostrar_cliente_nombre: ui.mostrar_cliente_nombre === undefined ? true : !!ui.mostrar_cliente_nombre,
           mostrar_tarifa_resumen: ui.mostrar_tarifa_resumen === undefined ? true : !!ui.mostrar_tarifa_resumen,
@@ -689,7 +697,8 @@
           marcar_sucia_al_pagar: ui.marcar_sucia_al_pagar === undefined ? true : !!ui.marcar_sucia_al_pagar,
           solo_activar_primer_clic: ui.solo_activar_primer_clic === undefined ? ui.abrir_carrito_al_activar === false : !!ui.solo_activar_primer_clic,
           abrir_carrito_al_activar: ui.abrir_carrito_al_activar === undefined ? ui.solo_activar_primer_clic !== true : !!ui.abrir_carrito_al_activar,
-          mostrar_boton_domotica: ui.mostrar_boton_domotica === undefined ? true : !!ui.mostrar_boton_domotica
+          mostrar_boton_domotica: ui.mostrar_boton_domotica === undefined ? false : !!ui.mostrar_boton_domotica,
+          abrir_domotica_al_entrar_estacion: carritoUI.abrir_domotica_al_entrar_estacion === undefined ? false : !!carritoUI.abrir_domotica_al_entrar_estacion
         });
 
         state.dirtyByEstacion = {};
@@ -1009,14 +1018,23 @@
     }
 
     function openStationDomotica(stationID, stationName) {
-      if (!empresaId || Number(stationID || 0) <= 0) return;
+      const targetID = Number(stationID || 0);
+      if (!empresaId || targetID <= 0) return;
       const params = new URLSearchParams();
       params.set('empresa_id', String(empresaId));
-      params.set('estacion_id', String(stationID));
-      params.set('estacion_nombre', String(stationName || stationDefaultName(stationID, stationConfig || {})));
+      params.set('estacion_id', String(targetID));
+      params.set('estacion_nombre', String(stationName || stationDefaultName(targetID, stationConfig || {})));
       params.set('source', 'estaciones');
       params.set('return_to', 'estaciones');
       window.location.href = '/administrar_empresa/carrito_control_electrico.html?' + params.toString();
+    }
+
+    function openStationOperationalDestination(stationID, stationName) {
+      if (state.stationCardUI && state.stationCardUI.abrir_domotica_al_entrar_estacion) {
+        openStationDomotica(stationID, stationName);
+        return;
+      }
+      openStationCarrito(stationID, stationName, false);
     }
     function openCajaClosePage(stationName, cajaCodigo, cajaDescripcion) {
       if (!empresaId) return;
@@ -1480,8 +1498,13 @@
         return;
       }
 
+      if (state.stationCardUI && state.stationCardUI.abrir_domotica_al_entrar_estacion) {
+        openStationOperationalDestination(stationID, stationName);
+        return;
+      }
+
       if (shouldOpenCartWhenStationClicked(stationID)) {
-        openStationCarrito(stationID, stationName);
+        openStationOperationalDestination(stationID, stationName);
         return;
       }
 
@@ -2339,10 +2362,12 @@
             stationMetaRowHtml('aseo', 'Aseo', 'Clic para reportar', isDirty && state.aseoControlEnabled) +
             stationMetaRowHtml('total', 'Total', meta.total, useMostrarTotal && !!meta.total) +
           '</div>';
+          const domoticaButtonHtml = state.stationCardUI && state.stationCardUI.mostrar_boton_domotica ?
+            '<div class="station-domotica-action"><button type="button" class="station-domotica-button" data-station-domotica="' + stationID + '" aria-label="Abrir Domótica de ' + sanitize(est.nombre) + '" title="Domótica">⚡</button></div>' : '';
           return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir ' + sanitize(est.nombre) + '">' +
             '<div class="station-sensor-indicator" data-sensor-color="' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
-			stationDataHtml +
+			stationDataHtml + domoticaButtonHtml +
             '</article>';
       }).join('');
           html += afterSpecial.join('');
@@ -2362,6 +2387,18 @@
           if (ev.key !== 'Enter' && ev.key !== ' ') return;
           ev.preventDefault();
           handleStationCardActivation(ev, card);
+        });
+      });
+
+      grid.querySelectorAll('[data-station-domotica]').forEach(button => {
+        button.addEventListener('click', function(ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const card = button.closest('.station-launch-card');
+          openStationDomotica(Number(button.getAttribute('data-station-domotica') || 0), card && card.getAttribute('data-estacion-nombre'));
+        });
+        button.addEventListener('keydown', function(ev) {
+          ev.stopPropagation();
         });
       });
 

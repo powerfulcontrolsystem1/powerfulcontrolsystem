@@ -1,13 +1,29 @@
 package handlers
 
 import (
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
+func TestDomoticaEventReportFilterParsesScopedFields(t *testing.T) {
+	req := httptest.NewRequest("GET", "/api/empresa/control_electrico?action=eventos&estacion_id=4&rele_id=8&raspberry_id=2&comando=encender&resultado=ok&desde=2026-08-23T08%3A00&hasta=2026-08-23T18%3A00&limit=80", nil)
+	filter, err := controlElectricoEventFilterFromRequest(req)
+	if err != nil {
+		t.Fatalf("filtro valido: %v", err)
+	}
+	if filter.EstacionID != 4 || filter.ReleID != 8 || filter.RaspberryID != 2 || filter.Comando != "encender" || filter.Resultado != "ok" || filter.Limit != 80 {
+		t.Fatalf("filtro inesperado: %#v", filter)
+	}
+	invalid := httptest.NewRequest("GET", "/api/empresa/control_electrico?action=eventos&rele_id=-1", nil)
+	if _, err := controlElectricoEventFilterFromRequest(invalid); err == nil {
+		t.Fatal("rele_id negativo debe rechazarse")
+	}
+}
+
+func TestDomoticaStationUIHasConfigurableCardEntryAndVisibilityCheck(t *testing.T) {
 	stationPage, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "estaciones.html"))
 	if err != nil {
 		t.Fatal(err)
@@ -28,8 +44,19 @@ func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
 			t.Fatalf("la configuracion de estaciones no contiene %q", marker)
 		}
 	}
-	if strings.Contains(stationSource, "data-open-station-domotica") || strings.Contains(stationSource, "station-domotica-button") {
-		t.Fatal("la pagina de estaciones no debe mostrar un boton Domotica dentro de la tarjeta")
+	for _, marker := range []string{"data-station-domotica", "station-domotica-button", "station-domotica-action", "ev.stopPropagation()"} {
+		if !strings.Contains(stationSource, marker) {
+			t.Fatalf("la pagina de estaciones no contiene el acceso Domotica configurable %q", marker)
+		}
+	}
+	electricConfig, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{"mostrarBotonDomoticaEstaciones", "saveStationDomoticaButtonPreference", "loadStationDomoticaButtonPreference", "api('station_card_ui')"} {
+		if !strings.Contains(string(electricConfig), marker) {
+			t.Fatalf("la configuracion de Domotica no contiene %q", marker)
+		}
 	}
 	cartPage, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "carrito_de_compras.html"))
 	if err != nil {
@@ -39,6 +66,64 @@ func TestDomoticaStationUIHasSingleEntryAndVisibilityCheck(t *testing.T) {
 	for _, marker := range []string{"carrito-action-select-row", "gap:18px", "id=\"carritoBtnControlElectrico\"", "aria-label=\"Abrir Domótica de esta estación\"", "const estacionID = resolveCarritoEstacionID(selected)", "return_to: 'carrito'"} {
 		if !strings.Contains(cartSource, marker) {
 			t.Fatalf("el carrito no contiene %q", marker)
+		}
+	}
+}
+
+func TestDomoticaStationCardPreferenceUsesControlElectricoPermissionBoundary(t *testing.T) {
+	content, err := os.ReadFile("control_electrico.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{"case \"station_card_ui\":", "getControlElectricoStationCardUIButton", "saveControlElectricoStationCardUIButton", "EmpresaEstacionPrefsSchemaReady", "registrarAuditoriaModuloEmpresaNoBloqueante"} {
+		if !strings.Contains(string(content), marker) {
+			t.Fatalf("el endpoint de Domotica no contiene %q", marker)
+		}
+	}
+	permissions, err := os.ReadFile("empresa_permisos.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(permissions), "\"station_card_ui\"") {
+		t.Fatal("la preferencia de tarjetas debe usar permisos de control electrico")
+	}
+}
+
+func TestDomoticaStationEntryPreferenceKeepsCartDefaultAndRedirectsCompanyMenu(t *testing.T) {
+	files := map[string][]string{
+		filepath.Join("..", "..", "web", "administrar_empresa", "configuracion_carrito_de_compra_empresa.html"): {
+			"carritoCfgAbrirDomoticaEstaciones",
+			"abrir_domotica_al_entrar_estacion: false",
+			"Abrir equipos electronicos al entrar a una estacion o a Venta directa",
+			"pcs-station-entry-navigation-updated",
+			"window.top && window.top !== window",
+		},
+		filepath.Join("..", "..", "web", "administrar_empresa", "estaciones.html"): {
+			"function openStationOperationalDestination",
+			"openStationDomotica(stationID, stationName)",
+			"openStationOperationalDestination(stationID, stationName)",
+		},
+		filepath.Join("..", "..", "web", "administrar_empresa", "configuracion_de_estaciones.html"): {
+			"nextConfig.abrir_domotica_al_entrar_estacion = !!prev.abrir_domotica_al_entrar_estacion",
+		},
+		filepath.Join("..", "..", "web", "js", "administrar_empresa.js"): {
+			"stationEntryDomoticaEnabled",
+			"link.id === \"linkVentaDirecta\"",
+			"target.pathname = \"/administrar_empresa/carrito_control_electrico.html\"",
+			"target.searchParams.set(\"vista\", \"todas\")",
+			"function refreshDirectSaleDestination",
+		},
+	}
+	for path, markers := range files {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		source := string(content)
+		for _, marker := range markers {
+			if !strings.Contains(source, marker) {
+				t.Fatalf("%s no contiene %q", path, marker)
+			}
 		}
 	}
 }
@@ -71,6 +156,14 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 		"function scheduleState(rele)",
 		"Programado · Funcionando ahora",
 		"Programado · En espera",
+		"function waitForRelayConfirmation(releID, estado)",
+		"Comando enviado; esperando confirmación de la Raspberry",
+		"El comando sigue en cola. Revisa la conexión de la Raspberry.",
+		"function relayRaspberryConnected(rele)",
+		"function explainDisconnectedRelay(rele, action)",
+		"porque ' + raspberry + ' está desconectada",
+		"function refreshLiveTimerLabels()",
+		"touch-action: manipulation",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("el panel operativo de estacion no contiene %q", marker)
@@ -81,6 +174,82 @@ func TestDomoticaStationPanelShowsDevicesSensorsAndMultipleRaspberry(t *testing.
 	}
 	if strings.Contains(source, "Modo: ' + escapeHtml(rele.modo") || strings.Contains(source, "raspberryStatusHTML(rele.raspberry_id)") {
 		t.Fatal("las tarjetas no deben repetir modo ni estado textual de Raspberry")
+	}
+}
+
+func TestDomoticaEventsMirrorIntoCompanyAuditWithTenantScope(t *testing.T) {
+	dbSource, err := os.ReadFile(filepath.Join("..", "db", "control_electrico.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{
+		"func createEmpresaControlElectricoAuditMirror",
+		"CreateEmpresaAuditoriaEvento",
+		"EmpresaID:      ev.EmpresaID",
+		"domotica_evento_id",
+		"empresa_control_electrico_eventos",
+	} {
+		if !strings.Contains(string(dbSource), marker) {
+			t.Fatalf("el espejo de auditoria Domotica no contiene %q", marker)
+		}
+	}
+	handlerSource, err := os.ReadFile("control_electrico.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{
+		"func registrarEventoControlElectrico",
+		"configuracion_domotica",
+		"equipo_configurado",
+		"regla_sensor_configurada",
+		"sensor_input",
+		"lectura_telemetria",
+		"prueba_gpio",
+		"operacion_raspberry",
+		"controlElectricoEventFilterFromRequest",
+		"ListEmpresaControlElectricoEventosFilteredContext",
+		"El equipo no pertenece a esta empresa",
+		"La Raspberry Pi no pertenece a esta empresa",
+	} {
+		if !strings.Contains(string(handlerSource), marker) {
+			t.Fatalf("la trazabilidad operativa Domotica no contiene %q", marker)
+		}
+	}
+	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "control_electrico.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{
+		"Seguimiento de eventos",
+		"eventStationFilter",
+		"eventDeviceFilter",
+		"eventRaspberryFilter",
+		"eventCommandFilter",
+		"eventResultFilter",
+		"eventFromFilter",
+		"eventUntilFilter",
+		"loadEventReport",
+		"eventFilterApplyBtn",
+	} {
+		if !strings.Contains(string(page), marker) {
+			t.Fatalf("el reporte filtrable de Domotica no contiene %q", marker)
+		}
+	}
+}
+
+func TestSuperAdminMobileStartsWithCompanySelector(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("..", "..", "web", "super_administrador.html"))
+	if err != nil {
+		t.Fatalf("read super admin: %v", err)
+	}
+	source := string(content)
+	selector := `<li class="admin-nav-standalone super-select-company-first">`
+	panel := `<a href="/super/licencias_resumen.html"`
+	if !strings.Contains(source, selector) || !strings.Contains(source, `href="/seleccionar_empresa.html"`) {
+		t.Fatal("el menu super debe exponer Seleccionar empresa como acceso principal")
+	}
+	if strings.Index(source, selector) > strings.Index(source, panel) {
+		t.Fatal("Seleccionar empresa debe aparecer antes del Panel en el menu movil del super administrador")
 	}
 }
 
@@ -108,6 +277,34 @@ func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {
 		}
 	}
 	for _, marker := range []string{"activationDelaySeconds", "activation_delay_seconds", "Cola única por empresa"} {
-		if !strings.Contains(source, marker) { t.Fatalf("la configuracion no contiene %q", marker) }
+		if !strings.Contains(source, marker) {
+			t.Fatalf("la configuracion no contiene %q", marker)
+		}
+	}
+	for _, marker := range []string{"Array.from({ length: 28 }", "GPIO 0 y GPIO 1 corresponden a ID_SDA/ID_SCL", "cableado verificado", "assignedPins", "hasConfiguredGPIO", "Selecciona una Raspberry", "Sin Raspberry asignada"} {
+		if !strings.Contains(source, marker) {
+			t.Fatalf("la configuracion no conserva GPIO 0 ni la lista neutral de Raspberry: falta %q", marker)
+		}
+	}
+	for _, legacy := range []string{"Raspberry principal/global", "disabled>Principal</button>"} {
+		if strings.Contains(source, legacy) {
+			t.Fatalf("la configuracion no debe clasificar controladores como principal/secundario: encontro %q", legacy)
+		}
+	}
+}
+
+func TestDomoticaSummaryHidesInactiveRaspberryControllers(t *testing.T) {
+	content, err := os.ReadFile("control_electrico.go")
+	if err != nil {
+		t.Fatalf("read domotica handler: %v", err)
+	}
+	source := string(content)
+	for _, marker := range []string{
+		"raspberries, err := dbpkg.ListEmpresaControlElectricoRaspberryContext(r.Context(), dbEmp, empresaID, false)",
+		"rows, _ := dbpkg.ListEmpresaControlElectricoRaspberry(dbEmp, empresaID, false)",
+	} {
+		if !strings.Contains(source, marker) {
+			t.Fatalf("la respuesta operativa de Domotica debe ocultar Raspberry inactivas: falta %q", marker)
+		}
 	}
 }

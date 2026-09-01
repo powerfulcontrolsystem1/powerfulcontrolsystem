@@ -3653,8 +3653,12 @@
 	  document.getElementById('carteraProveedorId').addEventListener('change', syncCarteraProveedorName);
     document.getElementById('carteraForm').addEventListener('submit', saveCartera);
 	  document.getElementById('btnCargarCxPIA').addEventListener('click', function() {
-		const tipo = normalize(document.getElementById('carteraTipo').value);
-		if (tipo !== 'cxp' && !window.confirm('La lectura IA crea un borrador de cuenta por pagar. ¿Continuar?')) return;
+		const tipoInput = document.getElementById('carteraTipo');
+		if (normalize(tipoInput.value) !== 'cxp') {
+		  tipoInput.value = 'cxp';
+		  syncCarteraProveedorUI();
+		  setMsg('carteraMsg', 'Carga IA preparada como cuenta por pagar. Selecciona el archivo; podrás revisar y editar los datos antes de guardar.', false);
+		}
 		document.getElementById('carteraSoporteIAArchivo').click();
 	  });
 	  document.getElementById('carteraSoporteIAArchivo').addEventListener('change', function() {

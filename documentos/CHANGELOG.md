@@ -1,83 +1,227 @@
-## [2026-09-01] rs gobierna ramas y migraciones antes del VPS
+## [2026-08-28] Cola de impresión con cierre físico explícito
 
-- [Operación] `scripts/rs.ps1` detecta ramas de trabajo antes de mutar el repositorio, las integra mediante PR con checks y solo despliega desde la rama productiva alineada exactamente con `origin`.
-- [Migraciones] El gate estricto es obligatorio en publicaciones reales: inventarios `Ensure`, catálogo histórico inmutable contra el ancestro común, comprobación post-PR contra el `main` anterior y pruebas Go enfocadas deben pasar antes de sincronizar.
-- [Seguridad] `-SkipPreflight` queda limitado a `DryRun`/`PreviewOnly`; una PR pendiente, cerrada sin fusionar o una rama divergente bloquea el VPS sin forzar ni reescribir historial.
-- [QA] `-FullPreflight` convierte `go test ./...` en gate obligatorio y una PR `DIRTY` aborta inmediatamente sin intentar resolver conflictos por preferencia automática.
+- [Operación] Reclamar un trabajo se identifica como una reserva de cola y no
+  como impresión física; el cierre como impreso exige confirmar que salió el
+  papel.
+- [Idempotencia] Reintentar advierte el riesgo de una segunda copia y no se
+  automatiza la recuperación de trabajos tomados sin conciliación física.
+- [QA] Una regresión protege la separación entre reclamar e imprimir, y el
+  script de sintaxis valida el JavaScript inline de la pantalla.
 
-## [2026-08-31] Raspberry multiplexada para sensores de puertas
+## [2026-08-26] Nomina electronica mensual DIAN dedicada
 
-- [Operación] Al agregar una Raspberry se elige `Domótica` o `Sistema de sensores en puertas`. El segundo modo reserva GPIO 0–3 como entradas y GPIO 4–19 como hasta 16 salidas selectoras; cada salida produce cuatro canales de puerta.
-- [Configuración] La empresa define cantidad de relés de salida (1–16) y retardo entre pulsos (10–5000 ms). PCS crea los canales automáticamente y la pantalla de sensores permite asociarlos con habitaciones/estaciones.
-- [Agente] El instalador único configura Python stdlib y `systemd`; después del paso local visible con `sudo`, el servicio arranca con la Raspberry, se enrola por HTTPS saliente y se reconecta con backoff.
-- [Seguridad] La identidad del túnel determina empresa y Raspberry. El agente no envía `empresa_id`; el backend valida salida/entrada contra la configuración y bloquea equipos o reglas Domótica en una placa dedicada a puertas.
-- [Auditoría] `empresa_control_electrico_eventos` registra alta, edición con antes/después, instalador, enrolamiento, canal asignado, operaciones y desactivación. `empresa_sensor_puertas_messages` conserva transiciones físicas por canal.
-- [Datos] La migración `20260831-002-raspberry-door-sensor-v1` agrega modo/retardo/cantidad al controlador y coordenadas físicas al dispositivo de puerta. Solo `pcs-migrate` aplica el esquema.
-- [Tutorial] `tutorial_sensores_puertas_raspberry.html` muestra la matriz 4×16, BCM y pines físicos, secuencia del barrido, enlaces de configuración y límites eléctricos: GPIO de 3,3 V, interfaz de contactos secos y módulo selector activo en alto.
-- [QA] Pasaron pruebas Go enfocadas y sintaxis Python/JavaScript. Pendientes: PostgreSQL efímero/staging, migración real, Raspberry/módulos físicos y validación eléctrica. Sin `rs` ni despliegue.
+- [Fuente fiscal] Consolida liquidaciones pagadas por trabajador/mes cerrado,
+  exige perfil DIAN y falla cerrado ante solapes, pagos ambiguos, diferencias o
+  conceptos horarios sin intervalos reales.
+- [Persistencia] Migracion empresarial versionada con importes exactos, perfil
+  fiscal, periodicidad, identidad del proveedor, reserva atomica e instantaneas
+  inmutables por empresa.
+- [DIAN] Genera `NominaIndividual`, CUNE SHA-384 y XAdES, valida XSD oficial y
+  transmite produccion con `SendNominaSync` sin reutilizar factura/rangos.
+- [Seguridad] Emision y reenvio cruzan aprobacion de Facturacion + Nomina;
+  listados, configuracion, cola y artefactos ocultan nomina sin permiso de
+  lectura adicional. El dashboard contable tampoco consulta ni devuelve
+  resumenes de nomina sin `nomina_sueldos:R`. Reenvio individual exige frase
+  exacta.
+- [Preflight] La identidad fiscal del empleador y del proveedor exige un DV de
+  un solo digito antes de reservar numeracion o generar el XML.
+- [UX] Perfil fiscal, configuracion de familia, preflight mensual y dialogo de
+  emision estan integrados en Nomina. El boton real solo se habilita con mes
+  cerrado, familia activa en produccion e integracion Colombia/DIAN productiva;
+  habilitacion automatica, ajuste y distribucion grafica dedicada siguen
+  bloqueados.
+- [Estado] Candidato local: XSD oficial verde, sin emision real ni despliegue.
 
-## [2026-08-31] Auditoria empresarial: permisos y evidencia forense
+## [2026-08-26] Confirmación visual fail-closed para anulación DIAN
 
-- [Seguridad] `retener` y `purgar` requieren `auditoria:D`; ya no se tratan
-  como una actualizacion ordinaria por usar `PUT` o `POST`.
-- [Evidencia] La pantalla distingue exportacion de vista de la forense. La
-  segunda solicita al servidor manifiesto SHA-256 y cadena de custodia por la
-  pagina filtrada.
-- [Datos] La documentacion elimina la referencia obsoleta a FTS virtual y
-  describe la busqueda PostgreSQL parametrizada e indexada por empresa.
+- [UX segura] El botón final de anulación inicia deshabilitado y solo se
+  habilita cuando la frase es exactamente `ANULAR` y el motivo contiene al
+  menos diez caracteres.
+- [Defensa en profundidad] La validación de envío existente permanece intacta;
+  el estado del botón también se recalcula al abrir, escribir, cerrar, fallar o
+  finalizar el diálogo.
+- [QA] Una regresión de contrato fija el estado inicial deshabilitado y los dos
+  requisitos visibles antes de cualquier solicitud de anulación. Las dos
+  pruebas de atomicidad de inventario con contratos SQL multilínea normalizan
+  `CRLF` para que el preflight completo sea equivalente en Windows y Linux.
 
-## [2026-08-26] Historial inmutable del carrito y corte de caja coherente
+## [2026-08-26] Productos e inventario preparados como candidato productivo
 
-- [Causa] Venta directa reactiva el mismo `carritos_compras.id` con `reset_items=1`; por eso el corte que filtraba `pagado_en` y `estado_carrito='cerrado'` perdía la venta ya cobrada y sus ítems, aunque el cierre conservara el efectivo.
-- [Persistencia] `PayCarritoStationSession` guarda, antes del commit, una fila `venta_pagada` con código único por sesión, carrito, estación, método, caja/turno, total, descuento, devolución, componente en efectivo y snapshot JSON de ítems. El mismo código diferencia el evento `commerce.sale-paid` para que cierres sucesivos del carrito 117 no compartan idempotencia.
-- [Caja] El efectivo del pago, la venta inmutable y el outbox quedan en la misma transacción. Un fallo en cualquiera revierte el cierre completo; el filtro combina siempre `empresa_id`, caja y `cierre_caja_id`.
-- [Reporte] Corte de caja lee ventas y anulaciones desde `empresa_ventas_estacion_metricas`, reconstruye productos/tipos en memoria y elimina las dos consultas que dependían de los ítems mutables. El acumulado persistido del turno solo corrige el reporte cuando el rango cubre desde la apertura completa, no un día parcial dentro de una caja antigua.
-- [Compatibilidad] Las marcas de tiempo PostgreSQL con fracciones y zona (`-05` o `-05:00`) ya calculan duración de atención. Filas históricas sin snapshot siguen mostrando la venta y sus montos; no pueden recuperar ítems que ya fueron borrados antes de esta migración.
-- [QA] Aprobaron pruebas unitarias de identidad por cierre, duración PostgreSQL, contrato SQL/argumentos, reconstrucción de dos ventas del mismo carrito, alcance de turno y consulta multiempresa inmutable. La venta real previa de PCS continúa como evidencia del defecto publicado; la corrección permanece local, requiere `pcs-migrate` y no se ha desplegado.
+- [Multiempresa] Las referencias hijas ajenas se rechazan como recurso no
+  disponible sin 500, filtrado de IDs ni mutaciones; la inconsistencia de
+  `empresa_id` entre URL, cabecera y cuerpo sigue bloqueada antes del handler.
+- [Productos/Servicios] Valores economicos, impuestos, stock y duraciones fuera
+  de rango se rechazan; los codigos opcionales vacios se persisten como `NULL`
+  para permitir varios catalogos validos por empresa.
+- [Inventario] Lotes, seriales y reservas usan selectores descriptivos; tanto
+  Inventario como Compras avanzados dejan de exponer generacion demo en capas
+  productivas.
+- [Compras] Una recepcion puede agrupar varios items pendientes en la misma
+  transaccion/documento, con stock, costo, lote, Kardex y estados atomicos.
+- [IA/archivos] El XML aceptado y extraido por GPT-5.5 tambien puede conservarse
+  como comprobante privado bien formado, sin DTD, y descargable como attachment.
+- [Observabilidad] Operaciones de catalogo, reservas e impresoras ya no descartan
+  errores de `RowsAffected`; los listados propagan `rows.Err()`.
+- [Catalogos] Categorias, productos, proveedores y servicios duplicados devuelven
+  HTTP 409 con un mensaje publico estable; las restricciones y mensajes internos
+  de PostgreSQL no se exponen al navegador.
+- [Catalogos] Categorias y proveedores comparan ademas el nombre normalizado por
+  empresa, de modo que cambios de mayusculas o espacios externos no creen el
+  mismo registro logico; una migracion con colisiones historicas falla cerrada.
+- [Servicios] El nombre normalizado es unico dentro de cada empresa mediante un
+  indice PostgreSQL versionado; conserva codigos opcionales `NULL`, bloquea
+  carreras concurrentes y falla cerrado si una instalacion historica requiere
+  reconciliar duplicados antes de migrar.
+- [Bodegas] Actualizar, cambiar estado o eliminar una bodega inexistente o ajena
+  devuelve 404 seguro en vez de convertir `sql.ErrNoRows` en un error 500.
+- [Kardex] La tendencia diaria normaliza fechas PostgreSQL antes de completar el
+  rango solicitado, evitando mostrar siete dias en cero cuando existen movimientos.
+- [IA/Compras] Si una factura repetida apunta a una cadena de soportes duplicados,
+  la carga automatica resuelve el original del mismo tenant y reutiliza su
+  extraccion verificable sin consumir otra llamada de IA.
+- [IA/Compras] La pantalla y la API de soportes dejan de crear registros demo
+  dentro de empresas reales; solo permanecen radicacion, revision, aprobacion,
+  contabilizacion, papelera, retencion y auditoria operativas.
+- [Impresion/UX] Los formularios y tablas de impresoras quedan acotados a su
+  columna: las tablas anchas conservan desplazamiento interno sin extender la
+  pagina en escritorio ni movil.
+- [Rendimiento/UX] El menu de Productos difiere la URL inicial de su iframe
+  hasta resolver `empresa_id`; evita la primera navegacion sin tenant y su
+  cancelacion inmediata, por lo que el catalogo se carga una sola vez.
+- [Rendimiento/UX] El menu de Compras aplica el mismo destino diferido; la
+  gestion de compras deja de iniciar y cancelar una carga previa sin tenant.
+  La ultima pagina se persiste por empresa e iframe para que Productos y Compras
+  no restauren el estado del otro submenu.
+- [IA/UX] Los paneles de Soportes de Compras IA admiten `min-width:0` dentro de
+  las grillas anidadas. La pagina ya no ensancha el iframe real del submenu en
+  resoluciones intermedias y las tablas conservan desplazamiento interno.
+- [Arquitectura] `bodega.html` queda como compatibilidad por redireccion y el
+  carrito abre directamente `administrar_productos.html?view=bodegas`; se
+  retira el CRUD heredado para mantener una sola implementacion de bodegas,
+  stock, traslados y Kardex.
+- [QA] Se agregan regresiones de ownership, proveedor sin codigo, recepcion
+  multiitem, formatos privados, idempotencia y ancho del centro de impresion;
+  los gates exactos del candidato final quedan documentados en PSI-000.
+- [QA/E2E] El login visual reintenta el flujo completo tras una navegacion,
+  interaccion o comprobacion de sesion transitoria; el segundo intento deja de
+  quedar anulado por una excepcion de `page.goto`.
 
-## [2026-08-25] Carrito POS sin solicitudes ni renderizados repetidos
+## [2026-08-26] Documento soporte DIAN 1.1 dedicado
 
-- [Rendimiento] El arranque mantiene la estructura visible, carga sus lecturas independientes en paralelo y evita que cada respuesta repinte parcialmente clientes, cajas, reglas, carritos e ítems.
-- [Red] `/me` y `estacion_prefs` usan una sola promesa compartida. En la prueba autenticada de venta directa, la versión publicada hizo 16 lecturas API e incluyó dos listados empresariales iguales; el candidato hizo 15, con una sola lectura principal del listado y una sola de `estacion_prefs`.
-- [UX] Escritorio y móvil no presentan IDs duplicados ni overflow horizontal de página; la tabla móvil conserva desplazamiento interno y totales/pago permanecen accesibles.
-- [Seguridad] No cambian handlers, permisos, licencias, pagos, reservas de inventario, tablas ni aislamiento por `empresa_id`.
-- [Compatibilidad] La primera lectura no filtra todavía por el código canónico calculado, de modo que venta directa reconoce el carrito legado existente antes de intentar crear uno nuevo; la prueba PCS evitó así el intento inválido `VENTA-DIRECTA-12-0` y recuperó el carrito 117 sin mutaciones.
-- [Cobro] El botón de pago permanece deshabilitado también cuando el carrito no tiene productos, servicios ni totales cobrables, con una indicación visible para agregar contenido antes de cobrar.
-- [QA] El candidato ejecutado localmente contra las APIs autenticadas de Powerful Control System completó las 15 lecturas con estado 200 en 1,179 s de cascada; la búsqueda real de `Menta` respondió en 113 ms, sin errores de consola. Aprobaron además `go test ./...`, compilación global, `go vet ./...`, regresiones de carrito/roles/DB, sintaxis JavaScript y revisión visual escritorio/móvil.
-- [QA real 2026-08-26] Una venta sola de la referencia QA `104` cerró subtotal COP 100, IVA COP 19 y efectivo COP 119. Hubo un único `PUT pagar_estacion` 200 de 562 ms; el servidor emitió el comprobante 123, código `CP-VENTA-DIRECTA-12-CRT-117-PG-2026082600215117596305`, sumó COP 119 a `QA-FE`/cierre 29 y abrió el carrito siguiente vacío con el pago deshabilitado. Kardex mostró un solo movimiento de salida, ID 204, cantidad 1, creado al reservar el ítem; pagar no generó una segunda salida. El stock quedó en -1 porque la política vigente del carrito permite vender sin existencia.
-- [Alcance] El endpoint agregado diario mostró dos ventas por COP 238, pero no expone el detalle temporal necesario para atribuir ambas. La instrumentación de esta interacción sí registró una sola solicitud de pago y un solo comprobante. El corte diario reveló además la pérdida de detalle causada por reactivar el carrito reutilizable; la sección 2026-08-26 corrige ese defecto localmente. La promoción queda en NO-GO hasta ejecutar migración, PostgreSQL/staging y una sesión real específica de cajero.
+- [Fuente fiscal] Las compras a no obligados nacen de un borrador estructurado;
+  líneas, vendedor, pago e importes se recalculan y sellan en servidor por
+  empresa antes de cualquier XML.
+- [Numeración] Configuración independiente con autorización de 14 dígitos,
+  prefijo opcional, vigencia/rango estrictos y reserva atómica que nunca reduce
+  un consecutivo alcanzado.
+- [UBL/DIAN] Se genera `InvoiceTypeCode=05`, CUDS SHA-384,
+  `CustomizationID=10|11`, unidades del catálogo exacto UN/ECE Revision 4,
+  firma XAdES y transporte síncrono `SendBillSync`.
+- [Seguridad] El preflight no emite; la emisión exige permiso de aprobación y
+  frase exacta. Se conservan fuente, XML, acuse y representación en
+  almacenamiento privado, sin incluir secretos en el snapshot de numeración.
+- [Migración] `20260826-002-dian-documento-soporte-v1` convierte importes a
+  `NUMERIC(18,2)` y preserva históricos sin sintetizar datos fiscales.
+- [QA] Pruebas enfocadas, catálogo 1.093/1.093, XSD/Schematron oficial y
+  preflight profesional aprueban localmente. PR, merge, despliegue y primer
+  acuse real permanecen como compuertas separadas.
 
-## [2026-08-25] Carga inicial de Administrar empresa
+## [2026-08-26] Reconciliacion DIAN exclusiva de acuses aceptados
 
-- [Rendimiento] Catálogo, sesión, URLs, preferencias y permisos se consultan en paralelo antes de resolver la página inicial autorizada.
-- [Red] `/me`, `estacion_prefs`, preferencias de chat/radio, configuración guiada, permisos y buzón reutilizan una promesa GET efímera durante el arranque.
-- [Iframe] El panel consume el bootstrap del contenedor cuando está embebido y mantiene fallback autónomo cuando se abre directamente.
-- [Ayuda] Se evita descargar y ejecutar el puente contextual dentro del `about:blank` transitorio.
-- [Seguridad] No cambian autorización backend, licencias, contratos API, tablas ni aislamiento por `empresa_id`. Cambio local sin despliegue.
+- [Seguridad operativa] `action=reconciliar_aceptados_local` solo examina colas
+  `aceptado|reconciliado` y termina antes de cualquier consulta o despacho del
+  XML de documentos pendientes.
+- [Trazabilidad] La respuesta publica `solo_acuses_aceptados`,
+  `transmision_xml_habilitada=false`, reparaciones locales y documentos
+  omitidos. La accion exige permiso efectivo `A` y conserva el tenant canonico.
+- [Invariantes] La reparacion reutiliza el acuse persistido y no modifica
+  intentos, fecha del ultimo intento, fecha legal de emision ni respuesta del
+  proveedor; solo completa estado y CUFE/CUDE locales cuando corresponda.
 
-## [2026-08-25] Productos, inventario y recepción de compras
+## [2026-08-25] Cierre seguro integral de facturacion DIAN
 
-- [Inventario] Entradas por empresa/producto/bodega usan UPSERT atómico; ajustes, traslados, conteos, cambios, inventario avanzado y compras web quedan protegidos con idempotencia durable.
-- [Compras] La recepción valida requisición, item, producto, proveedor y bodega por empresa y escribe recepción, cantidad pendiente, existencia, costo, lote opcional y Kardex en una sola transacción.
-- [UX] Requisiciones seleccionan productos activos; recepción selecciona el item pendiente y bodega destino. Se retiró la siembra demo visible, se sanearon errores públicos y la carga IA anuncia solo PNG/JPEG/WebP/PDF/XML, los formatos verificados por backend.
-- [Impresión] La cola reclama trabajos con un CTE `FOR UPDATE SKIP LOCKED`, solo el agente propietario puede cerrar un trabajo, el reintento reinicia intentos y la creación web usa idempotencia durable. Carrito reutiliza un solo resolver de impresora para orden, cajón y ticket.
-- [QA] Se recorrieron productos, servicios, categorías, stock, bodegas, Kardex, lotes, reservas, IA, recetas e impresoras en PCS y en responsive. El gate permanece NO-GO hasta staging/despliegue y validación física.
-- [QA final] Aprobaron `go test ./... -count=1`, compilación global, `go test ./db ./handlers`, `go vet ./db ./handlers`, sintaxis JavaScript y contratos enfocados. La auditoría encontró 322 rutas, 889 IDs de marcado y 789 funciones nombradas en ocho pantallas críticas, sin duplicados.
-- [QA plataforma] El parser del administrador de disco reconoce los tamaños compactos que entrega Docker (`10.5GB`) y conserva rechazo seguro de unidades desconocidas; su paquete vuelve a aprobar pruebas y `go vet`.
+- [Origen] La factura comercial solo nace de una venta pagada con fuente fiscal
+  inmutable comprobada antes de reservar consecutivo; el endpoint generico no
+  admite payload fiscal libre.
+- [Nota credito] La anulacion total se serializa por factura, reutiliza la nota
+  existente y solo finaliza con estado emitido, CUDE oficial y cola
+  aceptada/reconciliada coincidentes.
+- [Seguridad] Acciones fiscales con efectos exigen `A`, la anulacion conserva
+  `D`, los chequeos silenciosos de vencimiento usan `R` y los GET DIAN
+  desconocidos fallan antes del CRUD interno.
+- [UX] La bandeja exige CUFE oficial para anular y muestra artefactos de factura
+  y nota credito. Tambien exige la señal de fuente fiscal real, por lo que los
+  documentos historicos sin snapshot permanecen en consulta. Nomina solo
+  prepara el lote y no transmite por el adaptador de factura.
+- [Reconciliacion] Un acuse ya aceptado/reconciliado puede completar estado y
+  CUFE/CUDE locales antes de cualquier despacho, sin retransmitir ni incrementar
+  intentos.
+- [QA] Pruebas DIAN enfocadas, regresion Go completa y `go vet ./...` aprueban
+  localmente; despliegue y repeticion visual se registran por separado.
 
-## [2026-08-25] Chat IA simple, multimodal y con historial por usuario
+## [2026-08-25] Recuperación del login administrativo y guard de reCAPTCHA
 
-- [UX] El botón flotante vuelve a abrir el drawer oculto; el panel conserva solo nuevo chat, historial, cerrar, voz, adjuntar y enviar.
-- [Historial] Cada conversación usa `conversation_id`; la vista normal filtra por cuenta autenticada y los roles administrativos autorizados pueden alternar a todos los usuarios de la empresa.
-- [Modelo] Super Administrador elige un único modelo para texto, fotos, documentos y herramientas. El valor inicial es OpenAI GPT-5.6 Terra con razonamiento medium.
-- [Agente] Se retira el interruptor y los selectores: Agente PCS permanece activo en el drawer, Centro IA y Pedidos IA. Una consulta normal consume la cuota del chat; la cuota de herramientas se reserva solo cuando el modelo solicita realmente una herramienta.
-- [Seguridad] Los adjuntos producen borradores y toda escritura sigue sujeta a tenant, permiso, licencia y confirmación humana.
+- [Incidente] El portal público devolvía HTTP 503 en login, registro y
+  recuperación porque reCAPTCHA estaba solicitado mientras la clave privada
+  cifrada ya no podía leerse con la clave activa del servidor.
+- [Operación] Se desactivó de forma reversible únicamente la configuración
+  incompleta; el limitador durable de intentos permanece activo. El endpoint
+  volvió a responder errores funcionales normales y `/health` y `/ready`
+  conservaron HTTP 200.
+- [Seguridad] El backend rechaza volver a activar reCAPTCHA sin claves pública y
+  privada utilizables, y guarda habilitación, proveedor y credenciales en una
+  sola transacción para impedir estados parciales.
+- [UX/QA] Super administración diferencia una clave guardada de una clave
+  realmente descifrable. Se validaron visualmente login, registro, solicitud de
+  recuperación y formulario de restablecimiento en escritorio y móvil.
 
-## [2026-08-24] Administrar disco VPS seguro
+## [2026-08-25] Venta directa compatible con carrito heredado
 
-- [Super administrador] Nueva consola que muestra exclusivamente recursos Docker recuperables y permite liberarlos con confirmación explícita.
-- [Seguridad] El navegador no recibe acceso al socket Docker ni puede enviar rutas o comandos; un servicio interno firmado aplica una lista cerrada de limpiezas.
-- [Protección] Se excluyen bases de datos, archivos de empresas, configuración, certificados, respaldos, código y volúmenes conectados.
+- [Correccion] La carga inicial de Venta directa incluye el carrito historico
+  `VENTA-DIRECTA-<empresa>` antes de intentar crear el codigo canonico terminado
+  en `-0`, evitando el choque por nombre unico y la pantalla operativa vacia.
+- [Seguridad] Se mantienen el `empresa_id`, permiso y licencia efectivos; el
+  cambio solo corrige la reconciliacion dentro de la empresa seleccionada.
+- [QA] Una regresion de contrato fija el comportamiento observado durante la
+  preparacion visual de una factura DIAN real con Powerful Control System.
+
+## [2026-08-24] Factura DIAN desde fuente fiscal real
+
+- [Contrato] La emisión comercial queda limitada a factura electrónica de venta;
+  nota crédito/débito y las demás familias fallan cerrado hasta tener fuente y
+  adaptador propios.
+- [Datos] Se persiste un snapshot fiscal privado e inmutable y se agregan códigos
+  DANE de emisor/cliente sin inferir valores existentes.
+- [UBL] Las líneas, partes, pago, impuestos y totales nacen de la venta real; los
+  descuentos de línea no se duplican como descuento global.
+- [Seguridad] Secretos DIAN cifrados por empresa/campo y rutas libres de
+  firma/envío bloqueadas.
+- [UX/seguridad] El centro DIAN deja deshabilitada toda emisión fiscal manual,
+  no convierte la activación local en evidencia falsa de envío/acuse y distingue
+  un servidor alcanzable de una validación SOAP o fiscal exitosa.
+- [QA] Go, vet, JavaScript, PostgreSQL 17.11 aislado, XSD oficial y XMLDSig
+  aprobaron. Schematron oficial queda pendiente por falta de un procesador XSLT
+  3 compatible. La auditoría autenticada de PCS confirmó ambiente productivo,
+  credenciales/firma configuradas, `GetNumberingRange` y alcance de red; también
+  confirmó que la versión publicada aún no contiene esta reparación y que una
+  reconsulta histórica puede degradar el estado global. Ese dato se restauró y
+  el candidato restringe la actualización al historial individual. Clon del
+  esquema vigente, despliegue del candidato y acuse de una venta real siguen
+  pendientes; estado NO-GO.
+
+## [2026-08-21] Login y sesiones multiempresa
+
+- [Seguridad] Sesiones tipadas, aislamiento obligatorio por `empresa_id`, PBKDF2 versionado, tokens atómicos, revocación de sesiones y limitación durable de intentos administrativos.
+- [Acceso] El login empresarial exige empresa o invitación; el contrato vigente se valida antes de emitir sesión y la recuperación no enumera cuentas.
+- [OAuth] Se acota el presupuesto de cabeceras para el flujo Google y se mantiene state/PKCE.
+- [Correo] La invitación empresarial usa texto neutral para todas las verticales y normaliza la plantilla legada de motel.
+
+## [2026-08-13] Domótica 1.4, SSH cifrado, escenas y Victron VE.Direct
+- [Corrección] La cola interpreta fechas RFC3339 como `TIMESTAMPTZ`; botones, temporizadores, escenas y recuperación ya no quedan pendientes por desfase UTC/local.
+- [Raspberry] El agente usa el `boot_id` del kernel, se reemplaza y reinicia al actualizar y recupera las salidas previamente confirmadas mediante la cola empresarial.
+- [Seguridad] La actualización SSH valida la huella del host, limita redes privadas a CIDR VPN autorizados y guarda password/sudo solo cifrados por empresa y dispositivo.
+- [Automatización] Las escenas agrupan estados de múltiples aparatos y ejecutan los encendidos con el retardo eléctrico configurado.
+- [Solar] VE.Direct autodetecta la BlueSolar 75/15, valida checksum y alimenta una vista en tiempo real con estado verde/rojo, voltajes, corriente, potencia, producción, etapa y errores.
 
 ## [2026-08-11] Tarjetas operativas compactas de Domotica
 - [UX] Las tarjetas de equipos de estacion son mas compactas, resaltan de forma leve cuando la salida esta encendida y organizan sus tres acciones en una columna uniforme.
@@ -3559,39 +3703,19 @@
 - [Automatización] Un GPIO de entrada puede encender otro GPIO de forma normal, temporizada o dentro de la programación del aparato.
 - [Tutorial] Diagrama exacto del cabezal de 40 pines, diferencia entre posición física/BCM y guía de relación canal de relé → GPIO cableado.
 
-## 2026-08-23
+## 2026-08-13 - Estado Raspberry compatible con offset PostgreSQL
 
-- [Modulos] Retirados Gimnasio, Taxi System, Apartamentos turisticos, Propiedad horizontal y Odontologia.
-- [Inventario] Drogueria/Farmacia deja de ser modulo independiente; lotes y vencimientos quedan bajo Inventario y productos centrales.
-- [Datos] Migracion versionada para retirar tablas y datos exclusivos cuando se ejecute el despliegue correspondiente.
-- [Portal] Eliminados anuncios, accesos, licencias y plantillas relacionados de la pagina principal y panel empresarial.
-- [Portal] `index.html`, las dos landings descriptivas y el editor super quedan sincronizados con 52 modulos y 13 plantillas; configuraciones antiguas ya no pueden reintroducir tarjetas retiradas.
-- [Pruebas] Se agrega regresion backend del filtro de portada y del catalogo exacto de plantillas.
-- [Carrito] La apertura muestra primero la estructura visual y ejecuta juntas las lecturas independientes de configuracion, permisos, clientes, descuentos, cajas y carrito.
-- [Rendimiento] Se comparte la lectura de sesion y se elimina el segundo listado del carrito canonico cuando no hubo cambios; el pago permanece bloqueado hasta completar los datos financieros y operativos.
-- [Rendimiento] `estacion_prefs` se reutiliza entre el carrito y las etiquetas globales, evitando una segunda lectura al abrir venta directa o una estación.
+- El consumo de tunel en Super Administrador reconoce timestamps con zona
+  `-05` y refleja correctamente Raspberry conectadas durante los ultimos 90
+  segundos.
 
-## 2026-08-26 - Idempotencia punta a punta
+## 2026-08-25 - Recuperación operativa de reCAPTCHA y errores seguros de login
 
-- [Pagos] Wompi y Epayco exigen una clave estable de checkout, fijan la huella
-  del request y reproducen la respuesta persistida sin crear otra referencia.
-- [Licencias] Activacion y correo posterior al pago no se reejecutan cuando el
-  resultado previo es incierto.
-- [Ventas] Pago, caja, historial y outbox comparten transaccion; contabilidad
-  impide dos eventos de venta pagada para el mismo carrito empresarial.
-- [Integraciones] DIAN, Rappi, offline, venta publica, CxP, IA y colas reciben
-  claims, hashes o transiciones monotonas segun el tipo de efecto.
-- [Migraciones] Nuevos pasos versionados para las tablas de idempotencia de
-  pagos y la unicidad contable de ventas.
-- [Estado] Revision y pruebas locales; sin migracion ejecutada, sandbox de
-  proveedor, CI, despliegue ni GO de produccion.
-## [2026-08-31] Vida personal por cuenta autenticada
-
-- [UX] Nueva pagina responsive con resumen, gastos, captura de recibo y suscripciones desde Administrar empresa.
-- [Seguridad] El backend deriva el usuario de la sesion, filtra toda operacion por empresa/usuario y valida los comprobantes fuera de la raiz publica.
-- [Recordatorios] La ventana configurable alimenta alertas en pagina/menu; las notificaciones del navegador son opt-in, deduplicadas y requieren PCS abierto.
-- [Datos] `empresa_vida_gastos` y `empresa_vida_suscripciones` pertenecen a la migracion `20260831-001-vida-personal-v1`; no se integran con las cuentas de la empresa.
-- [Estado] Implementacion local sin migracion ni despliegue. La activacion exige `pcs-migrate` y validacion autorizada multiempresa, multiusuario y movil.
-- [Precios] Historial personal por producto/codigo, cantidad y precio unitario en `20260831-003-vida-price-history-ai-v1`.
-- [Movil] Lector nativo de codigos de barras con camara bajo accion del usuario y fallback manual.
-- [IA] Boton explicito para leer una factura y crear atomicamente gasto/productos; usa archivo privado, `store=false`, identificador seudonimo y validacion estricta.
+- Se recupera y recifra de forma versionada la credencial reCAPTCHA sin
+  publicarla en código, registros ni documentación.
+- Las CSP estática y dinámica permiten únicamente los orígenes oficiales exactos
+  requeridos para cargar, ejecutar y enmarcar Google reCAPTCHA.
+- Los flujos públicos de autenticación dejan de presentar páginas HTML de Nginx
+  cuando un upstream devuelve 5xx y muestran un mensaje operativo controlado.
+- OAuth Google usa una CSP de respuesta compacta y bloqueante para mantener el
+  redirect state/PKCE dentro del presupuesto de cabeceras del proxy.

@@ -213,7 +213,11 @@ var (
 			"moneda", "periodo_contable", "referencia_pagos_json", "fecha_ultimo_pago", "conciliado_en", "conciliado_por",
 			"usuario_creador", "estado", "observaciones",
 		},
-		RequiredOnCreate: []string{"proveedor_id", "proveedor_nombre", "documento_codigo"},
+		// proveedor_nombre is derived server-side from proveedor_id by
+		// validateEmpresaCxPProveedorPayload. Requiring the derived value before
+		// that validation runs prevented the official create flow from accepting a
+		// registered supplier selected by ID.
+		RequiredOnCreate: []string{"proveedor_id", "documento_codigo"},
 		ValidatePayload:  validateEmpresaCxPProveedorPayload,
 		CodeColumn:       "codigo",
 		CodePrefix:       "CXP",
@@ -486,6 +490,8 @@ var (
 		AllowedColumns: []string{
 			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "produccion_local_activa", "software_id", "software_pin",
 			"usar_software_compartido", "software_id_compartido_ref", "software_pin_compartido_ref",
+			"software_proveedor_nit", "software_proveedor_dv", "software_proveedor_razon_social",
+			"software_proveedor_primer_apellido", "software_proveedor_segundo_apellido", "software_proveedor_primer_nombre", "software_proveedor_otros_nombres",
 			"modo_operacion_descripcion", "modo_operacion_fecha_inicio", "modo_operacion_fecha_termino",
 			"test_set_id", "certificado_url", "certificado_clave_ref", "prefijo", "resolucion_numero",
 			"certificado_vencimiento", "certificado_vencimiento_en", "certificado_alerta_dias",
@@ -968,7 +974,7 @@ func handleRRHHVacacionesSaldoAction(dbEmp *sql.DB, w http.ResponseWriter, r *ht
 		return
 	}
 
-	saldo, err := buildRRHHVacacionesSaldoByFilter(dbEmp, empresaID, filtro)
+	saldo, err := buildRRHHVacacionesSaldoByFilter(r.Context(), dbEmp, empresaID, filtro)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "empleado de nomina no encontrado para calcular saldo", http.StatusNotFound)
@@ -1137,7 +1143,7 @@ func handleRRHHVacacionesAprobacionAction(dbEmp *sql.DB, action string, w http.R
 				fechaCorte = parsed.In(time.Local)
 			}
 
-			saldoAntes, saldoErr := buildRRHHVacacionesSaldoByFilter(dbEmp, empresaID, rrhhVacacionesSaldoFilter{
+			saldoAntes, saldoErr := buildRRHHVacacionesSaldoByFilter(r.Context(), dbEmp, empresaID, rrhhVacacionesSaldoFilter{
 				EmpleadoNominaID: anyToInt64(item["empleado_nomina_id"]),
 				EmpleadoID:       anyToInt64(item["empleado_id"]),
 				EmpleadoNombre:   genericStringValue(item["empleado_nombre"]),
@@ -1303,7 +1309,7 @@ func handleRRHHVacacionesVincularNominaAction(dbEmp *sql.DB, w http.ResponseWrit
 	empleadoID := anyToInt64(item["empleado_id"])
 	empleadoNombre := genericStringValue(item["empleado_nombre"])
 
-	ref, err := loadRRHHNominaEmpleadoRef(dbEmp, empresaID, empleadoNominaID, empleadoID, empleadoNombre)
+	ref, err := loadRRHHNominaEmpleadoRef(r.Context(), dbEmp, empresaID, empleadoNominaID, empleadoID, empleadoNombre)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "empleado de nomina no encontrado para vincular", http.StatusNotFound)
@@ -1326,7 +1332,7 @@ func handleRRHHVacacionesVincularNominaAction(dbEmp *sql.DB, w http.ResponseWrit
 		var liqEmpleadoNominaID int64
 		var liqDesde string
 		var liqHasta string
-		err := dbEmp.QueryRow(`SELECT
+		err := dbEmp.QueryRowContext(r.Context(), `SELECT
 			COALESCE(empleado_nomina_id, 0),
 			COALESCE(periodo_desde, ''),
 			COALESCE(periodo_hasta, '')
@@ -1358,7 +1364,7 @@ func handleRRHHVacacionesVincularNominaAction(dbEmp *sql.DB, w http.ResponseWrit
 			var foundID int64
 			var foundDesde string
 			var foundHasta string
-			err := dbEmp.QueryRow(`SELECT
+			err := dbEmp.QueryRowContext(r.Context(), `SELECT
 				id,
 				COALESCE(periodo_desde, ''),
 				COALESCE(periodo_hasta, '')
@@ -1446,12 +1452,12 @@ func handleRRHHVacacionesVincularNominaAction(dbEmp *sql.DB, w http.ResponseWrit
 	})
 }
 
-func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrhhVacacionesSaldoFilter) (map[string]interface{}, error) {
+func buildRRHHVacacionesSaldoByFilter(ctx context.Context, dbEmp *sql.DB, empresaID int64, filter rrhhVacacionesSaldoFilter) (map[string]interface{}, error) {
 	if filter.FechaCorte.IsZero() {
 		filter.FechaCorte = time.Now().In(time.Local)
 	}
 
-	ref, err := loadRRHHNominaEmpleadoRef(dbEmp, empresaID, filter.EmpleadoNominaID, filter.EmpleadoID, filter.EmpleadoNombre)
+	ref, err := loadRRHHNominaEmpleadoRef(ctx, dbEmp, empresaID, filter.EmpleadoNominaID, filter.EmpleadoID, filter.EmpleadoNombre)
 	if err != nil {
 		return nil, err
 	}
@@ -1502,7 +1508,7 @@ func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrh
 
 	var diasTomados float64
 	var solicitudesAprobadas int64
-	if err := dbEmp.QueryRow(queryTomados, argsTomados...).Scan(&diasTomados, &solicitudesAprobadas); err != nil {
+	if err := dbEmp.QueryRowContext(ctx, queryTomados, argsTomados...).Scan(&diasTomados, &solicitudesAprobadas); err != nil {
 		return nil, err
 	}
 
@@ -1528,7 +1534,7 @@ func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrh
 	}
 
 	solicitudesPendientes := int64(0)
-	if err := dbEmp.QueryRow(queryPendientes, argsPendientes...).Scan(&solicitudesPendientes); err != nil {
+	if err := dbEmp.QueryRowContext(ctx, queryPendientes, argsPendientes...).Scan(&solicitudesPendientes); err != nil {
 		return nil, err
 	}
 
@@ -1552,7 +1558,7 @@ func buildRRHHVacacionesSaldoByFilter(dbEmp *sql.DB, empresaID int64, filter rrh
 	}, nil
 }
 
-func loadRRHHNominaEmpleadoRef(dbEmp *sql.DB, empresaID, empleadoNominaID, empleadoID int64, empleadoNombre string) (*rrhhNominaEmpleadoRef, error) {
+func loadRRHHNominaEmpleadoRef(ctx context.Context, dbEmp *sql.DB, empresaID, empleadoNominaID, empleadoID int64, empleadoNombre string) (*rrhhNominaEmpleadoRef, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
 	}
@@ -1584,7 +1590,7 @@ func loadRRHHNominaEmpleadoRef(dbEmp *sql.DB, empresaID, empleadoNominaID, emple
 	query += ` ORDER BY CASE WHEN LOWER(COALESCE(estado, 'activo')) = 'activo' THEN 0 ELSE 1 END, id DESC LIMIT 1`
 
 	out := &rrhhNominaEmpleadoRef{}
-	err := dbEmp.QueryRow(query, args...).Scan(&out.NominaID, &out.EmpleadoID, &out.Nombre, &out.FechaIngreso)
+	err := dbEmp.QueryRowContext(ctx, query, args...).Scan(&out.NominaID, &out.EmpleadoID, &out.Nombre, &out.FechaIngreso)
 	if err != nil {
 		return nil, err
 	}
@@ -1721,7 +1727,7 @@ func handleInventarioLotesSeriesValidarDisponibilidadAction(dbEmp *sql.DB, w htt
 		return
 	}
 
-	row, err := loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, id, codigo)
+	row, err := loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, id, codigo)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "lote/serie no encontrado", http.StatusNotFound)
@@ -1732,8 +1738,14 @@ func handleInventarioLotesSeriesValidarDisponibilidadAction(dbEmp *sql.DB, w htt
 	}
 
 	now := time.Now().In(time.Local)
-	if updateErr := ensureLoteSerieVencimientoBloqueo(dbEmp, empresaID, row, now, strings.TrimSpace(adminEmailFromRequest(r))); updateErr == nil {
-		row, _ = loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, anyToInt64(row["id"]), "")
+	if updateErr := ensureLoteSerieVencimientoBloqueo(dbEmp, empresaID, row, now, strings.TrimSpace(adminEmailFromRequest(r))); updateErr != nil {
+		http.Error(w, "no se pudo actualizar vigencia de lote/serie", http.StatusInternalServerError)
+		return
+	}
+	row, err = loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, anyToInt64(row["id"]), "")
+	if err != nil {
+		http.Error(w, "no se pudo recargar lote/serie", http.StatusInternalServerError)
+		return
 	}
 
 	cantidadSolicitada := 0.0
@@ -1812,7 +1824,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		actor = "sistema"
 	}
 
-	row, err := loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, id, codigo)
+	row, err := loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, id, codigo)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "lote/serie no encontrado", http.StatusNotFound)
@@ -1825,8 +1837,14 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 	now := time.Now().In(time.Local)
 	nowText := now.Format("2006-01-02 15:04:05")
 
-	if err := ensureLoteSerieVencimientoBloqueo(dbEmp, empresaID, row, now, actor); err == nil {
-		row, _ = loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, anyToInt64(row["id"]), "")
+	if err := ensureLoteSerieVencimientoBloqueo(dbEmp, empresaID, row, now, actor); err != nil {
+		http.Error(w, "no se pudo actualizar vigencia de lote/serie", http.StatusInternalServerError)
+		return
+	}
+	row, err = loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, anyToInt64(row["id"]), "")
+	if err != nil {
+		http.Error(w, "no se pudo recargar lote/serie", http.StatusInternalServerError)
+		return
 	}
 
 	estadoLote := strings.ToLower(strings.TrimSpace(genericStringValue(row["estado_lote"])))
@@ -1930,7 +1948,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 	clienteID := anyToInt64(payload["cliente_id"])
 	clienteNombre := genericStringValue(payload["cliente_nombre"])
 
-	detalleJSON, _ := json.Marshal(map[string]interface{}{
+	detalleJSON := marshalToJSONString(map[string]interface{}{
 		"antes": map[string]interface{}{
 			"cantidad_disponible": reportesRound(disponibleAntes),
 			"reservado_cantidad":  reportesRound(reservadoAntes),
@@ -1946,7 +1964,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 
 	observaciones := appendGenericObservation(genericStringValue(row["observaciones"]), fmt.Sprintf("operacion_lote tipo=%s cantidad=%.6f referencia=%s", operacion, cantidad, referenciaCodigo))
 
-	tx, err := dbEmp.Begin()
+	tx, err := dbEmp.BeginTx(r.Context(), nil)
 	if err != nil {
 		http.Error(w, "no se pudo iniciar transaccion de lote/serie", http.StatusInternalServerError)
 		return
@@ -1959,7 +1977,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		}
 	}()
 
-	_, err = tx.Exec(`UPDATE inventario_lotes_series
+	_, err = tx.ExecContext(r.Context(), `UPDATE inventario_lotes_series
 	SET cantidad_disponible = ?,
 		reservado_cantidad = ?,
 		vendido_cantidad = ?,
@@ -1990,7 +2008,7 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		return
 	}
 
-	resMov, err := tx.Exec(`INSERT INTO inventario_lotes_series_movimientos (
+	err = tx.QueryRowContext(r.Context(), `INSERT INTO inventario_lotes_series_movimientos (
 		empresa_id,
 		lote_serie_id,
 		producto_id,
@@ -2008,7 +2026,8 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
+	RETURNING id`,
 		empresaID,
 		anyToInt64(row["id"]),
 		anyToInt64(row["producto_id"]),
@@ -2021,17 +2040,15 @@ func handleInventarioLotesSeriesOperacionAction(dbEmp *sql.DB, defaultAction str
 		referenciaCodigo,
 		clienteID,
 		clienteNombre,
-		string(detalleJSON),
+		detalleJSON,
 		nowText,
 		actor,
 		fmt.Sprintf("operacion=%s", operacion),
-	)
+	).Scan(&movimientoID)
 	if err != nil {
 		http.Error(w, "no se pudo registrar trazabilidad de lote/serie", http.StatusInternalServerError)
 		return
 	}
-	movimientoID, _ = resMov.LastInsertId()
-
 	if err := tx.Commit(); err != nil {
 		movimientoID = 0
 		http.Error(w, "no se pudo confirmar transaccion de lote/serie", http.StatusInternalServerError)
@@ -2110,7 +2127,7 @@ func handleInventarioLotesSeriesTrazabilidadAction(dbEmp *sql.DB, w http.Respons
 	query += ` ORDER BY pcs_ts(COALESCE(NULLIF(fecha_operacion, ''), fecha_creacion)) DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		http.Error(w, "no se pudo consultar trazabilidad de lotes/series", http.StatusInternalServerError)
 		return
@@ -2197,7 +2214,11 @@ func handleInventarioLotesSeriesTrazabilidadAction(dbEmp *sql.DB, w http.Respons
 
 	var lote map[string]interface{}
 	if id > 0 || codigo != "" {
-		lote, _ = loadInventarioLoteSerieByIDOrCode(dbEmp, empresaID, id, codigo)
+		lote, err = loadInventarioLoteSerieByIDOrCode(r.Context(), dbEmp, empresaID, id, codigo)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "no se pudo consultar lote/serie", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -2323,8 +2344,8 @@ func handleComprasDevolucionProveedorContabilizarAction(dbEmp *sql.DB, w http.Re
 		return
 	}
 
-	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
-		http.Error(w, "no se pudo preparar esquema de eventos contables", http.StatusInternalServerError)
+	if err := dbpkg.EmpresaEventosContablesSchemaReady(dbEmp); err != nil {
+		http.Error(w, "el esquema migrado de eventos contables no esta disponible", http.StatusInternalServerError)
 		return
 	}
 
@@ -2405,7 +2426,7 @@ func handleComprasDevolucionProveedorContabilizarAction(dbEmp *sql.DB, w http.Re
 	})
 }
 
-func loadInventarioLoteSerieByIDOrCode(dbEmp *sql.DB, empresaID, id int64, codigo string) (map[string]interface{}, error) {
+func loadInventarioLoteSerieByIDOrCode(ctx context.Context, dbEmp *sql.DB, empresaID, id int64, codigo string) (map[string]interface{}, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
 	}
@@ -2467,7 +2488,7 @@ func loadInventarioLoteSerieByIDOrCode(dbEmp *sql.DB, empresaID, id int64, codig
 	var ultimaOperacionEn string
 	var estado string
 	var observaciones string
-	err := dbEmp.QueryRow(query, args...).Scan(
+	err := dbEmp.QueryRowContext(ctx, query, args...).Scan(
 		&outID,
 		&productoID,
 		&bodegaID,
@@ -2730,7 +2751,7 @@ func handlePlanCuentasAplicarPlantillaAction(dbEmp *sql.DB, w http.ResponseWrite
 		actor = "sistema"
 	}
 
-	result, err := applyPlanCuentasTemplate(dbEmp, empresaID, tipoEmpresa, sobrescribir, actor)
+	result, err := applyPlanCuentasTemplate(r.Context(), dbEmp, empresaID, tipoEmpresa, sobrescribir, actor)
 	if err != nil {
 		http.Error(w, "No se pudo aplicar plantilla de plan de cuentas", http.StatusInternalServerError)
 		return
@@ -2739,7 +2760,7 @@ func handlePlanCuentasAplicarPlantillaAction(dbEmp *sql.DB, w http.ResponseWrite
 	writeJSON(w, http.StatusOK, result)
 }
 
-func applyPlanCuentasTemplate(dbEmp *sql.DB, empresaID int64, tipoEmpresa string, sobrescribir bool, actor string) (map[string]interface{}, error) {
+func applyPlanCuentasTemplate(ctx context.Context, dbEmp *sql.DB, empresaID int64, tipoEmpresa string, sobrescribir bool, actor string) (map[string]interface{}, error) {
 	if err := dbpkg.EmpresaModulosFaltantesSchemaReady(dbEmp); err != nil {
 		return nil, err
 	}
@@ -2779,7 +2800,7 @@ func applyPlanCuentasTemplate(dbEmp *sql.DB, empresaID int64, tipoEmpresa string
 		}
 
 		var existingID int64
-		err := dbEmp.QueryRow(`SELECT id FROM empresa_plan_cuentas WHERE empresa_id = ? AND codigo = ? LIMIT 1`, empresaID, item.Codigo).Scan(&existingID)
+		err := dbEmp.QueryRowContext(ctx, `SELECT id FROM empresa_plan_cuentas WHERE empresa_id = ? AND codigo = ? LIMIT 1`, empresaID, item.Codigo).Scan(&existingID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
@@ -2995,7 +3016,7 @@ func handleConciliarCarteraPagosAction(dbEmp *sql.DB, cfg empresaModuloGenericCo
 
 		documentoCodigo := genericStringValue(row["documento_codigo"])
 		terceroNombre := genericStringValue(row[terceroField])
-		pagosRelacionados, montoPagado, fechaUltimoPago, err := loadPagosCarteraRelacionados(dbEmp, empresaID, tipoMovimiento, periodoRow, documentoCodigo, terceroNombre)
+		pagosRelacionados, montoPagado, fechaUltimoPago, err := loadPagosCarteraRelacionados(r.Context(), dbEmp, empresaID, tipoMovimiento, periodoRow, documentoCodigo, terceroNombre)
 		if err != nil {
 			errores++
 			detalles = append(detalles, map[string]interface{}{
@@ -3152,7 +3173,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 		if actor == "" {
 			actor = "sistema"
 		}
-		result, err := dbpkg.RegistrarEmpresaCxPAbono(dbEmp, dbpkg.EmpresaCxPAbonoInput{
+		result, err := dbpkg.RegistrarEmpresaCxPAbonoContext(r.Context(), dbEmp, dbpkg.EmpresaCxPAbonoInput{
 			EmpresaID:         empresaID,
 			CuentaPorPagarID:  id,
 			Monto:             monto,
@@ -3168,7 +3189,11 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 			http.Error(w, err.Error(), registrarPagoCxPErrorStatus(err))
 			return
 		}
-		itemActualizado, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+		itemActualizado, err := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+		if err != nil {
+			http.Error(w, "El pago fue confirmado pero no se pudo recargar la cuenta por pagar", http.StatusInternalServerError)
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":                     true,
 			"empresa_id":             empresaID,
@@ -3292,7 +3317,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 	if saldoNuevo < 0 {
 		saldoNuevo = 0
 	}
-	pagosRelacionados, _, _, _ := loadPagosCarteraRelacionados(dbEmp, empresaID, tipoMovimiento, periodo, documentoCodigo, terceroNombre)
+	pagosRelacionados, _, _, _ := loadPagosCarteraRelacionados(r.Context(), dbEmp, empresaID, tipoMovimiento, periodo, documentoCodigo, terceroNombre)
 	pagosRelacionados = dedupePagosCarteraRelacionados(pagosRelacionados)
 	referenciaPagosJSON := "[]"
 	if len(pagosRelacionados) > 0 {
@@ -3336,7 +3361,7 @@ func handleRegistrarPagoCarteraAction(dbEmp *sql.DB, cfg empresaModuloGenericCon
 	})
 }
 
-func loadPagosCarteraRelacionados(dbEmp *sql.DB, empresaID int64, tipoMovimiento, periodo, documentoCodigo, terceroNombre string) ([]carteraPagoRelacionado, float64, string, error) {
+func loadPagosCarteraRelacionados(ctx context.Context, dbEmp *sql.DB, empresaID int64, tipoMovimiento, periodo, documentoCodigo, terceroNombre string) ([]carteraPagoRelacionado, float64, string, error) {
 	documentoCodigo = strings.ToUpper(strings.TrimSpace(documentoCodigo))
 	terceroNombre = strings.ToUpper(strings.TrimSpace(terceroNombre))
 	if documentoCodigo == "" && terceroNombre == "" {
@@ -3383,7 +3408,7 @@ func loadPagosCarteraRelacionados(dbEmp *sql.DB, empresaID int64, tipoMovimiento
 
 	query += ` ORDER BY pcs_ts(COALESCE(NULLIF(fecha_movimiento, ''), fecha_creacion)) DESC, id DESC LIMIT 500`
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -3515,13 +3540,7 @@ func finanzasCarteraDiasMora(fechaVencimiento string, saldo float64) int64 {
 }
 
 func finanzasFirstNonBlank(values ...string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func boolToInt(v bool) int64 {
@@ -3874,7 +3893,7 @@ func handleDocumentosGestionVersionesAction(dbEmp *sql.DB, w http.ResponseWriter
 	includeDenied := parseBoolQuery(r, "include_denegados")
 	requestedAction := resolveDocumentoPermissionActionFromRequest(r)
 
-	rows, err := loadDocumentoGestionVersionRows(dbEmp, empresaID, documentoCodigo, includeInactive, limit)
+	rows, err := loadDocumentoGestionVersionRows(r.Context(), dbEmp, empresaID, documentoCodigo, includeInactive, limit)
 	if err != nil {
 		http.Error(w, "No se pudo consultar historial de versiones", http.StatusInternalServerError)
 		return
@@ -3962,7 +3981,7 @@ func handleDocumentosGestionVersionarAction(dbEmp *sql.DB, w http.ResponseWriter
 		return
 	}
 
-	maxVersion, err := queryDocumentoGestionMaxVersion(dbEmp, empresaID, documentoCodigo)
+	maxVersion, err := queryDocumentoGestionMaxVersion(r.Context(), dbEmp, empresaID, documentoCodigo)
 	if err != nil {
 		http.Error(w, "No se pudo calcular version documental", http.StatusInternalServerError)
 		return
@@ -4060,7 +4079,7 @@ func handleDocumentosGestionVersionarAction(dbEmp *sql.DB, w http.ResponseWriter
 	writeJSON(w, http.StatusCreated, response)
 }
 
-func loadDocumentoGestionVersionRows(dbEmp *sql.DB, empresaID int64, documentoCodigo string, includeInactive bool, limit int) ([]map[string]interface{}, error) {
+func loadDocumentoGestionVersionRows(ctx context.Context, dbEmp *sql.DB, empresaID int64, documentoCodigo string, includeInactive bool, limit int) ([]map[string]interface{}, error) {
 	documentoCodigo = strings.TrimSpace(documentoCodigo)
 	if documentoCodigo == "" {
 		return []map[string]interface{}{}, nil
@@ -4085,7 +4104,7 @@ func loadDocumentoGestionVersionRows(dbEmp *sql.DB, empresaID int64, documentoCo
 	query += ` ORDER BY CAST(COALESCE(NULLIF(version, ''), '0') AS INTEGER) DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -4118,9 +4137,9 @@ func loadDocumentoGestionVersionRows(dbEmp *sql.DB, empresaID int64, documentoCo
 	return items, nil
 }
 
-func queryDocumentoGestionMaxVersion(dbEmp *sql.DB, empresaID int64, documentoCodigo string) (int64, error) {
+func queryDocumentoGestionMaxVersion(ctx context.Context, dbEmp *sql.DB, empresaID int64, documentoCodigo string) (int64, error) {
 	var maxVersion sql.NullInt64
-	err := dbEmp.QueryRow(`SELECT MAX(CAST(COALESCE(NULLIF(version, ''), '0') AS INTEGER))
+	err := dbEmp.QueryRowContext(ctx, `SELECT MAX(CAST(COALESCE(NULLIF(version, ''), '0') AS INTEGER))
 	FROM empresa_documentos_gestion
 	WHERE empresa_id = ?
 	  AND UPPER(COALESCE(documento_codigo, '')) = UPPER(?)`, empresaID, strings.TrimSpace(documentoCodigo)).Scan(&maxVersion)
@@ -4315,7 +4334,7 @@ func handleProduccionOrdenesPlanCapacidadAction(dbEmp *sql.DB, w http.ResponseWr
 	query += ` ORDER BY ` + dateExpr + ` ASC, id ASC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		http.Error(w, "no se pudo consultar plan de capacidad", http.StatusInternalServerError)
 		return
@@ -4608,7 +4627,7 @@ func handleLogisticaEnviosSeguimientoHitosAction(dbEmp *sql.DB, w http.ResponseW
 	query += ` ORDER BY ` + dateExpr + ` ASC, id ASC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		http.Error(w, "no se pudo consultar seguimiento logistico", http.StatusInternalServerError)
 		return
@@ -4887,7 +4906,7 @@ func handleVentasCotizacionConvertirPedidoAction(dbEmp *sql.DB, w http.ResponseW
 
 	actor := strings.TrimSpace(adminEmailFromRequest(r))
 	pedidoCodigo := genericStringValue(payload["pedido_codigo"])
-	cotizacion, pedido, pedidoCreado, autoAprobada, err := convertCotizacionToPedido(dbEmp, empresaID, cotizacionID, actor, pedidoCodigo)
+	cotizacion, pedido, pedidoCreado, autoAprobada, err := convertCotizacionToPedido(r.Context(), dbEmp, empresaID, cotizacionID, actor, pedidoCodigo)
 	if err != nil {
 		http.Error(w, err.Error(), ventasErrorStatus(err, http.StatusBadRequest))
 		return
@@ -4925,7 +4944,7 @@ func handleVentasCotizacionConvertirDocumentoFinalAction(dbEmp *sql.DB, w http.R
 
 	actor := strings.TrimSpace(adminEmailFromRequest(r))
 	pedidoCodigo := genericStringValue(payload["pedido_codigo"])
-	cotizacion, pedido, pedidoCreado, autoAprobada, err := convertCotizacionToPedido(dbEmp, empresaID, cotizacionID, actor, pedidoCodigo)
+	cotizacion, pedido, pedidoCreado, autoAprobada, err := convertCotizacionToPedido(r.Context(), dbEmp, empresaID, cotizacionID, actor, pedidoCodigo)
 	if err != nil {
 		http.Error(w, err.Error(), ventasErrorStatus(err, http.StatusBadRequest))
 		return
@@ -4937,7 +4956,7 @@ func handleVentasCotizacionConvertirDocumentoFinalAction(dbEmp *sql.DB, w http.R
 		return
 	}
 
-	pedidoUpdated, documentoFinal, documentoCreado, err := convertPedidoToDocumentoFinal(dbEmp, empresaID, pedidoID, payload, actor)
+	pedidoUpdated, documentoFinal, documentoCreado, err := convertPedidoToDocumentoFinal(r.Context(), dbEmp, empresaID, pedidoID, payload, actor)
 	if err != nil {
 		http.Error(w, err.Error(), ventasErrorStatus(err, http.StatusBadRequest))
 		return
@@ -4976,7 +4995,7 @@ func handleVentasPedidoConvertirDocumentoFinalAction(dbEmp *sql.DB, w http.Respo
 	}
 
 	actor := strings.TrimSpace(adminEmailFromRequest(r))
-	pedidoUpdated, documentoFinal, documentoCreado, err := convertPedidoToDocumentoFinal(dbEmp, empresaID, pedidoID, payload, actor)
+	pedidoUpdated, documentoFinal, documentoCreado, err := convertPedidoToDocumentoFinal(r.Context(), dbEmp, empresaID, pedidoID, payload, actor)
 	if err != nil {
 		http.Error(w, err.Error(), ventasErrorStatus(err, http.StatusBadRequest))
 		return
@@ -5032,6 +5051,7 @@ func handleVentasEmbudoConversionAction(dbEmp *sql.DB, w http.ResponseWriter, r 
 	hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
 
 	snapshot, err := buildVentasEmbudoConversionSnapshot(
+		r.Context(),
 		dbEmp,
 		empresaID,
 		desde,
@@ -5059,7 +5079,7 @@ func handleVentasEmbudoConversionAction(dbEmp *sql.DB, w http.ResponseWriter, r 
 	})
 }
 
-func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, actor, pedidoCodigo string) (map[string]interface{}, map[string]interface{}, bool, bool, error) {
+func convertCotizacionToPedido(ctx context.Context, dbEmp *sql.DB, empresaID, cotizacionID int64, actor, pedidoCodigo string) (map[string]interface{}, map[string]interface{}, bool, bool, error) {
 	if empresaID <= 0 {
 		return nil, nil, false, false, newVentasConversionError(http.StatusBadRequest, "empresa_id required")
 	}
@@ -5099,7 +5119,7 @@ func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, act
 		return nil, nil, false, autoAprobada, newVentasConversionError(http.StatusConflict, "la cotizacion debe estar aprobada o emitida para convertir")
 	}
 
-	pedido, err := resolvePedidoForCotizacion(dbEmp, empresaID, cotizacionID, anyToInt64(cotizacion["convertido_pedido_id"]))
+	pedido, err := resolvePedidoForCotizacion(ctx, dbEmp, empresaID, cotizacionID, anyToInt64(cotizacion["convertido_pedido_id"]))
 	if err != nil {
 		return nil, nil, false, autoAprobada, err
 	}
@@ -5191,7 +5211,7 @@ func convertCotizacionToPedido(dbEmp *sql.DB, empresaID, cotizacionID int64, act
 	return cotizacion, pedido, pedidoCreado, autoAprobada, nil
 }
 
-func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, payload map[string]interface{}, actor string) (map[string]interface{}, *dbpkg.EmpresaDocumentoFacturacion, bool, error) {
+func convertPedidoToDocumentoFinal(ctx context.Context, dbEmp *sql.DB, empresaID, pedidoID int64, payload map[string]interface{}, actor string) (map[string]interface{}, *dbpkg.EmpresaDocumentoFacturacion, bool, error) {
 	if empresaID <= 0 {
 		return nil, nil, false, newVentasConversionError(http.StatusBadRequest, "empresa_id required")
 	}
@@ -5229,7 +5249,7 @@ func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, pay
 		return nil, nil, false, newVentasConversionError(http.StatusConflict, "no se puede generar documento final desde un pedido cancelado")
 	}
 
-	docExistente, err := findDocumentoFacturacionByPedidoID(dbEmp, empresaID, pedidoID)
+	docExistente, err := findDocumentoFacturacionByPedidoID(ctx, dbEmp, empresaID, pedidoID)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -5315,7 +5335,7 @@ func convertPedidoToDocumentoFinal(dbEmp *sql.DB, empresaID, pedidoID int64, pay
 	return pedido, documentoFinal, documentoCreado, nil
 }
 
-func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, hasta string, slaCotizacionHoras, slaPedidoHoras int, includeInactive bool, maxRows int) (ventasEmbudoSnapshot, error) {
+func buildVentasEmbudoConversionSnapshot(ctx context.Context, dbEmp *sql.DB, empresaID int64, desde, hasta string, slaCotizacionHoras, slaPedidoHoras int, includeInactive bool, maxRows int) (ventasEmbudoSnapshot, error) {
 	if empresaID <= 0 {
 		return ventasEmbudoSnapshot{}, fmt.Errorf("empresa_id required")
 	}
@@ -5365,7 +5385,7 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 	query += ` ORDER BY id DESC LIMIT ?`
 	args = append(args, maxRows)
 
-	rows, err := dbEmp.Query(query, args...)
+	rows, err := dbEmp.QueryContext(ctx, query, args...)
 	if err != nil {
 		return ventasEmbudoSnapshot{}, err
 	}
@@ -5433,7 +5453,7 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 		estadoCotizacion = normalizeStateMachineValue(estadoCotizacion)
 
 		horasCotizacion := ventasElapsedHoursSince(fechaCotizacion, now)
-		pedidoRow, err := resolvePedidoForCotizacion(dbEmp, empresaID, cotizacionID, pedidoRefID)
+		pedidoRow, err := resolvePedidoForCotizacion(ctx, dbEmp, empresaID, cotizacionID, pedidoRefID)
 		if err != nil {
 			return ventasEmbudoSnapshot{}, err
 		}
@@ -5457,7 +5477,7 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 			}
 		}
 
-		docFinal, err := findDocumentoFacturacionByPedidoID(dbEmp, empresaID, pedidoID)
+		docFinal, err := findDocumentoFacturacionByPedidoID(ctx, dbEmp, empresaID, pedidoID)
 		if err != nil {
 			return ventasEmbudoSnapshot{}, err
 		}
@@ -5592,7 +5612,7 @@ func buildVentasEmbudoConversionSnapshot(dbEmp *sql.DB, empresaID int64, desde, 
 	return snapshot, nil
 }
 
-func resolvePedidoForCotizacion(dbEmp *sql.DB, empresaID, cotizacionID, pedidoRefID int64) (map[string]interface{}, error) {
+func resolvePedidoForCotizacion(ctx context.Context, dbEmp *sql.DB, empresaID, cotizacionID, pedidoRefID int64) (map[string]interface{}, error) {
 	if pedidoRefID > 0 {
 		item, err := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfgPedidosVenta.Table, empresaID, pedidoRefID)
 		if err == nil {
@@ -5602,16 +5622,16 @@ func resolvePedidoForCotizacion(dbEmp *sql.DB, empresaID, cotizacionID, pedidoRe
 			return nil, err
 		}
 	}
-	return findPedidoByCotizacionID(dbEmp, empresaID, cotizacionID)
+	return findPedidoByCotizacionID(ctx, dbEmp, empresaID, cotizacionID)
 }
 
-func findPedidoByCotizacionID(dbEmp *sql.DB, empresaID, cotizacionID int64) (map[string]interface{}, error) {
+func findPedidoByCotizacionID(ctx context.Context, dbEmp *sql.DB, empresaID, cotizacionID int64) (map[string]interface{}, error) {
 	if empresaID <= 0 || cotizacionID <= 0 {
 		return nil, nil
 	}
 
 	var pedidoID int64
-	err := dbEmp.QueryRow(`SELECT id
+	err := dbEmp.QueryRowContext(ctx, `SELECT id
 	FROM empresa_pedidos_venta
 	WHERE empresa_id = ?
 	  AND COALESCE(cotizacion_id, 0) = ?
@@ -5638,14 +5658,14 @@ func findPedidoByCotizacionID(dbEmp *sql.DB, empresaID, cotizacionID int64) (map
 	return item, nil
 }
 
-func findDocumentoFacturacionByPedidoID(dbEmp *sql.DB, empresaID, pedidoID int64) (*dbpkg.EmpresaDocumentoFacturacion, error) {
+func findDocumentoFacturacionByPedidoID(ctx context.Context, dbEmp *sql.DB, empresaID, pedidoID int64) (*dbpkg.EmpresaDocumentoFacturacion, error) {
 	if empresaID <= 0 || pedidoID <= 0 {
 		return nil, nil
 	}
 
 	var tipoDocumento string
 	var documentoCodigo string
-	err := dbEmp.QueryRow(`SELECT
+	err := dbEmp.QueryRowContext(ctx, `SELECT
 		COALESCE(tipo_documento, 'factura_electronica'),
 		COALESCE(documento_codigo, '')
 	FROM empresa_facturacion_documentos
@@ -7207,6 +7227,36 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	base := empresaModuloGenericCRUDHandler(dbEmp, cfgDIAN)
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		if r.Method == http.MethodGet && (action == "" || action == "detalle") {
+			empresaID := parseEmpresaIDFromContext(r)
+			if empresaID <= 0 {
+				var err error
+				empresaID, err = parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+			}
+			cfg, err := getEmpresaDIANConfig(dbEmp, empresaID)
+			if err != nil {
+				http.Error(w, "No se pudo consultar la configuracion DIAN", http.StatusInternalServerError)
+				return
+			}
+			if action == "detalle" {
+				if len(cfg) == 0 {
+					http.Error(w, "registro no encontrado", http.StatusNotFound)
+					return
+				}
+				writeJSON(w, http.StatusOK, sanitizeDIANConfigForResponse(cfg))
+				return
+			}
+			items := make([]map[string]interface{}, 0, 1)
+			if len(cfg) > 0 {
+				items = append(items, sanitizeDIANConfigForResponse(cfg))
+			}
+			writeJSON(w, http.StatusOK, items)
+			return
+		}
 		if action == "" && (r.Method == http.MethodPost || r.Method == http.MethodPut) {
 			handleDIANConfigSave(dbEmp, dbSuper, w, r)
 			return
@@ -7263,6 +7313,19 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			response, status, err := analyzeDIANScreenshotUpload(dbEmp, r)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
+		case "importar_rut_pdf_ia", "leer_rut_pdf_ia", "extraer_rut_pdf_ia":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			response, status, err := importDIANRUTPDFIA(dbEmp, dbSuper, r)
 			if err != nil {
 				http.Error(w, err.Error(), status)
 				return
@@ -7341,8 +7404,8 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
-			missing := missingDIANFields(cfg)
-			effectiveSoftwareID, _, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, nil)
+			missing := missingDIANFields(cfg, empresaID)
+			effectiveSoftwareID, _, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, nil, empresaID)
 			response := map[string]interface{}{
 				"ok":                len(missing) == 0,
 				"empresa_id":        empresaID,
@@ -7396,7 +7459,7 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				fecha = time.Now().Format("2006-01-02T15:04:05-07:00")
 			}
 			nit := genericStringValue(cfg["nit"])
-			softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload)
+			softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload, empresaID)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -7474,6 +7537,13 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			if chooseDIANAmbiente(cfg) != "habilitacion" || !parseTruthy(genericStringValue(payload["set_habilitacion"])) {
+				writeJSON(w, http.StatusConflict, map[string]interface{}{
+					"ok": false, "codigo": "generacion_ubl_libre_bloqueada", "bloqueado": true,
+					"motivo": "La generacion UBL libre solo se permite como fixture explicito del set DIAN de habilitacion; la emision comercial usa la fuente fiscal inmutable del servidor.",
+				})
+				return
+			}
 			response, status, err := generateDIANUBLBase(cfg, empresaID, payload)
 			if err != nil {
 				http.Error(w, err.Error(), status)
@@ -7487,23 +7557,12 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			payload, err := decodeGenericBodyMap(r)
-			if err != nil {
-				http.Error(w, "JSON invalido", http.StatusBadRequest)
-				return
-			}
-			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
-			response, status, err := signDIANXMLReal(cfg, empresaID, payload)
-			if err != nil {
-				http.Error(w, err.Error(), status)
-				return
-			}
-			writeJSON(w, status, response)
+			writeJSON(w, http.StatusConflict, map[string]interface{}{
+				"ok":        false,
+				"codigo":    "firma_xml_directa_bloqueada",
+				"bloqueado": true,
+				"motivo":    "La firma directa de XML libre fue deshabilitada; use el flujo fiscal canonico.",
+			})
 			return
 
 		case "firmar_xml_xades_base":
@@ -7511,23 +7570,12 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			payload, err := decodeGenericBodyMap(r)
-			if err != nil {
-				http.Error(w, "JSON invalido", http.StatusBadRequest)
-				return
-			}
-			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
-			response, status, err := signDIANXMLXAdESBase(cfg, empresaID, payload)
-			if err != nil {
-				http.Error(w, err.Error(), status)
-				return
-			}
-			writeJSON(w, status, response)
+			writeJSON(w, http.StatusConflict, map[string]interface{}{
+				"ok":        false,
+				"codigo":    "firma_xml_directa_bloqueada",
+				"bloqueado": true,
+				"motivo":    "La firma directa de XML libre fue deshabilitada; use el flujo fiscal canonico.",
+			})
 			return
 
 		case "diagnostico_oficial", "diagnosticar_oficial":
@@ -7580,23 +7628,16 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			payload, err := decodeGenericBodyMap(r)
-			if err != nil {
-				http.Error(w, "JSON invalido", http.StatusBadRequest)
-				return
-			}
-			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
-			response, status, err := sendDIANDocumentoReal(dbEmp, cfg, empresaID, payload)
-			if err != nil {
-				http.Error(w, err.Error(), status)
-				return
-			}
-			writeJSON(w, status, response)
+			// A free-form XML send bypasses the canonical fiscal document, its
+			// persisted artifact hash, advisory lock and retry ledger. Production
+			// emission is only allowed through the transactional billing endpoint.
+			writeJSON(w, http.StatusConflict, map[string]interface{}{
+				"ok":        false,
+				"codigo":    "envio_dian_directo_bloqueado",
+				"motivo":    "El envio DIAN directo fue deshabilitado: use el flujo documental canonico de facturacion.",
+				"accion":    "usar_api_facturacion_electronica",
+				"bloqueado": true,
+			})
 			return
 
 		case "consultar_acuse_real":
@@ -7764,6 +7805,13 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 		}
+		if r.Method == http.MethodGet {
+			// La configuracion DIAN contiene secretos descifrados para uso interno.
+			// Ninguna accion GET desconocida puede caer en el CRUD generico, porque
+			// ese listado no aplica el saneamiento write-only de este handler.
+			http.Error(w, "accion DIAN no soportada", http.StatusBadRequest)
+			return
+		}
 		if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
 			http.Error(w, "accion DIAN no soportada", http.StatusBadRequest)
 			return
@@ -7785,34 +7833,45 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		return
 	}
 	prepareDIANConfigSaveActivation(payload)
-	applyGenericDefaultValues(payload, cfgDIAN.DefaultValues)
-	ensureGenericCode(payload, cfgDIAN.CodeColumn, cfgDIAN.CodePrefix)
-	if hasAllowedColumn(cfgDIAN.AllowedColumns, "usuario_creador") && isEmptyGenericValue(payload["usuario_creador"]) {
-		payload["usuario_creador"] = adminEmailFromRequest(r)
-	}
-	if hasAllowedColumn(cfgDIAN.AllowedColumns, "estado") && isEmptyGenericValue(payload["estado"]) {
-		payload["estado"] = "activo"
-	}
-	if anyToInt64(payload["resolucion_alerta_dias"]) <= 0 {
-		payload["resolucion_alerta_dias"] = dianResolutionAlertDays
-	}
-	if err := validateGenericRequiredCreate(payload, cfgDIAN.RequiredOnCreate); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	id := resolveIDFromPayloadOrQuery(payload, r)
 	if id <= 0 {
-		if current, err := getEmpresaDIANConfig(dbEmp, empresaID); err == nil {
+		if current, currentErr := getEmpresaDIANConfig(dbEmp, empresaID); currentErr == nil {
 			id = anyToInt64(current["id"])
 		}
 	}
+	creating := id <= 0
+	prepareDIANConfigPersistenceDefaults(payload, creating, adminEmailFromRequest(r))
+	if err := validateDIANSoftwareProviderPayload(payload); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Certificate material can only be changed by the tenant-scoped upload
+	// flow. Empty write-only fields preserve the current encrypted value.
+	delete(payload, "certificado_url")
+	delete(payload, "certificado_clave_ref")
+	for _, field := range dbpkg.EmpresaDIANConfigSecretColumns() {
+		if value, exists := payload[field]; exists && strings.TrimSpace(genericStringValue(value)) == "" {
+			delete(payload, field)
+		}
+	}
+	if creating {
+		if err := validateGenericRequiredCreate(payload, cfgDIAN.RequiredOnCreate); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	storagePayload, err := encryptDIANConfigPayloadForStorage(empresaID, payload)
+	if err != nil {
+		http.Error(w, "No se pudo cifrar la configuracion sensible DIAN", http.StatusBadRequest)
+		return
+	}
 	status := http.StatusOK
-	if id <= 0 {
-		id, err = dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, payload, cfgDIAN.AllowedColumns)
+	if creating {
+		id, err = dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, storagePayload, cfgDIAN.AllowedColumns)
 		status = http.StatusCreated
 	} else {
-		err = dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, id, payload, cfgDIAN.AllowedColumns)
+		err = dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, id, storagePayload, cfgDIAN.AllowedColumns)
 	}
 	if err != nil {
 		if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
@@ -7823,17 +7882,17 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		return
 	}
 
-	item, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfgDIAN.Table, empresaID, id)
+	item, _ := getEmpresaDIANConfig(dbEmp, empresaID)
 	syncErr := syncDIANConfigToAdvanced(dbEmp, empresaID, item, strings.TrimSpace(adminEmailFromRequest(r)))
 	paisSyncErr := syncDIANConfigToFacturacionPais(dbEmp, empresaID, item, strings.TrimSpace(adminEmailFromRequest(r)))
 	resolutionStatus := checkDIANResolutionExpiry(dbEmp, dbSuper, empresaID, item, strings.TrimSpace(adminEmailFromRequest(r)), true)
-	if refreshed, err := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfgDIAN.Table, empresaID, id); err == nil {
+	if refreshed, err := getEmpresaDIANConfig(dbEmp, empresaID); err == nil {
 		item = refreshed
 	}
 	resp := map[string]interface{}{
 		"ok":                     true,
 		"id":                     id,
-		"item":                   item,
+		"item":                   sanitizeDIANConfigForResponse(item),
 		"vencimiento_resolucion": resolutionStatus,
 	}
 	if syncErr != nil {
@@ -7843,6 +7902,78 @@ func handleDIANConfigSave(dbEmp, dbSuper *sql.DB, w http.ResponseWriter, r *http
 		resp["configuracion_pais_warning"] = "La configuracion DIAN se guardo, pero no se pudo sincronizar la configuracion fiscal por pais."
 	}
 	writeJSON(w, status, resp)
+}
+
+func validateDIANSoftwareProviderPayload(payload map[string]interface{}) error {
+	fields := []string{
+		"software_proveedor_nit", "software_proveedor_dv", "software_proveedor_razon_social",
+		"software_proveedor_primer_apellido", "software_proveedor_segundo_apellido",
+		"software_proveedor_primer_nombre", "software_proveedor_otros_nombres",
+	}
+	touched := false
+	values := make(map[string]string, len(fields))
+	for _, field := range fields {
+		raw, exists := payload[field]
+		if exists {
+			touched = true
+		}
+		value := strings.TrimSpace(genericStringValue(raw))
+		if len(value) > 200 {
+			return fmt.Errorf("%s supera la longitud permitida", field)
+		}
+		if exists {
+			payload[field] = value
+		}
+		values[field] = value
+	}
+	if !touched {
+		return nil
+	}
+	isDigits := func(value string) bool {
+		if value == "" {
+			return false
+		}
+		for _, char := range value {
+			if char < '0' || char > '9' {
+				return false
+			}
+		}
+		return true
+	}
+	if !isDigits(values["software_proveedor_nit"]) || !isDigits(values["software_proveedor_dv"]) {
+		return errors.New("NIT y DV del proveedor del software DIAN deben contener solo dígitos")
+	}
+	if len(values["software_proveedor_dv"]) != 1 {
+		return errors.New("el DV del proveedor del software DIAN debe contener exactamente un dígito")
+	}
+	legalName := values["software_proveedor_razon_social"] != ""
+	naturalName := values["software_proveedor_primer_apellido"] != "" &&
+		values["software_proveedor_segundo_apellido"] != "" && values["software_proveedor_primer_nombre"] != ""
+	if !legalName && !naturalName {
+		return errors.New("configure razón social o los dos apellidos y primer nombre del proveedor del software DIAN")
+	}
+	return nil
+}
+
+func prepareDIANConfigPersistenceDefaults(payload map[string]interface{}, creating bool, actorEmail string) {
+	if payload == nil {
+		return
+	}
+	if creating {
+		applyGenericDefaultValues(payload, cfgDIAN.DefaultValues)
+		ensureGenericCode(payload, cfgDIAN.CodeColumn, cfgDIAN.CodePrefix)
+		if hasAllowedColumn(cfgDIAN.AllowedColumns, "usuario_creador") && isEmptyGenericValue(payload["usuario_creador"]) {
+			payload["usuario_creador"] = strings.TrimSpace(actorEmail)
+		}
+		if hasAllowedColumn(cfgDIAN.AllowedColumns, "estado") && isEmptyGenericValue(payload["estado"]) {
+			payload["estado"] = "activo"
+		}
+	}
+	if _, supplied := payload["resolucion_alerta_dias"]; creating || supplied {
+		if anyToInt64(payload["resolucion_alerta_dias"]) <= 0 {
+			payload["resolucion_alerta_dias"] = dianResolutionAlertDays
+		}
+	}
 }
 
 func prepareDIANConfigSaveActivation(payload map[string]interface{}) {
@@ -7877,7 +8008,6 @@ func syncDIANConfigToFacturacionPais(dbEmp *sql.DB, empresaID int64, cfg map[str
 		"resolucion_fecha_hasta":   strings.TrimSpace(genericStringValue(cfg["resolucion_fecha_hasta"])),
 		"consecutivo_desde":        anyToInt64(cfg["rango_desde"]),
 		"consecutivo_hasta":        anyToInt64(cfg["rango_hasta"]),
-		"proximo_consecutivo":      anyToInt64(cfg["consecutivo_actual"]),
 		"resolucion_alerta_dias":   anyToInt64(cfg["resolucion_alerta_dias"]),
 		"usar_software_compartido": parseTruthy(genericStringValue(cfg["usar_software_compartido"])),
 	}
@@ -7958,7 +8088,16 @@ func syncDIANConfigToAdvanced(dbEmp *sql.DB, empresaID int64, cfg map[string]int
 		resolucion_fecha_hasta = excluded.resolucion_fecha_hasta,
 		consecutivo_desde = excluded.consecutivo_desde,
 		consecutivo_hasta = excluded.consecutivo_hasta,
-		proximo_consecutivo = excluded.proximo_consecutivo,
+		proximo_consecutivo = CASE
+			WHEN empresa_configuracion_avanzada.prefijo_factura = excluded.prefijo_factura
+				AND empresa_configuracion_avanzada.resolucion_numero = excluded.resolucion_numero
+			THEN CASE
+				WHEN empresa_configuracion_avanzada.proximo_consecutivo > excluded.proximo_consecutivo
+				THEN empresa_configuracion_avanzada.proximo_consecutivo
+				ELSE excluded.proximo_consecutivo
+			END
+			ELSE excluded.proximo_consecutivo
+		END,
 		fecha_actualizacion = CURRENT_TIMESTAMP,
 		usuario_creador = CASE WHEN excluded.usuario_creador <> '' THEN excluded.usuario_creador ELSE empresa_configuracion_avanzada.usuario_creador END,
 		estado = 'activo'`,
@@ -7977,12 +8116,8 @@ func dianColombiaLocation() *time.Location {
 }
 
 const (
-	dianOfficialSetFacturas     = 30
-	dianOfficialSetNotasDebito  = 10
-	dianOfficialSetNotasCredito = 10
-	dianOfficialSetTotal        = dianOfficialSetFacturas + dianOfficialSetNotasDebito + dianOfficialSetNotasCredito
-	dianCertificateAlertDays    = 30
-	dianResolutionAlertDays     = 30
+	dianCertificateAlertDays = 30
+	dianResolutionAlertDays  = 30
 )
 
 func parseDIANStoredTime(raw string) (time.Time, bool) {
@@ -8223,14 +8358,16 @@ func checkDIANResolutionExpiry(dbEmp, dbSuper *sql.DB, empresaID int64, cfg map[
 	}
 	if created.ID > 0 {
 		status["notificacion_enviada"] = true
-		_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
+		if err := updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
 			"resolucion_alerta_ultimo_envio": time.Now().Format(time.RFC3339),
-		})
+		}); err != nil {
+			status["notificacion_error"] = "la alerta fue creada, pero no se pudo persistir su trazabilidad"
+		}
 	}
 	return status
 }
 
-func resolveDIANCertificateExpiryFromConfig(cfg map[string]interface{}) (time.Time, time.Time, string, error) {
+func resolveDIANCertificateExpiryFromConfig(cfg map[string]interface{}, empresaID int64) (time.Time, time.Time, string, error) {
 	if cfg == nil {
 		return time.Time{}, time.Time{}, "", fmt.Errorf("configuracion DIAN no disponible")
 	}
@@ -8246,7 +8383,7 @@ func resolveDIANCertificateExpiryFromConfig(cfg map[string]interface{}) (time.Ti
 	if certRef == "" {
 		return time.Time{}, time.Time{}, "", nil
 	}
-	cert, err := parseDIANCertificate(certRef)
+	cert, err := parseDIANCertificate(certRef, empresaID)
 	if err != nil {
 		return time.Time{}, time.Time{}, "certificado_url", err
 	}
@@ -8315,7 +8452,7 @@ func sendDIANCertificateExpiryEmail(dbEmp, dbSuper *sql.DB, empresaID int64, cfg
 func checkDIANCertificateExpiry(dbEmp, dbSuper *sql.DB, empresaID int64, cfg map[string]interface{}, notify bool) map[string]interface{} {
 	now := time.Now()
 	alertDays := dianCertificateAlertThresholdDays(cfg)
-	notBefore, notAfter, source, err := resolveDIANCertificateExpiryFromConfig(cfg)
+	notBefore, notAfter, source, err := resolveDIANCertificateExpiryFromConfig(cfg, empresaID)
 	status := dianCertificateExpiryStatus(now, notBefore, notAfter, alertDays)
 	status["empresa_id"] = empresaID
 	status["fuente"] = source
@@ -8343,22 +8480,25 @@ func checkDIANCertificateExpiry(dbEmp, dbSuper *sql.DB, empresaID int64, cfg map
 	}
 	status["correo_enviado"] = true
 	status["certificado_alerta_ultimo_envio"] = dianNowLocal()
-	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
+	if err := updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
 		"certificado_alerta_ultimo_envio": status["certificado_alerta_ultimo_envio"],
 		"certificado_alerta_email":        toEmail,
-	})
+	}); err != nil {
+		status["email_error"] = "el correo fue enviado, pero no se pudo persistir su trazabilidad"
+	}
 	return status
 }
 
 func dianDefaultSetRequirement() map[string]interface{} {
 	return map[string]interface{}{
 		"ambiente":               "habilitacion",
-		"facturas_electronicas":  dianOfficialSetFacturas,
-		"notas_debito":           dianOfficialSetNotasDebito,
-		"notas_credito":          dianOfficialSetNotasCredito,
-		"total_documentos":       dianOfficialSetTotal,
+		"facturas_electronicas":  0,
+		"notas_debito":           0,
+		"notas_credito":          0,
+		"total_documentos":       0,
+		"objetivo_confirmado":    false,
 		"estado_requerido_final": "Aceptado",
-		"nota":                   "Base operativa para software propio/proveedor segun el objetivo cargado en portal DIAN; verifique siempre el set exacto asignado a esta empresa.",
+		"nota":                   "DIAN asigna el objetivo por empresa y modo de operacion. PCS no presupone cantidades: copie y guarde el set exacto mostrado en el portal antes de enviar documentos reales.",
 	}
 }
 
@@ -8378,7 +8518,7 @@ func dianConfiguredSetCounts(cfg map[string]interface{}) (int, int, int, int) {
 	}
 	suma := facturas + notasDebito + notasCredito
 	if suma <= 0 {
-		return dianOfficialSetFacturas, dianOfficialSetNotasDebito, dianOfficialSetNotasCredito, dianOfficialSetTotal
+		return 0, 0, 0, 0
 	}
 	if total < suma {
 		total = suma
@@ -8426,6 +8566,7 @@ func dianEffectiveAcceptedCounts(cfg map[string]interface{}, payload map[string]
 func dianConfiguredSetRequirement(cfg map[string]interface{}) map[string]interface{} {
 	facturas, notasDebito, notasCredito, totalDocumentos := dianConfiguredSetCounts(cfg)
 	accFacturas, accDebito, accCredito, accTotal := dianConfiguredAcceptedCounts(cfg)
+	objetivoConfirmado := facturas+notasDebito+notasCredito > 0
 	return map[string]interface{}{
 		"ambiente":                               "habilitacion",
 		"modo_operacion":                         genericStringValue(cfg["modo_operacion_descripcion"]),
@@ -8437,15 +8578,16 @@ func dianConfiguredSetRequirement(cfg map[string]interface{}) map[string]interfa
 		"notas_debito_aceptadas_minimo":          accDebito,
 		"notas_credito_aceptadas_minimo":         accCredito,
 		"total_documentos_aceptados_minimo":      accTotal,
+		"objetivo_confirmado":                    objetivoConfirmado,
 		"estado_requerido_final":                 "Aceptado",
-		"nota":                                   "Objetivo cargado desde el modo de operacion del portal DIAN para esta empresa.",
+		"nota":                                   "Objetivo cargado para esta empresa desde el portal DIAN; confirme que coincide con el modo de operacion vigente antes de ejecutar el set.",
 	}
 }
 
 func dianEffectiveSetRequirement(payload map[string]interface{}) map[string]interface{} {
-	facturas := dianPayloadNonNegativeInt(payload, dianOfficialSetFacturas, "facturas_electronicas", "facturas", "invoices_total_required")
-	notasDebito := dianPayloadNonNegativeInt(payload, dianOfficialSetNotasDebito, "notas_debito", "debit_notes", "total_debit_notes_required")
-	notasCredito := dianPayloadNonNegativeInt(payload, dianOfficialSetNotasCredito, "notas_credito", "credit_notes", "total_credit_notes_required")
+	facturas := dianPayloadNonNegativeInt(payload, 0, "facturas_electronicas", "facturas", "invoices_total_required")
+	notasDebito := dianPayloadNonNegativeInt(payload, 0, "notas_debito", "debit_notes", "total_debit_notes_required")
+	notasCredito := dianPayloadNonNegativeInt(payload, 0, "notas_credito", "credit_notes", "total_credit_notes_required")
 	totalDocumentos := facturas + notasDebito + notasCredito
 	return map[string]interface{}{
 		"ambiente":               "habilitacion",
@@ -8453,6 +8595,7 @@ func dianEffectiveSetRequirement(payload map[string]interface{}) map[string]inte
 		"notas_debito":           notasDebito,
 		"notas_credito":          notasCredito,
 		"total_documentos":       totalDocumentos,
+		"objetivo_confirmado":    totalDocumentos > 0,
 		"estado_requerido_final": "Aceptado",
 		"nota":                   "Valores configurables segun el set que DIAN asigne a la empresa.",
 	}
@@ -8491,11 +8634,7 @@ func dianFirstNonBlank(values ...string) string {
 }
 
 func dianTruncate(raw string, max int) string {
-	raw = strings.TrimSpace(raw)
-	if max <= 0 || len(raw) <= max {
-		return raw
-	}
-	return strings.TrimSpace(raw[:max])
+	return facturacionTruncate(raw, max)
 }
 
 func resolveDIANSecretValue(raw string) (string, error) {
@@ -8552,8 +8691,49 @@ func resolveDIANSecretValue(raw string) (string, error) {
 	return raw, nil
 }
 
-func parseDIANRSAPrivateKey(raw string) (*rsa.PrivateKey, error) {
-	resolved, err := resolveDIANSecretValue(raw)
+func resolveDIANPrivateMaterialValue(raw string, empresaID int64) (string, error) {
+	if empresaID <= 0 {
+		return resolveDIANSecretValue(raw)
+	}
+	raw = strings.TrimSpace(raw)
+	if !strings.HasPrefix(strings.ToLower(raw), "file:") {
+		return "", fmt.Errorf("material criptografico DIAN debe provenir de una carga privada de la empresa")
+	}
+	path := strings.TrimSpace(raw[len("file:"):])
+	if path == "" || !strings.EqualFold(filepath.Ext(path), ".pem") {
+		return "", fmt.Errorf("referencia PEM DIAN invalida")
+	}
+	root, err := empresaPrivateCategoryRoot(empresaID, "dian")
+	if err != nil {
+		return "", err
+	}
+	resolvedPath, err := resolveExistingPrivateFileUnderRoot(root, path)
+	if err != nil {
+		return "", fmt.Errorf("material criptografico DIAN fuera del almacenamiento privado de la empresa")
+	}
+	file, err := os.Open(resolvedPath) // #nosec G304 -- path is resolved beneath the tenant DIAN private root.
+	if err != nil {
+		return "", fmt.Errorf("material criptografico DIAN no disponible")
+	}
+	defer func() { _ = file.Close() }()
+	const maxDIANPEMBytes = 2 << 20
+	content, err := io.ReadAll(io.LimitReader(file, maxDIANPEMBytes+1))
+	if err != nil || len(content) == 0 || len(content) > maxDIANPEMBytes {
+		return "", fmt.Errorf("material criptografico DIAN invalido")
+	}
+	value := strings.TrimSpace(string(content))
+	if !strings.HasPrefix(strings.ToUpper(value), "-----BEGIN ") {
+		return "", fmt.Errorf("material criptografico DIAN no esta en formato PEM")
+	}
+	return value, nil
+}
+
+func parseDIANRSAPrivateKey(raw string, empresaIDs ...int64) (*rsa.PrivateKey, error) {
+	empresaID := int64(0)
+	if len(empresaIDs) > 0 {
+		empresaID = empresaIDs[0]
+	}
+	resolved, err := resolveDIANPrivateMaterialValue(raw, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -8808,17 +8988,20 @@ func decodeDIANSignatureUpload(contentBytes []byte, filename, password string) (
 
 func normalizeDIANAcuseEstado(raw string) string {
 	raw = strings.ToLower(strings.TrimSpace(raw))
+	for from, to := range map[string]string{"á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u", "ü": "u"} {
+		raw = strings.ReplaceAll(raw, from, to)
+	}
 	switch {
 	case raw == "":
 		return ""
-	case strings.Contains(raw, "acept") || strings.Contains(raw, "validad") || strings.Contains(raw, "approved"):
-		return "aceptado"
-	case strings.Contains(raw, "rechaz") || strings.Contains(raw, "error") || strings.Contains(raw, "fail"):
+	case strings.Contains(raw, "no acept") || strings.Contains(raw, "no valid") || strings.Contains(raw, "not accept") || strings.Contains(raw, "not valid") || strings.Contains(raw, "invalid") || strings.Contains(raw, "rechaz") || strings.Contains(raw, "error") || strings.Contains(raw, "fail") || strings.Contains(raw, "fallid") || strings.Contains(raw, "deneg"):
 		return "rechazado"
-	case strings.Contains(raw, "pend") || strings.Contains(raw, "proces") || strings.Contains(raw, "queue"):
-		return "pendiente"
 	case strings.Contains(raw, "conting"):
 		return "contingencia"
+	case strings.Contains(raw, "pend") || strings.Contains(raw, "proces") || strings.Contains(raw, "queue"):
+		return "pendiente"
+	case strings.Contains(raw, "acept") || strings.Contains(raw, "validad") || strings.Contains(raw, "approved"):
+		return "aceptado"
 	default:
 		return raw
 	}
@@ -8857,6 +9040,13 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 			return "enviado", dianFirstNonBlank(message, "documento procesado anteriormente por DIAN; requiere consulta/acuse original para confirmar aceptacion")
 		}
 		normalizedMessage := normalizeDIANAcuseEstado(message)
+		// GetStatusZip puede informar que el set completo fue aceptado aunque
+		// IsValid sea false para el lote/documento consultado. La descripcion
+		// oficial positiva debe prevalecer sobre la marca generica para no
+		// registrar un rechazo fiscal inexistente.
+		if normalizedMessage == "aceptado" {
+			return "aceptado", dianFirstNonBlank(message, "set de pruebas aceptado por DIAN")
+		}
 		if normalizedMessage == "pendiente" {
 			return "pendiente", dianFirstNonBlank(message, "Batch en proceso de validacion.")
 		}
@@ -8877,16 +9067,8 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 		}
 	}
 
-	accepted := false
-	if parseTruthy(genericStringValue(response["accepted"])) || parseTruthy(genericStringValue(response["ok"])) || parseTruthy(genericStringValue(response["success"])) {
-		accepted = true
-	}
-
 	if statusCode >= 200 && statusCode < 300 {
-		if accepted {
-			return "aceptado", "acuse positivo del proveedor DIAN"
-		}
-		return "enviado", dianFirstNonBlank(message, "documento enviado a DIAN")
+		return "enviado", dianFirstNonBlank(message, "transporte exitoso; falta acuse fiscal concluyente de DIAN")
 	}
 	if statusCode >= 500 {
 		return "contingencia", "error de transporte DIAN"
@@ -8937,6 +9119,28 @@ func buildDIANCUFEFacturaVenta(documentoCodigo, issueDate, issueTime, lineExtens
 		dianOnlyDigits(emisorNIT),
 		dianOnlyDigits(adquirienteNIT),
 		strings.TrimSpace(technicalKey),
+		strings.TrimSpace(profileExecutionID),
+	)
+}
+
+// buildDIANCUDSDocumentoSoporte calcula el CUDS de la operación de compra a
+// un no obligado a facturar. Su semilla no es el CUFE de venta: usa la
+// identificación del vendedor no obligado, la del adquirente y el PIN del
+// software, en el orden definido por el anexo técnico DIAN de documento
+// soporte. Mantenerlo separado evita que un soporte se convierta en factura de
+// venta por accidente.
+func buildDIANCUDSDocumentoSoporte(documentoCodigo, issueDate, issueTime, lineExtensionAmount, tax01, payableAmount, vendedorNoObligadoDocumento, adquirenteNIT, softwarePIN, profileExecutionID string) string {
+	return buildDIANSHA384Hex(
+		strings.TrimSpace(documentoCodigo),
+		strings.TrimSpace(issueDate),
+		strings.TrimSpace(issueTime),
+		dianFormatDecimal(lineExtensionAmount, 0),
+		"01",
+		dianFormatDecimal(tax01, 0),
+		dianFormatDecimal(payableAmount, 0),
+		strings.TrimSpace(vendedorNoObligadoDocumento),
+		dianOnlyDigits(adquirenteNIT),
+		strings.TrimSpace(softwarePIN),
 		strings.TrimSpace(profileExecutionID),
 	)
 }
@@ -8995,12 +9199,16 @@ func dianIssuepcs_ts(raw string) (string, string) {
 
 func dianDocumentKind(raw string) (rootName, lineName, customizationID, uuidSchemeName, typeCode, totalTag, quantityTag, correctionCode string) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "documento_soporte", "documento_soporte_electronico", "soporte_compras":
+		return "DocumentoSoporte", "InvoiceLine", "10", "CUDS-SHA384", "05", "LegalMonetaryTotal", "InvoicedQuantity", ""
 	case "nota_credito", "credit_note", "creditnote", "credito", "credit":
 		return "CreditNote", "CreditNoteLine", "20", "CUDE-SHA384", "91", "LegalMonetaryTotal", "CreditedQuantity", "1"
 	case "nota_debito", "debit_note", "debitnote", "debito", "debit":
 		return "DebitNote", "DebitNoteLine", "30", "CUDE-SHA384", "", "RequestedMonetaryTotal", "DebitedQuantity", "1"
-	default:
+	case "factura", "invoice", "factura_electronica", "factura_venta", "factura_de_venta":
 		return "Invoice", "InvoiceLine", "01", "CUFE-SHA384", "01", "LegalMonetaryTotal", "InvoicedQuantity", ""
+	default:
+		return "", "", "", "", "", "", "", ""
 	}
 }
 
@@ -9024,13 +9232,19 @@ func dianNotePrefix(documentID, fallback string) string {
 }
 
 func dianDocumentProfileID(rootName string) string {
-	switch rootName {
+	// El Schematron DIAN vigente exige un literal distinto por familia UBL.
+	// No se debe abreviar a "DIAN 2.1": FAD03/CAD03 lo rechazan.
+	switch strings.TrimSpace(rootName) {
+	case "DocumentoSoporte":
+		return "DIAN 2.1: documento soporte en adquisiciones efectuadas a no obligados a facturar."
+	case "Invoice":
+		return "DIAN 2.1: Factura Electrónica de Venta"
 	case "CreditNote":
 		return "DIAN 2.1: Nota Crédito de Factura Electrónica de Venta"
 	case "DebitNote":
 		return "DIAN 2.1: Nota Débito de Factura Electrónica de Venta"
 	default:
-		return "DIAN 2.1: Factura Electrónica de Venta"
+		return ""
 	}
 }
 
@@ -9166,7 +9380,7 @@ func dianCustomerPartyXML(customerName, customerNIT string, rawTipoDocumento ...
 				`<cac:Party>`+
 				`%s`+
 				`<cac:PartyName><cbc:Name>%s</cbc:Name></cac:PartyName>`+
-				`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID schemeAgencyID="195" schemeAgencyName="%s" schemeName="13">%s</cbc:CompanyID><cbc:TaxLevelCode listName="49">R-99-PN</cbc:TaxLevelCode><cac:TaxScheme><cbc:ID>ZZ</cbc:ID><cbc:Name>No aplica</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
+				`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID schemeAgencyID="195" schemeAgencyName="%s" schemeName="13">%s</cbc:CompanyID><cbc:TaxLevelCode listName="04">R-99-PN</cbc:TaxLevelCode><cac:TaxScheme><cbc:ID>ZZ</cbc:ID><cbc:Name>No aplica</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
 				`<cac:Contact><cbc:Name>%s</cbc:Name><cbc:ElectronicMail>cliente@example.com</cbc:ElectronicMail></cac:Contact>`+
 				`%s`+
 				`</cac:Party>`+
@@ -9180,10 +9394,9 @@ func dianCustomerPartyXML(customerName, customerNIT string, rawTipoDocumento ...
 			dianPersonNameXML(customerName),
 		)
 	}
+	// El Schematron DIAN 2026 admite listas 04/05 para TaxLevelCode. La lista
+	// 49 de ejemplos históricos ya no es válida en el modelo compilado vigente.
 	taxLevelListName := "04"
-	if additionalAccountID == "2" {
-		taxLevelListName = "49"
-	}
 	companyIDAttrs := fmt.Sprintf(`schemeAgencyID="195" schemeAgencyName="%s" schemeName="%s"`, escapeXML(dianAgencyName), escapeXML(schemeName))
 	if schemeID != "" {
 		companyIDAttrs += fmt.Sprintf(` schemeID="%s"`, escapeXML(schemeID))
@@ -9235,7 +9448,7 @@ func dianPaymentMeansXML(issueDate string) string {
 
 func dianLineXML(lineName, quantityTag, currency, taxable, tax, percent, quantity string) string {
 	return fmt.Sprintf(
-		`<cac:%s><cbc:ID>1</cbc:ID><cbc:%s unitCode="EA">%s</cbc:%s><cbc:LineExtensionAmount currencyID="%s">%s</cbc:LineExtensionAmount>%s<cac:Item><cbc:Description>Servicio de habilitacion DIAN</cbc:Description><cac:SellersItemIdentification><cbc:ID>PCS-DIAN-001</cbc:ID></cac:SellersItemIdentification><cac:StandardItemIdentification><cbc:ID schemeID="999" schemeName="EAN13">7700000000019</cbc:ID></cac:StandardItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%s</cbc:PriceAmount><cbc:BaseQuantity unitCode="EA">%s</cbc:BaseQuantity></cac:Price></cac:%s>`,
+		`<cac:%s><cbc:ID>1</cbc:ID><cbc:%s unitCode="EA">%s</cbc:%s><cbc:LineExtensionAmount currencyID="%s">%s</cbc:LineExtensionAmount>%s<cac:Item><cbc:Description>Servicio de habilitacion DIAN</cbc:Description><cac:SellersItemIdentification><cbc:ID>PCS-DIAN-001</cbc:ID></cac:SellersItemIdentification><cac:StandardItemIdentification><cbc:ID schemeID="999" schemeName="Estándar de adopción del contribuyente">7700000000019</cbc:ID></cac:StandardItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%s</cbc:PriceAmount><cbc:BaseQuantity unitCode="EA">%s</cbc:BaseQuantity></cac:Price></cac:%s>`,
 		lineName, quantityTag, escapeXML(quantity), quantityTag, escapeXML(currency), escapeXML(taxable), dianTaxTotalXML(currency, taxable, tax, percent), escapeXML(currency), escapeXML(taxable), escapeXML(quantity), lineName,
 	)
 }
@@ -9392,6 +9605,14 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 	warnings := make([]map[string]interface{}, 0)
 	checks := map[string]interface{}{}
 	source := "sistema_preflight_dian"
+	documentoTipoPreflight := dianFirstNonBlank(genericStringValue(payload["documento_tipo"]), "factura")
+	if !facturacionDocumentoElectronicoDIANTransporteSoportado(documentoTipoPreflight) {
+		dianAppendValidationIssue(&issues, &warnings, "DIAN-TIPO-001", "error", "documento_tipo", facturacionDocumentoElectronicoBloqueoMotivo(documentoTipoPreflight), "anexo_tecnico_especifico_pendiente")
+	}
+	checks["tipo_documento"] = map[string]interface{}{
+		"codigo":    normalizeFacturacionDocumentoElectronicoTipo(documentoTipoPreflight),
+		"soportado": facturacionDocumentoElectronicoDIANTransporteSoportado(documentoTipoPreflight),
+	}
 
 	if empresaID <= 0 {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-PRE-EMPRESA", "error", "empresa_id", "empresa_id es obligatorio", source)
@@ -9399,7 +9620,7 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 	if len(cfg) == 0 {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-PRE-CONFIG", "error", "configuracion", "no existe configuracion DIAN para la empresa", source)
 	} else {
-		missing := missingDIANFields(cfg)
+		missing := missingDIANFieldsForDocument(cfg, documentoTipoPreflight, empresaID)
 		checks["configuracion_minima"] = map[string]interface{}{"ok": len(missing) == 0, "faltantes": missing}
 		for _, field := range missing {
 			dianAppendValidationIssue(&issues, &warnings, "DIAN-CFG-FALTANTE", "error", field, "campo DIAN obligatorio no configurado: "+field, "configuracion_dian")
@@ -9423,7 +9644,7 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 	if ambiente != "habilitacion" && ambiente != "produccion" {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-AMB-001", "error", "tipo_ambiente", "ambiente DIAN debe ser habilitacion o produccion", source)
 	}
-	if ambiente == "habilitacion" && strings.TrimSpace(genericStringValue(cfg["test_set_id"])) == "" && !parseTruthy(dianPayloadString(payload, "simular")) {
+	if normalizeFacturacionDocumentoElectronicoTipo(documentoTipoPreflight) != "documento_soporte" && ambiente == "habilitacion" && strings.TrimSpace(genericStringValue(cfg["test_set_id"])) == "" && !parseTruthy(dianPayloadString(payload, "simular")) {
 		dianAppendValidationIssue(&issues, &warnings, "DIAN-SET-001", "error", "test_set_id", "en habilitacion real debe existir TestSetId asignado por DIAN", "habilitacion_dian")
 	}
 
@@ -9519,14 +9740,14 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 	}
 
 	if stage == "envio_real" || stage == "set_habilitacion" || stage == "pre_envio" {
-		if keyRef := dianFirstNonBlank(genericStringValue(payload["certificado_clave_ref"]), genericStringValue(cfg["certificado_clave_ref"])); keyRef == "" {
+		if keyRef := strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"])); keyRef == "" {
 			dianAppendValidationIssue(&issues, &warnings, "DIAN-FIR-001", "error", "certificado_clave_ref", "llave privada de firma es obligatoria antes del envio", "firma_digital")
-		} else if _, err := parseDIANRSAPrivateKey(keyRef); err != nil {
+		} else if _, err := parseDIANRSAPrivateKey(keyRef, empresaID); err != nil {
 			dianAppendValidationIssue(&issues, &warnings, "DIAN-FIR-002", "error", "certificado_clave_ref", "llave privada de firma invalida: "+dianTruncate(err.Error(), 120), "firma_digital")
 		}
-		if certRef := dianFirstNonBlank(genericStringValue(payload["certificado_ref"]), genericStringValue(payload["certificado_pem"]), genericStringValue(cfg["certificado_url"])); certRef == "" {
+		if certRef := strings.TrimSpace(genericStringValue(cfg["certificado_url"])); certRef == "" {
 			dianAppendValidationIssue(&issues, &warnings, "DIAN-CER-001", "error", "certificado_url", "certificado X.509 es obligatorio antes del envio", "firma_digital")
-		} else if cert, err := parseDIANCertificate(certRef); err != nil {
+		} else if cert, err := parseDIANCertificate(certRef, empresaID); err != nil {
 			dianAppendValidationIssue(&issues, &warnings, "DIAN-CER-002", "error", "certificado_url", "certificado X.509 invalido: "+dianTruncate(err.Error(), 120), "firma_digital")
 		} else {
 			expiry := dianCertificateExpiryStatus(time.Now(), cert.NotBefore, cert.NotAfter, dianCertificateAlertThresholdDays(cfg))
@@ -9581,26 +9802,30 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 			if ublVersion != "2.1" && ublVersion != "UBL 2.1" {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-001", "error", "UBLVersionID", "UBLVersionID debe ser UBL 2.1", "ubl_2_1")
 			}
-			if profileID != "" && profileID != expectedProfileID && !strings.EqualFold(profileID, "DIAN 2.1") {
+			if profileID != "" && profileID != expectedProfileID {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-PROFILE", "error", "ProfileID", "ProfileID debe ser "+expectedProfileID, "ubl_2_1")
 			}
 			if profileExecutionID != "" && profileExecutionID != dianExpectedProfileExecutionID(cfg) {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-002", "error", "ProfileExecutionID", "ProfileExecutionID no coincide con el ambiente DIAN configurado", "ubl_2_1")
 			}
-			if xmlCustomizationID != "" && expectedCustomizationID != "" && xmlCustomizationID != expectedCustomizationID {
+			customizationValid := xmlCustomizationID == expectedCustomizationID
+			if normalizeFacturacionDocumentoElectronicoTipo(documentoTipoPreflight) == "documento_soporte" {
+				customizationValid = xmlCustomizationID == "10" || xmlCustomizationID == "11"
+			}
+			if xmlCustomizationID != "" && expectedCustomizationID != "" && !customizationValid {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-CUSTOM", "error", "CustomizationID", "CustomizationID no corresponde al tipo de documento DIAN", "ubl_2_1")
 			}
 			if documentoCodigo != "" && xmlID != "" && xmlID != documentoCodigo {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-003", "error", "ID", "ID del XML no coincide con documento_codigo", "ubl_2_1")
 			}
 			if xmlUUID == "" {
-				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-004", "error", "UUID", "CUFE/CUDE UUID es obligatorio en el XML", "ubl_2_1")
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-004", "error", "UUID", "CUFE/CUDE/CUDS UUID es obligatorio en el XML", "ubl_2_1")
 			}
 			if xmlUUID != "" && expectedUUIDScheme != "" && !strings.Contains(xmlPayload, `schemeName="`+expectedUUIDScheme+`"`) {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-UUID-SCHEME", "error", "UUID", "UUID debe usar "+expectedUUIDScheme+" segun el tipo de documento", "ubl_2_1")
 			}
 			if root == "Invoice" && expectedTypeCode != "" && xmlInvoiceType != expectedTypeCode {
-				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TIPO-FE", "error", "InvoiceTypeCode", "factura electronica de venta debe usar InvoiceTypeCode "+expectedTypeCode, "anexo_tecnico_dian")
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TIPO-FE", "error", "InvoiceTypeCode", "el documento debe usar InvoiceTypeCode "+expectedTypeCode, "anexo_tecnico_dian")
 			}
 			if root == "CreditNote" && expectedTypeCode != "" && xmlCreditType != expectedTypeCode {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TIPO-NC", "error", "CreditNoteTypeCode", "nota credito debe usar CreditNoteTypeCode "+expectedTypeCode, "anexo_tecnico_dian")
@@ -9672,7 +9897,11 @@ func updateDIANConfigFields(dbEmp *sql.DB, empresaID int64, cfg map[string]inter
 	if ambiente, ok := updates["tipo_ambiente"]; ok && strings.EqualFold(strings.TrimSpace(genericStringValue(ambiente)), "habilitacion") {
 		updates["produccion_local_activa"] = 0
 	}
-	if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, id, updates, cfgDIAN.AllowedColumns); err != nil {
+	storageUpdates, err := encryptDIANConfigPayloadForStorage(empresaID, updates)
+	if err != nil {
+		return err
+	}
+	if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, id, storageUpdates, cfgDIAN.AllowedColumns); err != nil {
 		return err
 	}
 	for key, value := range updates {
@@ -9691,16 +9920,12 @@ func signDIANXMLReal(cfg map[string]interface{}, empresaID int64, payload map[st
 		return nil, http.StatusBadRequest, fmt.Errorf("xml es obligatorio para firmar")
 	}
 
-	keyRef := dianFirstNonBlank(
-		genericStringValue(payload["private_key_pem"]),
-		genericStringValue(payload["certificado_clave_ref"]),
-		genericStringValue(cfg["certificado_clave_ref"]),
-	)
+	keyRef := strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"]))
 	if keyRef == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("certificado_clave_ref es obligatorio para firma real")
 	}
 
-	privateKey, err := parseDIANRSAPrivateKey(keyRef)
+	privateKey, err := parseDIANRSAPrivateKey(keyRef, empresaID)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -9725,17 +9950,27 @@ func signDIANXMLReal(cfg map[string]interface{}, empresaID int64, payload map[st
 	}, http.StatusOK, nil
 }
 
-func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {
+func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}, fuentes ...*facturacionFuenteFiscalSnapshot) (map[string]interface{}, int, error) {
 	if empresaID <= 0 {
 		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
 	}
+	if len(fuentes) > 0 {
+		if fuentes[0] == nil {
+			return nil, http.StatusUnprocessableEntity, fmt.Errorf("fuente fiscal inmutable no disponible")
+		}
+		return generateDIANUBLDesdeFuenteFiscal(cfg, empresaID, payload, fuentes[0])
+	}
 
-	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), genericStringValue(payload["documento_codigo"]), "FV"+time.Now().Format("20060102150405"))
+	documentoCodigoInterno := strings.TrimSpace(genericStringValue(payload["documento_codigo"]))
+	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), documentoCodigoInterno, "FV"+time.Now().Format("20060102150405"))
 	documentoCodigo = strings.ReplaceAll(strings.TrimSpace(documentoCodigo), " ", "")
 	if strings.EqualFold(dianFirstNonBlank(genericStringValue(cfg["pais_codigo"]), genericStringValue(payload["pais_codigo"])), "CO") {
 		documentoCodigo = strings.ReplaceAll(documentoCodigo, "-", "")
 	}
 	documentoTipo := strings.ToLower(dianFirstNonBlank(genericStringValue(payload["documento_tipo"]), "factura"))
+	if !facturacionDocumentoElectronicoDIANUBLVentaSoportado(documentoTipo) {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("%s", facturacionDocumentoElectronicoBloqueoMotivo(documentoTipo))
+	}
 	issueDateTime := dianFirstNonBlank(genericStringValue(payload["fecha_emision"]), time.Now().Format(time.RFC3339))
 	total := dianFormatDecimal(genericStringValue(payload["total"]), 1190.00)
 	impuestoTotal := dianFormatDecimal(genericStringValue(payload["impuesto_total"]), 190.00)
@@ -9792,7 +10027,7 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 		percent = fmt.Sprintf("%.2f", (taxFloat/taxableFloat)*100)
 	}
 	quantity := dianFormatQuantity(genericStringValue(payload["cantidad"]), 1)
-	softwareID, softwarePIN, _, credErr := resolveDIANSoftwareCredentials(cfg, payload)
+	softwareID, softwarePIN, _, credErr := resolveDIANSoftwareCredentials(cfg, payload, empresaID)
 	if credErr != nil {
 		softwareID = dianFirstNonBlank(genericStringValue(cfg["software_id"]), genericStringValue(payload["software_id"]))
 		softwarePIN = dianFirstNonBlank(genericStringValue(cfg["software_pin"]), genericStringValue(payload["software_pin"]))
@@ -9886,8 +10121,12 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 	}, http.StatusOK, nil
 }
 
-func parseDIANCertificate(raw string) (*x509.Certificate, error) {
-	resolved, err := resolveDIANSecretValue(raw)
+func parseDIANCertificate(raw string, empresaIDs ...int64) (*x509.Certificate, error) {
+	empresaID := int64(0)
+	if len(empresaIDs) > 0 {
+		empresaID = empresaIDs[0]
+	}
+	resolved, err := resolveDIANPrivateMaterialValue(raw, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -9957,7 +10196,9 @@ func dianIsDocumentRootNamespace(space string) bool {
 	switch space {
 	case "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
 		"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2",
-		"urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2":
+		"urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2",
+		nominaElectronicaNamespace,
+		nominaElectronicaAjusteNamespace:
 		return true
 	default:
 		return false
@@ -9982,6 +10223,16 @@ func dianUBLNamespaceAttrs(rootSpace string) []string {
 	if !dianIsDocumentRootNamespace(rootSpace) {
 		return nil
 	}
+	if rootSpace == nominaElectronicaNamespace || rootSpace == nominaElectronicaAjusteNamespace {
+		return []string{
+			fmt.Sprintf(`xmlns="%s"`, dianEscapeCanonicalAttr(rootSpace)),
+			`xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
+			`xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"`,
+			`xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"`,
+			`xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#"`,
+			`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
+		}
+	}
 	return []string{
 		fmt.Sprintf(`xmlns="%s"`, dianEscapeCanonicalAttr(rootSpace)),
 		`xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"`,
@@ -9997,17 +10248,7 @@ func dianUBLNamespaceAttrs(rootSpace string) []string {
 
 func dianCanonicalRootNamespaceAttrs(root xml.Name, contextRootSpace string) []string {
 	if dianIsDocumentRootNamespace(root.Space) {
-		return []string{
-			fmt.Sprintf(`xmlns="%s"`, dianEscapeCanonicalAttr(root.Space)),
-			`xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"`,
-			`xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"`,
-			`xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
-			`xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"`,
-			`xmlns:sts="dian:gov:co:facturaelectronica:Structures-2-1"`,
-			`xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"`,
-			`xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#"`,
-			`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
-		}
+		return dianUBLNamespaceAttrs(root.Space)
 	}
 	if attrs := dianUBLNamespaceAttrs(contextRootSpace); len(attrs) > 0 {
 		return attrs
@@ -10155,6 +10396,15 @@ func dianCanonicalSHA256Base64(xmlPayload string) (string, error) {
 }
 
 func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, cert *x509.Certificate) (map[string]string, error) {
+	if privateKey == nil {
+		return nil, fmt.Errorf("llave privada RSA DIAN requerida")
+	}
+	if cert != nil {
+		publicKey, ok := cert.PublicKey.(*rsa.PublicKey)
+		if !ok || publicKey == nil || publicKey.E != privateKey.PublicKey.E || publicKey.N.Cmp(privateKey.PublicKey.N) != 0 {
+			return nil, fmt.Errorf("el certificado X.509 DIAN no corresponde a la llave privada cargada")
+		}
+	}
 	documentRootSpace := dianDocumentRootNamespaceFromXML(xmlPayload)
 	documentDigestBase64, err := dianCanonicalSHA256Base64WithContext(xmlPayload, documentRootSpace)
 	if err != nil {
@@ -10196,6 +10446,9 @@ func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, 
 	signatureValue, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, signedInfoDigest[:])
 	if err != nil {
 		return nil, fmt.Errorf("no se pudo firmar SignedInfo con RSA-SHA256")
+	}
+	if err := rsa.VerifyPKCS1v15(&privateKey.PublicKey, crypto.SHA256, signedInfoDigest[:], signatureValue); err != nil {
+		return nil, fmt.Errorf("la firma XMLDSig generada no supero la verificacion criptografica local")
 	}
 
 	signatureXML := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">%s<ds:SignatureValue Id="%s-sigvalue">%s</ds:SignatureValue>%s<ds:Object><xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#" Id="QualifyingPropertiesPCS" Target="#%s">%s</xades:QualifyingProperties></ds:Object></ds:Signature>`,
@@ -10293,31 +10546,22 @@ func signDIANXMLXAdESBase(cfg map[string]interface{}, empresaID int64, payload m
 		return nil, http.StatusBadRequest, fmt.Errorf("xml_ubl_base/xml es obligatorio para firma XAdES base")
 	}
 
-	keyRef := dianFirstNonBlank(
-		genericStringValue(payload["private_key_pem"]),
-		genericStringValue(payload["certificado_clave_ref"]),
-		genericStringValue(cfg["certificado_clave_ref"]),
-	)
+	keyRef := strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"]))
 	if keyRef == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("certificado_clave_ref es obligatorio para firma XAdES base")
 	}
 
-	privateKey, err := parseDIANRSAPrivateKey(keyRef)
+	privateKey, err := parseDIANRSAPrivateKey(keyRef, empresaID)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
-	certificateRef := dianFirstNonBlank(
-		genericStringValue(payload["certificado_pem"]),
-		genericStringValue(payload["certificado_ref"]),
-		genericStringValue(payload["certificado_x509_ref"]),
-		genericStringValue(cfg["certificado_url"]),
-	)
+	certificateRef := strings.TrimSpace(genericStringValue(cfg["certificado_url"]))
 	var certificate *x509.Certificate
 	certificateIncluded := false
 	warnings := make([]string, 0)
 	if strings.TrimSpace(certificateRef) != "" {
-		certificate, err = parseDIANCertificate(certificateRef)
+		certificate, err = parseDIANCertificate(certificateRef, empresaID)
 		if err != nil {
 			warnings = append(warnings, err.Error())
 		} else {
@@ -10503,6 +10747,10 @@ func dianSOAPCanonicalTimestamp(id, created, expires string) string {
 func dianBuildSOAPBody(operation, fileName string, zipBytes []byte, testSetID string) string {
 	contentBase64 := base64.StdEncoding.EncodeToString(zipBytes)
 	switch operation {
+	case "SendNominaSync":
+		// El WSDL oficial define unicamente contentFile para nomina; incluir
+		// fileName hace que el contrato SOAP no corresponda al servicio.
+		return fmt.Sprintf(`<wcf:SendNominaSync><wcf:contentFile>%s</wcf:contentFile></wcf:SendNominaSync>`, contentBase64)
 	case "SendTestSetAsync":
 		return fmt.Sprintf(`<wcf:SendTestSetAsync><wcf:fileName>%s</wcf:fileName><wcf:contentFile>%s</wcf:contentFile><wcf:testSetId>%s</wcf:testSetId></wcf:SendTestSetAsync>`,
 			escapeXML(fileName), contentBase64, escapeXML(testSetID))
@@ -10593,6 +10841,10 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 }
 
 func dianSOAPOperationFromPayload(payload map[string]interface{}, ambiente, testSetID string) string {
+	documentType := normalizeFacturacionDocumentoElectronicoTipo(dianPayloadString(payload, "documento_tipo", "tipo_documento"))
+	if documentType == "nomina_electronica" || documentType == "nota_ajuste_nomina_electronica" {
+		return "SendNominaSync"
+	}
 	operation := strings.TrimSpace(dianPayloadString(payload, "soap_operacion", "operacion_soap", "operation"))
 	if operation != "" {
 		return operation
@@ -11039,22 +11291,7 @@ func dianSafeTrackHistoryJSON(raw map[string]interface{}) string {
 	if len(raw) == 0 {
 		return ""
 	}
-	out := make(map[string]interface{}, len(raw))
-	for key, value := range raw {
-		lowerKey := strings.ToLower(strings.TrimSpace(key))
-		if lowerKey == "" || lowerKey == "raw_xml" || lowerKey == "raw_response" {
-			continue
-		}
-		if strings.Contains(lowerKey, "certificado") || strings.Contains(lowerKey, "private_key") || strings.Contains(lowerKey, "token") || strings.Contains(lowerKey, "password") || strings.Contains(lowerKey, "clave") || strings.Contains(lowerKey, "pin") {
-			out[key] = "[oculto]"
-			continue
-		}
-		if str, ok := value.(string); ok {
-			out[key] = dianTruncate(str, 2000)
-			continue
-		}
-		out[key] = value
-	}
+	out := facturacionSanitizeDispatchValue(raw, 0)
 	bytes, err := json.Marshal(out)
 	if err != nil {
 		return ""
@@ -11062,17 +11299,17 @@ func dianSafeTrackHistoryJSON(raw map[string]interface{}) string {
 	return string(bytes)
 }
 
-func upsertDIANTrackHistory(dbEmp *sql.DB, empresaID int64, data map[string]interface{}) {
+func upsertDIANTrackHistory(dbEmp *sql.DB, empresaID int64, data map[string]interface{}) error {
 	if dbEmp == nil || empresaID <= 0 || data == nil {
-		return
+		return fmt.Errorf("datos DIAN insuficientes para persistir historial")
 	}
 	trackID := strings.TrimSpace(genericStringValue(data["track_id"]))
 	if trackID == "" {
-		return
+		return fmt.Errorf("track_id DIAN requerido para persistir historial")
 	}
 	zipKey := dianFirstNonBlank(genericStringValue(data["zip_key"]), trackID)
 	now := dianNowLocal()
-	_, _ = dbEmp.Exec(`INSERT INTO empresa_dian_track_historial (
+	_, err := dbEmp.Exec(`INSERT INTO empresa_dian_track_historial (
 		empresa_id, documento_codigo, tipo_documento, track_id, zip_key, test_set_id, ambiente, endpoint,
 		operacion_envio, operacion_acuse, http_status_envio, http_status_acuse, estado_dian, acuse_estado,
 		acuse_mensaje, status_code, status_description, is_valid, intento_consulta, respuesta_envio_json,
@@ -11130,6 +11367,31 @@ func upsertDIANTrackHistory(dbEmp *sql.DB, empresaID int64, data map[string]inte
 		dianTruncate(genericStringValue(data["usuario_creador"]), 160),
 		dianTruncate(genericStringValue(data["observaciones"]), 500),
 	)
+	return err
+}
+
+func dianIsSyntheticHistoryID(trackID string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(trackID))
+	return strings.HasPrefix(normalized, "sync:") || strings.HasPrefix(normalized, "audit:")
+}
+
+func dianHistoryTrackID(operation, documentoCodigo, responseTrackID string) string {
+	if trackID := strings.TrimSpace(responseTrackID); trackID != "" {
+		return trackID
+	}
+	documentoCodigo = strings.TrimSpace(documentoCodigo)
+	if documentoCodigo != "" {
+		// DIAN can return a definitive rejection without TrackId for synchronous
+		// and asynchronous send operations. Preserve every such response under a
+		// deterministic, non-reconsultable audit key instead of masking it with a
+		// local persistence error. A real TrackId always takes precedence above.
+		operation = strings.TrimSpace(operation)
+		if operation == "" {
+			operation = "send"
+		}
+		return "audit:" + strings.ToLower(operation) + ":" + documentoCodigo
+	}
+	return ""
 }
 
 func listDIANTrackHistory(dbEmp *sql.DB, empresaID int64, limit int) ([]map[string]interface{}, error) {
@@ -11186,6 +11448,7 @@ func listDIANTrackHistory(dbEmp *sql.DB, empresaID int64, limit int) ([]map[stri
 			"fecha_ultimo_acuse":  fechaUltimoAcuse,
 			"fecha_creacion":      fechaCreacion,
 			"fecha_actualizacion": fechaActualizacion,
+			"reconsultable":       trackID != "" && !dianIsSyntheticHistoryID(trackID),
 		})
 	}
 	return items, rows.Err()
@@ -11213,19 +11476,10 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 	envelope := buildDIANSOAPEnvelope(operation, soapEndpoint, zipFileName, zipBytes, testSetID)
 	wsSecurityMeta := map[string]interface{}{"ws_security": false}
 	if isDIANOfficialEndpoint(soapEndpoint) {
-		keyRef := dianFirstNonBlank(
-			genericStringValue(payload["private_key_pem"]),
-			genericStringValue(payload["certificado_clave_ref"]),
-			genericStringValue(cfg["certificado_clave_ref"]),
-		)
-		certRef := dianFirstNonBlank(
-			genericStringValue(payload["certificado_pem"]),
-			genericStringValue(payload["certificado_ref"]),
-			genericStringValue(payload["certificado_x509_ref"]),
-			genericStringValue(cfg["certificado_url"]),
-		)
-		privateKey, keyErr := parseDIANRSAPrivateKey(keyRef)
-		certificate, certErr := parseDIANCertificate(certRef)
+		keyRef := strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"]))
+		certRef := strings.TrimSpace(genericStringValue(cfg["certificado_url"]))
+		privateKey, keyErr := parseDIANRSAPrivateKey(keyRef, empresaID)
+		certificate, certErr := parseDIANCertificate(certRef, empresaID)
 		if keyErr != nil || certErr != nil {
 			missingParts := make([]string, 0)
 			if keyErr != nil {
@@ -11280,17 +11534,6 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 	startedAt := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
-		_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
-			"ultimo_envio": dianNowLocal(),
-			"estado_dian":  "contingencia",
-			"observaciones": appendStateMachineObservation(
-				genericStringValue(cfg["observaciones"]),
-				genericStringValue(cfg["estado_dian"]),
-				"contingencia",
-				dianTruncate(err.Error(), 240),
-				"dian_envio_soap",
-			),
-		})
 		return map[string]interface{}{
 			"ok":                  false,
 			"empresa_id":          empresaID,
@@ -11337,41 +11580,31 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 		contingenciaActiva = true
 	}
 
-	updates := map[string]interface{}{
-		"ultimo_envio": dianNowLocal(),
-		"estado_dian":  estadoDIAN,
-		"observaciones": appendStateMachineObservation(
-			genericStringValue(cfg["observaciones"]),
-			genericStringValue(cfg["estado_dian"]),
-			estadoDIAN,
-			dianFirstNonBlank(acuseMensaje, genericStringValue(responseMap["track_id"]), fmt.Sprintf("HTTP %d", resp.StatusCode)),
-			"dian_envio_soap",
-		),
+	historyTrackID := dianHistoryTrackID(operation, documentoCodigo, genericStringValue(responseMap["track_id"]))
+	if dbEmp != nil {
+		if err := upsertDIANTrackHistory(dbEmp, empresaID, map[string]interface{}{
+			"documento_codigo":     documentoCodigo,
+			"tipo_documento":       documentoTipo,
+			"track_id":             historyTrackID,
+			"zip_key":              genericStringValue(responseMap["track_id"]),
+			"test_set_id":          testSetID,
+			"ambiente":             ambiente,
+			"endpoint":             soapEndpoint,
+			"operacion_envio":      operation,
+			"http_status_envio":    resp.StatusCode,
+			"estado_dian":          estadoDIAN,
+			"acuse_estado":         acuseEstado,
+			"acuse_mensaje":        acuseMensaje,
+			"status_code":          genericStringValue(responseMap["status_code"]),
+			"status_description":   genericStringValue(responseMap["status_description"]),
+			"is_valid":             genericStringValue(responseMap["is_valid"]),
+			"respuesta_envio_json": dianSafeTrackHistoryJSON(responseMap),
+			"fecha_envio":          dianNowLocal(),
+			"observaciones":        "envio SOAP DIAN registrado por PCS",
+		}); err != nil {
+			return nil, http.StatusInternalServerError, fmt.Errorf("DIAN respondio, pero no se pudo persistir el historial de envio: %w", err)
+		}
 	}
-	if estadoDIAN == "aceptado" {
-		updates["consecutivo_actual"] = anyToInt64(cfg["consecutivo_actual"]) + 1
-	}
-	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, updates)
-	upsertDIANTrackHistory(dbEmp, empresaID, map[string]interface{}{
-		"documento_codigo":     documentoCodigo,
-		"tipo_documento":       documentoTipo,
-		"track_id":             genericStringValue(responseMap["track_id"]),
-		"zip_key":              genericStringValue(responseMap["track_id"]),
-		"test_set_id":          testSetID,
-		"ambiente":             ambiente,
-		"endpoint":             soapEndpoint,
-		"operacion_envio":      operation,
-		"http_status_envio":    resp.StatusCode,
-		"estado_dian":          estadoDIAN,
-		"acuse_estado":         acuseEstado,
-		"acuse_mensaje":        acuseMensaje,
-		"status_code":          genericStringValue(responseMap["status_code"]),
-		"status_description":   genericStringValue(responseMap["status_description"]),
-		"is_valid":             genericStringValue(responseMap["is_valid"]),
-		"respuesta_envio_json": dianSafeTrackHistoryJSON(responseMap),
-		"fecha_envio":          dianNowLocal(),
-		"observaciones":        "envio SOAP DIAN registrado por PCS",
-	})
 
 	return map[string]interface{}{
 		"ok":                  estadoDIAN == "aceptado" || estadoDIAN == "enviado" || acuseEstado == "pendiente",
@@ -11406,14 +11639,17 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 	if trackID == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("track_id es obligatorio para GetStatusZip")
 	}
+	if dianIsSyntheticHistoryID(trackID) {
+		return nil, http.StatusBadRequest, fmt.Errorf("la respuesta auditada no tiene TrackId DIAN para GetStatusZip")
+	}
 	soapEndpoint := normalizeDIANSOAPEndpoint(endpoint)
 	envelope := buildDIANGetStatusZipEnvelope(soapEndpoint, trackID)
 	wsSecurityMeta := map[string]interface{}{"ws_security": false}
 	if isDIANOfficialEndpoint(soapEndpoint) {
 		keyRef := genericStringValue(cfg["certificado_clave_ref"])
 		certRef := genericStringValue(cfg["certificado_url"])
-		privateKey, keyErr := parseDIANRSAPrivateKey(keyRef)
-		certificate, certErr := parseDIANCertificate(certRef)
+		privateKey, keyErr := parseDIANRSAPrivateKey(keyRef, empresaID)
+		certificate, certErr := parseDIANCertificate(certRef, empresaID)
 		if keyErr != nil || certErr != nil {
 			return map[string]interface{}{
 				"ok":                  false,
@@ -11485,7 +11721,7 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 	if parseTruthy(genericStringValue(responseMap["is_valid"])) {
 		acuseEstado = "aceptado"
 	}
-	estadoDIAN := genericStringDefault(cfg["estado_dian"], "pendiente")
+	estadoDIAN := "pendiente"
 	switch acuseEstado {
 	case "aceptado":
 		estadoDIAN = "aceptado"
@@ -11496,35 +11732,29 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 	case "enviado", "pendiente":
 		estadoDIAN = "enviado"
 	}
-	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
-		"estado_dian": estadoDIAN,
-		"observaciones": appendStateMachineObservation(
-			genericStringValue(cfg["observaciones"]),
-			genericStringValue(cfg["estado_dian"]),
-			estadoDIAN,
-			dianFirstNonBlank(acuseMensaje, genericStringValue(responseMap["status_description"]), genericStringValue(responseMap["status_message"]), fmt.Sprintf("HTTP %d", resp.StatusCode)),
-			"dian_get_status_zip",
-		),
-	})
-	upsertDIANTrackHistory(dbEmp, empresaID, map[string]interface{}{
-		"track_id":             trackID,
-		"zip_key":              trackID,
-		"test_set_id":          genericStringValue(cfg["test_set_id"]),
-		"ambiente":             genericStringDefault(cfg["tipo_ambiente"], "habilitacion"),
-		"endpoint":             soapEndpoint,
-		"operacion_acuse":      "GetStatusZip",
-		"http_status_acuse":    resp.StatusCode,
-		"estado_dian":          estadoDIAN,
-		"acuse_estado":         acuseEstado,
-		"acuse_mensaje":        acuseMensaje,
-		"status_code":          genericStringValue(responseMap["status_code"]),
-		"status_description":   genericStringValue(responseMap["status_description"]),
-		"is_valid":             genericStringValue(responseMap["is_valid"]),
-		"intento_consulta":     1,
-		"respuesta_acuse_json": dianSafeTrackHistoryJSON(responseMap),
-		"fecha_ultimo_acuse":   dianNowLocal(),
-		"observaciones":        "acuse GetStatusZip registrado por PCS",
-	})
+	if dbEmp != nil {
+		if err := upsertDIANTrackHistory(dbEmp, empresaID, map[string]interface{}{
+			"track_id":             trackID,
+			"zip_key":              trackID,
+			"test_set_id":          genericStringValue(cfg["test_set_id"]),
+			"ambiente":             genericStringDefault(cfg["tipo_ambiente"], "habilitacion"),
+			"endpoint":             soapEndpoint,
+			"operacion_acuse":      "GetStatusZip",
+			"http_status_acuse":    resp.StatusCode,
+			"estado_dian":          estadoDIAN,
+			"acuse_estado":         acuseEstado,
+			"acuse_mensaje":        acuseMensaje,
+			"status_code":          genericStringValue(responseMap["status_code"]),
+			"status_description":   genericStringValue(responseMap["status_description"]),
+			"is_valid":             genericStringValue(responseMap["is_valid"]),
+			"intento_consulta":     1,
+			"respuesta_acuse_json": dianSafeTrackHistoryJSON(responseMap),
+			"fecha_ultimo_acuse":   dianNowLocal(),
+			"observaciones":        "acuse GetStatusZip registrado por PCS",
+		}); err != nil {
+			return nil, http.StatusInternalServerError, fmt.Errorf("DIAN respondio, pero no se pudo persistir el historial de acuse: %w", err)
+		}
+	}
 
 	return map[string]interface{}{
 		"ok":             acuseEstado == "aceptado" || acuseEstado == "enviado" || acuseEstado == "pendiente",
@@ -11564,7 +11794,7 @@ func consultarDIANNumberingRange(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	if accountCode == "" || accountCodeT == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("NIT DIAN requerido para consultar rango de numeracion")
 	}
-	softwareID, _, _, softwareErr := resolveDIANSoftwareCredentials(cfg, payload)
+	softwareID, _, _, softwareErr := resolveDIANSoftwareCredentials(cfg, payload, empresaID)
 	if softwareErr != nil {
 		softwareID = dianFirstNonBlank(genericStringValue(payload["software_code"]), genericStringValue(payload["software_id"]), genericStringValue(cfg["software_id"]))
 	}
@@ -11576,8 +11806,8 @@ func consultarDIANNumberingRange(dbEmp *sql.DB, cfg map[string]interface{}, empr
 	if endpoint == "" {
 		return nil, http.StatusBadRequest, fmt.Errorf("url_dian requerida para GetNumberingRange")
 	}
-	privateKey, keyErr := parseDIANRSAPrivateKey(genericStringValue(cfg["certificado_clave_ref"]))
-	certificate, certErr := parseDIANCertificate(genericStringValue(cfg["certificado_url"]))
+	privateKey, keyErr := parseDIANRSAPrivateKey(genericStringValue(cfg["certificado_clave_ref"]), empresaID)
+	certificate, certErr := parseDIANCertificate(genericStringValue(cfg["certificado_url"]), empresaID)
 	if keyErr != nil || certErr != nil {
 		return map[string]interface{}{
 			"ok":             false,
@@ -11735,7 +11965,7 @@ func buildDIANOfficialReadinessReport(cfg map[string]interface{}, empresaID int6
 		missingConfig = append(missingConfig, field)
 	}
 	if configured {
-		for _, field := range missingDIANFields(cfg) {
+		for _, field := range missingDIANFields(cfg, empresaID) {
 			addMissing(field)
 		}
 		if strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"])) == "" {
@@ -11779,8 +12009,13 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 	if len(cfg) == 0 {
 		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
 	}
+	documentoTipo := normalizeFacturacionDocumentoElectronicoTipo(genericStringDefault(payload["documento_tipo"], "factura"))
+	if !facturacionDocumentoElectronicoDIANTransporteSoportado(documentoTipo) {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("%s", facturacionDocumentoElectronicoBloqueoMotivo(documentoTipo))
+	}
 
-	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), genericStringValue(payload["documento_codigo"]), "FV"+time.Now().Format("20060102150405"))
+	documentoCodigoInterno := strings.TrimSpace(genericStringValue(payload["documento_codigo"]))
+	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["numero_legal"]), documentoCodigoInterno, "FV"+time.Now().Format("20060102150405"))
 	documentoCodigo = strings.ReplaceAll(strings.TrimSpace(documentoCodigo), " ", "")
 	if strings.EqualFold(dianFirstNonBlank(genericStringValue(cfg["pais_codigo"]), genericStringValue(payload["pais_codigo"])), "CO") {
 		documentoCodigo = strings.ReplaceAll(documentoCodigo, "-", "")
@@ -11790,24 +12025,17 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		return nil, http.StatusBadRequest, fmt.Errorf("xml_firmado o xml es obligatorio para envio real")
 	}
 
-	endpoint := normalizeIntegracionEndpoint(dianFirstNonBlank(
-		genericStringValue(payload["url_dian"]),
-		genericStringValue(payload["endpoint"]),
-		genericStringValue(cfg["url_dian"]),
-	))
+	endpoint := dianConfiguredEndpoint(cfg, payload)
 	if endpoint == "" {
-		return nil, http.StatusBadRequest, fmt.Errorf("url_dian no configurada o invalida")
+		return nil, http.StatusBadRequest, fmt.Errorf("url_dian no configurada o no coincide con el origen autorizado")
 	}
 
-	token := strings.TrimSpace(genericStringValue(payload["token"]))
-	if token == "" {
-		resolved, err := resolveDIANSecretValue(genericStringValue(cfg["token_emisor_ref"]))
-		if err == nil {
-			token = resolved
-		}
+	token := ""
+	if resolved, err := dianResolveOptionalReference(genericStringValue(cfg["token_emisor_ref"]), empresaID); err == nil {
+		token = resolved
 	}
 
-	softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload)
+	softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload, empresaID)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -11820,9 +12048,12 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 
 	fechaEmision := dianFirstNonBlank(genericStringValue(payload["fecha_emision"]), time.Now().Format("2006-01-02T15:04:05-07:00"))
 	total := dianFirstNonBlank(genericStringValue(payload["total"]), "0")
-	cufe := dianFirstNonBlank(genericStringValue(payload["cufe"]), extractDIANUUIDFromXML(xmlFirmado), buildDIANCUFE(genericStringValue(cfg["nit"]), documentoCodigo, fechaEmision, total, softwareID, softwarePIN))
-	documentoTipo := genericStringDefault(payload["documento_tipo"], "factura")
-
+	cufe := ""
+	if documentoTipo == "nomina_electronica" {
+		cufe = dianFirstNonBlank(genericStringValue(payload["cune"]), genericStringValue(payload["cufe"]), nominaElectronicaCUNEDesdeXML(xmlFirmado))
+	} else {
+		cufe = dianFirstNonBlank(genericStringValue(payload["cufe"]), extractDIANUUIDFromXML(xmlFirmado), buildDIANCUFE(genericStringValue(cfg["nit"]), documentoCodigo, fechaEmision, total, softwareID, softwarePIN))
+	}
 	requestBody := map[string]interface{}{
 		"empresa_id":       empresaID,
 		"documento_codigo": documentoCodigo,
@@ -11837,13 +12068,29 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		"test_set_id":      dianFirstNonBlank(genericStringValue(payload["test_set_id"]), genericStringValue(cfg["test_set_id"])),
 		"xml_firmado":      xmlFirmado,
 	}
+	if documentoTipo == "nomina_electronica" {
+		requestBody["cune"] = cufe
+	}
 	for _, key := range []string{"cliente_nombre", "cliente_nit", "impuesto_total", "moneda", "certificado_ref", "certificado_pem", "certificado_clave_ref"} {
 		if _, exists := requestBody[key]; !exists && !isEmptyGenericValue(payload[key]) {
 			requestBody[key] = payload[key]
 		}
 	}
 
-	preflight := validateDIANDocumentPreflight(cfg, empresaID, requestBody, xmlFirmado, "envio_real")
+	preflight := map[string]interface{}{}
+	if documentoTipo == "nomina_electronica" {
+		pseudoDocument := dbpkg.EmpresaDocumentoFacturacion{
+			EmpresaID: empresaID, TipoDocumento: documentoTipo, DocumentoCodigo: documentoCodigoInterno,
+			NumeroLegal: documentoCodigo, MontoTotal: ventasAnyToFloat64(total),
+		}
+		_, source, _, loadErr := loadNominaElectronicaParaDispatch(context.Background(), dbEmp, pseudoDocument)
+		if loadErr != nil {
+			return nil, http.StatusConflict, fmt.Errorf("fuente fiscal canónica de nómina no disponible: %w", loadErr)
+		}
+		preflight = validateDIANNominaDocumentPreflight(cfg, empresaID, source, xmlFirmado, "envio_real")
+	} else {
+		preflight = validateDIANDocumentPreflight(cfg, empresaID, requestBody, xmlFirmado, "envio_real")
+	}
 	if parseTruthy(genericStringValue(preflight["bloqueado"])) {
 		return map[string]interface{}{
 			"ok":                   false,
@@ -11876,17 +12123,6 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 	startedAt := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
-		_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
-			"ultimo_envio": dianNowLocal(),
-			"estado_dian":  "contingencia",
-			"observaciones": appendStateMachineObservation(
-				genericStringValue(cfg["observaciones"]),
-				genericStringValue(cfg["estado_dian"]),
-				"contingencia",
-				dianTruncate(err.Error(), 240),
-				"dian_envio_real",
-			),
-		})
 		return map[string]interface{}{
 			"ok":                  false,
 			"empresa_id":          empresaID,
@@ -11925,23 +12161,6 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 			contingenciaActiva = true
 		}
 	}
-
-	consecutivoActual := anyToInt64(cfg["consecutivo_actual"])
-	updates := map[string]interface{}{
-		"ultimo_envio": dianNowLocal(),
-		"estado_dian":  estadoDIAN,
-		"observaciones": appendStateMachineObservation(
-			genericStringValue(cfg["observaciones"]),
-			genericStringValue(cfg["estado_dian"]),
-			estadoDIAN,
-			dianFirstNonBlank(acuseMensaje, dianTruncate(rawResponse, 180), fmt.Sprintf("HTTP %d", resp.StatusCode)),
-			"dian_envio_real",
-		),
-	}
-	if estadoDIAN == "aceptado" {
-		updates["consecutivo_actual"] = consecutivoActual + 1
-	}
-	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, updates)
 
 	return map[string]interface{}{
 		"ok":                  estadoDIAN == "aceptado" || estadoDIAN == "enviado" || acuseEstado == "pendiente",
@@ -12002,12 +12221,9 @@ func consultarDIANAcuseReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		return nil, http.StatusBadRequest, fmt.Errorf("url_dian/url_acuse no configurada o fuera del origen permitido")
 	}
 
-	token := strings.TrimSpace(genericStringValue(payload["token"]))
-	if token == "" {
-		resolved, err := resolveDIANSecretValue(genericStringValue(cfg["token_emisor_ref"]))
-		if err == nil {
-			token = resolved
-		}
+	token := ""
+	if resolved, err := dianResolveOptionalReference(genericStringValue(cfg["token_emisor_ref"]), empresaID); err == nil {
+		token = resolved
 	}
 
 	if isDIANOfficialEndpoint(endpoint) && trackID != "" {
@@ -12065,7 +12281,7 @@ func consultarDIANAcuseReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		acuseEstado = "pendiente"
 	}
 
-	estadoDIAN := genericStringDefault(cfg["estado_dian"], "pendiente")
+	estadoDIAN := "pendiente"
 	switch acuseEstado {
 	case "aceptado":
 		estadoDIAN = "aceptado"
@@ -12076,17 +12292,6 @@ func consultarDIANAcuseReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 	case "enviado", "pendiente":
 		estadoDIAN = "enviado"
 	}
-
-	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
-		"estado_dian": estadoDIAN,
-		"observaciones": appendStateMachineObservation(
-			genericStringValue(cfg["observaciones"]),
-			genericStringValue(cfg["estado_dian"]),
-			estadoDIAN,
-			dianFirstNonBlank(acuseMensaje, dianTruncate(rawResponse, 180), fmt.Sprintf("HTTP %d", resp.StatusCode)),
-			"dian_consultar_acuse",
-		),
-	})
 
 	return map[string]interface{}{
 		"ok":                  acuseEstado == "aceptado" || acuseEstado == "enviado" || acuseEstado == "pendiente",
@@ -12125,17 +12330,6 @@ func runDIANReconexion(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int6
 		estadoNuevo = "reconectado"
 	}
 
-	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
-		"estado_dian": estadoNuevo,
-		"observaciones": appendStateMachineObservation(
-			genericStringValue(cfg["observaciones"]),
-			estadoAnterior,
-			estadoNuevo,
-			dianFirstNonBlank(message, fmt.Sprintf("HTTP %d", httpStatus)),
-			"dian_reconexion",
-		),
-	})
-
 	response := map[string]interface{}{
 		"ok":                  reachable,
 		"empresa_id":          empresaID,
@@ -12146,15 +12340,16 @@ func runDIANReconexion(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int6
 		"message":             message,
 		"estado_anterior":     estadoAnterior,
 		"estado_dian":         estadoNuevo,
+		"estado_conectividad": estadoNuevo,
 		"contingencia_activa": !reachable,
 	}
 
 	if reachable && parseTruthy(genericStringValue(payload["reenviar"])) {
-		envioResp, _, err := sendDIANDocumentoReal(dbEmp, cfg, empresaID, payload)
-		if err != nil {
-			return nil, http.StatusBadRequest, err
+		response["reenvio"] = map[string]interface{}{
+			"ok":        false,
+			"bloqueado": true,
+			"motivo":    "La reconexion no retransmite XML libre; use el reintento del documento fiscal canonico.",
 		}
-		response["reenvio"] = envioResp
 	}
 
 	return response, http.StatusOK, nil
@@ -12355,25 +12550,6 @@ func runDIANPruebasHabilitacion(dbEmp *sql.DB, cfg map[string]interface{}, empre
 		}, http.StatusConflict, nil
 	}
 
-	defaultFacturas, defaultDebito, defaultCredito, defaultTotal := dianConfiguredSetCounts(cfg)
-	for key, value := range map[string]interface{}{
-		"facturas_electronicas": defaultFacturas,
-		"notas_debito":          defaultDebito,
-		"notas_credito":         defaultCredito,
-		"total_documentos":      defaultTotal,
-	} {
-		if _, exists := payload[key]; !exists {
-			payload[key] = value
-		}
-	}
-	if _, exists := payload["detener_en_error"]; !exists {
-		payload["detener_en_error"] = true
-	}
-	if _, exists := payload["simular"]; !exists {
-		payload["simular"] = false
-	}
-
-	credenciales, _, credErr := validateDIANCredentialRefs(cfg, empresaID, payload)
 	simular := parseTruthy(genericStringValue(payload["simular"]))
 	if simular {
 		return map[string]interface{}{
@@ -12383,6 +12559,37 @@ func runDIANPruebasHabilitacion(dbEmp *sql.DB, cfg map[string]interface{}, empre
 			"motivo":     "Las pruebas DIAN automaticas deben ejecutarse con envio real; simular=true no esta permitido en este flujo.",
 		}, http.StatusBadRequest, nil
 	}
+
+	defaultFacturas, defaultDebito, defaultCredito, defaultTotal := dianConfiguredSetCounts(cfg)
+	if defaultFacturas+defaultDebito+defaultCredito <= 0 {
+		return map[string]interface{}{
+			"ok":                 false,
+			"empresa_id":         empresaID,
+			"bloqueado":          true,
+			"paso":               "confirmar_objetivo_portal",
+			"motivo":             "Antes de enviar documentos reales copie y guarde el objetivo exacto del set asignado a esta empresa en el portal DIAN.",
+			"requisito_set_dian": dianDefaultSetRequirement(),
+		}, http.StatusConflict, nil
+	}
+	// El set ejecutado siempre es el objetivo persistido por empresa. El payload
+	// puede controlar parámetros operativos seguros (por ejemplo, stop-on-error),
+	// pero no sustituir la meta que DIAN mostró para este TestSetId.
+	for key, value := range map[string]interface{}{
+		"facturas_electronicas": defaultFacturas,
+		"notas_debito":          defaultDebito,
+		"notas_credito":         defaultCredito,
+		"total_documentos":      defaultTotal,
+	} {
+		payload[key] = value
+	}
+	if _, exists := payload["detener_en_error"]; !exists {
+		payload["detener_en_error"] = true
+	}
+	if _, exists := payload["simular"]; !exists {
+		payload["simular"] = false
+	}
+
+	credenciales, _, credErr := validateDIANCredentialRefs(cfg, empresaID, payload)
 	if credErr != nil {
 		return nil, http.StatusBadRequest, credErr
 	}
@@ -12498,7 +12705,7 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 	detenerEnError := parseTruthy(dianPayloadString(payload, "detener_en_error", "stop_on_error"))
 	totalPorDocumento := dianFirstNonBlank(dianPayloadString(payload, "total_por_documento", "total"), "1190.00")
 	prefijo := dianFirstNonBlank(dianPayloadString(payload, "prefijo"), genericStringValue(cfg["prefijo"]), "SETP")
-	softwareID, _, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload)
+	softwareID, _, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload, empresaID)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -12831,7 +13038,7 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		} else if !okSet {
 			estadoSet = "habilitacion_observada"
 		}
-		_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
+		if err := updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
 			"consecutivo_actual": siguienteConsecutivo,
 			"estado_dian":        estadoSet,
 			"observaciones": appendStateMachineObservation(
@@ -12841,7 +13048,9 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 				fmt.Sprintf("set_pruebas procesado=%d aceptado=%d rechazado=%d contingencia=%d", procesados, resumen["aceptado"], resumen["rechazado"], resumen["contingencia"]),
 				"dian_set_pruebas",
 			),
-		})
+		}); err != nil {
+			return nil, http.StatusInternalServerError, fmt.Errorf("el set fue procesado, pero no se pudo persistir su estado: %w", err)
+		}
 	}
 
 	ok := resumen["error"] == 0 && resumen["rechazado"] == 0 && resumen["contingencia"] == 0
@@ -12920,7 +13129,7 @@ func activateDIANProductionLocal(dbEmp *sql.DB, cfg map[string]interface{}, empr
 		}, http.StatusConflict, nil
 	}
 
-	missing := missingDIANFields(cfg)
+	missing := missingDIANFields(cfg, empresaID)
 	if len(missing) > 0 {
 		filtered := make([]string, 0, len(missing))
 		for _, item := range missing {
@@ -12980,10 +13189,10 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 	configured := len(cfg) > 0
 	missing := []string{}
 	if configured {
-		missing = missingDIANFields(cfg)
+		missing = missingDIANFields(cfg, empresaID)
 	}
 
-	softwareID, _, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, nil)
+	softwareID, _, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, nil, empresaID)
 	softwareMode := map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware]
 	if !configured {
 		softwareMode = "sin_configuracion"
@@ -13129,7 +13338,7 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 	issues := make([]string, 0)
 	checks := map[string]interface{}{}
 
-	softwareID, softwarePIN, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, payload)
+	softwareID, softwarePIN, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, payload, empresaID)
 	if softwareErr != nil {
 		issues = append(issues, softwareErr.Error())
 	}
@@ -13140,16 +13349,11 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 	}
 
 	emitterCredentialRequired := dianTokenRequiredForEndpoint(cfg, payload)
-	emitterCredentialRef := dianFirstNonBlank(genericStringValue(payload["token_emisor_ref"]), genericStringValue(cfg["token_emisor_ref"]))
-	emitterCredentialPayload := strings.TrimSpace(genericStringValue(payload["token"]))
+	emitterCredentialRef := strings.TrimSpace(genericStringValue(cfg["token_emisor_ref"]))
 	emitterCredentialOK := false
 	diagnosticMessage := ""
 	diagnosticSource := ""
-	if emitterCredentialPayload != "" {
-		emitterCredentialOK = true
-		diagnosticSource = "payload.token"
-		diagnosticMessage = "token entregado en payload"
-	} else if emitterCredentialRef == "" {
+	if emitterCredentialRef == "" {
 		diagnosticSource = "vacio"
 		if emitterCredentialRequired {
 			issues = append(issues, "token_emisor_ref no configurado")
@@ -13164,7 +13368,7 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		if !emitterCredentialRequired {
 			emitterCredentialOK = true
 			diagnosticMessage = "configurado, pero no requerido para endpoint oficial SOAP DIAN"
-		} else if _, err := resolveDIANSecretValue(emitterCredentialRef); err != nil {
+		} else if _, err := dianResolveOptionalReference(emitterCredentialRef, empresaID); err != nil {
 			issues = append(issues, "token_emisor_ref invalido")
 			diagnosticMessage = err.Error()
 		} else {
@@ -13203,14 +13407,14 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		"message":  dianTruncate(testSetMessage, 180),
 	}
 
-	keyRef := dianFirstNonBlank(genericStringValue(payload["certificado_clave_ref"]), genericStringValue(cfg["certificado_clave_ref"]))
+	keyRef := strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"]))
 	keyOK := false
 	keyMessage := ""
 	keySource := dianReferenceSource(keyRef)
 	if keyRef == "" {
 		issues = append(issues, "certificado_clave_ref no configurado")
 		keyMessage = "faltante"
-	} else if _, err := parseDIANRSAPrivateKey(keyRef); err != nil {
+	} else if _, err := parseDIANRSAPrivateKey(keyRef, empresaID); err != nil {
 		issues = append(issues, "certificado_clave_ref invalido")
 		keyMessage = err.Error()
 	} else {
@@ -13223,19 +13427,14 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		"message": dianTruncate(keyMessage, 180),
 	}
 
-	certRef := dianFirstNonBlank(
-		genericStringValue(payload["certificado_url"]),
-		genericStringValue(payload["certificado_ref"]),
-		genericStringValue(payload["certificado_pem"]),
-		genericStringValue(cfg["certificado_url"]),
-	)
+	certRef := strings.TrimSpace(genericStringValue(cfg["certificado_url"]))
 	certOK := false
 	certMessage := ""
 	certSource := dianReferenceSource(certRef)
 	if certRef == "" {
 		issues = append(issues, "certificado_url no configurado")
 		certMessage = "faltante"
-	} else if cert, err := parseDIANCertificate(certRef); err != nil {
+	} else if cert, err := parseDIANCertificate(certRef, empresaID); err != nil {
 		issues = append(issues, "certificado_url invalido")
 		certMessage = err.Error()
 	} else {
@@ -13262,7 +13461,7 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		"software_modo": map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
 		"checks":        checks,
 		"issues":        issues,
-		"faltantes":     missingDIANFields(cfg),
+		"faltantes":     missingDIANFields(cfg, empresaID),
 		"recomendaciones": []string{
 			"Mantener certificado_clave_ref y certificado X.509 por empresa.",
 			"Configurar token_emisor_ref solo cuando el endpoint sea de proveedor/API que use bearer token.",
@@ -13338,6 +13537,14 @@ type dianNumeracionPDFUpload struct {
 }
 
 func readDIANNumeracionPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int, error) {
+	return readDIANPDFUpload(r, "formulario_1876.pdf", "pdf de autorizacion DIAN es obligatorio", "solo se permite cargar PDF de autorizacion DIAN")
+}
+
+func readDIANRUTPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int, error) {
+	return readDIANPDFUpload(r, "rut.pdf", "PDF del RUT es obligatorio", "solo se permite cargar el RUT en PDF")
+}
+
+func readDIANPDFUpload(r *http.Request, defaultFileName, requiredMessage, typeMessage string) (dianNumeracionPDFUpload, int, error) {
 	const maxPDFBytes int64 = 12 << 20
 	if err := r.ParseMultipartForm(maxPDFBytes + (1 << 20)); err != nil {
 		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("payload multipart invalido")
@@ -13355,16 +13562,16 @@ func readDIANNumeracionPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int,
 		file, header, err = r.FormFile("file")
 	}
 	if err != nil {
-		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("pdf de autorizacion DIAN es obligatorio")
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("%s", requiredMessage)
 	}
 	defer file.Close()
 
-	fileName := "formulario_1876.pdf"
+	fileName := defaultFileName
 	if header != nil && strings.TrimSpace(header.Filename) != "" {
 		fileName = filepath.Base(header.Filename)
 	}
 	if !strings.EqualFold(filepath.Ext(fileName), ".pdf") {
-		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("solo se permite cargar PDF de autorizacion DIAN")
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("%s", typeMessage)
 	}
 	if header != nil && header.Size > maxPDFBytes {
 		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
@@ -13378,7 +13585,245 @@ func readDIANNumeracionPDFUpload(r *http.Request) (dianNumeracionPDFUpload, int,
 	if written > maxPDFBytes {
 		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("el PDF supera el limite de 12 MB")
 	}
+	if buf.Len() < 5 || !bytes.HasPrefix(buf.Bytes(), []byte("%PDF-")) || http.DetectContentType(buf.Bytes()) != "application/pdf" {
+		return dianNumeracionPDFUpload{}, http.StatusBadRequest, fmt.Errorf("el archivo cargado no es un PDF valido")
+	}
 	return dianNumeracionPDFUpload{EmpresaID: empresaID, FileName: fileName, Bytes: buf.Bytes()}, http.StatusOK, nil
+}
+
+func importDIANRUTPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
+	upload, status, err := readDIANRUTPDFUpload(r)
+	if err != nil {
+		return nil, status, err
+	}
+	if !isSuperAIEnabled(dbSuper) {
+		return nil, http.StatusServiceUnavailable, fmt.Errorf("la IA esta desactivada desde configuracion avanzada")
+	}
+	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.5"]
+	if !ok {
+		return nil, http.StatusServiceUnavailable, fmt.Errorf("el modelo openai:gpt-5.5 no esta disponible en el catalogo de IA")
+	}
+	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
+	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
+	pregunta := "Extrae los datos fiscales visibles del Registro Unico Tributario DIAN adjunto. Responde solo JSON valido."
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, dianRUTIASystemPrompt(), att, nil, nil)
+	if err != nil {
+		return nil, http.StatusBadGateway, err
+	}
+	fields, warnings, err := parseDIANRUTAIResponse(respuesta)
+	if err != nil {
+		return nil, http.StatusUnprocessableEntity, err
+	}
+	if len(fields) == 0 {
+		return nil, http.StatusUnprocessableEntity, fmt.Errorf("la IA no detecto datos fiscales del RUT en el PDF")
+	}
+	_, _ = dbpkg.RegisterEmpresaAIConsulta(dbEmp, dbpkg.EmpresaAIConsulta{
+		EmpresaID:        upload.EmpresaID,
+		Provider:         model.Provider,
+		ModelID:          model.ID,
+		Pregunta:         "extraccion_rut_dian_pdf",
+		Respuesta:        "extraccion_rut_completada_requiere_revision",
+		PromptTokens:     promptTokens,
+		CompletionTokens: completionTokens,
+		TotalTokens:      promptTokens + completionTokens,
+		UsuarioCreador:   adminEmailFromRequest(r),
+		Estado:           "activo",
+		Observaciones:    "Extraccion revisable de datos fiscales desde RUT DIAN",
+	})
+	return map[string]interface{}{
+		"ok":                    true,
+		"empresa_id":            upload.EmpresaID,
+		"archivo_nombre":        upload.FileName,
+		"metodo_extraccion":     "ia_gpt_5_5",
+		"modelo_ia":             model.ID,
+		"campos_detectados":     fields,
+		"valores_configuracion": fields,
+		"advertencias":          warnings,
+		"archivo_almacenado":    false,
+		"requiere_revision":     true,
+	}, http.StatusOK, nil
+}
+
+func dianRUTIASystemPrompt() string {
+	return `Eres un extractor profesional de documentos tributarios DIAN Colombia.
+Lee exclusivamente el PDF Formulario 001 del Registro Unico Tributario (RUT) adjunto.
+Devuelve exclusivamente JSON valido con estas claves:
+{
+  "numero_formulario": "",
+  "concepto": "",
+  "fecha_generacion": "YYYY-MM-DD",
+  "nit": "",
+  "dv": "",
+  "tipo_contribuyente": "persona_natural|persona_juridica|",
+  "tipo_documento_identidad": "",
+  "numero_documento_identidad": "",
+  "razon_social": "",
+  "nombre_comercial": "",
+  "pais_codigo": "CO",
+  "departamento": "",
+  "departamento_codigo_dane": "",
+  "municipio": "",
+  "municipio_codigo_dane": "",
+  "direccion_fiscal": "",
+  "codigo_postal": "",
+  "email_facturacion": "",
+  "telefono_facturacion": "",
+  "actividad_economica_principal": "",
+  "responsabilidades_rut": []
+}
+Reglas: usa solo datos visibles; no inventes ni completes campos por conocimiento externo. Para persona natural arma razon_social en orden nombres y luego apellidos. Toma el NIT del campo 5 y su DV del campo 6. Usa los codigos geograficos del bloque UBICACION: departamento de 2 digitos y municipio de 5 digitos; si el municipio aparece con 3 digitos, antepone el codigo de departamento. Responsabilidades_rut contiene solo codigos numericos visibles del campo 53. No confundas el numero de formulario, telefonos, fechas, actividad economica ni cedula con el NIT.`
+}
+
+func parseDIANRUTAIResponse(raw string) (map[string]interface{}, []string, error) {
+	candidate := extractJSONCandidate(raw)
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(candidate), &data); err != nil {
+		return nil, nil, fmt.Errorf("respuesta IA invalida para RUT DIAN")
+	}
+	fields := map[string]interface{}{}
+	dianRUTCopyTextFields(data, fields)
+	warnings := dianRUTApplyIdentity(data, fields)
+	dianRUTApplyLocation(data, fields)
+	dianRUTApplyResponsibilities(data, fields)
+	warnings = append(warnings, dianRUTMissingWarnings(fields)...)
+	warnings = append(warnings, "El PDF se proceso temporalmente y no fue almacenado. Revise los datos antes de aplicar y guardar.")
+	return fields, warnings, nil
+}
+
+func dianRUTCopyTextFields(data, fields map[string]interface{}) {
+	definitions := []struct {
+		dst string
+		max int
+	}{
+		{"numero_formulario", 32}, {"concepto", 120}, {"fecha_generacion", 10},
+		{"razon_social", 180}, {"nombre_comercial", 180}, {"departamento", 100},
+		{"municipio", 100}, {"direccion_fiscal", 220}, {"codigo_postal", 16},
+		{"email_facturacion", 180}, {"telefono_facturacion", 40}, {"actividad_economica_principal", 16},
+	}
+	for _, definition := range definitions {
+		value := strings.Join(strings.Fields(strings.TrimSpace(genericStringValue(data[definition.dst]))), " ")
+		if value == "" {
+			continue
+		}
+		if len(value) > definition.max {
+			value = value[:definition.max]
+		}
+		fields[definition.dst] = value
+	}
+}
+
+func dianRUTApplyIdentity(data, fields map[string]interface{}) []string {
+	warnings := []string{}
+
+	nit := onlyDigits(genericStringValue(data["nit"]))
+	if len(nit) >= 6 && len(nit) <= 15 {
+		fields["nit"] = nit
+		fields["tipo_documento_emisor"] = "NIT"
+	}
+	dv := onlyDigits(genericStringValue(data["dv"]))
+	if len(dv) == 1 {
+		fields["dv"] = dv
+		fields["digito_verificacion"] = dv
+	}
+	if nit != "" && dv != "" {
+		if expected, valid := calculateColombianNITDV(nit); !valid || strconv.Itoa(expected) != dv {
+			warnings = append(warnings, "El DV detectado no coincide con el calculado para el NIT; reviselo antes de aplicar.")
+		}
+	}
+
+	tipoPersona := strings.ToLower(strings.TrimSpace(genericStringValue(data["tipo_contribuyente"])))
+	switch tipoPersona {
+	case "persona_natural", "persona_juridica":
+		fields["tipo_persona_fiscal"] = tipoPersona
+	}
+	return warnings
+}
+
+func dianRUTApplyLocation(data, fields map[string]interface{}) {
+	departmentCode := onlyDigits(genericStringValue(data["departamento_codigo_dane"]))
+	if len(departmentCode) == 1 {
+		departmentCode = "0" + departmentCode
+	}
+	if len(departmentCode) == 2 {
+		fields["departamento_codigo_dane"] = departmentCode
+	}
+	municipalityCode := onlyDigits(genericStringValue(data["municipio_codigo_dane"]))
+	if len(municipalityCode) == 3 && len(departmentCode) == 2 {
+		municipalityCode = departmentCode + municipalityCode
+	}
+	if len(municipalityCode) == 5 && strings.HasPrefix(municipalityCode, departmentCode) {
+		fields["municipio_codigo_dane"] = municipalityCode
+	}
+	fields["pais_codigo"] = "CO"
+}
+
+func dianRUTApplyResponsibilities(data, fields map[string]interface{}) {
+	responsibilities := []string{}
+	seen := map[string]bool{}
+	var rawResponsibilities []interface{}
+	if list, ok := data["responsabilidades_rut"].([]interface{}); ok {
+		rawResponsibilities = list
+	}
+	for _, item := range rawResponsibilities {
+		code := onlyDigits(genericStringValue(item))
+		if len(code) == 1 {
+			code = "0" + code
+		}
+		if len(code) != 2 || seen[code] {
+			continue
+		}
+		seen[code] = true
+		responsibilities = append(responsibilities, code)
+	}
+	sort.Strings(responsibilities)
+	if encoded, err := json.Marshal(responsibilities); err == nil {
+		fields["responsabilidades_rut_json"] = string(encoded)
+	}
+	if seen["48"] {
+		fields["iva_responsabilidad"] = "responsable_iva"
+	} else if seen["49"] {
+		fields["iva_responsabilidad"] = "no_responsable_iva"
+	} else if seen["53"] {
+		fields["iva_responsabilidad"] = "pj_no_responsable_iva_simple"
+	}
+	if seen["47"] {
+		fields["regimen_tributario_colombia"] = "simple"
+	} else if seen["04"] {
+		fields["regimen_tributario_colombia"] = "especial"
+	} else if seen["05"] {
+		fields["regimen_tributario_colombia"] = "ordinario"
+	}
+	fields["inc_responsabilidad"] = "no_aplica"
+	taxLevels := []string{}
+	for _, mapping := range []struct{ code, level string }{{"13", "O-13"}, {"15", "O-15"}, {"23", "O-23"}, {"47", "O-47"}} {
+		if seen[mapping.code] {
+			taxLevels = append(taxLevels, mapping.level)
+		}
+	}
+	if len(taxLevels) == 0 {
+		taxLevels = append(taxLevels, "R-99-PN")
+	}
+	fields["responsabilidad_tributaria"] = strings.Join(taxLevels, ";")
+}
+
+func dianRUTMissingWarnings(fields map[string]interface{}) []string {
+	required := map[string]string{
+		"nit":                        "NIT",
+		"dv":                         "DV",
+		"razon_social":               "nombre legal",
+		"tipo_persona_fiscal":        "tipo de contribuyente",
+		"direccion_fiscal":           "direccion fiscal",
+		"departamento_codigo_dane":   "codigo DANE del departamento",
+		"municipio_codigo_dane":      "codigo DANE del municipio",
+		"responsabilidades_rut_json": "responsabilidades del campo 53",
+	}
+	warnings := []string{}
+	for key, label := range required {
+		if value, ok := fields[key]; !ok || strings.TrimSpace(genericStringValue(value)) == "" || genericStringValue(value) == "[]" {
+			warnings = append(warnings, "No se detecto "+label+".")
+		}
+	}
+	return warnings
 }
 
 func importDIANNumeracionPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
@@ -13397,7 +13842,7 @@ func importDIANNumeracionPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[str
 	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
 	systemPrompt := dianNumeracion1876IASystemPrompt()
 	pregunta := "Extrae los campos del Formulario 1876 de autorizacion de numeracion DIAN adjunto. Responde solo JSON valido."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att, nil, nil, empresaAISafetyIdentifier(fmt.Sprintf("empresa:%d:dian_numeracion", upload.EmpresaID)))
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil)
 	if err != nil {
 		return nil, http.StatusBadGateway, err
 	}
@@ -14575,6 +15020,22 @@ func decodeGenericBodyMap(r *http.Request) (map[string]interface{}, error) {
 }
 
 func resolveEmpresaIDFromPayloadOrRequest(r *http.Request, payload map[string]interface{}) (int64, error) {
+	authorizedID := parseEmpresaIDFromContext(r)
+	if authorizedID > 0 {
+		if payload != nil {
+			if value, exists := payload["empresa_id"]; exists {
+				payloadID := anyToInt64(value)
+				if payloadID <= 0 {
+					return 0, fmt.Errorf("empresa_id invalido en JSON")
+				}
+				if payloadID != authorizedID {
+					return 0, fmt.Errorf("empresa_id no coincide con el contexto de empresa")
+				}
+			}
+			payload["empresa_id"] = authorizedID
+		}
+		return authorizedID, nil
+	}
 	if payload != nil {
 		if v, ok := payload["empresa_id"]; ok {
 			id := anyToInt64(v)
@@ -14704,22 +15165,132 @@ func getEmpresaDIANConfig(dbEmp *sql.DB, empresaID int64) (map[string]interface{
 	if len(items) == 0 {
 		return map[string]interface{}{}, nil
 	}
-	return items[0], nil
+	item := items[0]
+	for _, field := range dbpkg.EmpresaDIANConfigSecretColumns() {
+		raw := strings.TrimSpace(genericStringValue(item[field]))
+		if raw == "" {
+			continue
+		}
+		plain, err := dbpkg.DecryptEmpresaDIANConfigSecret(empresaID, field, raw)
+		if err != nil {
+			return nil, fmt.Errorf("credencial DIAN %s no disponible: %w", field, err)
+		}
+		item[field] = plain
+	}
+	return item, nil
 }
 
-func dianResolveOptionalReference(raw string) (string, error) {
+func encryptDIANConfigPayloadForStorage(empresaID int64, payload map[string]interface{}) (map[string]interface{}, error) {
+	storage := make(map[string]interface{}, len(payload))
+	for key, value := range payload {
+		storage[key] = value
+	}
+	for _, field := range dbpkg.EmpresaDIANConfigSecretColumns() {
+		value, exists := storage[field]
+		if !exists {
+			continue
+		}
+		plain := strings.TrimSpace(genericStringValue(value))
+		if plain == "" {
+			delete(storage, field)
+			continue
+		}
+		encrypted, err := dbpkg.EncryptEmpresaDIANConfigSecret(empresaID, field, plain)
+		if err != nil {
+			return nil, err
+		}
+		storage[field] = encrypted
+	}
+	return storage, nil
+}
+
+func sanitizeDIANConfigForResponse(cfg map[string]interface{}) map[string]interface{} {
+	if len(cfg) == 0 {
+		return map[string]interface{}{}
+	}
+	out := make(map[string]interface{}, len(cfg))
+	for key, value := range cfg {
+		out[key] = value
+	}
+	for _, field := range dbpkg.EmpresaDIANConfigSecretColumns() {
+		configured := strings.TrimSpace(genericStringValue(out[field])) != ""
+		delete(out, field)
+		out[field+"_configurado"] = configured
+	}
+	return out
+}
+
+func dianResolveOptionalReference(raw string, empresaIDs ...int64) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return "", nil
 	}
-	resolved, err := resolveDIANSecretValue(raw)
-	if err != nil {
-		return "", err
+	empresaID := int64(0)
+	if len(empresaIDs) > 0 {
+		empresaID = empresaIDs[0]
 	}
-	return strings.TrimSpace(resolved), nil
+	if empresaID <= 0 {
+		return resolveOptionalSecretReference(raw)
+	}
+	lower := strings.ToLower(raw)
+	switch {
+	case strings.HasPrefix(lower, "env:"):
+		name := strings.TrimSpace(raw[len("env:"):])
+		upper := strings.ToUpper(name)
+		if name == "" || (!strings.HasPrefix(upper, "DIAN_") && !strings.HasPrefix(upper, "PCS_DIAN_")) {
+			return "", fmt.Errorf("variable de entorno fuera del espacio DIAN permitido")
+		}
+		value := strings.TrimSpace(os.Getenv(name))
+		if value == "" {
+			return "", fmt.Errorf("variable DIAN no configurada")
+		}
+		return value, nil
+	case strings.HasPrefix(lower, "file:"):
+		root, err := empresaPrivateCategoryRoot(empresaID, "dian")
+		if err != nil {
+			return "", err
+		}
+		path := strings.TrimSpace(raw[len("file:"):])
+		resolvedPath, err := resolveExistingPrivateFileUnderRoot(root, path)
+		if err != nil {
+			return "", fmt.Errorf("referencia DIAN fuera del almacenamiento privado de la empresa")
+		}
+		file, err := os.Open(resolvedPath) // #nosec G304 -- tenant private root was enforced above.
+		if err != nil {
+			return "", fmt.Errorf("referencia DIAN no disponible")
+		}
+		defer func() { _ = file.Close() }()
+		const maxDIANCredentialBytes = 256 << 10
+		content, err := io.ReadAll(io.LimitReader(file, maxDIANCredentialBytes+1))
+		if err != nil || len(content) == 0 || len(content) > maxDIANCredentialBytes {
+			return "", fmt.Errorf("referencia DIAN invalida")
+		}
+		return strings.TrimSpace(string(content)), nil
+	case strings.HasPrefix(lower, "base64:"):
+		decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(raw[len("base64:"):]))
+		if err != nil || len(decoded) == 0 || len(decoded) > 256<<10 {
+			return "", fmt.Errorf("referencia DIAN base64 invalida")
+		}
+		return strings.TrimSpace(string(decoded)), nil
+	default:
+		return raw, nil
+	}
 }
 
-func resolveDIANSoftwareCredentials(cfg map[string]interface{}, payload map[string]interface{}) (string, string, bool, error) {
+func dianPayloadCredential(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	lower := strings.ToLower(raw)
+	if strings.HasPrefix(lower, "env:") || strings.HasPrefix(lower, "file:") || strings.HasPrefix(lower, "base64:") {
+		return "", fmt.Errorf("las referencias de secretos no se aceptan desde el request")
+	}
+	return raw, nil
+}
+
+func resolveDIANSoftwareCredentials(cfg map[string]interface{}, payload map[string]interface{}, empresaIDs ...int64) (string, string, bool, error) {
+	empresaID := int64(0)
+	if len(empresaIDs) > 0 {
+		empresaID = empresaIDs[0]
+	}
 	useSharedSoftware := false
 	if payload != nil {
 		if _, ok := payload["usar_software_compartido"]; ok {
@@ -14731,24 +15302,24 @@ func resolveDIANSoftwareCredentials(cfg map[string]interface{}, payload map[stri
 		useSharedSoftware = parseTruthy(genericStringValue(cfg["usar_software_compartido"]))
 	}
 
-	softwareID, err := dianResolveOptionalReference(genericStringValue(payload["software_id"]))
+	softwareID, err := dianPayloadCredential(genericStringValue(payload["software_id"]))
 	if err != nil {
 		return "", "", useSharedSoftware, fmt.Errorf("software_id invalido: %w", err)
 	}
-	softwarePIN, err := dianResolveOptionalReference(genericStringValue(payload["software_pin"]))
+	softwarePIN, err := dianPayloadCredential(genericStringValue(payload["software_pin"]))
 	if err != nil {
 		return "", "", useSharedSoftware, fmt.Errorf("software_pin invalido: %w", err)
 	}
 
 	if useSharedSoftware {
 		if softwareID == "" {
-			softwareID, err = dianResolveOptionalReference(genericStringValue(cfg["software_id_compartido_ref"]))
+			softwareID, err = dianResolveOptionalReference(genericStringValue(cfg["software_id_compartido_ref"]), empresaID)
 			if err != nil {
 				return "", "", useSharedSoftware, fmt.Errorf("software_id_compartido_ref invalido: %w", err)
 			}
 		}
 		if softwarePIN == "" {
-			softwarePIN, err = dianResolveOptionalReference(genericStringValue(cfg["software_pin_compartido_ref"]))
+			softwarePIN, err = dianResolveOptionalReference(genericStringValue(cfg["software_pin_compartido_ref"]), empresaID)
 			if err != nil {
 				return "", "", useSharedSoftware, fmt.Errorf("software_pin_compartido_ref invalido: %w", err)
 			}
@@ -14762,13 +15333,13 @@ func resolveDIANSoftwareCredentials(cfg map[string]interface{}, payload map[stri
 	}
 
 	if softwareID == "" {
-		softwareID, err = dianResolveOptionalReference(genericStringValue(cfg["software_id"]))
+		softwareID, err = dianResolveOptionalReference(genericStringValue(cfg["software_id"]), empresaID)
 		if err != nil {
 			return "", "", useSharedSoftware, fmt.Errorf("software_id de empresa invalido: %w", err)
 		}
 	}
 	if softwarePIN == "" {
-		softwarePIN, err = dianResolveOptionalReference(genericStringValue(cfg["software_pin"]))
+		softwarePIN, err = dianResolveOptionalReference(genericStringValue(cfg["software_pin"]), empresaID)
 		if err != nil {
 			return "", "", useSharedSoftware, fmt.Errorf("software_pin de empresa invalido: %w", err)
 		}
@@ -14777,7 +15348,7 @@ func resolveDIANSoftwareCredentials(cfg map[string]interface{}, payload map[stri
 	return softwareID, softwarePIN, useSharedSoftware, nil
 }
 
-func missingDIANFields(cfg map[string]interface{}) []string {
+func missingDIANFields(cfg map[string]interface{}, empresaIDs ...int64) []string {
 	required := []string{
 		"nit",
 		"digito_verificacion",
@@ -14833,7 +15404,7 @@ func missingDIANFields(cfg map[string]interface{}) []string {
 		addMissing("consecutivo_actual_fuera_de_rango")
 	}
 
-	softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, nil)
+	softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, nil, empresaIDs...)
 	if err != nil {
 		addMissing("software_configuracion_invalida")
 	}
@@ -14853,6 +15424,26 @@ func missingDIANFields(cfg map[string]interface{}) []string {
 	}
 
 	return missing
+}
+
+func missingDIANFieldsForDocument(cfg map[string]interface{}, documentType string, empresaIDs ...int64) []string {
+	missing := missingDIANFields(cfg, empresaIDs...)
+	if normalizeFacturacionDocumentoElectronicoTipo(documentType) != "documento_soporte" {
+		return missing
+	}
+	out := make([]string, 0, len(missing))
+	for _, field := range missing {
+		switch field {
+		case "llave_tecnica", "test_set_id", "prefijo":
+			// Annex 1.1 calculates CUDS with Software-PIN and uses
+			// SendBillSync in both environments; it has no TestSet gate and
+			// the authorized prefix is optional (0..1, maximum four chars).
+			continue
+		default:
+			out = append(out, field)
+		}
+	}
+	return out
 }
 
 func chooseDIANAmbiente(cfg map[string]interface{}) string {

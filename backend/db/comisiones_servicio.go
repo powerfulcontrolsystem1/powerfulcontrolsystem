@@ -458,21 +458,11 @@ func defaultEmpresaComisionesServicioConfiguracion(empresaID int64) EmpresaComis
 }
 
 func normalizeComisionPorcentaje(v float64) float64 {
-	if v < 0 {
-		v = 0
-	}
-	if v > 100 {
-		v = 100
-	}
-	return round2(v)
+	return normalizeRoundedPercentage(v)
 }
 
 func normalizeComisionMoneda(v string) string {
-	m := strings.ToUpper(strings.TrimSpace(v))
-	if m == "" {
-		return "COP"
-	}
-	return m
+	return normalizeRepositoryCurrency(v, "COP", 0)
 }
 
 func normalizeComisionFiltro(v string) string {

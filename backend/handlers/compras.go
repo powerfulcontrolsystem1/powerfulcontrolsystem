@@ -44,7 +44,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			rows, err := dbpkg.ListEmpresaDocumentosCompraByEmpresa(dbEmp, empresaID, tipoDocumento, proveedorID, estadoDocumento, includeInactive, q, limit, offset)
+			rows, err := dbpkg.ListEmpresaDocumentosCompraByEmpresaContext(r.Context(), dbEmp, empresaID, tipoDocumento, proveedorID, estadoDocumento, includeInactive, q, limit, offset)
 			if err != nil {
 				http.Error(w, "No se pudo listar documentos de compras", http.StatusInternalServerError)
 				return
@@ -205,7 +205,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				accionResp = transition.Accion
 			}
 
-			docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompra(dbEmp, dbpkg.EmpresaDocumentoCompra{
+			docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompraContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoCompra{
 				EmpresaID:            payload.EmpresaID,
 				ProveedorID:          payload.ProveedorID,
 				TipoDocumento:        comprasFirstNonBlank(payload.TipoDocumento, "orden_compra"),
@@ -364,7 +364,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				if err := dbpkg.SetEmpresaDocumentoCompraEstadoByCodigo(dbEmp, payload.EmpresaID, tipoDocumento, payload.DocumentoCodigo, estado); err != nil {
+				if err := dbpkg.SetEmpresaDocumentoCompraEstadoByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, tipoDocumento, payload.DocumentoCodigo, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "documento no encontrado", http.StatusNotFound)
 						return
@@ -397,7 +397,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			docActual, err := dbpkg.GetEmpresaDocumentoCompraByCodigo(dbEmp, payload.EmpresaID, tipoDocumento, payload.DocumentoCodigo)
+			docActual, err := dbpkg.GetEmpresaDocumentoCompraByCodigoContext(r.Context(), dbEmp, payload.EmpresaID, tipoDocumento, payload.DocumentoCodigo)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "documento no encontrado", http.StatusNotFound)
@@ -656,7 +656,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				accionResp = transition.Accion
 			}
 
-			docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompra(dbEmp, dbpkg.EmpresaDocumentoCompra{
+			docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompraContext(r.Context(), dbEmp, dbpkg.EmpresaDocumentoCompra{
 				EmpresaID:            payload.EmpresaID,
 				ProveedorID:          payload.ProveedorID,
 				TipoDocumento:        docActual.TipoDocumento,
@@ -757,7 +757,7 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			if err := dbpkg.SetEmpresaDocumentoCompraEstadoByCodigo(dbEmp, empresaID, tipoDocumento, documentoCodigo, "inactivo"); err != nil {
+			if err := dbpkg.SetEmpresaDocumentoCompraEstadoByCodigoContext(r.Context(), dbEmp, empresaID, tipoDocumento, documentoCodigo, "inactivo"); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "documento no encontrado", http.StatusNotFound)
 					return
@@ -834,7 +834,7 @@ func EmpresaComprasDocumentoComprobanteUploadHandler(dbEmp *sql.DB) http.Handler
 			return
 		}
 
-		if err := dbpkg.UpdateEmpresaDocumentoCompraComprobante(dbEmp, empresaID, tipoDocumento, documentoCodigo, fileURL, fileName); err != nil {
+		if err := dbpkg.UpdateEmpresaDocumentoCompraComprobanteContext(r.Context(), dbEmp, empresaID, tipoDocumento, documentoCodigo, fileURL, fileName); err != nil {
 			_ = os.Remove(absPath)
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "documento de compras no encontrado", http.StatusNotFound)
@@ -844,7 +844,7 @@ func EmpresaComprasDocumentoComprobanteUploadHandler(dbEmp *sql.DB) http.Handler
 			return
 		}
 
-		item, err := dbpkg.GetEmpresaDocumentoCompraByCodigo(dbEmp, empresaID, tipoDocumento, documentoCodigo)
+		item, err := dbpkg.GetEmpresaDocumentoCompraByCodigoContext(r.Context(), dbEmp, empresaID, tipoDocumento, documentoCodigo)
 		if err != nil {
 			writeJSON(w, http.StatusCreated, map[string]interface{}{
 				"ok":                         true,
@@ -1059,29 +1059,13 @@ func validarComprasDocumentos(dbEmp *sql.DB, empresaID, proveedorID int64, prove
 }
 
 func comprasFirstNonBlank(values ...string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func comprasFirstPositive(values ...float64) float64 {
-	for _, value := range values {
-		if value > 0 {
-			return value
-		}
-	}
-	return 0
+	return firstPositiveFloat64(values...)
 }
 
 func comprasFirstNonBlankInt64(values ...int64) int64 {
-	for _, value := range values {
-		if value > 0 {
-			return value
-		}
-	}
-	return 0
+	return firstPositiveInt64(values...)
 }

@@ -344,6 +344,10 @@ func ventaPublicaNormalizeAction(raw string) string {
 }
 
 func ventaPublicaResolveCredential(raw string) (string, error) {
+	return resolveOptionalSecretReference(raw)
+}
+
+func resolveOptionalSecretReference(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return "", nil

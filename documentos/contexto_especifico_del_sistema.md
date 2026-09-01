@@ -1,6 +1,6 @@
 # Contexto especifico del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-08-31.
+Estado: vigente. Ultima actualizacion: 2026-08-13.
 
 Este documento amplia el
 [`Contexto general del sistema`](contexto_general_del_sistema.md). No se debe
@@ -8,6 +8,8 @@ leer completo por defecto: usar la seccion relacionada con la tarea.
 
 ## Inicio de cualquier cambio
 
+- Hoja de ruta activa de producción: `plan_110.md`; Planes 106 a 109 son
+  antecedentes y no órdenes vigentes.
 - Vision y alcance: `descripcion_del_proyecto`.
 - Ubicacion de paginas, APIs, tablas y pruebas: `mapa_modulos.md`.
 - Flujos de negocio: `flujos_operativos.md`.
@@ -55,8 +57,10 @@ forzadas aunque el boton se oculte en frontend.
   `gobernanza_tecnica/runbooks/runbook_checkout_licencias.md` y
   `gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md`.
 - Nomina, impuestos, contabilidad y reportes:
-  `descripcion_de_modulos`, `estructura_bd.md` y los documentos especificos del
-  modulo en `documentos/`.
+  `descripcion_de_modulos`, `estructura_bd.md`,
+  `nomina_colombia_avanzada.md` y los documentos especificos del modulo en
+  `documentos/`. Para nomina electronica DIAN consultar tambien
+  `referencias/dian/README.md` y el contrato de facturacion/documentos.
 - IA, agentes y limites por empresa: `ia_orquestador_empresarial.md`,
   `mapa_modulos.md`, `estructura_bd.md` y `diagramas/diagramas_sistema_pcs.md`.
   El recuadro distingue `super` (visión global exclusiva del rol super),

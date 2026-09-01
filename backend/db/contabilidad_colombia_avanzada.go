@@ -1,9 +1,13 @@
 package db
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"math"
 	"strings"
 	"time"
 )
@@ -70,48 +74,105 @@ type EmpresaExogenaRegistro struct {
 }
 
 type EmpresaNominaElectronica struct {
-	ID                 int64   `json:"id"`
-	EmpresaID          int64   `json:"empresa_id"`
-	EmpleadoID         int64   `json:"empleado_id,omitempty"`
-	TipoDocumento      string  `json:"tipo_documento"`
-	Documento          string  `json:"documento"`
-	Nombre             string  `json:"nombre"`
-	Periodo            string  `json:"periodo"`
-	FechaPago          string  `json:"fecha_pago"`
-	SalarioBase        float64 `json:"salario_base"`
-	Devengados         float64 `json:"devengados"`
-	Deducciones        float64 `json:"deducciones"`
-	Total              float64 `json:"total"`
-	CUNE               string  `json:"cune,omitempty"`
-	EstadoDIAN         string  `json:"estado_dian"`
-	RespuestaDIAN      string  `json:"respuesta_dian,omitempty"`
-	JSONPayload        string  `json:"json_payload,omitempty"`
-	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
+	ID                    int64   `json:"id"`
+	EmpresaID             int64   `json:"empresa_id"`
+	EmpleadoID            int64   `json:"empleado_id,omitempty"`
+	EmpleadoNominaID      int64   `json:"empleado_nomina_id,omitempty"`
+	LiquidacionID         int64   `json:"liquidacion_id,omitempty"`
+	PeriodoReporte        string  `json:"periodo_reporte,omitempty"`
+	TipoDocumento         string  `json:"tipo_documento"`
+	Documento             string  `json:"documento"`
+	Nombre                string  `json:"nombre"`
+	Periodo               string  `json:"periodo"`
+	FechaPago             string  `json:"fecha_pago"`
+	SalarioBase           float64 `json:"salario_base"`
+	Devengados            float64 `json:"devengados"`
+	Deducciones           float64 `json:"deducciones"`
+	Total                 float64 `json:"total"`
+	CUNE                  string  `json:"cune,omitempty"`
+	EstadoDIAN            string  `json:"estado_dian"`
+	RespuestaDIAN         string  `json:"respuesta_dian,omitempty"`
+	JSONPayload           string  `json:"json_payload,omitempty"`
+	NumeroLegal           string  `json:"numero_legal,omitempty"`
+	FechaEmisionLegal     string  `json:"fecha_emision_legal,omitempty"`
+	ConfiguracionDIANJSON string  `json:"configuracion_dian_json,omitempty"`
+	FuenteFiscalJSON      string  `json:"fuente_fiscal_json,omitempty"`
+	FuenteFiscalSellada   bool    `json:"fuente_fiscal_sellada"`
+	Intentos              int     `json:"intentos"`
+	FechaUltimoIntento    string  `json:"fecha_ultimo_intento,omitempty"`
+	FechaCreacion         string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion    string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador        string  `json:"usuario_creador,omitempty"`
 }
 
 type EmpresaDocumentoSoporteElectronico struct {
-	ID                 int64   `json:"id"`
-	EmpresaID          int64   `json:"empresa_id"`
-	ProveedorID        int64   `json:"proveedor_id,omitempty"`
-	TipoDocumento      string  `json:"tipo_documento"`
-	Documento          string  `json:"documento"`
-	NombreProveedor    string  `json:"nombre_proveedor"`
-	FechaDocumento     string  `json:"fecha_documento"`
-	Periodo            string  `json:"periodo"`
-	Concepto           string  `json:"concepto"`
-	Subtotal           float64 `json:"subtotal"`
-	IVA                float64 `json:"iva"`
-	Retenciones        float64 `json:"retenciones"`
-	Total              float64 `json:"total"`
-	CUDS               string  `json:"cuds,omitempty"`
-	EstadoDIAN         string  `json:"estado_dian"`
-	RespuestaDIAN      string  `json:"respuesta_dian,omitempty"`
-	JSONPayload        string  `json:"json_payload,omitempty"`
-	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
+	ID                                int64   `json:"id"`
+	EmpresaID                         int64   `json:"empresa_id"`
+	ProveedorID                       int64   `json:"proveedor_id,omitempty"`
+	TipoDocumento                     string  `json:"tipo_documento"`
+	Documento                         string  `json:"documento"`
+	VendedorDigitoVerificacion        string  `json:"vendedor_digito_verificacion,omitempty"`
+	VendedorTipoPersona               string  `json:"vendedor_tipo_persona"`
+	VendedorResidencia                string  `json:"vendedor_residencia"`
+	NombreProveedor                   string  `json:"nombre_proveedor"`
+	VendedorDireccion                 string  `json:"vendedor_direccion"`
+	VendedorPaisCodigo                string  `json:"vendedor_pais_codigo"`
+	VendedorDepartamento              string  `json:"vendedor_departamento"`
+	VendedorDepartamentoCodigoDANE    string  `json:"vendedor_departamento_codigo_dane,omitempty"`
+	VendedorMunicipio                 string  `json:"vendedor_municipio"`
+	VendedorMunicipioCodigoDANE       string  `json:"vendedor_municipio_codigo_dane,omitempty"`
+	VendedorCodigoPostal              string  `json:"vendedor_codigo_postal,omitempty"`
+	VendedorResponsabilidadTributaria string  `json:"vendedor_responsabilidad_tributaria"`
+	VendedorEmail                     string  `json:"vendedor_email,omitempty"`
+	VendedorTelefono                  string  `json:"vendedor_telefono,omitempty"`
+	FechaDocumento                    string  `json:"fecha_documento"`
+	Periodo                           string  `json:"periodo"`
+	Concepto                          string  `json:"concepto"`
+	Moneda                            string  `json:"moneda"`
+	FormaPagoCodigo                   string  `json:"forma_pago_codigo"`
+	MedioPagoCodigo                   string  `json:"medio_pago_codigo"`
+	FechaVencimiento                  string  `json:"fecha_vencimiento,omitempty"`
+	LineasJSON                        string  `json:"lineas_json"`
+	Subtotal                          float64 `json:"subtotal"`
+	IVA                               float64 `json:"iva"`
+	Retenciones                       float64 `json:"retenciones"`
+	Total                             float64 `json:"total"`
+	TotalNetoContable                 float64 `json:"total_neto_contable"`
+	NumeroLegal                       string  `json:"numero_legal,omitempty"`
+	FechaEmisionLegal                 string  `json:"fecha_emision_legal,omitempty"`
+	CUDS                              string  `json:"cuds,omitempty"`
+	EstadoDIAN                        string  `json:"estado_dian"`
+	RespuestaDIAN                     string  `json:"respuesta_dian,omitempty"`
+	JSONPayload                       string  `json:"json_payload,omitempty"`
+	ConfiguracionDIANJSON             string  `json:"configuracion_dian_json,omitempty"`
+	FuenteFiscalSellada               bool    `json:"fuente_fiscal_sellada"`
+	FechaCreacion                     string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion                string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador                    string  `json:"usuario_creador,omitempty"`
+}
+
+// EmpresaDocumentoSoporteLinea is the structured purchase detail used to
+// recalculate fiscal amounts on the server. Computed fields supplied by a
+// browser are never trusted and are overwritten before persistence.
+type EmpresaDocumentoSoporteLinea struct {
+	Numero                 int     `json:"numero"`
+	Codigo                 string  `json:"codigo"`
+	Descripcion            string  `json:"descripcion"`
+	UnidadMedida           string  `json:"unidad_medida"`
+	Cantidad               float64 `json:"cantidad"`
+	PrecioUnitario         float64 `json:"precio_unitario"`
+	DescuentoPorcentaje    float64 `json:"descuento_porcentaje"`
+	ValorDescuento         float64 `json:"valor_descuento"`
+	BaseGravable           float64 `json:"base_gravable"`
+	IVAPorcentaje          float64 `json:"iva_porcentaje"`
+	IVAValor               float64 `json:"iva_valor"`
+	ReteIVAPorcentaje      float64 `json:"reteiva_porcentaje"`
+	ReteIVAValor           float64 `json:"reteiva_valor"`
+	ReteRentaPorcentaje    float64 `json:"reterenta_porcentaje"`
+	ReteRentaValor         float64 `json:"reterenta_valor"`
+	SubtotalLinea          float64 `json:"subtotal_linea"`
+	TotalLinea             float64 `json:"total_linea"`
+	TotalNetoContableLinea float64 `json:"total_neto_contable_linea"`
 }
 
 type EmpresaActivoFijo struct {
@@ -355,6 +416,16 @@ func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 			estado_dian TEXT DEFAULT 'borrador',
 			respuesta_dian TEXT,
 			json_payload TEXT,
+			liquidacion_id BIGINT NOT NULL DEFAULT 0,
+			empleado_nomina_id BIGINT NOT NULL DEFAULT 0,
+			periodo_reporte TEXT NOT NULL DEFAULT '',
+			numero_legal TEXT NOT NULL DEFAULT '',
+			fecha_emision_legal TIMESTAMPTZ,
+			configuracion_dian_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+			fuente_fiscal_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+			fuente_fiscal_sellada BOOLEAN NOT NULL DEFAULT FALSE,
+			intentos INTEGER NOT NULL DEFAULT 0,
+			fecha_ultimo_intento TIMESTAMPTZ,
 			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
 			fecha_actualizacion TEXT DEFAULT CURRENT_TIMESTAMP,
 			usuario_creador TEXT,
@@ -366,18 +437,41 @@ func EnsureEmpresaContabilidadColombiaAvanzadaSchema(dbConn *sql.DB) error {
 			proveedor_id INTEGER DEFAULT 0,
 			tipo_documento TEXT DEFAULT 'NIT',
 			documento TEXT NOT NULL,
+			vendedor_digito_verificacion TEXT NOT NULL DEFAULT '',
+			vendedor_tipo_persona TEXT NOT NULL DEFAULT '',
+			vendedor_residencia TEXT NOT NULL DEFAULT 'residente',
 			nombre_proveedor TEXT NOT NULL,
+			vendedor_direccion TEXT NOT NULL DEFAULT '',
+			vendedor_pais_codigo TEXT NOT NULL DEFAULT 'CO',
+			vendedor_departamento TEXT NOT NULL DEFAULT '',
+			vendedor_departamento_codigo_dane TEXT NOT NULL DEFAULT '',
+			vendedor_municipio TEXT NOT NULL DEFAULT '',
+			vendedor_municipio_codigo_dane TEXT NOT NULL DEFAULT '',
+			vendedor_codigo_postal TEXT NOT NULL DEFAULT '',
+			vendedor_responsabilidad_tributaria TEXT NOT NULL DEFAULT '',
+			vendedor_email TEXT NOT NULL DEFAULT '',
+			vendedor_telefono TEXT NOT NULL DEFAULT '',
 			fecha_documento TEXT NOT NULL,
 			periodo TEXT NOT NULL,
 			concepto TEXT NOT NULL,
-			subtotal REAL DEFAULT 0,
-			iva REAL DEFAULT 0,
-			retenciones REAL DEFAULT 0,
-			total REAL DEFAULT 0,
+			moneda TEXT NOT NULL DEFAULT 'COP',
+			forma_pago_codigo TEXT NOT NULL DEFAULT '1',
+			medio_pago_codigo TEXT NOT NULL DEFAULT '10',
+			fecha_vencimiento DATE,
+			lineas_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+			subtotal NUMERIC(18,2) NOT NULL DEFAULT 0,
+			iva NUMERIC(18,2) NOT NULL DEFAULT 0,
+			retenciones NUMERIC(18,2) NOT NULL DEFAULT 0,
+			total NUMERIC(18,2) NOT NULL DEFAULT 0,
+			total_neto_contable NUMERIC(18,2) NOT NULL DEFAULT 0,
+			numero_legal TEXT NOT NULL DEFAULT '',
+			fecha_emision_legal TIMESTAMPTZ,
 			cuds TEXT,
 			estado_dian TEXT DEFAULT 'borrador',
 			respuesta_dian TEXT,
 			json_payload TEXT,
+			configuracion_dian_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+			fuente_fiscal_sellada BOOLEAN NOT NULL DEFAULT FALSE,
 			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
 			fecha_actualizacion TEXT DEFAULT CURRENT_TIMESTAMP,
 			usuario_creador TEXT
@@ -551,24 +645,35 @@ func SeedEmpresaContabilidadAvanzadaBase(dbConn *sql.DB, empresaID int64, usuari
 }
 
 func BuildEmpresaContabilidadAvanzadaDashboard(dbConn *sql.DB, empresaID int64) (EmpresaContabilidadAvanzadaDashboard, error) {
+	return BuildEmpresaContabilidadAvanzadaDashboardScoped(dbConn, empresaID, true)
+}
+
+// BuildEmpresaContabilidadAvanzadaDashboardScoped omits payroll-derived counts
+// and summaries unless the caller has already verified the additional payroll
+// read permission. Accounting access alone is not sufficient to disclose
+// employee payroll data.
+func BuildEmpresaContabilidadAvanzadaDashboardScoped(dbConn *sql.DB, empresaID int64, includeNomina bool) (EmpresaContabilidadAvanzadaDashboard, error) {
 	d := EmpresaContabilidadAvanzadaDashboard{EmpresaID: empresaID}
-	counts := []struct {
+	type countSpec struct {
 		table string
 		dest  *int
 		where string
-	}{
+	}
+	counts := []countSpec{
 		{"empresa_contabilidad_exogena_formatos", &d.FormatosExogena, ""},
 		{"empresa_contabilidad_exogena_registros", &d.RegistrosExogena, ""},
-		{"empresa_contabilidad_nomina_electronica", &d.NominasElectronicas, ""},
 		{"empresa_contabilidad_documentos_soporte", &d.DocumentosSoporte, ""},
 		{"empresa_contabilidad_activos_fijos", &d.ActivosFijos, " AND estado='activo'"},
 		{"empresa_contabilidad_cartera_cxp", &d.CarteraCXPendientes, " AND estado IN ('pendiente','vencido','parcial')"},
+	}
+	if includeNomina {
+		counts = append(counts, countSpec{"empresa_contabilidad_nomina_electronica", &d.NominasElectronicas, ""})
 	}
 	for _, c := range counts {
 		_ = dbConn.QueryRow("SELECT COUNT(1) FROM "+c.table+" WHERE empresa_id=?"+c.where, empresaID).Scan(c.dest)
 	}
 	d.LibrosDisponibles = buildDefaultLibroResumen(dbConn, empresaID, "")
-	d.UltimosDocumentosDIAN = listUltimosDocumentosDIAN(dbConn, empresaID)
+	d.UltimosDocumentosDIAN = listUltimosDocumentosDIAN(dbConn, empresaID, includeNomina)
 	return d, nil
 }
 
@@ -703,7 +808,7 @@ func CreateEmpresaNominaElectronica(dbConn *sql.DB, x EmpresaNominaElectronica) 
 		return 0, errors.New("empleado, documento y periodo son requeridos")
 	}
 	x.TipoDocumento = firstContabilidadValue(x.TipoDocumento, "CC")
-	x.EstadoDIAN = firstContabilidadValue(x.EstadoDIAN, "borrador")
+	normalizeEmpresaNominaElectronicaDraft(&x)
 	if x.Total == 0 {
 		x.Total = x.Devengados - x.Deducciones
 	}
@@ -726,6 +831,7 @@ func CreateEmpresaNominaElectronica(dbConn *sql.DB, x EmpresaNominaElectronica) 
 			json_payload=EXCLUDED.json_payload,
 			fecha_actualizacion=CURRENT_TIMESTAMP,
 			usuario_creador=EXCLUDED.usuario_creador
+		WHERE empresa_contabilidad_nomina_electronica.numero_legal = ''
 		RETURNING id`,
 		x.EmpresaID, x.EmpleadoID, x.TipoDocumento, x.Documento, x.Nombre, x.Periodo, firstContabilidadValue(x.FechaPago, time.Now().Format("2006-01-02")), x.SalarioBase, x.Devengados, x.Deducciones, x.Total, x.CUNE, x.EstadoDIAN, x.RespuestaDIAN, x.JSONPayload, x.UsuarioCreador).Scan(&id)
 	if err != nil {
@@ -742,8 +848,11 @@ func ListEmpresaNominaElectronica(dbConn *sql.DB, empresaID int64, periodo strin
 		args = append(args, periodo)
 	}
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
-	rows, err := dbConn.Query(`SELECT id, empresa_id, empleado_id, tipo_documento, documento, nombre, periodo, fecha_pago, salario_base,
+	rows, err := dbConn.Query(`SELECT id, empresa_id, empleado_id, COALESCE(empleado_nomina_id, 0), COALESCE(liquidacion_id, 0), COALESCE(periodo_reporte, ''), tipo_documento, documento, nombre, periodo, fecha_pago, salario_base,
 		devengados, deducciones, total, COALESCE(cune,''), estado_dian, COALESCE(respuesta_dian,''), COALESCE(json_payload,''),
+		COALESCE(numero_legal, ''), COALESCE(fecha_emision_legal::TEXT, ''), COALESCE(configuracion_dian_json::TEXT, '{}'),
+		COALESCE(fuente_fiscal_json::TEXT, '{}'), COALESCE(fuente_fiscal_sellada, FALSE), COALESCE(intentos, 0),
+		COALESCE(fecha_ultimo_intento::TEXT, ''),
 		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
 		FROM empresa_contabilidad_nomina_electronica WHERE `+where+` ORDER BY periodo DESC, nombre`, args...)
 	if err != nil {
@@ -753,7 +862,7 @@ func ListEmpresaNominaElectronica(dbConn *sql.DB, empresaID int64, periodo strin
 	var out []EmpresaNominaElectronica
 	for rows.Next() {
 		var x EmpresaNominaElectronica
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.EmpleadoID, &x.TipoDocumento, &x.Documento, &x.Nombre, &x.Periodo, &x.FechaPago, &x.SalarioBase, &x.Devengados, &x.Deducciones, &x.Total, &x.CUNE, &x.EstadoDIAN, &x.RespuestaDIAN, &x.JSONPayload, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.EmpleadoID, &x.EmpleadoNominaID, &x.LiquidacionID, &x.PeriodoReporte, &x.TipoDocumento, &x.Documento, &x.Nombre, &x.Periodo, &x.FechaPago, &x.SalarioBase, &x.Devengados, &x.Deducciones, &x.Total, &x.CUNE, &x.EstadoDIAN, &x.RespuestaDIAN, &x.JSONPayload, &x.NumeroLegal, &x.FechaEmisionLegal, &x.ConfiguracionDIANJSON, &x.FuenteFiscalJSON, &x.FuenteFiscalSellada, &x.Intentos, &x.FechaUltimoIntento, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -761,19 +870,137 @@ func ListEmpresaNominaElectronica(dbConn *sql.DB, empresaID int64, periodo strin
 	return out, rows.Err()
 }
 
+// GetEmpresaNominaElectronicaByIDContext resolves a payroll draft only inside
+// its tenant. DIAN preflight must never disclose employee data across empresas.
+func GetEmpresaNominaElectronicaByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, nominaID int64) (*EmpresaNominaElectronica, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || nominaID <= 0 {
+		return nil, errors.New("empresa_id y nomina_id son obligatorios")
+	}
+	var item EmpresaNominaElectronica
+	err := QueryRowCompatContext(ctx, dbConn, `SELECT
+		id, empresa_id, empleado_id, COALESCE(empleado_nomina_id, 0), COALESCE(liquidacion_id, 0), COALESCE(periodo_reporte, ''), tipo_documento, documento, nombre, periodo, fecha_pago, salario_base,
+		devengados, deducciones, total, COALESCE(cune,''), estado_dian, COALESCE(respuesta_dian,''),
+		COALESCE(json_payload,''), COALESCE(numero_legal, ''), COALESCE(fecha_emision_legal::TEXT, ''),
+		COALESCE(configuracion_dian_json::TEXT, '{}'), COALESCE(fuente_fiscal_json::TEXT, '{}'),
+		COALESCE(fuente_fiscal_sellada, FALSE), COALESCE(intentos, 0), COALESCE(fecha_ultimo_intento::TEXT, ''),
+		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''),
+		COALESCE(usuario_creador,'')
+	FROM empresa_contabilidad_nomina_electronica
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, nominaID).Scan(
+		&item.ID, &item.EmpresaID, &item.EmpleadoID, &item.EmpleadoNominaID, &item.LiquidacionID, &item.PeriodoReporte, &item.TipoDocumento, &item.Documento,
+		&item.Nombre, &item.Periodo, &item.FechaPago, &item.SalarioBase, &item.Devengados,
+		&item.Deducciones, &item.Total, &item.CUNE, &item.EstadoDIAN, &item.RespuestaDIAN,
+		&item.JSONPayload, &item.NumeroLegal, &item.FechaEmisionLegal, &item.ConfiguracionDIANJSON,
+		&item.FuenteFiscalJSON, &item.FuenteFiscalSellada, &item.Intentos, &item.FechaUltimoIntento,
+		&item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// GetEmpresaNominaElectronicaByLiquidacionContext resolves the fiscal payroll
+// mirror through the immutable operational source key. The tenant predicate is
+// mandatory so a liquidation identifier can never cross company boundaries.
+func GetEmpresaNominaElectronicaByLiquidacionContext(ctx context.Context, dbConn *sql.DB, empresaID, liquidacionID int64) (*EmpresaNominaElectronica, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || liquidacionID <= 0 {
+		return nil, errors.New("empresa_id y liquidacion_id son obligatorios")
+	}
+	var item EmpresaNominaElectronica
+	err := QueryRowCompatContext(ctx, dbConn, `SELECT
+		id, empresa_id, empleado_id, COALESCE(empleado_nomina_id, 0), COALESCE(liquidacion_id, 0), COALESCE(periodo_reporte, ''), tipo_documento, documento, nombre, periodo, fecha_pago, salario_base,
+		devengados, deducciones, total, COALESCE(cune,''), estado_dian, COALESCE(respuesta_dian,''),
+		COALESCE(json_payload,''), COALESCE(numero_legal, ''), COALESCE(fecha_emision_legal::TEXT, ''),
+		COALESCE(configuracion_dian_json::TEXT, '{}'), COALESCE(fuente_fiscal_json::TEXT, '{}'),
+		COALESCE(fuente_fiscal_sellada, FALSE), COALESCE(intentos, 0), COALESCE(fecha_ultimo_intento::TEXT, ''),
+		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	FROM empresa_contabilidad_nomina_electronica
+	WHERE empresa_id = ? AND liquidacion_id = ?
+	LIMIT 1`, empresaID, liquidacionID).Scan(
+		&item.ID, &item.EmpresaID, &item.EmpleadoID, &item.EmpleadoNominaID, &item.LiquidacionID, &item.PeriodoReporte, &item.TipoDocumento, &item.Documento,
+		&item.Nombre, &item.Periodo, &item.FechaPago, &item.SalarioBase, &item.Devengados,
+		&item.Deducciones, &item.Total, &item.CUNE, &item.EstadoDIAN, &item.RespuestaDIAN,
+		&item.JSONPayload, &item.NumeroLegal, &item.FechaEmisionLegal, &item.ConfiguracionDIANJSON,
+		&item.FuenteFiscalJSON, &item.FuenteFiscalSellada, &item.Intentos, &item.FechaUltimoIntento,
+		&item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// GetEmpresaNominaElectronicaByEmpleadoPeriodoContext resolves the one monthly
+// NominaIndividual allowed for a tenant/worker/reporting month. A selected
+// biweekly settlement is only an entry point and is never the fiscal identity.
+func GetEmpresaNominaElectronicaByEmpleadoPeriodoContext(ctx context.Context, dbConn *sql.DB, empresaID, empleadoNominaID int64, periodoReporte string) (*EmpresaNominaElectronica, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	periodoReporte = strings.TrimSpace(periodoReporte)
+	if empresaID <= 0 || empleadoNominaID <= 0 || len(periodoReporte) != 7 {
+		return nil, errors.New("empresa_id, empleado_nomina_id y periodo_reporte son obligatorios")
+	}
+	var item EmpresaNominaElectronica
+	err := QueryRowCompatContext(ctx, dbConn, `SELECT
+		id, empresa_id, empleado_id, COALESCE(empleado_nomina_id, 0), COALESCE(liquidacion_id, 0), COALESCE(periodo_reporte, ''), tipo_documento, documento, nombre, periodo, fecha_pago, salario_base,
+		devengados, deducciones, total, COALESCE(cune,''), estado_dian, COALESCE(respuesta_dian,''),
+		COALESCE(json_payload,''), COALESCE(numero_legal, ''), COALESCE(fecha_emision_legal::TEXT, ''),
+		COALESCE(configuracion_dian_json::TEXT, '{}'), COALESCE(fuente_fiscal_json::TEXT, '{}'),
+		COALESCE(fuente_fiscal_sellada, FALSE), COALESCE(intentos, 0), COALESCE(fecha_ultimo_intento::TEXT, ''),
+		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	FROM empresa_contabilidad_nomina_electronica
+	WHERE empresa_id = ? AND empleado_nomina_id = ? AND periodo_reporte = ?
+	LIMIT 1`, empresaID, empleadoNominaID, periodoReporte).Scan(
+		&item.ID, &item.EmpresaID, &item.EmpleadoID, &item.EmpleadoNominaID, &item.LiquidacionID, &item.PeriodoReporte, &item.TipoDocumento, &item.Documento,
+		&item.Nombre, &item.Periodo, &item.FechaPago, &item.SalarioBase, &item.Devengados,
+		&item.Deducciones, &item.Total, &item.CUNE, &item.EstadoDIAN, &item.RespuestaDIAN,
+		&item.JSONPayload, &item.NumeroLegal, &item.FechaEmisionLegal, &item.ConfiguracionDIANJSON,
+		&item.FuenteFiscalJSON, &item.FuenteFiscalSellada, &item.Intentos, &item.FechaUltimoIntento,
+		&item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 func CreateEmpresaDocumentoSoporte(dbConn *sql.DB, x EmpresaDocumentoSoporteElectronico) (int64, error) {
 	if x.EmpresaID <= 0 || strings.TrimSpace(x.Documento) == "" || strings.TrimSpace(x.NombreProveedor) == "" || strings.TrimSpace(x.Concepto) == "" {
 		return 0, errors.New("proveedor, documento y concepto son requeridos")
 	}
 	x.TipoDocumento = firstContabilidadValue(x.TipoDocumento, "NIT")
-	x.EstadoDIAN = firstContabilidadValue(x.EstadoDIAN, "borrador")
-	if x.Total == 0 {
-		x.Total = x.Subtotal + x.IVA - x.Retenciones
+	if err := normalizeEmpresaDocumentoSoporteFiscalDraft(&x); err != nil {
+		return 0, err
 	}
+	normalizeEmpresaDocumentoSoporteDraft(&x)
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_contabilidad_documentos_soporte
-		(empresa_id, proveedor_id, tipo_documento, documento, nombre_proveedor, fecha_documento, periodo, concepto, subtotal, iva, retenciones, total, cuds, estado_dian, respuesta_dian, json_payload, usuario_creador)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		x.EmpresaID, x.ProveedorID, x.TipoDocumento, x.Documento, x.NombreProveedor, firstContabilidadValue(x.FechaDocumento, time.Now().Format("2006-01-02")), firstContabilidadValue(x.Periodo, time.Now().Format("2006-01")), x.Concepto, x.Subtotal, x.IVA, x.Retenciones, x.Total, x.CUDS, x.EstadoDIAN, x.RespuestaDIAN, x.JSONPayload, x.UsuarioCreador)
+		(empresa_id, proveedor_id, tipo_documento, documento, vendedor_digito_verificacion,
+		 vendedor_tipo_persona, vendedor_residencia, nombre_proveedor, vendedor_direccion,
+		 vendedor_pais_codigo, vendedor_departamento, vendedor_departamento_codigo_dane,
+		 vendedor_municipio, vendedor_municipio_codigo_dane, vendedor_codigo_postal,
+		 vendedor_responsabilidad_tributaria, vendedor_email, vendedor_telefono,
+		 fecha_documento, periodo, concepto, moneda, forma_pago_codigo, medio_pago_codigo,
+		 fecha_vencimiento, lineas_json, subtotal, iva, retenciones, total,
+		 total_neto_contable, cuds, estado_dian, respuesta_dian, json_payload, usuario_creador)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, '')::DATE,?::jsonb,?,?,?,?,?,?,?,?,?,?)`,
+		x.EmpresaID, x.ProveedorID, x.TipoDocumento, x.Documento, x.VendedorDigitoVerificacion,
+		x.VendedorTipoPersona, x.VendedorResidencia, x.NombreProveedor, x.VendedorDireccion,
+		x.VendedorPaisCodigo, x.VendedorDepartamento, x.VendedorDepartamentoCodigoDANE,
+		x.VendedorMunicipio, x.VendedorMunicipioCodigoDANE, x.VendedorCodigoPostal,
+		x.VendedorResponsabilidadTributaria, x.VendedorEmail, x.VendedorTelefono,
+		firstContabilidadValue(x.FechaDocumento, time.Now().Format("2006-01-02")), firstContabilidadValue(x.Periodo, time.Now().Format("2006-01")),
+		x.Concepto, x.Moneda, x.FormaPagoCodigo, x.MedioPagoCodigo, x.FechaVencimiento, x.LineasJSON,
+		x.Subtotal, x.IVA, x.Retenciones, x.Total, x.TotalNetoContable, x.CUDS, x.EstadoDIAN,
+		x.RespuestaDIAN, x.JSONPayload, x.UsuarioCreador)
 }
 
 func ListEmpresaDocumentosSoporte(dbConn *sql.DB, empresaID int64, periodo string) ([]EmpresaDocumentoSoporteElectronico, error) {
@@ -784,9 +1011,7 @@ func ListEmpresaDocumentosSoporte(dbConn *sql.DB, empresaID int64, periodo strin
 		args = append(args, periodo)
 	}
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
-	rows, err := dbConn.Query(`SELECT id, empresa_id, proveedor_id, tipo_documento, documento, nombre_proveedor, fecha_documento, periodo,
-		concepto, subtotal, iva, retenciones, total, COALESCE(cuds,''), estado_dian, COALESCE(respuesta_dian,''), COALESCE(json_payload,''),
-		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	rows, err := dbConn.Query(`SELECT `+empresaDocumentoSoporteSelectColumns+`
 		FROM empresa_contabilidad_documentos_soporte WHERE `+where+` ORDER BY fecha_documento DESC, id DESC`, args...)
 	if err != nil {
 		return nil, err
@@ -795,12 +1020,303 @@ func ListEmpresaDocumentosSoporte(dbConn *sql.DB, empresaID int64, periodo strin
 	var out []EmpresaDocumentoSoporteElectronico
 	for rows.Next() {
 		var x EmpresaDocumentoSoporteElectronico
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ProveedorID, &x.TipoDocumento, &x.Documento, &x.NombreProveedor, &x.FechaDocumento, &x.Periodo, &x.Concepto, &x.Subtotal, &x.IVA, &x.Retenciones, &x.Total, &x.CUDS, &x.EstadoDIAN, &x.RespuestaDIAN, &x.JSONPayload, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
+		if err := scanEmpresaDocumentoSoporte(rows, &x); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
 	}
 	return out, rows.Err()
+}
+
+// GetEmpresaDocumentoSoporteByIDContext resolves a purchase-support draft only
+// inside its tenant. It is intentionally separate from the list helper so a
+// DIAN preflight cannot inspect a document from another empresa.
+func GetEmpresaDocumentoSoporteByIDContext(ctx context.Context, dbConn *sql.DB, empresaID, documentoSoporteID int64) (*EmpresaDocumentoSoporteElectronico, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 || documentoSoporteID <= 0 {
+		return nil, errors.New("empresa_id y documento_soporte_id son obligatorios")
+	}
+	var item EmpresaDocumentoSoporteElectronico
+	err := scanEmpresaDocumentoSoporte(QueryRowCompatContext(ctx, dbConn, `SELECT `+empresaDocumentoSoporteSelectColumns+`
+	FROM empresa_contabilidad_documentos_soporte
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, documentoSoporteID), &item)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// normalizeEmpresaNominaElectronicaDraft keeps user-entered accounting data
+// from impersonating a DIAN response. CUNE, provider reply and state are only
+// written later by the dedicated DIAN adapter after a signed submission.
+func normalizeEmpresaNominaElectronicaDraft(x *EmpresaNominaElectronica) {
+	if x == nil {
+		return
+	}
+	x.EstadoDIAN = "borrador"
+	x.CUNE = ""
+	x.RespuestaDIAN = ""
+	x.JSONPayload = ""
+}
+
+// normalizeEmpresaDocumentoSoporteDraft applies the same fail-closed rule to
+// purchase support. A manual CUDS or "enviado" label is never fiscal proof.
+func normalizeEmpresaDocumentoSoporteDraft(x *EmpresaDocumentoSoporteElectronico) {
+	if x == nil {
+		return
+	}
+	x.EstadoDIAN = "borrador"
+	x.CUDS = ""
+	x.RespuestaDIAN = ""
+	x.JSONPayload = ""
+	x.NumeroLegal = ""
+	x.FechaEmisionLegal = ""
+	x.ConfiguracionDIANJSON = ""
+	x.FuenteFiscalSellada = false
+}
+
+const empresaDocumentoSoporteSelectColumns = `
+	id, empresa_id, proveedor_id, tipo_documento, documento,
+	COALESCE(vendedor_digito_verificacion, ''), COALESCE(vendedor_tipo_persona, ''),
+	COALESCE(vendedor_residencia, ''), nombre_proveedor, COALESCE(vendedor_direccion, ''),
+	COALESCE(vendedor_pais_codigo, ''), COALESCE(vendedor_departamento, ''),
+	COALESCE(vendedor_departamento_codigo_dane, ''), COALESCE(vendedor_municipio, ''),
+	COALESCE(vendedor_municipio_codigo_dane, ''), COALESCE(vendedor_codigo_postal, ''),
+	COALESCE(vendedor_responsabilidad_tributaria, ''), COALESCE(vendedor_email, ''),
+	COALESCE(vendedor_telefono, ''), fecha_documento, periodo, concepto,
+	COALESCE(moneda, 'COP'), COALESCE(forma_pago_codigo, '1'), COALESCE(medio_pago_codigo, '10'),
+	COALESCE(fecha_vencimiento::TEXT, ''), COALESCE(lineas_json::TEXT, '[]'),
+	subtotal, iva, retenciones, total, COALESCE(total_neto_contable, 0),
+	COALESCE(numero_legal, ''), COALESCE(fecha_emision_legal::TEXT, ''), COALESCE(cuds, ''),
+	estado_dian, COALESCE(respuesta_dian, ''), COALESCE(json_payload, ''),
+	COALESCE(configuracion_dian_json::TEXT, '{}'), COALESCE(fuente_fiscal_sellada, FALSE),
+	COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, '')`
+
+type empresaDocumentoSoporteScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanEmpresaDocumentoSoporte(scanner empresaDocumentoSoporteScanner, x *EmpresaDocumentoSoporteElectronico) error {
+	return scanner.Scan(
+		&x.ID, &x.EmpresaID, &x.ProveedorID, &x.TipoDocumento, &x.Documento,
+		&x.VendedorDigitoVerificacion, &x.VendedorTipoPersona, &x.VendedorResidencia,
+		&x.NombreProveedor, &x.VendedorDireccion, &x.VendedorPaisCodigo, &x.VendedorDepartamento,
+		&x.VendedorDepartamentoCodigoDANE, &x.VendedorMunicipio, &x.VendedorMunicipioCodigoDANE,
+		&x.VendedorCodigoPostal, &x.VendedorResponsabilidadTributaria, &x.VendedorEmail,
+		&x.VendedorTelefono, &x.FechaDocumento, &x.Periodo, &x.Concepto, &x.Moneda,
+		&x.FormaPagoCodigo, &x.MedioPagoCodigo, &x.FechaVencimiento, &x.LineasJSON,
+		&x.Subtotal, &x.IVA, &x.Retenciones, &x.Total, &x.TotalNetoContable,
+		&x.NumeroLegal, &x.FechaEmisionLegal, &x.CUDS, &x.EstadoDIAN, &x.RespuestaDIAN,
+		&x.JSONPayload, &x.ConfiguracionDIANJSON, &x.FuenteFiscalSellada,
+		&x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador,
+	)
+}
+
+// normalizeEmpresaDocumentoSoporteFiscalDraft performs the authoritative
+// monetary calculation. DIAN LegalMonetaryTotal remains subtotal + IVA;
+// withholding taxes affect only the accounting net payable.
+func normalizeEmpresaDocumentoSoporteFiscalDraft(x *EmpresaDocumentoSoporteElectronico) error {
+	if x == nil {
+		return errors.New("documento soporte es obligatorio")
+	}
+	x.TipoDocumento = strings.ToUpper(strings.TrimSpace(x.TipoDocumento))
+	x.Documento = strings.TrimSpace(x.Documento)
+	x.VendedorDigitoVerificacion = strings.TrimSpace(x.VendedorDigitoVerificacion)
+	x.VendedorTipoPersona = strings.ToLower(strings.TrimSpace(x.VendedorTipoPersona))
+	x.VendedorResidencia = strings.ToLower(strings.TrimSpace(x.VendedorResidencia))
+	x.NombreProveedor = strings.TrimSpace(x.NombreProveedor)
+	x.VendedorDireccion = strings.TrimSpace(x.VendedorDireccion)
+	x.VendedorPaisCodigo = strings.ToUpper(strings.TrimSpace(x.VendedorPaisCodigo))
+	x.VendedorDepartamento = strings.TrimSpace(x.VendedorDepartamento)
+	x.VendedorDepartamentoCodigoDANE = strings.TrimSpace(x.VendedorDepartamentoCodigoDANE)
+	x.VendedorMunicipio = strings.TrimSpace(x.VendedorMunicipio)
+	x.VendedorMunicipioCodigoDANE = strings.TrimSpace(x.VendedorMunicipioCodigoDANE)
+	x.VendedorCodigoPostal = strings.TrimSpace(x.VendedorCodigoPostal)
+	x.VendedorResponsabilidadTributaria = strings.TrimSpace(x.VendedorResponsabilidadTributaria)
+	x.VendedorEmail = strings.TrimSpace(x.VendedorEmail)
+	x.VendedorTelefono = strings.TrimSpace(x.VendedorTelefono)
+	x.Concepto = strings.TrimSpace(x.Concepto)
+	x.Moneda = strings.ToUpper(strings.TrimSpace(x.Moneda))
+	x.FormaPagoCodigo = strings.TrimSpace(x.FormaPagoCodigo)
+	x.MedioPagoCodigo = strings.TrimSpace(x.MedioPagoCodigo)
+	x.FechaVencimiento = strings.TrimSpace(x.FechaVencimiento)
+	if x.VendedorResidencia == "" {
+		x.VendedorResidencia = "residente"
+	}
+	if x.VendedorPaisCodigo == "" {
+		x.VendedorPaisCodigo = "CO"
+	}
+	if x.Moneda == "" {
+		x.Moneda = "COP"
+	}
+	if x.FormaPagoCodigo == "" {
+		x.FormaPagoCodigo = "1"
+	}
+	if x.MedioPagoCodigo == "" {
+		x.MedioPagoCodigo = "10"
+	}
+	if strings.TrimSpace(x.FechaDocumento) != "" {
+		if _, err := time.Parse("2006-01-02", strings.TrimSpace(x.FechaDocumento)); err != nil {
+			return errors.New("fecha_documento invalida")
+		}
+	}
+	if strings.TrimSpace(x.Periodo) != "" {
+		if _, err := time.Parse("2006-01", strings.TrimSpace(x.Periodo)); err != nil {
+			return errors.New("periodo invalido; use AAAA-MM")
+		}
+	}
+	if len(x.VendedorPaisCodigo) != 2 {
+		return errors.New("vendedor_pais_codigo debe usar ISO 3166-1 alfa-2")
+	}
+	for _, char := range x.VendedorPaisCodigo {
+		if char < 'A' || char > 'Z' {
+			return errors.New("vendedor_pais_codigo debe usar ISO 3166-1 alfa-2")
+		}
+	}
+	if x.FormaPagoCodigo != "1" && x.FormaPagoCodigo != "2" {
+		return errors.New("forma_pago_codigo debe ser 1 contado o 2 credito")
+	}
+	if !empresaDocumentoSoporteMedioPagoValido(x.MedioPagoCodigo) {
+		return errors.New("medio_pago_codigo no pertenece a la lista DIAN de documento soporte")
+	}
+	if x.FechaVencimiento != "" {
+		if _, err := time.Parse("2006-01-02", x.FechaVencimiento); err != nil {
+			return errors.New("fecha_vencimiento invalida")
+		}
+	} else if x.FormaPagoCodigo == "2" {
+		return errors.New("fecha_vencimiento es obligatoria para pago a credito")
+	}
+	normalizedLines, totals, err := normalizeEmpresaDocumentoSoporteLines(x.LineasJSON)
+	if err != nil {
+		return err
+	}
+	x.Subtotal = totals.Subtotal
+	x.IVA = totals.IVA
+	x.Retenciones = totals.Retenciones
+	x.Total = totals.Total
+	x.TotalNetoContable = totals.TotalNetoContable
+	x.LineasJSON = normalizedLines
+	return nil
+}
+
+type empresaDocumentoSoporteCalculatedTotals struct {
+	Subtotal, IVA, Retenciones, Total, TotalNetoContable float64
+}
+
+func normalizeEmpresaDocumentoSoporteLines(raw string) (string, empresaDocumentoSoporteCalculatedTotals, error) {
+	var lines []EmpresaDocumentoSoporteLinea
+	var totals empresaDocumentoSoporteCalculatedTotals
+	decoder := json.NewDecoder(strings.NewReader(strings.TrimSpace(raw)))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&lines); err != nil {
+		return "", totals, errors.New("lineas_json invalido")
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return "", totals, errors.New("lineas_json contiene datos adicionales")
+	}
+	if len(lines) == 0 || len(lines) > 1000 {
+		return "", totals, errors.New("documento soporte requiere entre 1 y 1000 lineas estructuradas")
+	}
+	for index := range lines {
+		line := &lines[index]
+		line.Numero = index + 1
+		line.Codigo = strings.TrimSpace(line.Codigo)
+		line.Descripcion = strings.TrimSpace(line.Descripcion)
+		line.UnidadMedida = strings.ToUpper(strings.TrimSpace(line.UnidadMedida))
+		if line.UnidadMedida == "" {
+			line.UnidadMedida = "94"
+		}
+		if !EmpresaDocumentoSoporteUnitCodeValid(line.UnidadMedida) {
+			return "", totals, fmt.Errorf("linea %d contiene unidad_medida fuera del catalogo DIAN Revision 4", line.Numero)
+		}
+		if line.Codigo == "" || line.Descripcion == "" {
+			return "", totals, fmt.Errorf("linea %d requiere codigo y descripcion", line.Numero)
+		}
+		if !empresaDocumentoSoporteNumerosFinitos(line.Cantidad, line.PrecioUnitario, line.DescuentoPorcentaje, line.IVAPorcentaje, line.ReteIVAPorcentaje, line.ReteRentaPorcentaje) ||
+			line.Cantidad <= 0 || line.PrecioUnitario < 0 || line.DescuentoPorcentaje < 0 || line.DescuentoPorcentaje > 100 ||
+			line.IVAPorcentaje < 0 || line.IVAPorcentaje > 100 || line.ReteIVAPorcentaje < 0 || line.ReteIVAPorcentaje > 100 ||
+			line.ReteRentaPorcentaje < 0 || line.ReteRentaPorcentaje > 100 {
+			return "", totals, fmt.Errorf("linea %d contiene cantidades, precios o porcentajes invalidos", line.Numero)
+		}
+		if !empresaDocumentoSoporteTaxRateAllowed("iva", line.IVAPorcentaje) ||
+			!empresaDocumentoSoporteTaxRateAllowed("reteiva", line.ReteIVAPorcentaje) ||
+			!empresaDocumentoSoporteTaxRateAllowed("reterenta", line.ReteRentaPorcentaje) {
+			return "", totals, fmt.Errorf("linea %d contiene una tarifa que no pertenece a las listas DIAN de documento soporte", line.Numero)
+		}
+		bruto := empresaDocumentoSoporteRound(line.Cantidad * line.PrecioUnitario)
+		line.ValorDescuento = empresaDocumentoSoporteRound(bruto * line.DescuentoPorcentaje / 100)
+		line.BaseGravable = empresaDocumentoSoporteRound(bruto - line.ValorDescuento)
+		line.IVAValor = empresaDocumentoSoporteRound(line.BaseGravable * line.IVAPorcentaje / 100)
+		line.ReteIVAValor = empresaDocumentoSoporteRound(line.IVAValor * line.ReteIVAPorcentaje / 100)
+		line.ReteRentaValor = empresaDocumentoSoporteRound(line.BaseGravable * line.ReteRentaPorcentaje / 100)
+		line.SubtotalLinea = line.BaseGravable
+		line.TotalLinea = empresaDocumentoSoporteRound(line.BaseGravable + line.IVAValor)
+		line.TotalNetoContableLinea = empresaDocumentoSoporteRound(line.TotalLinea - line.ReteIVAValor - line.ReteRentaValor)
+		if line.TotalNetoContableLinea < 0 {
+			return "", totals, fmt.Errorf("linea %d tiene retenciones superiores al total", line.Numero)
+		}
+		totals.Subtotal += line.BaseGravable
+		totals.IVA += line.IVAValor
+		totals.Retenciones += line.ReteIVAValor + line.ReteRentaValor
+		totals.Total += line.TotalLinea
+	}
+	totals.Subtotal = empresaDocumentoSoporteRound(totals.Subtotal)
+	totals.IVA = empresaDocumentoSoporteRound(totals.IVA)
+	totals.Retenciones = empresaDocumentoSoporteRound(totals.Retenciones)
+	totals.Total = empresaDocumentoSoporteRound(totals.Total)
+	totals.TotalNetoContable = empresaDocumentoSoporteRound(totals.Total - totals.Retenciones)
+	if totals.Total <= 0 || totals.TotalNetoContable < 0 {
+		return "", totals, errors.New("los importes calculados del documento soporte son invalidos")
+	}
+	normalized, err := json.Marshal(lines)
+	if err != nil {
+		return "", totals, fmt.Errorf("serializar lineas de documento soporte: %w", err)
+	}
+	return string(normalized), totals, nil
+}
+
+func empresaDocumentoSoporteNumerosFinitos(values ...float64) bool {
+	for index := range values {
+		if !math.IsNaN(values[index]) && !math.IsInf(values[index], 0) {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func empresaDocumentoSoporteRound(value float64) float64 {
+	return math.Round(value*100) / 100
+}
+
+func empresaDocumentoSoporteTaxRateAllowed(kind string, rate float64) bool {
+	rate = empresaDocumentoSoporteRound(rate)
+	if rate == 0 {
+		return true
+	}
+	allowed := map[string][]float64{
+		"iva":       {5, 19},
+		"reteiva":   {15, 100},
+		"reterenta": {0.10, 0.50, 1, 1.50, 2, 2.50, 3, 3.50, 4, 6, 7, 10, 11, 20},
+	}
+	for _, candidate := range allowed[kind] {
+		if rate == candidate {
+			return true
+		}
+	}
+	return false
+}
+
+func empresaDocumentoSoporteMedioPagoValido(code string) bool {
+	switch strings.ToUpper(strings.TrimSpace(code)) {
+	case "1", "2", "3", "4", "5", "6", "7", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "60", "61", "62", "63", "64", "65", "66", "67", "70", "71", "72", "74", "75", "76", "77", "78", "91", "92", "93", "94", "95", "96", "97", "ZZZ":
+		return true
+	default:
+		return false
+	}
 }
 
 func CreateEmpresaActivoFijo(dbConn *sql.DB, x EmpresaActivoFijo) (int64, error) {
@@ -1253,6 +1769,9 @@ func CreateEmpresaCarteraCXP(dbConn *sql.DB, x EmpresaCarteraCXP) (int64, error)
 	if x.Tipo != "cxc" && x.Tipo != "cxp" {
 		return 0, errors.New("tipo debe ser cxc o cxp")
 	}
+	if err := rejectEmpresaCarteraCXPHistorica(x.Tipo); err != nil {
+		return 0, err
+	}
 	x.FechaEmision = firstContabilidadValue(x.FechaEmision, time.Now().Format("2006-01-02"))
 	x.FechaVencimiento = firstContabilidadValue(x.FechaVencimiento, x.FechaEmision)
 	x.Estado = firstContabilidadValue(x.Estado, "pendiente")
@@ -1327,6 +1846,9 @@ func AplicarEmpresaCarteraCXPAbono(dbConn *sql.DB, empresaID, id int64, monto fl
 	if err != nil {
 		return result, err
 	}
+	if err := rejectEmpresaCarteraCXPHistorica(row.Tipo); err != nil {
+		return result, err
+	}
 	saldoAnterior := roundContabilidad(maxFloat64(row.Saldo, 0))
 	if saldoAnterior <= 0 {
 		return result, errors.New("la cartera seleccionada no tiene saldo pendiente")
@@ -1377,6 +1899,20 @@ func AplicarEmpresaCarteraCXPAbono(dbConn *sql.DB, empresaID, id int64, monto fl
 		DocumentoContable: strings.TrimSpace(row.Documento),
 	}
 	return result, nil
+}
+
+// ErrEmpresaCarteraCXPHistoricaReadOnly protects the P106/P110 decision that
+// supplier CxP writes live exclusively in empresa_cuentas_por_pagar. The
+// advanced accounting table remains queryable only for historical
+// reconciliation, even when this database helper is called outside its HTTP
+// handler.
+var ErrEmpresaCarteraCXPHistoricaReadOnly = errors.New("la cartera CxP historica es de solo lectura; use Finanzas > Cartera de proveedores")
+
+func rejectEmpresaCarteraCXPHistorica(tipo string) error {
+	if strings.EqualFold(strings.TrimSpace(tipo), "cxp") {
+		return ErrEmpresaCarteraCXPHistoricaReadOnly
+	}
+	return nil
 }
 
 func BuildEmpresaCarteraCXPEdades(dbConn *sql.DB, empresaID int64, tipo, fechaCorte string) (EmpresaCarteraCXPEdadesResumen, error) {
@@ -1580,15 +2116,17 @@ func buildLibroResumenRows(dbConn *sql.DB, empresaID int64, periodo string) []Em
 	}
 }
 
-func listUltimosDocumentosDIAN(dbConn *sql.DB, empresaID int64) []EmpresaDocumentoDIANResumen {
+func listUltimosDocumentosDIAN(dbConn *sql.DB, empresaID int64, includeNomina bool) []EmpresaDocumentoDIANResumen {
 	out := make([]EmpresaDocumentoDIANResumen, 0, 10)
-	if rows, err := dbConn.Query(`SELECT 'nomina_electronica', documento, nombre, periodo, total, estado_dian, fecha_pago, COALESCE(respuesta_dian,'')
-		FROM empresa_contabilidad_nomina_electronica WHERE empresa_id=? ORDER BY id DESC LIMIT 5`, empresaID); err == nil {
-		defer rows.Close()
-		for rows.Next() {
-			var x EmpresaDocumentoDIANResumen
-			_ = rows.Scan(&x.Modulo, &x.Codigo, &x.Tercero, &x.Periodo, &x.Total, &x.Estado, &x.Fecha, &x.Respuesta)
-			out = append(out, x)
+	if includeNomina {
+		if rows, err := dbConn.Query(`SELECT 'nomina_electronica', documento, nombre, periodo, total, estado_dian, fecha_pago, COALESCE(respuesta_dian,'')
+			FROM empresa_contabilidad_nomina_electronica WHERE empresa_id=? ORDER BY id DESC LIMIT 5`, empresaID); err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var x EmpresaDocumentoDIANResumen
+				_ = rows.Scan(&x.Modulo, &x.Codigo, &x.Tercero, &x.Periodo, &x.Total, &x.Estado, &x.Fecha, &x.Respuesta)
+				out = append(out, x)
+			}
 		}
 	}
 	if rows, err := dbConn.Query(`SELECT 'documento_soporte', documento, nombre_proveedor, periodo, total, estado_dian, fecha_documento, COALESCE(respuesta_dian,'')

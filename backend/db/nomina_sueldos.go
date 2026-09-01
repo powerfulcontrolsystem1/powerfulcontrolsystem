@@ -21,6 +21,7 @@ type EmpresaNominaConfiguracion struct {
 	EmpresaID                             int64   `json:"empresa_id"`
 	PaisCodigo                            string  `json:"pais_codigo"`
 	Moneda                                string  `json:"moneda"`
+	PeriodoNominaDIAN                     int     `json:"periodo_nomina_dian"`
 	SalarioMinimoMensual                  float64 `json:"salario_minimo_mensual"`
 	AuxilioTransporteLegalMensual         float64 `json:"auxilio_transporte_legal_mensual"`
 	HorasOrdinariasSemana                 float64 `json:"horas_ordinarias_semana"`
@@ -391,6 +392,7 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			empresa_id INTEGER NOT NULL UNIQUE,
 			pais_codigo TEXT DEFAULT 'CO',
 			moneda TEXT DEFAULT 'COP',
+			periodo_nomina_dian INTEGER NOT NULL DEFAULT 0,
 			salario_minimo_mensual REAL DEFAULT 1750905,
 			auxilio_transporte_legal_mensual REAL DEFAULT 249095,
 			horas_ordinarias_semana REAL DEFAULT 42,
@@ -661,6 +663,7 @@ func defaultEmpresaNominaConfiguracion(empresaID int64) EmpresaNominaConfiguraci
 		EmpresaID:                             empresaID,
 		PaisCodigo:                            "CO",
 		Moneda:                                "COP",
+		PeriodoNominaDIAN:                     0,
 		SalarioMinimoMensual:                  ColombiaSalarioMinimoMensual2026,
 		AuxilioTransporteLegalMensual:         ColombiaAuxilioTransporteMensual2026,
 		HorasOrdinariasSemana:                 42,
@@ -804,6 +807,7 @@ func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNom
 		empresa_id,
 		COALESCE(pais_codigo, 'CO'),
 		COALESCE(moneda, 'COP'),
+		COALESCE(periodo_nomina_dian, 0),
 		COALESCE(salario_minimo_mensual, 1750905),
 		COALESCE(auxilio_transporte_legal_mensual, 249095),
 		COALESCE(horas_ordinarias_semana, 42),
@@ -846,6 +850,7 @@ func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNom
 		&cfg.EmpresaID,
 		&cfg.PaisCodigo,
 		&cfg.Moneda,
+		&cfg.PeriodoNominaDIAN,
 		&cfg.SalarioMinimoMensual,
 		&cfg.AuxilioTransporteLegalMensual,
 		&cfg.HorasOrdinariasSemana,
@@ -892,6 +897,9 @@ func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNom
 func normalizeEmpresaNominaConfiguracion(cfg EmpresaNominaConfiguracion) *EmpresaNominaConfiguracion {
 	cfg.PaisCodigo = normalizeNominaPais(cfg.PaisCodigo)
 	cfg.Moneda = normalizeNominaMoneda(cfg.Moneda)
+	if cfg.PeriodoNominaDIAN < 0 || cfg.PeriodoNominaDIAN > 6 {
+		cfg.PeriodoNominaDIAN = 0
+	}
 	cfg.SalarioMinimoMensual = normalizeNominaMoney(cfg.SalarioMinimoMensual, ColombiaSalarioMinimoMensual2026)
 	cfg.AuxilioTransporteLegalMensual = normalizeNominaMoney(cfg.AuxilioTransporteLegalMensual, ColombiaAuxilioTransporteMensual2026)
 	cfg.HorasOrdinariasSemana = normalizeNominaHoras(cfg.HorasOrdinariasSemana, 42)
@@ -950,6 +958,7 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		SET
 			pais_codigo = ?,
 			moneda = ?,
+			periodo_nomina_dian = ?,
 			salario_minimo_mensual = ?,
 			auxilio_transporte_legal_mensual = ?,
 			horas_ordinarias_semana = ?,
@@ -985,6 +994,7 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		WHERE empresa_id = ?`,
 			cfg.PaisCodigo,
 			cfg.Moneda,
+			cfg.PeriodoNominaDIAN,
 			cfg.SalarioMinimoMensual,
 			cfg.AuxilioTransporteLegalMensual,
 			cfg.HorasOrdinariasSemana,
@@ -1028,6 +1038,7 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		empresa_id,
 		pais_codigo,
 		moneda,
+		periodo_nomina_dian,
 		salario_minimo_mensual,
 		auxilio_transporte_legal_mensual,
 		horas_ordinarias_semana,
@@ -1061,10 +1072,11 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		cfg.EmpresaID,
 		cfg.PaisCodigo,
 		cfg.Moneda,
+		cfg.PeriodoNominaDIAN,
 		cfg.SalarioMinimoMensual,
 		cfg.AuxilioTransporteLegalMensual,
 		cfg.HorasOrdinariasSemana,
@@ -1972,6 +1984,75 @@ func incorporarComisionesServicioEnLiquidacion(liq *EmpresaNominaLiquidacion, cf
 	liq.NetoPagar = round2(liq.DevengadoTotal - liq.DeduccionTotal)
 }
 
+func empresaNominaLiquidacionIdentityValues(payload EmpresaNominaLiquidacion) []interface{} {
+	return []interface{}{
+		payload.EmpleadoID, strings.TrimSpace(payload.EmpleadoCodigo), payload.EmpleadoNombre,
+		strings.TrimSpace(payload.EmpleadoDocumento), strings.TrimSpace(payload.Cargo), strings.TrimSpace(payload.SedeCodigo),
+		strings.TrimSpace(payload.SedeNombre), strings.TrimSpace(payload.CentroCosto),
+	}
+}
+
+func empresaNominaLiquidacionCalculationValues(payload EmpresaNominaLiquidacion) []interface{} {
+	return []interface{}{
+		payload.DiasLiquidados, payload.HorasAsistenciaTotal, payload.RegistrosAsistencia, payload.HorasOrdinarias,
+		payload.HorasRecargoNocturno, payload.HorasExtraDiurnas, payload.HorasExtraNocturnas,
+		payload.HorasDominicalesDiurnas, payload.HorasDominicalesNocturnas,
+		payload.HorasExtraDominicalesDiurnas, payload.HorasExtraDominicalesNocturnas,
+		payload.ValorHoraOrdinaria, payload.BaseSalarioProporcional, payload.ValorRecargoNocturno,
+		payload.ValorDominicalDiurno, payload.ValorDominicalNocturno, payload.ValorExtraDiurna, payload.ValorExtraNocturna,
+		payload.ValorExtraDominicalDiurna, payload.ValorExtraDominicalNocturna, payload.TotalRecargosHorasExtras,
+		payload.AuxilioTransporte, payload.Bonificacion, payload.ComisionesServicioTotal,
+		payload.ComisionesServicioMovimientos, payload.ComisionesServicioAjustes, payload.DevengadoTotal,
+		payload.IngresoBaseCotizacion, payload.DeduccionSalud, payload.DeduccionPension,
+		payload.DeduccionFondoSolidaridad, payload.DeduccionFija, payload.OtrasDeducciones,
+		payload.DeduccionTotal, payload.NetoPagar, strings.TrimSpace(payload.OrigenCalculo),
+		strings.TrimSpace(payload.ResumenJSON), strings.TrimSpace(payload.UsuarioCreador),
+		normalizeNominaEstado(payload.Estado), strings.TrimSpace(payload.Observaciones),
+	}
+}
+
+func updateEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquidacion, existingID int64) error {
+	args := empresaNominaLiquidacionIdentityValues(payload)
+	args = append(args, empresaNominaLiquidacionCalculationValues(payload)...)
+	args = append(args, existingID, payload.EmpresaID)
+	_, err := dbConn.Exec(`UPDATE empresa_nomina_liquidaciones SET
+		empleado_id = ?, empleado_codigo = ?, empleado_nombre = ?, empleado_documento = ?, cargo = ?,
+		sede_codigo = ?, sede_nombre = ?, centro_costo = ?, dias_liquidados = ?, horas_asistencia_total = ?,
+		registros_asistencia = ?, horas_ordinarias = ?, horas_recargo_nocturno = ?, horas_extra_diurnas = ?,
+		horas_extra_nocturnas = ?, horas_dominicales_diurnas = ?, horas_dominicales_nocturnas = ?,
+		horas_extra_dominicales_diurnas = ?, horas_extra_dominicales_nocturnas = ?, valor_hora_ordinaria = ?,
+		base_salario_proporcional = ?, valor_recargo_nocturno = ?, valor_dominical_diurno = ?,
+		valor_dominical_nocturno = ?, valor_extra_diurna = ?, valor_extra_nocturna = ?,
+		valor_extra_dominical_diurna = ?, valor_extra_dominical_nocturna = ?, total_recargos_horas_extras = ?,
+		auxilio_transporte = ?, bonificacion = ?, comisiones_servicio_total = ?, comisiones_servicio_movimientos = ?,
+		comisiones_servicio_ajustes = ?, devengado_total = ?, ingreso_base_cotizacion = ?, deduccion_salud = ?,
+		deduccion_pension = ?, deduccion_fondo_solidaridad = ?, deduccion_fija = ?, otras_deducciones = ?,
+		deduccion_total = ?, neto_pagar = ?, origen_calculo = ?, resumen_json = ?, fecha_generacion = CURRENT_TIMESTAMP,
+		usuario_creador = ?, estado = ?, observaciones = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+	WHERE id = ? AND empresa_id = ?`, args...)
+	return err
+}
+
+func insertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquidacion) (int64, error) {
+	args := []interface{}{payload.EmpresaID, payload.EmpleadoNominaID}
+	args = append(args, empresaNominaLiquidacionIdentityValues(payload)...)
+	args = append(args, payload.PeriodoDesde, payload.PeriodoHasta)
+	args = append(args, empresaNominaLiquidacionCalculationValues(payload)...)
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_nomina_liquidaciones (
+		empresa_id, empleado_nomina_id, empleado_id, empleado_codigo, empleado_nombre, empleado_documento, cargo,
+		sede_codigo, sede_nombre, centro_costo, periodo_desde, periodo_hasta, dias_liquidados, horas_asistencia_total,
+		registros_asistencia, horas_ordinarias, horas_recargo_nocturno, horas_extra_diurnas, horas_extra_nocturnas,
+		horas_dominicales_diurnas, horas_dominicales_nocturnas, horas_extra_dominicales_diurnas,
+		horas_extra_dominicales_nocturnas, valor_hora_ordinaria, base_salario_proporcional, valor_recargo_nocturno,
+		valor_dominical_diurno, valor_dominical_nocturno, valor_extra_diurna, valor_extra_nocturna,
+		valor_extra_dominical_diurna, valor_extra_dominical_nocturna, total_recargos_horas_extras,
+		auxilio_transporte, bonificacion, comisiones_servicio_total, comisiones_servicio_movimientos,
+		comisiones_servicio_ajustes, devengado_total, ingreso_base_cotizacion, deduccion_salud, deduccion_pension,
+		deduccion_fondo_solidaridad, deduccion_fija, otras_deducciones, deduccion_total, neto_pagar, origen_calculo,
+		resumen_json, usuario_creador, estado, observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, args...)
+}
+
 func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquidacion, overwrite bool) (int64, error) {
 	if payload.EmpresaID <= 0 || payload.EmpleadoNominaID <= 0 {
 		return 0, fmt.Errorf("empresa_id y empleado_nomina_id son obligatorios")
@@ -1979,241 +2060,23 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 	if strings.TrimSpace(payload.PeriodoDesde) == "" || strings.TrimSpace(payload.PeriodoHasta) == "" {
 		return 0, fmt.Errorf("periodo_desde y periodo_hasta son obligatorios")
 	}
-
 	var existingID int64
-	err := dbConn.QueryRow(`SELECT id FROM empresa_nomina_liquidaciones WHERE empresa_id = ? AND empleado_nomina_id = ? AND periodo_desde = ? AND periodo_hasta = ? LIMIT 1`,
-		payload.EmpresaID, payload.EmpleadoNominaID, payload.PeriodoDesde, payload.PeriodoHasta,
-	).Scan(&existingID)
+	err := dbConn.QueryRow(`SELECT id FROM empresa_nomina_liquidaciones
+		WHERE empresa_id = ? AND empleado_nomina_id = ? AND periodo_desde = ? AND periodo_hasta = ? LIMIT 1`,
+		payload.EmpresaID, payload.EmpleadoNominaID, payload.PeriodoDesde, payload.PeriodoHasta).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
-
 	if existingID > 0 && !overwrite {
 		return existingID, nil
 	}
-
 	if existingID > 0 {
-		_, err = dbConn.Exec(`UPDATE empresa_nomina_liquidaciones
-		SET
-			empleado_id = ?,
-			empleado_codigo = ?,
-			empleado_nombre = ?,
-			empleado_documento = ?,
-			cargo = ?,
-			sede_codigo = ?,
-			sede_nombre = ?,
-			centro_costo = ?,
-			dias_liquidados = ?,
-			horas_asistencia_total = ?,
-			registros_asistencia = ?,
-			horas_ordinarias = ?,
-			horas_recargo_nocturno = ?,
-			horas_extra_diurnas = ?,
-			horas_extra_nocturnas = ?,
-			horas_dominicales_diurnas = ?,
-			horas_dominicales_nocturnas = ?,
-			horas_extra_dominicales_diurnas = ?,
-			horas_extra_dominicales_nocturnas = ?,
-			valor_hora_ordinaria = ?,
-			base_salario_proporcional = ?,
-			valor_recargo_nocturno = ?,
-			valor_dominical_diurno = ?,
-			valor_dominical_nocturno = ?,
-			valor_extra_diurna = ?,
-			valor_extra_nocturna = ?,
-			valor_extra_dominical_diurna = ?,
-			valor_extra_dominical_nocturna = ?,
-			total_recargos_horas_extras = ?,
-			auxilio_transporte = ?,
-			bonificacion = ?,
-			comisiones_servicio_total = ?,
-			comisiones_servicio_movimientos = ?,
-			comisiones_servicio_ajustes = ?,
-			devengado_total = ?,
-			ingreso_base_cotizacion = ?,
-			deduccion_salud = ?,
-			deduccion_pension = ?,
-			deduccion_fondo_solidaridad = ?,
-			deduccion_fija = ?,
-			otras_deducciones = ?,
-			deduccion_total = ?,
-			neto_pagar = ?,
-			origen_calculo = ?,
-			resumen_json = ?,
-			fecha_generacion = CURRENT_TIMESTAMP,
-			usuario_creador = ?,
-			estado = ?,
-			observaciones = ?,
-			fecha_actualizacion = CURRENT_TIMESTAMP
-		WHERE id = ? AND empresa_id = ?`,
-			payload.EmpleadoID,
-			strings.TrimSpace(payload.EmpleadoCodigo),
-			payload.EmpleadoNombre,
-			strings.TrimSpace(payload.EmpleadoDocumento),
-			strings.TrimSpace(payload.Cargo),
-			strings.TrimSpace(payload.SedeCodigo),
-			strings.TrimSpace(payload.SedeNombre),
-			strings.TrimSpace(payload.CentroCosto),
-			payload.DiasLiquidados,
-			payload.HorasAsistenciaTotal,
-			payload.RegistrosAsistencia,
-			payload.HorasOrdinarias,
-			payload.HorasRecargoNocturno,
-			payload.HorasExtraDiurnas,
-			payload.HorasExtraNocturnas,
-			payload.HorasDominicalesDiurnas,
-			payload.HorasDominicalesNocturnas,
-			payload.HorasExtraDominicalesDiurnas,
-			payload.HorasExtraDominicalesNocturnas,
-			payload.ValorHoraOrdinaria,
-			payload.BaseSalarioProporcional,
-			payload.ValorRecargoNocturno,
-			payload.ValorDominicalDiurno,
-			payload.ValorDominicalNocturno,
-			payload.ValorExtraDiurna,
-			payload.ValorExtraNocturna,
-			payload.ValorExtraDominicalDiurna,
-			payload.ValorExtraDominicalNocturna,
-			payload.TotalRecargosHorasExtras,
-			payload.AuxilioTransporte,
-			payload.Bonificacion,
-			payload.ComisionesServicioTotal,
-			payload.ComisionesServicioMovimientos,
-			payload.ComisionesServicioAjustes,
-			payload.DevengadoTotal,
-			payload.IngresoBaseCotizacion,
-			payload.DeduccionSalud,
-			payload.DeduccionPension,
-			payload.DeduccionFondoSolidaridad,
-			payload.DeduccionFija,
-			payload.OtrasDeducciones,
-			payload.DeduccionTotal,
-			payload.NetoPagar,
-			strings.TrimSpace(payload.OrigenCalculo),
-			strings.TrimSpace(payload.ResumenJSON),
-			strings.TrimSpace(payload.UsuarioCreador),
-			normalizeNominaEstado(payload.Estado),
-			strings.TrimSpace(payload.Observaciones),
-			existingID,
-			payload.EmpresaID,
-		)
-		if err != nil {
+		if err := updateEmpresaNominaLiquidacion(dbConn, payload, existingID); err != nil {
 			return 0, err
 		}
 		return existingID, nil
 	}
-
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_nomina_liquidaciones (
-		empresa_id,
-		empleado_nomina_id,
-		empleado_id,
-		empleado_codigo,
-		empleado_nombre,
-		empleado_documento,
-		cargo,
-		sede_codigo,
-		sede_nombre,
-		centro_costo,
-		periodo_desde,
-		periodo_hasta,
-		dias_liquidados,
-		horas_asistencia_total,
-		registros_asistencia,
-		horas_ordinarias,
-		horas_recargo_nocturno,
-		horas_extra_diurnas,
-		horas_extra_nocturnas,
-		horas_dominicales_diurnas,
-		horas_dominicales_nocturnas,
-		horas_extra_dominicales_diurnas,
-		horas_extra_dominicales_nocturnas,
-		valor_hora_ordinaria,
-		base_salario_proporcional,
-		valor_recargo_nocturno,
-		valor_dominical_diurno,
-		valor_dominical_nocturno,
-		valor_extra_diurna,
-		valor_extra_nocturna,
-		valor_extra_dominical_diurna,
-		valor_extra_dominical_nocturna,
-		total_recargos_horas_extras,
-		auxilio_transporte,
-		bonificacion,
-		comisiones_servicio_total,
-		comisiones_servicio_movimientos,
-		comisiones_servicio_ajustes,
-		devengado_total,
-		ingreso_base_cotizacion,
-		deduccion_salud,
-		deduccion_pension,
-		deduccion_fondo_solidaridad,
-		deduccion_fija,
-		otras_deducciones,
-		deduccion_total,
-		neto_pagar,
-		origen_calculo,
-		resumen_json,
-		usuario_creador,
-		estado,
-		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		payload.EmpresaID,
-		payload.EmpleadoNominaID,
-		payload.EmpleadoID,
-		strings.TrimSpace(payload.EmpleadoCodigo),
-		payload.EmpleadoNombre,
-		strings.TrimSpace(payload.EmpleadoDocumento),
-		strings.TrimSpace(payload.Cargo),
-		strings.TrimSpace(payload.SedeCodigo),
-		strings.TrimSpace(payload.SedeNombre),
-		strings.TrimSpace(payload.CentroCosto),
-		payload.PeriodoDesde,
-		payload.PeriodoHasta,
-		payload.DiasLiquidados,
-		payload.HorasAsistenciaTotal,
-		payload.RegistrosAsistencia,
-		payload.HorasOrdinarias,
-		payload.HorasRecargoNocturno,
-		payload.HorasExtraDiurnas,
-		payload.HorasExtraNocturnas,
-		payload.HorasDominicalesDiurnas,
-		payload.HorasDominicalesNocturnas,
-		payload.HorasExtraDominicalesDiurnas,
-		payload.HorasExtraDominicalesNocturnas,
-		payload.ValorHoraOrdinaria,
-		payload.BaseSalarioProporcional,
-		payload.ValorRecargoNocturno,
-		payload.ValorDominicalDiurno,
-		payload.ValorDominicalNocturno,
-		payload.ValorExtraDiurna,
-		payload.ValorExtraNocturna,
-		payload.ValorExtraDominicalDiurna,
-		payload.ValorExtraDominicalNocturna,
-		payload.TotalRecargosHorasExtras,
-		payload.AuxilioTransporte,
-		payload.Bonificacion,
-		payload.ComisionesServicioTotal,
-		payload.ComisionesServicioMovimientos,
-		payload.ComisionesServicioAjustes,
-		payload.DevengadoTotal,
-		payload.IngresoBaseCotizacion,
-		payload.DeduccionSalud,
-		payload.DeduccionPension,
-		payload.DeduccionFondoSolidaridad,
-		payload.DeduccionFija,
-		payload.OtrasDeducciones,
-		payload.DeduccionTotal,
-		payload.NetoPagar,
-		strings.TrimSpace(payload.OrigenCalculo),
-		strings.TrimSpace(payload.ResumenJSON),
-		strings.TrimSpace(payload.UsuarioCreador),
-		normalizeNominaEstado(payload.Estado),
-		strings.TrimSpace(payload.Observaciones),
-	)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
+	return insertEmpresaNominaLiquidacion(dbConn, payload)
 }
 
 // ListEmpresaNominaLiquidaciones lista liquidaciones por empresa y filtros.

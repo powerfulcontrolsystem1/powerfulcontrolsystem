@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 )
 
@@ -39,8 +40,12 @@ func EnsureEmpresasScopeReferences(dbConn *sql.DB) error {
 }
 
 func tableExists(dbConn *sql.DB, tableName string) (bool, error) {
+	return tableExistsContext(context.Background(), dbConn, tableName)
+}
+
+func tableExistsContext(ctx context.Context, dbConn *sql.DB, tableName string) (bool, error) {
 	var exists bool
-	err := queryRowSQLCompat(dbConn, `
+	err := queryRowSQLCompatContext(ctx, dbConn, `
 		SELECT EXISTS (
 			SELECT 1
 			FROM information_schema.tables

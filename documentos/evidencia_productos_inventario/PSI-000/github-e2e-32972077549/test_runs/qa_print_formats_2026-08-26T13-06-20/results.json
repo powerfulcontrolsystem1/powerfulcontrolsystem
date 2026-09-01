@@ -1,0 +1,729 @@
+{
+  "outDir": "/home/runner/work/powerfulcontrolsystem/powerfulcontrolsystem/test_runs/qa_print_formats_2026-08-26T13-06-20",
+  "generatedAt": "2026-08-26T13:06:25.781Z",
+  "results": [
+    {
+      "name": "Factura electronica de venta - carta",
+      "format": "carta",
+      "kind": "factura",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/factura_electronica_de_venta_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/factura_electronica_de_venta_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/factura_electronica_de_venta_-_carta.pdf",
+      "screenshotBytes": 89728,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 1,
+        "broken": 0,
+        "qr": 1,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 3
+      },
+      "expectQR": true,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Factura electronica de venta",
+        "textLength": 848,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Factura electronica de venta - pos",
+      "format": "pos",
+      "kind": "factura",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/factura_electronica_de_venta_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/factura_electronica_de_venta_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/factura_electronica_de_venta_-_pos.pdf",
+      "screenshotBytes": 61089,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 1,
+        "broken": 0,
+        "qr": 1,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 3
+      },
+      "expectQR": true,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Factura electronica de venta",
+        "textLength": 820,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Recibo de venta - carta",
+      "format": "carta",
+      "kind": "recibo",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/recibo_de_venta_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/recibo_de_venta_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/recibo_de_venta_-_carta.pdf",
+      "screenshotBytes": 59009,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 3
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Recibo de venta",
+        "textLength": 530,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Recibo de venta - pos",
+      "format": "pos",
+      "kind": "recibo",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/recibo_de_venta_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/recibo_de_venta_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/recibo_de_venta_-_pos.pdf",
+      "screenshotBytes": 41209,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 3
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Recibo de venta",
+        "textLength": 502,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Comprobante de ingreso - carta",
+      "format": "carta",
+      "kind": "comprobante_ingreso",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/comprobante_de_ingreso_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/comprobante_de_ingreso_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/comprobante_de_ingreso_-_carta.pdf",
+      "screenshotBytes": 55658,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 6
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Comprobante de ingreso",
+        "textLength": 445,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Comprobante de ingreso - pos",
+      "format": "pos",
+      "kind": "comprobante_ingreso",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/comprobante_de_ingreso_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/comprobante_de_ingreso_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/comprobante_de_ingreso_-_pos.pdf",
+      "screenshotBytes": 29628,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 6
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Comprobante de ingreso",
+        "textLength": 417,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Comprobante de egreso - carta",
+      "format": "carta",
+      "kind": "comprobante_egreso",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/comprobante_de_egreso_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/comprobante_de_egreso_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/comprobante_de_egreso_-_carta.pdf",
+      "screenshotBytes": 53428,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 6
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Comprobante de egreso",
+        "textLength": 430,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Comprobante de egreso - pos",
+      "format": "pos",
+      "kind": "comprobante_egreso",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/comprobante_de_egreso_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/comprobante_de_egreso_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/comprobante_de_egreso_-_pos.pdf",
+      "screenshotBytes": 27969,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 6
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Comprobante de egreso",
+        "textLength": 402,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Orden de servicio - carta",
+      "format": "carta",
+      "kind": "orden",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/orden_de_servicio_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/orden_de_servicio_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/orden_de_servicio_-_carta.pdf",
+      "screenshotBytes": 54322,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 3
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Orden de servicio",
+        "textLength": 489,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Orden de servicio - pos",
+      "format": "pos",
+      "kind": "orden",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/orden_de_servicio_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/orden_de_servicio_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/orden_de_servicio_-_pos.pdf",
+      "screenshotBytes": 37626,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 3
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Orden de servicio",
+        "textLength": 461,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Corte de caja - carta",
+      "format": "carta",
+      "kind": "corte_caja",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/corte_de_caja_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/corte_de_caja_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/corte_de_caja_-_carta.pdf",
+      "screenshotBytes": 48818,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 6
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Corte de caja",
+        "textLength": 389,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Corte de caja - pos",
+      "format": "pos",
+      "kind": "corte_caja",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/corte_de_caja_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/corte_de_caja_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/corte_de_caja_-_pos.pdf",
+      "screenshotBytes": 27163,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 6
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Corte de caja",
+        "textLength": 361,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Recibo parqueadero - carta",
+      "format": "carta",
+      "kind": "parqueadero",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/recibo_parqueadero_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/recibo_parqueadero_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/recibo_parqueadero_-_carta.pdf",
+      "screenshotBytes": 48279,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 6
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Recibo parqueadero",
+        "textLength": 368,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Recibo parqueadero - pos",
+      "format": "pos",
+      "kind": "parqueadero",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/recibo_parqueadero_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/recibo_parqueadero_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/recibo_parqueadero_-_pos.pdf",
+      "screenshotBytes": 26044,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 6
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Recibo parqueadero",
+        "textLength": 340,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Ticket de turno - carta",
+      "format": "carta",
+      "kind": "turno_atencion",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/ticket_de_turno_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/ticket_de_turno_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/ticket_de_turno_-_carta.pdf",
+      "screenshotBytes": 52869,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 3
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Ticket de turno",
+        "textLength": 465,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Ticket de turno - pos",
+      "format": "pos",
+      "kind": "turno_atencion",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/ticket_de_turno_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/ticket_de_turno_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/ticket_de_turno_-_pos.pdf",
+      "screenshotBytes": 36641,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 3
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Ticket de turno",
+        "textLength": 437,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Factura electronica extensa multipagina - carta",
+      "format": "carta",
+      "kind": "factura_extenso",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/factura_electronica_extensa_multipagina_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/factura_electronica_extensa_multipagina_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/factura_electronica_extensa_multipagina_-_carta.pdf",
+      "screenshotBytes": 671590,
+      "pdfPages": 6,
+      "imageAudit": {
+        "total": 1,
+        "broken": 0,
+        "qr": 1,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 5,
+        "summaryPages": 1,
+        "tableRows": 96
+      },
+      "expectQR": true,
+      "expectedMinPdfPages": 6,
+      "expectedTablePages": 5,
+      "expectedSummaryPages": 1,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Factura electronica extensa multipagina",
+        "textLength": 9805,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Recibo de venta extenso multipagina - carta",
+      "format": "carta",
+      "kind": "recibo_extenso",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/recibo_de_venta_extenso_multipagina_-_carta.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/recibo_de_venta_extenso_multipagina_-_carta.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/recibo_de_venta_extenso_multipagina_-_carta.pdf",
+      "screenshotBytes": 647994,
+      "pdfPages": 6,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 5,
+        "summaryPages": 1,
+        "tableRows": 96
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 6,
+      "expectedTablePages": 5,
+      "expectedSummaryPages": 1,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Recibo de venta extenso multipagina",
+        "textLength": 9349,
+        "viewportWidth": 1100,
+        "bodyWidth": 1100,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Ticket real turnos atencion - pos",
+      "format": "pos",
+      "kind": "turno_atencion_real",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/ticket_real_turnos_atencion_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/ticket_real_turnos_atencion_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/ticket_real_turnos_atencion_-_pos.pdf",
+      "screenshotBytes": 18410,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 0
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Turno T-000",
+        "textLength": 121,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    },
+    {
+      "name": "Recibo real parqueadero - pos",
+      "format": "pos",
+      "kind": "parqueadero_real",
+      "html": "test_runs/qa_print_formats_2026-08-26T13-06-20/html/recibo_real_parqueadero_-_pos.html",
+      "screenshot": "test_runs/qa_print_formats_2026-08-26T13-06-20/screenshots/recibo_real_parqueadero_-_pos.png",
+      "pdf": "test_runs/qa_print_formats_2026-08-26T13-06-20/pdf/recibo_real_parqueadero_-_pos.pdf",
+      "screenshotBytes": 21108,
+      "pdfPages": 1,
+      "imageAudit": {
+        "total": 0,
+        "broken": 0,
+        "qr": 0,
+        "brokenQr": 0
+      },
+      "paginationAudit": {
+        "tablePages": 0,
+        "summaryPages": 0,
+        "tableRows": 0
+      },
+      "expectQR": false,
+      "expectedMinPdfPages": 1,
+      "expectedTablePages": 0,
+      "expectedSummaryPages": 0,
+      "consoleErrors": [],
+      "metrics": {
+        "title": "Recibo parqueadero PK-000184",
+        "textLength": 178,
+        "viewportWidth": 340,
+        "bodyWidth": 340,
+        "horizontalOverflow": false,
+        "badNodes": []
+      },
+      "status": "ok"
+    }
+  ],
+  "printCalls": [
+    {
+      "name": "PCSPrint autoPrint factura POS",
+      "calls": {
+        "print": 1,
+        "close": 0
+      }
+    },
+    {
+      "name": "Ticket turnos autoPrint",
+      "calls": {
+        "print": 1,
+        "close": 0
+      }
+    },
+    {
+      "name": "Recibo parqueadero autoPrint",
+      "calls": {
+        "print": 1,
+        "close": 0
+      }
+    }
+  ]
+}

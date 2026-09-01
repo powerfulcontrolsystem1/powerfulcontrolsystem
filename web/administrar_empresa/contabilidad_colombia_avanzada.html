@@ -34,12 +34,29 @@
     .coadv-badge.warn{border-color:rgba(245,158,11,.36);background:rgba(245,158,11,.13);color:#a16207}
     .coadv-badge.danger{border-color:rgba(239,68,68,.36);background:rgba(239,68,68,.12);color:var(--danger)}
     .coadv-empty{padding:16px;border:1px dashed var(--border);border-radius:8px;background:var(--surface-soft);color:var(--muted);text-align:center}
+    .coadv-preflight{margin-top:10px}
+    .coadv-badge-spaced{margin-top:8px}
     .coadv-msg{min-height:22px;color:var(--muted)}
     .coadv-msg.success{color:var(--success)}.coadv-msg.error{color:var(--danger)}
     .coadv-inline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
     .coadv-right{text-align:right}
+    .coadv-card-wide{grid-column:1/-1}
+    .coadv-fieldset{margin:14px 0 0;padding:14px;border:1px solid var(--border);border-radius:8px}
+    .coadv-fieldset legend{padding:0 7px;color:var(--text);font-weight:900}
+    .coadv-lines{min-width:1180px}
+    .coadv-lines input,.coadv-lines select{min-width:82px;padding:7px}
+    .coadv-lines input[data-ds-line="descripcion"]{min-width:190px}
+    .coadv-lines input[data-ds-line="codigo"]{min-width:115px}
+    .coadv-total-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:12px}
+    .coadv-total{padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .coadv-total span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase}
+    .coadv-total strong{display:block;margin-top:4px}
+    .coadv-dialog{width:min(560px,calc(100vw - 28px));border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);padding:20px;box-shadow:0 24px 70px rgba(15,23,42,.32)}
+    .coadv-dialog::backdrop{background:rgba(15,23,42,.58)}
+    .coadv-code{display:block;margin:10px 0;padding:9px;border-radius:7px;background:var(--surface-soft);font-weight:900;overflow-wrap:anywhere}
+    .coadv-artifacts{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
     @media(max-width:1100px){.coadv-hero,.coadv-grid-2{grid-template-columns:1fr}.coadv-kpis,.coadv-grid-3,.coadv-inline{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:680px){.coadv-shell{padding:12px}.coadv-kpis,.coadv-grid-3,.coadv-inline{grid-template-columns:1fr}.coadv-tab{flex:1 1 150px}.coadv-right{text-align:left}}
+    @media(max-width:680px){.coadv-shell{padding:12px}.coadv-kpis,.coadv-grid-3,.coadv-inline,.coadv-total-grid{grid-template-columns:1fr}.coadv-tab{flex:1 1 150px}.coadv-right{text-align:left}}
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -101,22 +118,117 @@
       <article class="coadv-card">
         <h2>Nómina electrónica DIAN</h2>
         <div class="coadv-inline"><div><label class="form-label" for="nomPeriodo">Periodo</label><input id="nomPeriodo" class="form-input"></div><div><label class="form-label" for="nomFecha">Fecha pago</label><input id="nomFecha" class="form-input" type="date"></div><div><label class="form-label" for="nomDoc">Documento</label><input id="nomDoc" class="form-input"></div><div><label class="form-label" for="nomNombre">Empleado</label><input id="nomNombre" class="form-input"></div></div>
-        <div class="coadv-inline"><div><label class="form-label" for="nomSalario">Salario base</label><input id="nomSalario" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="nomDev">Devengados</label><input id="nomDev" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="nomDed">Deducciones</label><input id="nomDed" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="nomEstado">Estado DIAN</label><select id="nomEstado" class="form-input"><option>borrador</option><option>validado</option><option>enviado</option><option>rechazado</option></select></div></div>
-        <button id="btnSaveNomina" class="btn" type="button">Guardar nómina electrónica</button>
+        <div class="coadv-inline"><div><label class="form-label" for="nomSalario">Salario base</label><input id="nomSalario" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="nomDev">Devengados</label><input id="nomDev" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="nomDed">Deducciones</label><input id="nomDed" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="nomEstado">Estado técnico</label><input id="nomEstado" class="form-input" value="Borrador local - sin envío DIAN" readonly></div></div>
+		<p class="form-help">Vista hist&oacute;rica de control. La fuente fiscal mensual, CUNE, firma y transmisi&oacute;n se administran exclusivamente desde N&oacute;mina y sueldos con liquidaciones y pagos reales.</p>
+		<button id="btnSaveNomina" class="btn" type="button" disabled title="La creaci&oacute;n manual de n&oacute;mina fiscal est&aacute; bloqueada">Creaci&oacute;n manual bloqueada</button>
+		<a class="btn secondary" href="/administrar_empresa/nomina_sueldos.html?seccion=dian">Abrir N&oacute;mina y sueldos</a>
       </article>
-      <article class="coadv-card"><h2>Documentos de nómina</h2><div class="coadv-table-wrap"><table class="coadv-table"><thead><tr><th>Periodo</th><th>Empleado</th><th>Documento</th><th>Devengados</th><th>Deducciones</th><th>Total</th><th>Estado</th></tr></thead><tbody id="nominaBody"></tbody></table></div></article>
+      <article class="coadv-card"><h2>Documentos de n&oacute;mina</h2><div class="coadv-table-wrap"><table class="coadv-table"><thead><tr><th>Periodo</th><th>Empleado</th><th>Documento</th><th>Devengados</th><th>Deducciones</th><th>Total</th><th>Estado</th><th>Revisi&oacute;n</th></tr></thead><tbody id="nominaBody"></tbody></table></div><div id="nominaPreflight" class="coadv-empty coadv-preflight">Selecciona “Revisar DIAN”. La verificaci&oacute;n delega al preflight mensual especializado, no consume consecutivo y no transmite informaci&oacute;n.</div></article>
     </section>
 
     <section id="panel-soporte" class="coadv-panel coadv-grid-2" hidden>
-      <article class="coadv-card">
-        <h2>Documento soporte electrónico</h2>
-        <div class="coadv-inline"><div><label class="form-label" for="dsPeriodo">Periodo</label><input id="dsPeriodo" class="form-input"></div><div><label class="form-label" for="dsFecha">Fecha</label><input id="dsFecha" class="form-input" type="date"></div><div><label class="form-label" for="dsDoc">Documento proveedor</label><input id="dsDoc" class="form-input"></div><div><label class="form-label" for="dsProveedor">Proveedor</label><input id="dsProveedor" class="form-input"></div></div>
-        <label class="form-label" for="dsConcepto">Concepto</label><input id="dsConcepto" class="form-input">
-        <div class="coadv-inline"><div><label class="form-label" for="dsSubtotal">Subtotal</label><input id="dsSubtotal" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="dsIva">IVA</label><input id="dsIva" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="dsRet">Retenciones</label><input id="dsRet" class="form-input" type="number" step=".01"></div><div><label class="form-label" for="dsEstado">Estado DIAN</label><select id="dsEstado" class="form-input"><option>borrador</option><option>validado</option><option>enviado</option><option>rechazado</option></select></div></div>
-        <button id="btnSaveSoporte" class="btn" type="button">Guardar documento soporte</button>
+      <article class="coadv-card coadv-card-wide">
+        <h2>Configuración DIAN exclusiva de documento soporte</h2>
+        <p>Esta numeración es independiente de factura de venta. El anexo 1.1 usa envío síncrono y no exige TestSetId para este documento.</p>
+        <div class="coadv-inline">
+          <div><label class="form-label" for="dsCfgEstado">Estado</label><select id="dsCfgEstado" class="form-input"><option value="configurando">Configurando</option><option value="habilitacion">Habilitación</option><option value="activo">Activo en producción</option><option value="suspendido">Suspendido</option></select></div>
+          <div><label class="form-label" for="dsCfgAmbiente">Ambiente</label><select id="dsCfgAmbiente" class="form-input"><option value="habilitacion">Habilitación</option><option value="produccion">Producción</option></select></div>
+          <div><label class="form-label" for="dsCfgModo">Modo de operación</label><input id="dsCfgModo" class="form-input" autocomplete="off"></div>
+          <div><label class="form-label" for="dsCfgPrefijo">Prefijo (opcional, máximo 4)</label><input id="dsCfgPrefijo" class="form-input" autocomplete="off" maxlength="4" pattern="[A-Za-z0-9]{0,4}" placeholder="DS"></div>
+        </div>
+        <div class="coadv-inline">
+          <div><label class="form-label" for="dsCfgResolucion">Autorización de numeración (14 dígitos)</label><input id="dsCfgResolucion" class="form-input" autocomplete="off" inputmode="numeric" maxlength="14" pattern="[0-9]{14}"></div>
+          <div><label class="form-label" for="dsCfgDesde">Vigente desde</label><input id="dsCfgDesde" class="form-input" type="date"></div>
+          <div><label class="form-label" for="dsCfgHasta">Vigente hasta</label><input id="dsCfgHasta" class="form-input" type="date"></div>
+          <div><label class="form-label" for="dsCfgURL">URL DIAN opcional</label><input id="dsCfgURL" class="form-input" type="url" autocomplete="off" placeholder="https://..."></div>
+        </div>
+        <div class="coadv-inline">
+          <div><label class="form-label" for="dsCfgRangoDesde">Rango desde</label><input id="dsCfgRangoDesde" class="form-input" type="number" min="1" max="999999999" step="1"></div>
+          <div><label class="form-label" for="dsCfgRangoHasta">Rango hasta</label><input id="dsCfgRangoHasta" class="form-input" type="number" min="1" max="999999999" step="1"></div>
+          <div><label class="form-label" for="dsCfgConsecutivo">Próximo consecutivo</label><input id="dsCfgConsecutivo" class="form-input" type="number" min="1" max="999999999" step="1"></div>
+          <div><label class="form-label" for="dsCfgObservaciones">Observaciones</label><input id="dsCfgObservaciones" class="form-input" autocomplete="off"></div>
+        </div>
+        <div class="coadv-actions"><button id="btnSaveSoporteConfig" class="btn secondary" type="button">Guardar configuración</button><span id="dsCfgResumen" class="form-help">Consultando configuración…</span></div>
       </article>
-      <article class="coadv-card"><h2>Compras a no obligados</h2><div class="coadv-table-wrap"><table class="coadv-table"><thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Estado</th></tr></thead><tbody id="soporteBody"></tbody></table></div></article>
+
+      <article class="coadv-card coadv-card-wide">
+        <h2>Nuevo borrador desde una compra real</h2>
+        <p>Guardar crea únicamente un borrador contable. El servidor recalcula los importes y elimina cualquier CUDS, respuesta o estado DIAN escrito desde el navegador.</p>
+        <fieldset class="coadv-fieldset">
+          <legend>Documento y vendedor no obligado</legend>
+          <div class="coadv-inline">
+            <div><label class="form-label" for="dsPeriodo">Periodo</label><input id="dsPeriodo" class="form-input" placeholder="AAAA-MM"></div>
+            <div><label class="form-label" for="dsFecha">Fecha</label><input id="dsFecha" class="form-input" type="date"></div>
+            <div><label class="form-label" for="dsResidencia">Residencia fiscal</label><select id="dsResidencia" class="form-input"><option value="residente">Residente en Colombia</option><option value="no_residente">No residente</option></select></div>
+            <div><label class="form-label" for="dsTipoDocumento">Tipo de identificación</label><select id="dsTipoDocumento" class="form-input"></select></div>
+          </div>
+          <div class="coadv-inline">
+            <div><label class="form-label" for="dsDoc">Número de identificación</label><input id="dsDoc" class="form-input" autocomplete="off"></div>
+            <div><label class="form-label" for="dsDV">Dígito de verificación</label><input id="dsDV" class="form-input" inputmode="numeric" maxlength="1" autocomplete="off"></div>
+            <div><label class="form-label" for="dsProveedor">Nombre o razón social</label><input id="dsProveedor" class="form-input" autocomplete="off"></div>
+            <div><label class="form-label" for="dsTipoPersona">Tipo de persona</label><select id="dsTipoPersona" class="form-input"><option value="natural">Persona natural</option><option value="juridica">Persona jurídica</option></select></div>
+          </div>
+          <div class="coadv-inline">
+            <div><label class="form-label" for="dsResponsabilidad">Responsabilidad tributaria</label><input id="dsResponsabilidad" class="form-input" value="R-99-PN" autocomplete="off"></div>
+            <div><label class="form-label" for="dsPais">País ISO alfa-2</label><input id="dsPais" class="form-input" value="CO" maxlength="2" autocomplete="off"></div>
+            <div><label class="form-label" for="dsDireccion">Dirección</label><input id="dsDireccion" class="form-input" autocomplete="off"></div>
+            <div><label class="form-label" for="dsPostal">Código postal</label><input id="dsPostal" class="form-input" autocomplete="off"></div>
+          </div>
+          <div class="coadv-inline">
+            <div><label class="form-label" for="dsDepartamento">Departamento / región</label><input id="dsDepartamento" class="form-input" autocomplete="off"></div>
+            <div><label class="form-label" for="dsDepartamentoDANE">Código departamento DANE</label><input id="dsDepartamentoDANE" class="form-input" inputmode="numeric" maxlength="2" autocomplete="off"></div>
+            <div><label class="form-label" for="dsMunicipio">Municipio / ciudad</label><input id="dsMunicipio" class="form-input" autocomplete="off"></div>
+            <div><label class="form-label" for="dsMunicipioDANE">Código municipio DANE</label><input id="dsMunicipioDANE" class="form-input" inputmode="numeric" maxlength="5" autocomplete="off"></div>
+          </div>
+          <div class="coadv-inline">
+            <div><label class="form-label" for="dsEmail">Correo</label><input id="dsEmail" class="form-input" type="email" autocomplete="off"></div>
+            <div><label class="form-label" for="dsTelefono">Teléfono</label><input id="dsTelefono" class="form-input" autocomplete="off"></div>
+            <div><label class="form-label" for="dsConcepto">Concepto general</label><input id="dsConcepto" class="form-input" autocomplete="off"></div>
+            <div><label class="form-label" for="dsMoneda">Moneda</label><input id="dsMoneda" class="form-input" value="COP" readonly></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="coadv-fieldset">
+          <legend>Pago</legend>
+          <div class="coadv-inline">
+            <div><label class="form-label" for="dsFormaPago">Forma</label><select id="dsFormaPago" class="form-input"><option value="1">1 · Contado</option><option value="2">2 · Crédito</option></select></div>
+            <div><label class="form-label" for="dsMedioPago">Medio</label><select id="dsMedioPago" class="form-input"><option value="10">10 · Efectivo</option><option value="42">42 · Consignación bancaria</option><option value="47">47 · Transferencia débito</option><option value="48">48 · Tarjeta crédito</option><option value="49">49 · Tarjeta débito</option><option value="ZZZ">ZZZ · Otro</option></select></div>
+            <div><label class="form-label" for="dsVencimiento">Fecha de vencimiento</label><input id="dsVencimiento" class="form-input" type="date" disabled></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="coadv-fieldset">
+          <legend>Detalle fiscal estructurado</legend>
+          <div class="coadv-table-wrap"><table class="coadv-table coadv-lines"><thead><tr><th>Código</th><th>Descripción</th><th>Unidad</th><th>Cantidad</th><th>Precio</th><th>Desc. %</th><th>IVA %</th><th>ReteIVA %</th><th>ReteRenta %</th><th>Neto</th><th></th></tr></thead><tbody id="dsLineasBody"></tbody></table></div>
+          <datalist id="dsUnidadMedidaOpciones"><option value="94">Unidad</option><option value="NIU">Unidad</option><option value="EA">Cada uno</option><option value="HUR">Hora</option><option value="KGM">Kilogramo</option><option value="MTR">Metro</option><option value="LTR">Litro</option><option value="NT">Tonelada</option><option value="P0">Página</option></datalist>
+          <p class="form-help">La unidad admite cualquiera de los 1.093 códigos del catálogo DIAN/UN-ECE Revision 4; las opciones visibles son solo las más comunes.</p>
+          <button id="btnAddSoporteLinea" class="btn secondary" type="button">Agregar línea</button>
+          <div class="coadv-total-grid" aria-live="polite">
+            <div class="coadv-total"><span>Subtotal</span><strong id="dsTotalSubtotal">$0</strong></div>
+            <div class="coadv-total"><span>IVA</span><strong id="dsTotalIVA">$0</strong></div>
+            <div class="coadv-total"><span>Retenciones</span><strong id="dsTotalRetenciones">$0</strong></div>
+            <div class="coadv-total"><span>Total DIAN</span><strong id="dsTotalDIAN">$0</strong></div>
+            <div class="coadv-total"><span>Neto contable</span><strong id="dsTotalNeto">$0</strong></div>
+          </div>
+        </fieldset>
+        <div class="coadv-actions"><button id="btnSaveSoporte" class="btn" type="button">Guardar borrador</button><span class="form-help">Guardar no consume consecutivo, no genera XML y no transmite a DIAN.</span></div>
+      </article>
+
+      <article class="coadv-card coadv-card-wide">
+        <h2>Compras a no obligados</h2>
+        <div class="coadv-table-wrap"><table class="coadv-table"><thead><tr><th>Número</th><th>Fecha</th><th>Vendedor</th><th>Total DIAN</th><th>Neto contable</th><th>Estado</th><th>CUDS</th><th>Acciones</th></tr></thead><tbody id="soporteBody"></tbody></table></div>
+        <div id="soportePreflight" class="coadv-empty coadv-preflight">Selecciona “Revisar DIAN”. El preflight no genera XML, no consume consecutivo y no transmite información.</div>
+      </article>
     </section>
+
+    <dialog id="dsEmitDialog" class="coadv-dialog" aria-labelledby="dsEmitTitle">
+      <h2 id="dsEmitTitle">Confirmar emisión fiscal real</h2>
+      <p>Esta acción reservará un consecutivo, sellará la fuente fiscal, firmará el XML y podrá transmitirlo a DIAN. Verifica primero la compra y el vendedor.</p>
+      <label class="form-label" for="dsEmitConfirmacion">Escribe exactamente:</label>
+      <code class="coadv-code">EMITIR DOCUMENTO SOPORTE DIAN</code>
+      <input id="dsEmitConfirmacion" class="form-input" autocomplete="off">
+      <div class="coadv-actions"><button id="btnCancelarSoporteEmision" class="btn secondary" type="button">Cancelar</button><button id="btnConfirmarSoporteEmision" class="btn" type="button" disabled>Emitir y transmitir</button></div>
+    </dialog>
 
     <section id="panel-activos" class="coadv-panel coadv-grid-2" hidden>
       <article class="coadv-card">
@@ -180,25 +292,26 @@
   </main>
   <script>
   (function(){
-    var state={empresaID:getEmpresaID(),dashboard:null,formatos:[],registros:[],nomina:[],soporte:[],activos:[],cartera:[],libro:[]};
-    var ids="btnRefresh btnSeed kpiFormatos kpiRegistros kpiNomina kpiSoporte kpiActivos kpiCartera dianBody librosResumen formatosList registrosBody nominaBody soporteBody activosBody carteraBody libroBody msg exoFormato exoAnio exoConcepto exoVersion exoDescripcion btnSaveFormato btnGenerarExogena regFormato regDoc regNombre regCuenta regBase regIva regRet regTotal btnSaveRegistro nomPeriodo nomFecha nomDoc nomNombre nomSalario nomDev nomDed nomEstado btnSaveNomina dsPeriodo dsFecha dsDoc dsProveedor dsConcepto dsSubtotal dsIva dsRet dsEstado btnSaveSoporte actCodigo actNombre actCategoria actFecha actCosto actResidual actVida actUbicacion actCuenta actDep actGasto actResponsable btnSaveActivo cxTipo cxDoc cxTercero cxCuenta cxConcepto cxEmision cxVence cxValor cxPagado btnSaveCartera libTipo libPeriodo btnLoadLibro".split(" ");
+    var state={empresaID:getEmpresaID(),dashboard:null,formatos:[],registros:[],nomina:[],activos:[],cartera:[],libro:[]};
+    var ids="btnRefresh btnSeed kpiFormatos kpiRegistros kpiNomina kpiSoporte kpiActivos kpiCartera dianBody librosResumen formatosList registrosBody nominaBody nominaPreflight activosBody carteraBody libroBody msg exoFormato exoAnio exoConcepto exoVersion exoDescripcion btnSaveFormato btnGenerarExogena regFormato regDoc regNombre regCuenta regBase regIva regRet regTotal btnSaveRegistro nomPeriodo nomFecha nomDoc nomNombre nomSalario nomDev nomDed nomEstado btnSaveNomina actCodigo actNombre actCategoria actFecha actCosto actResidual actVida actUbicacion actCuenta actDep actGasto actResponsable btnSaveActivo cxTipo cxDoc cxTercero cxCuenta cxConcepto cxEmision cxVence cxValor cxPagado btnSaveCartera libTipo libPeriodo btnLoadLibro".split(" ");
     var els={};ids.forEach(function(id){els[id]=document.getElementById(id);});
     function getEmpresaID(){try{var p=new URLSearchParams(location.search||"");var id=p.get("empresa_id")||p.get("id");if(id)return id;}catch(e){}try{if(parent&&parent.__resolveEmpresaIdContext)return String(parent.__resolveEmpresaIdContext()||"");}catch(e){}return "";}
     function api(a,extra){return "/api/empresa/contabilidad_colombia_avanzada?empresa_id="+encodeURIComponent(state.empresaID)+"&action="+encodeURIComponent(a)+(extra||"");}
-    async function req(url,opt){var res=await fetch(url,Object.assign({credentials:"same-origin"},opt||{}));var text=await res.text();var data={};try{data=text?JSON.parse(text):{};}catch(e){data={error:text};}if(!res.ok)throw new Error(data.error||text||("HTTP "+res.status));return data;}
+    async function req(url,opt){var res=await fetch(url,Object.assign({credentials:"same-origin"},opt||{}));var text=await res.text();var data={};try{data=text?JSON.parse(text):{};}catch(e){data={error:text};}if(!res.ok){var err=new Error(data.error||text||("HTTP "+res.status));err.status=res.status;throw err;}return data;}
     function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
     function money(v){try{return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(v||0));}catch(e){return "$"+Number(v||0).toFixed(0);}}
     function msg(t,c){els.msg.textContent=t||"";els.msg.className="coadv-msg "+(c||"");}
     function badge(v){var s=String(v||"");var k=/validado|enviado|activo|cuadrado/i.test(s)?"ok":(/rechazado|vencido|error/i.test(s)?"danger":"warn");return '<span class="coadv-badge '+k+'">'+esc(s||"-")+'</span>';}
     function today(){return new Date().toISOString().slice(0,10);}function period(){return new Date().toISOString().slice(0,7);}
-    async function load(){if(!state.empresaID){msg("Falta empresa_id en la URL.","error");return;}var all=await Promise.all([req(api("dashboard")),req(api("exogena_formatos")),req(api("exogena_registros")),req(api("nomina_electronica")),req(api("documentos_soporte")),req(api("activos_fijos")),req(api("cartera_cxp"))]);state.dashboard=all[0]||{};state.formatos=all[1]||[];state.registros=all[2]||[];state.nomina=all[3]||[];state.soporte=all[4]||[];state.activos=all[5]||[];state.cartera=all[6]||[];render();}
-    function render(){var d=state.dashboard||{};els.kpiFormatos.textContent=d.formatos_exogena||0;els.kpiRegistros.textContent=d.registros_exogena||0;els.kpiNomina.textContent=d.nominas_electronicas||0;els.kpiSoporte.textContent=d.documentos_soporte||0;els.kpiActivos.textContent=d.activos_fijos||0;els.kpiCartera.textContent=d.cartera_cx_pendientes||0;renderDian(d.ultimos_documentos_dian||[]);renderLibrosResumen(d.libros_disponibles||[]);renderExogena();renderNomina();renderSoporte();renderActivos();renderCartera();defaults();}
-    function defaults(){els.exoAnio.value=els.exoAnio.value||String(new Date().getFullYear());els.nomPeriodo.value=els.nomPeriodo.value||period();els.nomFecha.value=els.nomFecha.value||today();els.dsPeriodo.value=els.dsPeriodo.value||period();els.dsFecha.value=els.dsFecha.value||today();els.actFecha.value=els.actFecha.value||today();els.cxEmision.value=els.cxEmision.value||today();els.cxVence.value=els.cxVence.value||today();}
+    async function loadNominaAccounting(){try{return await req(api("nomina_electronica"));}catch(err){if(Number(err&&err.status||0)!==403)throw err;document.querySelectorAll('[data-panel="nomina"],[data-jump="nomina"]').forEach(function(el){el.hidden=true;});var panel=document.getElementById("panel-nomina");if(panel)panel.hidden=true;var kpi=els.kpiNomina&&els.kpiNomina.closest(".coadv-kpi");if(kpi)kpi.hidden=true;return [];}}
+    async function load(){if(!state.empresaID){msg("Falta empresa_id en la URL.","error");return;}var all=await Promise.all([req(api("dashboard")),req(api("exogena_formatos")),req(api("exogena_registros")),loadNominaAccounting(),req(api("activos_fijos")),req(api("cartera_cxp"))]);state.dashboard=all[0]||{};state.formatos=all[1]||[];state.registros=all[2]||[];state.nomina=all[3]||[];state.activos=all[4]||[];state.cartera=all[5]||[];render();}
+    function render(){var d=state.dashboard||{};els.kpiFormatos.textContent=d.formatos_exogena||0;els.kpiRegistros.textContent=d.registros_exogena||0;els.kpiNomina.textContent=d.nominas_electronicas||0;els.kpiSoporte.textContent=d.documentos_soporte||0;els.kpiActivos.textContent=d.activos_fijos||0;els.kpiCartera.textContent=d.cartera_cx_pendientes||0;renderDian(d.ultimos_documentos_dian||[]);renderLibrosResumen(d.libros_disponibles||[]);renderExogena();renderNomina();renderActivos();renderCartera();defaults();}
+    function defaults(){els.exoAnio.value=els.exoAnio.value||String(new Date().getFullYear());els.nomPeriodo.value=els.nomPeriodo.value||period();els.nomFecha.value=els.nomFecha.value||today();els.actFecha.value=els.actFecha.value||today();els.cxEmision.value=els.cxEmision.value||today();els.cxVence.value=els.cxVence.value||today();}
     function renderDian(rows){els.dianBody.innerHTML=rows.map(function(x){return "<tr><td>"+esc(x.modulo)+"</td><td>"+esc(x.codigo)+"</td><td>"+esc(x.tercero)+"</td><td>"+esc(x.periodo)+"</td><td>"+money(x.total)+"</td><td>"+badge(x.estado)+"</td></tr>";}).join("")||'<tr><td colspan="6"><div class="coadv-empty">Sin documentos DIAN recientes.</div></td></tr>';}
     function renderLibrosResumen(rows){els.librosResumen.innerHTML=rows.map(function(x){return '<div class="coadv-card" style="box-shadow:none;margin-bottom:8px;padding:12px"><strong>'+esc(x.tipo)+'</strong> '+badge(x.estado)+'<div class="form-help">Registros '+esc(x.registros||0)+' · Débito '+money(x.total_debito)+' · Crédito '+money(x.total_credito)+' · Diferencia '+money(x.diferencia)+'</div></div>';}).join("")||'<div class="coadv-empty">Sin resumen de libros.</div>';}
     function renderExogena(){els.formatosList.innerHTML=state.formatos.map(function(x){return '<div class="coadv-card" style="box-shadow:none;margin-bottom:8px;padding:12px"><strong>ID '+x.id+' · Formato '+esc(x.formato)+'</strong> '+badge(x.estado)+'<div class="form-help">'+esc(x.anio_gravable)+' · '+esc(x.concepto)+' · '+esc(x.descripcion)+'</div></div>';}).join("")||'<div class="coadv-empty">Sin formatos.</div>';els.registrosBody.innerHTML=state.registros.map(function(x){return "<tr><td>"+x.id+"</td><td>"+esc(x.formato||x.formato_id)+"</td><td>"+esc(x.documento+" · "+x.razon_social)+"</td><td>"+esc(x.cuenta_codigo)+"</td><td>"+money(x.total)+"</td><td>"+esc(x.validaciones||"")+"</td></tr>";}).join("")||'<tr><td colspan="6"><div class="coadv-empty">Sin registros.</div></td></tr>';}
-    function renderNomina(){els.nominaBody.innerHTML=state.nomina.map(function(x){return "<tr><td>"+esc(x.periodo)+"</td><td>"+esc(x.nombre)+"</td><td>"+esc(x.documento)+"</td><td>"+money(x.devengados)+"</td><td>"+money(x.deducciones)+"</td><td>"+money(x.total)+"</td><td>"+badge(x.estado_dian)+"</td></tr>";}).join("")||'<tr><td colspan="7"><div class="coadv-empty">Sin nómina electrónica.</div></td></tr>';}
-    function renderSoporte(){els.soporteBody.innerHTML=state.soporte.map(function(x){return "<tr><td>"+esc(x.fecha_documento)+"</td><td>"+esc(x.nombre_proveedor)+"</td><td>"+esc(x.concepto)+"</td><td>"+money(x.subtotal)+"</td><td>"+money(x.iva)+"</td><td>"+money(x.total)+"</td><td>"+badge(x.estado_dian)+"</td></tr>";}).join("")||'<tr><td colspan="7"><div class="coadv-empty">Sin documentos soporte.</div></td></tr>';}
+    function renderNomina(){els.nominaBody.innerHTML=state.nomina.map(function(x){return "<tr><td>"+esc(x.periodo)+"</td><td>"+esc(x.nombre)+"</td><td>"+esc(x.documento)+"</td><td>"+money(x.devengados)+"</td><td>"+money(x.deducciones)+"</td><td>"+money(x.total)+"</td><td>"+badge(x.estado_dian)+"</td><td><button class=\"btn secondary\" type=\"button\" data-nom-preflight=\""+esc(x.id)+"\">Revisar DIAN</button></td></tr>";}).join("")||'<tr><td colspan="8"><div class="coadv-empty">Sin nómina electrónica.</div></td></tr>';Array.prototype.forEach.call(els.nominaBody.querySelectorAll("[data-nom-preflight]"),function(btn){btn.onclick=function(){preflightNomina(btn.getAttribute("data-nom-preflight"));};});}
+    async function preflightNomina(id){var out=await req(api("nomina_electronica_preflight","&nomina_id="+encodeURIComponent(id)));var issues=Array.isArray(out.issues)?out.issues:[],bloqueos=issues.filter(function(x){return String(x&&x.severity||x&&x.nivel||'error').toLowerCase()==='error';}).map(function(x){return x&&x.message||x&&x.mensaje||String(x||'');}),advertencias=issues.filter(function(x){return String(x&&x.severity||x&&x.nivel||'').toLowerCase()!=='error';}).map(function(x){return x&&x.message||x&&x.mensaje||String(x||'');});if(out.error)bloqueos.push(out.error);els.nominaPreflight.innerHTML='<strong>Revisi&oacute;n DIAN mensual: '+esc(out.bloqueado?'bloqueada':'lista')+'</strong><div class="form-help">No se emiti&oacute; ni transmiti&oacute; ning&uacute;n documento.</div>'+(bloqueos.length?'<div class="coadv-badge coadv-badge-spaced danger">Bloqueos '+bloqueos.length+'</div><ul>'+bloqueos.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'')+(advertencias.length?'<div class="coadv-badge warn">Advertencias '+advertencias.length+'</div><ul>'+advertencias.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'');msg('Revisi&oacute;n DIAN mensual completada sin emisi&oacute;n.','success');}
     function renderActivos(){els.activosBody.innerHTML=state.activos.map(function(x){return "<tr><td><strong>"+esc(x.codigo)+"</strong></td><td>"+esc(x.nombre)+"</td><td>"+money(x.costo)+"</td><td>"+money(x.depreciacion_mensual)+"</td><td>"+money(x.valor_libros)+"</td><td>"+badge(x.estado)+"</td></tr>";}).join("")||'<tr><td colspan="6"><div class="coadv-empty">Sin activos fijos.</div></td></tr>';}
     function renderCartera(){els.carteraBody.innerHTML=state.cartera.map(function(x){return "<tr><td>"+esc(x.tipo)+"</td><td>"+esc(x.documento)+"</td><td>"+esc(x.tercero_nombre)+"</td><td>"+esc(x.fecha_vencimiento)+"</td><td>"+money(x.valor_original)+"</td><td>"+money(x.saldo)+"</td><td>"+badge(x.estado)+"</td></tr>";}).join("")||'<tr><td colspan="7"><div class="coadv-empty">Sin obligaciones.</div></td></tr>';}
     async function post(action,payload,extra){await req(api(action,extra),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload||{})});await load();}
@@ -209,14 +322,14 @@
     els.btnSaveFormato.onclick=function(){post("exogena_formatos",{formato:els.exoFormato.value,anio_gravable:Number(els.exoAnio.value),concepto:els.exoConcepto.value,version:els.exoVersion.value,descripcion:els.exoDescripcion.value,periodicidad:"anual"}).then(function(){msg("Formato guardado.","success");}).catch(function(e){msg(e.message,"error");});};
     els.btnGenerarExogena.onclick=function(){var id=Number(els.regFormato.value||((state.formatos[0]||{}).id)||0);post("generar_exogena",{formato_id:id},"&formato_id="+encodeURIComponent(id)).then(function(){msg("Exógena generada desde contabilidad.","success");}).catch(function(e){msg(e.message,"error");});};
     els.btnSaveRegistro.onclick=function(){post("exogena_registros",{formato_id:Number(els.regFormato.value),documento:els.regDoc.value,razon_social:els.regNombre.value,cuenta_codigo:els.regCuenta.value,base_valor:Number(els.regBase.value||0),iva:Number(els.regIva.value||0),retencion:Number(els.regRet.value||0),total:Number(els.regTotal.value||0)}).then(function(){msg("Registro guardado.","success");}).catch(function(e){msg(e.message,"error");});};
-    els.btnSaveNomina.onclick=function(){post("nomina_electronica",{periodo:els.nomPeriodo.value,fecha_pago:els.nomFecha.value,documento:els.nomDoc.value,nombre:els.nomNombre.value,salario_base:Number(els.nomSalario.value||0),devengados:Number(els.nomDev.value||0),deducciones:Number(els.nomDed.value||0),estado_dian:els.nomEstado.value}).then(function(){msg("Nómina electrónica guardada.","success");}).catch(function(e){msg(e.message,"error");});};
-    els.btnSaveSoporte.onclick=function(){post("documentos_soporte",{periodo:els.dsPeriodo.value,fecha_documento:els.dsFecha.value,documento:els.dsDoc.value,nombre_proveedor:els.dsProveedor.value,concepto:els.dsConcepto.value,subtotal:Number(els.dsSubtotal.value||0),iva:Number(els.dsIva.value||0),retenciones:Number(els.dsRet.value||0),estado_dian:els.dsEstado.value}).then(function(){msg("Documento soporte guardado.","success");}).catch(function(e){msg(e.message,"error");});};
+    els.btnSaveNomina.onclick=function(){post("nomina_electronica",{periodo:els.nomPeriodo.value,fecha_pago:els.nomFecha.value,documento:els.nomDoc.value,nombre:els.nomNombre.value,salario_base:Number(els.nomSalario.value||0),devengados:Number(els.nomDev.value||0),deducciones:Number(els.nomDed.value||0)}).then(function(){msg("Borrador de nómina guardado.","success");}).catch(function(e){msg(e.message,"error");});};
     els.btnSaveActivo.onclick=function(){post("activos_fijos",{codigo:els.actCodigo.value,nombre:els.actNombre.value,categoria:els.actCategoria.value,fecha_compra:els.actFecha.value,costo:Number(els.actCosto.value||0),valor_residual:Number(els.actResidual.value||0),vida_util_meses:Number(els.actVida.value||60),ubicacion:els.actUbicacion.value,cuenta_activo:els.actCuenta.value,cuenta_depreciacion:els.actDep.value,cuenta_gasto:els.actGasto.value,responsable:els.actResponsable.value}).then(function(){msg("Activo fijo guardado.","success");}).catch(function(e){msg(e.message,"error");});};
     els.btnSaveCartera.onclick=function(){post("cartera_cxp",{tipo:els.cxTipo.value,documento:els.cxDoc.value,tercero_nombre:els.cxTercero.value,cuenta_codigo:els.cxCuenta.value,concepto:els.cxConcepto.value,fecha_emision:els.cxEmision.value,fecha_vencimiento:els.cxVence.value,valor_original:Number(els.cxValor.value||0),valor_pagado:Number(els.cxPagado.value||0)}).then(function(){msg("Obligación guardada.","success");}).catch(function(e){msg(e.message,"error");});};
     els.btnLoadLibro.onclick=function(){req(api("libros","&tipo="+encodeURIComponent(els.libTipo.value)+"&periodo="+encodeURIComponent(els.libPeriodo.value))).then(function(rows){state.libro=rows||[];els.libroBody.innerHTML=state.libro.map(function(x){return "<tr><td>"+esc(x.fecha_comprobante)+"</td><td>"+esc(x.codigo)+"</td><td>"+esc(x.cuenta_codigo+" "+x.cuenta_nombre)+"</td><td>"+esc(x.tercero_nombre)+"</td><td>"+esc(x.detalle||x.concepto)+"</td><td>"+money(x.debito)+"</td><td>"+money(x.credito)+"</td><td>"+money(x.saldo)+"</td></tr>";}).join("")||'<tr><td colspan="8"><div class="coadv-empty">Sin movimientos para el filtro.</div></td></tr>';msg("Libro generado.","success");}).catch(function(e){msg(e.message,"error");});};
     load().catch(function(e){msg(e.message,"error");});
   })();
   </script>
+  <script src="/js/documento_soporte_dian.js"></script>
   <script>
   (function(){
     var ids="actAvPeriodo actAvEventoID actAvEventoTipo actAvEventoValor actAvDestino actAvResponsable actAvDetalle btnActAvDep btnActAvEvento actAvKpiCosto actAvKpiLibros actAvKpiDep actAvDepBody actAvEventosBody actAvInventarioBody msg".split(" ");

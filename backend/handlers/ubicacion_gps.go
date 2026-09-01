@@ -28,7 +28,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 			}
 			includeInactive := queryBool(r, "include_inactive")
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
-			rows, err := dbpkg.GetEmpresaGPSDispositivos(dbEmp, empresaID, includeInactive, q)
+			rows, err := dbpkg.GetEmpresaGPSDispositivosContext(r.Context(), dbEmp, empresaID, includeInactive, q)
 			if err != nil {
 				http.Error(w, "No se pudieron listar los dispositivos GPS", http.StatusInternalServerError)
 				return
@@ -64,7 +64,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 				http.Error(w, "No se pudo validar limite de dispositivos GPS: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			existing, err := dbpkg.CountEmpresaGPSDispositivos(dbEmp, payload.EmpresaID)
+			existing, err := dbpkg.CountEmpresaGPSDispositivosContext(r.Context(), dbEmp, payload.EmpresaID)
 			if err != nil {
 				http.Error(w, "No se pudo contar dispositivos GPS", http.StatusInternalServerError)
 				return
@@ -74,7 +74,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-			id, err := dbpkg.CreateEmpresaGPSDispositivo(dbEmp, payload)
+			id, err := dbpkg.CreateEmpresaGPSDispositivoContext(r.Context(), dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo crear el dispositivo GPS", http.StatusBadRequest)
 				return
@@ -99,7 +99,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 				if action == "desactivar" {
 					estado = "inactivo"
 				}
-				if err := dbpkg.SetEmpresaGPSDispositivoEstado(dbEmp, empresaID, id, estado); err != nil {
+				if err := dbpkg.SetEmpresaGPSDispositivoEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "dispositivo gps no encontrado", http.StatusNotFound)
 						return
@@ -128,7 +128,7 @@ func EmpresaUbicacionGPSDispositivosHandler(dbEmp *sql.DB, dbSuper *sql.DB) http
 			if strings.TrimSpace(payload.Codigo) == "" {
 				payload.Codigo = fmt.Sprintf("GPS-%d-%d", payload.EmpresaID, payload.ID)
 			}
-			if err := dbpkg.UpdateEmpresaGPSDispositivo(dbEmp, payload); err != nil {
+			if err := dbpkg.UpdateEmpresaGPSDispositivoContext(r.Context(), dbEmp, payload); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "dispositivo gps no encontrado", http.StatusNotFound)
 					return
@@ -203,7 +203,7 @@ func EmpresaUbicacionGPSRecorridosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if limit <= 0 {
 				limit = 600
 			}
-			rows, err := dbpkg.ListEmpresaGPSRecorridos(dbEmp, empresaID, dispositivoID, includeInactive, desdeMinutos, limit)
+			rows, err := dbpkg.ListEmpresaGPSRecorridosContext(r.Context(), dbEmp, empresaID, dispositivoID, includeInactive, desdeMinutos, limit)
 			if err != nil {
 				http.Error(w, "No se pudieron listar los recorridos GPS", http.StatusInternalServerError)
 				return
@@ -263,7 +263,7 @@ func EmpresaUbicacionGPSRecorridosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if action == "desactivar" {
 					estado = "inactivo"
 				}
-				if err := dbpkg.SetEmpresaGPSRecorridoEstado(dbEmp, empresaID, id, estado); err != nil {
+				if err := dbpkg.SetEmpresaGPSRecorridoEstadoContext(r.Context(), dbEmp, empresaID, id, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "punto gps no encontrado", http.StatusNotFound)
 						return

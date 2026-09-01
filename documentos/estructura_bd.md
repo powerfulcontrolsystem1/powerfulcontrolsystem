@@ -46,36 +46,20 @@ El esquema aun no se ha aplicado en ningun entorno por esta tarea.
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
-Actualizacion 2026-08-25 (recepción de compras e inventario)
-- `empresa_compras_recepciones_avanzadas.bodega_id` identifica la bodega destino
-  dentro de la misma empresa.
-- Una recepción válida bloquea requisición e items, actualiza cantidades
-  pendientes y persiste existencia, costo, lote avanzado opcional y Kardex en
-  la misma transacción.
-- `inventario_existencias` conserva el índice único
-  `(empresa_id, producto_id, bodega_id)` y las entradas usan
-  `INSERT ... ON CONFLICT DO UPDATE` para evitar la ventana update/insert.
-- `productos` usa el índice `(empresa_id, estado, id)` para mantener el listado
-  reciente acotado por tenant.
-
-Actualizacion 2026-08-25 (cola de impresion segura)
-- No se agrega una tabla paralela: `empresa_impresoras_cola` conserva la fuente
-  canónica y la creación web reutiliza `empresa_mobile_api_idempotencia` con la
-  operación `printers.web.queue_create`, siempre por `empresa_id`.
-- La toma de pendientes selecciona y actualiza dentro de un CTE PostgreSQL con
-  `FOR UPDATE SKIP LOCKED`; evita que dos agentes reclamen la misma fila y no
-  realiza una consulta adicional por impresora.
-- El cierre exige coincidencia entre `tomado_por` y `agente_id`; repetir el mismo
-  cierre no duplica efectos. El reintento vuelve a `pendiente` y pone
-  `intentos=0` para que el límite anterior no deje la fila bloqueada.
-
-Actualizacion 2026-08-25 (conversaciones IA por usuario)
-- No se agregan tablas. `empresa_ai_consultas.conversation_id` agrupa turnos de
-  una conversación y `usuario_creador` conserva su propietario autenticado.
-- La lectura ordinaria exige simultáneamente `empresa_id` y
-  `LOWER(usuario_creador)`; así el historial no se comparte entre usuarios y
-  mantiene aislamiento multiempresa. La lectura administrativa conserva el
-  filtro `empresa_id` y requiere un rol administrativo autorizado en backend.
+Actualizacion 2026-08-26 (nomina electronica DIAN mensual)
+- La migracion empresarial
+  `20260826-005-dian-nomina-electronica-v2` endurece
+  `empresa_contabilidad_nomina_electronica`, crea
+  `empresa_nomina_dian_perfiles` y amplia las configuraciones de nomina/DIAN.
+- La unicidad fiscal queda por empresa y origen: liquidacion, trabajador/mes y
+  numero legal. Una colision o fila historica incompatible detiene la migracion
+  para conciliacion manual; no se corrige ni descarta de forma automatica.
+- Fuente y configuracion fiscal se sellan en JSON por documento. Los secretos
+  del software/certificado no se copian a esas instantaneas.
+- Los datos fiscales de nomina tambien se reflejan en
+  `empresa_facturacion_documentos`, `facturacion_electronica_reintentos` y
+  `empresa_facturacion_artefactos`, siempre con `empresa_id` y acceso cruzado de
+  Facturacion + Nomina.
 
 Actualizacion 2026-08-09 (tunel saliente de Domotica)
 - `empresa_control_electrico_raspberry_pis` agrega identidad unica, huellas de
@@ -712,7 +696,13 @@ Actualizacion 2026-05-21 (alerta visual configurable de carrito)
 Actualizacion 2026-05-20 (catalogo DIAN Colombia documentos electronicos)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `facturacion_electronica_pais` con `pais_codigo='CO'` y `UNIQUE(empresa_id, pais_codigo)`.
-- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version` para activar por empresa factura electronica, notas, documento soporte, nomina, documentos equivalentes electronicos, contingencia y eventos RADIAN.
+- `campos_pais_json` agrega/actualiza `documentos_soportados`,
+  `documentos_contadores_colombia` y `documentos_dian_catalogo_version`. Desde
+  2026-08-26 el filtro operativo admite factura, documento soporte ordinario y
+  nomina ordinaria, cada uno mediante su fuente/adaptador dedicado. La nota
+  credito se admite exclusivamente desde anulacion total. Nota credito
+  libre/parcial, nota debito, notas de ajuste, equivalentes, contingencia y
+  RADIAN permanecen catalogados sin emision generica.
 - `empresa_facturacion_documentos` y `facturacion_electronica_reintentos` aceptan los nuevos codigos canonicos como `tipo_documento`, siempre aislados por `empresa_id`.
 - Las obligaciones de contador se registran como configuracion/catalogo, no como documentos UBL de venta.
 
@@ -1046,7 +1036,11 @@ Actualizacion 2026-05-05 (carnets empresariales por empresa)
 Actualizacion 2026-05-05 (suite contable Colombia avanzada)
 - `empresa_contabilidad_exogena_formatos`: formatos DIAN/medios magneticos configurables por `empresa_id`, formato, version, año gravable, concepto, periodicidad, estado y ultima generacion.
 - `empresa_contabilidad_exogena_registros`: registros por tercero/formato para exogena, con documento, razon social, cuenta, base, IVA, retencion, total, validaciones y estado.
-- `empresa_contabilidad_nomina_electronica`: documentos de nomina electronica por empleado/documento y periodo, con salario, devengados, deducciones, total, CUNE, estado DIAN, respuesta y payload.
+- `empresa_contabilidad_nomina_electronica`: espejo de documentos de nomina
+  electronica por trabajador/mes. Ademas de salario, devengados, deducciones,
+  total, CUNE, estado y respuesta, conserva liquidacion origen, trabajador de
+  nomina, periodo `YYYY-MM`, numero/fecha legal, fuente/configuracion selladas e
+  intentos del transporte.
 - `empresa_contabilidad_documentos_soporte`: documentos soporte electronicos para compras a no obligados a facturar, con proveedor, periodo, subtotal, IVA, retenciones, total, CUDS, estado DIAN y payload.
 - `empresa_contabilidad_activos_fijos`: activos fijos por empresa con costo, valor residual, vida util, depreciacion mensual/acumulada, valor en libros y cuentas contables.
 - `empresa_contabilidad_cartera_cxp`: cuentas por cobrar y por pagar con tercero, documento, vencimiento, valor original, valor pagado, saldo, estado y referencia externa.
@@ -1159,6 +1153,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, codigo, nombre, ubicacion, responsable
 - categorias_productos:
   - empresa_id, codigo, nombre, descripcion, color_hex, orden
+  - `ux_categorias_productos_empresa_nombre_normalizado` impide repetir
+    `LOWER(BTRIM(nombre))` no vacio dentro de la misma empresa.
 - productos:
   - empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras
   - nombre, descripcion, categoria, marca, unidad_medida
@@ -1178,9 +1174,15 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - proveedores:
   - empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion
   - catalogo_referencia, precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega
+  - `ux_proveedores_empresa_nombre_normalizado` impide repetir
+    `LOWER(BTRIM(nombre))` no vacio dentro de la misma empresa; empresas
+    distintas conservan catalogos independientes.
 - servicios:
   - empresa_id, codigo, nombre, descripcion, categoria, duracion_minutos
   - costo_referencial, precio, impuesto_porcentaje, imagen_url
+  - `ux_servicios_empresa_nombre_normalizado` garantiza un solo
+    `LOWER(BTRIM(nombre))` no vacio por `empresa_id`; el codigo opcional vacio se
+    conserva como `NULL` y puede omitirse en servicios distintos.
 - producto_precios_historial:
   - empresa_id, producto_id
   - costo_anterior, costo_nuevo, precio_anterior, precio_nuevo
@@ -1645,13 +1647,65 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   runtime PostgreSQL vigente.
 
 ### Tablas de documentos transaccionales canonicos
+
+Actualizacion 2026-08-26 (documento soporte DIAN 1.1):
+- La migracion inmutable `20260826-002-dian-documento-soporte-v1` amplía
+  `empresa_contabilidad_documentos_soporte` sin inventar datos fiscales para
+  filas históricas. Los importes pasan a `NUMERIC(18,2)` y se agregan vendedor,
+  ubicación, pago, `lineas_json`, `total_neto_contable`, `numero_legal`,
+  `fecha_emision_legal`, `configuracion_dian_json` y
+  `fuente_fiscal_sellada`.
+- La migracion falla cerrada si una fila existente tiene importes negativos o
+  precisión incompatible. Las filas legadas continúan como borrador y no
+  reciben CUDS, número, dirección ni respuesta DIAN sintetizados.
+- El índice único parcial `(empresa_id,numero_legal)` evita duplicados solo
+  después de reservar número. La reserva bloquea tanto borrador como
+  `empresa_dian_documentos_configuracion`, incrementa el consecutivo en la misma
+  transacción y reutiliza la instantánea en reintentos.
+- La configuración `tipo_documento=documento_soporte` no permite reducir un
+  consecutivo ya alcanzado ni guardar un rango por debajo de éste. Los datos de
+  firma/software siguen en la configuración DIAN principal; el snapshot de
+  numeración es deliberadamente libre de secretos.
+- Las líneas se recalculan en servidor y aceptan únicamente el catálogo de
+  1.093 unidades UN/ECE Revision 4 embebido por la caja DIAN 1.1. La fuente
+  fiscal y los artefactos se conservan en las tablas privadas existentes,
+  siempre por `empresa_id`.
+
+Actualizacion 2026-08-23 (configuracion DIAN por familia documental):
+- La migracion `20260823-001-dian-documentos-configuracion-v1` crea
+  `empresa_dian_documentos_configuracion`, aislada por
+  `(empresa_id,tipo_documento)`. Guarda ambiente, estado, modo de operacion,
+  TestSet, prefijo, resolucion, vigencia, rango y consecutivo de cada familia.
+- La configuracion base `empresa_dian_configuracion` no se reutiliza como rango
+  de documento soporte, nomina, equivalentes o RADIAN. La nueva tabla inicia
+  inactiva. Documento soporte y nomina ordinaria obtuvieron adaptadores propios
+  el 2026-08-26; sus notas de ajuste y las demas familias continúan sin
+  habilitar envio hasta completar sus contratos.
+- No se reescriben filas fiscales históricas durante el despliegue. Cualquier
+  estado legado de nómina o documento soporte requiere conciliación y evidencia
+  antes de corregirse; los formularios nuevos sí quedan forzados a borrador.
+
+Actualizacion 2026-08-21 (precision fiscal y consecutivos):
+- `empresa_facturacion_documentos.monto_total` se migra por
+  `pcs-migrate` a `NUMERIC(18,2) NOT NULL DEFAULT 0`; la migracion falla
+  cerrada si encuentra valores negativos o una diferencia de precision que
+  exige conciliacion manual.
+- La reserva de `empresa_configuracion_avanzada.proximo_consecutivo` se realiza
+  bajo bloqueo PostgreSQL `FOR UPDATE` y filtro `empresa_id` antes de avanzar
+  el valor, evitando folios duplicados entre emisiones concurrentes.
+- `20260821-002-facturacion-artefactos-v1` crea el catalogo privado de XML,
+  acuses y PDF fiscales; la API y el worker solo verifican/read-write, sin DDL.
+
 - empresa_facturacion_documentos:
   - empresa_id, tipo_documento, documento_codigo
   - estado_documento, estado_anterior, evento_ultimo
   - periodo_contable, monto_total, moneda
   - numero_legal, codigo_validacion, pais_codigo, ambiente_fe
   - fecha_documento, entidad_relacionada_id
-  - uso operativo actual: soporta `factura_electronica`, `nota_credito` y `comprobante_pago`
+  - uso operativo actual: `factura_electronica` se emite desde fuente fiscal
+    inmutable y `comprobante_pago` conserva el origen comercial; `nota_credito`
+    y `nota_debito` se mantienen para consulta/legado pero su emision DIAN esta
+    bloqueada hasta contar con fuente de ajuste y adaptador propios.
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 - empresa_compras_documentos:
   - empresa_id, proveedor_id, tipo_documento, documento_codigo
@@ -1740,13 +1794,21 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - facturacion_electronica_reintentos:
   - empresa_id, tipo_documento, documento_codigo
   - pais_codigo, proveedor, ambiente
-  - estado_envio (`pendiente`, `fallido`, `enviado`, `reconciliado`, `contingencia`, `no_aplica`)
+  - estado_envio (`pendiente`, `fallido`, `enviado`, `aceptado`, `reconciliado`, `contingencia`, `no_aplica`)
   - intentos, max_intentos, proximo_intento, fecha_ultimo_intento
   - ultimo_error, respuesta_proveedor_json
   - contingencia_activa, fecha_contingencia
   - referencia_externa
   - numero_legal, codigo_validacion, fecha_emision_legal
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
+
+### Tabla de artefactos privados de facturacion electronica
+- empresa_facturacion_artefactos:
+  - empresa_id, tipo_documento, documento_codigo, tipo_artefacto
+  - `tipo_artefacto`: `xml_firmado`, `respuesta_proveedor` o `representacion_pdf`
+  - storage_ref privada fuera de `web/`, sha256, mime_type, tamano_bytes, estado
+  - UNIQUE(empresa_id, tipo_documento, documento_codigo, tipo_artefacto)
+  - la descarga siempre resuelve primero `empresa_id + id`; la API no expone `storage_ref`
 
 ### Tablas de chat y tareas (nuevo modulo)
 - chat_tareas_conversaciones:
@@ -1808,6 +1870,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_nomina_configuracion:
   - empresa_id (UNIQUE)
   - pais_codigo, moneda
+  - periodo_nomina_dian (codigo de periodicidad DIAN entre 0 y 6)
   - horas_ordinarias_semana, horas_ordinarias_dia, dias_nomina_mes, divisor_hora_ordinaria
   - hora_nocturna_desde, hora_nocturna_hasta
   - recargo_nocturno_porcentaje
@@ -1852,6 +1915,31 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, periodo, empleado_nomina_id, empleado_nombre, empleado_documento
   - ibc, salud_empleado, pension_empleado, salud_empleador, pension_empleador
   - arl, caja_compensacion, icbf, sena, total_aportes, estado
+- empresa_nomina_dian_perfiles:
+  - empresa_id, empleado_nomina_id (UNIQUE por empresa/empleado)
+  - tipo_documento_dian, primer_apellido, segundo_apellido, primer_nombre,
+    otros_nombres
+  - tipo_trabajador, subtipo_trabajador, alto_riesgo_pension,
+    salario_integral, tipo_contrato
+  - pais_codigo, departamento_codigo, municipio_codigo, direccion
+  - banco, tipo_cuenta, numero_cuenta, estado y auditoria
+- empresa_contabilidad_nomina_electronica (campos fiscales vigentes):
+  - empresa_id, empleado_id, empleado_nomina_id, liquidacion_id,
+    periodo_reporte
+  - documento, numero_legal, fecha_emision_legal, fecha_pago
+  - salario_base, devengados, deducciones, total con `NUMERIC(18,2)`
+  - cune, estado_dian, respuesta_dian, json_payload
+  - configuracion_dian_json, fuente_fiscal_json, fuente_fiscal_sellada
+  - intentos, fecha_ultimo_intento, usuario y fechas de auditoria
+  - indices unicos parciales por `(empresa_id, liquidacion_id)`,
+    `(empresa_id, empleado_nomina_id, periodo_reporte)` y
+    `(empresa_id, numero_legal)`
+- empresa_dian_configuracion (identidad de proveedor del software):
+  - software_proveedor_nit, software_proveedor_dv,
+    software_proveedor_razon_social
+  - software_proveedor_primer_apellido,
+    software_proveedor_segundo_apellido, software_proveedor_primer_nombre y
+    software_proveedor_otros_nombres
 
 ### Tabla de registro vehicular por empresa
 - empresa_vehiculos_registro:
@@ -2306,6 +2394,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.
 - 2026-05-13: se agrega `licencia_vencimiento_notificaciones` en `pcs_superadministrador` para registrar avisos de vencimiento enviados/capturados por licencia base o adicional, empresa, correo administrador, fecha de vencimiento y umbral de dias. La configuracion global vive en `configuraciones` con claves `licencias.vencimiento_alertas.*`.
 - 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar reles GPIO en Raspberry Pi por estacion. La configuracion guarda conexion HTTP por empresa; los reles asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.
+- 2026-08-23: cada fila de `empresa_control_electrico_eventos` genera un espejo de auditoria en `empresa_auditoria_eventos`, ambos con el mismo `empresa_id`. El espejo registra la referencia de estación/equipo/Raspberry y resultado, sin copiar IP, cuerpos de respuesta, tokens o secretos del evento operativo.
 - 2026-04-08: se agrega `super_servidor_eventos` en `pcs_superadministrador` para auditoria de inicio/reinicio del servidor (incluye estado previo, motivo, resultado de envio de correo y metadata operativa); ademas se incorpora clave de configuracion `gmail.restart_alert_to` para correo destino de alertas.
 - 2026-04-08: se amplía `licencias` en `pcs_superadministrador` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
 - 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `pcs_superadministrador` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.
@@ -2327,6 +2416,12 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-06: se fortalece `reservas_hotel` con politica automatica avanzada (expiracion + no_show) y reconversion operativa a carrito; el estado de reserva extiende valores operativos con `en_curso` y `no_show`.
 - 2026-04-06: se agrega `empresa_vehiculos_configuracion` para parametrizar validacion de placa/patente por pais y regex por `empresa_id`, junto con regla de duplicidad activa; se incorpora reporte operativo `operativo_vehiculos_permanencia` con exportacion PDF/XLS/CSV/JSON/TXT.
 - 2026-04-06: se agregan `empresa_asistencia_configuracion` y `empresa_asistencia_periodos_cerrados` para parametrizar tolerancias/turnos y bloquear ediciones por cierre de periodo en asistencia; se publica reporte operativo `operativo_asistencia_nomina_auditoria` para auditoria de nomina.
+- 2026-08-26: migracion
+  `20260826-005-dian-nomina-electronica-v2`; crea perfiles fiscales DIAN,
+  convierte importes historicos de nomina electronica a `NUMERIC(18,2)`, agrega
+  origen/mes/numero/fecha/fuente/configuracion/intentos, periodicidad DIAN e
+  identidad del proveedor del software, con comprobaciones e indices
+  fail-closed por empresa.
 - 2026-05-20: se documenta el alcance operativo de Nomina Colombia avanzada. No se agregan tablas nuevas en este cierre; se amplian conceptos seed, novedades aprobadas aplicadas a liquidacion y flujo demo profesional por empresa.
 - 2026-06-03: `empresa_nomina_empleados` y `empresa_nomina_liquidaciones` incorporan `sede_codigo`, `sede_nombre` y `centro_costo` para soportar nomina multi-sede, desprendibles y preparacion de documento soporte de pago de nomina electronica por empresa.
 - 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `pcs_superadministrador` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.
@@ -2489,48 +2584,38 @@ reconciliación operativa explícita.
 - `empresa_control_electrico_limites_tunel`: una fila por `empresa_id`, cuota mensual MB, porcentaje de advertencia, bloqueo, auditoría y observaciones.
 - `empresa_control_electrico_trafico_diario` conserva RX/TX/solicitudes por `(empresa_id, raspberry_id, fecha)` y añade índice por empresa/fecha para agregación mensual.
 
-## Actualizacion 2026-08-23: retiro de verticales
+## Reporte de seguimiento Domótica (2026-08-23)
 
-- La migracion empresarial `20260823-002-retire-vertical-modules-v1` elimina las tablas `empresa_gimnasio_*`, `empresa_taxi_*`, `empresa_apartamentos_turisticos_*`, `empresa_propiedad_horizontal_*` y `empresa_odontologia_*`.
-- Se elimina `empresa_venta_publica_ordenes.taxi_request_id`; el seguimiento de pedidos conserva su token propio y no depende de Taxi System.
-- Se eliminan de `empresa_modulos_colombia_*` las filas con `modulo='drogueria_farmacia'`.
-- Droguerias y farmacias usan las tablas centrales de productos e Inventario para lotes, vencimientos y alertas. No se crea un inventario sanitario paralelo.
+- No crea tablas ni retiene secretos nuevos: consulta `empresa_control_electrico_eventos`, que se filtra siempre por `empresa_id` y, de forma opcional, por `estacion_id`, `rele_id`, `raspberry_id`, `comando`, `resultado` y rango de `fecha_evento`.
+- La validación del handler comprueba que cada identificador secundario solicitado pertenece a la empresa autorizada antes de ejecutar la consulta; la UI solo carga selectores a partir del resumen de esa misma empresa.
 
-## Actualizacion 2026-08-26: historial inmutable de ventas de carrito
+## 2026-08-13 - SSH cifrado y escenas de Domotica
 
-- La migracion de empresa `20260826-002-cart-sale-history-v1` agrega el esquema
-  en instalaciones que ya tienen aplicada la linea base; la API no ejecuta DDL.
-- `empresa_ventas_estacion_metricas` agrega `carrito_codigo`, `carrito_nombre`,
-  `operacion_codigo`, `monto_efectivo`, `descuento_total` y
-  `detalle_items_json`.
-- El indice parcial unico `ux_ventas_estacion_metricas_operacion` impide repetir
-  una misma operacion no vacia dentro de `(empresa_id, evento_operacion)` y
-  permite conservar multiples cierres legítimos del mismo `carrito_id`.
-- `PayCarritoStationSession` inserta `venta_pagada`, actualiza el efectivo del
-  cierre y publica el outbox dentro de una sola transaccion PostgreSQL. El
-  snapshot conserva el detalle después de `activar_estacion?reset_items=1`.
-- Corte de caja filtra directamente el historial por `empresa_id`, fecha,
-  usuario, `cierre_caja_id` y `caja_codigo`; las filas previas a la migracion
-  conservan sus montos, pero un detalle de items ya eliminado no es recuperable.
+- `empresa_control_electrico_raspberry_pis` agrega `ssh_host`, `ssh_port`,
+  `ssh_username`, `ssh_host_key_fingerprint`, auditoría y las columnas
+  `ssh_password_enc`/`ssh_sudo_password_enc`. No existe almacenamiento de claves
+  SSH en texto plano; el cifrado usa un propósito distinto por `empresa_id` y
+  `raspberry_id`.
+- `empresa_control_electrico_escenas` conserva nombre, descripción, estado y
+  auditoría por empresa.
+- `empresa_control_electrico_escena_items` relaciona cada escena con aparatos de
+  la misma empresa, estado objetivo `on/off` y orden determinista.
+- Migraciones: `20260813-002-domotica-ssh-credentials-v1` y
+  `20260813-003-domotica-scenes-v1`.
 
-## Actualizacion 2026-08-26: idempotencia de pagos y efectos criticos
+## 2026-08-24 - Fuente fiscal inmutable y códigos DANE
 
-- `payment_checkout_idempotencia` (base super) identifica checkout por
-  `(proveedor, empresa_id, clave_hash)`, fija `solicitud_hash` y `referencia`, y
-  conserva la respuesta 2xx para replay exacto.
-- `payment_post_effect_idempotencia` (base super) identifica por proveedor,
-  fila de pago y efecto. `procesando`/`incierto` no se reclaman automaticamente;
-  solo un fallo confirmado puede abrir otro intento.
-- `pagos_wompi` y `pagos_epayco` incorporan observabilidad de intento y lease de
-  activacion. El estado `processing` es una barrera de conciliacion y no un
-  permiso de reejecucion por vencimiento.
-- `empresa_ventas_offline_sync` incorpora hash inmutable de payload, token y
-  vencimiento de claim; `empresa_facturacion_electronica_reintentos` incorpora
-  token y lease para claims con `SKIP LOCKED`.
-- `empresa_cuentas_por_pagar_pagos` conserva la huella canonica completa de la
-  solicitud idempotente.
-- `ux_empresa_eventos_contables_venta_pagada_carrito` garantiza una sola fila
-  activa `ventas/venta_pagada/carrito_compra` por empresa y carrito.
-- Migraciones: `20260826-001-payment-idempotency-v1` en superadministrador y
-  `20260826-001-sale-accounting-idempotency-v1` y
-  `20260826-003-operational-idempotency-v1` en empresas.
+- `empresa_facturacion_artefactos.tipo_artefacto` admite
+  `fuente_fiscal_json`. Para cada `(empresa_id, tipo_documento,
+  documento_codigo)` solo puede existir una fuente; repetir el mismo SHA-256 es
+  idempotente y cambiarlo devuelve `ErrEmpresaFacturacionFuenteFiscalInmutable`.
+  El JSON y su archivo permanecen privados por empresa.
+- La migración `20260823-003-facturacion-fuente-fiscal-v1` amplía el catálogo
+  del artefacto sin reescribir documentos históricos.
+- La migración `20260824-001-facturacion-dane-codes-v1` agrega
+  `departamento_codigo_dane` y `municipio_codigo_dane` a
+  `empresa_configuracion_avanzada` y `clientes`. Las columnas existentes quedan
+  nulas: el despliegue no deduce una ubicación fiscal a partir del nombre.
+- `empresa_dian_configuracion` conserva secretos cifrados con propósito por
+  `empresa_id` y campo. La API no expone valores descifrados; certificado y
+  llave privada se referencian en almacenamiento privado del tenant.

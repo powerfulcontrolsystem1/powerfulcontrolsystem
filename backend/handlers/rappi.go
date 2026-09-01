@@ -51,9 +51,9 @@ func EmpresaRappiHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := dbpkg.EnsureEmpresaRappiSchema(dbEmp); err != nil {
-			log.Printf("[rappi] ensure schema empresa_id=%d error: %v", empresaID, err)
-			http.Error(w, "No se pudo preparar la integracion Rappi", http.StatusInternalServerError)
+		if err := dbpkg.EmpresaRappiSchemaReady(dbEmp); err != nil {
+			log.Printf("[rappi] schema no disponible empresa_id=%d error: %v", empresaID, err)
+			http.Error(w, "La integracion Rappi no esta migrada", http.StatusInternalServerError)
 			return
 		}
 		switch r.Method {

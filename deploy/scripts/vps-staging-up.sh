@@ -47,6 +47,7 @@ docker compose \
   --env-file "$ENV_FILE" \
   -f deploy/docker-compose.platform.yml \
   -f deploy/docker-compose.staging.yml \
+  -f deploy/docker-compose.staging-antivirus.yml \
   config --quiet
 
 if [ "${RESET_STAGING:-0}" = "1" ]; then
@@ -55,6 +56,7 @@ if [ "${RESET_STAGING:-0}" = "1" ]; then
     --env-file "$ENV_FILE" \
     -f deploy/docker-compose.platform.yml \
     -f deploy/docker-compose.staging.yml \
+    -f deploy/docker-compose.staging-antivirus.yml \
     down -v
 fi
 
@@ -62,6 +64,7 @@ docker compose \
   --env-file "$ENV_FILE" \
   -f deploy/docker-compose.platform.yml \
   -f deploy/docker-compose.staging.yml \
+  -f deploy/docker-compose.staging-antivirus.yml \
   up -d --build
 
 echo "[OK] Staging levantado en 127.0.0.1:${HTTP_PORT:-8082}"

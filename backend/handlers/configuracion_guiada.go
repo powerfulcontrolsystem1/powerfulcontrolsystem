@@ -721,13 +721,7 @@ func defaultGuidedTariffType(kind string) string {
 }
 
 func firstNonEmptyGuidedValue(values ...string) string {
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-		if value != "" {
-			return value
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func valueOrEmpty[T any](obj *T, getter func(*T) string) string {

@@ -91,8 +91,8 @@ var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 		Description:     "Invitación y confirmación para usuarios creados dentro de una empresa.",
 		Variables:       []string{"name", "company_name", "confirm_url", "login_url", "admin_message", "admin_message_block_text", "admin_message_block_html"},
 		DefaultSubject:  "Confirma tu correo - Powerful Control System",
-		DefaultBodyText: "Hola {{name}},\n\nEl administrador de la empresa {{company_name}} te ha invitado a registrarte al sistema de motel Powerful Control System.\n\n{{admin_message_block_text}}Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.\nHaz clic en este enlace:\n{{confirm_url}}\n\nDespués de confirmar, inicia sesión aquí:\n{{login_url}}\n\nSi no solicitaste esta cuenta, ignora este mensaje.\n",
-		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>El administrador de la empresa <strong>{{company_name}}</strong> te ha invitado a registrarte al sistema de motel <strong>Powerful Control System</strong>.</p>{{admin_message_block_html}}<p>Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.</p><p><a href=\"{{confirm_url}}\">Confirmar correo</a></p><p>Después de confirmar, inicia sesión <a href=\"{{login_url}}\">aquí</a>.</p><p>Si no solicitaste esta cuenta, ignora este mensaje.</p></body></html>",
+		DefaultBodyText: "Hola {{name}},\n\nEl administrador de la empresa {{company_name}} te ha invitado a registrarte en la plataforma Powerful Control System.\n\n{{admin_message_block_text}}Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.\nHaz clic en este enlace:\n{{confirm_url}}\n\nDespués de confirmar, inicia sesión aquí:\n{{login_url}}\n\nSi no solicitaste esta cuenta, ignora este mensaje.\n",
+		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>El administrador de la empresa <strong>{{company_name}}</strong> te ha invitado a registrarte en la plataforma <strong>Powerful Control System</strong>.</p>{{admin_message_block_html}}<p>Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.</p><p><a href=\"{{confirm_url}}\">Confirmar correo</a></p><p>Después de confirmar, inicia sesión <a href=\"{{login_url}}\">aquí</a>.</p><p>Si no solicitaste esta cuenta, ignora este mensaje.</p></body></html>",
 	},
 	{
 		Key:             superEmailTemplateKeyEmpresaAdminShareInvite,
@@ -265,6 +265,7 @@ func listSuperEmailTemplates(dbSuper *sql.DB) ([]superEmailTemplateItem, error) 
 		if strings.TrimSpace(bodyHTML) == "" {
 			bodyHTML = def.DefaultBodyHTML
 		}
+		bodyText, bodyHTML = normalizeLegacyEmpresaConfirmationTemplate(def.Key, bodyText, bodyHTML)
 		items = append(items, superEmailTemplateItem{
 			Key:         def.Key,
 			Label:       def.Label,
@@ -282,12 +283,7 @@ func listSuperEmailTemplates(dbSuper *sql.DB) ([]superEmailTemplateItem, error) 
 }
 
 func latestNonEmptyString(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
+	return firstNonEmptyString(values...)
 }
 
 func applySuperEmailTemplate(dbSuper *sql.DB, key string, values map[string]string) (string, string, string, error) {
@@ -317,6 +313,7 @@ func applySuperEmailTemplate(dbSuper *sql.DB, key string, values map[string]stri
 	if strings.TrimSpace(bodyHTML) == "" && !bodyHTMLConfigured {
 		bodyHTML = def.DefaultBodyHTML
 	}
+	bodyText, bodyHTML = normalizeLegacyEmpresaConfirmationTemplate(def.Key, bodyText, bodyHTML)
 	subject = replaceTemplateVariables(subject, values)
 	bodyText = replaceTemplateVariables(bodyText, values)
 	bodyHTML = replaceTemplateVariables(bodyHTML, values)
@@ -324,6 +321,23 @@ func applySuperEmailTemplate(dbSuper *sql.DB, key string, values map[string]stri
 		bodyHTML = plainTextEmailToHTML(bodyText)
 	}
 	return subject, bodyText, bodyHTML, nil
+}
+
+func normalizeLegacyEmpresaConfirmationTemplate(key, bodyText, bodyHTML string) (string, string) {
+	if strings.TrimSpace(key) != superEmailTemplateKeyEmpresaConfirmation {
+		return bodyText, bodyHTML
+	}
+	bodyText = strings.ReplaceAll(
+		bodyText,
+		"te ha invitado a registrarte al sistema de motel Powerful Control System",
+		"te ha invitado a registrarte en la plataforma Powerful Control System",
+	)
+	bodyHTML = strings.ReplaceAll(
+		bodyHTML,
+		"te ha invitado a registrarte al sistema de motel <strong>Powerful Control System</strong>",
+		"te ha invitado a registrarte en la plataforma <strong>Powerful Control System</strong>",
+	)
+	return bodyText, bodyHTML
 }
 
 func replaceTemplateVariables(input string, values map[string]string) string {

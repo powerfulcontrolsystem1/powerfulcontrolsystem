@@ -36,4 +36,15 @@ func TestAccountCredentialChangesRotateSessions(t *testing.T) {
 	if !strings.Contains(string(adminSource), "RevokeSessionsByAdminEmail(dbSuper, existing.Email)") {
 		t.Fatal("role changes must revoke existing administrator sessions")
 	}
+	deleteStart := strings.Index(string(adminSource), "case http.MethodDelete:")
+	if deleteStart < 0 {
+		t.Fatal("administrative delete handler is missing")
+	}
+	deleteSection := string(adminSource)[deleteStart:]
+	revokeIndex := strings.Index(deleteSection, "RevokeSessionsByAdminEmail(dbSuper, targetAdmin.Email)")
+	deleteIndex := strings.Index(deleteSection, "DeleteAdministrador(dbSuper, id)")
+	invalidateIndex := strings.Index(deleteSection, "InvalidateAuthCacheForAdmin(targetAdmin.Email)")
+	if revokeIndex < 0 || deleteIndex < 0 || invalidateIndex < 0 || revokeIndex > deleteIndex || deleteIndex > invalidateIndex {
+		t.Fatal("administrator deletion must revoke sessions before deletion and invalidate authorization cache afterwards")
+	}
 }

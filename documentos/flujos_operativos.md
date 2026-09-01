@@ -4,35 +4,29 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
-## Agente PCS empresarial
+## Reenvio manual DIAN de una cola terminal
 
-1. El usuario abre el chat, Centro IA o Pedidos IA sin elegir modo, agente ni
-   modelo; el servidor aplica `agente_pcs` y el modelo global.
-2. Una consulta explicativa responde con el contexto permitido y consume la
-   cuota normal del chat.
-3. Si una tarea requiere herramienta, el servidor comprueba flag, tenant, rol,
-   licencia y límite antes de preparar una propuesta.
-4. La propuesta permite como máximo una operación y ninguna escritura ocurre
-   hasta una confirmación humana independiente e idempotente.
-
-## Recepción de compra con impacto en inventario
-
-1. El comprador crea la requisición eligiendo productos activos de la empresa,
-   obtiene cotización de un proveedor creado y registra la aprobación.
-2. En Recepción selecciona requisición, item pendiente, proveedor y bodega
-   destino; informa documento, cantidad, costo y lote opcional.
-3. El navegador conserva una `Idempotency-Key` estable para esa operación. El
-   backend vuelve a validar sesión, licencia, permiso y `empresa_id`.
-4. Una transacción bloquea requisición e item, impide recibir más de lo
-   solicitado o reutilizar el documento para esa requisición y valida producto,
-   proveedor y bodega dentro de la misma empresa.
-5. La misma transacción registra recepción, cantidad recibida/pendiente,
-   existencia, costo, lote avanzado opcional y movimiento de entrada en Kardex.
-6. Solo la suma real de items recibidos cambia la requisición a
-   `recibida_total`; elegir manualmente "total" no puede omitir pendientes.
-7. La validación operativa debe comprobar antes/después en existencia, Kardex y
-   valorización, repetir la solicitud con la misma llave y ensayar concurrencia
-   contra PostgreSQL aislado o staging.
+1. El usuario autorizado pulsa `Reenviar DIAN` sobre el documento de la
+   empresa activa; esa accion explicita es la unica que puede reabrir una cola
+   `fallido_terminal`. El worker y la emision automatica la mantienen cerrada.
+2. El backend toma el bloqueo advisory del mismo `empresa_id`, tipo y codigo de
+   documento antes de revisar o modificar la cola, evitando envios concurrentes.
+3. Si el documento, la cola o el historial ya conservan TrackId, CUFE/CUDE o
+   codigo de validacion, el reenvio se bloquea y se debe consultar el acuse para
+   no duplicar un documento fiscal.
+4. Sin evidencia fiscal, PCS reinicia el lote de intentos y registra en
+   observaciones la reactivacion, los intentos agotados y el error anterior.
+5. El envio vuelve a pasar por el adaptador DIAN normal. Toda respuesta se
+   conserva en el historial; si DIAN no entrega TrackId, se usa una referencia
+   interna de auditoria que no se puede reconsultar como `GetStatusZip`.
+6. Antes de firmar, cada familia UBL usa su `ProfileID` oficial completo y cada
+   linea informa `StandardItemIdentification`. Si no existe UNSPSC, GTIN o
+   partida arancelaria configurada, PCS usa el codigo comercial ya persistido
+   con el estandar `999`; nunca inventa una clasificacion externa.
+7. Si una respuesta rechazada dejo un XML firmado con un formato anterior, el
+   reenvio manual puede regenerarlo desde la misma fuente fiscal inmutable. El
+   XML anterior permanece vigente hasta que el nuevo supere el preflight; el
+   worker no puede ejecutar esta migracion ni alterar la fuente comercial.
 
 ## Cliente movil POS v1
 
@@ -178,17 +172,29 @@ afecte dinero, documentos, licencias o seguridad.
    antes de continuar.
 4. En `Pagos y PILA`, validar control contable, consultar provisiones, generar
    pagos y generar PILA cuando aplique.
-5. En `Nomina electronica DIAN`, usar `Preparar lote DIAN`; PCS arma el resumen
-   por empleado y muestra requisitos pendientes.
-6. Si no hay pendientes, usar `Enviar nomina electronica a DIAN`; la pantalla
-   vuelve a preparar el lote y llama el flujo fiscal existente de facturacion
-   electronica con `tipo_documento=nomina_electronica`.
-7. El envio conserva `empresa_id`, permisos existentes y configuracion DIAN de
-   la empresa; si DIAN/proveedor rechaza o no hay conectividad, la respuesta se
-   muestra en el panel de nomina y queda disponible para reintentos del modulo
-   fiscal.
-8. El tutorial vive en el mismo submenu y explica preparacion, envio, acuse,
-   ajustes y archivo documental.
+5. En `Nomina electronica DIAN`, elegir un mes calendario cerrado. PCS agrupa
+   todas las liquidaciones pagadas del trabajador en un solo candidato mensual.
+6. Completar el perfil fiscal DIAN del trabajador y la configuracion separada
+   de la familia `nomina_electronica`. La numeracion interna de nomina no usa la
+   resolucion ni el rango de factura de venta.
+7. Ejecutar `Preflight` desde la fila mensual. Reconstruye la fuente en servidor
+   y valida liquidaciones, pagos, partes, totales, ambiente y configuracion; no
+   reserva consecutivo, no firma y no transmite.
+8. Un periodo abierto, liquidaciones solapadas/cruzadas, pago ambiguo, perfil
+   incompleto o concepto horario sin intervalos reales mantiene `Emitir`
+   bloqueado. PCS no completa datos fiscales por suposicion.
+9. La emision solo se ofrece con la familia activa en produccion y exige la
+   frase exacta `EMITIR NOMINA ELECTRONICA DIAN`, ademas de aprobacion efectiva
+   tanto en Facturacion como en Nomina.
+10. El servidor reserva de forma atomica un documento por trabajador/mes,
+    sella fuente y configuracion, genera `NominaIndividual`, CUNE SHA-384 y
+    firma XAdES, valida el XML y transmite con `SendNominaSync`.
+11. XML firmado y acuse quedan privados por empresa. El worker reintenta el XML
+    ya autorizado; el procesamiento manual general omite nomina y el reenvio
+    individual exige `REENVIAR NOMINA ELECTRONICA DIAN`.
+12. Habilitacion automatica por `SendTestSetAsync`, nota de ajuste y entrega/PDF
+    dedicado de nomina siguen cerrados. No usar el correo o PDF de factura para
+    esta familia; consultar `nomina_colombia_avanzada.md`.
 
 ## Snapshot completo VPS desde super administrador
 
@@ -791,6 +797,13 @@ afecte dinero, documentos, licencias o seguridad.
 3. En Colombia, la configuracion operativa de PCS usa la modalidad DIAN
    `Software propio`; el tutorial no debe sugerir proveedor tecnologico ni
    solucion gratuita como modalidad de PCS.
+4. El Formulario 001 RUT y el Formulario 1876 de numeracion tienen controles
+   separados. Cada empresa carga su propio RUT desde la tarjeta Colombia; el
+   backend usa el `empresa_id` autenticado, valida PDF real y devuelve NIT/DV,
+   nombre legal, ubicacion DANE y responsabilidades para revision.
+5. `Aplicar datos revisados` solo llena los formularios visibles. Los cambios
+   se persisten al guardar DIAN Colombia y Configuracion avanzada; el PDF del
+   RUT no se almacena y la carga no firma, emite ni transmite documentos.
 
 ## Configurar empresa
 
@@ -866,18 +879,18 @@ afecte dinero, documentos, licencias o seguridad.
    `action=validar_credenciales` y luego `action=pruebas_dian`.
 9. La pagina `Facturacion electronica > Pasar test DIAN` muestra estado de
    ambiente, rango, TestSetId y credenciales; desde alli se guarda el objetivo
-   del set que aparece en el portal DIAN, incluyendo totales requeridos y
-   minimos aceptados por facturas, notas debito y notas credito. La barra
+   del set que aparece en el portal DIAN para la factura electronica. Las notas
+   debito y credito no se incluyen mientras sus adaptadores esten bloqueados.
+   La barra
    `Avance de validacion DIAN` muestra un porcentaje operativo 0-100% por
    hitos, pero no reemplaza el acuse final de DIAN.
 10. `Ejecutar set automatico` usa los valores guardados para generar el lote
-   completo; los botones `Enviar factura`, `Enviar nota debito` y `Enviar nota
-   credito` permiten probar un documento a la vez y ver si fue recibido,
-   aceptado, rechazado o queda pendiente.
-   Para la empresa interna Powerful Control System, el set registrado desde el
-   portal de habilitacion es: 50 documentos totales, 30 facturas electronicas,
-   10 notas debito, 10 notas credito, minimo aceptado total 1 y minimo aceptado
-   de facturas 1.
+   de factura electronica. Los controles de nota debito y nota credito deben
+   permanecer indisponibles hasta disponer de fuente de ajuste y adaptadores
+   DIAN propios. El resultado de factura permite ver si fue recibido, aceptado,
+   rechazado o queda pendiente.
+   No existe preset numerico: cada empresa debe guardar el objetivo exacto que
+   muestre su portal DIAN. Sin objetivo persistido, el envio automatico queda bloqueado.
 11. El resultado visual debe mostrar resumen por estado, aceptados por tipo,
    mensaje de recepcion y si el minimo configurado ya se cumple. No se debe
    declarar produccion local hasta tener acuse suficiente de DIAN/proveedor.
@@ -899,11 +912,9 @@ afecte dinero, documentos, licencias o seguridad.
 16. Estado operativo actual: el set real configurado por empresa debe quedar
    como envio real con HTTP 200, TrackId/ZipKey y respuesta inicial `Batch en
    proceso de validacion`. Ese estado todavia no equivale a aceptacion final.
-17. Lo que falta en el modulo DIAN/documentos electronicos es consultar y
-   persistir el acuse final por TrackId hasta aceptado/rechazado, reconciliar
-   `facturacion_electronica_reintentos` y `empresa_facturacion_documentos`,
-   mostrar un resumen claro en la pantalla y habilitar produccion local solo
-   cuando los minimos aceptados del set esten cumplidos.
+17. Los TrackId pendientes se consultan desde `pcs-worker` sin regenerar el XML;
+   el modulo persiste XML firmado, acuse y PDF fuera de `web/`, con SHA-256 y
+   aislamiento por empresa. El correo fiscal de produccion espera aceptacion DIAN.
 18. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
    archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
    puede consultar ni modificar la configuracion. Luego usar `Verificar
@@ -1397,21 +1408,25 @@ afecte dinero, documentos, licencias o seguridad.
    liquidaciones, pagos, costo empresa y sedes activas.
 7. Para Colombia, la seccion avanzada consulta conceptos, novedades, PILA y el
    resumen de documentos electronicos de nomina.
-8. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` valida el
-   periodo y muestra liquidaciones listas por empleado para documento soporte de
-   pago de nomina electronica.
-9. `POST /api/empresa/nomina?action=preparar_nomina_electronica` prepara el lote
-   por empleado con devengados, deducciones, neto, IBC, sede y centro de costo.
-   El envio real a DIAN sigue dependiendo de firma, CUNE, numeracion,
-   credenciales y transporte documental configurados por empresa en facturacion
-   electronica.
+8. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` consolida
+   por trabajador y mes calendario todas las liquidaciones activas con pagos
+   reales, y devuelve bloqueos/preflight sin efectos fiscales.
+9. `POST /api/empresa/nomina?action=preparar_nomina_electronica` conserva la
+   revision compatible. `GET action=nomina_electronica_preflight` valida la
+   fuente mensual completa; solo
+   `POST /api/empresa/facturacion_electronica?action=emitir_nomina_electronica`
+   puede reservar, sellar, firmar y usar `SendNominaSync`, con doble permiso y
+   confirmacion fuerte.
 10. La pagina `web/administrar_empresa/nomina_tutorial.html` debe abrirse desde
    el boton `Tutorial` de nomina y conservar `empresa_id`; explica el orden
    recomendado: parametros legales, configuracion, empleados, novedades,
    liquidacion, pagos/PILA, preparacion del lote DIAN y revision de acuses.
-11. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
-   sedes, liquidaciones por sede, PILA, pagos, desprendible y botones `Ver estado
-   DIAN` / `Preparar lote DIAN`; abrir `Tutorial` y `Ayuda` desde nomina.
+11. Pruebas de nomina ordinaria: verificar empleados en varias sedes,
+   liquidaciones, PILA, pagos y desprendibles. Para DIAN no usar semillas ni
+   fabricar pagos/configuracion: validar perfil, candidato mensual, preflight y
+   dialogo sin confirmar una emision real salvo autorizacion fiscal especifica.
+12. `NominaIndividualDeAjuste`, habilitacion automatica y distribucion grafica
+   dedicada permanecen bloqueadas y deben presentarse como limites visibles.
 
 ## Carrito: medios de pago y pagos combinados
 
@@ -1501,25 +1516,62 @@ afecte dinero, documentos, licencias o seguridad.
 3. En `Centro de habilitacion DIAN` se pulsa `Consultar clave tecnica DIAN` para
    ejecutar `GetNumberingRange` y guardar la clave tecnica del rango.
 4. Se valida configuracion, firma digital, certificado, software ID/PIN, NIT/DV,
-   ambiente, prefijo, rango y cliente antes de emitir.
-5. La factura se genera con UBL 2.1, `DianExtensions`, `SoftwareSecurityCode`,
-   CUFE/CUDE, QR, parties, impuestos, totales y lineas. El backend bloquea XML
-   incompleto en preflight.
-6. El envio oficial usa DIAN SOAP/WCF con WS-Security y firma RSA-SHA256. No
-   modificar canonicacion/firma sin prueba real DIAN.
+   ambiente, prefijo, rango, emisor, cliente y sus codigos DANE antes de emitir.
+5. Solo la factura comercial se genera con UBL 2.1 desde una
+   `fuente_fiscal_json` inmutable del carrito pagado, con `DianExtensions`,
+   `SoftwareSecurityCode`, CUFE, QR, parties, impuestos, totales y lineas
+   reales. El backend bloquea XML incompleto en preflight.
+6. El envio oficial usa DIAN SOAP/WCF con WS-Security y firma RSA-SHA256 desde
+   el despachador interno; las acciones directas de firma/envio estan cerradas.
+   No modificar canonicacion/firma sin prueba real DIAN.
 7. Un acuse aceptado deja `estado_envio=aceptado`. `Regla 90` por documento ya
    procesado queda como pendiente de consulta del acuse original; no equivale por
    si sola a aceptacion.
-8. Un rechazo deja el documento en cola/reintentos y crea alerta en el buzon del
-   administrador de la empresa. La consola DIAN muestra el error en rojo con
-   guia de solucion.
-9. En produccion PCS, el portal DIAN confirmo `1PCS2` y `1PCS3` como `Aprobado
-   con notificacion`; el siguiente consecutivo esperado despues de esa prueba es
-   `1PCS4`.
-10. `Aprobado con notificacion` cuenta como documento aprobado; la notificacion
-    se conserva como observacion y se corrigen datos maestros si aplica.
+   Cuando el documento local estaba `pendiente_emision`, la aceptación con
+   CUFE/CUDE oficial completa de forma idempotente la transición a `emitida`.
+   Una reejecución sobre la cola ya aceptada solo repara esa sincronización local
+   y nunca vuelve a transmitir el XML.
+   Una respuesta sincronica `SendBillSync` sin `TrackId` usa solamente la
+   referencia interna `sync:<documento>` para persistir historial. Esa referencia
+   no es un TrackId DIAN y nunca se consulta con `GetStatusZip`.
+8. Un rechazo deja la factura en cola/reintentos y crea alerta en el buzon del
+   administrador. El reintento reutiliza el XML solo si la fuente fiscal
+   inmutable del mismo documento sigue disponible y valida.
+9. Los registros `1PCS2` y `1PCS3` son evidencia historica de portal; no
+   certifican la configuracion ni el candidato actual. El consecutivo vigente
+   debe leerse de la configuracion y portal actuales, nunca inferirse de ellos.
+10. `Aprobado con notificacion` cuenta como documento aprobado solo cuando el
+    acuse/portal pertenece al XML y folio actual; la notificacion se conserva
+    como observacion y se corrigen datos maestros si aplica.
 11. Antes de reenviar un mismo prefijo/folio, consultar historial DIAN, cola de
-    reintentos, CUFE/TrackId o portal DIAN para evitar duplicados y `Regla 90`.
+    reintentos, CUFE/TrackId o portal para evitar duplicados y `Regla 90`.
+12. Al pagar, la respuesta y la interfaz deben mostrar por separado el
+    comprobante comercial y la factura electronica. Una advertencia/rechazo DIAN
+    no se oculta detras del mensaje de pago exitoso.
+
+### Anulacion total mediante nota credito DIAN
+
+1. Seleccionar una factura electronica emitida y confirmar que su integracion
+   fiscal esta aceptada y conserva CUFE oficial, XML firmado y fuente fiscal.
+2. Ejecutar `anular_factura_nota_credito` con motivo de al menos 10 caracteres.
+   No se admiten lineas, impuestos ni referencia fiscal libres del navegador.
+3. PCS reserva un consecutivo interno de nota, deriva una fuente fiscal separada
+   con las lineas de la factura y referencia su numero legal, CUFE y fecha fiscal.
+4. El `CreditNote` usa código de correccion 2 para anulacion total, CUDE propio y
+   se firma/envia por el despachador DIAN. Un fallo queda en cola sin anular la
+   factura original.
+5. Solo cuando el acuse DIAN de la nota es aceptado, PCS cambia la factura a
+   `anulada`. Reintentos y reconciliacion aplican la misma regla idempotente.
+6. Nota credito parcial/libre y nota debito permanecen bloqueadas hasta tener una
+   fuente de ajuste estructurada proveniente de una operacion empresarial real.
+7. La bandeja habilita la anulacion solo si la factura conserva CUFE oficial y
+   `fuente_fiscal_disponible=true`. Un documento historico sin snapshot queda en
+   consulta; no se reconstruyen lineas, impuestos o cliente por suposicion.
+8. `reconciliar_aceptados_local` repara exclusivamente los datos locales de una
+   cola ya aceptada/reconciliada. Omite el resto antes de cualquier despacho, no
+   vuelve a transmitir el XML ni aumenta intentos o fechas de envio. La accion
+   general `reconciliar_estados` conserva el flujo operativo de pendientes y no
+   debe usarse para un cierre limitado a acuses aceptados.
 
 ### Errores DIAN que el usuario puede resolver
 
@@ -1538,6 +1590,23 @@ afecte dinero, documentos, licencias o seguridad.
    correccion posterior.
 8. Firma o resolucion vencida: renovar, cargar en PCS, asociar en DIAN y volver a
    probar.
+
+### Factura electrónica comercial Colombia con fuente real (2026-08-24)
+
+1. Completar emisor y cliente con documento, responsabilidad tributaria,
+   dirección, departamento/municipio y códigos DANE coherentes.
+2. Confirmar que cada línea del carrito tenga descripción, unidad convertible a
+   código DIAN, código de impuesto y porcentaje explícitos; no se inventa el
+   tratamiento de una línea al 0 %.
+3. Al pagar, PCS persiste primero el comprobante y su `fuente_fiscal_json`
+   inmutable antes de reutilizar o limpiar el carrito.
+4. La factura carga la fuente por `empresa_id` y documento, concilia líneas,
+   impuestos y total, reserva el folio, genera UBL, firma, guarda XML y solo
+   entonces transmite por el flujo canónico.
+5. Una respuesta de transporte sin acuse concluyente queda pendiente; solo el
+   acuse oficial permite marcar aceptada y enviar XML/PDF al cliente.
+6. Nota crédito/débito, soporte, nómina, equivalentes, contingencia y RADIAN
+   permanecen bloqueados mientras no tengan fuente y adaptador específicos.
 ## Domotica: provisionar Raspberry desde su navegador
 
 1. El administrador abre PCS en la Raspberry, entra a Domotica y registra el
@@ -1568,66 +1637,14 @@ afecte dinero, documentos, licencias o seguridad.
 11. Una entrada GPIO autenticada puede encender/apagar el aparato destino,
     iniciar su temporizador o respetar su agenda; todo ON reserva la cola única
     de la empresa.
+### Preflight fiscal antes de pagar una factura Colombia
 
-## Sensores de puertas: barrido de cuatro entradas por salida
-
-1. El administrador abre PCS desde la Raspberry y agrega el controlador eligiendo `Sistema de sensores en puertas`.
-2. Define 1–16 relés de salida y el retardo en milisegundos; guardar crea cuatro canales por salida sin empresa ni estación elegidas por el agente.
-3. Descarga y ejecuta una vez el instalador con `sudo`; `systemd` deja autoarranque y el túnel HTTPS saliente.
-4. En cada ciclo el agente mantiene todas las salidas bajas, eleva OUTn, espera el delay, lee IN1–IN4 y baja OUTn antes de avanzar.
-5. El túnel valida dispositivo, uso y rango, actualiza estado/`last_seen`, conserva transiciones y solo autoactiva la estación asociada cuando la política empresarial lo permite.
-6. En Configuración de sensores, el administrador pulsa `Asignar habitación` sobre cada OUT/IN y guarda una estación válida de la misma empresa.
-7. Cambiar cantidad conserva asociaciones dentro del rango y desactiva canales sobrantes; cambiar a Domótica desactiva todos los canales automáticos y detiene el barrido en el siguiente poll.
-8. La bitácora permite reconstruir alta, configuración, instalación, enrolamiento, asignaciones, operaciones y desactivación de la Raspberry.
-
-## Portal publico y plantillas vigentes
-
-1. El visitante abre `web/index.html`; la pagina solicita
-   `/api/public/pagina_principal` y `/api/public/informacion_de_modulos`.
-2. El backend normaliza las tarjetas guardadas y descarta cualquier destino de
-   un modulo o plantilla retirado.
-3. El frontend repite el filtro como defensa ante respuestas antiguas y combina
-   las tarjetas personalizadas con cuatro plantillas clasicas y nueve nuevas.
-4. La combinacion usa la clave `module` para no duplicar Parqueadero,
-   Domicilios, Alquileres o Construccion/AIU si ya llegaron desde la API.
-5. `descripcion_de_los_sistemas.html` y la ruta compatible `.ht` reciben el
-   mismo conjunto, muestran 53 modulos y 13 plantillas y llevan el CTA publico
-   al registro cuando el destino operativo exige autenticacion.
-6. El superadministrador puede editar hasta 12 tarjetas personalizadas; el
-   guardado nunca restaura elementos retirados.
-
-## Vida personal: gasto, comprobante y suscripcion
-
-1. Una cuenta autenticada abre `Vida` desde Administrar empresa; el backend
-   valida empresa, rol, permiso y deriva `usuario_id` de la sesion.
-2. Para un gasto, el usuario confirma fecha, categoria, comercio, valor, moneda
-   y medio de pago. Desde movil puede abrir la camara con el selector de recibo.
-3. Si adjunta comprobante, el backend limita el cuerpo, valida JPEG, PNG, WebP
-   o PDF y lo guarda fuera de `web/` bajo la empresa. La fila solo conserva la
-   referencia privada.
-4. La alta usa una clave idempotente ligada a empresa, usuario y contenido. Un
-   reintento devuelve el mismo gasto; otro contenido con la misma clave falla.
-5. Listar, editar, descargar o eliminar repite el filtro
-   `empresa_id + usuario_id + id`. Borrar un gasto propio elimina despues su
-   archivo privado, sin aceptar referencias aportadas por el cliente.
-6. Una suscripcion guarda costo, periodicidad, proxima renovacion, dias de
-   anticipacion y si el aviso es para renovar, cancelar o ambas acciones.
-7. Las alertas aparecen en Vida y en el contador del menu. Con permiso explicito
-   del navegador se muestra una alarma deduplicada mientras PCS permanece
-   abierto; no se contacta automaticamente al proveedor.
-8. `Renovar` avanza la fecha respetando el ultimo dia del mes. Ninguna accion de
-   Vida genera contabilidad, caja, inventario, CxP o documentos fiscales.
-
-## Idempotencia en pagos, ventas e integraciones
-
-1. La UI conserva una `Idempotency-Key` por intento logico de checkout y el
-   backend deriva una referencia estable sin exponer la clave.
-2. Antes de invocar una pasarela se reclama la clave y se fija el hash del
-   request. Una repeticion completada obtiene la misma respuesta.
-3. Un timeout de proveedor marca el intento como incierto y bloquea el reenvio
-   automatico hasta conciliar la referencia.
-4. Al pagar carrito, estado, caja, historial y outbox confirman juntos. El
-   worker recupera la proyeccion contable con unicidad por empresa/carrito.
-5. Offline, DIAN y workers reclaman filas con token/lease; Rappi manual usa
-   ledger durable y sus webhooks deduplican por empresa/orden.
-6. Toda conciliacion conserva `empresa_id`, permisos y propiedad de IDs hijos.
+- Si el pago solicita factura electrónica (manual o automática), el backend
+  reconstruye en memoria la misma fuente fiscal a partir del carrito, cliente y
+  emisor reales antes de cerrar la venta.
+- Datos maestros incompletos, códigos DANE inválidos, líneas sin código/unidad o
+  totales/impuestos no conciliados responden `409` sin pagar, reservar consecutivo,
+  firmar ni transmitir.
+- Descuentos y devoluciones globales no distribuidos se rechazan para factura;
+  deben aplicarse por línea o usarse únicamente con comprobante de pago.
+- Una fuente con bloqueantes nunca se persiste como artefacto inmutable.

@@ -156,9 +156,9 @@ func UpsertEstacionColumnPreferences(dbConn *sql.DB, p *EstacionColumnPreference
 	}
 
 	// Insert
-	res, err := dbConn.Exec(`INSERT INTO estacion_column_preferences (empresa_id, usuario_email, rol_id, columnas, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, NULLIF(?, ''), NULLIF(?, 0), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'))`, p.EmpresaID, usuario, p.RolID, columnas, p.UsuarioCreador, p.Estado)
+	id, err := insertSQLCompat(dbConn, `INSERT INTO estacion_column_preferences (empresa_id, usuario_email, rol_id, columnas, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, NULLIF(?, ''), NULLIF(?, 0), ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, COALESCE(NULLIF(?, ''), 'activo'))`, p.EmpresaID, usuario, p.RolID, columnas, p.UsuarioCreador, p.Estado)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }

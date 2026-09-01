@@ -498,7 +498,7 @@ func UpsertTipoEmpresaPreconfiguracion(dbConn *sql.DB, item TipoEmpresaPreconfig
 	if item.TipoEmpresaID <= 0 {
 		return 0, errors.New("tipo_empresa_id invalido")
 	}
-	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
+	if err := PlantillasLicenciasSchemaReady(dbConn); err != nil {
 		return 0, err
 	}
 	enabled := 0
@@ -686,6 +686,12 @@ func canSkipDefaultTipoEmpresaSeed(dbConn *sql.DB, totalTipos int) (bool, error)
 // EnsureCanonicalTiposEmpresaPreconfigurables registra tipos operativos base
 // cuando aun no existen, para que la preconfiguracion no dependa de captura manual.
 func EnsureCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
+	return SyncCanonicalTiposEmpresaPreconfigurables(dbConn)
+}
+
+// SyncCanonicalTiposEmpresaPreconfigurables sincroniza el catálogo de tipos;
+// no crea ni altera esquema.
+func SyncCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
 	tipos, err := GetTiposEmpresas(dbConn)
 	if err != nil {
 		return err

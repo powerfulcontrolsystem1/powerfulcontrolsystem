@@ -776,7 +776,7 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		h := sanitizeHistorial(body.Historial, 6)
-		answer, _, _, err := ctrl.generateResponseWithSystemPrompt(model, p, h, systemPrompt, empresaAISafetyIdentifier("portal:"+scope+":"+resolveAuditoriaIP(r)))
+		answer, _, _, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, p, h, systemPrompt)
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]interface{}{
 				"ok":                  false,

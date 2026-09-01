@@ -16,8 +16,23 @@ fi
 
 install -d -m 0750 /opt/pcs-domotica /etc/pcs-domotica
 
+# Conserva la red Wi-Fi ya configurada por el administrador y la marca para
+# reconectar indefinidamente tras una perdida de energia, AP o Internet. No se
+# escriben SSID ni claves en este instalador ni en los registros.
+if command -v nmcli >/dev/null 2>&1; then
+  nmcli radio wifi on >/dev/null 2>&1 || true
+  active_wifi="$(nmcli -g GENERAL.CONNECTION device show wlan0 2>/dev/null | head -n 1 || true)"
+  if [ -n "$active_wifi" ] && [ "$active_wifi" != "--" ]; then
+    nmcli connection modify "$active_wifi" connection.autoconnect yes connection.autoconnect-retries 0 >/dev/null 2>&1 || true
+  fi
+fi
+if command -v wpa_cli >/dev/null 2>&1; then
+  wpa_cli -i wlan0 reconnect >/dev/null 2>&1 || true
+  wpa_cli -i wlan0 save_config >/dev/null 2>&1 || true
+fi
+
 cat > /etc/pcs-domotica/agent.json <<'PCS_CONFIG'
-{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.3.0"}
+{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.6.0"}
 PCS_CONFIG
 chmod 0600 /etc/pcs-domotica/agent.json
 
@@ -41,6 +56,8 @@ inputs_cache = []
 door_scan_lock = threading.Lock()
 door_scan_cache = {}
 stop_event = threading.Event()
+network_recovery_lock = threading.Lock()
+network_recovery_after = 0.0
 
 
 def log(message):
@@ -73,6 +90,20 @@ def local_ip():
         sock.close()
 
 
+def read_boot_id():
+    """Devuelve un ID estable durante el arranque real del sistema."""
+    try:
+        with open("/proc/sys/kernel/random/boot_id", "r", encoding="ascii") as handle:
+            value = handle.read(96).strip().lower()
+        if re.fullmatch(r"[0-9a-f-]{16,64}", value):
+            return value
+    except OSError:
+        pass
+    # Respaldo para plataformas sin boot_id; mantiene compatibilidad sin
+    # impedir la reconexion del agente.
+    return os.urandom(16).hex()
+
+
 def request_json(config, action, payload, authenticated=True, timeout=35):
     url = config["base_url"].rstrip("/") + API_PATH + "?action=" + action
     body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
@@ -84,6 +115,43 @@ def request_json(config, action, payload, authenticated=True, timeout=35):
     with urllib.request.urlopen(req, timeout=timeout) as response:
         raw = response.read(262144)
         return json.loads(raw.decode("utf-8")) if raw else {}
+
+
+def retry_after_seconds(exc):
+    """Lee Retry-After sin permitir que un servidor fuerce una espera enorme."""
+    try:
+        value = int(exc.headers.get("Retry-After", ""))
+    except (AttributeError, TypeError, ValueError):
+        return 0
+    return max(0, min(300, value))
+
+
+def request_network_reconnect():
+    """Solicita reconexion a la red local sin conocer ni registrar claves Wi-Fi.
+
+    NetworkManager es el caso habitual en instalaciones recientes; wpa_cli
+    cubre Raspberry Pi OS con wpa_supplicant. Se limita en el tiempo y se llama
+    solo despues de errores repetidos del tunel, por lo que no reinicia la Pi ni
+    interrumpe una conexion sana.
+    """
+    global network_recovery_after
+    now = time.monotonic()
+    with network_recovery_lock:
+        if now < network_recovery_after:
+            return
+        network_recovery_after = now + 30.0
+    try:
+        if shutil.which("nmcli"):
+            subprocess.run(["nmcli", "networking", "on"], check=False, capture_output=True, text=True, timeout=8)
+            subprocess.run(["nmcli", "radio", "wifi", "on"], check=False, capture_output=True, text=True, timeout=8)
+            subprocess.run(["nmcli", "device", "connect", "wlan0"], check=False, capture_output=True, text=True, timeout=15)
+            log("Se solicito reconexion Wi-Fi mediante NetworkManager")
+            return
+        if shutil.which("wpa_cli"):
+            subprocess.run(["wpa_cli", "-i", "wlan0", "reconnect"], check=False, capture_output=True, text=True, timeout=8)
+            log("Se solicito reconexion Wi-Fi mediante wpa_supplicant")
+    except (OSError, subprocess.SubprocessError) as exc:
+        log("No se pudo solicitar reconexion Wi-Fi: " + str(exc))
 
 
 class GPIOBackend:
@@ -243,114 +311,103 @@ def monitor_inputs(config):
         stop_event.wait(0.2)
 
 
-def monitor_door_sensors(config):
-    states = {}
-    pending = {}
-    configured_signature = None
-    active_outputs = []
-    last_full_report = 0.0
-    while not stop_event.is_set():
-        with door_scan_lock:
-            current = dict(door_scan_cache)
-        input_pins = [int(pin) for pin in current.get("input_pins", []) if 0 <= int(pin) <= 27]
-        output_pins = [int(pin) for pin in current.get("output_pins", []) if 0 <= int(pin) <= 27]
-        if len(input_pins) != 4 or not output_pins:
-            if active_outputs:
-                for pin in active_outputs:
-                    try: gpio.set_output(pin, False, True)
-                    except Exception as exc: log("No se pudo desactivar salida selectora: " + str(exc))
-                active_outputs = []
-            configured_signature = None
-            states.clear()
-            pending.clear()
-            stop_event.wait(0.5)
-            continue
-        delay_ms = max(10, min(5000, int(current.get("delay_ms", 100) or 100)))
-        signature = (tuple(input_pins), tuple(output_pins), delay_ms, str(current.get("input_pull", "up")))
-        if signature != configured_signature:
-            for pin in range(4, 20):
-                gpio.set_output(pin, False, True)
-            for pin in input_pins:
-                gpio.configure_input(pin, current.get("input_pull", "up"))
-            active_outputs = list(output_pins)
-            states.clear()
-            pending.clear()
-            configured_signature = signature
-            last_full_report = 0.0
-            log("Barrido de puertas activo: {} salidas x 4 entradas, {} ms".format(len(output_pins), delay_ms))
+VEDIRECT_PRODUCTS = {
+    "0xA042": "Victron BlueSolar MPPT 75/15",
+    "0xA07A": "Victron BlueSolar MPPT 75/15 rev2",
+    "0xA07D": "Victron BlueSolar MPPT 75/15 rev3",
+}
+
+
+def vedirect_candidates():
+    import glob
+    preferred = []
+    configured = os.environ.get("PCS_VEDIRECT_PORT", "").strip()
+    if configured:
+        preferred.append(configured)
+    preferred.extend(glob.glob("/dev/serial/by-id/*Victron*"))
+    preferred.extend(glob.glob("/dev/serial/by-id/*VE_Direct*"))
+    preferred.extend(glob.glob("/dev/serial/by-id/*Prolific*"))
+    preferred.extend(glob.glob("/dev/serial/by-id/*FTDI*"))
+    preferred.extend(glob.glob("/dev/ttyUSB*"))
+    preferred.extend(glob.glob("/dev/ttyACM*"))
+    out = []
+    seen = set()
+    for path in preferred:
         try:
-            for output_index, output_pin in enumerate(output_pins, 1):
-                try:
-                    gpio.set_output(output_pin, True, True)
-                    if stop_event.wait(delay_ms / 1000.0):
-                        break
-                    for input_index, input_pin in enumerate(input_pins, 1):
-                        value = gpio.read_input(input_pin)
-                        key = (output_index, input_index)
-                        previous = states.get(key)
-                        if previous is None:
-                            states[key] = (value, value, 1)
-                            pending[key] = value
-                            continue
-                        stable, observed, count = previous
-                        if value != observed:
-                            states[key] = (stable, value, 1)
-                        else:
-                            count += 1
-                            if value != stable and count >= 2:
-                                stable = value
-                                pending[key] = value
-                            states[key] = (stable, observed, count)
-                finally:
-                    gpio.set_output(output_pin, False, True)
-            now = time.monotonic()
-            full_report = now - last_full_report >= 30.0
-            report = {}
-            if full_report:
-                report = {key: value[0] for key, value in states.items()}
-            report.update(pending)
-            if report:
-                readings = [{"output_index": key[0], "input_index": key[1], "value": value} for key, value in sorted(report.items())]
-                request_json(config, "door_scan", {"readings": readings}, timeout=20)
-                for key in report:
-                    pending.pop(key, None)
-                if full_report:
-                    last_full_report = now
-        except Exception as exc:
-            log("Barrido de sensores de puertas no disponible: " + str(exc))
-            for pin in output_pins:
-                try: gpio.set_output(pin, False, True)
-                except Exception: pass
-            stop_event.wait(1.0)
+            real = os.path.realpath(path)
+        except OSError:
+            continue
+        if real in seen or not os.path.exists(real):
+            continue
+        seen.add(real)
+        out.append(path)
+    return out
 
 
-def read_vedirect(path="/dev/ttyUSB0"):
+def parse_vedirect_block(data):
+    marker = b"\r\nChecksum\t"
+    cursor = 0
+    while True:
+        checksum_at = data.find(marker, cursor)
+        if checksum_at < 0 or checksum_at + len(marker) >= len(data):
+            return None
+        end = checksum_at + len(marker) + 1
+        start = data.rfind(b"\r\nPID\t", cursor, checksum_at)
+        cursor = end
+        if start < 0:
+            continue
+        block = data[start:end]
+        if sum(block) % 256 != 0:
+            continue
+        values = {}
+        for line in block[:checksum_at - start].split(b"\r\n"):
+            if b"\t" not in line:
+                continue
+            key, value = line.split(b"\t", 1)
+            values[key.decode("ascii", "ignore").strip()] = value.decode("ascii", "ignore").strip()
+        if values.get("PID") and values.get("V") is not None and values.get("VPV") is not None:
+            return values
+
+
+def read_vedirect():
     import termios
-    if not os.path.exists(path):
-        return None
-    fd = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-    try:
-        attrs = termios.tcgetattr(fd)
-        attrs[0] = attrs[1] = attrs[3] = 0
-        attrs[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
-        attrs[4] = attrs[5] = termios.B19200
-        attrs[6][termios.VMIN] = 0
-        attrs[6][termios.VTIME] = 0
-        termios.tcsetattr(fd, termios.TCSANOW, attrs)
-        end = time.monotonic() + 1.5
-        data = b""
-        while time.monotonic() < end:
-            try: data += os.read(fd, 4096)
-            except BlockingIOError: pass
-            time.sleep(0.05)
-    finally:
-        os.close(fd)
-    values = {}
-    for line in data.decode("ascii", "ignore").splitlines():
-        if "\t" in line:
-            key, value = line.split("\t", 1)
-            values[key.strip()] = value.strip()
-    if "V" not in values or "VPV" not in values:
+    values = None
+    selected_path = ""
+    for path in vedirect_candidates():
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOCTTY | os.O_NONBLOCK)
+        except OSError:
+            continue
+        try:
+            attrs = termios.tcgetattr(fd)
+            attrs[0] = attrs[1] = attrs[3] = 0
+            attrs[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
+            attrs[4] = attrs[5] = termios.B19200
+            attrs[6][termios.VMIN] = 0
+            attrs[6][termios.VTIME] = 0
+            termios.tcsetattr(fd, termios.TCSANOW, attrs)
+            termios.tcflush(fd, termios.TCIFLUSH)
+            end = time.monotonic() + 2.6
+            data = b""
+            while time.monotonic() < end and len(data) < 65536:
+                try:
+                    chunk = os.read(fd, 4096)
+                    if chunk:
+                        data += chunk
+                        values = parse_vedirect_block(data)
+                        if values:
+                            selected_path = os.path.realpath(path)
+                            break
+                except BlockingIOError:
+                    pass
+                time.sleep(0.05)
+        except (OSError, termios.error):
+            values = None
+        finally:
+            os.close(fd)
+        if values:
+            break
+    if not values:
         return None
     def number(key, scale=1.0):
         try: return float(values.get(key, 0)) * scale
@@ -358,31 +415,44 @@ def read_vedirect(path="/dev/ttyUSB0"):
     current = number("I", 0.001)
     voltage = number("V", 0.001)
     solar_w = number("PPV")
+    pid = values.get("PID", "")
+    charge_states = {"0":"apagado", "1":"baja_potencia", "2":"falla", "3":"bulk", "4":"absorcion", "5":"flotacion", "6":"almacenamiento", "7":"ecualizacion", "245":"iniciando"}
+    charger_state = charge_states.get(values.get("CS", ""), "desconocido")
     return {
-        "modelo": "Victron BlueSolar MPPT 75/15 VE.Direct",
+        "modelo": VEDIRECT_PRODUCTS.get(pid, "Victron MPPT VE.Direct " + pid),
         "lectura": {
             "potencia_solar_w": solar_w, "produccion_dia_kwh": number("H20", 0.01),
             "bateria_voltaje_v": voltage, "bateria_corriente_a": current,
             "bateria_carga_w": max(0.0, voltage * current), "bateria_descarga_w": max(0.0, -voltage * current),
             "estado_paneles": "produciendo" if solar_w > 0 else "sin_produccion",
             "estado_bateria": "cargando" if current > 0 else ("descargando" if current < 0 else "reposo"),
-            "estado_inversor": "no_reportado",
-            "raw": {"protocolo":"VE.Direct", "vpv_v":number("VPV", 0.001), "cs":values.get("CS", ""), "err":values.get("ERR", ""), "h19_kwh":number("H19", 0.01), "h21_w":number("H21")}
+            "estado_inversor": charger_state,
+            "raw": {"protocolo":"VE.Direct", "puerto":selected_path, "checksum_valido":True,
+                    "pid":pid, "serial":values.get("SER#", ""), "firmware":values.get("FW", ""),
+                    "vpv_v":number("VPV", 0.001), "cs":values.get("CS", ""), "estado_cargador":charger_state,
+                    "err":values.get("ERR", ""), "load":values.get("LOAD", ""), "load_current_a":number("IL", 0.001),
+                    "h19_kwh":number("H19", 0.01), "h21_w":number("H21"), "soc_disponible":False}
         }
     }
 
 
 def main():
-    config = ensure_enrolled(load_config())
-    boot_id = os.urandom(16).hex()
+    # El servicio se inicia junto con systemd y network-online no garantiza que
+    # DNS, Wi-Fi o la ruta al VPS ya estén listos. La inscripcion y el primer
+    # poll viven dentro del mismo bucle para que un corte de energia/red nunca
+    # deje al agente detenido esperando una reinstalacion manual.
+    config = load_config()
+    boot_id = read_boot_id()
     watcher = threading.Thread(target=monitor_inputs, args=(config,), daemon=True)
     watcher.start()
     door_watcher = threading.Thread(target=monitor_door_sensors, args=(config,), daemon=True)
     door_watcher.start()
     backoff = 1
     next_solar = 0
+    solar_connected = False
     while not stop_event.is_set():
         try:
+            config = ensure_enrolled(config)
             response = request_json(config, "poll", {
                 "hostname": socket.gethostname(),
                 "local_ip": local_ip(),
@@ -419,20 +489,39 @@ def main():
                 sample = read_vedirect()
                 if sample:
                     request_json(config, "solar_telemetry", sample, timeout=20)
-                next_solar = time.monotonic() + 60
+                    if not solar_connected:
+                        log("Victron VE.Direct conectado")
+                    solar_connected = True
+                else:
+                    if solar_connected:
+                        log("Victron VE.Direct desconectado o sin bloque valido")
+                    solar_connected = False
+                next_solar = time.monotonic() + 15
             backoff = 1
         except urllib.error.HTTPError as exc:
             log("VPS respondio HTTP {}".format(exc.code))
             if exc.code == 401:
-                config["device_token"] = ""
-                save_config(config)
-                config = ensure_enrolled(config)
-            stop_event.wait(backoff)
-            backoff = min(30, backoff * 2)
+                # El enrollment_token se consume al primer registro. Nunca se
+                # borra el device_token persistente ante un 401 transitorio:
+                # hacerlo dejaba al equipo en un ciclo de reinscripcion
+                # imposible despues de un reinicio o una restauracion de DB.
+                if config.get("enrollment_token"):
+                    config["device_token"] = ""
+                    save_config(config)
+                    log("Credencial de tunel rechazada; se reintentara la inscripcion inicial")
+                else:
+                    log("Credencial de tunel rechazada; conserve el ID del equipo y revise la provision en Domotica")
+            delay = retry_after_seconds(exc) or backoff
+            if backoff >= 8:
+                request_network_reconnect()
+            stop_event.wait(delay)
+            backoff = min(60, backoff * 2)
         except Exception as exc:
             log("Tunel temporalmente desconectado: " + str(exc))
+            if backoff >= 8:
+                request_network_reconnect()
             stop_event.wait(backoff)
-            backoff = min(30, backoff * 2)
+            backoff = min(60, backoff * 2)
 
 
 if __name__ == "__main__":
@@ -469,5 +558,6 @@ WantedBy=multi-user.target
 PCS_SERVICE
 
 systemctl daemon-reload
-systemctl enable --now pcs-domotica-agent.service
-echo "PCS Raspberry instalado. Estado: systemctl status pcs-domotica-agent --no-pager"
+systemctl enable pcs-domotica-agent.service
+systemctl restart pcs-domotica-agent.service
+echo "PCS Domotica instalado. Estado: systemctl status pcs-domotica-agent --no-pager"

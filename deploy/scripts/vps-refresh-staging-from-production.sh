@@ -36,6 +36,6 @@ else
   echo "[WARN] STAGING_ANONYMIZE=0. Staging queda con datos copiados desde produccion."
 fi
 
-docker compose --env-file "$ENV_FILE" -f deploy/docker-compose.platform.yml -f deploy/docker-compose.staging.yml restart backend frontend
+docker compose --env-file "$ENV_FILE" -f deploy/docker-compose.platform.yml -f deploy/docker-compose.staging.yml -f deploy/docker-compose.staging-antivirus.yml restart clamav backend frontend
 
 echo "[OK] Staging refrescado desde produccion."
