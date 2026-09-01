@@ -3,6 +3,7 @@
 - [Operación] `scripts/rs.ps1` detecta ramas de trabajo antes de mutar el repositorio, las integra mediante PR con checks y solo despliega desde la rama productiva alineada exactamente con `origin`.
 - [Migraciones] El gate estricto es obligatorio en publicaciones reales: inventarios `Ensure`, catálogo histórico inmutable contra el ancestro común, comprobación post-PR contra el `main` anterior y pruebas Go enfocadas deben pasar antes de sincronizar.
 - [Seguridad] `-SkipPreflight` queda limitado a `DryRun`/`PreviewOnly`; una PR pendiente, cerrada sin fusionar o una rama divergente bloquea el VPS sin forzar ni reescribir historial.
+- [QA] `-FullPreflight` convierte `go test ./...` en gate obligatorio y una PR `DIRTY` aborta inmediatamente sin intentar resolver conflictos por preferencia automática.
 
 ## [2026-08-31] Raspberry multiplexada para sensores de puertas
 

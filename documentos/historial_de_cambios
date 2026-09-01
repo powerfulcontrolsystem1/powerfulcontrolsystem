@@ -41859,6 +41859,7 @@ Archivos modificados:
 - `scripts/profesional_preflight.ps1` incorpora un gate obligatorio de migraciones para publicacion y pruebas Go enfocadas del catalogo.
 - `tools/migration_audit.mjs` compara las entradas historicas con la rama base y bloquea eliminaciones, cambios de `Description`/`Body` o mutaciones de archivos historicos de migracion.
 - En ramas divergentes, el primer gate usa el ancestro comun y el segundo usa el SHA de `main` previo a la PR, evitando falsos positivos sin permitir que la fusion pierda migraciones.
+- El modo `FullPreflight` bloquea ante pruebas Go fallidas y una PR `DIRTY` termina sin esperar ni escoger automaticamente lados del conflicto.
 - `documentos/comandos_codex.md` documenta regeneracion de inventarios, parametros de rama y limites de `SkipPreflight`.
 
 2026-09-01: rs: actualizar repositorio y sincronizar VPS

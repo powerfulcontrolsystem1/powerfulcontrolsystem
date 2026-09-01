@@ -286,7 +286,7 @@ try {
   }
 
   if ($Full -and -not $SkipGoTests) {
-    Invoke-Captured -Title "Go test backend completo" -Required:$Strict -Script {
+    Invoke-Captured -Title "Go test backend completo" -Required -Script {
       Push-Location backend
       try {
         & go test ./...

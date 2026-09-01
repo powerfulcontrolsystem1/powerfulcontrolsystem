@@ -195,6 +195,11 @@ misma rama no cuenta como abierta para commits nuevos. Para bloquear en lugar de
 integrar automaticamente, usar `-NoIntegrateWorkBranch`; para otro nombre de
 rama productiva, usar `-ProductionBranch`.
 
+`-FullPreflight` hace bloqueante la bateria `go test ./...`. Si GitHub informa
+que la PR esta `DIRTY`, `rs` termina de inmediato y exige reconciliacion manual;
+no elige automaticamente entre cambios en conflicto ni espera inutilmente el
+timeout de la PR.
+
 Si GitHub protege `main` y rechaza el push directo, `actualizar_repositorio.ps1`
 crea una rama `codex/rs-...`, abre la PR y solicita `auto-merge`. Nunca se
 autoaprueba ni evita checks: GitHub solo la fusiona despues de una aprobacion
