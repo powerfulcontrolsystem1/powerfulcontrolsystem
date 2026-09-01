@@ -3149,7 +3149,9 @@ func buildCarritoPaidMetricInputTx(tx *sql.Tx, empresaID, carritoID int64, monto
 	for rows.Next() {
 		var item carritoSaleItemSnapshot
 		if err := rows.Scan(&item.Tipo, &item.Referencia, &item.Producto, &item.Cantidad, &item.Total); err != nil {
-			rows.Close()
+			if closeErr := rows.Close(); closeErr != nil {
+				return CarritoStationMetricInput{}, fmt.Errorf("%w; no se pudieron cerrar filas de items: %v", err, closeErr)
+			}
 			return CarritoStationMetricInput{}, err
 		}
 		item.Cantidad = round2(item.Cantidad)
@@ -3157,10 +3159,14 @@ func buildCarritoPaidMetricInputTx(tx *sql.Tx, empresaID, carritoID int64, monto
 		detalle = append(detalle, item)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil {
+			return CarritoStationMetricInput{}, fmt.Errorf("%w; no se pudieron cerrar filas de items: %v", err, closeErr)
+		}
 		return CarritoStationMetricInput{}, err
 	}
-	rows.Close()
+	if err := rows.Close(); err != nil {
+		return CarritoStationMetricInput{}, err
+	}
 	detalleJSON, err := json.Marshal(detalle)
 	if err != nil {
 		return CarritoStationMetricInput{}, err
