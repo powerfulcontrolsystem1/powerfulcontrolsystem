@@ -13402,3 +13402,9 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
 - `documentos/evidencia_productos_inventario/PSI-000/compras_ia_anidada_sin_overflow_desktop_9eba6b12.jpg`:
   evidencia visual manual del flujo anidado de soportes IA sin overflow global
   y con desplazamiento horizontal contenido en su tabla.
+
+2026-09-01 - Recursos CSP del panel de disco VPS
+- `web/administrar_disco_vps.css`: estilos externos y acotados del panel de
+  administracion de disco VPS, sin bloques ni atributos CSS inline.
+- `web/js/administrar_disco_vps.js`: comportamiento externo del panel para
+  consultar el estado, ejecutar limpieza segura y mostrar el resultado.

@@ -43737,3 +43737,6 @@ Archivos modificados:
   `CVE-2026-56854` detectada por Trivy. No hay reemplazo completo en la libreria
   estandar; reimplementar primitivas criptograficas en Go puro seria mas riesgoso.
 - Archivos de dependencia afectados: `backend/go.mod` y `backend/go.sum`.
+- El panel nuevo de administracion de disco VPS extrae su CSS y JavaScript a
+  recursos estaticos, eliminando cuatro bloqueos CSP inline sin alterar sus
+  permisos, endpoints, textos ni comportamiento operativo.
