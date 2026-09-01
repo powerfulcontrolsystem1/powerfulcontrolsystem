@@ -41860,3 +41860,16 @@ Archivos modificados:
 - `tools/migration_audit.mjs` compara las entradas historicas con la rama base y bloquea eliminaciones, cambios de `Description`/`Body` o mutaciones de archivos historicos de migracion.
 - En ramas divergentes, el primer gate usa el ancestro comun y el segundo usa el SHA de `main` previo a la PR, evitando falsos positivos sin permitir que la fusion pierda migraciones.
 - `documentos/comandos_codex.md` documenta regeneracion de inventarios, parametros de rama y limites de `SkipPreflight`.
+
+2026-09-01: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/arquitectura/inventario_bootstrap_ensure.md
+- documentos/arquitectura/inventario_runtime_ensure.md
+- documentos/arquitectura/matriz_rutas_multiempresa.md
+- documentos/comandos_codex.md
+- documentos/historial_de_cambios
+- scripts/profesional_preflight.ps1
+- scripts/rs.ps1
+- tools/migration_audit.mjs

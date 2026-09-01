@@ -17294,3 +17294,15 @@ Archivos modificados:
 - web/super_administrador.html
 - web/taxi_system.html
 - web/taxi_system_conductor.html
+
+2026-09-01 11:13:03 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 09f010e7; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/arquitectura/inventario_bootstrap_ensure.md
+- documentos/arquitectura/inventario_runtime_ensure.md
+- documentos/arquitectura/matriz_rutas_multiempresa.md
+- documentos/comandos_codex.md
+- documentos/historial_de_cambios
+- scripts/profesional_preflight.ps1
+- scripts/rs.ps1
+- tools/migration_audit.mjs
