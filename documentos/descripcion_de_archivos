@@ -13378,6 +13378,9 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
   administración muestre la recuperación requerida.
 
 2026-08-26 - Evidencia y regresiones de Productos, Servicios e Inventario
+- `backend/handlers/configuracion_impresora_ui_test.go`: regresión de la UI de
+  cola que separa reclamar de imprimir y protege el cierre/reintento contra
+  duplicados físicos.
 - `backend/handlers/productos_ownership_error_test.go`: comprueba que las
   referencias empresariales ajenas, incluidos servicios, produzcan 404 publico
   sin revelar IDs ni convertir errores internos en falsos recursos ausentes.

@@ -2552,6 +2552,13 @@
 - Seguridad/alcance: no se agregan dependencias, no se imprimen secretos y no se cambia la logica legal DIAN; solo cambia identidad visual y rutas de archivos empresariales.
 - QA: `go test ./db -run EmpresaConfiguracionAvanzada -count=1`; `go test ./handlers -run ConfiguracionAvanzada -count=1`; `node --check web/js/print_documents.js`; validacion de scripts inline de las pantallas tocadas.
 
+2026-08-28: Operacion segura de cola de impresion.
+
+- Problema prevenido: la pantalla administrativa podia sugerir que reclamar un trabajo lo enviaba por si solo a la impresora fisica, aun cuando esa accion solo reserva la cola para un agente local externo.
+- Frontend: `web/administrar_empresa/configuracion_impresora.html` diferencia explicitamente reclamar de imprimir, exige confirmar que hubo papel antes de cerrar como impreso y advierte que reintentar solo procede si no salio una copia.
+- Idempotencia operativa: no se reclaman automaticamente trabajos tomados ni se reintentan ante ausencia de acuse, porque ese comportamiento podria duplicar documentos fisicos.
+- Alcance: sin cambios de datos, permisos ni rutas; mantiene el aislamiento por `empresa_id` y el contrato del agente local.
+
 2026-06-09: Impresoras por empresa con cola para agente local.
 - Modulos afectados: Configuracion de impresoras, ventas/caja.
 - Backend: `empresa_impresoras.go` agrega `empresa_impresoras_cola` para trabajos pendientes/tomados/impresos/error, reclamados por `agente_id` y `estacion_id`, con `empresa_id` obligatorio en consultas, updates y listados.
