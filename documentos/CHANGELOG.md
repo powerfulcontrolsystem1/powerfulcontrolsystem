@@ -3719,3 +3719,12 @@
   cuando un upstream devuelve 5xx y muestran un mensaje operativo controlado.
 - OAuth Google usa una CSP de respuesta compacta y bloqueante para mantener el
   redirect state/PKCE dentro del presupuesto de cabeceras del proxy.
+
+## 2026-09-01 - Compuertas profesionales de integracion y seguridad
+
+- CI obtiene el historial Git completo para auditar migraciones contra `main`.
+- Se reduce el tamano del handler de carritos extrayendo metricas repetidas de
+  anulacion total y parcial, sin modificar su contrato operativo.
+- Se actualiza `golang.org/x/crypto` a `v0.55.0` para corregir
+  `CVE-2026-56854`; la alternativa de reimplementar criptografia en Go puro se
+  descarta por seguridad y mantenibilidad.

@@ -43726,3 +43726,14 @@ Archivos modificados:
   desplazamiento horizontal.
 - La medicion paso de 966 px de documento sobre 791 px de viewport a 791/791,
   sin cambiar datos, acciones, permisos ni el comportamiento movil.
+
+2026-09-01: Integracion segura de rs, CI y ramas antes de despliegue.
+- El preflight de CI obtiene el historial completo para comparar migraciones con
+  `origin/main`; se mantiene el bloqueo estricto ante versiones duplicadas o
+  cuerpos historicos modificados.
+- La construccion de metricas de anulacion de carritos se extrae del handler sin
+  cambiar montos, aislamiento por empresa, caja, estacion ni trazabilidad.
+- `golang.org/x/crypto` se actualiza a `v0.55.0` por la vulnerabilidad critica
+  `CVE-2026-56854` detectada por Trivy. No hay reemplazo completo en la libreria
+  estandar; reimplementar primitivas criptograficas en Go puro seria mas riesgoso.
+- Archivos de dependencia afectados: `backend/go.mod` y `backend/go.sum`.
