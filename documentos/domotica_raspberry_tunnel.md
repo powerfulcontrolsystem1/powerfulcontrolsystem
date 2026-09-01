@@ -139,3 +139,67 @@ segundo entre confirmaciones, evitando energizar todos los relés a la vez.
 - La empresa puede activar `disconnect_alert_enabled`, registrar correo y definir `disconnect_grace_minutes`. El worker espera ese período y publica una alerta de buzón/campanita y correo una sola vez por valor de `last_seen`.
 - La identidad `RPI-` contiene 128 bits aleatorios, tiene índice único global y el secreto plano solo aparece en el instalador de un uso. El agente no envía ni elige `empresa_id`; PostgreSQL lo deriva del `device_uid` y token autenticados.
 - Para la primera instalación no es necesaria una IP local: se crea el controlador, se genera el instalador desde la página abierta en la Raspberry y el agente inicia el túnel HTTPS saliente.
+
+## Modalidad sensores de puertas multiplexados (2026-08-31)
+
+Al agregar una Raspberry, la empresa elige uno de dos usos mutuamente
+excluyentes: `domotica` o `sensor_puertas`. Una placa de puertas reserva sus
+GPIO para el barrido y no admite aparatos, pruebas manuales ni reglas GPIO de
+Domotica. Reiniciar, apagar, telemetria de conexion y cuotas del tunel siguen
+disponibles.
+
+El cableado logico solicitado usa numeracion BCM:
+
+```text
+Entradas: GPIO0=IN1, GPIO1=IN2, GPIO2=IN3, GPIO3=IN4
+Selectores: GPIO4=OUT1, GPIO5=OUT2, ... GPIO19=OUT16
+
+OUT1 alto -> esperar delay -> leer IN1..IN4 -> OUT1 bajo
+OUT2 alto -> esperar delay -> leer IN1..IN4 -> OUT2 bajo
+...
+```
+
+La empresa configura entre 1 y 16 salidas y un retardo de 10 a 5000 ms. PCS
+crea automaticamente cuatro canales por salida, hasta 64, con identidad
+determinista por empresa/Raspberry/salida/entrada. Desde Configuracion de
+sensores cada canal se asocia a una habitacion. Un nivel alto se registra como
+`open` y uno bajo como `closed`; los cambios se guardan en
+`empresa_sensor_puertas_messages` y actualizan el indicador vigente de la
+estacion.
+
+El agente mantiene todas las salidas bajas, eleva solo una, espera el retardo,
+lee las cuatro entradas y vuelve esa salida a bajo antes de avanzar. Exige dos
+observaciones consecutivas antes de publicar un cambio y envia un estado
+completo periodico para mantener `last_seen` fresco.
+
+Advertencias de hardware: un modulo de cuatro reles no es por si mismo un
+modulo de entrada. Las entradas deben entregar contactos secos o logica segura
+de 3,3 V; nunca aplicar 5 V a un GPIO. GPIO 0/1 suelen reservarse para EEPROM
+HAT y GPIO 2/3 para I2C, por lo que se debe confirmar que esas funciones esten
+libres. La prueba fisica requiere masa comun, fuente dimensionada, polaridad y
+aislamiento verificados antes de conectar puertas reales.
+
+La descarga sigue necesitando una ejecucion local visible:
+
+```sh
+sudo sh ~/Downloads/instalar-pcs-sensores-puertas-*.sh
+```
+
+Un navegador no puede ejecutar root de forma silenciosa. Despues de ese unico
+paso, `pcs-domotica-agent` queda habilitado en `systemd`, autoarranca y se
+reconecta sin intervención.
+
+## Auditoria de Raspberry (2026-08-31)
+
+La bitacora de Domotica registra por `empresa_id` y `raspberry_id`:
+
+- alta y configuracion, con valores anteriores/nuevos saneados;
+- generacion o rotacion del instalador y enrolamiento efectivo;
+- cambio de uso, numero de salidas y retardo;
+- asociacion de canal fisico con habitacion;
+- reinicio/apagado y resultados del tunel;
+- desactivacion logica de la Raspberry.
+
+Los metadatos no incluyen tokens, credenciales ni secretos. Desactivar es
+recuperable a nivel de datos: no borra la bitacora ni las transiciones
+historicas de puertas.

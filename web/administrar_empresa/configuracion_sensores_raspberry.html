@@ -15,6 +15,7 @@
           <h1>Raspberry Pi y sensores</h1>
           <p id="empresaInfo" class="form-help">Empresa: cargando...</p>
         </div>
+        <a id="doorSensorTutorialLink" class="btn secondary" href="/administrar_empresa/tutorial_sensores_puertas_raspberry.html">Tutorial de conexión</a>
       </div>
 
       <p class="form-help">Registra cada Raspberry Pi o sensor fisico y asocialo a la estacion correspondiente. El estado se refleja en las tarjetas de estaciones cuando el dispositivo envia heartbeats al servidor.</p>
@@ -116,6 +117,10 @@
 
       var params = new URLSearchParams(window.location.search || '');
       var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
+
+      if (empresaId) {
+        document.getElementById('doorSensorTutorialLink').href = '/administrar_empresa/tutorial_sensores_puertas_raspberry.html?empresa_id=' + encodeURIComponent(empresaId);
+      }
 
       function sanitize(value) {
         return String(value == null ? '' : value)
@@ -266,11 +271,13 @@
           var rows = devices.map(function (d) {
             var state = String(d.last_state || '').trim();
             var stateClass = /^(active|open|on|1|true|abierto|activa|activo)$/i.test(state) ? 'success' : 'muted';
+            var automaticChannel = Number(d.source_raspberry_id || 0) > 0;
+            var channelLabel = automaticChannel ? ('Salida ' + Number(d.selector_output || 0) + ' · Entrada ' + Number(d.selector_input || 0)) : String(d.device_id || '');
             return '<tr>' +
-              '<td><strong>' + sanitize(d.device_id || '') + '</strong></td>' +
-              '<td>' + sanitize(d.estacion_id || 'no asociada') + '</td>' +
+              '<td><strong>' + sanitize(channelLabel) + '</strong>' + (automaticChannel ? '<br><small>' + sanitize(d.device_id || '') + '</small>' : '') + '</td>' +
+              '<td>' + sanitize(d.estacion_id || 'no asociada') + (automaticChannel ? '<br><button type="button" class="btn secondary small door-channel-select" data-device-id="' + sanitize(d.device_id || '') + '" data-station-id="' + sanitize(d.estacion_id || '') + '">Asignar habitación</button>' : '') + '</td>' +
               '<td><span class="status-pill ' + stateClass + '">' + sanitize(state || 'sin señal') + '</span></td>' +
-              '<td>' + (d.device_token_configured ? '<span class="status-pill success">Token activo</span>' : '<span class="status-pill muted">Sin token</span>') + '</td>' +
+              '<td>' + (automaticChannel ? '<span class="status-pill success">Túnel seguro</span>' : (d.device_token_configured ? '<span class="status-pill success">Token activo</span>' : '<span class="status-pill muted">Sin token</span>')) + '</td>' +
               '<td>' + sanitize(d.last_seen || '') + '</td>' +
               '<td>' + sanitize(d.usuario_creador || '') + '</td>' +
               '</tr>';
@@ -429,6 +436,15 @@
         document.getElementById('saveSensorRulesBtn').addEventListener('click', function (ev) {
           ev.preventDefault();
           saveSensorRules();
+        });
+        document.getElementById('devicesTable').addEventListener('click', function (ev) {
+          var button = ev.target.closest('.door-channel-select');
+          if (!button) return;
+          document.getElementById('deviceId').value = button.getAttribute('data-device-id') || '';
+          document.getElementById('estacionId').value = button.getAttribute('data-station-id') || '';
+          document.getElementById('deviceToken').value = '';
+          showMessage('Canal seleccionado. Indica la habitación y pulsa Guardar dispositivo.', 'success');
+          document.getElementById('estacionId').focus();
         });
       }
 

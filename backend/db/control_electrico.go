@@ -68,6 +68,9 @@ type EmpresaControlElectricoRaspberry struct {
 	LastSeen           string `json:"last_seen,omitempty"`
 	LastIP             string `json:"last_ip,omitempty"`
 	AgentVersion       string `json:"agent_version,omitempty"`
+	UsoTipo            string `json:"uso_tipo"`
+	PuertaRelesSalida  int    `json:"puerta_reles_salida"`
+	PuertaDelayMS      int    `json:"puerta_delay_ms"`
 	BytesRX            int64  `json:"bytes_rx,omitempty"`
 	BytesTX            int64  `json:"bytes_tx,omitempty"`
 	LastTunnelError    string `json:"last_tunnel_error,omitempty"`
@@ -584,7 +587,7 @@ func ListEmpresaControlElectricoRaspberry(dbConn *sql.DB, empresaID int64, inclu
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
-	q := `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(tipo_controlador,'raspberry_gpio'), COALESCE(proveedor,''), COALESCE(base_url,''), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(device_uid,''), COALESCE(tunnel_enabled,0), COALESCE(tunnel_status,'sin_configurar'), COALESCE(last_seen,''), COALESCE(last_ip,''), COALESCE(agent_version,''), COALESCE(bytes_rx,0), COALESCE(bytes_tx,0), COALESCE(last_tunnel_error,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_raspberry_pis WHERE empresa_id = ?`
+	q := `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(tipo_controlador,'raspberry_gpio'), COALESCE(proveedor,''), COALESCE(base_url,''), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(device_uid,''), COALESCE(tunnel_enabled,0), COALESCE(tunnel_status,'sin_configurar'), COALESCE(last_seen,''), COALESCE(last_ip,''), COALESCE(agent_version,''), COALESCE(uso_tipo,'domotica'), COALESCE(puerta_reles_salida,16), COALESCE(puerta_delay_ms,100), COALESCE(bytes_rx,0), COALESCE(bytes_tx,0), COALESCE(last_tunnel_error,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_raspberry_pis WHERE empresa_id = ?`
 	if !includeInactive {
 		q += " AND LOWER(COALESCE(estado,'activo')) = 'activo'"
 	}
@@ -599,7 +602,7 @@ func ListEmpresaControlElectricoRaspberry(dbConn *sql.DB, empresaID int64, inclu
 		var item EmpresaControlElectricoRaspberry
 		var token string
 		var tunnelEnabled int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.TipoControlador, &item.Proveedor, &item.BaseURL, &item.RaspberryIP, &item.RaspberryPort, &item.APIPath, &token, &item.TimeoutMS, &item.DeviceUID, &tunnelEnabled, &item.TunnelStatus, &item.LastSeen, &item.LastIP, &item.AgentVersion, &item.BytesRX, &item.BytesTX, &item.LastTunnelError, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.TipoControlador, &item.Proveedor, &item.BaseURL, &item.RaspberryIP, &item.RaspberryPort, &item.APIPath, &token, &item.TimeoutMS, &item.DeviceUID, &tunnelEnabled, &item.TunnelStatus, &item.LastSeen, &item.LastIP, &item.AgentVersion, &item.UsoTipo, &item.PuertaRelesSalida, &item.PuertaDelayMS, &item.BytesRX, &item.BytesTX, &item.LastTunnelError, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
 			return nil, err
 		}
 		item.APITokenConfigured = strings.TrimSpace(token) != ""
@@ -615,11 +618,11 @@ func GetEmpresaControlElectricoRaspberryByID(dbConn *sql.DB, empresaID, raspberr
 	if empresaID <= 0 || raspberryID <= 0 {
 		return nil, errors.New("empresa_id y raspberry_id son obligatorios")
 	}
-	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(tipo_controlador,'raspberry_gpio'), COALESCE(proveedor,''), COALESCE(base_url,''), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(device_uid,''), COALESCE(tunnel_enabled,0), COALESCE(tunnel_status,'sin_configurar'), COALESCE(last_seen,''), COALESCE(last_ip,''), COALESCE(agent_version,''), COALESCE(bytes_rx,0), COALESCE(bytes_tx,0), COALESCE(last_tunnel_error,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_raspberry_pis WHERE empresa_id = ? AND id = ? AND LOWER(COALESCE(estado,'activo')) = 'activo' LIMIT 1`, empresaID, raspberryID)
+	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(tipo_controlador,'raspberry_gpio'), COALESCE(proveedor,''), COALESCE(base_url,''), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(device_uid,''), COALESCE(tunnel_enabled,0), COALESCE(tunnel_status,'sin_configurar'), COALESCE(last_seen,''), COALESCE(last_ip,''), COALESCE(agent_version,''), COALESCE(uso_tipo,'domotica'), COALESCE(puerta_reles_salida,16), COALESCE(puerta_delay_ms,100), COALESCE(bytes_rx,0), COALESCE(bytes_tx,0), COALESCE(last_tunnel_error,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_raspberry_pis WHERE empresa_id = ? AND id = ? AND LOWER(COALESCE(estado,'activo')) = 'activo' LIMIT 1`, empresaID, raspberryID)
 	var item EmpresaControlElectricoRaspberry
 	var token string
 	var tunnelEnabled int
-	if err := row.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.TipoControlador, &item.Proveedor, &item.BaseURL, &item.RaspberryIP, &item.RaspberryPort, &item.APIPath, &token, &item.TimeoutMS, &item.DeviceUID, &tunnelEnabled, &item.TunnelStatus, &item.LastSeen, &item.LastIP, &item.AgentVersion, &item.BytesRX, &item.BytesTX, &item.LastTunnelError, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+	if err := row.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.TipoControlador, &item.Proveedor, &item.BaseURL, &item.RaspberryIP, &item.RaspberryPort, &item.APIPath, &token, &item.TimeoutMS, &item.DeviceUID, &tunnelEnabled, &item.TunnelStatus, &item.LastSeen, &item.LastIP, &item.AgentVersion, &item.UsoTipo, &item.PuertaRelesSalida, &item.PuertaDelayMS, &item.BytesRX, &item.BytesTX, &item.LastTunnelError, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
 		return nil, err
 	}
 	item.APITokenConfigured = strings.TrimSpace(token) != ""
@@ -656,12 +659,12 @@ func UpsertEmpresaControlElectricoRaspberry(dbConn *sql.DB, item *EmpresaControl
 		token = strings.TrimSpace(item.APIToken)
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET codigo=?, nombre=?, tipo_controlador=?, proveedor=?, base_url=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE empresa_id=? AND id=?`,
-			item.Codigo, item.Nombre, item.TipoControlador, item.Proveedor, item.BaseURL, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), item.EmpresaID, existingID)
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET codigo=?, nombre=?, tipo_controlador=?, proveedor=?, base_url=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, uso_tipo=?, puerta_reles_salida=?, puerta_delay_ms=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=?, estado=?, observaciones=? WHERE empresa_id=? AND id=?`,
+			item.Codigo, item.Nombre, item.TipoControlador, item.Proveedor, item.BaseURL, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, item.UsoTipo, item.PuertaRelesSalida, item.PuertaDelayMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), item.EmpresaID, existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_raspberry_pis (empresa_id, codigo, nombre, tipo_controlador, proveedor, base_url, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
-		item.EmpresaID, item.Codigo, item.Nombre, item.TipoControlador, item.Proveedor, item.BaseURL, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_raspberry_pis (empresa_id, codigo, nombre, tipo_controlador, proveedor, base_url, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, uso_tipo, puerta_reles_salida, puerta_delay_ms, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)`,
+		item.EmpresaID, item.Codigo, item.Nombre, item.TipoControlador, item.Proveedor, item.BaseURL, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, item.UsoTipo, item.PuertaRelesSalida, item.PuertaDelayMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
 }
 
 // SetEmpresaControlElectricoRaspberryEstado activa o desactiva un controlador GPIO.
@@ -669,8 +672,14 @@ func SetEmpresaControlElectricoRaspberryEstado(dbConn *sql.DB, empresaID, raspbe
 	if empresaID <= 0 || raspberryID <= 0 {
 		return errors.New("empresa_id y raspberry_id son obligatorios")
 	}
-	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, raspberryID)
-	return err
+	result, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, raspberryID)
+	if err != nil {
+		return err
+	}
+	if affected, _ := result.RowsAffected(); affected != 1 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // UpsertEmpresaControlElectricoConfig crea o actualiza configuracion.
@@ -855,11 +864,15 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 		}
 	}
 	if item.RaspberryID > 0 {
-		if _, err := GetEmpresaControlElectricoRaspberryByID(dbConn, item.EmpresaID, item.RaspberryID, false); err != nil {
+		pi, err := GetEmpresaControlElectricoRaspberryByID(dbConn, item.EmpresaID, item.RaspberryID, false)
+		if err != nil {
 			if err == sql.ErrNoRows {
 				return 0, fmt.Errorf("raspberry_id no pertenece a la empresa o esta inactiva")
 			}
 			return 0, err
+		}
+		if pi.UsoTipo == ControlElectricoUsoSensorPuertas {
+			return 0, errors.New("la Raspberry de sensores de puertas reserva GPIO 0-19 y no admite aparatos de domotica")
 		}
 	}
 	var existingID int64
@@ -1101,11 +1114,15 @@ func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElec
 		if item.EntradaGPIOPin < 0 || item.EntradaGPIOPin > 27 {
 			return 0, errors.New("entrada_gpio_pin debe estar entre 0 y 27")
 		}
-		if _, err := GetEmpresaControlElectricoRaspberryByID(dbConn, item.EmpresaID, item.RaspberryID, false); err != nil {
+		pi, err := GetEmpresaControlElectricoRaspberryByID(dbConn, item.EmpresaID, item.RaspberryID, false)
+		if err != nil {
 			return 0, errors.New("raspberry_id no pertenece a esta empresa")
 		}
+		if pi.UsoTipo == ControlElectricoUsoSensorPuertas {
+			return 0, errors.New("la Raspberry de sensores de puertas no admite reglas GPIO de domotica")
+		}
 		var conflictingOutputID int64
-		err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_control_electrico_reles WHERE empresa_id=? AND raspberry_id=? AND gpio_pin=? AND LOWER(COALESCE(estado,'activo'))='activo' LIMIT 1`, item.EmpresaID, item.RaspberryID, item.EntradaGPIOPin).Scan(&conflictingOutputID)
+		err = queryRowSQLCompat(dbConn, `SELECT id FROM empresa_control_electrico_reles WHERE empresa_id=? AND raspberry_id=? AND gpio_pin=? AND LOWER(COALESCE(estado,'activo'))='activo' LIMIT 1`, item.EmpresaID, item.RaspberryID, item.EntradaGPIOPin).Scan(&conflictingOutputID)
 		if err != nil && err != sql.ErrNoRows {
 			return 0, err
 		}
@@ -1316,6 +1333,12 @@ func normalizeEmpresaControlElectricoRaspberry(item *EmpresaControlElectricoRasp
 		item.Nombre = strings.ReplaceAll(item.Codigo, "_", " ")
 	}
 	item.TipoControlador = normalizeControlElectricoTipoControlador(item.TipoControlador)
+	item.UsoTipo = NormalizeControlElectricoUsoTipo(item.UsoTipo)
+	item.PuertaRelesSalida = NormalizeControlElectricoDoorOutputCount(item.PuertaRelesSalida)
+	item.PuertaDelayMS = NormalizeControlElectricoDoorDelayMS(item.PuertaDelayMS)
+	if item.UsoTipo == ControlElectricoUsoSensorPuertas {
+		item.TipoControlador = "raspberry_gpio"
+	}
 	item.Proveedor = normalizeControlElectricoProveedor(item.Proveedor, item.TipoControlador)
 	item.BaseURL = strings.TrimSpace(item.BaseURL)
 	item.RaspberryIP = strings.TrimSpace(item.RaspberryIP)

@@ -761,3 +761,4 @@ global opaca y aislamiento por empresa, añade alertas de desconexión con graci
 y cuota mensual RX/TX por empresa administrada desde Super Administrador. El
 tutorial documenta el alta sin IP local, los 40 pines físico/BCM, relés y
 sensores con salida normal, temporizada o programada.
+Revision Raspberry sensores de puertas 2026-08-31: una Raspberry registrada puede elegirse para Domotica o para barrido de puertas. El modo puertas usa cuatro entradas BCM 0-3 y hasta 16 salidas BCM 4-19, con retardo empresarial, genera hasta 64 canales asignables a habitaciones y reutiliza el tunel HTTPS saliente con autoarranque/reconexion. El backend conserva aislamiento por empresa y auditoria completa del ciclo de vida/configuracion; la migracion y pruebas son locales, sin hardware ni despliegue.

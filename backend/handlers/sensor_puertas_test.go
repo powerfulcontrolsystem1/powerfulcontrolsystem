@@ -3,6 +3,8 @@ package handlers
 import (
 	"strings"
 	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 func TestBuildEmpresaSensorProvisioningPayload(t *testing.T) {
@@ -17,6 +19,15 @@ func TestBuildEmpresaSensorProvisioningPayload(t *testing.T) {
 	python, _ := payload["python"].(string)
 	if python == "" || !containsAll(python, []string{"tok_123", "rpi-mesa-1", "requests.post"}) {
 		t.Fatalf("python de provisionamiento incompleto: %q", python)
+	}
+}
+
+func TestAutomaticDoorChannelRequiresAuthenticatedRaspberryTunnel(t *testing.T) {
+	if !sensorRequiresRaspberryTunnel(&dbpkg.EmpresaSensorDevice{SourceRaspberryID: 12}) {
+		t.Fatal("un canal automatico debe rechazar la API publica heredada")
+	}
+	if sensorRequiresRaspberryTunnel(&dbpkg.EmpresaSensorDevice{}) {
+		t.Fatal("un sensor heredado no debe cambiar su contrato por este guard")
 	}
 }
 

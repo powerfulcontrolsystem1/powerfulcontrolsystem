@@ -950,12 +950,31 @@
             button.disabled = true;
             button.textContent = label || 'Verificando...';
           }
-          function resetProvider(provider){
-            const button = getButton(provider);
-            if (!button) return;
-            button.disabled = false;
-            button.textContent = originalButtonLabel(provider);
-          }
+	          function resetProvider(provider){
+	            const button = getButton(provider);
+	            if (!button) return;
+	            button.disabled = false;
+	            button.textContent = originalButtonLabel(provider);
+	          }
+	          function checkoutIdempotencyKey(provider, payload){
+	            const normalizedProvider = normalizeProvider(provider);
+	            const fingerprint = JSON.stringify(payload || {});
+	            const storageKey = 'pcs_checkout_idempotency_' + normalizedProvider + '_' + String(empresaId || 0) + '_' + String(licenciaId || 0);
+	            try {
+	              const stored = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+	              if (stored && stored.fingerprint === fingerprint && typeof stored.key === 'string' && stored.key.length >= 16) return stored.key;
+	            } catch(e) {}
+	            const randomPart = window.crypto && typeof window.crypto.randomUUID === 'function'
+	              ? window.crypto.randomUUID()
+	              : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2));
+	            const key = 'checkout-' + normalizedProvider + '-' + randomPart;
+	            try { sessionStorage.setItem(storageKey, JSON.stringify({fingerprint: fingerprint, key: key})); } catch(e) {}
+	            return key;
+	          }
+	          function clearCheckoutIdempotencyKey(provider){
+	            const normalizedProvider = normalizeProvider(provider);
+	            try { sessionStorage.removeItem('pcs_checkout_idempotency_' + normalizedProvider + '_' + String(empresaId || 0) + '_' + String(licenciaId || 0)); } catch(e) {}
+	          }
           function disableAllPayments(){
             if (ui.payWompiBtn) ui.payWompiBtn.disabled = true;
             if (ui.payEpaycoBtn) ui.payEpaycoBtn.disabled = true;
@@ -1032,8 +1051,9 @@
               return { done: true, context: resolved };
             }
 
-            if (isFinalStatus(normalizedStatus)) {
-              clearPendingPayment();
+	            if (isFinalStatus(normalizedStatus)) {
+	              clearCheckoutIdempotencyKey(normalizedProvider);
+	              clearPendingPayment();
               updateUrlState({
                 provider: normalizedProvider,
                 status: normalizedStatus.toLowerCase(),
@@ -1109,8 +1129,10 @@
           }
 
           var pollingCtrl = null;
-          function doCancelPolling(){
-            if (pollingCtrl) { pollingCtrl.cancelled = true; pollingCtrl = null; }
+	          function doCancelPolling(){
+	            const pending = loadPendingPayment();
+	            if (pending && pending.provider) clearCheckoutIdempotencyKey(pending.provider);
+	            if (pollingCtrl) { pollingCtrl.cancelled = true; pollingCtrl = null; }
             clearPendingPayment();
             renderFeedback(ui.feedback, '', '', '');
             ['epayco','wompi'].forEach(function(p){ resetProvider(p); });
@@ -1248,9 +1270,9 @@
               try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
               try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
 
-              const wompiRes = await fetch('/wompi/create_checkout', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
+	              const wompiRes = await fetch('/wompi/create_checkout', {
+	                method: 'POST',
+	                headers: {'Content-Type':'application/json', 'Idempotency-Key': checkoutIdempotencyKey('wompi', payload)},
                 body: JSON.stringify(payload)
               });
 
@@ -1327,9 +1349,9 @@
               try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
               try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
 
-              const epayRes = await fetch('/epayco/create_transaction', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
+	              const epayRes = await fetch('/epayco/create_transaction', {
+	                method: 'POST',
+	                headers: {'Content-Type':'application/json', 'Idempotency-Key': checkoutIdempotencyKey('epayco', payload)},
                 body: JSON.stringify(payload)
               });
               const raw = await epayRes.text();

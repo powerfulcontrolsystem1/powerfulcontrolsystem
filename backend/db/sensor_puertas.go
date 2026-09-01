@@ -34,6 +34,9 @@ type EmpresaSensorDevice struct {
 	Estado                string `json:"estado,omitempty"`
 	Observaciones         string `json:"observaciones,omitempty"`
 	DeviceTokenConfigured bool   `json:"device_token_configured,omitempty"`
+	SourceRaspberryID     int64  `json:"source_raspberry_id,omitempty"`
+	SelectorOutput        int    `json:"selector_output,omitempty"`
+	SelectorInput         int    `json:"selector_input,omitempty"`
 }
 
 func NormalizeEmpresaSensorDeviceID(raw string) string {
@@ -186,15 +189,38 @@ func EmpresaSensorPuertasSchemaReady(dbConn *sql.DB) error {
 func GetEmpresaSensorByDeviceID(dbConn *sql.DB, deviceID string) (*EmpresaSensorDevice, error) {
 	idv := NormalizeEmpresaSensorDeviceID(deviceID)
 	var p EmpresaSensorDevice
-	row := dbConn.QueryRow(`SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones, COALESCE(device_token_hash, '') FROM empresa_sensor_puertas_devices WHERE lower(device_id) = ? AND estado = 'activo' LIMIT 1`, idv)
+	row := dbConn.QueryRow(`SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones, COALESCE(device_token_hash, ''), COALESCE(source_raspberry_id,0), COALESCE(selector_output,0), COALESCE(selector_input,0) FROM empresa_sensor_puertas_devices WHERE lower(device_id) = ? AND estado = 'activo' LIMIT 1`, idv)
 	var estacion int64
 	var observ sql.NullString
 	var tokenHash string
-	if err := row.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ, &tokenHash); err != nil {
+	if err := row.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ, &tokenHash, &p.SourceRaspberryID, &p.SelectorOutput, &p.SelectorInput); err != nil {
 		return nil, err
 	}
 	p.Observaciones = observ.String
 	p.EstacionID = estacion
+	p.DeviceTokenConfigured = strings.TrimSpace(tokenHash) != ""
+	return &p, nil
+}
+
+// GetEmpresaSensorByEmpresaDeviceID resuelve un canal exclusivamente dentro
+// de la empresa autenticada. Debe preferirse en superficies administrativas.
+func GetEmpresaSensorByEmpresaDeviceID(dbConn *sql.DB, empresaID int64, deviceID string) (*EmpresaSensorDevice, error) {
+	device := NormalizeEmpresaSensorDeviceID(deviceID)
+	if dbConn == nil || empresaID <= 0 || device == "" {
+		return nil, sql.ErrNoRows
+	}
+	var p EmpresaSensorDevice
+	var estacion int64
+	var observ sql.NullString
+	var tokenHash string
+	err := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), COALESCE(last_state,''), COALESCE(last_seen,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,''), COALESCE(device_token_hash,''), COALESCE(source_raspberry_id,0), COALESCE(selector_output,0), COALESCE(selector_input,0) FROM empresa_sensor_puertas_devices WHERE empresa_id=? AND LOWER(device_id)=? AND LOWER(COALESCE(estado,'activo'))='activo' LIMIT 1`, empresaID, device).Scan(
+		&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ, &tokenHash, &p.SourceRaspberryID, &p.SelectorOutput, &p.SelectorInput,
+	)
+	if err != nil {
+		return nil, err
+	}
+	p.EstacionID = estacion
+	p.Observaciones = observ.String
 	p.DeviceTokenConfigured = strings.TrimSpace(tokenHash) != ""
 	return &p, nil
 }
@@ -204,10 +230,10 @@ func GetEmpresaSensorByToken(dbConn *sql.DB, token string) (*EmpresaSensorDevice
 	sum := sha256.Sum256([]byte(token))
 	hash := base64.StdEncoding.EncodeToString(sum[:])
 	var p EmpresaSensorDevice
-	row := dbConn.QueryRow(`SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresa_sensor_puertas_devices WHERE device_token_hash = ? AND estado = 'activo' LIMIT 1`, hash)
+	row := dbConn.QueryRow(`SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones, COALESCE(source_raspberry_id,0), COALESCE(selector_output,0), COALESCE(selector_input,0) FROM empresa_sensor_puertas_devices WHERE device_token_hash = ? AND estado = 'activo' LIMIT 1`, hash)
 	var estacion int64
 	var observ sql.NullString
-	if err := row.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ); err != nil {
+	if err := row.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ, &p.SourceRaspberryID, &p.SelectorOutput, &p.SelectorInput); err != nil {
 		return nil, err
 	}
 	p.Observaciones = observ.String
@@ -218,7 +244,7 @@ func GetEmpresaSensorByToken(dbConn *sql.DB, token string) (*EmpresaSensorDevice
 
 // GetEmpresaSensorsByEmpresa lista los dispositivos registrados para una empresa
 func GetEmpresaSensorsByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaSensorDevice, error) {
-	q := `SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones, COALESCE(device_token_hash, '') FROM empresa_sensor_puertas_devices WHERE empresa_id = ? AND estado = 'activo'`
+	q := `SELECT id, empresa_id, device_id, COALESCE(estacion_id,0), last_state, last_seen, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones, COALESCE(device_token_hash, ''), COALESCE(source_raspberry_id,0), COALESCE(selector_output,0), COALESCE(selector_input,0) FROM empresa_sensor_puertas_devices WHERE empresa_id = ? AND estado = 'activo' ORDER BY COALESCE(source_raspberry_id,0), COALESCE(selector_output,0), COALESCE(selector_input,0), id`
 	rows, err := dbConn.Query(q, empresaID)
 	if err != nil {
 		return nil, err
@@ -230,7 +256,7 @@ func GetEmpresaSensorsByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaSenso
 		var estacion int64
 		var observ sql.NullString
 		var tokenHash string
-		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ, &tokenHash); err != nil {
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.DeviceID, &estacion, &p.LastState, &p.LastSeen, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &observ, &tokenHash, &p.SourceRaspberryID, &p.SelectorOutput, &p.SelectorInput); err != nil {
 			return nil, err
 		}
 		p.Observaciones = observ.String
@@ -270,13 +296,13 @@ func UpsertEmpresaSensorDevice(dbConn *sql.DB, p *EmpresaSensorDevice) (int64, e
 
 	if existingID > 0 {
 		if tokenHash.Valid {
-			_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones), device_token_hash = ?, device_token_enc = ? WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), tokenHash.String, tokenEnc.String, existingID)
+			_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones), device_token_hash = ?, device_token_enc = ? WHERE empresa_id = ? AND id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), tokenHash.String, tokenEnc.String, p.EmpresaID, existingID)
 			if err != nil {
 				return 0, err
 			}
 			return existingID, nil
 		}
-		_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones) WHERE id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), existingID)
+		_, err := dbConn.Exec(`UPDATE empresa_sensor_puertas_devices SET estacion_id = NULLIF(?,0), fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = ?, estado = COALESCE(NULLIF(?, ''), 'activo'), observaciones = COALESCE(NULLIF(?, ''), observaciones) WHERE empresa_id = ? AND id = ?`, p.EstacionID, p.UsuarioCreador, p.Estado, strings.TrimSpace(p.Observaciones), p.EmpresaID, existingID)
 		if err != nil {
 			return 0, err
 		}

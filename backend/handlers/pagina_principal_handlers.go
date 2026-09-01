@@ -161,6 +161,24 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 	cards := []paginaPrincipalCard{
 		{
 			TipoTarjeta:       paginaPrincipalCardTypeInfoPhoto,
+			Titulo:            "Vida",
+			Descripcion:       "Gastos personales por usuario, facturas privadas, suscripciones y recordatorios de renovacion o cancelacion.",
+			ImagenURL:         "/img/money.svg",
+			ImagenSecundaria:  "/img/Sistema para la vida.png",
+			Enlace:            "/administrar_empresa.html?module=vida",
+			DetalleEtiqueta:   "Finanzas personales",
+			DetalleTitular:    "Ordena los gastos cotidianos y anticipa cada suscripcion sin mezclarlos con la contabilidad empresarial.",
+			DetalleParrafoUno: "Vida es un espacio privado por empresa y por usuario para registrar supermercado, hogar, transporte, salud y otras compras diarias. Cada persona consulta exclusivamente sus propios registros, aunque comparta la empresa con otros usuarios.",
+			DetalleParrafoDos: "La captura movil permite adjuntar una foto de la factura, mientras el tablero mensual organiza categorias, promedios y soportes. Las suscripciones calculan su costo mensual y anual y avisan antes de renovar, cancelar o llegar a la fecha de cobro.",
+			DetallePuntos: []string{
+				"Registro rapido desde celular con foto privada de la factura.",
+				"Gastos y soportes aislados por empresa y cuenta autenticada.",
+				"Suscripciones semanales, mensuales, trimestrales, semestrales, anuales o personalizadas.",
+				"Recordatorios visibles y alarmas del navegador mientras PCS esta abierto.",
+			},
+		},
+		{
+			TipoTarjeta:       paginaPrincipalCardTypeInfoPhoto,
 			Titulo:            "Punto de venta",
 			Descripcion:       "Solucion completa para ventas rapidas y facturacion electronica.",
 			ImagenURL:         "/img/punto_venta.png",
@@ -259,14 +277,6 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 		},
 		{
 			TipoTarjeta:      paginaPrincipalCardTypeInfoPhoto,
-			Titulo:           "Drogueria y farmacia",
-			Descripcion:      "Plantilla sanitaria integrada al nucleo: lotes, INVIMA, vencimientos, formulas, dispensacion, inventario, ventas, pagos y facturacion.",
-			ImagenURL:        "/img/shield-license-color.svg",
-			ImagenSecundaria: "/img/report.svg",
-			Enlace:           "/administrar_empresa.html?module=drogueria_farmacia",
-		},
-		{
-			TipoTarjeta:      paginaPrincipalCardTypeInfoPhoto,
 			Titulo:           "Alquileres de activos",
 			Descripcion:      "Contratos, garantias, checklist, devoluciones, mantenimiento y venta central conectada a clientes y servicios.",
 			ImagenURL:        "/img/company-briefcase-color.svg",
@@ -315,7 +325,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 
 func informacionModulosDefaultConfig() informacionModulosConfig {
 	return informacionModulosConfig{
-		Titulo: "Modulos y caracteristicas principales",
+		Titulo: "53 modulos activos y 13 plantillas empresariales",
 		Modulos: []informacionModuloItem{
 			{Titulo: "Inventario profesional", IconoURL: "/img/warehouse-color.svg", Caracteristicas: []string{"Productos", "Servicios", "Recetas", "Categorias", "Bodegas", "Kardex", "Traslados", "Compras", "Proveedores", "Control de existencias"}},
 			{Titulo: "Ventas POS", IconoURL: "/img/punto_venta.png", Caracteristicas: []string{"Venta directa", "Carritos por estacion", "Pagos mixtos", "Abonos", "Descuentos", "Codigos promocionales", "Caja por usuario", "Varias cajas simultaneas"}},
@@ -334,12 +344,12 @@ func informacionModulosDefaultConfig() informacionModulosConfig {
 			{Titulo: "Finanzas y cumplimiento", IconoURL: "/img/taxes.svg", Caracteristicas: []string{"Impuestos", "Bancos", "Ingresos", "Egresos", "Tesoreria", "Presupuesto", "Reportes", "Modulo del contador", "Certificados tributarios", "Informacion exogena"}},
 			{Titulo: "Operacion por estaciones", IconoURL: "/img/hotel-logo.svg", Caracteristicas: []string{"Estaciones", "Mesas", "Habitaciones", "Zonas o bahias configurables", "Control de estados", "Turnos", "Reservas", "Alertas de tiempo", "Aseo", "Cierre/corte de caja"}},
 			{Titulo: "Automatizacion e IA", IconoURL: "/img/gpt.svg", Caracteristicas: []string{"Integracion con IA", "Documentos inteligentes", "IA GPT-5.5 para compras", "Soporte operativo", "Reportes asistidos", "Acciones confirmables"}},
-			{Titulo: "GRAFOLOGIX", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Carga de manuscritos", "Analisis visual con IA GPT-5.5", "Medidas de inclinacion", "Espacios entre palabras y letras", "Metricas de margenes", "Reporte PDF", "Exportacion HTML, JSON, CSV y TXT", "Analisis complementario con IA configurada"}},
 			{Titulo: "Energia solar", IconoURL: "/img/solar-energy.svg", Caracteristicas: []string{"Monitoreo de paneles", "Controladoras Victron", "SMA Sunny Portal", "SolarEdge Monitoring", "Baterias Powerwall, BYD, Pylontech y Enphase", "Alertas por correo", "Lecturas por gateway local", "BMS y estado de salud"}},
 			{Titulo: "Camaras y DVR", IconoURL: "/img/shield-security-color.svg", Caracteristicas: []string{"Registro de camaras por empresa", "DVR/NVR por canal", "Visores HLS, WebRTC, MJPEG o iframe", "Estaciones tipo camara", "Carga antes o despues de estaciones", "Acceso por permisos", "Monitoreo operativo"}},
 			{Titulo: "Domotica y control fisico", IconoURL: "/img/sensor.png", Caracteristicas: []string{"Domotica por estacion", "Manejo de sensores", "Puertas", "Aparatos", "Permanencia", "Acceso", "Vehiculos", "Parqueaderos", "Trazabilidad operativa"}},
 			{Titulo: "Gestion empresarial", IconoURL: "/img/company-briefcase-color.svg", Caracteristicas: []string{"Clientes", "CRM", "Usuarios", "Roles", "Permisos", "Licencias", "Auditoria", "Backups", "Comunicaciones", "Soporte", "Chat y tareas"}},
-			{Titulo: "Plantillas listas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Hotel", "Motel", "Restaurante", "Gimnasio", "Odontologia", "Propiedad horizontal", "Domicilios", "Taxi", "Carta QR", "Venta publica", "Red social comercial"}},
+			{Titulo: "Vida personal", IconoURL: "/img/money.svg", Caracteristicas: []string{"Gastos por usuario", "Foto privada de facturas", "Categorias mensuales", "Suscripciones", "Recordatorios de renovacion o cancelacion", "Proyeccion mensual y anual"}},
+			{Titulo: "13 plantillas listas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Parqueadero", "Domicilios", "Alquileres", "Construccion / AIU", "Eventos y boleteria", "Salon, barberia y spa", "Veterinaria y pet shop", "Lavanderia y tintoreria", "Taller mecanico", "Transporte de carga / TMS", "Servicios tecnicos", "Funeraria y servicios exequiales", "Parque recreativo"}},
 		},
 	}
 }
@@ -558,6 +568,9 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 		if i < len(cfg.Tarjetas) {
 			current = cfg.Tarjetas[i]
 		}
+		if paginaPrincipalCardIsRetired(current) {
+			continue
+		}
 		title := strings.TrimSpace(current.Titulo)
 		if title == "" {
 			title = base.Titulo
@@ -582,11 +595,67 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 		})
 	}
 
+	if len(normalized) == 0 {
+		return defaults
+	}
+
 	return paginaPrincipalConfig{
-		Cantidad: cfg.Cantidad,
+		Cantidad: len(normalized),
 		Tarjetas: normalized,
 		Estilos:  paginaPrincipalNormalizeVisualSettings(cfg.Estilos),
 	}
+}
+
+func paginaPrincipalCardIsRetired(card paginaPrincipalCard) bool {
+	resource := strings.ToLower(strings.Join([]string{card.Enlace, card.ImagenURL, card.ImagenSecundaria}, " "))
+	resource = strings.NewReplacer("-", "_", " ", "_", "%20", "_").Replace(resource)
+	for _, module := range []string{
+		"grafologia",
+		"gimnasio",
+		"taxi_system",
+		"apartamentos_turisticos",
+		"propiedad_horizontal",
+		"odontologia",
+		"consultorio_odontologico",
+		"drogueria_farmacia",
+		"agencia_viajes",
+		"operador_turistico",
+		"clinica_consultorios",
+		"laboratorio_clinico",
+		"colegio_academia",
+		"guarderia_infantil",
+		"seguridad_privada",
+		"club_deportivo",
+		"inmobiliaria_comercial",
+		"cooperativa_fondo",
+		"capacitacion_empresarial",
+	} {
+		if strings.Contains(resource, module) {
+			return true
+		}
+	}
+
+	switch paginaPrincipalCatalogTextKey(card.Titulo) {
+	case "grafologia", "grafologix", "gimnasio", "taxi system", "apartamentos turisticos",
+		"propiedad horizontal", "odontologia", "consultorio odontologico", "drogueria farmacia", "drogueria y farmacia",
+		"agencia de viajes", "operador turistico", "clinica y consultorios", "laboratorio clinico",
+		"colegio y academia", "guarderia infantil", "seguridad privada", "club deportivo",
+		"inmobiliaria comercial", "cooperativa y fondo de empleados", "capacitacion empresarial":
+		return true
+	default:
+		return false
+	}
+}
+
+func paginaPrincipalCatalogTextKey(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	value = strings.NewReplacer(
+		"á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ü", "u", "ñ", "n",
+	).Replace(value)
+	fields := strings.FieldsFunc(value, func(r rune) bool {
+		return (r < 'a' || r > 'z') && (r < '0' || r > '9')
+	})
+	return strings.Join(fields, " ")
 }
 
 func informacionModulosNormalizeFeatures(raw []string, fallback []string) []string {
@@ -647,10 +716,18 @@ func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacion
 		if moduleTitle == "" {
 			moduleTitle = base.Titulo
 		}
+		if paginaPrincipalCardIsRetired(paginaPrincipalCard{Titulo: moduleTitle}) {
+			continue
+		}
 		if informacionModulosIsDocumentosElectronicosTitle(moduleTitle) {
 			base = documentosBase
 		}
 		features := informacionModulosNormalizeFeatures(item.Caracteristicas, base.Caracteristicas)
+		if informacionModulosIsTemplatesTitle(moduleTitle) {
+			base = informacionModulosTemplatesDefault(defaults.Modulos)
+			moduleTitle = base.Titulo
+			features = append([]string(nil), base.Caracteristicas...)
+		}
 		if informacionModulosIsDocumentosElectronicosTitle(moduleTitle) && !informacionModulosHasDocumentosDianColombia(features) {
 			features = informacionModulosNormalizeFeatures(base.Caracteristicas, base.Caracteristicas)
 		}
@@ -662,6 +739,23 @@ func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacion
 	}
 
 	return informacionModulosConfig{Titulo: title, Modulos: modules}
+}
+
+func informacionModulosIsTemplatesTitle(title string) bool {
+	return strings.Contains(paginaPrincipalCatalogTextKey(title), "plantilla")
+}
+
+func informacionModulosTemplatesDefault(defaults []informacionModuloItem) informacionModuloItem {
+	for _, item := range defaults {
+		if informacionModulosIsTemplatesTitle(item.Titulo) {
+			return item
+		}
+	}
+	return informacionModuloItem{
+		Titulo:          "13 plantillas listas",
+		IconoURL:        "/img/analytics-color.svg",
+		Caracteristicas: []string{"Parqueadero", "Domicilios", "Alquileres", "Construccion / AIU", "Eventos y boleteria", "Salon, barberia y spa", "Veterinaria y pet shop", "Lavanderia y tintoreria", "Taller mecanico", "Transporte de carga / TMS", "Servicios tecnicos", "Funeraria y servicios exequiales", "Parque recreativo"},
+	}
 }
 
 func informacionModulosDocumentosElectronicosDefault(defaults []informacionModuloItem) informacionModuloItem {
@@ -705,7 +799,7 @@ func informacionModulosMergeDefaultHighlights(source, defaults []informacionModu
 	for _, item := range defaults {
 		key := strings.ToLower(strings.TrimSpace(item.Titulo))
 		switch key {
-		case "grafologix", "camaras y dvr", "energia solar":
+		case "camaras y dvr", "energia solar", "vida personal":
 			if !seen[key] && len(source) < informacionModulosDefaultLimit {
 				source = append(source, item)
 				seen[key] = true

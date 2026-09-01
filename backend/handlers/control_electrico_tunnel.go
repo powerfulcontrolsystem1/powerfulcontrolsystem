@@ -72,20 +72,28 @@ func handleDomoticaRaspberryInstallerDownload(w http.ResponseWriter, r *http.Req
 	if err := tmpl.Execute(&body, domoticaInstallerTemplateData{BaseURLJSON: string(baseJSON), DeviceUIDJSON: string(deviceJSON), EnrollmentTokenJSON: string(tokenJSON)}); err != nil {
 		return err
 	}
+	auditMetadata, _ := json.Marshal(map[string]interface{}{
+		"uso_tipo": pi.UsoTipo, "puerta_reles_salida": pi.PuertaRelesSalida, "puerta_delay_ms": pi.PuertaDelayMS,
+	})
 	_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
-		EmpresaID:   empresaID,
-		RaspberryID: pi.ID,
-		Comando:     "provisionar_tunel",
-		Resultado:   "instalador_generado",
-		Actor:       actor,
-		Origen:      "panel_domotica",
+		EmpresaID:    empresaID,
+		RaspberryID:  pi.ID,
+		Comando:      "provisionar_tunel",
+		Resultado:    "instalador_generado",
+		Actor:        actor,
+		Origen:       "panel_domotica",
+		MetadataJSON: string(auditMetadata),
 	})
 	filenameCode := sanitizeDomoticaASCII(firstNonEmpty(pi.Codigo, pi.Nombre, "raspberry"))
 	if filenameCode == "" {
 		filenameCode = "raspberry"
 	}
 	w.Header().Set("Content-Type", "text/x-shellscript; charset=utf-8")
-	w.Header().Set("Content-Disposition", `attachment; filename="instalar-pcs-domotica-`+filenameCode+`.sh"`)
+	prefix := "instalar-pcs-domotica-"
+	if pi.UsoTipo == dbpkg.ControlElectricoUsoSensorPuertas {
+		prefix = "instalar-pcs-sensores-puertas-"
+	}
+	w.Header().Set("Content-Disposition", `attachment; filename="`+prefix+filenameCode+`.sh"`)
 	w.Header().Set("Cache-Control", "no-store, max-age=0")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -163,6 +171,8 @@ func PublicDomoticaRaspberryTunnelHandler(dbEmp *sql.DB) http.HandlerFunc {
 			handleDomoticaTunnelAck(w, r, dbEmp, device, requestBytes)
 		case "input":
 			handleDomoticaTunnelInput(w, r, dbEmp, device, requestBytes)
+		case "door_scan":
+			handleDomoticaTunnelDoorScan(w, r, dbEmp, device, requestBytes)
 		case "telemetry":
 			handleDomoticaTunnelTelemetry(w, r, dbEmp, device, requestBytes)
 		case "solar_telemetry":
@@ -301,6 +311,11 @@ func handleDomoticaTunnelEnroll(w http.ResponseWriter, r *http.Request, dbEmp *s
 		writeDomoticaTunnelJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "error": "aprovisionamiento invalido o vencido"})
 		return
 	}
+	metadata, _ := json.Marshal(map[string]interface{}{"agent_version": truncateHTTPText(payload.AgentVersion, 80)})
+	_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
+		EmpresaID: device.EmpresaID, RaspberryID: device.RaspberryID, Comando: "raspberry_enrolada",
+		Resultado: "conectado", Actor: device.DeviceUID, Origen: "tunel_raspberry", MetadataJSON: string(metadata),
+	})
 	response := map[string]interface{}{"ok": true, "device_token": deviceToken, "poll_seconds": 20, "server_time": time.Now().UTC().Format(time.RFC3339)}
 	body := marshalDomoticaTunnelJSON(response)
 	_ = dbpkg.RecordEmpresaControlElectricoTunnelTraffic(dbEmp, device, requestBytes, int64(len(body)), domoticaTunnelRemoteIP(r), payload.AgentVersion, "")
@@ -327,15 +342,20 @@ func handleDomoticaTunnelPoll(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "json invalido"})
 		return
 	}
+	isDoorSensor := device.UsoTipo == dbpkg.ControlElectricoUsoSensorPuertas
 	recoveryQueued := 0
-	if strings.TrimSpace(payload.BootID) != "" {
+	if !isDoorSensor && strings.TrimSpace(payload.BootID) != "" {
 		var recoveryErr error
 		recoveryQueued, recoveryErr = dbpkg.QueueEmpresaControlElectricoTunnelRestoreOnBoot(dbEmp, device, payload.BootID)
 		if recoveryErr != nil {
 			log.Printf("[domotica_tunnel] restore queue empresa_id=%d raspberry_id=%d error: %v", device.EmpresaID, device.RaspberryID, recoveryErr)
 		}
 	}
-	deadline := time.Now().Add(20 * time.Second)
+	pollWait := 20 * time.Second
+	if isDoorSensor {
+		pollWait = 5 * time.Second
+	}
+	deadline := time.Now().Add(pollWait)
 	var command *dbpkg.EmpresaControlElectricoTunnelCommand
 	for time.Now().Before(deadline) {
 		claimed, err := dbpkg.ClaimEmpresaControlElectricoTunnelCommand(dbEmp, device.EmpresaID, device.RaspberryID)
@@ -353,11 +373,18 @@ func handleDomoticaTunnelPoll(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		case <-time.After(400 * time.Millisecond):
 		}
 	}
-	inputs, err := dbpkg.ListEmpresaControlElectricoInputConfigs(dbEmp, device.EmpresaID, device.RaspberryID)
-	if err != nil {
-		inputs = []dbpkg.EmpresaControlElectricoInputConfig{}
+	inputs := []dbpkg.EmpresaControlElectricoInputConfig{}
+	if !isDoorSensor {
+		var err error
+		inputs, err = dbpkg.ListEmpresaControlElectricoInputConfigs(dbEmp, device.EmpresaID, device.RaspberryID)
+		if err != nil {
+			inputs = []dbpkg.EmpresaControlElectricoInputConfig{}
+		}
 	}
-	response := map[string]interface{}{"ok": true, "inputs": inputs, "server_time": time.Now().UTC().Format(time.RFC3339)}
+	response := map[string]interface{}{"ok": true, "usage_type": device.UsoTipo, "inputs": inputs, "server_time": time.Now().UTC().Format(time.RFC3339)}
+	if isDoorSensor {
+		response["door_scan"] = dbpkg.BuildEmpresaControlElectricoDoorScanConfig(device.PuertaRelesSalida, device.PuertaDelayMS)
+	}
 	if recoveryQueued > 0 {
 		response["recovery_queued"] = recoveryQueued
 	}
@@ -374,6 +401,52 @@ func handleDomoticaTunnelPoll(w http.ResponseWriter, r *http.Request, dbEmp *sql
 		log.Printf("[domotica_tunnel] traffic empresa_id=%d raspberry_id=%d error: %v", device.EmpresaID, device.RaspberryID, err)
 	}
 	writeDomoticaTunnelJSONBytes(w, http.StatusOK, body)
+}
+
+func handleDomoticaTunnelDoorScan(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, device *dbpkg.EmpresaControlElectricoTunnelDevice, requestBytes int64) {
+	if device.UsoTipo != dbpkg.ControlElectricoUsoSensorPuertas {
+		writeDomoticaTunnelJSON(w, http.StatusForbidden, map[string]interface{}{"ok": false, "error": "Raspberry no configurada para sensores de puertas"})
+		return
+	}
+	var payload struct {
+		Readings []dbpkg.EmpresaControlElectricoDoorReading `json:"readings"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || len(payload.Readings) == 0 {
+		writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "lecturas de puertas invalidas"})
+		return
+	}
+	for _, reading := range payload.Readings {
+		if reading.OutputIndex > device.PuertaRelesSalida {
+			writeDomoticaTunnelJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "salida fuera de la configuracion empresarial"})
+			return
+		}
+	}
+	transitions, err := dbpkg.ApplyEmpresaControlElectricoDoorScan(dbEmp, device.EmpresaID, device.RaspberryID, payload.Readings)
+	if err != nil {
+		recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, map[string]interface{}{"ok": false, "error": "no se pudieron guardar las lecturas de puertas"}, err.Error())
+		return
+	}
+	changed := 0
+	autoActivated := 0
+	warnings := make([]string, 0)
+	for _, transition := range transitions {
+		if !transition.Changed {
+			continue
+		}
+		changed++
+		activated, warning := maybeAutoActivateStationFromSensor(dbEmp, device.EmpresaID, transition.EstacionID, transition.State)
+		if activated {
+			autoActivated++
+		}
+		if warning != "" {
+			warnings = append(warnings, warning)
+		}
+	}
+	response := map[string]interface{}{"ok": true, "readings": len(transitions), "changed": changed, "auto_activated": autoActivated}
+	if len(warnings) > 0 {
+		response["warnings"] = warnings
+	}
+	recordAndWriteDomoticaTunnel(w, r, dbEmp, device, requestBytes, response, "")
 }
 
 func handleDomoticaTunnelAck(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, device *dbpkg.EmpresaControlElectricoTunnelDevice, requestBytes int64) {

@@ -168,16 +168,44 @@ propagan mediante `Error()`. La interfaz recibe un mensaje generico, mientras
 la auditoria conserva solo metadatos minimizados sin prompt, token, adjunto ni
 respuesta privada.
 
+Cada solicitud de OpenAI Responses incluye `safety_identifier` estable y
+pseudonimo, derivado con SHA-256 de una identidad autenticada o del alcance
+operativo cuando no existe usuario final. Nunca se transmite correo, IP ni otro
+identificador original; las solicitudes conservan `store=false`.
+
 ## Modelos y esfuerzo de razonamiento
 
-Super Administrador puede habilitar y seleccionar GPT-5.4 mini, GPT-5.5,
-GPT-5.6 Luna, GPT-5.6 Terra y GPT-5.6 Sol. Terra equilibra capacidad y costo;
-Sol queda orientado a tareas profesionales complejas; Luna a volumen y costo.
-La disponibilidad efectiva depende de la cuenta y permisos del proveedor.
+Super Administrador selecciona un solo modelo principal para todas las
+empresas, usuarios, preguntas y adjuntos. El valor inicial es GPT-5.6 Terra con
+esfuerzo `medium`: cubre texto e imagen de entrada y usa Responses API para
+archivos, herramientas y salidas estructuradas. La disponibilidad efectiva
+depende de la cuenta y permisos vigentes del proveedor.
 
-La configuracion guarda un esfuerzo por modelo y el backend solo acepta los
-valores declarados por su catalogo. Para los modelos GPT-5.6 se permiten
-`none`, `low`, `medium`, `high`, `xhigh` y `max`; GPT-5.5 usa `none`, `low`,
-`medium`, `high` y `xhigh`; GPT-5.4 mini queda en `none` porque opera por
-Chat Completions en el flujo economico actual. El esfuerzo se envia unicamente
-al endpoint Responses y nunca es controlado directamente por el navegador.
+El catálogo técnico conserva modelos alternativos para que Super Administrador
+pueda cambiar la política global, pero la API empresarial expone únicamente el
+seleccionado. El navegador no puede escoger otro modelo ni esfuerzo. Voz sigue
+siendo una capa de entrada/salida separada; el modelo principal devuelve texto.
+
+## Agente PCS permanente
+
+La experiencia empresarial no muestra selector ni interruptor de agente. El
+servidor fuerza `agente_pcs` para chat, adjuntos, Centro IA y Pedidos IA. El
+agente identifica el módulo según la intención y el contexto autorizado; no
+recibe `empresa_id`, rol, permiso ni confirmación desde el modelo como campos de
+autoridad.
+
+Mantener el agente activo no implica por sí solo otra tarifa: el consumo se
+mide por tokens y herramientas realmente usadas. El historial enviado queda
+acotado, el razonamiento inicial es `medium`, `MaxOperations` permanece en uno
+y la cuota ligera de agente se reserva al invocar una herramienta, no al
+responder una pregunta normal. Toda herramienta conserva flags, permiso
+efectivo y confirmación independiente.
+
+## Historial y adjuntos del drawer
+
+Cada chat crea un `conversation_id` y lo persiste junto a `usuario_creador` y
+`empresa_id`. El endpoint de historial usa alcance `usuario` por defecto. El
+alcance `empresa` se permite solo a roles administrativos autorizados y nunca
+omite el tenant. Fotos, PDF, DOCX, XLSX, CSV y texto validado se envían como
+datos no confiables al modelo para generar un borrador; toda escritura real
+continúa requiriendo una herramienta cerrada, permisos y confirmación humana.

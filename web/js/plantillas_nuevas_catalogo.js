@@ -5,30 +5,6 @@
 
   var modules = [
     {
-      id: "linkAgenciaViajes",
-      module: "agencia_viajes",
-      title: "Agencia de viajes",
-      fullTitle: "Agencia de viajes y planes turísticos",
-      lead: "Paquetes, reservas, itinerarios, vouchers, pagos por cuotas, proveedores y comisiones.",
-      description: "Gestiona paquetes turísticos, cotizaciones, itinerarios, reservas, vouchers, pagos por cuotas, proveedores, comisiones y seguimiento comercial desde una sola operación. La agencia puede controlar clientes, fechas de viaje, saldos pendientes, confirmaciones y evidencias para vender planes completos con trazabilidad y mejor servicio.",
-      summary: "Paquetes, reservas, itinerarios, vouchers y comisiones.",
-      icon: "/img/hotel-logo.svg",
-      secondaryIcon: "/img/portal-systems/realistic/agencia-viajes.jpg",
-      sections: ["Dashboard comercial", "Paquetes y cotizaciones", "Reservas y vouchers", "Pagos y comisiones", "Aprobaciones", "Evidencias"]
-    },
-    {
-      id: "linkOperadorTuristico",
-      module: "operador_turistico",
-      title: "Operador turístico",
-      fullTitle: "Operador turístico local",
-      lead: "Tours, guías, cupos, check-in, rutas, transporte y novedades.",
-      description: "Organiza tours locales con rutas, guías, cupos, transporte, check-in, novedades y cierre operativo. El módulo ayuda a coordinar grupos, validar asistencia, registrar evidencias del recorrido, controlar disponibilidad por fecha y entregar reportes claros sobre ocupación, cumplimiento y rentabilidad de cada experiencia.",
-      summary: "Tours locales, guías, cupos, check-in y rutas.",
-      icon: "/img/gps.svg",
-      secondaryIcon: "/img/portal-systems/realistic/operador-turistico.jpg",
-      sections: ["Dashboard operativo", "Tours y rutas", "Guias y cupos", "Check-in", "Evidencias", "Cierre"]
-    },
-    {
       id: "linkEventosBoleteria",
       module: "eventos_boleteria",
       title: "Eventos y boletería",
@@ -63,54 +39,6 @@
       icon: "/img/shield-license-color.svg",
       secondaryIcon: "/img/portal-systems/realistic/veterinaria-petshop.jpg",
       sections: ["Pacientes", "Historia", "Vacunas", "Peluqueria", "Productos", "Seguimiento"]
-    },
-    {
-      id: "linkClinicaConsultorios",
-      module: "clinica_consultorios",
-      title: "Clínica y consultorios",
-      fullTitle: "Clínica médica y consultorios múltiples",
-      lead: "Pacientes, citas, profesionales, órdenes, historia clínica básica y remisiones.",
-      description: "Gestiona pacientes, citas, profesionales, órdenes, remisiones, historia clínica básica y seguimiento administrativo para clínicas o consultorios múltiples. El flujo permite coordinar recepción, atención, autorizaciones, resultados, pagos y reportes manteniendo separación de permisos y trazabilidad por sede o especialidad.",
-      summary: "Pacientes, citas, órdenes e historia clínica básica.",
-      icon: "/img/report.svg",
-      secondaryIcon: "/img/portal-systems/realistic/clinica-consultorios.jpg",
-      sections: ["Pacientes", "Citas", "Historia", "Órdenes", "Aprobaciones", "Reportes"]
-    },
-    {
-      id: "linkLaboratorioClinico",
-      module: "laboratorio_clinico",
-      title: "Laboratorio clínico",
-      fullTitle: "Laboratorio clínico",
-      lead: "Órdenes de examen, muestras, trazabilidad, resultados, validación y entrega digital.",
-      description: "Administra órdenes de examen, toma de muestras, trazabilidad, control de calidad, resultados, validación profesional y entrega digital. El laboratorio puede seguir cada muestra por estado, priorizar tiempos de respuesta, documentar incidencias y cerrar servicios con reportes para usuarios, convenios y auditoría.",
-      summary: "Órdenes, muestras, resultados y entrega digital.",
-      icon: "/img/analytics-color.svg",
-      secondaryIcon: "/img/portal-systems/realistic/laboratorio-clinico.jpg",
-      sections: ["Órdenes", "Muestras", "Resultados", "Calidad", "Entrega", "SLA"]
-    },
-    {
-      id: "linkColegioAcademia",
-      module: "colegio_academia",
-      title: "Colegio o academia",
-      fullTitle: "Colegio, academia o instituto",
-      lead: "Estudiantes, matrículas, cursos, mensualidades, asistencia, boletines y certificados.",
-      description: "Organiza estudiantes, acudientes, matrículas, cursos, mensualidades, asistencia, boletines, certificados y cartera educativa. La institución puede controlar grupos, pagos, novedades académicas, documentos emitidos y comunicación administrativa, conectando la operación diaria con reportes para dirección y control financiero.",
-      summary: "Matrículas, cursos, asistencia, mensualidades y boletines.",
-      icon: "/img/company-briefcase-color.svg",
-      secondaryIcon: "/img/portal-systems/realistic/colegio-academia.jpg",
-      sections: ["Matriculas", "Cursos", "Asistencia", "Mensualidades", "Boletines", "Certificados"]
-    },
-    {
-      id: "linkGuarderiaInfantil",
-      module: "guarderia_infantil",
-      title: "Guardería infantil",
-      fullTitle: "Guardería y jardín infantil",
-      lead: "Niños, acudientes, autorizaciones, alimentación, novedades, entregas y pagos.",
-      description: "Controla niños, acudientes, autorizaciones, alimentación, novedades, entregas, pagos y seguimiento diario para guarderías o jardines infantiles. El módulo ayuda a registrar entrada y salida, responsables autorizados, observaciones de cuidado, cobros recurrentes y reportes para una operación segura y ordenada.",
-      summary: "Niños, acudientes, autorizaciones, novedades y pagos.",
-      icon: "/img/user-avatar-color.svg",
-      secondaryIcon: "/img/portal-systems/realistic/guarderia-infantil.jpg",
-      sections: ["Jornada", "Ninos", "Acudientes", "Autorizaciones", "Novedades", "Pagos"]
     },
     {
       id: "linkLavanderiaTintoreria",
@@ -161,42 +89,6 @@
       sections: ["Órdenes", "Agenda", "Técnicos", "Repuestos", "Firmas", "Garantías"]
     },
     {
-      id: "linkInmobiliariaComercial",
-      module: "inmobiliaria_comercial",
-      title: "Inmobiliaria",
-      fullTitle: "Inmobiliaria comercial",
-      lead: "Propiedades, arriendos, ventas, visitas, leads, propietarios, contratos y comisiones.",
-      description: "Administra propiedades, arriendos, ventas, visitas, leads, propietarios, contratos, comisiones y seguimiento comercial inmobiliario. La agencia puede publicar inventario, programar recorridos, registrar interesados, controlar documentación, medir conversiones y cerrar negocios con trazabilidad financiera y contractual.",
-      summary: "Propiedades, visitas, leads, propietarios y comisiones.",
-      icon: "/img/company-briefcase-color.svg",
-      secondaryIcon: "/img/portal-systems/realistic/inmobiliaria-comercial.jpg",
-      sections: ["Propiedades", "Leads", "Visitas", "Contratos", "Comisiones", "Cierre"]
-    },
-    {
-      id: "linkSeguridadPrivada",
-      module: "seguridad_privada",
-      title: "Seguridad privada",
-      fullTitle: "Seguridad privada y vigilancia",
-      lead: "Guardas, puestos, turnos, rondas QR, novedades, incidentes y escalamiento.",
-      description: "Controla guardas, puestos, turnos, rondas QR, novedades, incidentes, escalamiento y reportes para empresas de seguridad privada. La operación puede verificar presencia, documentar eventos, asignar supervisores, medir cumplimiento de rondas y conservar evidencia para clientes, auditoría y control interno.",
-      summary: "Guardas, puestos, turnos, rondas QR e incidentes.",
-      icon: "/img/shield-license-color.svg",
-      secondaryIcon: "/img/portal-systems/realistic/seguridad-privada.jpg",
-      sections: ["Puestos", "Turnos", "Guardas", "Rondas QR", "Incidentes", "Reportes"]
-    },
-    {
-      id: "linkClubDeportivo",
-      module: "club_deportivo",
-      title: "Club deportivo",
-      fullTitle: "Club deportivo y escuela deportiva",
-      lead: "Alumnos, entrenadores, disciplinas, clases, torneos, pagos y asistencia.",
-      description: "Gestiona alumnos, entrenadores, disciplinas, clases, torneos, pagos, asistencia y comunicaciones para clubes o escuelas deportivas. El módulo ayuda a organizar grupos, programar entrenamientos, controlar mensualidades, registrar participación en eventos y medir avance operativo por disciplina o categoría.",
-      summary: "Alumnos, entrenadores, disciplinas, torneos y asistencia.",
-      icon: "/img/analytics-color.svg",
-      secondaryIcon: "/img/portal-systems/realistic/club-deportivo.jpg",
-      sections: ["Alumnos", "Disciplinas", "Clases", "Torneos", "Pagos", "Asistencia"]
-    },
-    {
       id: "linkFunerariaExequial",
       module: "funeraria_exequial",
       title: "Funeraria exequial",
@@ -219,57 +111,19 @@
       icon: "/img/tags-color.svg",
       secondaryIcon: "/img/portal-systems/realistic/parque-recreativo.jpg",
       sections: ["Entradas", "Manillas QR", "Aforo", "Atracciones", "Consumo", "Incidentes"]
-    },
-    {
-      id: "linkCooperativaFondo",
-      module: "cooperativa_fondo",
-      title: "Cooperativa",
-      fullTitle: "Cooperativa y fondo de empleados",
-      lead: "Asociados, aportes, créditos internos, cartera, beneficios, convenios y asambleas.",
-      description: "Gestiona asociados, aportes, créditos internos, cartera, beneficios, convenios, asambleas y trazabilidad administrativa para cooperativas o fondos de empleados. El módulo permite controlar solicitudes, aprobaciones, obligaciones, recaudos y comunicaciones manteniendo gobierno interno, reportes y permisos por responsabilidad.",
-      summary: "Asociados, aportes, créditos internos, cartera y beneficios.",
-      icon: "/img/money.svg",
-      secondaryIcon: "/img/portal-systems/realistic/cooperativa-fondo.jpg",
-      sections: ["Asociados", "Aportes", "Creditos", "Cartera", "Beneficios", "Asambleas"]
-    },
-    {
-      id: "linkCapacitacionEmpresarial",
-      module: "capacitacion_empresarial",
-      title: "Capacitación empresarial",
-      fullTitle: "Centro de capacitación empresarial",
-      lead: "Cursos, instructores, cohortes, asistencia, evaluaciones, certificados y empresas cliente.",
-      description: "Administra cursos, instructores, cohortes, empresas cliente, asistencia, evaluaciones, certificados y seguimiento comercial para centros de capacitación. La operación puede vender programas, controlar grupos, medir cumplimiento académico, emitir constancias y conservar historial por participante, empresa y periodo.",
-      summary: "Cursos, instructores, certificados, asistencia y empresas.",
-      icon: "/img/excel.svg",
-      secondaryIcon: "/img/portal-systems/realistic/capacitacion-empresarial.jpg",
-      sections: ["Cursos", "Cohortes", "Instructores", "Asistencia", "Evaluaciones", "Certificados"]
     }
   ];
-
-  modules = modules.filter(function (item) {
-    return String((item && item.module) || "").trim().toLowerCase() !== "colegio_academia";
-  });
 
   var productionMassRank = {
     salon_spa: 1,
     veterinaria_petshop: 2,
-    clinica_consultorios: 3,
-    laboratorio_clinico: 4,
     taller_mecanico: 5,
     servicios_tecnicos: 6,
     lavanderia_tintoreria: 7,
-    agencia_viajes: 8,
     eventos_boleteria: 9,
     transporte_carga_tms: 10,
-    operador_turistico: 11,
-    guarderia_infantil: 12,
-    inmobiliaria_comercial: 13,
-    seguridad_privada: 14,
-    club_deportivo: 15,
     funeraria_exequial: 16,
     parque_recreativo: 17,
-    cooperativa_fondo: 18,
-    capacitacion_empresarial: 19
   };
 
   function uniqueList(values) {

@@ -1,3 +1,34 @@
+2026-08-31: Auditoria empresarial verificable y retencion protegida.
+- Backend: la consulta y exportacion forense siguen bajo `auditoria:R`; las
+  acciones destructivas `retener` y `purgar` ahora se resuelven como
+  `auditoria:D` en el wrapper, aun si se invocan fuera de la interfaz.
+- Exportacion: `action=export_forense` entrega JSON o CSV con manifiesto
+  SHA-256, hashes por registro y cadena de custodia para la pagina filtrada.
+  El manifiesto distingue `total_coincidencias` de los registros incluidos;
+  las exportaciones de vista conservan el contenido normal de la pagina.
+- UX: Auditoria separa claramente exportaciones de vista y forenses, para no
+  presentar un CSV sin hashes como evidencia de cadena de custodia.
+- Datos: la busqueda operacional usa filtros parametrizados e indices por
+  empresa; no crea una tabla virtual FTS en PostgreSQL.
+
+2026-08-25: Productos, Servicios, Inventario y Compras avanzadas.
+- Backend: recepción de compra, existencia, costo, lote opcional y Kardex forman
+  una sola transacción; `FOR UPDATE`, cantidades condicionales y UPSERT de
+  existencias protegen concurrencia y sobre-recepción.
+- Multiempresa: requisición, item, cotización, producto, proveedor y bodega se
+  validan por `empresa_id`; las mutaciones web críticas exigen idempotencia
+  durable después del wrapper de permisos/licencia.
+- Frontend: productos y bodegas se eligen desde catálogos activos; recepción
+  parte del item pendiente, muestra lote y explicita que actualiza inventario.
+- Impresoras: la cola toma trabajos concurrentes con `FOR UPDATE SKIP LOCKED`,
+  exige propietario para cerrar, reinicia intentos al reintentar y protege la
+  creación web con idempotencia durable. El carrito comparte un solo resolver
+  para orden de servicio, cajón monedero y ticket.
+- QA: recorrido real y visual de productos, servicios, categorías, bodegas,
+  Kardex, lotes, reservas, IA, recetas e impresoras. Suite Go global, vet,
+  sintaxis y auditoría de duplicados aprobadas. Candidato local para staging;
+  NO-GO de producción hasta PostgreSQL/staging, carga IA real y hardware físico.
+
 2026-08-09: Dialogos verificables para acciones CxP/IA.
 - Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria` y
   `frontend_ux`.
@@ -4792,3 +4823,79 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - Alerta empresarial de Raspberry desconectada con gracia, correo y buzón/campanita.
 - Cuota mensual del túnel por empresa, advertencia y bloqueo administrados exclusivamente por Super Administrador.
 - Entradas GPIO con salida normal, temporizada o condicionada a la agenda del aparato, siempre aisladas por empresa/Raspberry y dentro de la cola de encendidos.
+
+2026-08-23: Retiro y consolidacion de modulos verticales
+- Retirados: Gimnasio, Taxi System, Apartamentos turisticos, Propiedad horizontal y Odontologia.
+- Consolidado: Drogueria/Farmacia deja de ser modulo/licencia/pagina independiente y usa Inventario, productos, compras, ventas y facturacion centrales.
+- Se conservan en Inventario las capacidades reutilizables de lotes, fechas de vencimiento, alertas y trazabilidad por producto.
+- El catalogo de plantillas vigente queda en 13 entradas: cuatro clasicas y nueve nuevas.
+
+2026-08-23: Portal publico alineado con el catalogo vigente
+- `web/index.html` y `/api/public/informacion_de_modulos` muestran el corte de 52 modulos activos y enumeran las 13 plantillas vigentes.
+- `web/descripcion_de_los_sistemas.html` y `web/descripcion_de_los_sistemas.ht` agregan fichas para las cuatro plantillas clasicas y las nueve nuevas, sin duplicar una plantilla que ya exista en la configuracion dinamica.
+- `backend/handlers/pagina_principal_handlers.go` elimina de la respuesta y del guardado tarjetas heredadas de elementos retirados; el frontend aplica la misma defensa antes de renderizar.
+- Drogueria/Farmacia solo puede presentarse como tipo de negocio servido por Inventario, no como licencia, permiso, pagina o tarjeta modular independiente.
+
+2026-08-23: Apertura rapida del carrito POS
+- La vista del carrito presenta primero su estructura visual y carga en paralelo
+  las lecturas independientes de empresa, permisos, configuracion operativa,
+  clientes, descuentos, cajas y carrito.
+- La identidad de sesion se consulta una sola vez durante la apertura y se
+  elimina el segundo listado del carrito canonico cuando no hubo una mutacion de
+  ciclo de vida.
+- La configuracion `estacion_prefs` se comparte con `estaciones_labels.js` para
+  no solicitar dos veces las mismas preferencias al abrir la venta.
+- Pagar permanece deshabilitado hasta completar items, abonos y reglas de cobro;
+  no cambian endpoints, contratos, permisos ni aislamiento por `empresa_id`.
+
+2026-08-24: Administrar disco VPS en Super administrador
+
+- La nueva vista de Plataforma solo está disponible para `super_administrador`
+  y no forma parte de permisos/licencias empresariales.
+- Muestra categorías Docker recuperables sin revelar IDs, rutas ni secretos y
+  requiere la frase exacta `LIBERAR ESPACIO` antes de cualquier eliminación.
+- La operación nunca incluye PostgreSQL, datos de empresa, archivos privados,
+  respaldos, certificados, configuración, código o volúmenes conectados.
+2026-08-25: Chat IA simple, multimodal y con historial por usuario.
+- Modulos afectados: `chat IA`, `super`, `configuracion avanzada`, `seguridad multiempresa` y `frontend_ux`.
+- El drawer elimina selectores y configuración redundantes, conserva voz, adjuntos, nuevo chat e historial, y repara la apertura cuando el elemento estaba marcado `hidden`.
+- Fotos y documentos se procesan con el mismo modelo global para preparar borradores de compras, productos o cartas; ninguna mutación se ejecuta sin permisos y confirmación.
+- El historial normal se filtra por cuenta autenticada y empresa; los administradores autorizados pueden alternar a todos los usuarios de su propia empresa.
+- El único `Agente PCS` permanece activo sin interruptor en chat, Centro IA y Pedidos IA; decide la ayuda por intención, pero no amplía permisos ni ejecuta escrituras sin confirmación.
+
+2026-08-26: Idempotencia transversal de operaciones criticas.
+- Modulos afectados: pagos/licencias, carrito y caja, ventas offline, CxP,
+  facturacion electronica, Rappi, venta publica, IA empresarial y plataforma de
+  outbox/jobs.
+- Los flujos financieros y externos usan replay durable, transaccion, claim o
+  restriccion unica segun la naturaleza del efecto.
+- Un resultado remoto ambiguo queda bloqueado para conciliacion; no se sacrifica
+  la seguridad de cobro o comunicacion por un reintento automatico.
+2026-08-31: Vida personal
+
+Ampliacion 2026-08-31: agrega historial de precios por producto/codigo de
+barras, lector movil nativo con fallback manual y carga de facturas por IA. El
+clic `IA: leer y registrar factura` autoriza el alta automatica del gasto y sus
+lineas personales; no integra datos con cuentas o modulos empresariales.
+- Nuevo modulo universal para cuentas empresariales autenticadas, independiente
+  de caja, compras, inventario, contabilidad, impuestos y documentos fiscales.
+- Registra gastos cotidianos por categoria, comercio, fecha, valor y medio de
+  pago; permite foto desde el movil o comprobante PDF privado con confirmacion
+  manual de los datos.
+- Resume el mes, promedio diario, categorias y costo proyectado de
+  suscripciones. Las suscripciones admiten periodicidad y alertas para renovar,
+  cancelar o ambas acciones.
+- Cada registro pertenece a `empresa_id + usuario_id`. No existe consulta de
+  todos los usuarios y la licencia comercial no puede bloquear el modulo.
+- El menu muestra alertas y puede emitir Notification API si la persona concede
+  permiso; requiere PCS abierto y no contacta al proveedor automaticamente.
+- La migracion sigue pendiente de `pcs-migrate`; cambio local sin despliegue.
+- El catalogo publico actual pasa de 52 a 53 modulos; las 13 plantillas no
+  cambian.
+2026-08-31: Raspberry multiplexada para sensores de puertas.
+- Modulo visible: Domotica y Configuracion de sensores; claves tecnicas `control_electrico` y `sensor_puertas`.
+- Cada controlador Raspberry elige uso exclusivo. El modo puertas genera 4 canales por cada una de 1–16 salidas y permite asignarlos a estaciones/habitaciones existentes.
+- El agente Python stdlib pulsa GPIO 4–19 de uno en uno y lee GPIO 0–3, con delay empresarial, filtro estable, estado completo periódico, autoarranque systemd y reconexión HTTPS.
+- El tutorial dedicado muestra el esquema de conexión 4×16, equivalencias BCM/pin físico y advierte que los GPIO son de 3,3 V, la interfaz de entrada debe usar contacto seco/optoacoplador y el selector debe ser activo en alto.
+- El backend deriva empresa/controlador de la identidad del túnel, bloquea cargas o reglas Domótica en una placa de puertas y conserva auditoría completa sin secretos.
+- Persistencia y migración: `20260831-002-raspberry-door-sensor-v1`; sin ejecución ni despliegue en esta tarea.

@@ -39,7 +39,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 				return
 			}
 
@@ -335,7 +335,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodPost, http.MethodPut:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 				return
 			}
 
@@ -351,7 +351,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, err := dbpkg.UpsertEmpresaImpresora(dbEmp, payload)
 				if err != nil {
 					log.Printf("[empresa_impresoras] upsert impresora empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				item, err := dbpkg.GetEmpresaImpresoraByID(dbEmp, empresaID, id)
@@ -375,7 +375,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "activar", "desactivar", "inactivar":
 				impresoraID, err := parsePrinterIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				estado := "activo"
@@ -384,7 +384,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.SetEmpresaImpresoraEstado(dbEmp, empresaID, impresoraID, estado, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
 					log.Printf("[empresa_impresoras] set estado empresa_id=%d impresora_id=%d estado=%s error: %v", empresaID, impresoraID, estado, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "estado_impresora_actualizado", "empresa_impresoras", impresoraID, http.StatusOK, map[string]interface{}{
@@ -396,12 +396,12 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "predeterminada", "default":
 				impresoraID, err := parsePrinterIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				if err := dbpkg.SetEmpresaImpresoraPredeterminada(dbEmp, empresaID, impresoraID, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
 					log.Printf("[empresa_impresoras] set default empresa_id=%d impresora_id=%d error: %v", empresaID, impresoraID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "predeterminada_actualizada", "empresa_impresoras", impresoraID, http.StatusOK, nil, "impresora predeterminada actualizada")
@@ -419,7 +419,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, err := dbpkg.UpsertEmpresaImpresoraFuncionalidad(dbEmp, payload)
 				if err != nil {
 					log.Printf("[empresa_impresoras] upsert funcionalidad empresa_id=%d funcionalidad=%q error: %v", empresaID, payload.Funcionalidad, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "funcionalidad_asignada", "empresa_impresoras_funcionalidades", id, http.StatusOK, map[string]interface{}{
@@ -440,7 +440,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, err := dbpkg.UpsertEmpresaImpresoraProducto(dbEmp, payload)
 				if err != nil {
 					log.Printf("[empresa_impresoras] upsert producto empresa_id=%d producto_id=%d error: %v", empresaID, payload.ProductoID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "producto_asignado", "empresa_impresoras_productos", id, http.StatusOK, map[string]interface{}{
@@ -461,7 +461,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, err := dbpkg.UpsertEmpresaImpresoraProductoRegla(dbEmp, payload)
 				if err != nil {
 					log.Printf("[empresa_impresoras] upsert producto regla empresa_id=%d alcance=%q categoria_id=%d error: %v", empresaID, payload.Alcance, payload.CategoriaID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "regla_producto_asignada", "empresa_impresoras_productos_reglas", id, http.StatusOK, map[string]interface{}{
@@ -483,7 +483,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, err := dbpkg.UpsertEmpresaImpresoraReceta(dbEmp, payload)
 				if err != nil {
 					log.Printf("[empresa_impresoras] upsert receta empresa_id=%d receta_id=%d error: %v", empresaID, payload.RecetaID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "receta_asignada", "empresa_impresoras_recetas", id, http.StatusOK, map[string]interface{}{
@@ -504,7 +504,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, err := dbpkg.UpsertEmpresaImpresoraDispositivo(dbEmp, payload)
 				if err != nil {
 					log.Printf("[empresa_impresoras] upsert dispositivo empresa_id=%d dispositivo=%q error: %v", empresaID, payload.DispositivoID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "computador_impresora_asignado", "empresa_impresoras_dispositivos", id, http.StatusOK, map[string]interface{}{
@@ -526,7 +526,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, err := dbpkg.CrearEmpresaImpresoraTrabajo(dbEmp, payload)
 				if err != nil {
 					log.Printf("[empresa_impresoras] crear trabajo empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				item, err := dbpkg.GetEmpresaImpresoraTrabajoByID(dbEmp, empresaID, id)
@@ -566,7 +566,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				trabajos, err := dbpkg.TomarEmpresaImpresoraTrabajos(dbEmp, empresaID, payload.AgenteID, payload.EstacionID, payload.Limit)
 				if err != nil {
 					log.Printf("[empresa_impresoras] tomar trabajos empresa_id=%d agente=%q error: %v", empresaID, payload.AgenteID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "trabajos": trabajos})
@@ -593,7 +593,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.ActualizarEmpresaImpresoraTrabajoEstado(dbEmp, empresaID, payload.TrabajoID, payload.Estado, payload.AgenteID, payload.UltimoError); err != nil {
 					log.Printf("[empresa_impresoras] actualizar trabajo empresa_id=%d trabajo_id=%d estado=%q error: %v", empresaID, payload.TrabajoID, payload.Estado, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				item, _ := dbpkg.GetEmpresaImpresoraTrabajoByID(dbEmp, empresaID, payload.TrabajoID)
@@ -624,7 +624,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.ReintentarEmpresaImpresoraTrabajo(dbEmp, empresaID, trabajoID, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
 					log.Printf("[empresa_impresoras] reintentar trabajo empresa_id=%d trabajo_id=%d error: %v", empresaID, trabajoID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				item, _ := dbpkg.GetEmpresaImpresoraTrabajoByID(dbEmp, empresaID, trabajoID)
@@ -640,7 +640,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodDelete:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 				return
 			}
 
@@ -648,12 +648,12 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "", "impresora":
 				impresoraID, err := parsePrinterIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				if err := dbpkg.SetEmpresaImpresoraEstado(dbEmp, empresaID, impresoraID, "inactivo", strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
 					log.Printf("[empresa_impresoras] delete impresora empresa_id=%d impresora_id=%d error: %v", empresaID, impresoraID, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "impresora_desactivada", "empresa_impresoras", impresoraID, http.StatusOK, nil, "impresora desactivada")
@@ -732,7 +732,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				funcionalidad := strings.TrimSpace(r.URL.Query().Get("funcionalidad"))
 				if err := dbpkg.DeleteEmpresaImpresoraDispositivo(dbEmp, empresaID, dispositivoID, funcionalidad); err != nil {
 					log.Printf("[empresa_impresoras] delete dispositivo empresa_id=%d dispositivo=%q funcionalidad=%q error: %v", empresaID, dispositivoID, funcionalidad, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}
 				registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, empresaID, "impresoras", "computador_impresora_eliminado", "empresa_impresoras_dispositivos", 0, http.StatusOK, map[string]interface{}{
@@ -765,7 +765,7 @@ func EmpresaImpresorasResolverHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 			return
 		}
 		funcionalidad := strings.TrimSpace(r.URL.Query().Get("funcionalidad"))
@@ -833,7 +833,7 @@ func EmpresaImpresorasAgenteHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 			return
 		}
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
@@ -865,7 +865,7 @@ func EmpresaImpresorasAgenteHandler(dbEmp *sql.DB) http.HandlerFunc {
 			trabajos, err := dbpkg.TomarEmpresaImpresoraTrabajos(dbEmp, empresaID, payload.AgenteID, payload.EstacionID, payload.Limit)
 			if err != nil {
 				log.Printf("[empresa_impresoras_agente] tomar empresa_id=%d agente=%q error: %v", empresaID, payload.AgenteID, err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "empresa_id": empresaID, "trabajos": trabajos})
@@ -896,7 +896,7 @@ func EmpresaImpresorasAgenteHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if err := dbpkg.ActualizarEmpresaImpresoraTrabajoEstado(dbEmp, empresaID, payload.TrabajoID, payload.Estado, payload.AgenteID, payload.UltimoError); err != nil {
 				log.Printf("[empresa_impresoras_agente] estado empresa_id=%d trabajo_id=%d error: %v", empresaID, payload.TrabajoID, err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "trabajo_id": payload.TrabajoID})

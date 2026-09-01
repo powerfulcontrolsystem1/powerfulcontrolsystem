@@ -53,6 +53,45 @@ func TestDomoticaTutorialHasAccuratePinoutAndInstallFlow(t *testing.T) {
 	}
 }
 
+func TestDoorSensorTutorialExplainsMatrixPinoutAndElectricalSafety(t *testing.T) {
+	source, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "tutorial_sensores_puertas_raspberry.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(source)
+	for _, marker := range []string{
+		"GPIO0, GPIO1, GPIO2 y GPIO3",
+		"GPIO4 a GPIO19",
+		"OUT16 → puertas 61–64",
+		"Los GPIO aceptan lógica de <strong>3,3 V</strong>",
+		"módulo de 4 relés",
+		"activo en alto",
+		"0 como puerta cerrada",
+		"sudo sh ~/Downloads/instalar-pcs-sensores-puertas-*.sh",
+		"Raspberry Pi · GPIO BCM",
+	} {
+		if !strings.Contains(body, marker) {
+			t.Fatalf("tutorial de sensores sin %q", marker)
+		}
+	}
+	for _, page := range []string{"control_electrico.html", "configuracion_sensores_raspberry.html"} {
+		linked, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", page))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(linked), "tutorial_sensores_puertas_raspberry.html") {
+			t.Fatalf("%s no enlaza el tutorial de sensores", page)
+		}
+	}
+	menu, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "modulo_menu.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(menu), "Tutorial sensores de puertas") || !strings.Contains(string(menu), "tutorial_sensores_puertas_raspberry.html") {
+		t.Fatal("el submenu Domotica no expone el tutorial de sensores")
+	}
+}
+
 func TestSuperDomoticaTrafficHasCompanyLimitsAndAbuseAlarm(t *testing.T) {
 	source, err := os.ReadFile(filepath.Join("..", "..", "web", "super", "domotica_raspberry_trafico.html"))
 	if err != nil {

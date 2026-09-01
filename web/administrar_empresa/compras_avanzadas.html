@@ -43,7 +43,6 @@
         <p>Requisición, cotización, aprobación y recepción en un solo flujo.</p>
         <div class="cav-actions" style="margin-top:12px">
           <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
-          <button id="btnSeed" class="btn secondary" type="button">Cargar demo</button>
           <a id="btnProveedores" class="btn secondary" href="/administrar_empresa/administrar_productos.html?view=proveedores">Proveedores</a>
         </div>
       </div>
@@ -81,13 +80,13 @@
           <div><label class="form-label" for="reqJustificacion">Justificacion</label><textarea id="reqJustificacion" class="form-input" rows="2"></textarea></div>
           <h3>Items</h3>
           <div class="cav-row">
-            <div><label class="form-label" for="itemNombre1">Producto 1</label><input id="itemNombre1" class="form-input"></div>
+            <div><label class="form-label" for="itemNombre1">Producto 1</label><select id="itemNombre1" class="form-input producto-select"><option value="">Cargando productos...</option></select></div>
             <div><label class="form-label" for="itemCant1">Cantidad</label><input id="itemCant1" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="itemCosto1">Costo unitario</label><input id="itemCosto1" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="itemProv1">Proveedor sugerido</label><select id="itemProv1" class="form-input proveedor-select"><option value="">Cargando proveedores...</option></select></div>
           </div>
           <div class="cav-row">
-            <div><label class="form-label" for="itemNombre2">Producto 2</label><input id="itemNombre2" class="form-input"></div>
+            <div><label class="form-label" for="itemNombre2">Producto 2</label><select id="itemNombre2" class="form-input producto-select"><option value="">Cargando productos...</option></select></div>
             <div><label class="form-label" for="itemCant2">Cantidad</label><input id="itemCant2" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="itemCosto2">Costo unitario</label><input id="itemCosto2" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="itemProv2">Proveedor sugerido</label><select id="itemProv2" class="form-input proveedor-select"><option value="">Cargando proveedores...</option></select></div>
@@ -128,19 +127,22 @@
             <div><label class="form-label" for="recReqID">Requisicion ID</label><input id="recReqID" class="form-input" type="number"></div>
             <div><label class="form-label" for="recCotID">Cotizacion ID</label><input id="recCotID" class="form-input" type="number"></div>
             <div><label class="form-label" for="recDocumento">Documento</label><input id="recDocumento" class="form-input"></div>
-            <div><label class="form-label" for="recEstado">Tipo</label><select id="recEstado" class="form-input"><option>parcial</option><option>total</option></select></div>
           </div>
           <div class="cav-row">
             <div><label class="form-label" for="recProveedor">Proveedor</label><select id="recProveedor" class="form-input proveedor-select"><option value="">Cargando proveedores...</option></select></div>
             <div><label class="form-label" for="recFecha">Fecha</label><input id="recFecha" class="form-input" type="date"></div>
-            <div><label class="form-label" for="recProducto">Producto</label><input id="recProducto" class="form-input"></div>
-            <div><label class="form-label" for="recItemID">Item req. ID</label><input id="recItemID" class="form-input" type="number"></div>
+            <div><label class="form-label" for="recProducto">Producto</label><select id="recProducto" class="form-input producto-select" disabled><option value="">Seleccione un item</option></select></div>
+            <div><label class="form-label" for="recItemID">Item de requisicion</label><select id="recItemID" class="form-input"><option value="">Seleccione una requisicion</option></select></div>
           </div>
           <div class="cav-row">
             <div><label class="form-label" for="recOrdenada">Ordenada</label><input id="recOrdenada" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="recRecibida">Recibida</label><input id="recRecibida" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="recCosto">Costo unitario</label><input id="recCosto" class="form-input" type="number" step=".01"></div>
-            <div><button id="btnSaveRec" class="btn" type="button" style="margin-top:24px">Guardar recepcion</button></div>
+            <div><label class="form-label" for="recBodega">Bodega destino</label><select id="recBodega" class="form-input bodega-select"><option value="">Cargando bodegas...</option></select></div>
+          </div>
+          <div class="cav-row">
+            <div><label class="form-label" for="recLote">Lote (opcional)</label><input id="recLote" class="form-input" autocomplete="off"></div>
+            <div><button id="btnSaveRec" class="btn" type="button" style="margin-top:24px">Recibir y actualizar inventario</button></div>
           </div>
         </div>
       </article>
@@ -150,7 +152,7 @@
         <div class="cav-table-wrap"><table class="cav-table"><thead><tr><th>ID</th><th>Codigo</th><th>Area</th><th>Prioridad</th><th>Total</th><th>Estado</th><th>Accion</th></tr></thead><tbody id="reqBody"></tbody></table></div>
       </article>
       <article class="cav-card"><h2>Detalle</h2><div class="cav-table-wrap"><table class="cav-table"><thead><tr><th>Tipo</th><th>Referencia</th><th>Proveedor/Producto</th><th>Cantidad</th><th>Valor</th><th>Estado</th></tr></thead><tbody id="detailBody"></tbody></table></div></article>
-      <article class="cav-card"><h2>Bitacora</h2><div id="msg" class="cav-msg"></div></article>
+      <article class="cav-card"><h2>Bitacora</h2><p class="cav-msg">La recepción se marca total únicamente cuando no quedan cantidades pendientes.</p><div id="msg" class="cav-msg"></div></article>
     </section>
   </main>
   <script src="/js/compras_avanzadas.js"></script>

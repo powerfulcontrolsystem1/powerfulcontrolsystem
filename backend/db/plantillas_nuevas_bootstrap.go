@@ -33,51 +33,29 @@ type nuevoVerticalBootstrapMeta struct {
 }
 
 var nuevasPlantillasBootstrapMeta = []nuevoVerticalBootstrapMeta{
-	{"agencia_viajes", "Asesor", 3, []string{"asesor_viajes", "operacion", "caja"}},
-	{"operador_turistico", "Ruta", 4, []string{"coordinador_tours", "guia", "caja"}},
 	{"eventos_boleteria", "Taquilla", 4, []string{"productor_eventos", "taquilla", "control_acceso", "caja"}},
 	{"salon_spa", "Puesto", 4, []string{"recepcion", "profesional_belleza", "caja"}},
 	{"veterinaria_petshop", "Consultorio", 3, []string{"veterinario", "auxiliar_veterinaria", "caja"}},
-	{"clinica_consultorios", "Consultorio", 5, []string{"recepcion", "profesional_salud", "caja"}},
-	{"laboratorio_clinico", "Toma", 4, []string{"recepcion", "bacteriologo", "auxiliar_laboratorio", "caja"}},
-	{"colegio_academia", "Aula", 6, []string{"coordinador_academico", "docente", "caja"}},
-	{"guarderia_infantil", "Salon", 4, []string{"coordinador_guarderia", "docente", "auxiliar", "caja"}},
 	{"lavanderia_tintoreria", "Punto", 3, []string{"recepcion", "operario_lavanderia", "caja"}},
 	{"taller_mecanico", "Bahia", 5, []string{"recepcion", "tecnico", "compras", "caja"}},
 	{"transporte_carga_tms", "Ruta", 5, []string{"coordinador_logistico", "conductor", "caja"}},
 	{"servicios_tecnicos", "Tecnico", 4, []string{"coordinador_servicio", "tecnico", "caja"}},
-	{"inmobiliaria_comercial", "Asesor", 4, []string{"asesor_inmobiliario", "coordinador", "caja"}},
-	{"seguridad_privada", "Puesto", 6, []string{"coordinador_seguridad", "guarda", "supervisor", "caja"}},
-	{"club_deportivo", "Cancha", 5, []string{"coordinador_deportivo", "entrenador", "caja"}},
 	{"funeraria_exequial", "Sala", 4, []string{"coordinador_servicio", "asesor_exequial", "caja"}},
 	{"parque_recreativo", "Atraccion", 6, []string{"operador_parque", "taquilla", "supervisor", "caja"}},
-	{"cooperativa_fondo", "Oficina", 3, []string{"analista_credito", "cartera", "caja"}},
-	{"capacitacion_empresarial", "Aula", 5, []string{"coordinador_capacitacion", "instructor", "caja"}},
 }
 
 var nuevasPlantillasTipoEmpresaCatalog = buildNuevasPlantillasTipoEmpresaCatalog()
 
 var nuevasPlantillasProduccionMasiva = map[string]int{
-	"salon_spa":                1,
-	"veterinaria_petshop":      2,
-	"clinica_consultorios":     3,
-	"laboratorio_clinico":      4,
-	"taller_mecanico":          5,
-	"servicios_tecnicos":       6,
-	"lavanderia_tintoreria":    7,
-	"agencia_viajes":           8,
-	"eventos_boleteria":        9,
-	"transporte_carga_tms":     10,
-	"operador_turistico":       11,
-	"colegio_academia":         12,
-	"guarderia_infantil":       13,
-	"inmobiliaria_comercial":   14,
-	"seguridad_privada":        15,
-	"club_deportivo":           16,
-	"funeraria_exequial":       17,
-	"parque_recreativo":        18,
-	"cooperativa_fondo":        19,
-	"capacitacion_empresarial": 20,
+	"salon_spa":             1,
+	"veterinaria_petshop":   2,
+	"taller_mecanico":       3,
+	"servicios_tecnicos":    4,
+	"lavanderia_tintoreria": 5,
+	"eventos_boleteria":     6,
+	"transporte_carga_tms":  7,
+	"funeraria_exequial":    8,
+	"parque_recreativo":     9,
 }
 
 func buildNuevasPlantillasTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
@@ -199,7 +177,7 @@ func isNuevoVerticalTipoEmpresaModulo(modulo string) bool {
 
 func buildClassicTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmpresaPreconfigIntegracionVertical {
 	switch strings.ToLower(strings.TrimSpace(modulo)) {
-	case "gimnasio", "odontologia", "turnos_atencion", "vehiculos", "taller", "lavadero_autos", "hotel", "motel", "drogueria_farmacia", "alquileres", "constructora":
+	case "turnos_atencion", "vehiculos", "taller", "lavadero_autos", "hotel", "motel", "alquileres", "constructora":
 		return &TipoEmpresaPreconfigIntegracionVertical{
 			Modulo:               strings.ToLower(strings.TrimSpace(modulo)),
 			EstadoIntegracion:    "plantilla_integrada_nucleo",

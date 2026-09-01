@@ -1,7 +1,81 @@
 # Estructura del Base de Datos
 
+## Actualizacion 2026-08-31: Raspberry de sensores de puertas
+
+La migracion `20260831-002-raspberry-door-sensor-v1` agrega:
+
+- `empresa_control_electrico_raspberry_pis.uso_tipo`: `domotica` o `sensor_puertas`.
+- `puerta_reles_salida`: cantidad de selectores 1–16; `puerta_delay_ms`: 10–5000 ms.
+- `empresa_sensor_puertas_devices.source_raspberry_id`, `selector_output` y `selector_input`, con unicidad parcial por empresa/Raspberry/canal.
+- indice activo por `(empresa_id, source_raspberry_id, estado)`.
+
+Los canales automáticos conservan `estacion_id`, `last_state` y `last_seen` en
+la tabla vigente de sensores. Las transiciones se insertan en
+`empresa_sensor_puertas_messages`; el ciclo de vida y cambios de configuración
+se registran en `empresa_control_electrico_eventos`. Toda consulta/mutación usa
+`empresa_id`; el túnel deriva esa frontera de la credencial del dispositivo.
+
+## Actualizacion 2026-08-31: Vida personal
+
+La migracion empresarial `20260831-001-vida-personal-v1` crea, solo mediante
+`pcs-migrate`, dos tablas PostgreSQL independientes de la contabilidad:
+
+- `empresa_vida_gastos`: `id`, `empresa_id`, `usuario_id`, `fecha_gasto`,
+  `categoria`, `comercio`, `descripcion`, `monto NUMERIC(18,2)`, `moneda`,
+  `metodo_pago`, referencia/nombre del comprobante privado, idempotencia y
+  auditoria temporal.
+- `empresa_vida_suscripciones`: `id`, `empresa_id`, `usuario_id`, nombre,
+  proveedor, costo, moneda, periodicidad/intervalo, inicio, proxima renovacion,
+  dias/tipo de recordatorio, autorrenovacion, estado, notas, idempotencia y
+  auditoria temporal.
+
+Los indices operativos comienzan por `empresa_id, usuario_id`; las restricciones
+unicas de `client_request_id` usan la misma frontera. Todos los IDs secundarios
+se consultan con empresa y usuario. Los archivos no se guardan en PostgreSQL:
+la tabla conserva una referencia opaca a la categoria privada `vida`.
+
+La migracion aditiva `20260831-003-vida-price-history-ai-v1` crea
+`empresa_vida_precios`. Cada fila pertenece a `empresa_id + usuario_id`, enlaza
+el `gasto_id` personal con borrado en cascada y conserva fecha, codigo de barras,
+producto, comercio, cantidad `NUMERIC(14,3)`, precio unitario/total
+`NUMERIC(18,2)`, moneda y origen (`manual`, `codigo_barras` o `ia_factura`). No
+existe FK hacia productos, compras o inventario empresarial.
+
+El esquema aun no se ha aplicado en ningun entorno por esta tarea.
+
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
+
+Actualizacion 2026-08-25 (recepción de compras e inventario)
+- `empresa_compras_recepciones_avanzadas.bodega_id` identifica la bodega destino
+  dentro de la misma empresa.
+- Una recepción válida bloquea requisición e items, actualiza cantidades
+  pendientes y persiste existencia, costo, lote avanzado opcional y Kardex en
+  la misma transacción.
+- `inventario_existencias` conserva el índice único
+  `(empresa_id, producto_id, bodega_id)` y las entradas usan
+  `INSERT ... ON CONFLICT DO UPDATE` para evitar la ventana update/insert.
+- `productos` usa el índice `(empresa_id, estado, id)` para mantener el listado
+  reciente acotado por tenant.
+
+Actualizacion 2026-08-25 (cola de impresion segura)
+- No se agrega una tabla paralela: `empresa_impresoras_cola` conserva la fuente
+  canónica y la creación web reutiliza `empresa_mobile_api_idempotencia` con la
+  operación `printers.web.queue_create`, siempre por `empresa_id`.
+- La toma de pendientes selecciona y actualiza dentro de un CTE PostgreSQL con
+  `FOR UPDATE SKIP LOCKED`; evita que dos agentes reclamen la misma fila y no
+  realiza una consulta adicional por impresora.
+- El cierre exige coincidencia entre `tomado_por` y `agente_id`; repetir el mismo
+  cierre no duplica efectos. El reintento vuelve a `pendiente` y pone
+  `intentos=0` para que el límite anterior no deje la fila bloqueada.
+
+Actualizacion 2026-08-25 (conversaciones IA por usuario)
+- No se agregan tablas. `empresa_ai_consultas.conversation_id` agrupa turnos de
+  una conversación y `usuario_creador` conserva su propietario autenticado.
+- La lectura ordinaria exige simultáneamente `empresa_id` y
+  `LOWER(usuario_creador)`; así el historial no se comparte entre usuarios y
+  mantiene aislamiento multiempresa. La lectura administrativa conserva el
+  filtro `empresa_id` y requiere un rol administrativo autorizado en backend.
 
 Actualizacion 2026-08-09 (tunel saliente de Domotica)
 - `empresa_control_electrico_raspberry_pis` agrega identidad unica, huellas de
@@ -150,6 +224,13 @@ Actualizacion 2026-06-10 (snapshots completos VPS)
   exclusivo de super administrador; las copias fisicas quedan bajo
   `backup/vps_snapshots` y la descarga valida que la ruta no salga de esa
   carpeta.
+
+Actualizacion 2026-08-24 (administracion segura de disco VPS)
+- No agrega tablas, columnas ni configuraciones persistentes. La operación se
+  audita mediante el middleware global existente `super_auditoria_eventos`.
+- No recibe `empresa_id`, rutas físicas, nombres de volúmenes ni comandos desde
+  el navegador; es una operación exclusiva de infraestructura para super
+  administrador.
 
 Actualizacion 2026-06-09 (logos corporativo y factura por empresa)
 - Tabla `empresa_configuracion_avanzada`: agrega
@@ -652,7 +733,7 @@ Actualizacion 2026-05-20 (pagos QR desde carrito)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`.
 - El JSON `estaciones_config.carrito_ui_global` puede incluir `pago_qr_habilitado`, `pago_qr_proveedor`, `pago_qr_llave`, `pago_qr_comercio`, `pago_qr_payload_oficial`, `pago_qr_instrucciones` y `pago_qr_cuentas`.
-- `pago_qr_cuentas` almacena cuentas receptoras por empresa con proveedor, nombre, llave/cuenta, comercio, payload oficial/plantilla, instrucciones y estado activo. El pago final sigue usando `metodo_pago='transferencia_bancaria'` y `referencia_pago` generada por el carrito.
+- `pago_qr_cuentas` almacena cuentas receptoras por empresa con proveedor, nombre, llave/cuenta, comercio, payload estatico oficial exacto, instrucciones y estado activo. El runtime rechaza plantillas y marcadores heredados; un QR dinamico requiere API oficial del participante. El pago final sigue usando `metodo_pago='transferencia_bancaria'` y `referencia_pago` generada por el carrito.
 
 Actualizacion 2026-05-20 (facturacion offline de carrito)
 - Nueva tabla `empresa_ventas_offline_sync` para bitacora e idempotencia de ventas capturadas sin internet.
@@ -1554,16 +1635,14 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - retencion_dias, fecha_evento, fecha_expiracion
   - Los eventos de conectividad del navegador usan `modulo=conectividad`, `recurso=conexion_internet` y acciones `internet_perdido` / `internet_restaurado`. En `metadata_json` guardan `estado_conexion`, `evento_id`, `origen`, `path`, `online`, `pending_count` y `source=frontend_connectivity_monitor`.
 
-### Objetos de busqueda full-text de auditoria (FTS operativa)
-- empresa_auditoria_eventos_fts (tabla virtual):
-  - indexa contenido textual de `empresa_auditoria_eventos` para `search` full-text.
-  - columnas indexadas: `modulo`, `accion`, `recurso`, `endpoint`, `metadata_json`, `observaciones`.
-- Triggers de sincronizacion FTS:
-  - `empresa_auditoria_eventos_ai`: inserta en FTS cuando se crea evento.
-  - `empresa_auditoria_eventos_au`: refresca fila FTS cuando se actualiza evento.
-  - `empresa_auditoria_eventos_ad`: elimina fila FTS cuando se elimina evento.
-- Backfill inicial FTS:
-  - al crear el esquema FTS se repueblan filas existentes para consistencia historica.
+### Busqueda operacional de auditoria
+- PostgreSQL no crea una tabla virtual FTS ni triggers paralelos para
+  `empresa_auditoria_eventos`.
+- `search` aplica coincidencias parametrizadas y siempre dentro de
+  `empresa_id`; los indices por empresa/fecha, módulo/acción, usuario,
+  request id, HTTP/resultado y recurso/ID sostienen los filtros habituales.
+- Esta decisión evita documentar objetos SQLite heredados que no existen en el
+  runtime PostgreSQL vigente.
 
 ### Tablas de documentos transaccionales canonicos
 - empresa_facturacion_documentos:
@@ -1598,7 +1677,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - condiciones_pago, observaciones, estado
   - UNIQUE(empresa_id, requisicion_id, numero)
 - empresa_compras_recepciones_avanzadas:
-  - empresa_id, requisicion_id, cotizacion_id, proveedor_id, proveedor_nombre
+  - empresa_id, requisicion_id, bodega_id, cotizacion_id, proveedor_id, proveedor_nombre
   - documento, fecha_recepcion, estado_recepcion, responsable, observaciones
 - empresa_compras_recepcion_items_avanzadas:
   - empresa_id, recepcion_id, requisicion_item_id, producto_nombre
@@ -2409,3 +2488,49 @@ reconciliación operativa explícita.
 - `empresa_control_electrico_raspberry_pis`: `disconnect_alerted_for_last_seen` y `disconnect_alerted_at` para deduplicar alertas de desconexión entre réplicas.
 - `empresa_control_electrico_limites_tunel`: una fila por `empresa_id`, cuota mensual MB, porcentaje de advertencia, bloqueo, auditoría y observaciones.
 - `empresa_control_electrico_trafico_diario` conserva RX/TX/solicitudes por `(empresa_id, raspberry_id, fecha)` y añade índice por empresa/fecha para agregación mensual.
+
+## Actualizacion 2026-08-23: retiro de verticales
+
+- La migracion empresarial `20260823-002-retire-vertical-modules-v1` elimina las tablas `empresa_gimnasio_*`, `empresa_taxi_*`, `empresa_apartamentos_turisticos_*`, `empresa_propiedad_horizontal_*` y `empresa_odontologia_*`.
+- Se elimina `empresa_venta_publica_ordenes.taxi_request_id`; el seguimiento de pedidos conserva su token propio y no depende de Taxi System.
+- Se eliminan de `empresa_modulos_colombia_*` las filas con `modulo='drogueria_farmacia'`.
+- Droguerias y farmacias usan las tablas centrales de productos e Inventario para lotes, vencimientos y alertas. No se crea un inventario sanitario paralelo.
+
+## Actualizacion 2026-08-26: historial inmutable de ventas de carrito
+
+- La migracion de empresa `20260826-002-cart-sale-history-v1` agrega el esquema
+  en instalaciones que ya tienen aplicada la linea base; la API no ejecuta DDL.
+- `empresa_ventas_estacion_metricas` agrega `carrito_codigo`, `carrito_nombre`,
+  `operacion_codigo`, `monto_efectivo`, `descuento_total` y
+  `detalle_items_json`.
+- El indice parcial unico `ux_ventas_estacion_metricas_operacion` impide repetir
+  una misma operacion no vacia dentro de `(empresa_id, evento_operacion)` y
+  permite conservar multiples cierres legítimos del mismo `carrito_id`.
+- `PayCarritoStationSession` inserta `venta_pagada`, actualiza el efectivo del
+  cierre y publica el outbox dentro de una sola transaccion PostgreSQL. El
+  snapshot conserva el detalle después de `activar_estacion?reset_items=1`.
+- Corte de caja filtra directamente el historial por `empresa_id`, fecha,
+  usuario, `cierre_caja_id` y `caja_codigo`; las filas previas a la migracion
+  conservan sus montos, pero un detalle de items ya eliminado no es recuperable.
+
+## Actualizacion 2026-08-26: idempotencia de pagos y efectos criticos
+
+- `payment_checkout_idempotencia` (base super) identifica checkout por
+  `(proveedor, empresa_id, clave_hash)`, fija `solicitud_hash` y `referencia`, y
+  conserva la respuesta 2xx para replay exacto.
+- `payment_post_effect_idempotencia` (base super) identifica por proveedor,
+  fila de pago y efecto. `procesando`/`incierto` no se reclaman automaticamente;
+  solo un fallo confirmado puede abrir otro intento.
+- `pagos_wompi` y `pagos_epayco` incorporan observabilidad de intento y lease de
+  activacion. El estado `processing` es una barrera de conciliacion y no un
+  permiso de reejecucion por vencimiento.
+- `empresa_ventas_offline_sync` incorpora hash inmutable de payload, token y
+  vencimiento de claim; `empresa_facturacion_electronica_reintentos` incorpora
+  token y lease para claims con `SKIP LOCKED`.
+- `empresa_cuentas_por_pagar_pagos` conserva la huella canonica completa de la
+  solicitud idempotente.
+- `ux_empresa_eventos_contables_venta_pagada_carrito` garantiza una sola fila
+  activa `ventas/venta_pagada/carrito_compra` por empresa y carrito.
+- Migraciones: `20260826-001-payment-idempotency-v1` en superadministrador y
+  `20260826-001-sale-accounting-idempotency-v1` y
+  `20260826-003-operational-idempotency-v1` en empresas.

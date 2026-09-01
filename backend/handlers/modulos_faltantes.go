@@ -3111,6 +3111,7 @@ func handleConciliarCarteraPagosAction(dbEmp *sql.DB, cfg empresaModuloGenericCo
 func registrarPagoCxPErrorStatus(err error) int {
 	if errors.Is(err, dbpkg.ErrEmpresaCxPAmountExceedsBalance) ||
 		errors.Is(err, dbpkg.ErrEmpresaCxPNoPendingBalance) ||
+		errors.Is(err, dbpkg.ErrEmpresaCxPIdempotencyConflict) ||
 		errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
 		return http.StatusConflict
 	}
@@ -13396,7 +13397,7 @@ func importDIANNumeracionPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[str
 	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
 	systemPrompt := dianNumeracion1876IASystemPrompt()
 	pregunta := "Extrae los campos del Formulario 1876 de autorizacion de numeracion DIAN adjunto. Responde solo JSON valido."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att, nil, nil)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPrompt(model, pregunta, nil, systemPrompt, att, nil, nil, empresaAISafetyIdentifier(fmt.Sprintf("empresa:%d:dian_numeracion", upload.EmpresaID)))
 	if err != nil {
 		return nil, http.StatusBadGateway, err
 	}

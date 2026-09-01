@@ -4,10 +4,13 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 )
+
+var ErrOutboxIdempotencyConflict = errors.New("outbox idempotency key conflict")
 
 const (
 	OutboxPending    = "pending"
@@ -183,6 +186,9 @@ func InsertOutboxEventIdempotent(tx *sql.Tx, event OutboxEvent) (*OutboxEvent, b
 			&existing.Attempts, &existing.MaxAttempts, &existing.IdempotencyKeyHash, &existing.AvailableAt)
 	if err != nil {
 		return nil, false, err
+	}
+	if existing.Version != event.Version || strings.TrimSpace(existing.PayloadJSON) != strings.TrimSpace(event.PayloadJSON) {
+		return nil, false, ErrOutboxIdempotencyConflict
 	}
 	return &existing, false, nil
 }

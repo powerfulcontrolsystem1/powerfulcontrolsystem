@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar disco VPS</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root { --panel:var(--surface,#fff); --soft:var(--surface-soft,#f6f8fb); --line:var(--border,#d7e0ea); --text:var(--text,#172033); --muted:var(--muted,#64748b); --accent:var(--accent,#2563eb); --danger:#b42318; --good:#14804a; }
+    body { margin:0; background:var(--bg,#f4f7fb); color:var(--text); font-family:Inter,system-ui,sans-serif; }
+    main { max-width:1040px; margin:auto; padding:22px; display:grid; gap:14px; }
+    h1,h2,p { margin:0; } h1 { font-size:24px; } h2 { font-size:16px; }
+    .muted { color:var(--muted); line-height:1.5; font-size:14px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; }
+    .head { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; }
+    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .metric { background:var(--soft); border-radius:9px; padding:12px; } .metric span { display:block; font-size:12px; color:var(--muted); } .metric strong { display:block; margin-top:4px; font-size:20px; }
+    .candidates { display:grid; gap:9px; margin-top:12px; }
+    .candidate { display:grid; grid-template-columns:auto 1fr auto; gap:11px; align-items:start; padding:12px; border:1px solid var(--line); border-radius:9px; }
+    .candidate input { margin-top:4px; width:18px; height:18px; accent-color:var(--accent); }
+    .candidate strong { display:block; } .candidate small { color:var(--muted); display:block; margin-top:3px; line-height:1.35; }
+    button { border:1px solid var(--line); border-radius:8px; min-height:38px; padding:0 13px; background:var(--soft); color:var(--text); font-weight:750; cursor:pointer; }
+    button.primary { background:var(--danger); border-color:var(--danger); color:#fff; } button:disabled { opacity:.55; cursor:not-allowed; }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .confirm { display:grid; gap:6px; margin-top:13px; } .confirm input { border:1px solid var(--line); border-radius:8px; min-height:38px; padding:0 10px; background:var(--soft); color:var(--text); max-width:310px; }
+    .notice { border-left:4px solid var(--good); background:color-mix(in srgb,var(--good) 9%,var(--panel)); padding:11px; border-radius:6px; color:var(--text); font-size:14px; line-height:1.45; }
+    .notice.warn { border-color:#b7791f; background:color-mix(in srgb,#b7791f 9%,var(--panel)); }
+    #status { min-height:20px; color:var(--muted); font-size:14px; } .hidden { display:none; }
+    @media (max-width:640px) { main { padding:14px; } .head { display:grid; } .metrics { grid-template-columns:1fr; } .candidate { grid-template-columns:auto 1fr; } .candidate b { grid-column:2; } }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="panel head">
+      <div><h1>Administrar disco VPS</h1><p class="muted">Solo muestra recursos Docker verificadamente recuperables. Nunca ofrece bases de datos, volúmenes conectados, archivos de empresas, certificados, configuración, código ni respaldos.</p></div>
+      <button id="refreshBtn" type="button">Actualizar</button>
+    </section>
+
+    <section class="metrics" aria-label="Uso del disco">
+      <div class="metric"><span>Capacidad</span><strong id="totalValue">—</strong></div>
+      <div class="metric"><span>En uso</span><strong id="usedValue">—</strong></div>
+      <div class="metric"><span>Disponible</span><strong id="freeValue">—</strong></div>
+    </section>
+
+    <section class="panel">
+      <h2>Elementos seguros para eliminar</h2>
+      <p class="muted">La estimación de Docker puede variar hasta que termina la limpieza. Los volúmenes anónimos no se muestran por nombre y se eliminan solo si ningún contenedor los referencia.</p>
+      <div id="candidates" class="candidates"></div>
+      <div id="emptyState" class="notice hidden">No hay recursos recuperables dentro de las categorías seguras.</div>
+    </section>
+
+    <section class="panel">
+      <div class="notice warn"><strong>Confirmación requerida.</strong> La operación no puede borrar datos activos, pero elimina cachés e imágenes no usadas. Escriba <code>LIBERAR ESPACIO</code> para habilitarla.</div>
+      <div class="confirm"><label for="confirmation">Confirmación</label><input id="confirmation" autocomplete="off" spellcheck="false" placeholder="LIBERAR ESPACIO"></div>
+      <div class="controls" style="margin-top:13px"><button id="selectAllBtn" type="button">Seleccionar todos</button><button id="cleanupBtn" class="primary" type="button" disabled>Liberar espacio seleccionado</button></div>
+      <p id="status" role="status" aria-live="polite" style="margin-top:12px"></p>
+    </section>
+  </main>
+  <script>
+  (function () {
+    var endpoint = "/super/api/administrar_disco_vps";
+    var candidatesEl = document.getElementById("candidates");
+    var emptyEl = document.getElementById("emptyState");
+    var confirmationEl = document.getElementById("confirmation");
+    var cleanupBtn = document.getElementById("cleanupBtn");
+    var refreshBtn = document.getElementById("refreshBtn");
+    var selectAllBtn = document.getElementById("selectAllBtn");
+    var statusEl = document.getElementById("status");
+    var state = { categories: [] };
+
+    function bytes(value) { value = Number(value || 0); if (!value) return "0 B"; var units=["B","KB","MB","GB","TB"], index=0; while(value>=1024 && index<units.length-1){ value/=1024; index++; } return (value>=10 || index===0 ? value.toFixed(0) : value.toFixed(1)) + " " + units[index]; }
+    function selected() { return Array.prototype.slice.call(candidatesEl.querySelectorAll("input[type=checkbox]:checked")).map(function (item) { return item.value; }); }
+    function updateAction() { cleanupBtn.disabled = confirmationEl.value.trim() !== "LIBERAR ESPACIO" || selected().length === 0; }
+    function setStatus(message) { statusEl.textContent = message || ""; }
+    function render(data) {
+      state.categories = Array.isArray(data.categories) ? data.categories : [];
+      var disk = data.disk || {};
+      document.getElementById("totalValue").textContent = bytes(disk.total_bytes);
+      document.getElementById("usedValue").textContent = bytes(disk.used_bytes);
+      document.getElementById("freeValue").textContent = bytes(disk.free_bytes);
+      candidatesEl.innerHTML = "";
+      state.categories.forEach(function (item) {
+        var row = document.createElement("label"); row.className = "candidate";
+        var count = Number(item.candidate_count || 0);
+        var estimate = item.estimate_known ? bytes(item.estimated_bytes) + " estimados" : (count ? "tamaño se calculará al limpiar" : "sin elementos");
+        row.innerHTML = '<input type="checkbox" value="' + escapeHTML(item.id) + '"' + (count ? '' : ' disabled') + '><span><strong></strong><small></small></span><b></b>';
+        row.querySelector("strong").textContent = item.title || "Categoría segura";
+        row.querySelector("small").textContent = item.description || "";
+        row.querySelector("b").textContent = count + " elemento(s) · " + estimate;
+        candidatesEl.appendChild(row);
+      });
+      emptyEl.classList.toggle("hidden", state.categories.some(function (item) { return Number(item.candidate_count || 0) > 0; }));
+      updateAction();
+    }
+    function escapeHTML(value) { var node=document.createElement("span"); node.textContent=String(value || ""); return node.innerHTML; }
+    function request(method, body) { return fetch(endpoint, { method:method, credentials:"same-origin", headers: body ? {"Content-Type":"application/json"} : {}, body: body ? JSON.stringify(body) : undefined }).then(function(response){ return response.json().catch(function(){ return {}; }).then(function(data){ if(!response.ok || !data.ok){ throw new Error(data.error || "No se pudo completar la operación"); } return data; }); }); }
+    function load(message) { refreshBtn.disabled = true; setStatus("Consultando recursos recuperables..."); request("GET").then(function(data){ render(data); setStatus(message || "Actualizado."); }).catch(function(error){ setStatus(error.message); }).finally(function(){ refreshBtn.disabled = false; }); }
+    refreshBtn.addEventListener("click", load);
+    confirmationEl.addEventListener("input", updateAction);
+    candidatesEl.addEventListener("change", updateAction);
+    selectAllBtn.addEventListener("click", function(){ Array.prototype.slice.call(candidatesEl.querySelectorAll("input[type=checkbox]:not(:disabled)")).forEach(function(item){ item.checked=true; }); updateAction(); });
+    cleanupBtn.addEventListener("click", function(){ var categories=selected(); if(!categories.length || confirmationEl.value.trim()!=="LIBERAR ESPACIO") return; cleanupBtn.disabled=true; refreshBtn.disabled=true; setStatus("Liberando únicamente recursos recuperables..."); request("POST", { action:"cleanup", categories:categories, confirmation:"LIBERAR ESPACIO" }).then(function(data){ confirmationEl.value=""; load("Limpieza terminada. Espacio liberado: " + bytes(data.freed_bytes) + "."); }).catch(function(error){ setStatus(error.message); }).finally(function(){ refreshBtn.disabled=false; updateAction(); }); });
+    load();
+  })();
+  </script>
+</body>
+</html>

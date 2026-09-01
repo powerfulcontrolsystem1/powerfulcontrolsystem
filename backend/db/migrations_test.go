@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestMigrationChecksumIncludesImmutableBody(t *testing.T) {
 	t.Parallel()
@@ -196,4 +199,35 @@ func TestLegacySchemaManifestV1KeepsReleasedChecksums(t *testing.T) {
 			t.Fatalf("legacy manifest migration is missing for %s", target)
 		}
 	}
+}
+
+func TestEmpresaCatalogIncludesRetiredVerticalModulesCleanup(t *testing.T) {
+	t.Parallel()
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version != "20260823-002-retire-vertical-modules-v1" {
+			continue
+		}
+		if migration.Apply == nil || migration.Body != empresaVerticalModulesDecommissionFingerprint {
+			t.Fatal("retired vertical modules migration must be executable and immutable")
+		}
+		for _, marker := range []string{
+			"empresa_gimnasio_planes",
+			"empresa_taxi_requests",
+			"empresa_apartamentos_turisticos_config",
+			"empresa_propiedad_horizontal_config",
+			"empresa_odontologia_pacientes",
+			"DROP COLUMN IF EXISTS taxi_request_id",
+			"modulo = 'drogueria_farmacia'",
+		} {
+			if !strings.Contains(migration.Body, marker) {
+				t.Fatalf("retired vertical modules migration missing %q", marker)
+			}
+		}
+		return
+	}
+	t.Fatal("retired vertical modules migration is missing from empresa catalog")
 }

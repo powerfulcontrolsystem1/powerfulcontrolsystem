@@ -19,23 +19,6 @@
   }
 
   var catalog = {
-    gimnasio: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla fitness conectada al nucleo comun: socios, planes y pagos operan desde clientes, servicios, ventas y pagos centrales.",
-      duplicados: [],
-      supportModules: ["estaciones", "turnos_atencion"],
-      similarTemplates: ["club_deportivo"]
-    },
-    odontologia: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla clinica conectada al nucleo comun: pacientes, tratamientos y recaudos usan clientes, servicios, ventas y pagos centrales.",
-      duplicados: [],
-      fusedModules: ["consultorio_odontologico"],
-      supportModules: ["turnos_atencion", "estaciones"],
-      similarTemplates: ["clinica_consultorios"]
-    },
     parqueadero: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
@@ -44,43 +27,16 @@
       supportModules: ["estaciones", "turnos_atencion"],
       similarTemplates: ["parque_recreativo"]
     },
-    taxi_system: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla de transporte conectada al nucleo comun: clientes, servicios de viaje, ventas y pagos se gobiernan desde el nucleo.",
-      duplicados: [],
-      fusedModules: ["taxi"],
-      supportModules: ["estaciones"],
-      similarTemplates: ["transporte_carga_tms"]
-    },
     domicilios: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
       motivo: "Plantilla logistica conectada al nucleo comun: pedidos, clientes, menu, ventas y pagos se resuelven en los modulos centrales.",
       duplicados: []
     },
-    apartamentos_turisticos: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla de alojamiento conectada al nucleo comun: huespedes, unidades vendibles, reservas, ventas y pagos comparten el motor central.",
-      duplicados: []
-    },
-    propiedad_horizontal: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla de copropiedad conectada al nucleo comun: terceros, unidades, cargos, recaudos, cartera y reportes no duplican clientes ni pagos.",
-      duplicados: []
-    },
     alquileres: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
       motivo: "Plantilla de alquiler conectada al nucleo comun: clientes, activos vendibles, contratos, ventas y pagos usan la fuente unica.",
-      duplicados: []
-    },
-    drogueria_farmacia: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla sanitaria conectada al nucleo comun: productos, inventario, compras, clientes, ventas y facturacion siguen en modulos centrales.",
       duplicados: []
     },
     aiu_construccion: {

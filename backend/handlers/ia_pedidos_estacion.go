@@ -283,10 +283,7 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 		return
 	}
 
-	body.ModelID = strings.TrimSpace(body.ModelID)
-	if body.ModelID == "" {
-		body.ModelID = firstAvailableEmpresaAIModelID(c.dbSuper)
-	}
+	body.ModelID = firstAvailableEmpresaAIModelID(c.dbSuper)
 	catalog := availableEmpresaAIModelMap(c.dbSuper)
 	if len(catalog) == 0 {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
@@ -312,10 +309,7 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "mensaje supera el maximo permitido (2500 caracteres)"})
 		return
 	}
-	agentID := normalizeEmpresaAIChatAgentID(body.AgentID)
-	if agentID == "general" {
-		agentID = "ventas"
-	}
+	agentID := "agente_pcs"
 	if _, _, err := reserveAgenteInternetLightUsage(c.dbEmp, c.dbSuper, body.EmpresaID, googleAccount); err != nil {
 		writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{"ok": false, "code": "empresa_agent_limit_reached", "error": err.Error()})
 		return
@@ -394,13 +388,13 @@ func (c *EmpresaAIChatController) IaPedidosEstacionEjecutarHandler(w http.Respon
 
 	systemPrompt := buildIAPedidosSystemPrompt(estaciones, productos)
 	systemPrompt += "\n\n" + buildEmpresaAIChatAgentInstruction(agentID)
-	respText, promptTokens, completionTokens, err := c.generateResponseWithSystemPrompt(model, body.Mensaje, body.Historial, systemPrompt)
+	respText, promptTokens, completionTokens, err := c.generateResponseWithSystemPrompt(model, body.Mensaje, body.Historial, systemPrompt, empresaAISafetyIdentifier(googleAccount))
 	if err != nil {
 		if isProviderLimitError(err) {
 			c.writeLimitReached(w, body.EmpresaID, model, usoActual.Consultas)
 			return
 		}
-		writeJSON(w, http.StatusBadGateway, map[string]interface{}{"ok": false, "error": err.Error()})
+		writeJSON(w, http.StatusBadGateway, map[string]interface{}{"ok": false, "error": publicAIProviderError(err)})
 		return
 	}
 	respText = strings.TrimSpace(respText)

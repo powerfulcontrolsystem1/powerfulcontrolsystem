@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -298,12 +298,12 @@
           <div class="form-row" style="align-items:center;">
             <div class="form-col maxw-220">
               <div class="kpi-box" style="margin:0;">
-                <span class="kpi-label">Peso estable</span>
+	                <span id="scaleWeightLabel" class="kpi-label">Peso no verificado</span>
                 <strong id="scaleWeightDisplay">0.000 kg</strong>
               </div>
             </div>
             <div class="form-col">
-              <div id="scaleStatus" class="form-help">Conecta una báscula serial/USB compatible. El navegador pedirá permiso para acceder al puerto.</div>
+	              <div id="scaleStatus" class="form-help">Conecta una báscula serial/USB verificada para uso comercial. La tara local y esta interfaz no sustituyen calibración ni control metrológico.</div>
             </div>
           </div>
         </div>
@@ -1022,6 +1022,7 @@
   <script>
     const state = {
       empresaID: 0,
+      initialDataLoading: true,
       stationMode: false,
       directSaleMode: false,
       scannerProductResults: [],
@@ -1156,9 +1157,12 @@
         buffer: '',
         weightKg: 0,
         displayUnit: 'kg',
-        tareKg: 0,
-        lastRaw: '',
-        lastStableAt: 0
+	        tareKg: 0,
+	        lastRaw: '',
+	        lastStableAt: 0,
+	        lastReadingAt: 0,
+	        stable: false,
+	        samples: []
       }
     };
 
@@ -1168,6 +1172,7 @@
     let scannerProcessingStartedAt = 0;
     let scannerManualProcessQueued = false;
     let scannerAutofocusPaused = false;
+    let currentSessionContextPromise = null;
     const REQUEST_TIMEOUT_MS = 45000;
 
     function getQueryParam(name) {
@@ -1705,7 +1710,7 @@
       }
     }
 
-    async function loadActiveCashRegisters() {
+    async function loadActiveCashRegisters(renderAfterLoad) {
       if (!state.empresaID) return;
       try {
         const params = new URLSearchParams();
@@ -1734,7 +1739,7 @@
         state.activeCashRegisters = [];
         state.activeCashRegistersLoadError = true;
       }
-      renderActiveCashRegisters();
+      if (renderAfterLoad !== false) renderActiveCashRegisters();
     }
 
     function defaultPaymentCashRegisterCode() {
@@ -2556,11 +2561,18 @@
         return state.stationConfig;
       }
       try {
-        const data = await fetchWithTimeout('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
-          credentials: 'same-origin'
-        });
-        if (!data.ok) throw new Error('No se pudo cargar la configuración de estaciones.');
-        const payload = await data.json();
+        const sharedPrefsLoader = window.PCSEstacionLabels && typeof window.PCSEstacionLabels.loadPrefs === 'function'
+          ? window.PCSEstacionLabels.loadPrefs
+          : null;
+        const payload = sharedPrefsLoader
+          ? await sharedPrefsLoader(state.empresaID)
+          : await fetchWithTimeout('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+            credentials: 'same-origin'
+          }).then(async function(res) {
+            if (!res.ok) throw new Error('No se pudo cargar la configuración de estaciones.');
+            return res.json();
+          });
+        if (!payload) throw new Error('No se pudo cargar la configuración de estaciones.');
         const prefs = payload && payload.prefs ? payload.prefs : [];
         const pref = Array.isArray(prefs) ? prefs.find(function(item) {
           return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
@@ -3431,18 +3443,24 @@
       }
     }
 
-    async function loadCurrentAdminRole() {
-      try {
-        const res = await fetch('/me', { credentials: 'same-origin' });
-        if (!res.ok) return '';
-        const me = await res.json();
-        return normalizeRoleName(me && (me.role || me.rol || me.admin_role));
-      } catch (_) {
-        return '';
+    async function loadCurrentSessionContext() {
+      if (!currentSessionContextPromise) {
+        currentSessionContextPromise = fetch('/me', { credentials: 'same-origin' })
+          .then(function(res) {
+            if (!res.ok) return null;
+            return res.json();
+          })
+          .catch(function() { return null; });
       }
+      return currentSessionContextPromise;
     }
 
-    async function loadOperativaConfig() {
+    async function loadCurrentAdminRole() {
+      const me = await loadCurrentSessionContext();
+      return normalizeRoleName(me && (me.role || me.rol || me.admin_role));
+    }
+
+    async function loadOperativaConfig(renderAfterLoad) {
       if (!state.empresaID) {
         state.operativaConfig.loaded = false;
         state.operativaConfig.role = '';
@@ -3476,9 +3494,11 @@
         state.operativaConfig.permisos = defaultOperativaPermisos(role);
       }
 
-      ensurePaymentMethodInputsFromOperativa();
-      renderTipConfigHint();
-      renderCommissionConfigHint();
+      if (renderAfterLoad !== false) {
+        ensurePaymentMethodInputsFromOperativa();
+        renderTipConfigHint();
+        renderCommissionConfigHint();
+      }
     }
 
     function setScannerMessage(text, isError) {
@@ -3523,15 +3543,42 @@
       const value = Number(matches[matches.length - 1]);
       if (!Number.isFinite(value)) return null;
       const unit = unitMatch ? unitMatch[1].toLowerCase() : (normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg');
-      return { raw: raw, unit: unit, value: value, kg: Math.max(0, scaleUnitToKg(value, unit)) };
-    }
+	      const upper = raw.toUpperCase();
+	      const explicitlyUnstable = /(^|\s)(US|UNSTABLE|MOTION)(\s|$)/.test(upper);
+	      const explicitlyStable = !explicitlyUnstable && /(^|\s)(ST|STABLE)(\s|$)/.test(upper);
+	      const kg = scaleUnitToKg(value, unit);
+	      if (!Number.isFinite(kg) || kg < 0 || kg > 100000) return null;
+	      return { raw: raw, unit: unit, value: value, kg: kg, explicitlyStable: explicitlyStable, explicitlyUnstable: explicitlyUnstable };
+	    }
 
-    function currentScaleNetKg() {
-      return Math.max(0, Number(state.scale.weightKg || 0) - Number(state.scale.tareKg || 0));
-    }
+	    function currentScaleNetKg() {
+	      return Math.max(0, Number(state.scale.weightKg || 0) - Number(state.scale.tareKg || 0));
+	    }
+
+	    function isScaleReadingUsable() {
+	      return Boolean(state.scale.connected && state.scale.stable && state.scale.lastStableAt > 0 && (Date.now() - state.scale.lastStableAt) <= 2500 && currentScaleNetKg() > 0);
+	    }
+
+	    function evaluateScaleStability(parsed) {
+	      const now = Date.now();
+	      state.scale.samples.push({ kg: parsed.kg, at: now, explicitlyStable: parsed.explicitlyStable, explicitlyUnstable: parsed.explicitlyUnstable });
+	      state.scale.samples = state.scale.samples.filter(function(sample) { return now - sample.at <= 2500; }).slice(-8);
+	      if (parsed.explicitlyUnstable) return false;
+	      const required = parsed.explicitlyStable ? 3 : 5;
+	      const samples = state.scale.samples;
+	      if (samples.length < required || samples.some(function(sample) { return sample.explicitlyUnstable; })) return false;
+	      const elapsed = samples[samples.length - 1].at - samples[0].at;
+	      if (elapsed < (parsed.explicitlyStable ? 250 : 600)) return false;
+	      const values = samples.map(function(sample) { return sample.kg; });
+	      const min = Math.min.apply(Math, values);
+	      const max = Math.max.apply(Math, values);
+	      const toleranceKg = Math.max(0.002, Math.abs(parsed.kg) * 0.001);
+	      return max - min <= toleranceKg;
+	    }
 
     function updateScaleUI() {
-      const display = document.getElementById('scaleWeightDisplay');
+	      const display = document.getElementById('scaleWeightDisplay');
+	      const label = document.getElementById('scaleWeightLabel');
       const connect = document.getElementById('scaleConnectBtn');
       const disconnect = document.getElementById('scaleDisconnectBtn');
       const tare = document.getElementById('scaleTareBtn');
@@ -3539,7 +3586,8 @@
       const unit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || state.scale.displayUnit || 'kg';
       state.scale.displayUnit = unit;
       const value = scaleKgToUnit(currentScaleNetKg(), unit);
-      if (display) display.textContent = (Math.round(value * 1000) / 1000).toFixed(unit === 'g' ? 0 : 3) + ' ' + unit;
+	      if (display) display.textContent = (Math.round(value * 1000) / 1000).toFixed(unit === 'g' ? 0 : 3) + ' ' + unit;
+	      if (label) label.textContent = isScaleReadingUsable() ? 'Peso estable y fresco' : 'Peso no verificado';
       if (connect) connect.disabled = !enabledForCompany || !state.scale.supported || state.scale.connected || state.scale.connecting;
       if (disconnect) disconnect.disabled = !state.scale.connected;
       if (tare) tare.disabled = !state.scale.connected;
@@ -3550,9 +3598,10 @@
 
     function applyScaleWeightToQuantity(force) {
       if (!isScaleEnabledForCurrentCart()) return false;
-      const enabled = document.getElementById('scaleApplyWeight');
-      if (enabled && !enabled.checked) return false;
-      const input = document.getElementById('scannerCantidad');
+	      const enabled = document.getElementById('scaleApplyWeight');
+	      if (enabled && !enabled.checked) return false;
+	      if (!isScaleReadingUsable()) return false;
+	      const input = document.getElementById('scannerCantidad');
       const unit = normalize(document.getElementById('scaleDefaultUnit') && document.getElementById('scaleDefaultUnit').value) || 'kg';
       const value = scaleKgToUnit(currentScaleNetKg(), unit);
       if (!input || value <= 0) return false;
@@ -3564,19 +3613,28 @@
       return true;
     }
 
-    function handleScaleDataChunk(text) {
-      state.scale.buffer += String(text || '');
+	    function handleScaleDataChunk(text) {
+	      state.scale.buffer += String(text || '');
+	      if (state.scale.buffer.length > 4096 && !/[\r\n]/.test(state.scale.buffer)) {
+	        state.scale.buffer = '';
+	        state.scale.samples = [];
+	        state.scale.stable = false;
+	        setScaleStatus('Lectura descartada: el dispositivo no envio lineas dentro del limite seguro.', true);
+	        return;
+	      }
       const parts = state.scale.buffer.split(/\r?\n/);
       state.scale.buffer = parts.pop() || '';
       parts.forEach(function(line) {
         const parsed = parseScaleLine(line);
         if (!parsed) return;
-        state.scale.weightKg = parsed.kg;
-        state.scale.lastRaw = parsed.raw;
-        state.scale.lastStableAt = Date.now();
-        updateScaleUI();
-        applyScaleWeightToQuantity(false);
-        setScaleStatus('Bascula conectada. Ultima lectura: ' + parsed.raw, false);
+	        state.scale.weightKg = parsed.kg;
+	        state.scale.lastRaw = parsed.raw;
+	        state.scale.lastReadingAt = Date.now();
+	        state.scale.stable = evaluateScaleStability(parsed);
+	        if (state.scale.stable) state.scale.lastStableAt = state.scale.lastReadingAt;
+	        updateScaleUI();
+	        applyScaleWeightToQuantity(false);
+	        setScaleStatus(state.scale.stable ? 'Lectura estable. Verifica el equipo y el producto antes de agregar: ' + parsed.raw : 'Esperando estabilidad de la bascula: ' + parsed.raw, false);
       });
     }
 
@@ -3615,9 +3673,12 @@
         const baudRate = Number(document.getElementById('scaleBaudRate').value || 9600);
         const port = await navigator.serial.requestPort();
         await port.open({ baudRate: baudRate || 9600, dataBits: 8, stopBits: 1, parity: 'none', flowControl: 'none' });
-        state.scale.port = port;
-        state.scale.connected = true;
-        state.scale.buffer = '';
+	        state.scale.port = port;
+	        state.scale.connected = true;
+	        state.scale.buffer = '';
+	        state.scale.samples = [];
+	        state.scale.stable = false;
+	        state.scale.lastStableAt = 0;
         setScaleStatus('Bascula conectada. Coloca el producto y espera lectura estable.', false);
         updateScaleUI();
         startScaleReadLoop().catch(function(err) {
@@ -3640,17 +3701,22 @@
         if (state.scale.port) await state.scale.port.close();
       } catch (_) {}
       state.scale.port = null;
-      state.scale.reader = null;
-      state.scale.connected = false;
+	      state.scale.reader = null;
+	      state.scale.connected = false;
+	      state.scale.samples = [];
+	      state.scale.stable = false;
+	      state.scale.lastStableAt = 0;
       setScaleStatus('Bascula desconectada.', false);
       updateScaleUI();
     }
 
     function tareScaleLocal() {
-      state.scale.tareKg = Number(state.scale.weightKg || 0);
-      updateScaleUI();
-      applyScaleWeightToQuantity(true);
-      setScaleStatus('Tara local aplicada. El sistema descuenta el peso actual sin enviar comandos a la bascula.', false);
+	      state.scale.tareKg = Number(state.scale.weightKg || 0);
+	      updateScaleUI();
+	      state.scale.samples = [];
+	      state.scale.stable = false;
+	      state.scale.lastStableAt = 0;
+	      setScaleStatus('Tara local aplicada como ayuda operativa. Espera una nueva lectura estable; no reemplaza la tara ni calibracion certificada del instrumento.', false);
     }
 
     function normalizeScanCode(value) {
@@ -3763,10 +3829,10 @@
       }
     }
 
-    async function loadTipConfig() {
+    async function loadTipConfig(renderAfterLoad) {
       if (!state.empresaID) {
         state.tipConfig.loaded = false;
-        renderTipConfigHint();
+        if (renderAfterLoad !== false) renderTipConfigHint();
         return;
       }
       try {
@@ -3776,7 +3842,7 @@
         const res = await fetch(url.pathname + url.search);
         if (!res.ok) {
           state.tipConfig.loaded = false;
-          renderTipConfigHint();
+          if (renderAfterLoad !== false) renderTipConfigHint();
           return;
         }
         const cfg = await res.json();
@@ -3786,10 +3852,10 @@
         state.tipConfig.modoDistribucion = normalize((cfg && cfg.modo_distribucion) || 'por_usuario') || 'por_usuario';
         state.tipConfig.aplicarAutomaticamente = cfg && cfg.aplicar_automaticamente !== false;
         state.stationTip.aplicar = state.tipConfig.habilitarPropina && state.tipConfig.aplicarAutomaticamente;
-        renderTipConfigHint();
+        if (renderAfterLoad !== false) renderTipConfigHint();
       } catch (_) {
         state.tipConfig.loaded = false;
-        renderTipConfigHint();
+        if (renderAfterLoad !== false) renderTipConfigHint();
       }
     }
 
@@ -3817,10 +3883,10 @@
         ' | Porcentaje: ' + pct + '% | Filtro: ' + filtro;
     }
 
-    async function loadCommissionConfig() {
+    async function loadCommissionConfig(renderAfterLoad) {
       if (!state.empresaID) {
         state.commissionConfig.loaded = false;
-        renderCommissionConfigHint();
+        if (renderAfterLoad !== false) renderCommissionConfigHint();
         return;
       }
       try {
@@ -3830,7 +3896,7 @@
         const res = await fetch(url.pathname + url.search);
         if (!res.ok) {
           state.commissionConfig.loaded = false;
-          renderCommissionConfigHint();
+          if (renderAfterLoad !== false) renderCommissionConfigHint();
           return;
         }
         const cfg = await res.json();
@@ -3839,10 +3905,10 @@
         state.commissionConfig.porcentajeComision = Math.max(0, Math.min(100, Number((cfg && cfg.porcentaje_comision) || 0)));
         state.commissionConfig.filtroServicio = normalize((cfg && cfg.filtro_servicio) || 'lavado').toLowerCase();
         state.commissionConfig.aplicarAutomaticamente = cfg && cfg.aplicar_automaticamente !== false;
-        renderCommissionConfigHint();
+        if (renderAfterLoad !== false) renderCommissionConfigHint();
       } catch (_) {
         state.commissionConfig.loaded = false;
-        renderCommissionConfigHint();
+        if (renderAfterLoad !== false) renderCommissionConfigHint();
       }
     }
 
@@ -4784,11 +4850,17 @@
     }
 
     function buildPaymentQrReference(carrito, account) {
-      const now = new Date();
+	      const now = new Date();
       const pad = function(n) { return String(n).padStart(2, '0'); };
       const stamp = String(now.getFullYear()) + pad(now.getMonth() + 1) + pad(now.getDate()) + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
-      const cartPart = normalize(carrito && (carrito.codigo || carrito.nombre)) || ('CRT' + String(carrito && carrito.id || 0));
-      return ('QR-' + paymentQrProviderLabel(account && account.proveedor) + '-' + cartPart + '-' + stamp)
+	      const cartPart = normalize(carrito && (carrito.codigo || carrito.nombre)) || ('CRT' + String(carrito && carrito.id || 0));
+	      let nonce = String(Date.now());
+	      if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+	        const values = new Uint32Array(1);
+	        window.crypto.getRandomValues(values);
+	        nonce = values[0].toString(36);
+	      }
+	      return ('QR-' + paymentQrProviderLabel(account && account.proveedor) + '-' + cartPart + '-' + stamp + '-' + nonce)
         .replace(/\s+/g, '-')
         .replace(/[^A-Za-z0-9_-]/g, '')
         .slice(0, 80);
@@ -4800,38 +4872,11 @@
       });
     }
 
-    function buildPaymentQrPayload(carrito, pay, account, reference) {
-      const amount = roundMoney(Number(pay && pay.totalPagarFinal || 0));
-      const provider = normalize(account && account.proveedor).toLowerCase() || 'breb';
-      const moneda = normalize(carrito && carrito.moneda) || 'COP';
-      const amountText = moneyPrecision(moneda) === 0 ? String(Math.round(amount)) : amount.toFixed(2);
-      const data = {
-        proveedor: paymentQrProviderLabel(provider),
-        provider: provider,
-        valor: amountText,
-        total: amountText,
-        moneda: moneda,
-        referencia: reference,
-        reference: reference,
-        empresa_id: String(state.empresaID || ''),
-        carrito_id: String(carrito && carrito.id || ''),
-        carrito_codigo: normalize(carrito && carrito.codigo) || '',
-        llave: normalize(account && account.llave),
-        cuenta: normalize(account && account.llave),
-        comercio: normalize(account && account.comercio) || normalize(account && account.nombre) || ('Empresa ' + String(state.empresaID || ''))
-      };
-      if (normalize(account && account.payload_oficial)) return applyQrTemplate(account.payload_oficial, data);
-      return JSON.stringify({
-        tipo: 'PCS_PAGO_QR',
-        proveedor: data.proveedor,
-        moneda: data.moneda,
-        valor: data.valor,
-        referencia: data.referencia,
-        llave: data.llave,
-        comercio: data.comercio,
-        empresa_id: Number(state.empresaID || 0),
-        carrito_id: Number(carrito && carrito.id || 0)
-      });
+	    function buildPaymentQrPayload(carrito, pay, account, reference) {
+	      const payload = normalize(account && account.payload_oficial);
+	      const qrType = normalize(account && account.qr_tipo).toLowerCase() || 'estatico';
+	      if (!payload || qrType !== 'estatico' || /\{[a-zA-Z0-9_]+\}/.test(payload)) return '';
+	      return payload;
     }
 
     function ensurePaymentQrData(carrito, pay, cfg, account, force) {
@@ -4923,13 +4968,13 @@
           (account.instrucciones ? '<div><strong>Instrucciones:</strong> ' + escapeHtml(account.instrucciones) + '</div>' : '');
       }
       if (preview) {
-        preview.textContent = account.payload_oficial
-          ? 'QR generado con el payload oficial configurado para el proveedor.'
-          : 'QR operativo con valor, llave y referencia. Para que sea leído como QR bancario nativo, pega en configuración el payload oficial o la plantilla entregada por Bre-B/Nequi.';
-      }
-      if (!account.llave && !account.payload_oficial) {
-        clearPaymentQrCanvas();
-        setPaymentQrStatus('Configura al menos una cuenta receptora con llave/cuenta o payload oficial antes de generar QR.', true);
+	        preview.textContent = qr.payload
+	          ? 'QR bancario estatico generado con el payload exacto emitido por el participante. El valor y la referencia deben verificarse en el banco antes del cierre.'
+	          : 'No hay un payload bancario estatico valido. PCS no fabrica ni simula QR Bre-B/Nequi.';
+	      }
+	      if (!qr.payload) {
+	        clearPaymentQrCanvas();
+	        setPaymentQrStatus('Configura el payload QR estatico exacto entregado por el banco, Nequi o participante Bre-B.', true);
         return;
       }
 
@@ -4947,7 +4992,7 @@
           setPaymentQrStatus('No se pudo generar el QR: ' + (err.message || err), true);
           return;
         }
-        setPaymentQrStatus(account.payload_oficial ? 'QR listo para escanear desde la app del proveedor.' : 'QR listo. Confirma el pago recibido antes de cerrar el carrito.', false);
+	        setPaymentQrStatus('QR bancario estatico listo. Confirma valor, referencia y abono en el canal oficial antes de cerrar.', false);
       });
     }
 
@@ -4964,8 +5009,8 @@
       }
       const pay = getStationPaymentBreakdown(selected);
       const account = getSelectedPaymentQrAccount(cfg);
-      if (!account.llave && !account.payload_oficial) {
-        setPaymentQrStatus('Configura una cuenta receptora para poder usar pago QR.', true);
+	      if (!normalize(account.payload_oficial) || (normalize(account.qr_tipo).toLowerCase() || 'estatico') !== 'estatico' || /\{[a-zA-Z0-9_]+\}/.test(account.payload_oficial)) {
+	        setPaymentQrStatus('Se requiere un payload QR bancario estatico exacto; no se admiten plantillas ni QR internos.', true);
         return;
       }
       const qr = ensurePaymentQrData(selected, pay, cfg, account, false);
@@ -4991,11 +5036,11 @@
       return shouldUseWholeMoney() ? Math.round(n) : Math.round(n * 100) / 100;
     }
 
-    async function resolvePrinterForServiceOrder(itemPayload) {
+    async function resolvePrinterOperation(funcionalidad, itemPayload) {
       if (!state.empresaID) return null;
       const params = new URLSearchParams();
       params.set('empresa_id', String(state.empresaID));
-      params.set('funcionalidad', 'orden_servicio');
+      params.set('funcionalidad', normalize(funcionalidad) || 'general');
       const tipoItem = normalize(itemPayload && itemPayload.tipo_item).toLowerCase();
       const referenciaID = Number((itemPayload && itemPayload.referencia_id) || 0);
       if (tipoItem === 'producto' && Number.isFinite(referenciaID) && referenciaID > 0) {
@@ -5033,7 +5078,7 @@
       const precio = Number(itemPayload.precio_unitario || 0);
       const totalLinea = cantidad * precio;
       const now = new Date();
-      const printerResolution = await resolvePrinterForServiceOrder(itemPayload);
+      const printerResolution = await resolvePrinterOperation('orden_servicio', itemPayload);
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
       const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
@@ -5102,24 +5147,6 @@
         printWindow.print();
         printWindow.close();
       }, 250);
-    }
-
-    async function resolvePrinterForTicketCobro() {
-      if (!state.empresaID) return null;
-      const params = new URLSearchParams();
-      params.set('empresa_id', String(state.empresaID));
-      params.set('funcionalidad', 'ticket_cobro');
-      try {
-        const res = await fetch('/api/empresa/impresoras/resolver?' + params.toString(), {
-          credentials: 'same-origin'
-        });
-        if (!res.ok) return null;
-        const out = await res.json();
-        if (!out || out.ok !== true) return null;
-        return out.resolucion || null;
-      } catch (_) {
-        return null;
-      }
     }
 
     function openReservedPrintWindow(title, features) {
@@ -5263,24 +5290,6 @@
       };
     }
 
-    async function resolvePrinterForCashDrawer(drawerConfig) {
-      if (!state.empresaID) return null;
-      const params = new URLSearchParams();
-      params.set('empresa_id', String(state.empresaID));
-      params.set('funcionalidad', normalize(drawerConfig && drawerConfig.printerFunction) || 'cajon_monedero');
-      try {
-        const res = await fetch('/api/empresa/impresoras/resolver?' + params.toString(), {
-          credentials: 'same-origin'
-        });
-        if (!res.ok) return null;
-        const out = await res.json();
-        if (!out || out.ok !== true) return null;
-        return out.resolucion || null;
-      } catch (_) {
-        return null;
-      }
-    }
-
     async function openCashDrawerIfEnabled(trigger, carrito, pay) {
       const drawer = getCashDrawerConfig();
       if (!drawer.cajaActiva || !drawer.enabled) return false;
@@ -5292,7 +5301,7 @@
         return true;
       }
 
-      const printerResolution = await resolvePrinterForCashDrawer(drawer);
+      const printerResolution = await resolvePrinterOperation(drawer.printerFunction || 'cajon_monedero');
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       if (!printerTarget) {
         setStationPaymentMessage('Pago registrado, pero no hay impresora configurada para abrir el cajon monedero. Asigna una impresora con funcionalidad ' + drawer.printerFunction + ' o abre el cajon manualmente.', true);
@@ -5782,7 +5791,7 @@
       const printItems = receiptPrintItems(cfg);
 
       const moneda = (carrito && carrito.moneda) || 'COP';
-      const printerResolution = await resolvePrinterForTicketCobro();
+      const printerResolution = await resolvePrinterOperation('ticket_cobro');
       const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
       const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
       const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
@@ -6406,10 +6415,11 @@
       if (!btn) return;
       const opts = options || {};
       const loading = Boolean(opts.loading);
-      btn.disabled = Boolean(opts.disabled) || loading;
+      const initialDataLoading = Boolean(state.initialDataLoading);
+      btn.disabled = Boolean(opts.disabled) || loading || initialDataLoading;
       btn.textContent = opts.label || (loading ? 'Registrando pago...' : 'Pagar y cerrar carrito');
-      btn.title = opts.title || '';
-      btn.setAttribute('aria-busy', loading ? 'true' : 'false');
+      btn.title = initialDataLoading ? 'Terminando de cargar los datos del carrito.' : (opts.title || '');
+      btn.setAttribute('aria-busy', loading || initialDataLoading ? 'true' : 'false');
     }
 
     function resetPaymentDraftStateForNextCart() {
@@ -6893,16 +6903,22 @@
         breakdownEl.textContent += ' | Detalle mixto: ' + pay.mixedSummary;
       }
 
-      const hasBlockingError = Boolean(pendingOfflineSale) || !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || Boolean(pay.paymentAmountsMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
-      const payDisabledReason = !selectedActive
-        ? (state.directSaleMode ? 'Carrito inactivo. Reabre la venta directa para iniciar una nueva venta.' : 'Carrito inactivo. Activalo para iniciar una nueva sesion de estacion.')
-        : (pendingOfflineSale
-          ? pendingOfflineSaleMessage(pendingOfflineSale)
-          : (!selectedCash
-          ? 'Clic para refrescar cajas abiertas y cobrar.'
-        : (!hasAllowedPaymentMethods
-          ? 'No hay metodos de pago habilitados para este rol.'
-          : (pay.operativaMessage || pay.discountCodeMessage || pay.paymentAmountsMessage || pay.mixedMessage || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0 ? 'El codigo de descuento no puede cubrir propina activa.' : '')))));
+      const hasPayableContent = cartHasItemsOrTotalsForCancel(carrito);
+      const hasBlockingError = !hasPayableContent || Boolean(pendingOfflineSale) || !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || Boolean(pay.paymentAmountsMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
+      let payDisabledReason = '';
+      if (!selectedActive) {
+        payDisabledReason = state.directSaleMode ? 'Carrito inactivo. Reabre la venta directa para iniciar una nueva venta.' : 'Carrito inactivo. Activalo para iniciar una nueva sesion de estacion.';
+      } else if (!hasPayableContent) {
+        payDisabledReason = 'Agrega al menos un producto o servicio antes de pagar.';
+      } else if (pendingOfflineSale) {
+        payDisabledReason = pendingOfflineSaleMessage(pendingOfflineSale);
+      } else if (!selectedCash) {
+        payDisabledReason = 'Clic para refrescar cajas abiertas y cobrar.';
+      } else if (!hasAllowedPaymentMethods) {
+        payDisabledReason = 'No hay metodos de pago habilitados para este rol.';
+      } else {
+        payDisabledReason = pay.operativaMessage || pay.discountCodeMessage || pay.paymentAmountsMessage || pay.mixedMessage || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0 ? 'El codigo de descuento no puede cubrir propina activa.' : '');
+      }
       setStationPayButtonState({
         disabled: !selectedActive || hasBlockingError || state.paymentInProgress,
         loading: state.paymentInProgress,
@@ -7300,9 +7316,21 @@
       }
     }
 
-    async function loadUsuariosEmpresaForComisiones() {
+    function renderUsuariosEmpresaForComisiones() {
+      const list = document.getElementById('usuariosEmpresaComisionList');
+      if (!list) return;
+      list.innerHTML = state.usuariosEmpresa.map(function(u) {
+        const label = normalize(u.nombre || u.name || u.email);
+        const email = normalize(u.email);
+        const value = label + (email && email !== label ? ' (' + email + ')' : '');
+        return '<option value="' + escapeHtml(value) + '"></option>';
+      }).join('');
+    }
+
+    async function loadUsuariosEmpresaForComisiones(renderAfterLoad) {
       if (!state.empresaID) {
         state.usuariosEmpresa = [];
+        if (renderAfterLoad !== false) renderUsuariosEmpresaForComisiones();
         return;
       }
       try {
@@ -7313,14 +7341,7 @@
       } catch (_) {
         state.usuariosEmpresa = [];
       }
-      const list = document.getElementById('usuariosEmpresaComisionList');
-      if (!list) return;
-      list.innerHTML = state.usuariosEmpresa.map(function(u) {
-        const label = normalize(u.nombre || u.name || u.email);
-        const email = normalize(u.email);
-        const value = label + (email && email !== label ? ' (' + email + ')' : '');
-        return '<option value="' + escapeHtml(value) + '"></option>';
-      }).join('');
+      if (renderAfterLoad !== false) renderUsuariosEmpresaForComisiones();
     }
 
     async function generarCodigoVIP() {
@@ -7983,7 +8004,10 @@
       const productoUnidad = normalize(producto.unidad_medida) || 'unidad';
       const qtyRaw = document.getElementById('scannerCantidad').value;
       const decimalQtyAllowed = allowsDecimalScannerQuantity() && !isWeightUnit(productoUnidad);
-      const useScaleWeight = Boolean(isScaleEnabledForCurrentCart() && document.getElementById('scaleApplyWeight') && document.getElementById('scaleApplyWeight').checked && currentScaleNetKg() > 0);
+	      const useScaleWeight = Boolean(isScaleEnabledForCurrentCart() && document.getElementById('scaleApplyWeight') && document.getElementById('scaleApplyWeight').checked && state.scale.connected);
+	      if (useScaleWeight && !isScaleReadingUsable()) {
+	        throw new Error('La bascula no tiene una lectura estable y fresca. Espera la estabilizacion o desactiva "aplicar peso" para digitar la cantidad manualmente.');
+	      }
       let qty = parseQuantityValue(qtyRaw, productoUnidad, 0);
       if (decimalQtyAllowed) {
         qty = Math.round(Math.max(0, Number(normalize(qtyRaw).replace(',', '.')) || 0) * 1000) / 1000;
@@ -9235,7 +9259,7 @@
         });
       };
 
-      if (containsAny(['motel', 'hotel', 'reservas_hotel', 'apartamentos_turisticos', 'hospedaje'])) {
+      if (containsAny(['motel', 'hotel', 'reservas_hotel', 'hospedaje'])) {
         return mergeCartSummaryProfile({
           key: 'estadia',
           title: 'Cuenta de estadia',
@@ -9258,25 +9282,7 @@
           showTimeRow: true
         });
       }
-      if (containsAny(['gimnasio', 'club_deportivo', 'fitness', 'deporte'])) {
-        return mergeCartSummaryProfile({
-          key: 'gimnasio',
-          title: 'Resumen de membresia',
-          badge: 'Fitness',
-          cartLabel: 'Cuenta',
-          stationLabel: 'Puesto',
-          itemsLabel: 'Cargos',
-          productItemsLabel: 'Productos / suplementos',
-          serviceItemsLabel: 'Planes / clases',
-          productAmountLabel: 'Productos facturados',
-          serviceAmountLabel: 'Planes y clases facturados',
-          customerLabel: 'Socio',
-          totalLabel: 'Total a cobrar',
-          balanceLabel: 'Saldo socio',
-          noSelectionText: 'Selecciona una cuenta para ver la membresia.'
-        });
-      }
-      if (containsAny(['odontologia', 'consultorio_odontologico', 'clinica', 'laboratorio', 'veterinaria', 'salud'])) {
+      if (containsAny(['clinica', 'laboratorio', 'veterinaria', 'salud'])) {
         return mergeCartSummaryProfile({
           key: 'clinico',
           title: 'Resumen clinico',
@@ -9313,7 +9319,7 @@
           noSelectionText: 'Selecciona un pedido para ver el resumen.'
         });
       }
-      if (containsAny(['taxi_system', 'taxi', 'transporte', 'flota', 'despacho'])) {
+      if (containsAny(['transporte', 'flota', 'despacho'])) {
         return mergeCartSummaryProfile({
           key: 'transporte',
           title: 'Resumen del servicio',
@@ -9371,38 +9377,6 @@
           balanceLabel: 'Saldo contrato',
           noSelectionText: 'Selecciona un contrato para ver el alquiler.',
           showTimeRow: true
-        });
-      }
-      if (containsAny(['propiedad_horizontal', 'copropiedad', 'condominio', 'conjunto'])) {
-        return mergeCartSummaryProfile({
-          key: 'copropiedad',
-          title: 'Resumen de recaudo',
-          badge: 'Copropiedad',
-          cartLabel: 'Recaudo',
-          stationLabel: 'Unidad',
-          itemsLabel: 'Cargos',
-          productItemsLabel: 'Productos',
-          serviceItemsLabel: 'Cuotas / conceptos',
-          serviceAmountLabel: 'Cuotas facturadas',
-          customerLabel: 'Propietario / residente',
-          totalLabel: 'Total recaudo',
-          balanceLabel: 'Saldo cartera',
-          noSelectionText: 'Selecciona un recaudo para ver el resumen.'
-        });
-      }
-      if (containsAny(['drogueria_farmacia', 'drogueria', 'farmacia', 'farmaceutica'])) {
-        return mergeCartSummaryProfile({
-          key: 'farmacia',
-          title: 'Resumen farmaceutico',
-          badge: 'Farmacia',
-          itemsLabel: 'Lineas dispensadas',
-          productItemsLabel: 'Medicamentos / productos',
-          serviceItemsLabel: 'Servicios farmaceuticos',
-          productAmountLabel: 'Medicamentos facturados',
-          customerLabel: 'Paciente / cliente',
-          totalLabel: 'Total venta',
-          balanceLabel: 'Saldo venta',
-          noSelectionText: 'Selecciona una venta para ver el resumen.'
         });
       }
       if (containsAny(['salon', 'belleza', 'barberia', 'spa'])) {
@@ -9473,7 +9447,7 @@
           balanceLabel: 'Saldo obra'
         });
       }
-      if (containsAny(['operador_turistico', 'turismo', 'viajes', 'tours', 'eventos'])) {
+      if (containsAny(['turismo', 'viajes', 'tours', 'eventos'])) {
         return mergeCartSummaryProfile({
           key: 'turismo',
           title: 'Resumen de reserva',
@@ -9492,7 +9466,7 @@
           balanceLabel: 'Saldo reserva'
         });
       }
-      if (containsAny(['inmobiliaria_comercial', 'inmobiliaria', 'propiedades'])) {
+      if (containsAny(['inmobiliaria', 'propiedades'])) {
         return mergeCartSummaryProfile({
           key: 'inmobiliario',
           title: 'Resumen inmobiliario',
@@ -9508,9 +9482,9 @@
           balanceLabel: 'Saldo operacion'
         });
       }
-      if (containsAny(['seguridad_privada', 'vigilancia_privada', 'guardas', 'rondas'])) {
+      if (containsAny(['vigilancia_privada', 'guardas', 'rondas'])) {
         return mergeCartSummaryProfile({
-          key: 'seguridad_privada',
+          key: 'vigilancia',
           title: 'Resumen de servicio',
           badge: 'Vigilancia',
           cartLabel: 'Servicio',
@@ -9560,7 +9534,7 @@
           balanceLabel: 'Saldo admision'
         });
       }
-      if (containsAny(['cooperativa_fondo', 'cooperativa', 'fondo'])) {
+      if (containsAny(['cooperativa', 'fondo'])) {
         return mergeCartSummaryProfile({
           key: 'cooperativa',
           title: 'Resumen de aporte',
@@ -11184,12 +11158,9 @@
 
     async function loadEmpresaTitle() {
       try {
-        const meRes = await fetch('/me', { credentials: 'same-origin' });
-        if (meRes.ok) {
-          const me = await meRes.json();
-          const role = normalize(me && me.role).toLowerCase();
-          if (role !== 'super_admin' && role !== 'superadministrador' && role !== 'super') return;
-        }
+        const me = await loadCurrentSessionContext();
+        const role = normalize(me && me.role).toLowerCase();
+        if (role !== 'super_admin' && role !== 'superadministrador' && role !== 'super') return;
         const res = await fetch('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
         if (!res.ok) return;
         const empresa = await res.json();
@@ -11206,28 +11177,34 @@
       } catch (_) {}
     }
 
-    async function loadClientes() {
+    async function loadClientes(renderAfterLoad) {
       try {
         const res = await fetchWithTimeout('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID), {
           credentials: 'same-origin'
         });
         if (!res.ok) {
           state.clientes = [];
-          fillClientesSelect('');
-          renderStationCustomerPanel(getSelectedCarrito());
+          if (renderAfterLoad !== false) {
+            fillClientesSelect('');
+            renderStationCustomerPanel(getSelectedCarrito());
+          }
           return;
         }
         state.clientes = await res.json();
-        fillClientesSelect('');
-        renderStationCustomerPanel(getSelectedCarrito());
+        if (renderAfterLoad !== false) {
+          fillClientesSelect('');
+          renderStationCustomerPanel(getSelectedCarrito());
+        }
       } catch (_) {
         state.clientes = [];
-        fillClientesSelect('');
-        renderStationCustomerPanel(getSelectedCarrito());
+        if (renderAfterLoad !== false) {
+          fillClientesSelect('');
+          renderStationCustomerPanel(getSelectedCarrito());
+        }
       }
     }
 
-    async function loadCarritos() {
+    async function loadCarritos(renderAfterLoad, filterBySelectedCode) {
       setInitialLoadContentVisible(true);
       const url = new URL('/api/empresa/carritos_compra', window.location.origin);
       url.searchParams.set('empresa_id', String(state.empresaID));
@@ -11235,7 +11212,7 @@
       if (state.directSaleMode) {
         url.searchParams.set('modo', 'venta_directa');
         url.searchParams.set('perm_page', 'linkVentaDirecta');
-        if (state.selectedCarritoCode) {
+        if (filterBySelectedCode !== false && state.selectedCarritoCode) {
           url.searchParams.set('carrito_codigo', state.selectedCarritoCode);
         }
       } else if (state.stationMode) {
@@ -11243,7 +11220,7 @@
         if (state.stationID > 0) {
           url.searchParams.set('estacion_id', String(state.stationID));
         }
-        if (state.selectedCarritoCode) {
+        if (filterBySelectedCode !== false && state.selectedCarritoCode) {
           url.searchParams.set('carrito_codigo', state.selectedCarritoCode);
         }
       }
@@ -11266,10 +11243,12 @@
         }
       }
 
-      renderCarritos();
-      renderResumen();
-      renderItems();
-      applyStationCartUIConfig();
+      if (renderAfterLoad !== false) {
+        renderCarritos();
+        renderResumen();
+        renderItems();
+        applyStationCartUIConfig();
+      }
       if (state.stationMode) {
         restartStationAutoRefresh();
         ensureStationAlert10Timer();
@@ -11552,6 +11531,37 @@
       await ensureOk(res);
       state.items = await res.json();
       await loadCarritoAbonos(false);
+      renderResumen();
+      renderItems();
+    }
+
+    async function loadInitialCartData() {
+      setInitialLoadContentVisible(true);
+      await Promise.all([
+        loadEmpresaGeneralConfigFromServer(),
+        loadEmpresaAvanzadaConfigFromServer(),
+        loadEmpresaPermissionsContextFromServer(),
+        loadStationConfigFromServer(),
+        loadTarifaMinutosConfigFromServer(),
+        loadEmpresaTitle(),
+        loadClientes(false),
+        loadDiscountCodes(),
+        loadOperativaConfig(false),
+        loadTipConfig(false),
+        loadCommissionConfig(false),
+        loadUsuariosEmpresaForComisiones(false),
+        loadActiveCashRegisters(false),
+        loadCarritos(false, false)
+      ]);
+
+      applyCartMoneyInputScale('COP');
+      renderCarritoSummaryPanel();
+      applyStationModeUI();
+      renderActiveCashRegisters();
+      ensurePaymentMethodInputsFromOperativa();
+      renderUsuariosEmpresaForComisiones();
+      fillClientesSelect('');
+      renderCarritos();
       renderResumen();
       renderItems();
     }
@@ -12484,35 +12494,19 @@
         document.getElementById('cancelCarritoBtn').style.display = 'none';
         document.getElementById('cancelItemBtn').style.display = 'none';
 
-        await loadEmpresaGeneralConfigFromServer();
-        applyCartMoneyInputScale('COP');
-        await loadEmpresaAvanzadaConfigFromServer();
-        await loadEmpresaPermissionsContextFromServer();
-        await loadStationConfigFromServer();
-        await loadTarifaMinutosConfigFromServer();
-        renderCarritoSummaryPanel();
-
-        await loadEmpresaTitle();
-        await loadClientes();
-        await loadDiscountCodes();
-        await loadOperativaConfig();
-        await loadTipConfig();
-        await loadCommissionConfig();
-        await loadUsuariosEmpresaForComisiones();
-        await loadActiveCashRegisters();
-        await loadCarritos();
+        await loadInitialCartData();
         if (state.directSaleMode) {
           await ensureDirectSaleCarritoLifecycle();
-          await loadCarritos();
         }
         if (state.stationMode) {
           await ensureStationCarritoLifecycle();
-          await loadCarritos();
         }
         const selectedOnOpen = ensureSelectedCarritoFromLoadedList();
         if (selectedOnOpen || state.selectedCarritoID) {
           await loadItems();
         }
+        state.initialDataLoading = false;
+        renderStationPaymentPanel(getSelectedCarrito());
         updateOfflineFloatingNotice();
         if (isOfflineBillingEnabled()) {
           syncOfflineSalesQueue();
@@ -12521,6 +12515,7 @@
         const selectedAfterPartialLoad = getSelectedCarrito();
         if ((state.directSaleMode || state.stationMode) && selectedAfterPartialLoad) {
           console.warn('Carga parcial del carrito; se conserva la pantalla operativa.', err);
+          state.initialDataLoading = false;
           setInitialLoadContentVisible(true);
           renderCarritos();
           renderResumen();
@@ -12530,6 +12525,7 @@
           setMessage('carritoMsg', 'Carrito listo. Algunas opciones secundarias se reintentarán automáticamente si son necesarias.', false);
           return;
         }
+        state.initialDataLoading = false;
         renderInitialLoadError(err);
       }
     })();
@@ -12552,7 +12548,7 @@
         { re: /imprimir/i, symbol: 'P', tone: 'slate' }
       ];
 
-      function normalize(value) {
+      function normalizeButtonText(value) {
         return String(value || '').trim();
       }
 
@@ -12567,7 +12563,7 @@
           button.getAttribute('aria-label'),
           button.getAttribute('title'),
           button.textContent
-        ].map(normalize).filter(Boolean).join(' ');
+        ].map(normalizeButtonText).filter(Boolean).join(' ');
       }
 
       function iconFor(button) {
@@ -12583,7 +12579,7 @@
         if (button.querySelector('.cart-btn-icon')) return false;
         if (button.closest('[data-cart-icons="off"]')) return false;
         if (button.matches('.cart-btn-icon, .cart-item-qty-step, .ai-chat-icon-btn, .ai-chat-minibar-btn, .pcs-field-help-button')) return false;
-        const label = normalize(button.textContent || button.getAttribute('aria-label') || button.getAttribute('title'));
+        const label = normalizeButtonText(button.textContent || button.getAttribute('aria-label') || button.getAttribute('title'));
         if (!label || label === '×' || label === 'x') return false;
         return Boolean(button.closest('body.carrito-flat-page'));
       }

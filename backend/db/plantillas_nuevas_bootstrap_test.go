@@ -7,8 +7,8 @@ import (
 
 func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 	catalog := NuevasPlantillasTipoEmpresaCatalog()
-	if len(catalog) != 20 {
-		t.Fatalf("expected 20 nuevas plantillas, got %d", len(catalog))
+	if len(catalog) != 9 {
+		t.Fatalf("expected 9 nuevas plantillas, got %d", len(catalog))
 	}
 	for _, item := range catalog {
 		t.Run(item.Modulo, func(t *testing.T) {
@@ -41,8 +41,8 @@ func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 
 func TestNuevasPlantillasProduccionMasivaLicenciasRecomendadas(t *testing.T) {
 	selected := NuevasPlantillasProduccionMasivaSeleccionados()
-	if len(selected) != 20 {
-		t.Fatalf("seleccion produccion len=%d want 20", len(selected))
+	if len(selected) != 9 {
+		t.Fatalf("seleccion produccion len=%d want 9", len(selected))
 	}
 	for _, modulo := range selected {
 		t.Run(modulo, func(t *testing.T) {

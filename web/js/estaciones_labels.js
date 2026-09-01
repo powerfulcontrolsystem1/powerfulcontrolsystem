@@ -5,6 +5,7 @@
     singular: "Estacion",
     plural: "Estaciones"
   };
+  var prefsLoads = Object.create(null);
 
   function cleanText(value) {
     return String(value == null ? "" : value).trim().replace(/\s+/g, " ");
@@ -105,6 +106,31 @@
     return null;
   }
 
+  async function loadPrefs(empresaId) {
+    empresaId = parsePositiveInt(empresaId || resolveEmpresaId());
+    if (!empresaId) return null;
+    if (prefsLoads[empresaId]) return prefsLoads[empresaId];
+
+    var url = "/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId);
+    if (window.PCSRequestCache && typeof window.PCSRequestCache.getJSON === "function") {
+      prefsLoads[empresaId] = window.PCSRequestCache.getJSON(url, {
+        credentials: "same-origin",
+        ttlMs: 5000
+      }).then(function(result) {
+        return result && result.ok ? result.data : null;
+      }).catch(function() { return null; });
+    } else {
+      prefsLoads[empresaId] = fetch(url, { credentials: "same-origin" })
+        .then(function(resp) {
+          if (!resp.ok) return null;
+          return resp.json();
+        })
+        .catch(function() { return null; });
+    }
+
+    return prefsLoads[empresaId];
+  }
+
   async function loadLabels(empresaId) {
     empresaId = parsePositiveInt(empresaId || resolveEmpresaId());
     if (!empresaId) return normalizeLabels(null);
@@ -120,11 +146,8 @@
     } catch (e) {}
 
     try {
-      var resp = await fetch("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaId), {
-        credentials: "same-origin"
-      });
-      if (!resp.ok) return normalizeLabels(null);
-      var data = await resp.json();
+      var data = await loadPrefs(empresaId);
+      if (!data) return normalizeLabels(null);
       var config = parseConfigFromPrefs(Array.isArray(data) ? data : (data && data.prefs ? data.prefs : []));
       var labels = normalizeLabels(config);
       try { sessionStorage.setItem(cacheKey, JSON.stringify(labels)); } catch (e) {}
@@ -223,6 +246,7 @@
 
   window.PCSEstacionLabels = {
     load: loadLabels,
+    loadPrefs: loadPrefs,
     apply: applyLabels,
     init: init,
     normalize: normalizeLabels,

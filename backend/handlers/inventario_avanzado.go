@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -104,7 +105,7 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				id, err := dbpkg.CreateEmpresaInventarioLoteAvanzado(dbEmp, payload.Lote)
 				if err != nil {
-					http.Error(w, "No se pudo guardar lote: "+err.Error(), http.StatusBadRequest)
+					writeInventarioAvanzadoError(w, r, "guardar_lote", err, http.StatusBadRequest, "No se pudo guardar el lote.")
 					return
 				}
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
@@ -115,7 +116,7 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				id, err := dbpkg.CreateEmpresaInventarioSerialAvanzado(dbEmp, payload.Serial)
 				if err != nil {
-					http.Error(w, "No se pudo guardar serial: "+err.Error(), http.StatusBadRequest)
+					writeInventarioAvanzadoError(w, r, "guardar_serial", err, http.StatusBadRequest, "No se pudo guardar el serial.")
 					return
 				}
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
@@ -130,7 +131,7 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err != nil {
-					http.Error(w, "No se pudo crear reserva: "+err.Error(), http.StatusBadRequest)
+					writeInventarioAvanzadoError(w, r, "crear_reserva", err, http.StatusBadRequest, "No se pudo crear la reserva.")
 					return
 				}
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
@@ -148,7 +149,7 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				if err != nil {
-					http.Error(w, "No se pudo confirmar reserva: "+err.Error(), http.StatusBadRequest)
+					writeInventarioAvanzadoError(w, r, "confirmar_reserva", err, http.StatusBadRequest, "No se pudo confirmar la reserva.")
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
@@ -159,4 +160,16 @@ func EmpresaInventarioAvanzadoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+// writeInventarioAvanzadoError evita exponer detalles de PostgreSQL, rutas o
+// relaciones internas por un endpoint empresarial. El detalle queda limitado
+// al log operativo y el request id, cuando ya fue asignado por middleware.
+func writeInventarioAvanzadoError(w http.ResponseWriter, r *http.Request, operation string, err error, status int, message string) {
+	requestID := strings.TrimSpace(r.Header.Get("X-Request-ID"))
+	log.Printf("[inventario_avanzado] operation=%s request_id=%s error_type=%T", operation, requestID, err)
+	if requestID != "" {
+		message += " Referencia: " + requestID
+	}
+	http.Error(w, message, status)
 }

@@ -172,8 +172,22 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				},
 			},
 			{Version: "20260811-003-domotica-timer-v1", Description: "timer duration for electronic equipment and sensor rules", Body: empresaControlElectricoTimerSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoTimerSchemaTx(tx) }},
-			{Version: "20260812-001-domotica-activation-queue-v1", Description: "company-wide serialized relay activation delay", Body: empresaControlElectricoActivationQueueSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoActivationQueueSchemaTx(tx) }},
+			{Version: "20260812-001-domotica-activation-queue-v1", Description: "company-wide serialized relay activation delay", Body: empresaControlElectricoActivationQueueSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error {
+				return applyEmpresaControlElectricoActivationQueueSchemaTx(tx)
+			}},
 			{Version: "20260813-001-domotica-governance-v1", Description: "Raspberry disconnect alerts and per-company monthly tunnel limits", Body: empresaControlElectricoGovernanceSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error { return applyEmpresaControlElectricoGovernanceSchemaTx(tx) }},
+			{Version: "20260823-001-retire-grafologia-v1", Description: "remove retired handwriting-analysis module data", Body: empresaGrafologiaDecommissionFingerprint, Apply: applyEmpresaGrafologiaDecommissionTx},
+			{Version: "20260823-002-retire-vertical-modules-v1", Description: "remove retired gym taxi apartments horizontal property dentistry and pharmacy module data", Body: empresaVerticalModulesDecommissionFingerprint, Apply: applyEmpresaVerticalModulesDecommissionTx},
+			{Version: "20260826-001-sale-accounting-idempotency-v1", Description: "one active paid-sale accounting event per tenant cart", Body: empresaSaleAccountingIdempotencyFingerprint, Apply: applyEmpresaSaleAccountingIdempotencyTx},
+			{Version: "20260826-002-cart-sale-history-v1", Description: "immutable cart sale history for cash reports", Body: empresaCarritoSaleHistorySchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error {
+				return applyEmpresaCarritoSaleHistorySchemaTx(tx)
+			}},
+			{Version: "20260826-003-operational-idempotency-v1", Description: "request fingerprints and leased claims for CxP offline sales and DIAN retries", Body: empresaOperationalIdempotencyFingerprint, Apply: applyEmpresaOperationalIdempotencyTx},
+			{Version: "20260831-001-vida-personal-v1", Description: "personal expenses receipts subscriptions and reminders isolated by tenant and user", Body: empresaVidaSchemaFingerprint, Apply: applyEmpresaVidaSchemaTx},
+			{Version: "20260831-002-raspberry-door-sensor-v1", Description: "multiplexed four-input door sensors for enrolled Raspberry controllers", Body: empresaControlElectricoDoorSensorSchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error {
+				return applyEmpresaControlElectricoDoorSensorSchemaTx(tx)
+			}},
+			{Version: "20260831-003-vida-price-history-ai-v1", Description: "personal price history barcode captures and AI invoice line items", Body: empresaVidaPriceHistorySchemaFingerprint, Apply: applyEmpresaVidaPriceHistorySchemaTx},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
@@ -231,6 +245,12 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Apply: func(ctx context.Context, tx *sql.Tx) error {
 					return applyPortalVisitasSchemaTx(ctx, tx)
 				},
+			},
+			{
+				Version:     "20260826-001-payment-idempotency-v1",
+				Description: "durable payment checkout and post-effect idempotency",
+				Body:        paymentIdempotencySchemaFingerprint,
+				Apply:       applyPaymentIdempotencySchemaTx,
 			},
 		}, nil
 	default:

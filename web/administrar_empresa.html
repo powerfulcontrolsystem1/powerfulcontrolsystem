@@ -5,28 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administrar Empresa</title>
   <link rel="stylesheet" href="/estilos.css?v=20260615-cart-ia-visual">
-  <style>
-    .admin-notification-wrap { position:relative; display:inline-flex; }
-    .admin-frame-toolbar .admin-notification-wrap { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
-    .admin-notification-btn { position:relative; display:inline-grid; place-items:center; width:38px; height:38px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-size:1.12rem; }
-    .admin-notification-btn:hover, .admin-notification-btn:focus-visible { outline:2px solid color-mix(in srgb,var(--accent) 30%,transparent); outline-offset:2px; }
-    .admin-notification-badge { position:absolute; top:-7px; right:-7px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; display:none; align-items:center; justify-content:center; background:#ef4444; color:#fff; font-size:.72rem; font-weight:900; line-height:20px; box-shadow:0 0 0 2px var(--bg); }
-    .admin-notification-btn.has-unread .admin-notification-badge { display:flex; }
-    .admin-notification-menu { position:absolute; right:0; top:calc(100% + 8px); z-index:20; width:min(360px, calc(100vw - 28px)); max-height:420px; overflow:auto; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card); box-shadow:0 18px 46px rgba(15,23,42,.22); color:var(--text); }
-    .admin-notification-menu[hidden] { display:none; }
-    .admin-notification-head { display:flex; justify-content:space-between; gap:8px; align-items:center; margin:0 0 8px; }
-    .admin-notification-head strong { font-size:.92rem; }
-    .admin-notification-list { display:grid; gap:8px; }
-    .admin-notification-item { width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; background:var(--surface); color:var(--text); text-align:left; cursor:pointer; }
-    .admin-notification-item strong { display:block; font-size:.86rem; line-height:1.25; }
-    .admin-notification-item span { display:block; margin-top:3px; color:var(--muted); font-size:.76rem; line-height:1.25; }
-    .admin-notification-empty { margin:0; color:var(--muted); font-size:.84rem; }
-  </style>
+<link rel="stylesheet" href="/administrar_empresa.css?v=20260813-p110-csp">
   <script src="/js/service_worker_update.js?v=20260521-admin-mobile-cache-v4"></script>
-  <script src="/menu.js"></script>
+  <script src="/menu.js?v=20260825-admin-load-v1"></script>
   <script src="/js/empresa_submenu_context.js?v=20260521-connectivity"></script>
-  <script src="/js/plantillas_integracion_catalogo.js"></script>
-  <script src="/js/plantillas_nuevas_catalogo.js"></script>
+  <script src="/js/plantillas_integracion_catalogo.js?v=20260823-retire-verticals"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js?v=20260823-retire-verticals"></script>
   <script src="/js/ai_button_icons.js?v=20260615-ia-logo-theme"></script>
 </head>
 <body class="admin-empresa-shell" data-auto-collapse-menu="true" data-auto-estacion-labels="true">
@@ -36,6 +20,7 @@
       <p id="empresaNameMenu" class="empresa-name-menu"></p>
       <ul class="nav admin-nav-grouped" id="adminSidebarNav">
         <li><a id="linkPanelEmpresa" href="/administrar_empresa/panel.html?v=20260620-guided-dismiss" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Panel</a></li>
+        <li><a id="linkVida" href="/administrar_empresa/vida.html" target="contentFrame"><span class="icon menu-symbol-icon" aria-hidden="true">♥</span>Vida</a></li>
 
         <li class="admin-nav-group is-open">
           <button type="button" class="admin-nav-group-title" aria-expanded="true">Operación y ventas</button>
@@ -122,7 +107,6 @@
             <li><a id="linkAuditoria" href="/administrar_empresa/modulo_menu.html?module=auditoria" target="contentFrame"><img class="icon" src="/img/audit.svg" alt="">Auditoría</a></li>
             <li><a id="linkCalidadProcesos" href="/administrar_empresa/modulo_menu.html?module=calidad_procesos" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Calidad y procesos</a></li>
             <li><a id="linkCamaras" href="/administrar_empresa/camaras.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Cámaras</a></li>
-            <li><a id="linkGrafologia" href="/administrar_empresa/grafologia.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">GRAFOLOGIX</a></li>
             <li><a id="linkBolsa" href="/administrar_empresa/bolsa.html" target="contentFrame"><img class="icon" src="/img/analytics.svg" alt="">Bolsa</a></li>
           </ul>
         </li>
@@ -151,13 +135,8 @@
         <li class="admin-nav-group">
           <button type="button" class="admin-nav-group-title" aria-expanded="false">Soluciones por negocio</button>
           <ul class="admin-nav-sublist">
-            <li><a id="linkGimnasio" href="/administrar_empresa/gimnasio_menu.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Gimnasio</a></li>
-            <li><a id="linkConsultorioOdontologico" href="/administrar_empresa/modulo_menu.html?module=consultorio_odontologico" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Odontología</a></li>
-            <li><a id="linkDrogueriaFarmacia" href="/administrar_empresa/modulo_menu.html?module=drogueria_farmacia" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Droguería / Farmacia</a></li>
             <li><a id="linkParqueadero" href="/administrar_empresa/modulo_menu.html?module=parqueadero" target="contentFrame"><img class="icon" src="/img/vehiculos-flotas-logo.svg" alt="">Parqueadero</a></li>
             <li><a id="linkReservasHotel" href="/administrar_empresa/reservas_hotel.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Reservas</a></li>
-            <li><a id="linkApartamentosTuristicos" href="/administrar_empresa/modulo_menu.html?module=apartamentos_turisticos" target="contentFrame"><img class="icon" src="/img/hotel-logo.svg" alt="">Apartamentos turísticos</a></li>
-            <li><a id="linkPropiedadHorizontal" href="/administrar_empresa/modulo_menu.html?module=propiedad_horizontal" target="contentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Propiedad horizontal</a></li>
             <li><a id="linkAlquileres" href="/administrar_empresa/modulo_menu.html?module=alquileres" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Alquiler</a></li>
             <li><a id="linkAIUConstruccion" href="/administrar_empresa/modulo_menu.html?module=aiu_construccion" target="contentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Construcción / AIU</a></li>
             <li><a id="linkTaxiSystem" href="/administrar_empresa/modulo_menu.html?module=taxi" target="contentFrame"><img class="icon" src="/img/gps.svg" alt="">Taxi System</a></li>
@@ -216,7 +195,7 @@
   </div>
 
   <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" aria-hidden="true" type="button" hidden>
-    <img class="icon ai-openai-mark ai-mark-shell" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true"><span class="ai-chat-toggle-label">Asistente IA</span>
+    <img class="icon ai-openai-mark ai-mark-shell" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true"><span class="ai-chat-toggle-label">Agente PCS</span>
   </button>
 
   <button id="openRadioDrawer" class="ai-chat-toggle-button radio-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button" hidden aria-hidden="true">
@@ -297,8 +276,8 @@
 
   <section id="aiChatDrawer" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle" aria-hidden="true" hidden>
     <div class="ai-chat-minibar" id="aiChatMinibar" hidden>
-      <span class="ai-chat-minibar-label">Asistente IA</span>
-      <button type="button" id="aiChatMinibarExpand" class="ai-chat-minibar-btn" aria-label="Abrir asistente IA">
+      <span class="ai-chat-minibar-label">Agente PCS</span>
+      <button type="button" id="aiChatMinibarExpand" class="ai-chat-minibar-btn" aria-label="Abrir Agente PCS">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M7 14l5-5 5 5H7z"/></svg>
       </button>
     </div>
@@ -309,7 +288,7 @@
             <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
           </span>
           <div>
-            <h2 id="aiChatTitle">Asistente IA</h2>
+            <h2 id="aiChatTitle">Agente PCS</h2>
           </div>
         </div>
         <div class="ai-chat-header-actions">
@@ -320,7 +299,7 @@
           <button id="aiChatMinimize" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>
           </button>
-          <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">&times;</button>
+          <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar Agente PCS">&times;</button>
         </div>
       </div>
       <div id="aiChatNotice" class="ai-chat-notice"></div>
@@ -370,11 +349,11 @@
     </div>
   </section>
 
-  <script src="/js/estaciones_labels.js"></script>
-  <script src="/js/administrar_empresa.js?v=20260713-nextcloud-context"></script>
+  <script src="/js/estaciones_labels.js?v=20260825-admin-load-v1"></script>
+  <script src="/js/administrar_empresa.js?v=20260825-admin-load-v1"></script>
   <script src="/js/radio_catalog.js?v=20260607-admin-audit"></script>
-  <script src="/js/radio_player.js?v=20260607-admin-audit"></script>
-  <script src="/js/ai_chat_drawer.js?v=20260713-chat-resultados"></script>
-  <script src="/js/help_ai_bridge.js?v=20260725-observer-guard"></script>
+  <script src="/js/radio_player.js?v=20260825-admin-load-v1"></script>
+  <script src="/js/ai_chat_drawer.js?v=20260825-admin-load-v1"></script>
+  <script src="/js/help_ai_bridge.js?v=20260825-admin-load-v1"></script>
 </body>
 </html>

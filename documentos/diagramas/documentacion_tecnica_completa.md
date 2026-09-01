@@ -1,6 +1,6 @@
 # Documentacion tecnica completa con diagramas PCS
 
-Actualizacion: 2026-07-09
+Actualizacion: 2026-08-23
 
 Este paquete documenta la arquitectura vigente de PCS en formato legible para humanos y para Codex. Los diagramas estan en Mermaid y el manifiesto estructurado esta en `documentos/diagramas/documentacion_tecnica_completa_manifest.json`.
 
@@ -53,7 +53,7 @@ flowchart TB
   Empresa --> Finanzas[Finanzas, cartera, contabilidad, nomina]
   Empresa --> Personas[Usuarios, roles, clientes, empleados]
   Empresa --> Canales[Correo, WhatsApp, Rappi, portal, noticias]
-  Empresa --> IA[Chat IA, agentes, captura inteligente, grafologia]
+  Empresa --> IA[Chat IA, agentes, captura inteligente y automatizacion]
   Super --> Licencias[Licencias, pagos, planes, descuentos]
   Super --> Infra[VPS, Docker, backups, VPS2, alertas]
   Super --> Gobierno[Configuracion, auditoria, IA global, diagramas]
@@ -154,11 +154,6 @@ flowchart TB
   empresa_alquileres_mantenimientos["empresa_alquileres_mantenimientos"]
   empresa_alquileres_tarifas["empresa_alquileres_tarifas"]
   empresa_alquileres_ubicaciones["empresa_alquileres_ubicaciones"]
-  empresa_apartamentos_turisticos_config["empresa_apartamentos_turisticos_config"]
-  empresa_apartamentos_turisticos_reservas["empresa_apartamentos_turisticos_reservas"]
-  empresa_apartamentos_turisticos_tareas["empresa_apartamentos_turisticos_tareas"]
-  empresa_apartamentos_turisticos_tarifas["empresa_apartamentos_turisticos_tarifas"]
-  empresa_apartamentos_turisticos_unidades["empresa_apartamentos_turisticos_unidades"]
   empresa_backups["empresa_backups"]
   empresa_backups_restauraciones["empresa_backups_restauraciones"]
   empresa_calculadora_configuracion["empresa_calculadora_configuracion"]
@@ -199,15 +194,6 @@ flowchart TB
   empresa_domicilios_restaurantes["empresa_domicilios_restaurantes"]
   empresa_estacion_aseo_eventos["empresa_estacion_aseo_eventos"]
   empresa_estacion_prefs["empresa_estacion_prefs"]
-  empresa_gimnasio_acceso_config["empresa_gimnasio_acceso_config"]
-  empresa_gimnasio_clases["empresa_gimnasio_clases"]
-  empresa_gimnasio_dispositivos_acceso["empresa_gimnasio_dispositivos_acceso"]
-  empresa_gimnasio_entrenadores["empresa_gimnasio_entrenadores"]
-  empresa_gimnasio_eventos_acceso["empresa_gimnasio_eventos_acceso"]
-  empresa_gimnasio_inscripciones["empresa_gimnasio_inscripciones"]
-  empresa_gimnasio_pagos["empresa_gimnasio_pagos"]
-  empresa_gimnasio_planes["empresa_gimnasio_planes"]
-  empresa_gimnasio_socios["empresa_gimnasio_socios"]
   empresa_gps_dispositivos["empresa_gps_dispositivos"]
   empresa_gps_recorridos["empresa_gps_recorridos"]
   empresa_hoja_vida_alertas["empresa_hoja_vida_alertas"]
@@ -228,13 +214,6 @@ flowchart TB
   empresa_parqueadero_tickets["empresa_parqueadero_tickets"]
   empresa_payment_settings["empresa_payment_settings"]
   empresa_plan_cuentas["empresa_plan_cuentas"]
-  empresa_propiedad_horizontal_asambleas["empresa_propiedad_horizontal_asambleas"]
-  empresa_propiedad_horizontal_cargos["empresa_propiedad_horizontal_cargos"]
-  empresa_propiedad_horizontal_config["empresa_propiedad_horizontal_config"]
-  empresa_propiedad_horizontal_personas["empresa_propiedad_horizontal_personas"]
-  empresa_propiedad_horizontal_pqrs["empresa_propiedad_horizontal_pqrs"]
-  empresa_propiedad_horizontal_recaudos["empresa_propiedad_horizontal_recaudos"]
-  empresa_propiedad_horizontal_unidades["empresa_propiedad_horizontal_unidades"]
   empresa_propinas_configuracion["empresa_propinas_configuracion"]
   empresa_propinas_movimientos["empresa_propinas_movimientos"]
   empresa_reportes_ejecuciones["empresa_reportes_ejecuciones"]
@@ -246,12 +225,6 @@ flowchart TB
   empresa_tarifas_motel["empresa_tarifas_motel"]
   empresa_tarifas_por_minutos["empresa_tarifas_por_minutos"]
   empresa_tarifas_por_minutos_configuracion["empresa_tarifas_por_minutos_configuracion"]
-  empresa_taxi_config["empresa_taxi_config"]
-  empresa_taxi_customers["empresa_taxi_customers"]
-  empresa_taxi_drivers["empresa_taxi_drivers"]
-  empresa_taxi_offers["empresa_taxi_offers"]
-  empresa_taxi_requests["empresa_taxi_requests"]
-  empresa_taxi_route_points["empresa_taxi_route_points"]
   empresa_vehiculos_configuracion["empresa_vehiculos_configuracion"]
   empresa_vehiculos_registro["empresa_vehiculos_registro"]
   empresas["empresas"]
@@ -305,7 +278,6 @@ flowchart TB
   empresa_finanzas_configuracion["empresa_finanzas_configuracion"]
   empresa_finanzas_movimientos["empresa_finanzas_movimientos"]
   empresa_finanzas_periodos["empresa_finanzas_periodos"]
-  empresa_gimnasio_asistencias["empresa_gimnasio_asistencias"]
   empresa_impuestos_config["empresa_impuestos_config"]
   empresa_integraciones_bancos["empresa_integraciones_bancos"]
   empresa_nomina_colombia_conceptos["empresa_nomina_colombia_conceptos"]
@@ -358,23 +330,12 @@ flowchart TB
   empresa_energia_solar_eventos["empresa_energia_solar_eventos"]
   empresa_energia_solar_lecturas["empresa_energia_solar_lecturas"]
   empresa_energia_solar_sistemas["empresa_energia_solar_sistemas"]
-  empresa_gimnasio_credenciales["empresa_gimnasio_credenciales"]
-  empresa_grafologia_analisis["empresa_grafologia_analisis"]
   empresa_licencias_adicionales["empresa_licencias_adicionales"]
   empresa_modulos_colombia_aprobaciones["empresa_modulos_colombia_aprobaciones"]
   empresa_modulos_colombia_eventos["empresa_modulos_colombia_eventos"]
   empresa_modulos_colombia_evidencias["empresa_modulos_colombia_evidencias"]
   empresa_modulos_colombia_registros["empresa_modulos_colombia_registros"]
   empresa_modulos_colombia_tareas["empresa_modulos_colombia_tareas"]
-  empresa_odontologia_citas["empresa_odontologia_citas"]
-  empresa_odontologia_consultorios["empresa_odontologia_consultorios"]
-  empresa_odontologia_historias["empresa_odontologia_historias"]
-  empresa_odontologia_odontogramas["empresa_odontologia_odontogramas"]
-  empresa_odontologia_pacientes["empresa_odontologia_pacientes"]
-  empresa_odontologia_pagos["empresa_odontologia_pagos"]
-  empresa_odontologia_presupuestos["empresa_odontologia_presupuestos"]
-  empresa_odontologia_profesionales["empresa_odontologia_profesionales"]
-  empresa_odontologia_tratamientos["empresa_odontologia_tratamientos"]
   empresa_publicaciones_red_social["empresa_publicaciones_red_social"]
   empresa_publicaciones_red_social_comentarios["empresa_publicaciones_red_social_comentarios"]
   empresa_publicaciones_red_social_reacciones["empresa_publicaciones_red_social_reacciones"]
@@ -818,7 +779,7 @@ flowchart LR
 
 ## Catalogo completo de tablas PostgreSQL extraidas
 
-Total de tablas extraidas: 365.
+Total de tablas extraidas: 326.
 
 ### Acceso, seguridad y auditoria
 
@@ -1649,140 +1610,6 @@ Fuente: backend/db/alquileres.go
 | fuente | TEXT | no |  | no | default |
 | referencia | TEXT | no |  | no |  |
 | fecha_registro | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_apartamentos_turisticos_config
-
-Fuente: backend/db/apartamentos_turisticos.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| empresa_id | BIGINT | si |  | no |  |
-| nombre_sistema | TEXT | no |  | no | default |
-| moneda | TEXT | no |  | no | default |
-| hora_check_in | TEXT | no |  | no | default |
-| hora_check_out | TEXT | no |  | no | default |
-| deposito_porcentaje | NUMERIC(7,2) | no |  | no | default |
-| impuesto_porcentaje | NUMERIC(7,2) | no |  | no | default |
-| auto_programar_limpieza | INTEGER | no |  | no | default |
-| permitir_reservas_publicas | INTEGER | no |  | no | default |
-| requerir_documento_huesped | INTEGER | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_apartamentos_turisticos_reservas
-
-Fuente: backend/db/apartamentos_turisticos.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| apartamento_id | BIGINT | no |  | si |  |
-| cliente_id | BIGINT | no |  | no |  |
-| servicio_id | BIGINT | no |  | no |  |
-| carrito_id | BIGINT | no |  | no |  |
-| carrito_item_id | BIGINT | no |  | no |  |
-| codigo_reserva | TEXT | no |  | si |  |
-| huesped_nombre | TEXT | no |  | si |  |
-| huesped_documento | TEXT | no |  | no |  |
-| huesped_telefono | TEXT | no |  | no |  |
-| huesped_email | TEXT | no |  | no |  |
-| cantidad_huespedes | INTEGER | no |  | no | default |
-| fecha_entrada | TEXT | no |  | si |  |
-| fecha_salida | TEXT | no |  | si |  |
-| noches | INTEGER | no |  | no | default |
-| canal | TEXT | no |  | no | default |
-| metodo_pago | TEXT | no |  | no | default |
-| estado_reserva | TEXT | no |  | no | default |
-| estado_pago | TEXT | no |  | no | default |
-| subtotal | NUMERIC(14,2) | no |  | no | default |
-| limpieza | NUMERIC(14,2) | no |  | no | default |
-| impuestos | NUMERIC(14,2) | no |  | no | default |
-| deposito | NUMERIC(14,2) | no |  | no | default |
-| total | NUMERIC(14,2) | no |  | no | default |
-| saldo_pendiente | NUMERIC(14,2) | no |  | no | default |
-| codigo_acceso | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| fecha_check_in | TEXT | no |  | no |  |
-| fecha_check_out | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_apartamentos_turisticos_tareas
-
-Fuente: backend/db/apartamentos_turisticos.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| apartamento_id | BIGINT | no |  | si |  |
-| reserva_id | BIGINT | no |  | no | default |
-| tipo | TEXT | no |  | no | default |
-| prioridad | TEXT | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| responsable | TEXT | no |  | no |  |
-| fecha_programada | TEXT | no |  | no |  |
-| fecha_cierre | TEXT | no |  | no |  |
-| costo_estimado | NUMERIC(14,2) | no |  | no | default |
-| costo_real | NUMERIC(14,2) | no |  | no | default |
-| descripcion | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_apartamentos_turisticos_tarifas
-
-Fuente: backend/db/apartamentos_turisticos.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| apartamento_id | BIGINT | no |  | no | default |
-| nombre | TEXT | no |  | si |  |
-| canal | TEXT | no |  | no | default |
-| fecha_desde | TEXT | no |  | no |  |
-| fecha_hasta | TEXT | no |  | no |  |
-| precio_noche | NUMERIC(14,2) | no |  | no | default |
-| minimo_noches | INTEGER | no |  | no | default |
-| descuento_semanal | NUMERIC(7,2) | no |  | no | default |
-| descuento_mensual | NUMERIC(7,2) | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_apartamentos_turisticos_unidades
-
-Fuente: backend/db/apartamentos_turisticos.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| servicio_id | BIGINT | no |  | no |  |
-| codigo | TEXT | no |  | si |  |
-| nombre | TEXT | no |  | si |  |
-| tipo | TEXT | no |  | no | default |
-| ubicacion | TEXT | no |  | no |  |
-| capacidad | INTEGER | no |  | no | default |
-| habitaciones | INTEGER | no |  | no | default |
-| camas | INTEGER | no |  | no | default |
-| banos | INTEGER | no |  | no | default |
-| precio_base_noche | NUMERIC(14,2) | no |  | no | default |
-| tarifa_limpieza | NUMERIC(14,2) | no |  | no | default |
-| deposito_sugerido | NUMERIC(14,2) | no |  | no | default |
-| estado_operativo | TEXT | no |  | no | default |
-| estado_ocupacion | TEXT | no |  | no | default |
-| url_foto | TEXT | no |  | no |  |
-| amenidades | TEXT | no |  | no |  |
-| reglas_casa | TEXT | no |  | no |  |
-| notas | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
 | usuario_creador | TEXT | no |  | no |  |
 
 #### empresa_backups
@@ -2896,205 +2723,6 @@ Fuente: backend/db/empresa_estacion_prefs.go
 | estado | TEXT | no |  | no | default |
 | observaciones | TEXT | no |  | no |  |
 
-#### empresa_gimnasio_acceso_config
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si | unique |
-| modo_validacion_principal | TEXT | no |  | no | default |
-| permitir_rfid | INTEGER | no |  | no | default |
-| permitir_nfc | INTEGER | no |  | no | default |
-| permitir_qr | INTEGER | no |  | no | default |
-| permitir_pin | INTEGER | no |  | no | default |
-| permitir_biometria | INTEGER | no |  | no | default |
-| permitir_facial | INTEGER | no |  | no | default |
-| anti_passback_minutos | INTEGER | no |  | no | default |
-| minutos_tolerancia_mora | INTEGER | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_clases
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| nombre | TEXT | no |  | si |  |
-| categoria | TEXT | no |  | no |  |
-| entrenador_id | INTEGER | no |  | no |  |
-| sede | TEXT | no |  | no |  |
-| canal | TEXT | no |  | no |  |
-| cupos | INTEGER | no |  | no | default |
-| duracion_minutos | INTEGER | no |  | no | default |
-| fecha_programada | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| precio | REAL | no |  | no | default |
-| descripcion | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_dispositivos_acceso
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| nombre | TEXT | no |  | si |  |
-| tipo_dispositivo | TEXT | no |  | si |  |
-| ubicacion | TEXT | no |  | no |  |
-| sede | TEXT | no |  | no |  |
-| canal | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| identificador | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_entrenadores
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| nombre_completo | TEXT | no |  | si |  |
-| especialidad | TEXT | no |  | no |  |
-| telefono | TEXT | no |  | no |  |
-| email | TEXT | no |  | no |  |
-| certificaciones | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| disponibilidad | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_eventos_acceso
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| socio_id | INTEGER | no |  | no |  |
-| credencial_id | INTEGER | no |  | no |  |
-| dispositivo_id | INTEGER | no |  | no |  |
-| codigo_credencial | TEXT | no |  | no |  |
-| metodo_acceso | TEXT | no |  | no |  |
-| resultado | TEXT | no |  | no | default |
-| motivo | TEXT | no |  | no |  |
-| fecha_evento | TEXT | no |  | no | default |
-| canal | TEXT | no |  | no |  |
-| sede | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_inscripciones
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| socio_id | INTEGER | no |  | si |  |
-| clase_id | INTEGER | no |  | si |  |
-| estado | TEXT | no |  | no | default |
-| fecha_inscripcion | TEXT | no |  | no | default |
-| asistencia_marcada | INTEGER | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_pagos
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| socio_id | INTEGER | no |  | si |  |
-| cliente_id | INTEGER | no |  | no |  |
-| plan_id | INTEGER | no |  | no |  |
-| servicio_id | INTEGER | no |  | no |  |
-| carrito_id | INTEGER | no |  | no |  |
-| carrito_item_id | INTEGER | no |  | no |  |
-| concepto | TEXT | no |  | si |  |
-| monto | REAL | no |  | no | default |
-| moneda | TEXT | no |  | no | default |
-| metodo_pago | TEXT | no |  | no | default |
-| canal | TEXT | no |  | no |  |
-| sede | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| referencia | TEXT | no |  | no |  |
-| fecha_pago | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_planes
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| servicio_id | INTEGER | no |  | no |  |
-| nombre | TEXT | no |  | si |  |
-| descripcion | TEXT | no |  | no |  |
-| precio | REAL | no |  | no | default |
-| duracion_dias | INTEGER | no |  | no | default |
-| clases_incluidas | INTEGER | no |  | no | default |
-| acceso_ilimitado | INTEGER | no |  | no | default |
-| sesiones_personalizadas | INTEGER | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_socios
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| cliente_id | INTEGER | no |  | no |  |
-| codigo | TEXT | no |  | no |  |
-| nombre_completo | TEXT | no |  | si |  |
-| documento | TEXT | no |  | no |  |
-| telefono | TEXT | no |  | no |  |
-| email | TEXT | no |  | no |  |
-| fecha_nacimiento | TEXT | no |  | no |  |
-| genero | TEXT | no |  | no |  |
-| objetivo | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| plan_id | INTEGER | no |  | no |  |
-| fecha_inicio_plan | TEXT | no |  | no |  |
-| fecha_fin_plan | TEXT | no |  | no |  |
-| saldo | REAL | no |  | no | default |
-| contacto_emergencia_nombre | TEXT | no |  | no |  |
-| contacto_emergencia_telefono | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
 #### empresa_gps_dispositivos
 
 Fuente: backend/db/ubicacion_gps.go
@@ -3590,157 +3218,6 @@ Fuente: backend/db/modulos_faltantes.go
 | estado | TEXT | no |  | no | default |
 | observaciones | TEXT | no |  | no |  |
 
-#### empresa_propiedad_horizontal_asambleas
-
-Fuente: backend/db/propiedad_horizontal.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| titulo | TEXT | no |  | si |  |
-| tipo_asamblea | TEXT | no |  | no | default |
-| fecha | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| quorum_objetivo | NUMERIC(8,4) | no |  | no | default |
-| quorum_actual | NUMERIC(8,4) | no |  | no | default |
-| acta_url | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_propiedad_horizontal_cargos
-
-Fuente: backend/db/propiedad_horizontal.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| unidad_id | BIGINT | no |  | si |  |
-| servicio_id | BIGINT | no |  | no |  |
-| periodo | TEXT | no |  | si |  |
-| concepto | TEXT | no |  | si |  |
-| tipo_cargo | TEXT | no |  | no | default |
-| valor_base | NUMERIC(14,2) | no |  | no | default |
-| interes_mora | NUMERIC(14,2) | no |  | no | default |
-| descuento | NUMERIC(14,2) | no |  | no | default |
-| total | NUMERIC(14,2) | no |  | no | default |
-| saldo_pendiente | NUMERIC(14,2) | no |  | no | default |
-| fecha_vencimiento | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_propiedad_horizontal_config
-
-Fuente: backend/db/propiedad_horizontal.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| empresa_id | BIGINT | si |  | no |  |
-| nombre_copropiedad | TEXT | no |  | no |  |
-| nit | TEXT | no |  | no |  |
-| tipo_copropiedad | TEXT | no |  | no | default |
-| direccion | TEXT | no |  | no |  |
-| ciudad | TEXT | no |  | no |  |
-| administrador | TEXT | no |  | no |  |
-| telefono | TEXT | no |  | no |  |
-| email | TEXT | no |  | no |  |
-| interes_mora_mensual | NUMERIC(8,4) | no |  | no | default |
-| dias_gracia | INTEGER | no |  | no | default |
-| facturacion_electronica | INTEGER | no |  | no | default |
-| permitir_portal_residente | INTEGER | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_propiedad_horizontal_personas
-
-Fuente: backend/db/propiedad_horizontal.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| unidad_id | BIGINT | no |  | no | default |
-| cliente_id | BIGINT | no |  | no |  |
-| tipo_relacion | TEXT | no |  | no | default |
-| nombre | TEXT | no |  | si |  |
-| documento | TEXT | no |  | no |  |
-| telefono | TEXT | no |  | no |  |
-| email | TEXT | no |  | no |  |
-| contacto_emergencia | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_propiedad_horizontal_pqrs
-
-Fuente: backend/db/propiedad_horizontal.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| unidad_id | BIGINT | no |  | no | default |
-| tipo | TEXT | no |  | no | default |
-| prioridad | TEXT | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| asunto | TEXT | no |  | si |  |
-| descripcion | TEXT | no |  | no |  |
-| responsable | TEXT | no |  | no |  |
-| fecha_limite | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_propiedad_horizontal_recaudos
-
-Fuente: backend/db/propiedad_horizontal.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| cargo_id | BIGINT | no |  | no | default |
-| unidad_id | BIGINT | no |  | si |  |
-| cliente_id | BIGINT | no |  | no |  |
-| servicio_id | BIGINT | no |  | no |  |
-| carrito_id | BIGINT | no |  | no |  |
-| carrito_item_id | BIGINT | no |  | no |  |
-| fecha_pago | TEXT | no |  | no |  |
-| metodo_pago | TEXT | no |  | no | default |
-| referencia | TEXT | no |  | no |  |
-| valor_pagado | NUMERIC(14,2) | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_propiedad_horizontal_unidades
-
-Fuente: backend/db/propiedad_horizontal.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| servicio_id | BIGINT | no |  | no |  |
-| codigo | TEXT | no |  | si |  |
-| torre | TEXT | no |  | no |  |
-| piso | TEXT | no |  | no |  |
-| tipo_unidad | TEXT | no |  | no | default |
-| area_m2 | NUMERIC(14,2) | no |  | no | default |
-| coeficiente | NUMERIC(12,6) | no |  | no | default |
-| cuota_base | NUMERIC(14,2) | no |  | no | default |
-| parqueadero | TEXT | no |  | no |  |
-| deposito | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
 #### empresa_propinas_configuracion
 
 Fuente: backend/db/propinas.go
@@ -4008,160 +3485,6 @@ Fuente: backend/db/tarifas_por_minutos.go
 | usuario_creador | TEXT | no |  | no |  |
 | estado | TEXT | no |  | no | default |
 | observaciones | TEXT | no |  | no |  |
-
-#### empresa_taxi_config
-
-Fuente: backend/db/taxi_system.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| empresa_id | BIGINT | si |  | no |  |
-| nombre_sistema | TEXT | no |  | no | default |
-| nombre_portal | TEXT | no |  | no | default |
-| radio_busqueda_km | NUMERIC(10,2) | no |  | no | default |
-| conductores_por_ronda | INTEGER | no |  | no | default |
-| timeout_oferta_segundos | INTEGER | no |  | no | default |
-| permitir_registro_cliente | INTEGER | no |  | no | default |
-| permitir_ubicacion_cliente | INTEGER | no |  | no | default |
-| permitir_despacho_automatico | INTEGER | no |  | no | default |
-| latitud_base | NUMERIC(12,8) | no |  | no | default |
-| longitud_base | NUMERIC(12,8) | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_taxi_customers
-
-Fuente: backend/db/taxi_system.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| cliente_id | BIGINT | no |  | no |  |
-| nombre | TEXT | no |  | si |  |
-| documento | TEXT | no |  | no |  |
-| telefono | TEXT | no |  | si |  |
-| email | TEXT | no |  | no |  |
-| pin_hash | TEXT | no |  | no |  |
-| pin_salt | TEXT | no |  | no |  |
-| token_sesion | TEXT | no |  | no |  |
-| token_expira | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-
-#### empresa_taxi_drivers
-
-Fuente: backend/db/taxi_system.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| codigo | TEXT | no |  | si |  |
-| nombre | TEXT | no |  | si |  |
-| documento | TEXT | no |  | si |  |
-| telefono | TEXT | no |  | no |  |
-| email | TEXT | no |  | no |  |
-| vehiculo_placa | TEXT | no |  | no |  |
-| vehiculo_modelo | TEXT | no |  | no |  |
-| vehiculo_tipo | TEXT | no |  | no |  |
-| vehiculo_color | TEXT | no |  | no |  |
-| licencia_conduccion | TEXT | no |  | no |  |
-| gps_dispositivo_id | BIGINT | no |  | no | default |
-| gps_codigo | TEXT | no |  | no |  |
-| gps_tipo | TEXT | no |  | no | default |
-| gps_proveedor | TEXT | no |  | no |  |
-| gps_protocolo | TEXT | no |  | no | default |
-| pin_hash | TEXT | no |  | no |  |
-| pin_salt | TEXT | no |  | no |  |
-| token_sesion | TEXT | no |  | no |  |
-| token_expira | TEXT | no |  | no |  |
-| ultima_latitud | NUMERIC(12,8) | no |  | no | default |
-| ultima_longitud | NUMERIC(12,8) | no |  | no | default |
-| ultima_precision_metros | NUMERIC(10,2) | no |  | no | default |
-| ultima_velocidad_kmh | NUMERIC(10,2) | no |  | no | default |
-| ultimo_reporte_en | TEXT | no |  | no |  |
-| online | INTEGER | no |  | no | default |
-| disponible | INTEGER | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-
-#### empresa_taxi_offers
-
-Fuente: backend/db/taxi_system.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| request_id | BIGINT | no |  | si |  |
-| conductor_id | BIGINT | no |  | si |  |
-| distancia_km | NUMERIC(10,2) | no |  | no | default |
-| tiempo_aproximado_min | NUMERIC(10,2) | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| fecha_oferta | TEXT | no |  | no | default |
-| fecha_respuesta | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-
-#### empresa_taxi_requests
-
-Fuente: backend/db/taxi_system.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| customer_id | BIGINT | no |  | no |  |
-| cliente_id | BIGINT | no |  | no |  |
-| servicio_id | BIGINT | no |  | no |  |
-| carrito_id | BIGINT | no |  | no |  |
-| carrito_item_id | BIGINT | no |  | no |  |
-| conductor_id | BIGINT | no |  | no |  |
-| codigo_servicio | TEXT | no |  | si |  |
-| cliente_nombre | TEXT | no |  | si |  |
-| cliente_telefono | TEXT | no |  | si |  |
-| cliente_documento | TEXT | no |  | no |  |
-| recoger_texto | TEXT | no |  | si |  |
-| recoger_latitud | NUMERIC(12,8) | no |  | si |  |
-| recoger_longitud | NUMERIC(12,8) | no |  | si |  |
-| destino_texto | TEXT | no |  | no |  |
-| destino_latitud | NUMERIC(12,8) | no |  | no | default |
-| destino_longitud | NUMERIC(12,8) | no |  | no | default |
-| comparte_ubicacion_cliente | INTEGER | no |  | no | default |
-| metodo_solicitud | TEXT | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| canal | TEXT | no |  | no | default |
-| notas | TEXT | no |  | no |  |
-| distancia_estimada_km | NUMERIC(10,2) | no |  | no | default |
-| tiempo_estimado_min | NUMERIC(10,2) | no |  | no | default |
-| tarifa_estimada | NUMERIC(12,2) | no |  | no | default |
-| metodo_pago | TEXT | no |  | no |  |
-| fecha_solicitud | TEXT | no |  | no | default |
-| fecha_aceptacion | TEXT | no |  | no |  |
-| fecha_inicio | TEXT | no |  | no |  |
-| fecha_cierre | TEXT | no |  | no |  |
-
-#### empresa_taxi_route_points
-
-Fuente: backend/db/taxi_system.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | BIGINT | no |  | si |  |
-| request_id | BIGINT | no |  | no |  |
-| conductor_id | BIGINT | no |  | no |  |
-| actor_tipo | TEXT | no |  | si |  |
-| latitud | NUMERIC(12,8) | no |  | si |  |
-| longitud | NUMERIC(12,8) | no |  | si |  |
-| precision_metros | NUMERIC(10,2) | no |  | no | default |
-| velocidad_kmh | NUMERIC(10,2) | no |  | no | default |
-| rumbo_grados | NUMERIC(10,2) | no |  | no | default |
-| capturado_en | TEXT | no |  | no | default |
 
 #### empresa_vehiculos_configuracion
 
@@ -5190,24 +4513,6 @@ Fuente: backend/db/finanzas.go
 | fecha_actualizacion | TEXT | no |  | no | default |
 | usuario_creador | TEXT | no |  | no |  |
 | observaciones | TEXT | no |  | no |  |
-
-#### empresa_gimnasio_asistencias
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| socio_id | INTEGER | no |  | si |  |
-| clase_id | INTEGER | no |  | no |  |
-| fecha_hora | TEXT | no |  | no | default |
-| tipo_acceso | TEXT | no |  | no | default |
-| canal | TEXT | no |  | no |  |
-| sede | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
 
 #### empresa_impuestos_config
 
@@ -6405,55 +5710,6 @@ Fuente: backend/db/energia_solar.go
 | estado | TEXT | no |  | no | default |
 | observaciones | TEXT | no |  | no |  |
 
-#### empresa_gimnasio_credenciales
-
-Fuente: backend/db/gimnasio.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| socio_id | INTEGER | no |  | si |  |
-| tipo_credencial | TEXT | no |  | si |  |
-| codigo_credencial | TEXT | no |  | si |  |
-| alias_credencial | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| fecha_expiracion | TEXT | no |  | no |  |
-| ultimo_uso | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_grafologia_analisis
-
-Fuente: backend/db/grafologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| cliente_id | INTEGER | no |  | no | default |
-| cliente_nombre | TEXT | no |  | no |  |
-| cliente_documento | TEXT | no |  | no |  |
-| persona_descripcion | TEXT | no |  | no |  |
-| persona_caracteristicas | TEXT | no |  | no |  |
-| titulo | TEXT | no |  | no |  |
-| archivo_nombre | TEXT | no |  | no |  |
-| imagen_url | TEXT | no |  | no |  |
-| imagen_mime | TEXT | no |  | no |  |
-| ocr_texto | TEXT | no |  | no |  |
-| ocr_motor | TEXT | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| resumen | TEXT | no |  | no |  |
-| metricas_json | TEXT | no |  | no |  |
-| interpretacion_json | TEXT | no |  | no |  |
-| preprocesamiento_json | TEXT | no |  | no |  |
-| reporte_html | TEXT | no |  | no |  |
-| confianza_global | REAL | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-
 #### empresa_licencias_adicionales
 
 Fuente: backend/db/licencias_adicionales.go
@@ -6572,207 +5828,6 @@ Fuente: backend/db/modulos_empresariales_colombia.go
 | usuario_creador | TEXT | no |  | no |  |
 | fecha_creacion | TEXT | no |  | no | default |
 | fecha_actualizacion | TEXT | no |  | no | default |
-
-#### empresa_odontologia_citas
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| paciente_id | INTEGER | no |  | si |  |
-| profesional_id | INTEGER | no |  | si |  |
-| consultorio_id | INTEGER | no |  | no | default |
-| fecha_hora | TEXT | no |  | si |  |
-| duracion_minutos | INTEGER | no |  | no | default |
-| motivo | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| canal | TEXT | no |  | no |  |
-| prioridad | TEXT | no |  | no |  |
-| aseguradora | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_odontologia_consultorios
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| nombre | TEXT | no |  | si |  |
-| sede | TEXT | no |  | no |  |
-| sillon | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_odontologia_historias
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| paciente_id | INTEGER | no |  | si |  |
-| profesional_id | INTEGER | no |  | no | default |
-| cita_id | INTEGER | no |  | no | default |
-| fecha_atencion | TEXT | no |  | no |  |
-| motivo_consulta | TEXT | no |  | no |  |
-| diagnostico | TEXT | no |  | no |  |
-| plan_tratamiento | TEXT | no |  | no |  |
-| evolucion | TEXT | no |  | no |  |
-| formula | TEXT | no |  | no |  |
-| recomendaciones | TEXT | no |  | no |  |
-| proxima_cita | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_odontologia_odontogramas
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| paciente_id | INTEGER | no |  | si |  |
-| profesional_id | INTEGER | no |  | no | default |
-| fecha_registro | TEXT | no |  | no |  |
-| piezas_json | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_odontologia_pacientes
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| cliente_id | INTEGER | no |  | no |  |
-| codigo | TEXT | no |  | no |  |
-| nombre_completo | TEXT | no |  | si |  |
-| documento | TEXT | no |  | no |  |
-| telefono | TEXT | no |  | no |  |
-| email | TEXT | no |  | no |  |
-| fecha_nacimiento | TEXT | no |  | no |  |
-| genero | TEXT | no |  | no |  |
-| aseguradora | TEXT | no |  | no |  |
-| alergias | TEXT | no |  | no |  |
-| riesgo_medico | TEXT | no |  | no |  |
-| ultima_visita | TEXT | no |  | no |  |
-| saldo | REAL | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_odontologia_pagos
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| paciente_id | INTEGER | no |  | no | default |
-| cliente_id | INTEGER | no |  | no |  |
-| presupuesto_id | INTEGER | no |  | no | default |
-| servicio_id | INTEGER | no |  | no |  |
-| carrito_id | INTEGER | no |  | no |  |
-| carrito_item_id | INTEGER | no |  | no |  |
-| concepto | TEXT | no |  | si |  |
-| monto | REAL | no |  | no | default |
-| metodo_pago | TEXT | no |  | no |  |
-| referencia | TEXT | no |  | no |  |
-| fecha_pago | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_odontologia_presupuestos
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| paciente_id | INTEGER | no |  | si |  |
-| tratamiento_id | INTEGER | no |  | no | default |
-| nombre | TEXT | no |  | si |  |
-| valor_total | REAL | no |  | no | default |
-| cuota_inicial | REAL | no |  | no | default |
-| saldo | REAL | no |  | no | default |
-| estado | TEXT | no |  | no | default |
-| vigencia_hasta | TEXT | no |  | no |  |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_odontologia_profesionales
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| nombre_completo | TEXT | no |  | si |  |
-| especialidad | TEXT | no |  | no |  |
-| registro_profesional | TEXT | no |  | no |  |
-| telefono | TEXT | no |  | no |  |
-| email | TEXT | no |  | no |  |
-| color_agenda | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
-
-#### empresa_odontologia_tratamientos
-
-Fuente: backend/db/odontologia.go
-
-| Columna | Tipo | PK | FK fisica | Not null | Default/Unique |
-|---|---|---:|---|---:|---|
-| id | BIGSERIAL | si |  | no |  |
-| empresa_id | INTEGER | no |  | si |  |
-| servicio_id | INTEGER | no |  | no |  |
-| paciente_id | INTEGER | no |  | si |  |
-| profesional_id | INTEGER | no |  | no | default |
-| nombre | TEXT | no |  | si |  |
-| categoria | TEXT | no |  | no |  |
-| piezas | TEXT | no |  | no |  |
-| sesiones_total | INTEGER | no |  | no | default |
-| sesiones_realizadas | INTEGER | no |  | no | default |
-| costo_estimado | REAL | no |  | no | default |
-| costo_real | REAL | no |  | no | default |
-| fecha_inicio | TEXT | no |  | no |  |
-| fecha_fin | TEXT | no |  | no |  |
-| estado | TEXT | no |  | no | default |
-| observaciones | TEXT | no |  | no |  |
-| fecha_creacion | TEXT | no |  | no | default |
-| fecha_actualizacion | TEXT | no |  | no | default |
-| usuario_creador | TEXT | no |  | no |  |
 
 #### empresa_publicaciones_red_social
 
@@ -9911,13 +8966,6 @@ Fuente: backend/db/productos.go
 | empresa_alquileres_mantenimientos | empresa_id | empresas.id |
 | empresa_alquileres_tarifas | empresa_id | empresas.id |
 | empresa_alquileres_ubicaciones | empresa_id | empresas.id |
-| empresa_apartamentos_turisticos_config | empresa_id | empresas.id |
-| empresa_apartamentos_turisticos_reservas | carrito_id | carritos_compras.id |
-| empresa_apartamentos_turisticos_reservas | cliente_id | clientes.id |
-| empresa_apartamentos_turisticos_reservas | empresa_id | empresas.id |
-| empresa_apartamentos_turisticos_tareas | empresa_id | empresas.id |
-| empresa_apartamentos_turisticos_tarifas | empresa_id | empresas.id |
-| empresa_apartamentos_turisticos_unidades | empresa_id | empresas.id |
 | empresa_asientos_contables | empresa_id | empresas.id |
 | empresa_asistencia_configuracion | empresa_id | empresas.id |
 | empresa_asistencia_empleados | empresa_id | empresas.id |
@@ -10053,26 +9101,8 @@ Fuente: backend/db/productos.go
 | empresa_finanzas_configuracion | empresa_id | empresas.id |
 | empresa_finanzas_movimientos | empresa_id | empresas.id |
 | empresa_finanzas_periodos | empresa_id | empresas.id |
-| empresa_gimnasio_acceso_config | empresa_id | empresas.id |
-| empresa_gimnasio_asistencias | empresa_id | empresas.id |
-| empresa_gimnasio_clases | empresa_id | empresas.id |
-| empresa_gimnasio_credenciales | empresa_id | empresas.id |
-| empresa_gimnasio_dispositivos_acceso | empresa_id | empresas.id |
-| empresa_gimnasio_entrenadores | empresa_id | empresas.id |
-| empresa_gimnasio_eventos_acceso | empresa_id | empresas.id |
-| empresa_gimnasio_inscripciones | empresa_id | empresas.id |
-| empresa_gimnasio_pagos | carrito_id | carritos_compras.id |
-| empresa_gimnasio_pagos | cliente_id | clientes.id |
-| empresa_gimnasio_pagos | empresa_id | empresas.id |
-| empresa_gimnasio_pagos | plan_id | planes.id |
-| empresa_gimnasio_planes | empresa_id | empresas.id |
-| empresa_gimnasio_socios | cliente_id | clientes.id |
-| empresa_gimnasio_socios | empresa_id | empresas.id |
-| empresa_gimnasio_socios | plan_id | planes.id |
 | empresa_gps_dispositivos | empresa_id | empresas.id |
 | empresa_gps_recorridos | empresa_id | empresas.id |
-| empresa_grafologia_analisis | cliente_id | clientes.id |
-| empresa_grafologia_analisis | empresa_id | empresas.id |
 | empresa_hoja_vida_alertas | empresa_id | empresas.id |
 | empresa_hoja_vida_entidades | cliente_id | clientes.id |
 | empresa_hoja_vida_entidades | empresa_id | empresas.id |
@@ -10120,18 +9150,6 @@ Fuente: backend/db/productos.go
 | empresa_nomina_festivos | empresa_id | empresas.id |
 | empresa_nomina_liquidaciones | empresa_id | empresas.id |
 | empresa_nomina_pagos | empresa_id | empresas.id |
-| empresa_odontologia_citas | empresa_id | empresas.id |
-| empresa_odontologia_consultorios | empresa_id | empresas.id |
-| empresa_odontologia_historias | empresa_id | empresas.id |
-| empresa_odontologia_odontogramas | empresa_id | empresas.id |
-| empresa_odontologia_pacientes | cliente_id | clientes.id |
-| empresa_odontologia_pacientes | empresa_id | empresas.id |
-| empresa_odontologia_pagos | carrito_id | carritos_compras.id |
-| empresa_odontologia_pagos | cliente_id | clientes.id |
-| empresa_odontologia_pagos | empresa_id | empresas.id |
-| empresa_odontologia_presupuestos | empresa_id | empresas.id |
-| empresa_odontologia_profesionales | empresa_id | empresas.id |
-| empresa_odontologia_tratamientos | empresa_id | empresas.id |
 | empresa_ordenes_compra_items | empresa_id | empresas.id |
 | empresa_ordenes_compra_items | producto_id | productos.id |
 | empresa_ordenes_compra | empresa_id | empresas.id |
@@ -10165,16 +9183,6 @@ Fuente: backend/db/productos.go
 | empresa_produccion_receta_componentes | empresa_id | empresas.id |
 | empresa_produccion_receta_componentes | producto_id | productos.id |
 | empresa_produccion_recetas | empresa_id | empresas.id |
-| empresa_propiedad_horizontal_asambleas | empresa_id | empresas.id |
-| empresa_propiedad_horizontal_cargos | empresa_id | empresas.id |
-| empresa_propiedad_horizontal_config | empresa_id | empresas.id |
-| empresa_propiedad_horizontal_personas | cliente_id | clientes.id |
-| empresa_propiedad_horizontal_personas | empresa_id | empresas.id |
-| empresa_propiedad_horizontal_pqrs | empresa_id | empresas.id |
-| empresa_propiedad_horizontal_recaudos | carrito_id | carritos_compras.id |
-| empresa_propiedad_horizontal_recaudos | cliente_id | clientes.id |
-| empresa_propiedad_horizontal_recaudos | empresa_id | empresas.id |
-| empresa_propiedad_horizontal_unidades | empresa_id | empresas.id |
 | empresa_propinas_configuracion | empresa_id | empresas.id |
 | empresa_propinas_movimientos | carrito_id | carritos_compras.id |
 | empresa_propinas_movimientos | empresa_id | empresas.id |
@@ -10202,15 +9210,6 @@ Fuente: backend/db/productos.go
 | empresa_tarifas_por_dia | empresa_id | empresas.id |
 | empresa_tarifas_por_minutos_configuracion | empresa_id | empresas.id |
 | empresa_tarifas_por_minutos | empresa_id | empresas.id |
-| empresa_taxi_config | empresa_id | empresas.id |
-| empresa_taxi_customers | cliente_id | clientes.id |
-| empresa_taxi_customers | empresa_id | empresas.id |
-| empresa_taxi_drivers | empresa_id | empresas.id |
-| empresa_taxi_offers | empresa_id | empresas.id |
-| empresa_taxi_requests | carrito_id | carritos_compras.id |
-| empresa_taxi_requests | cliente_id | clientes.id |
-| empresa_taxi_requests | empresa_id | empresas.id |
-| empresa_taxi_route_points | empresa_id | empresas.id |
 | empresa_tesoreria_config | empresa_id | empresas.id |
 | empresa_tesoreria_cuentas | empresa_id | empresas.id |
 | empresa_tesoreria_flujo_caja | empresa_id | empresas.id |

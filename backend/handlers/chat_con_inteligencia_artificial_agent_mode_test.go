@@ -3,10 +3,10 @@ package handlers
 import "testing"
 
 func TestEmpresaAIChatAgentForModeIsServerOwned(t *testing.T) {
-	if got := empresaAIChatAgentForMode(false); got != "general" {
-		t.Fatalf("modo normal = %q, want general", got)
+	if got := empresaAIChatAgentForMode(false); got != "agente_pcs" {
+		t.Fatalf("crafted normal mode = %q, want permanent PCS agent", got)
 	}
-	if got := empresaAIChatAgentForMode(true); got != "agente_configuracion_de_empresa" {
-		t.Fatalf("modo agente = %q, want closed configuration agent", got)
+	if got := empresaAIChatAgentForMode(true); got != "agente_pcs" {
+		t.Fatalf("agent mode = %q, want permanent PCS agent", got)
 	}
 }

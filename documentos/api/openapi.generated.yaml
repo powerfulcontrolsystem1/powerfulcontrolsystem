@@ -176,19 +176,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/apartamentos_turisticos":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/apartamentos_turisticos
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/apartamentos_turisticos
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/asistencia_empleados":
     get:
       tags: [empresa]
@@ -917,19 +904,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/drogueria_farmacia":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/drogueria_farmacia
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/drogueria_farmacia
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/email_corporativo":
     get:
       tags: [empresa]
@@ -1187,45 +1161,6 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/gestion_documental
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/gimnasio":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/gimnasio
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/gimnasio
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/grafologia":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/grafologia
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/grafologia
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/grafologia/archivo":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/grafologia/archivo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/grafologia/archivo
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -1684,19 +1619,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/odontologia":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/odontologia
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/odontologia
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/offline_ventas":
     get:
       tags: [empresa]
@@ -1863,19 +1785,6 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/productos/precios_historial
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/propiedad_horizontal":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/propiedad_horizontal
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/propiedad_horizontal
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -2113,19 +2022,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/taxi_system":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/taxi_system
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/taxi_system
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/tesoreria_presupuesto":
     get:
       tags: [empresa]
@@ -2305,6 +2201,19 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/venta_publica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/vida":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/vida
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/vida
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -2663,19 +2572,6 @@ paths:
     post:
       tags: [publico]
       summary: Ruta inventariada /api/public/soporte_remoto
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/api/public/taxi_system":
-    get:
-      tags: [publico]
-      summary: Ruta inventariada /api/public/taxi_system
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [publico]
-      summary: Ruta inventariada /api/public/taxi_system
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -3157,6 +3053,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/administradores/solicitar_recuperacion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/administrar_disco_vps":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administrar_disco_vps
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/administrar_disco_vps
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

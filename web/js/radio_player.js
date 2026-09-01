@@ -83,6 +83,28 @@
     return PREFS_ENDPOINT + "?empresa_id=" + encodeURIComponent(String(empresaId));
   }
 
+  function loadSharedPreferences() {
+    var url = buildPrefsEndpoint();
+    if (window.PCSRequestCache && typeof window.PCSRequestCache.getJSON === "function") {
+      return window.PCSRequestCache.getJSON(url, {
+        credentials: "same-origin",
+        ttlMs: 5000
+      }).then(function (result) {
+        return result && result.ok ? (result.data || {}) : {};
+      });
+    }
+    return fetch(url, { credentials: "same-origin" }).then(function (res) {
+      if (!res.ok) return {};
+      return res.json();
+    });
+  }
+
+  function invalidateSharedPreferences() {
+    if (window.PCSRequestCache && typeof window.PCSRequestCache.invalidate === "function") {
+      window.PCSRequestCache.invalidate(buildPrefsEndpoint());
+    }
+  }
+
   function buildCountryEndpoint() {
     var empresaId = getCurrentEmpresaId();
     var tz = "";
@@ -297,6 +319,7 @@
       if (!res.ok) throw new Error("No se pudo guardar la emisora.");
       return res.json();
     }).then(function (data) {
+      invalidateSharedPreferences();
       applyPreferencePayload(data || {});
     }).catch(function (err) {
       if (enabledStatus) {
@@ -358,11 +381,7 @@
   }
 
   function loadCompanyRadioPreference() {
-    fetch(buildPrefsEndpoint(), { credentials: "same-origin" })
-      .then(function (res) {
-        if (!res.ok) return {};
-        return res.json();
-      })
+    return loadSharedPreferences()
       .then(function (data) {
         applyPreferencePayload(data || {});
         if (state.countryCode) return null;

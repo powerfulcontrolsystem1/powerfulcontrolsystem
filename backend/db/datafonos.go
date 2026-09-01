@@ -286,7 +286,7 @@ func UpsertEmpresaDatafonoConfig(dbConn *sql.DB, cfg EmpresaDatafonoConfig) (int
 	}
 
 	if cfg.ID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_datafonos_config SET
+		result, err := execSQLCompat(dbConn, `UPDATE empresa_datafonos_config SET
 			proveedor = ?, nombre = ?, terminal_id = ?, comercio_id = ?, api_base_url = ?,
 			crear_pago_path = ?, consultar_pago_path = ?, auth_mode = ?, auth_header = ?,
 			api_key_ref = ?, timeout_ms = ?, moneda = ?, metodo_pago_pos = ?, activo = ?,
@@ -298,6 +298,13 @@ func UpsertEmpresaDatafonoConfig(dbConn *sql.DB, cfg EmpresaDatafonoConfig) (int
 			strings.TrimSpace(cfg.UsuarioCreador), estado, strings.TrimSpace(cfg.Observaciones), cfg.EmpresaID, cfg.ID)
 		if err != nil {
 			return 0, err
+		}
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return 0, err
+		}
+		if rows != 1 {
+			return 0, fmt.Errorf("configuracion de datafono no encontrada para esta empresa")
 		}
 		return cfg.ID, nil
 	}
@@ -481,17 +488,40 @@ func ValidateDatafonoAmountAndReference(req EmpresaDatafonoPaymentRequest, resp 
 	if NormalizeDatafonoEstadoPago(resp.EstadoPago) != DatafonoEstadoAprobado {
 		return nil
 	}
-	if resp.Monto > 0 && math.Abs(round2(resp.Monto)-round2(req.Monto)) > 0.01 {
+	if strings.TrimSpace(resp.ProviderTransactionID) == "" {
+		return fmt.Errorf("el proveedor no entrego identificador verificable de transaccion")
+	}
+	if resp.Monto <= 0 || math.IsNaN(resp.Monto) || math.IsInf(resp.Monto, 0) {
+		return fmt.Errorf("el proveedor no confirmo el monto de la transaccion")
+	}
+	if math.Abs(round2(resp.Monto)-round2(req.Monto)) > 0.01 {
 		return fmt.Errorf("monto confirmado por datafono no coincide con la venta")
 	}
-	if strings.TrimSpace(resp.Referencia) != "" && strings.TrimSpace(req.Referencia) != "" && strings.TrimSpace(resp.Referencia) != strings.TrimSpace(req.Referencia) {
+	if strings.TrimSpace(resp.Referencia) == "" {
+		return fmt.Errorf("el proveedor no confirmo la referencia de la venta")
+	}
+	if strings.TrimSpace(req.Referencia) != "" && strings.TrimSpace(resp.Referencia) != strings.TrimSpace(req.Referencia) {
 		return fmt.Errorf("referencia confirmada por datafono no coincide con la venta")
+	}
+	if NormalizeDatafonoMoneda(resp.Moneda) != NormalizeDatafonoMoneda(req.Moneda) {
+		return fmt.Errorf("moneda confirmada por datafono no coincide con la venta")
 	}
 	return nil
 }
 
 func DatafonoRequestJSON(req EmpresaDatafonoPaymentRequest) string {
-	raw, _ := json.Marshal(req)
+	safe := map[string]interface{}{
+		"empresa_id":        req.EmpresaID,
+		"config_id":         req.ConfigID,
+		"proveedor":         req.Proveedor,
+		"carrito_id":        req.CarritoID,
+		"monto":             req.Monto,
+		"moneda":            req.Moneda,
+		"referencia":        req.Referencia,
+		"metadata":          req.Metadata,
+		"cliente_informado": strings.TrimSpace(req.Cliente.Nombre) != "" || strings.TrimSpace(req.Cliente.Documento) != "" || strings.TrimSpace(req.Cliente.Email) != "" || strings.TrimSpace(req.Cliente.Telefono) != "",
+	}
+	raw, _ := json.Marshal(safe)
 	return string(raw)
 }
 

@@ -647,7 +647,7 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="productoImagen">Imagen / logo</label>
-            <input id="productoImagen" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.svg">
+            <input id="productoImagen" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp">
           </div>
         </div>
 
@@ -1157,6 +1157,7 @@
         <p id="inventarioProyeccionContexto" class="form-help">Proyección: cargando...</p>
 
       </section>
+	</section>
 
     <section class="card empresa-section" data-view-section="compras">
       <div class="empresa-section-header">
@@ -1427,6 +1428,21 @@
       messageBox.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
 
+    function publicAPIError(data, contentType, status, fallback) {
+      if (data && typeof data === 'object' && typeof data.error === 'string') {
+        return data.error;
+      }
+      const text = typeof data === 'string' ? data.trim() : '';
+      if (contentType.includes('text/plain') && text && text.length <= 300 && !/<\/?[a-z][\s\S]*>/i.test(text)) {
+        return text;
+      }
+      if (status === 401) return 'La sesión expiró. Ingresa nuevamente.';
+      if (status === 403) return 'No tienes permiso para realizar esta operación.';
+      if (status === 404) return 'La información solicitada no está disponible.';
+      if (status === 409) return 'La operación entra en conflicto con el estado actual. Actualiza la vista e intenta de nuevo.';
+      return fallback || 'No se pudo completar la operación.';
+    }
+
     async function requestJSON(url, options) {
       const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
       const contentType = resp.headers.get('content-type') || '';
@@ -1437,10 +1453,32 @@
         data = await resp.text();
       }
       if (!resp.ok) {
-        const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
-        throw new Error(msg || ('HTTP ' + resp.status));
+		throw new Error(publicAPIError(data, contentType, resp.status));
       }
       return data;
+    }
+
+    function inventarioIdempotencyKey(operation, reference) {
+      const fallback = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 12);
+      const raw = ['pcs', 'inventory', empresaId, operation, String(reference || fallback).trim()].join('-');
+      return raw.replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 200);
+    }
+
+    function inventarioMutationHeaders(operation, reference) {
+      return {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': inventarioIdempotencyKey(operation, reference)
+      };
+    }
+
+    function ensureInventarioMutationReference(inputId, prefix) {
+      const input = document.getElementById(inputId);
+      let reference = String(input && input.value ? input.value : '').trim();
+      if (!reference) {
+        reference = [prefix, empresaId, Date.now(), Math.random().toString(36).slice(2, 8)].join('-');
+        if (input) input.value = reference;
+      }
+      return reference;
     }
 
     function downloadBlob(blob, filename) {
@@ -1550,12 +1588,13 @@
     }
 
     function abrirCartaPreciosIA() {
-      const prompt = 'Actua como agente_configuracion_de_empresa. Voy a adjuntar una foto, PDF o imagen de una carta/lista de precios. Extrae productos, categorias, precios, impuestos, costos si aparecen, y presentame una tabla para revision humana. No guardes nada hasta que yo confirme. Si falta SKU o categoria, propon valores seguros por empresa_id.';
+      const prompt = 'Como Agente PCS, analiza la foto, PDF o imagen de una carta/lista de precios. Extrae productos, categorias, precios, impuestos y costos si aparecen, y presenta una tabla para revision humana. No guardes nada hasta que yo confirme. Si falta SKU o categoria, propon valores seguros dentro de la empresa activa.';
       try {
         window.postMessage({
           type: 'pcs-ai-drawer-open',
           mode: 'operativo',
-          agent_id: 'agente_configuracion_de_empresa',
+          agent_id: 'agente_pcs',
+          modo_agente: true,
           prompt: prompt
         }, window.location.origin);
       } catch (_) {}
@@ -3028,7 +3067,7 @@
         producto_id: Number(document.getElementById('conteoProducto').value || 0),
         bodega_id: Number(document.getElementById('conteoBodega').value || 0),
         cantidad_contada: num(document.getElementById('conteoCantidad').value),
-        referencia: document.getElementById('conteoReferencia').value.trim(),
+        referencia: ensureInventarioMutationReference('conteoReferencia', 'CNT-UI'),
         observaciones: document.getElementById('conteoObservaciones').value.trim(),
         usuario_aplicacion: 'ui_admin_productos'
       };
@@ -3038,9 +3077,9 @@
         return;
       }
 
-      const created = await requestJSON('/api/empresa/inventario/conteo_ciclico', {
+      const created = await requestJSON('/api/empresa/inventario/conteo_ciclico?empresa_id=' + encodeURIComponent(empresaId), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: inventarioMutationHeaders('cycle-count', payload.referencia),
         body: JSON.stringify(payload)
       });
 
@@ -3049,7 +3088,7 @@
       await loadMovimientos();
       await loadConteosCiclicos();
 
-      const variacion = Number((created && created.variacion) || 0);
+      const variacion = Number((created && created.resultado && created.resultado.variacion) || 0);
       showMessage('Conteo cíclico registrado. Variación: ' + variacion.toFixed(2) + '.', 'success');
     }
 
@@ -3086,6 +3125,11 @@
 
       const resumen = await requestJSON('/api/empresa/inventario/resumen?' + params.toString());
 
+	  document.getElementById('kpiProductos').textContent = String(Number(resumen.productos_total || 0));
+	  document.getElementById('kpiProductosVencimiento').textContent = String(Number(resumen.productos_por_vencer || 0));
+	  document.getElementById('kpiBodegas').textContent = String(Number(resumen.bodegas_total || 0));
+	  document.getElementById('kpiServicios').textContent = String(Number(resumen.servicios_total || 0));
+	  document.getElementById('kpiCategoriasProductos').textContent = String(Number(resumen.categorias_total || 0));
       document.getElementById('kpiInventarioAlertas').textContent = String(Number(resumen.alertas_total || 0));
       document.getElementById('kpiInventarioSinStock').textContent = String(Number(resumen.alertas_sin_stock || 0));
       document.getElementById('kpiInventarioMovPeriodo').textContent = String(Number(resumen.movimientos_total || 0));
@@ -3796,16 +3840,16 @@
         bodega_origen_id: Number(document.getElementById('transferOrigen').value || 0),
         bodega_destino_id: Number(document.getElementById('transferDestino').value || 0),
         cantidad: num(document.getElementById('transferCantidad').value),
-        referencia: document.getElementById('transferReferencia').value.trim(),
+        referencia: ensureInventarioMutationReference('transferReferencia', 'TR-UI'),
         observaciones: document.getElementById('transferObs').value.trim()
       };
       if (!payload.producto_id || !payload.bodega_origen_id || !payload.bodega_destino_id || payload.cantidad <= 0) {
         showMessage('Complete producto, origen, destino y cantidad válida.', 'error');
         return;
       }
-      await requestJSON('/api/empresa/inventario/transferir', {
+      await requestJSON('/api/empresa/inventario/transferir?empresa_id=' + encodeURIComponent(empresaId), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: inventarioMutationHeaders('transfer', payload.referencia),
         body: JSON.stringify(payload)
       });
       showMessage('Inventario trasladado correctamente.', 'success');
@@ -3823,16 +3867,16 @@
         bodega_id: Number(document.getElementById('ajusteBodega').value || 0),
         tipo: document.getElementById('ajusteTipo').value,
         cantidad: num(document.getElementById('ajusteCantidad').value),
-        referencia: document.getElementById('ajusteReferencia').value.trim(),
+        referencia: ensureInventarioMutationReference('ajusteReferencia', 'AJ-UI'),
         observaciones: document.getElementById('ajusteObservaciones').value.trim()
       };
       if (!payload.producto_id || !payload.bodega_id || !payload.tipo || payload.cantidad <= 0) {
         showMessage('Complete producto, bodega, tipo y cantidad válida para el ajuste.', 'error');
         return;
       }
-      await requestJSON('/api/empresa/inventario/ajustar', {
+      await requestJSON('/api/empresa/inventario/ajustar?empresa_id=' + encodeURIComponent(empresaId), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: inventarioMutationHeaders('adjustment', payload.referencia),
         body: JSON.stringify(payload)
       });
       showMessage('Ajuste de inventario registrado.', 'success');
@@ -3850,7 +3894,7 @@
         producto_destino_id: Number(document.getElementById('cambioProductoDestino').value || 0),
         bodega_id: Number(document.getElementById('cambioBodega').value || 0),
         cantidad: num(document.getElementById('cambioCantidad').value),
-        referencia: document.getElementById('cambioReferencia').value.trim(),
+        referencia: ensureInventarioMutationReference('cambioReferencia', 'CAM-UI'),
         observaciones: document.getElementById('cambioObservaciones').value.trim()
       };
       if (!payload.producto_origen_id || !payload.producto_destino_id || !payload.bodega_id || payload.cantidad <= 0) {
@@ -3861,9 +3905,9 @@
         showMessage('El producto origen y destino deben ser diferentes.', 'error');
         return;
       }
-      await requestJSON('/api/empresa/inventario/cambiar_producto', {
+      await requestJSON('/api/empresa/inventario/cambiar_producto?empresa_id=' + encodeURIComponent(empresaId), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: inventarioMutationHeaders('product-change', payload.referencia),
         body: JSON.stringify(payload)
       });
       showMessage('Cambio entre productos registrado.', 'success');
@@ -4310,6 +4354,7 @@
         return;
       }
       await loadEmpresaInfo();
+      await loadInventarioResumen();
       if (viewMode === 'categorias') {
         await loadCategoriasProductos();
         return;

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial · Sensores de puertas con Raspberry Pi</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root {
+      --door-bg: var(--bg, #f4f7fb);
+      --door-card: var(--card, #fff);
+      --door-soft: var(--surface-soft, #eef4fb);
+      --door-text: var(--text, #172235);
+      --door-muted: var(--muted, #607086);
+      --door-line: var(--border, #d5deea);
+      --door-blue: #1769e0;
+      --door-green: #16834b;
+      --door-orange: #a85d00;
+      --door-red: #b42318;
+    }
+    body { margin:0; background:linear-gradient(180deg,var(--door-soft),var(--door-bg) 280px); color:var(--door-text); }
+    .door-guide { max-width:1240px; margin:0 auto; padding:26px 18px 54px; }
+    .door-head { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:end; margin-bottom:18px; }
+    .door-kicker { margin:0 0 5px; color:var(--door-blue); font-size:.77rem; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(1.65rem,3vw,2.55rem); line-height:1.08; }
+    .door-lead { max-width:830px; margin:9px 0 0; color:var(--door-muted); line-height:1.55; }
+    .door-actions { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
+    .door-card { margin-top:14px; padding:18px; border:1px solid var(--door-line); border-radius:12px; background:var(--door-card); box-shadow:0 8px 24px rgba(22,38,65,.07); }
+    .door-card h2 { margin:0 0 7px; font-size:1.18rem; }
+    .door-card p { color:var(--door-muted); line-height:1.55; }
+    .door-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px; }
+    .door-summary article { min-height:108px; padding:15px; border:1px solid var(--door-line); border-radius:10px; background:var(--door-card); }
+    .door-summary strong { display:block; margin-bottom:5px; color:var(--door-blue); font-size:1.25rem; }
+    .door-summary span { color:var(--door-muted); line-height:1.45; }
+    .door-schematic { overflow-x:auto; border:1px solid var(--door-line); border-radius:10px; background:#f8fbff; }
+    .door-schematic svg { display:block; width:100%; min-width:920px; height:auto; }
+    .door-caption { margin:10px 0 0; font-size:.92rem; }
+    .door-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .door-note { border-left:4px solid var(--door-orange); }
+    .door-danger { border-left:4px solid var(--door-red); }
+    .door-ok { border-left:4px solid var(--door-green); }
+    .door-note strong,.door-danger strong,.door-ok strong { color:var(--door-text); }
+    .door-steps { counter-reset:door-step; display:grid; gap:10px; margin-top:12px; }
+    .door-step { counter-increment:door-step; display:grid; grid-template-columns:38px 1fr; gap:12px; align-items:start; padding:12px 0; border-top:1px solid var(--door-line); }
+    .door-step::before { content:counter(door-step); display:grid; place-items:center; width:32px; height:32px; border-radius:50%; background:var(--door-blue); color:#fff; font-weight:850; }
+    .door-step h3 { margin:2px 0 5px; font-size:1rem; }
+    .door-step p { margin:0; }
+    .door-table-wrap { overflow-x:auto; }
+    .door-table { width:100%; border-collapse:collapse; min-width:720px; }
+    .door-table th,.door-table td { padding:9px 10px; border-bottom:1px solid var(--door-line); text-align:left; vertical-align:top; }
+    .door-table th { background:var(--door-soft); color:var(--door-text); font-size:.86rem; }
+    .door-table td { color:var(--door-muted); }
+    code { padding:2px 5px; border-radius:5px; background:color-mix(in srgb,var(--door-blue) 11%,transparent); color:var(--door-text); }
+    .door-cycle { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-top:12px; }
+    .door-cycle div { padding:11px; border:1px solid var(--door-line); border-radius:8px; background:var(--door-soft); text-align:center; color:var(--door-muted); }
+    .door-cycle b { display:block; margin-bottom:3px; color:var(--door-text); }
+    ul { color:var(--door-muted); line-height:1.55; }
+    @media (max-width:850px) { .door-summary,.door-grid { grid-template-columns:1fr 1fr; } .door-cycle { grid-template-columns:1fr; } }
+    @media (max-width:620px) { .door-head { grid-template-columns:1fr; } .door-actions { justify-content:flex-start; } .door-summary,.door-grid { grid-template-columns:1fr; } .door-guide { padding:18px 12px 40px; } }
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="door-guide">
+    <header class="door-head">
+      <div>
+        <p class="door-kicker">PCS · Motel · Raspberry Pi</p>
+        <h1>Cómo conectar 4 entradas y hasta 16 salidas</h1>
+        <p class="door-lead">Este montaje barre cuatro contactos magnéticos por cada salida selectora: <strong>OUT1 → IN1–IN4</strong>, luego <strong>OUT2 → IN1–IN4</strong> y así sucesivamente. Con 16 salidas se identifican hasta 64 puertas.</p>
+      </div>
+      <nav class="door-actions" aria-label="Acciones del tutorial">
+        <a class="btn secondary keep-company" href="/administrar_empresa/control_electrico.html?pagina=raspberry">Raspberrys</a>
+        <a class="btn keep-company" href="/administrar_empresa/configuracion_sensores_raspberry.html">Asignar habitaciones</a>
+      </nav>
+    </header>
+
+    <section class="door-summary" aria-label="Resumen del cableado">
+      <article><strong>4 IN</strong><span>GPIO0, GPIO1, GPIO2 y GPIO3 reciben únicamente señales seguras de 3,3 V o contactos secos.</span></article>
+      <article><strong>1–16 OUT</strong><span>GPIO4 a GPIO19 seleccionan, uno por uno, los bancos de cuatro puertas.</span></article>
+      <article><strong>10–5000 ms</strong><span>Retardo configurable entre activar la salida y tomar las cuatro lecturas.</span></article>
+      <article><strong>Máximo 64</strong><span>16 salidas × 4 entradas. Cada combinación OUT/IN se asigna a una habitación.</span></article>
+    </section>
+
+    <section class="door-card" aria-labelledby="schemeTitle">
+      <h2 id="schemeTitle">Esquema funcional de conexión</h2>
+      <p>El dibujo muestra la matriz lógica. La interfaz de cuatro entradas debe entregar una señal compatible con 3,3 V; el módulo de 16 relés debe aceptar control lógico de 3,3 V y activación en alto.</p>
+      <div class="door-schematic" role="img" aria-label="Raspberry Pi con GPIO0 a GPIO3 como cuatro entradas, GPIO4 a GPIO19 como dieciséis salidas selectoras y cuatro sensores magnéticos por banco">
+        <svg viewBox="0 0 1180 660" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1769e0"/></marker>
+            <style>.t{font:600 16px system-ui,sans-serif;fill:#172235}.s{font:500 13px system-ui,sans-serif;fill:#52647a}.w{font:700 13px system-ui,sans-serif;fill:#fff}.pin{font:700 12px ui-monospace,monospace;fill:#172235}.line{stroke:#1769e0;stroke-width:3;fill:none}.sense{stroke:#16834b;stroke-width:3;fill:none}.gnd{stroke:#66758a;stroke-width:3;fill:none;stroke-dasharray:7 5}</style>
+          </defs>
+          <rect x="28" y="112" width="265" height="442" rx="18" fill="#e8f1ff" stroke="#1769e0" stroke-width="2"/>
+          <text class="t" x="55" y="145">Raspberry Pi · GPIO BCM</text><text class="s" x="55" y="168">Nunca usar 5 V en un GPIO</text>
+          <rect x="55" y="195" width="205" height="132" rx="10" fill="#fff" stroke="#8db9f6"/>
+          <text class="t" x="74" y="220">Entradas con pull-up</text>
+          <text class="pin" x="74" y="248">GPIO0  ← IN1</text><text class="pin" x="74" y="271">GPIO1  ← IN2</text><text class="pin" x="74" y="294">GPIO2  ← IN3</text><text class="pin" x="74" y="317">GPIO3  ← IN4</text>
+          <rect x="55" y="350" width="205" height="166" rx="10" fill="#fff" stroke="#8db9f6"/>
+          <text class="t" x="74" y="376">Salidas selectoras</text>
+          <text class="pin" x="74" y="404">GPIO4   → OUT1</text><text class="pin" x="74" y="427">GPIO5   → OUT2</text><text class="pin" x="74" y="450">GPIO6   → OUT3</text><text class="pin" x="74" y="473">···</text><text class="pin" x="74" y="496">GPIO19 → OUT16</text>
+
+          <rect x="390" y="65" width="285" height="258" rx="16" fill="#eefbf3" stroke="#16834b" stroke-width="2"/>
+          <text class="t" x="415" y="96">Interfaz segura de 4 entradas</text><text class="s" x="415" y="119">Contacto seco / optoacoplador 3,3 V</text>
+          <rect x="420" y="145" width="225" height="145" rx="10" fill="#fff" stroke="#91cfad"/>
+          <text class="pin" x="445" y="175">CH1 → IN1</text><text class="pin" x="445" y="203">CH2 → IN2</text><text class="pin" x="445" y="231">CH3 → IN3</text><text class="pin" x="445" y="259">CH4 → IN4</text>
+          <path class="sense" d="M293 248 H390"/><path class="sense" d="M293 271 H370 V203 H390"/><path class="sense" d="M293 294 H350 V231 H390"/><path class="sense" d="M293 317 H330 V259 H390"/>
+
+          <rect x="390" y="370" width="330" height="232" rx="16" fill="#fff4e7" stroke="#c97813" stroke-width="2"/>
+          <text class="t" x="415" y="402">Módulo selector de 16 relés</text><text class="s" x="415" y="425">Entradas lógicas activas en alto, 3,3 V</text>
+          <rect x="420" y="451" width="270" height="118" rx="10" fill="#fff" stroke="#e2b36f"/>
+          <text class="pin" x="445" y="480">IN1  ← GPIO4  · Banco 1</text><text class="pin" x="445" y="506">IN2  ← GPIO5  · Banco 2</text><text class="pin" x="445" y="532">···</text><text class="pin" x="445" y="558">IN16 ← GPIO19 · Banco 16</text>
+          <path class="line" d="M293 404 H390" marker-end="url(#arrow)"/><path class="line" d="M293 427 H365 V506 H390"/><path class="line" d="M293 496 H345 V558 H390"/>
+
+          <rect x="790" y="48" width="350" height="258" rx="16" fill="#fff" stroke="#16834b" stroke-width="2"/>
+          <text class="t" x="815" y="81">Banco seleccionado · 4 puertas</text><text class="s" x="815" y="105">Ejemplo: OUT1 activo</text>
+          <g transform="translate(820 132)"><rect width="130" height="34" rx="7" fill="#eaf7ef" stroke="#16834b"/><text class="pin" x="12" y="22">Puerta 1 → IN1</text></g>
+          <g transform="translate(975 132)"><rect width="130" height="34" rx="7" fill="#eaf7ef" stroke="#16834b"/><text class="pin" x="12" y="22">Puerta 2 → IN2</text></g>
+          <g transform="translate(820 188)"><rect width="130" height="34" rx="7" fill="#eaf7ef" stroke="#16834b"/><text class="pin" x="12" y="22">Puerta 3 → IN3</text></g>
+          <g transform="translate(975 188)"><rect width="130" height="34" rx="7" fill="#eaf7ef" stroke="#16834b"/><text class="pin" x="12" y="22">Puerta 4 → IN4</text></g>
+          <text class="s" x="815" y="262">Cada sensor es un contacto magnético.</text><text class="s" x="815" y="284">El común del banco se habilita con OUTn.</text>
+          <path class="sense" d="M675 175 H790" marker-end="url(#arrow)"/><path class="line" d="M720 480 H755 V285 H790" marker-end="url(#arrow)"/>
+
+          <rect x="790" y="370" width="350" height="232" rx="16" fill="#f6f8fb" stroke="#66758a" stroke-width="2"/>
+          <text class="t" x="815" y="404">Bancos 2 a 16</text><text class="s" x="815" y="430">Se repite el mismo grupo de 4 puertas</text>
+          <text class="pin" x="835" y="470">OUT2  → puertas 5–8</text><text class="pin" x="835" y="500">OUT3  → puertas 9–12</text><text class="pin" x="835" y="530">···</text><text class="pin" x="835" y="560">OUT16 → puertas 61–64</text>
+          <path class="gnd" d="M675 285 H750 V626 H1085"/><text class="s" x="875" y="646">GND común solo en el lado lógico seguro</text>
+        </svg>
+      </div>
+      <p class="door-caption"><strong>Importante:</strong> “módulo de 4 relés” solo puede usarse como entrada si entrega <em>contactos secos aislados</em>. Un pin IN de un módulo de relés normalmente es una entrada de control, no una salida para leer; no lo conecte como sensor sin verificar el modelo y su diagrama eléctrico.</p>
+    </section>
+
+    <section class="door-grid" aria-label="Advertencias de cableado">
+      <article class="door-card door-danger"><h2>Antes de energizar</h2><ul><li>Los GPIO aceptan lógica de <strong>3,3 V</strong>; 5 V puede destruir la Raspberry.</li><li>Alimente los relés con fuente separada adecuada y una tierra lógica común solo cuando el fabricante lo exija.</li><li>No lleve 110/220 V, cerraduras ni cargas de potencia al conector GPIO.</li><li>El módulo selector debe ser <strong>activo en alto</strong>. Muchos módulos comerciales son activos en bajo y no sirven con esta configuración sin adaptación.</li></ul></article>
+      <article class="door-card door-note"><h2>Pines con funciones reservadas</h2><p>GPIO0/1 se reservan normalmente para EEPROM HAT; GPIO2/3 para I²C; GPIO7–11 para SPI; GPIO14/15 para UART y GPIO18/19 para audio/I²S. Este diseño ocupa GPIO0–19, por lo que esas interfaces deben estar deshabilitadas y el instalador debe verificar la placa exacta.</p><p>La numeración utilizada por PCS es <strong>BCM</strong>, no el número físico del conector.</p></article>
+    </section>
+
+    <section class="door-card" aria-labelledby="pinTitle">
+      <h2 id="pinTitle">Tabla exacta GPIO BCM → pin físico</h2>
+      <div class="door-table-wrap">
+        <table class="door-table">
+          <thead><tr><th>Señal PCS</th><th>GPIO BCM</th><th>Pin físico</th><th>Conectar a</th></tr></thead>
+          <tbody>
+            <tr><td>IN1</td><td>GPIO0</td><td>27</td><td>Canal 1 de la interfaz de contactos secos</td></tr>
+            <tr><td>IN2</td><td>GPIO1</td><td>28</td><td>Canal 2 de la interfaz de contactos secos</td></tr>
+            <tr><td>IN3</td><td>GPIO2</td><td>3</td><td>Canal 3 de la interfaz de contactos secos</td></tr>
+            <tr><td>IN4</td><td>GPIO3</td><td>5</td><td>Canal 4 de la interfaz de contactos secos</td></tr>
+            <tr><td>OUT1–OUT4</td><td>GPIO4, 5, 6, 7</td><td>7, 29, 31, 26</td><td>IN1–IN4 del módulo selector</td></tr>
+            <tr><td>OUT5–OUT8</td><td>GPIO8, 9, 10, 11</td><td>24, 21, 19, 23</td><td>IN5–IN8 del módulo selector</td></tr>
+            <tr><td>OUT9–OUT12</td><td>GPIO12, 13, 14, 15</td><td>32, 33, 8, 10</td><td>IN9–IN12 del módulo selector</td></tr>
+            <tr><td>OUT13–OUT16</td><td>GPIO16, 17, 18, 19</td><td>36, 11, 12, 35</td><td>IN13–IN16 del módulo selector</td></tr>
+            <tr><td>GND lógico</td><td>GND</td><td>6, 9, 14, 20, 25, 30, 34 o 39</td><td>Referencia lógica según el módulo y su aislamiento</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="door-card" aria-labelledby="cycleTitle">
+      <h2 id="cycleTitle">Qué hace el programa en cada ciclo</h2>
+      <div class="door-cycle"><div><b>1. Todo en bajo</b>Evita seleccionar dos bancos.</div><div><b>2. OUTn en alto</b>Activa un banco de cuatro puertas.</div><div><b>3. Espera</b>Usa el delay configurado por empresa.</div><div><b>4. Lee IN1–IN4</b>Publica los cuatro estados por túnel seguro.</div><div><b>5. OUTn en bajo</b>Avanza a la siguiente salida.</div></div>
+      <p>El agente confirma una variación dos veces antes de reportarla para reducir rebotes. Si se pierde Internet, mantiene el servicio activo y reintenta; <code>systemd</code> lo inicia nuevamente después de reiniciar la Raspberry.</p>
+      <p>Con la entrada pull-up, PCS interpreta <strong>0 como puerta cerrada</strong> y <strong>1 como puerta abierta</strong>. Use el contacto NC/NO correcto del sensor o de su interfaz; si la lectura aparece invertida, corrija el cableado antes de habilitar automatizaciones.</p>
+    </section>
+
+    <section class="door-card" aria-labelledby="installTitle">
+      <h2 id="installTitle">Instalación y configuración en PCS</h2>
+      <div class="door-steps">
+        <article class="door-step"><div><h3>Registre la Raspberry</h3><p>Abra <strong>Configuración de domótica → Controladores</strong>, seleccione <strong>Sistema de sensores en puertas</strong>, indique cantidad de salidas y delay, y guarde.</p></div></article>
+        <article class="door-step"><div><h3>Descargue el instalador desde esa Raspberry</h3><p>Pulse <strong>Generar instalador</strong> y ejecute una sola vez <code>sudo sh ~/Downloads/instalar-pcs-sensores-puertas-*.sh</code>. El navegador no puede concederse permisos de administrador automáticamente.</p></div></article>
+        <article class="door-step"><div><h3>Compruebe el cableado sin puertas ocupadas</h3><p>Empiece con una salida y cuatro contactos de prueba. Revise que solo una salida esté alta y que cada IN cambie con su imán. No use “Probar GPIO” de Domótica para este modo.</p></div></article>
+        <article class="door-step"><div><h3>Asigne cada canal a una habitación</h3><p>En <strong>Raspberry Pi y sensores</strong>, cada fila muestra Salida y Entrada. Pulse <strong>Asignar habitación</strong>, elija una estación de la misma empresa y guarde.</p></div></article>
+        <article class="door-step"><div><h3>Revise la auditoría</h3><p>La bitácora registra alta, cambios de configuración, generación de instalador, enrolamiento, asignación de canal y desactivación de la Raspberry.</p></div></article>
+      </div>
+    </section>
+
+    <section class="door-grid">
+      <aside class="door-card door-ok"><h2>Prueba mínima recomendada</h2><p>Use OUT1 e IN1–IN4, abra y cierre cada contacto, confirme los cuatro estados en PCS y solo después aumente a 2, 4, 8 o 16 salidas.</p></aside>
+      <aside class="door-card door-danger"><h2>Trabajo eléctrico</h2><p>El esquema es funcional, no sustituye el diagrama del fabricante. La instalación final debe revisarla una persona calificada, especialmente si existen fuentes compartidas, tendidos largos, interferencia o cargas de red.</p></aside>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || '');
+      var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
+      if (!empresaId) return;
+      document.querySelectorAll('a.keep-company').forEach(function (link) {
+        var url = new URL(link.getAttribute('href'), window.location.origin);
+        url.searchParams.set('empresa_id', empresaId);
+        link.setAttribute('href', url.pathname + url.search);
+      });
+    }());
+  </script>
+</body>
+</html>

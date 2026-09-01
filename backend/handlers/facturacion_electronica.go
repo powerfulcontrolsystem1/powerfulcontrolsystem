@@ -3139,12 +3139,7 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 		limit = 500
 	}
 
-	items, err := dbpkg.ListFacturacionElectronicaRetriesByEmpresa(dbEmp, empresaID, dbpkg.FacturacionElectronicaRetryFilter{
-		SoloVencidos:    true,
-		IncludeInactive: false,
-		Limit:           limit,
-		Offset:          0,
-	})
+	items, err := dbpkg.ClaimFacturacionElectronicaRetriesByEmpresa(dbEmp, empresaID, limit, usuario)
 	if err != nil {
 		return nil, err
 	}
@@ -3199,11 +3194,17 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 					procesados += 1
 				}
 				resumenItems = append(resumenItems, detail)
+				if releaseErr := dbpkg.ReleaseFacturacionElectronicaRetryClaim(dbEmp, empresaID, retryItem.ID, retryItem.LeaseToken); releaseErr != nil {
+					erroresInternos += 1
+				}
 				continue
 			}
 			erroresInternos += 1
 			detail["error"] = "no se pudo consultar documento para reintento"
 			resumenItems = append(resumenItems, detail)
+			if releaseErr := dbpkg.ReleaseFacturacionElectronicaRetryClaim(dbEmp, empresaID, retryItem.ID, retryItem.LeaseToken); releaseErr != nil {
+				erroresInternos += 1
+			}
 			continue
 		}
 
@@ -3246,6 +3247,9 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 			procesados += 1
 		}
 		resumenItems = append(resumenItems, detail)
+		if releaseErr := dbpkg.ReleaseFacturacionElectronicaRetryClaim(dbEmp, empresaID, retryItem.ID, retryItem.LeaseToken); releaseErr != nil {
+			erroresInternos += 1
+		}
 	}
 
 	return map[string]interface{}{

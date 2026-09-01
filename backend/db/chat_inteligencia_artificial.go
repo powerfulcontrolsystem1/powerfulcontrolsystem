@@ -1493,6 +1493,7 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 		rows, err := querySQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
+		COALESCE(conversation_id, ''),
 		COALESCE(provider, ''),
 		COALESCE(model_id, ''),
 		COALESCE(pregunta, ''),
@@ -1522,6 +1523,7 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 			if err := rows.Scan(
 				&it.ID,
 				&it.EmpresaID,
+				&it.ConversationID,
 				&it.Provider,
 				&it.ModelID,
 				&it.Pregunta,

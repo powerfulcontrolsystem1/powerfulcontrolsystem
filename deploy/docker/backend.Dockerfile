@@ -10,6 +10,7 @@ COPY backend/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-backend .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-migrate ./cmd/pcs-migrate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-worker ./cmd/pcs-worker
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-disk-manager ./cmd/pcs-disk-manager
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-migrate-private-uploads ./tools/migrate_private_uploads
 
 FROM alpine:3.20 AS lynis-source
@@ -29,7 +30,13 @@ COPY --from=lynis-source /src/lynis /opt/lynis
 RUN printf '%s\n' '#!/bin/sh' 'cd /opt/lynis' 'exec /opt/lynis/lynis "$@"' > /usr/local/bin/lynis \
     && chmod 0755 /usr/local/bin/lynis
 WORKDIR /app/backend
-ENV GRAFOLOGIA_TESSERACT_ENABLED=0
+
+FROM alpine:3.20 AS disk-manager
+
+RUN apk add --no-cache ca-certificates docker-cli
+COPY --from=build /out/pcs-disk-manager /usr/local/bin/pcs-disk-manager
+USER 0:0
+ENTRYPOINT ["/usr/local/bin/pcs-disk-manager"]
 
 FROM runtime-base AS migrate
 

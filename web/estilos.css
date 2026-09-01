@@ -3944,6 +3944,33 @@ html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
 
 .systems-main{max-width:1180px;margin:0 auto;padding-bottom:32px}
 .systems-main-compact{padding-top:12px}
+.systems-catalog-heading{
+  margin:0 0 14px;
+  padding:14px 16px;
+  border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);
+  border-radius:16px;
+  background:color-mix(in srgb,var(--surface) 92%,var(--accent) 8%);
+}
+.systems-catalog-heading p{
+  margin:0 0 4px;
+  color:var(--accent);
+  font-size:.76rem;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.systems-catalog-heading h1{
+  margin:0;
+  color:var(--text);
+  font-size:clamp(1.35rem,3vw,2rem);
+  line-height:1.15;
+}
+.systems-catalog-heading span{
+  display:block;
+  margin-top:7px;
+  color:var(--muted);
+  line-height:1.45;
+}
 .systems-hero,
 .systems-nav-panel,
 .system-detail-card{
@@ -14417,6 +14444,52 @@ html.theme-light .ai-gemini-inline-alert{
   .ai-chat-drawer .ai-chat-attachment-row{flex:0 0 auto;min-width:0;gap:6px}
   .ai-chat-drawer .ai-chat-attachment-name{font-size:.74rem;line-height:1.2;max-height:2.4em;overflow:hidden}
   .ai-chat-drawer .ai-chat-form textarea{min-height:68px;max-height:112px;padding:9px 10px;border-radius:12px}
+}
+
+/* Chat IA simple y multimodal: una sola superficie, modelo global e historial. */
+.ai-chat-drawer.ai-chat-simple .ai-chat-drawer-surface{position:relative;border:1px solid color-mix(in srgb,var(--border) 78%,var(--accent) 22%);border-radius:20px;box-shadow:0 24px 70px rgba(15,23,42,.24)}
+.ai-chat-drawer.ai-chat-simple .ai-chat-header{min-height:64px;padding:12px 14px;background:color-mix(in srgb,var(--surface) 96%,var(--accent) 4%);border-bottom:1px solid var(--border)}
+.ai-chat-drawer.ai-chat-simple .ai-chat-header-title-row{gap:10px;min-width:0}
+.ai-chat-drawer.ai-chat-simple .ai-chat-header-title-row h2{font-size:1rem;line-height:1.2;margin:0;color:var(--text)}
+.ai-chat-model-summary{margin:3px 0 0;color:var(--muted);font-size:.72rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:205px}
+.ai-chat-drawer.ai-chat-simple .ai-chat-header-actions{gap:4px;flex-wrap:nowrap}
+.ai-chat-drawer.ai-chat-simple .ai-chat-header-actions>[hidden]{display:none}
+.ai-chat-drawer.ai-chat-simple .ai-chat-header-icon-btn,.ai-chat-drawer.ai-chat-simple .ai-chat-close,.ai-chat-drawer.ai-chat-simple #aiChatNewBtn{width:34px;height:34px;min-width:34px;border-radius:10px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.ai-chat-drawer.ai-chat-simple .ai-chat-body-scroll{background:linear-gradient(180deg,color-mix(in srgb,var(--surface-soft) 60%,var(--surface)),var(--surface));padding:14px}
+.ai-chat-drawer.ai-chat-simple .ai-chat-message{max-width:90%;border-radius:16px;padding:10px 12px;box-shadow:none}
+.ai-chat-drawer.ai-chat-simple .ai-chat-message.user{margin-left:auto;border-bottom-right-radius:5px}
+.ai-chat-drawer.ai-chat-simple .ai-chat-message.assistant{margin-right:auto;border-bottom-left-radius:5px}
+.ai-chat-drawer.ai-chat-simple .ai-chat-model-badge{display:none}
+.ai-chat-drawer.ai-chat-simple .ai-chat-form{display:grid;grid-template-areas:"tools tools" "input send";grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px 12px 12px;background:var(--surface);border-top:1px solid var(--border)}
+.ai-chat-drawer.ai-chat-simple .ai-chat-toolbar-row{grid-area:tools;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ai-chat-drawer.ai-chat-simple .ai-chat-voice-toolbar{display:flex;gap:5px;flex:0 0 auto}
+.ai-chat-drawer.ai-chat-simple .ai-chat-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0}
+.ai-chat-drawer.ai-chat-simple .ai-chat-control-field{margin:0;min-width:0}
+.ai-chat-drawer.ai-chat-simple .ai-chat-control-field:has(#aiChatAttachment)>span{display:none}
+.ai-chat-drawer.ai-chat-simple .ai-chat-attachment-name{max-width:145px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem}
+.ai-chat-drawer.ai-chat-simple .ai-chat-form textarea{grid-area:input;min-height:46px;max-height:128px;margin:0;padding:11px 12px;border-radius:14px;resize:none}
+.ai-chat-drawer.ai-chat-simple .ai-chat-form>button[type="submit"]{grid-area:send;align-self:end;min-width:76px;min-height:46px;border-radius:14px}
+.ai-chat-history-panel{position:absolute;z-index:8;inset:64px 0 0;display:flex;flex-direction:column;gap:10px;padding:12px;background:color-mix(in srgb,var(--surface) 97%,var(--accent) 3%)}
+.ai-chat-history-panel[hidden]{display:none}
+.ai-chat-history-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.ai-chat-history-head>div{display:grid;gap:2px}.ai-chat-history-head small{color:var(--muted);font-size:.72rem}
+.ai-chat-history-scope{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted)}
+.ai-chat-history-scope .form-input{min-height:36px;height:36px;padding:5px 9px;font-size:.8rem}
+.ai-chat-history-list{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0;padding-right:2px}
+.ai-chat-history-item{display:grid;gap:4px;width:100%;padding:10px 11px;text-align:left;border:1px solid transparent;border-radius:12px;background:var(--surface-soft);color:var(--text);cursor:pointer}
+.ai-chat-history-item:hover,.ai-chat-history-item:focus-visible{border-color:color-mix(in srgb,var(--accent) 55%,var(--border));background:color-mix(in srgb,var(--surface-soft) 85%,var(--accent) 15%)}
+.ai-chat-history-item strong{font-size:.82rem;line-height:1.35}.ai-chat-history-item span{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+@media (max-width:540px){
+  .ai-chat-drawer.ai-chat-simple .ai-chat-drawer-surface{border-radius:0;border-left:0;border-right:0}
+  .ai-chat-drawer.ai-chat-simple .ai-chat-header{padding:10px}
+  .ai-chat-model-summary{max-width:150px}
+  .ai-chat-drawer.ai-chat-simple .ai-chat-form{grid-template-areas:"tools tools" "input send";padding:8px 10px 10px}
+  .ai-chat-drawer.ai-chat-simple .ai-chat-toolbar-row{align-items:flex-start}
+  .ai-chat-drawer.ai-chat-simple .ai-chat-controls{gap:5px}
+  .ai-chat-drawer.ai-chat-simple .ai-chat-attachment-name{max-width:90px}
+  .ai-chat-drawer.ai-chat-simple .ai-chat-form>button[type="submit"]{min-width:68px}
+  .ai-chat-history-panel{inset:56px 0 0}
 }
 
 /* Modulo ubicacion_gps */

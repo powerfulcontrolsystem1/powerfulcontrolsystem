@@ -30,19 +30,6 @@
   <script>
     (function () {
       var modules = {
-        taxi: {
-          title: "Taxi system",
-          summary: "Central operativa para despacho, flota, GPS, portales y seguimiento en vivo.",
-          defaultUrl: "/administrar_empresa/taxi_system.html?tab=resumen&v=20260509-taxi-system",
-          items: [
-            ["Resumen", "/img/analytics-color.svg", "/administrar_empresa/taxi_system.html?tab=resumen&v=20260509-taxi-system"],
-            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/taxi_system.html?tab=configuracion&v=20260509-taxi-system"],
-            ["Conductores", "/img/customer.svg", "/administrar_empresa/taxi_system.html?tab=conductores&v=20260509-taxi-system"],
-            ["GPS y telemetria", "/img/gps.svg", "/administrar_empresa/taxi_system.html?tab=gps&v=20260509-taxi-system"],
-            ["Despacho", "/img/network-color.svg", "/administrar_empresa/taxi_system.html?tab=despacho&v=20260509-taxi-system"],
-            ["Seguimiento en vivo", "/img/analytics-color.svg", "/administrar_empresa/taxi_system.html?tab=seguimiento&v=20260509-taxi-system"]
-          ]
-        },
         domicilios: {
           title: "Domicilios",
           summary: "Central de delivery para pedidos, restaurantes, domiciliarios, menu y tracking en vivo.",
@@ -56,34 +43,6 @@
             ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/domicilios.html?tab=config&v=20260509-domicilios"]
           ]
         },
-        drogueria_farmacia: {
-          title: "Drogueria / Farmacia",
-          summary: "Medicamentos, lotes, INVIMA, vencimientos, dispensacion y farmacovigilancia.",
-          defaultUrl: "/administrar_empresa/drogueria_farmacia.html",
-          items: [
-            ["Panel sanitario", "/img/shield-license-color.svg", "/administrar_empresa/drogueria_farmacia.html#moduloColombiaApp"],
-            ["Medicamentos y lotes", "/img/tags-color.svg", "/administrar_empresa/drogueria_farmacia.html#mcTable"],
-            ["Vencimientos", "/img/analytics-color.svg", "/administrar_empresa/drogueria_farmacia.html#mcAgenda"],
-            ["Dispensacion", "/img/report.svg", "/administrar_empresa/drogueria_farmacia.html#mcForm"],
-            ["Farmacovigilancia", "/img/network-color.svg", "/administrar_empresa/drogueria_farmacia.html#mcRiesgo"]
-          ]
-        },
-        consultorio_odontologico: {
-          title: "Odontologia",
-          summary: "Pacientes, agenda clinica, historias, odontogramas, tratamientos, presupuestos y recaudo.",
-          defaultUrl: "/administrar_empresa/consultorio_odontologico.html?tab=pacientes",
-          items: [
-            ["Pacientes", "/img/customer.svg", "/administrar_empresa/consultorio_odontologico.html?tab=pacientes"],
-            ["Profesionales", "/img/user-avatar-color.svg", "/administrar_empresa/consultorio_odontologico.html?tab=profesionales"],
-            ["Consultorios", "/img/company-briefcase-color.svg", "/administrar_empresa/consultorio_odontologico.html?tab=consultorios"],
-            ["Citas", "/img/analytics-color.svg", "/administrar_empresa/consultorio_odontologico.html?tab=citas"],
-            ["Historias clinicas", "/img/report.svg", "/administrar_empresa/consultorio_odontologico.html?tab=historias"],
-            ["Odontogramas", "/img/shield-license-color.svg", "/administrar_empresa/consultorio_odontologico.html?tab=odontogramas"],
-            ["Tratamientos", "/img/tags-color.svg", "/administrar_empresa/consultorio_odontologico.html?tab=tratamientos"],
-            ["Presupuestos", "/img/money.svg", "/administrar_empresa/consultorio_odontologico.html?tab=presupuestos"],
-            ["Pagos", "/img/money.svg", "/administrar_empresa/consultorio_odontologico.html?tab=pagos"]
-          ]
-        },
         parqueadero: {
           title: "Parqueadero",
           summary: "Tickets, salidas, tarifas, QR y recibos.",
@@ -93,33 +52,6 @@
             ["Salida y cobro", "/img/money.svg", "/administrar_empresa/parqueadero.html?panel=salida"],
             ["Tarifas y reglas", "/img/settings-color.svg", "/administrar_empresa/parqueadero.html?panel=config"],
             ["Recibo", "/img/report.svg", "/administrar_empresa/parqueadero.html?panel=recibo"]
-          ]
-        },
-        apartamentos_turisticos: {
-          title: "Apartamentos turisticos",
-          summary: "Unidades, reservas, tarifas, tareas y configuracion.",
-          defaultUrl: "/administrar_empresa/apartamentos_turisticos.html?panel=dashboard",
-          items: [
-            ["Dashboard", "/img/analytics-color.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=dashboard"],
-            ["Apartamentos", "/img/hotel-logo.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=apartamentos"],
-            ["Reservas", "/img/report.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=reservas"],
-            ["Tarifas", "/img/tags-color.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=tarifas"],
-            ["Tareas", "/img/network-color.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=tareas"],
-            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/apartamentos_turisticos.html?panel=config"]
-          ]
-        },
-        propiedad_horizontal: {
-          title: "Propiedad horizontal",
-          summary: "Copropiedad, unidades, residentes, cartera y asambleas.",
-          defaultUrl: "/administrar_empresa/propiedad_horizontal.html?tab=dashboard",
-          items: [
-            ["Dashboard", "/img/analytics-color.svg", "/administrar_empresa/propiedad_horizontal.html?tab=dashboard"],
-            ["Unidades", "/img/company-briefcase-color.svg", "/administrar_empresa/propiedad_horizontal.html?tab=unidades"],
-            ["Personas", "/img/customer.svg", "/administrar_empresa/propiedad_horizontal.html?tab=personas"],
-            ["Cartera", "/img/money.svg", "/administrar_empresa/propiedad_horizontal.html?tab=cartera"],
-            ["Recaudos", "/img/report.svg", "/administrar_empresa/propiedad_horizontal.html?tab=recaudos"],
-            ["PQR", "/img/network-color.svg", "/administrar_empresa/propiedad_horizontal.html?tab=pqrs"],
-            ["Asambleas", "/img/shield-license-color.svg", "/administrar_empresa/propiedad_horizontal.html?tab=asambleas"]
           ]
         },
         alquileres: {
@@ -231,6 +163,7 @@
             ["Conexion GPIO", "/img/settings-color.svg", "/administrar_empresa/control_electrico.html?pagina=conexion&v=20260530-domotica-paginas"],
             ["Controladores", "/img/network-color.svg", "/administrar_empresa/control_electrico.html?pagina=raspberry&v=20260530-domotica-paginas"],
             ["Sensores Raspberry", "/img/door.svg", "/administrar_empresa/configuracion_sensores_raspberry.html"],
+            ["Tutorial sensores de puertas", "/img/report.svg", "/administrar_empresa/tutorial_sensores_puertas_raspberry.html"],
             ["Estaciones y aparatos", "/img/shield-license-color.svg", "/administrar_empresa/control_electrico.html?pagina=reles&v=20260530-domotica-paginas"],
             ["Automatizaciones", "/img/settings-color.svg", "/administrar_empresa/control_electrico.html?pagina=automatizaciones&v=20260530-domotica-paginas"],
             ["Reportes", "/img/report.svg", "/administrar_empresa/control_electrico.html?pagina=reportes&v=20260530-domotica-paginas"],

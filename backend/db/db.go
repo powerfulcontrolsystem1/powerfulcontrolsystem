@@ -223,6 +223,8 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activation_status TEXT`,
 		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activada_id BIGINT`,
 		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activada_en TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activation_lease_until TIMESTAMPTZ`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activation_attempts INTEGER NOT NULL DEFAULT 0`,
 		`CREATE INDEX IF NOT EXISTS ix_pagos_wompi_transaction_id ON pagos_wompi (transaction_id)`,
 		`CREATE INDEX IF NOT EXISTS ix_pagos_wompi_reference ON pagos_wompi (reference)`,
 		`CREATE TABLE IF NOT EXISTS pagos_epayco (
@@ -250,6 +252,8 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activation_status TEXT`,
 		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activada_id BIGINT`,
 		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activada_en TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activation_lease_until TIMESTAMPTZ`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activation_attempts INTEGER NOT NULL DEFAULT 0`,
 		`CREATE INDEX IF NOT EXISTS ix_pagos_epayco_transaction_id ON pagos_epayco (transaction_id)`,
 		`CREATE INDEX IF NOT EXISTS ix_pagos_epayco_reference ON pagos_epayco (reference)`,
 	}
@@ -2106,6 +2110,15 @@ func empresaCreateAdvisoryLockID(key string) int64 {
 	return (high << 32) | low
 }
 
+// nullableID convierte identificadores opcionales en NULL para PostgreSQL.
+// Es compartido por los modulos empresariales que persisten relaciones opcionales.
+func nullableID(v int64) interface{} {
+	if v <= 0 {
+		return nil
+	}
+	return v
+}
+
 func normalizeEmpresaCreateText(value string) string {
 	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(value))), " ")
 }
@@ -2906,10 +2919,12 @@ func getLicenciaPaymentRowID(dbConn *sql.DB, table, transactionID, reference str
 
 // TryBeginLicenciaPaymentActivation reserva una transaccion de pasarela para
 // que un webhook o consulta repetida no vuelva a sumar dias a la licencia.
+// Un estado processing no se reclama automaticamente: un corte despues de
+// activar y antes de confirmar es incierto y debe reconciliarse, no repetirse.
 func TryBeginLicenciaPaymentActivation(dbConn *sql.DB, provider, transactionID, reference string) (bool, error) {
 	table, ok := licenciaPaymentTable(provider)
 	if !ok {
-		return true, nil
+		return false, fmt.Errorf("proveedor de pago no soportado")
 	}
 	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
 		return false, err
@@ -2919,14 +2934,17 @@ func TryBeginLicenciaPaymentActivation(dbConn *sql.DB, provider, transactionID, 
 		return false, err
 	}
 	if !found {
-		return true, nil
+		return false, fmt.Errorf("pago de licencia no registrado previamente")
 	}
 	nowExpr := sqlNowExpr()
 	res, err := execSQLCompat(dbConn, fmt.Sprintf(`UPDATE %s
-		SET licencia_activation_status = 'processing',
-			fecha_actualizacion = %s
-		WHERE id = ?
-			AND COALESCE(licencia_activation_status, '') NOT IN ('processing', 'done')`, table, nowExpr), id)
+			SET licencia_activation_status = 'processing',
+				licencia_activation_lease_until = CURRENT_TIMESTAMP + interval '5 minutes',
+				licencia_activation_attempts = COALESCE(licencia_activation_attempts, 0) + 1,
+				fecha_actualizacion = %s
+			WHERE id = ?
+				AND COALESCE(licencia_activation_status, '') <> 'done'
+				AND COALESCE(licencia_activation_status, '') <> 'processing'`, table, nowExpr), id)
 	if err != nil {
 		return false, err
 	}
@@ -2952,8 +2970,9 @@ func FinishLicenciaPaymentActivation(dbConn *sql.DB, provider, transactionID, re
 		status = "failed"
 	}
 	_, err = execSQLCompat(dbConn, fmt.Sprintf(`UPDATE %s
-		SET licencia_activation_status = ?,
-			licencia_activada_id = CASE WHEN ? > 0 THEN ? ELSE licencia_activada_id END,
+			SET licencia_activation_status = ?,
+				licencia_activation_lease_until = NULL,
+				licencia_activada_id = CASE WHEN ? > 0 THEN ? ELSE licencia_activada_id END,
 			licencia_activada_en = CASE WHEN ? = 'done' THEN %s ELSE licencia_activada_en END,
 			fecha_actualizacion = %s
 		WHERE id = ?`, table, nowExpr, nowExpr), status, activatedLicenciaID, activatedLicenciaID, status, id)

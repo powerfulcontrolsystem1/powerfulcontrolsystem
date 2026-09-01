@@ -531,7 +531,8 @@
         <p id="empresaInfo" class="electric-subtitle">Empresa: cargando...</p>
       </div>
       <div class="electric-actions">
-		<a class="btn secondary" href="/administrar_empresa/tutorial_domotica.html" aria-label="Abrir tutorial de configuración de Domótica">Tutorial</a>
+		<a class="btn secondary" href="/administrar_empresa/tutorial_domotica.html" aria-label="Abrir tutorial de configuración de Domótica">Tutorial Domótica</a>
+		<a class="btn secondary" id="doorSensorTutorialLink" href="/administrar_empresa/tutorial_sensores_puertas_raspberry.html" aria-label="Abrir tutorial de conexión de sensores de puertas">Tutorial sensores</a>
         <button id="scheduleBtn" class="btn secondary" type="button">Ejecutar agenda</button>
         <button id="syncBtn" class="btn secondary" type="button">Sincronizar</button>
         <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
@@ -661,6 +662,28 @@
                 <option value="generic_http">HTTP generico</option>
               </select>
             </div>
+            <div class="form-col span-2">
+              <label class="form-label" for="raspberryUsoTipo">Uso de esta Raspberry</label>
+              <select id="raspberryUsoTipo" class="form-input">
+                <option value="domotica">Domótica / control de equipos</option>
+                <option value="sensor_puertas">Sistema de sensores en puertas</option>
+              </select>
+              <p class="form-help">El modo puertas reserva GPIO 0–3 como entradas y GPIO 4 en adelante como salidas selectoras; no permite mezclar aparatos de domótica en la misma placa.</p>
+            </div>
+            <div id="raspberryDoorConfig" class="form-col span-2" hidden>
+              <div class="electric-form-grid">
+                <div class="form-col">
+                  <label class="form-label" for="raspberryDoorOutputs">Relés de salida disponibles</label>
+                  <input id="raspberryDoorOutputs" class="form-input" type="number" min="1" max="16" step="1" value="16">
+                  <p class="form-help">Cada salida lee cuatro puertas; 16 salidas permiten hasta 64 sensores.</p>
+                </div>
+                <div class="form-col">
+                  <label class="form-label" for="raspberryDoorDelay">Retardo entre pulsos (ms)</label>
+                  <input id="raspberryDoorDelay" class="form-input" type="number" min="10" max="5000" step="10" value="100">
+                  <p class="form-help">Tiempo que la salida permanece alta antes de leer las cuatro entradas.</p>
+                </div>
+              </div>
+            </div>
             <div class="form-col">
               <label class="form-label" for="raspberryProveedor">Proveedor</label>
               <input id="raspberryProveedor" class="form-input" placeholder="home_assistant, shelly, hue, tuya">
@@ -703,7 +726,7 @@
             Siri se integra de forma portable publicando entidades desde Home Assistant hacia Apple Home con HomeKit Bridge. Matter, Hue, Tuya, Zigbee2MQTT y Z-Wave JS pueden operar por Home Assistant o gateway compatible.
           </div>
           <div class="integration-hint">
-            <strong>Instalacion desde la Raspberry:</strong> abre PCS en el navegador de la Raspberry Pi, entra a esta pagina y pulsa <strong>Generar instalador</strong>. Luego ejecuta una sola vez el archivo descargado con <code>sudo sh ~/Downloads/instalar-pcs-domotica-*.sh</code>. El instalador crea el servicio y la Raspberry mantiene el tunel HTTPS saliente hacia el VPS; no requiere abrir puertos en el router.
+            <strong>Instalacion desde la Raspberry:</strong> abre PCS en el navegador de la Raspberry Pi, elige su uso, guarda el controlador y pulsa <strong>Generar instalador</strong>. Luego ejecuta una sola vez el archivo descargado con <code>sudo sh ~/Downloads/instalar-pcs-*.sh</code>. El instalador crea el servicio y la Raspberry mantiene el tunel HTTPS saliente hacia el VPS; no requiere abrir puertos en el router.
           </div>
           <div id="raspberryList" class="raspberry-list"></div>
         </div>
@@ -838,6 +861,10 @@
       var params = new URLSearchParams(window.location.search || '');
       var empresaId = params.get('empresa_id') || params.get('id') || localStorage.getItem('empresa_id') || '';
       var state = { config: null, raspberryPis: [], estaciones: [], reles: [], eventos: [], lecturas: [], reglas: [], reporte: null };
+
+      if (empresaId) {
+        document.getElementById('doorSensorTutorialLink').href = '/administrar_empresa/tutorial_sensores_puertas_raspberry.html?empresa_id=' + encodeURIComponent(empresaId);
+      }
 
       function $(id) { return document.getElementById(id); }
 
@@ -994,7 +1021,7 @@
         var selected = Number(selectedID || 0);
         var html = '<option value="">Raspberry principal/global</option>';
         state.raspberryPis
-          .filter(function (pi) { return String(pi.estado || 'activo').toLowerCase() === 'activo'; })
+          .filter(function (pi) { return String(pi.estado || 'activo').toLowerCase() === 'activo' && String(pi.uso_tipo || 'domotica') === 'domotica'; })
           .forEach(function (pi) {
             html += '<option value="' + sanitize(pi.id) + '"' + (Number(pi.id) === selected ? ' selected' : '') + '>' + sanitize(raspberryLabel(pi)) + '</option>';
           });
@@ -1006,6 +1033,9 @@
         $('raspberryCodigo').value = '';
         $('raspberryNombre').value = '';
         $('raspberryTipoControlador').value = 'raspberry_gpio';
+        $('raspberryUsoTipo').value = 'domotica';
+        $('raspberryDoorOutputs').value = 16;
+        $('raspberryDoorDelay').value = 100;
         $('raspberryProveedor').value = '';
         $('raspberryBaseUrl').value = '';
         $('raspberryNodeIp').value = '';
@@ -1014,6 +1044,13 @@
         $('raspberryNodeApiToken').value = '';
         $('raspberryNodeTimeout').value = 2500;
         $('raspberryNodeObservaciones').value = '';
+        updateRaspberryUsageFields();
+      }
+
+      function updateRaspberryUsageFields() {
+        var isDoorSensor = $('raspberryUsoTipo').value === 'sensor_puertas';
+        $('raspberryDoorConfig').hidden = !isDoorSensor;
+        if (isDoorSensor) $('raspberryTipoControlador').value = 'raspberry_gpio';
       }
 
       function fillRaspberryForm(pi) {
@@ -1022,6 +1059,9 @@
         $('raspberryCodigo').value = pi.codigo || '';
         $('raspberryNombre').value = pi.nombre || '';
         $('raspberryTipoControlador').value = pi.tipo_controlador || 'raspberry_gpio';
+        $('raspberryUsoTipo').value = pi.uso_tipo || 'domotica';
+        $('raspberryDoorOutputs').value = pi.puerta_reles_salida || 16;
+        $('raspberryDoorDelay').value = pi.puerta_delay_ms || 100;
         $('raspberryProveedor').value = pi.proveedor || '';
         $('raspberryBaseUrl').value = pi.base_url || '';
         $('raspberryNodeIp').value = pi.raspberry_ip || '';
@@ -1030,6 +1070,7 @@
         $('raspberryNodeApiToken').value = '';
         $('raspberryNodeTimeout').value = pi.timeout_ms || 2500;
         $('raspberryNodeObservaciones').value = pi.observaciones || '';
+        updateRaspberryUsageFields();
       }
 
       function readRaspberryPayload() {
@@ -1038,6 +1079,9 @@
           codigo: $('raspberryCodigo').value.trim(),
           nombre: $('raspberryNombre').value.trim(),
           tipo_controlador: $('raspberryTipoControlador').value,
+          uso_tipo: $('raspberryUsoTipo').value,
+          puerta_reles_salida: Math.max(1, Math.min(16, Number($('raspberryDoorOutputs').value || 16))),
+          puerta_delay_ms: Math.max(10, Math.min(5000, Number($('raspberryDoorDelay').value || 100))),
           proveedor: $('raspberryProveedor').value.trim(),
           base_url: $('raspberryBaseUrl').value.trim(),
           raspberry_ip: $('raspberryNodeIp').value.trim(),
@@ -1259,6 +1303,7 @@
           var inactive = String(pi.estado || 'activo').toLowerCase() !== 'activo';
           var primary = String(pi.codigo || '').toLowerCase() === 'principal';
           var online = tunnelOnline(pi);
+          var isDoorSensor = String(pi.uso_tipo || 'domotica') === 'sensor_puertas';
           var testButtons = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27].map(function(pin) {
             return '<button class="btn secondary small raspberry-gpio-test" type="button" data-gpio-pin="' + pin + '"' + (!online ? ' disabled' : '') + '>GPIO ' + pin + '</button>';
           }).join('');
@@ -1273,6 +1318,8 @@
             '<div class="relay-meta">' +
               '<span class="status-chip">' + sanitize(pi.api_path || '/api/gpio/relay') + '</span>' +
               '<span class="status-chip">' + sanitize(pi.tipo_controlador || 'raspberry_gpio') + '</span>' +
+              '<span class="status-chip ' + (isDoorSensor ? 'on' : '') + '">' + sanitize(isDoorSensor ? 'Sensores de puertas' : 'Domótica') + '</span>' +
+              (isDoorSensor ? '<span class="status-chip">' + sanitize((pi.puerta_reles_salida || 16) + ' OUT × 4 IN') + '</span><span class="status-chip">' + sanitize((pi.puerta_delay_ms || 100) + ' ms') + '</span>' : '') +
               '<span class="status-chip">' + sanitize(pi.proveedor || 'raspberry_pi') + '</span>' +
               '<span class="status-chip">' + sanitize((pi.timeout_ms || 2500) + ' ms') + '</span>' +
               '<span class="status-chip">' + sanitize(pi.api_token_configured ? 'Token configurado' : 'Sin token') + '</span>' +
@@ -1284,10 +1331,11 @@
               '<button class="btn secondary small raspberry-edit" type="button">Editar</button>' +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn add small raspberry-provision" type="button">Generar instalador</button>' : '') +
               (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-connection-test" type="button">Probar conexión</button><button class="btn secondary small raspberry-restart" type="button">Reiniciar</button><button class="btn danger small raspberry-shutdown" type="button">Apagar</button>' : '') +
-              (String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-gpio-toggle" type="button">Probar GPIO</button>' : '') +
+              (isDoorSensor ? '<button class="btn secondary small raspberry-door-config" type="button">Asignar puertas a habitaciones</button>' : '') +
+              (!isDoorSensor && String(pi.tipo_controlador || 'raspberry_gpio') === 'raspberry_gpio' ? '<button class="btn secondary small raspberry-gpio-toggle" type="button">Probar GPIO</button>' : '') +
               (primary ? '<button class="btn secondary small" type="button" disabled>Principal</button>' : '<button class="btn danger small raspberry-delete" type="button">Desactivar</button>') +
             '</div>' +
-            '<div class="gpio-test-panel" aria-label="Prueba de GPIO: cada boton envia un pulso de un segundo">' + testButtons + '</div>' +
+            (!isDoorSensor ? '<div class="gpio-test-panel" aria-label="Prueba de GPIO: cada boton envia un pulso de un segundo">' + testButtons + '</div>' : '') +
           '</article>';
         }).join('');
       }
@@ -1299,10 +1347,12 @@
           return;
         }
         box.innerHTML = state.eventos.map(function (ev) {
-          var cls = ev.resultado === 'ok' ? 'on' : 'warn';
+          var cls = /^(ok|conectado|instalador_generado|completado)$/i.test(String(ev.resultado || '')) ? 'on' : 'warn';
+          var lifecycle = /^raspberry_|^canal_puerta_|^provisionar_tunel/.test(String(ev.comando || ''));
+          var target = lifecycle ? ('Raspberry #' + sanitize(ev.raspberry_id || '-')) : ('Est. ' + sanitize(ev.estacion_id || '-') + ' · GPIO ' + sanitize(ev.gpio_pin || '-'));
           return '<div class="event-row">' +
             '<small>' + sanitize(ev.fecha_evento || '') + '</small>' +
-            '<div class="event-main"><strong>Est. ' + sanitize(ev.estacion_id || '-') + '</strong> GPIO ' + sanitize(ev.gpio_pin || '-') + ' -> ' + sanitize(ev.estado_objetivo || '') + (ev.error ? ' · ' + sanitize(ev.error) : '') + '</div>' +
+            '<div class="event-main"><strong>' + sanitize(ev.comando || 'evento') + '</strong> · ' + target + (ev.estado_objetivo ? ' → ' + sanitize(ev.estado_objetivo) : '') + (ev.actor ? ' · Actor: ' + sanitize(ev.actor) : '') + (ev.origen ? ' · Origen: ' + sanitize(ev.origen) : '') + (ev.error ? ' · ' + sanitize(ev.error) : '') + '</div>' +
             '<span class="status-chip ' + cls + '">' + sanitize(ev.resultado || '-') + '</span>' +
           '</div>';
         }).join('');
@@ -1321,7 +1371,7 @@
         var raspberrySelect = $('ruleRaspberry');
         if (raspberrySelect) {
           var selected = raspberrySelect.value;
-          raspberrySelect.innerHTML = '<option value="">Sensor externo / sin GPIO</option>' + state.raspberryPis.filter(function (pi) { return String(pi.estado || 'activo').toLowerCase() === 'activo'; }).map(function (pi) {
+          raspberrySelect.innerHTML = '<option value="">Sensor externo / sin GPIO</option>' + state.raspberryPis.filter(function (pi) { return String(pi.estado || 'activo').toLowerCase() === 'activo' && String(pi.uso_tipo || 'domotica') === 'domotica'; }).map(function (pi) {
             return '<option value="' + sanitize(pi.id) + '">' + sanitize(raspberryLabel(pi)) + '</option>';
           }).join('');
           raspberrySelect.value = selected;
@@ -1708,6 +1758,10 @@
       }
 
       document.addEventListener('change', function (ev) {
+        if (ev.target && ev.target.id === 'raspberryUsoTipo') {
+          updateRaspberryUsageFields();
+          return;
+        }
         if (ev.target && ev.target.id === 'ruleAccion') {
           updateRuleActionFields();
           return;
@@ -1780,6 +1834,9 @@
             var connectionPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             var connectionResult = await requestJSON(api('raspberry_operacion'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ raspberry_id: connectionPiID, operacion: 'probar_conexion' }) });
             showMessage(connectionResult.message || 'Conexion por tunel verificada.', 'success');
+          } else if (raspberryCard && ev.target.classList.contains('raspberry-door-config')) {
+            window.location.href = '/administrar_empresa/configuracion_sensores_raspberry.html?empresa_id=' + encodeURIComponent(empresaId);
+            return;
           } else if (raspberryCard && ev.target.classList.contains('raspberry-restart')) {
             var restartPiID = Number(raspberryCard.getAttribute('data-raspberry-id') || 0);
             if (!window.confirm('La Raspberry se reiniciara y se reconectara automaticamente. Continuar?')) return;

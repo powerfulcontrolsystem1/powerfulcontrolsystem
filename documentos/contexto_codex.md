@@ -9,6 +9,46 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-08-31 - Vida personal
+
+- `/administrar_empresa/vida.html` y `/api/empresa/vida` registran gastos,
+  comprobantes privados y suscripciones de la cuenta autenticada dentro de una
+  empresa.
+- Toda persistencia usa `empresa_id + usuario_id`; el usuario se deriva de la
+  sesion y nunca del payload. Vida no escribe contabilidad, caja, compras ni
+  inventario empresarial.
+- El modulo ignora la lista comercial de licencia para estar disponible en
+  todas las empresas, pero conserva sesion, rol y permisos efectivos.
+- La migracion `20260831-001-vida-personal-v1` solo puede ejecutarla
+  `pcs-migrate`. El candidato es local y se documenta en `vida.md`.
+
+## Actualizacion 2026-08-25 - carga inicial de Administrar empresa
+
+- `web/administrar_empresa.html` conserva el gate de permisos antes de elegir la
+  pagina inicial, pero obtiene en paralelo catalogo, sesion, URLs, preferencias
+  y contexto de permisos.
+- `menu.js` expone `PCSRequestCache`, una cache efimera de promesas GET que
+  comparte `/me`, `estacion_prefs` y preferencias del chat dentro de la misma
+  pagina. Las escrituras invalidan la entrada relacionada y nunca sustituyen la
+  autorizacion backend ni el aislamiento por `empresa_id`.
+- El panel embebido reutiliza durante el arranque las lecturas del contenedor
+  para sesion, permisos, configuracion guiada y buzon. Si se abre directamente,
+  conserva sus lecturas propias.
+- El puente de ayuda ya no se inyecta en el iframe transitorio `about:blank`.
+- Cambio local: no se ejecuto `rs` ni despliegue.
+
+## Actualizacion 2026-08-23 - catalogo publico vigente
+
+- El corte operativo de esa fecha era de 52 modulos y 13 plantillas empresariales.
+- La fuente funcional de plantillas es
+  `documentos/matriz_integracion_plantillas.md`; cuatro son clasicas y nueve
+  provienen del catalogo de plantillas nuevas.
+- `index.html`, `descripcion_de_los_sistemas.html` y la compatibilidad `.ht`
+  filtran tarjetas retiradas y evitan duplicar plantillas por clave `module`.
+- El backend repite el filtro al leer o guardar configuracion de pagina
+  principal. Drogueria/Farmacia pertenece a Inventario y no es modulo propio.
+- No se ha desplegado este cambio ni ejecutado su migracion de retiro.
+
 ## Actualizacion 2026-07-24 - Plan 106 P0 en ejecucion controlada
 
 - `documentos/plan_106.md` es el plan vigente para certificar produccion
@@ -666,31 +706,6 @@ decisiones en cada tarea.
   correo al administrador de la empresa cuando faltan 30 dias o menos, con
   control de no repetir alertas dentro de 24 horas.
 
-## Actualizacion 2026-06-01 - GRAFOLOGIX
-
-- Nuevo modulo empresarial `grafologia` visible como `Administrar empresa >
-  Analisis y control > GRAFOLOGIX`.
-- API: `/api/empresa/grafologia`, protegida por
-  `WithEmpresaGrafologiaPermissions`.
-- Backend: `backend/internal/grafologia` contiene el motor Go puro; no usa
-  dependencias externas.
-- Docker/VPS: desde 2026-06-18 no se instala Tesseract/pdftoppm para OCR; el
-  analisis complementario debe usar IA GPT-5.5 y transcripcion manual opcional.
-- BD: `empresa_grafologia_analisis` en `pcs_empresas`.
-- UI: `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js`.
-- La pantalla asocia cada manuscrito a un cliente central de la empresa:
-  busca/crea desde `/api/empresa/clientes`, guarda `cliente_id` validado por
-  `empresa_id` y conserva descripcion/caracteristicas de la persona en el
-  informe.
-- La pantalla tambien ofrece `Analizar con GPT-5.5`, que reutiliza el catalogo
-  de Chat IA empresarial (`openai:gpt-5.5`), valida limites diarios por empresa,
-  envia la imagen como adjunto de vision y registra la consulta en la auditoria
-  de uso IA sin crear dependencias nuevas.
-- Documento completo: `documentos/grafologix_arquitectura.md`.
-- Advertencia permanente: las interpretaciones grafológicas son heuristicas y
-  orientativas; no son diagnostico psicologico ni criterio automatico de
-  contratacion.
-
 ## Resumen del sistema
 
 Powerful Control System es un POS/ERP SaaS multiempresa. El backend esta escrito
@@ -1200,3 +1215,11 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
 - Las desconexiones se notifican por worker después de la gracia empresarial; Super Administrador controla cuota mensual RX+TX, advertencia y bloqueo del túnel por empresa.
 - La primera instalación no requiere IP local: la Raspberry descarga un instalador de un uso, recibe ID global aleatorio y abre HTTPS hacia el VPS.
 - En sensores, `encender_temporizado` usa la duración de la regla y `encender_programado` solo enciende si la agenda del aparato está activa.
+
+## Raspberry para sensores de puertas 2026-08-31
+
+- `empresa_control_electrico_raspberry_pis.uso_tipo` separa `domotica` de `sensor_puertas`; no se mezclan cargas y barrido en la misma placa.
+- El modo puertas usa entradas BCM 0–3 y 1–16 salidas BCM 4–19, con `puerta_delay_ms` empresarial y cuatro canales automáticos por salida.
+- `POST /api/public/domotica/tunnel?action=door_scan` acepta lotes únicamente del dispositivo autenticado y deriva empresa/Raspberry en servidor.
+- Los canales reutilizan `empresa_sensor_puertas_devices` y su asignación a estación; las transiciones se guardan en `empresa_sensor_puertas_messages`.
+- Alta, configuración antes/después, instalador, enrolamiento, asignación y desactivación quedan en `empresa_control_electrico_eventos`, sin secretos.

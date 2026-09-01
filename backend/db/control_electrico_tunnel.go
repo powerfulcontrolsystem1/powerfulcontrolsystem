@@ -20,11 +20,14 @@ const (
 )
 
 type EmpresaControlElectricoTunnelDevice struct {
-	EmpresaID   int64
-	RaspberryID int64
-	DeviceUID   string
-	Nombre      string
-	Codigo      string
+	EmpresaID         int64
+	RaspberryID       int64
+	DeviceUID         string
+	Nombre            string
+	Codigo            string
+	UsoTipo           string
+	PuertaRelesSalida int
+	PuertaDelayMS     int
 }
 
 type EmpresaControlElectricoTunnelCommand struct {
@@ -90,6 +93,8 @@ func EmpresaControlElectricoTunnelSchemaReady(dbConn *sql.DB) error {
 		`SELECT id FROM empresa_control_electrico_comandos WHERE 1=0`,
 		`SELECT id FROM empresa_control_electrico_trafico_diario WHERE 1=0`,
 		`SELECT empresa_id FROM empresa_control_electrico_limites_tunel WHERE 1=0`,
+		`SELECT uso_tipo, puerta_reles_salida, puerta_delay_ms FROM empresa_control_electrico_raspberry_pis WHERE 1=0`,
+		`SELECT source_raspberry_id, selector_output, selector_input FROM empresa_sensor_puertas_devices WHERE 1=0`,
 	}
 	for _, query := range checks {
 		var marker interface{}
@@ -202,11 +207,14 @@ func AuthenticateEmpresaControlElectricoRaspberryTunnel(dbConn *sql.DB, deviceUI
 		return nil, sql.ErrNoRows
 	}
 	var device EmpresaControlElectricoTunnelDevice
-	err := queryRowSQLCompat(dbConn, `SELECT empresa_id, id, COALESCE(device_uid,''), COALESCE(nombre,''), COALESCE(codigo,'') FROM empresa_control_electrico_raspberry_pis WHERE device_uid=? AND device_token_hash=? AND COALESCE(tunnel_enabled,0)=1 AND LOWER(COALESCE(estado,'activo'))='activo' LIMIT 1`,
-		deviceUID, controlElectricoTunnelTokenHash(deviceToken)).Scan(&device.EmpresaID, &device.RaspberryID, &device.DeviceUID, &device.Nombre, &device.Codigo)
+	err := queryRowSQLCompat(dbConn, `SELECT empresa_id, id, COALESCE(device_uid,''), COALESCE(nombre,''), COALESCE(codigo,''), COALESCE(uso_tipo,'domotica'), COALESCE(puerta_reles_salida,16), COALESCE(puerta_delay_ms,100) FROM empresa_control_electrico_raspberry_pis WHERE device_uid=? AND device_token_hash=? AND COALESCE(tunnel_enabled,0)=1 AND LOWER(COALESCE(estado,'activo'))='activo' LIMIT 1`,
+		deviceUID, controlElectricoTunnelTokenHash(deviceToken)).Scan(&device.EmpresaID, &device.RaspberryID, &device.DeviceUID, &device.Nombre, &device.Codigo, &device.UsoTipo, &device.PuertaRelesSalida, &device.PuertaDelayMS)
 	if err != nil {
 		return nil, err
 	}
+	device.UsoTipo = NormalizeControlElectricoUsoTipo(device.UsoTipo)
+	device.PuertaRelesSalida = NormalizeControlElectricoDoorOutputCount(device.PuertaRelesSalida)
+	device.PuertaDelayMS = NormalizeControlElectricoDoorDelayMS(device.PuertaDelayMS)
 	return &device, nil
 }
 

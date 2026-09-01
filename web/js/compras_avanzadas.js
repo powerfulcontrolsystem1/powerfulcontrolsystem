@@ -5,6 +5,10 @@
   var empresaId = qs.get("empresa_id") || localStorage.getItem("empresa_id") || "";
   var api = "/api/empresa/compras_avanzadas";
   var proveedores = [];
+  var productos = [];
+  var bodegas = [];
+  var detalleItems = [];
+  var pageMutationKey = String(Date.now()) + "-" + Math.random().toString(36).slice(2);
 
   function el(id){ return document.getElementById(id); }
   function val(id){ var node = el(id); return node ? node.value.trim() : ""; }
@@ -28,18 +32,44 @@
     if (action) p.set("action", action);
     return api + "?" + p.toString();
   }
-  function post(action, payload){
+  function publicError(status, raw){
+    var text = String(raw || "").trim();
+    if (text && text.charAt(0) === "{") {
+      try {
+        var data = JSON.parse(text);
+        if (data && typeof data.error === "string") text = data.error.trim();
+      } catch (_err) {}
+    }
+    if (!text || text.indexOf("<") !== -1 || text.length > 240) {
+      if (status === 401) return "La sesion expiro. Inicia sesion nuevamente.";
+      if (status === 403) return "No tienes permiso para operar compras en esta empresa.";
+      if (status === 404) return "La informacion solicitada no esta disponible.";
+      if (status === 409) return "La operacion ya fue procesada o entra en conflicto con el estado actual.";
+      return "No se pudo completar la operacion de compras.";
+    }
+    return text;
+  }
+  function readResponse(r){
+    return r.text().then(function(raw){
+      if (!r.ok) throw new Error(publicError(r.status, raw));
+      if (!raw.trim()) return {};
+      try { return JSON.parse(raw); } catch (_err) { throw new Error("La respuesta del servidor no es valida."); }
+    });
+  }
+  function idempotencyKey(action, reference){
+    var safe = String(reference || pageMutationKey).trim().replace(/[^A-Za-z0-9_.-]+/g, "-");
+    var key = "pcs.purchases." + String(empresaId || "0") + "." + action + "." + safe;
+    return key.slice(0, 200);
+  }
+  function post(action, payload, reference){
     payload = payload || {};
     payload.action = action;
     payload.empresa_id = Number(empresaId);
     return fetch(url(action), {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: {"Content-Type":"application/json", "Idempotency-Key":idempotencyKey(action, reference)},
       body: JSON.stringify(payload)
-    }).then(function(r){
-      if(!r.ok){ return r.text().then(function(t){ throw new Error(t || "Error"); }); }
-      return r.json();
-    });
+    }).then(readResponse);
   }
   function providerLabel(p){
     var extra = p.codigo || p.documento || ("ID-" + p.id);
@@ -104,12 +134,61 @@
       });
   }
 
+  function productById(id){
+    var n = Number(id || 0);
+    for (var i = 0; i < productos.length; i += 1) {
+      if (Number(productos[i].id) === n) return productos[i];
+    }
+    return null;
+  }
+  function productLabel(p){
+    var code = p.sku || p.codigo_barras || ("ID-" + p.id);
+    return (p.nombre || "Producto") + " (" + code + ")";
+  }
+  function renderProductoSelects(){
+    var options = ['<option value="">Seleccione producto activo</option>'];
+    productos.forEach(function(p){
+      if (String(p.estado || "activo").toLowerCase() !== "activo") return;
+      options.push('<option value="' + escapeHtml(p.id) + '">' + escapeHtml(productLabel(p)) + '</option>');
+    });
+    document.querySelectorAll(".producto-select").forEach(function(node){
+      var current = node.value;
+      node.innerHTML = options.join("");
+      if (current && productById(current)) node.value = current;
+      if (options.length === 1) node.innerHTML = '<option value="">Primero cree un producto</option>';
+    });
+  }
+  function loadProductos(){
+    if (!empresaId) return Promise.resolve();
+    return fetch("/api/empresa/productos?empresa_id=" + encodeURIComponent(empresaId) + "&estado=activo&limit=500", {credentials:"same-origin"})
+      .then(readResponse)
+      .then(function(rows){ productos = Array.isArray(rows) ? rows : []; renderProductoSelects(); });
+  }
+  function renderBodegas(){
+    var options = ['<option value="">Seleccione bodega activa</option>'];
+    bodegas.forEach(function(b){
+      if (String(b.estado || "activo").toLowerCase() !== "activo") return;
+      options.push('<option value="' + escapeHtml(b.id) + '">' + escapeHtml((b.nombre || "Bodega") + " (" + (b.codigo || ("ID-" + b.id)) + ")") + '</option>');
+    });
+    document.querySelectorAll(".bodega-select").forEach(function(node){
+      var current = node.value;
+      node.innerHTML = options.join("");
+      if (current) node.value = current;
+    });
+  }
+  function loadBodegas(){
+    if (!empresaId) return Promise.resolve();
+    return fetch("/api/empresa/bodegas?empresa_id=" + encodeURIComponent(empresaId), {credentials:"same-origin"})
+      .then(readResponse)
+      .then(function(rows){ bodegas = Array.isArray(rows) ? rows : []; renderBodegas(); });
+  }
+
   function loadDashboard(){
     if (!empresaId) {
       setMsg("Selecciona una empresa para operar compras avanzadas.", "error");
       return Promise.resolve();
     }
-    return fetch(url("dashboard")).then(function(r){ return r.json(); }).then(function(d){
+    return fetch(url("dashboard")).then(readResponse).then(function(d){
       el("kpiAbiertas").textContent = d.requisiciones_abiertas || 0;
       el("kpiAprobacion").textContent = d.requisiciones_pendientes_aprobacion || 0;
       el("kpiCotizaciones").textContent = d.cotizaciones_en_evaluacion || 0;
@@ -137,7 +216,7 @@
   }
 
   function loadDetalle(id){
-    return fetch(url("detalle", {id:id})).then(function(r){ return r.json(); }).then(function(d){
+    return fetch(url("detalle", {id:id})).then(readResponse).then(function(d){
       el("cotReqID").value = d.id || "";
       el("aprReqID").value = d.id || "";
       el("recReqID").value = d.id || "";
@@ -159,7 +238,8 @@
       tr.children[5].textContent = estado || "";
       body.appendChild(tr);
     }
-    (d.items || []).forEach(function(x){
+    detalleItems = Array.isArray(d.items) ? d.items : [];
+    detalleItems.forEach(function(x){
       add("Item", x.id, x.producto_nombre, (x.cantidad_recibida || 0) + " / " + (x.cantidad_solicitada || 0), x.costo_estimado, x.estado);
     });
     (d.cotizaciones || []).forEach(function(x){
@@ -176,24 +256,49 @@
     (d.recepciones || []).forEach(function(x){
       add("Recepcion", x.id + " - " + x.documento, x.proveedor_nombre, x.estado_recepcion, 0, x.fecha_recepcion);
     });
-    if ((d.items || []).length) {
-      var first = d.items[0];
-      el("recItemID").value = first.id || "";
-      el("recProducto").value = first.producto_nombre || "";
-      el("recOrdenada").value = first.cantidad_solicitada || "";
-      el("recCosto").value = first.costo_estimado || "";
+    var itemSelect = el("recItemID");
+    itemSelect.innerHTML = '<option value="">Seleccione item pendiente</option>';
+    detalleItems.forEach(function(x){
+      var pendiente = Math.max(0, Number(x.cantidad_solicitada || 0) - Number(x.cantidad_recibida || 0));
+      if (pendiente <= 0) return;
+      var option = document.createElement("option");
+      option.value = String(x.id || "");
+      option.textContent = (x.producto_nombre || "Item") + " - pendiente " + pendiente;
+      itemSelect.appendChild(option);
+    });
+    if (itemSelect.options.length > 1) {
+      itemSelect.selectedIndex = 1;
+      fillReceptionItem();
+    } else {
+      fillReceptionItem();
     }
+  }
+
+  function fillReceptionItem(){
+    var itemID = num("recItemID");
+    var selected = null;
+    for (var i = 0; i < detalleItems.length; i += 1) {
+      if (Number(detalleItems[i].id) === itemID) { selected = detalleItems[i]; break; }
+    }
+    el("recProducto").value = selected && selected.producto_id ? String(selected.producto_id) : "";
+    el("recOrdenada").value = selected ? Number(selected.cantidad_solicitada || 0) : "";
+    el("recRecibida").value = selected ? Math.max(0, Number(selected.cantidad_solicitada || 0) - Number(selected.cantidad_recibida || 0)) : "";
+    el("recCosto").value = selected ? Number(selected.costo_estimado || 0) : "";
   }
 
   function saveRequisicion(){
     var items = [];
     [["1"],["2"]].forEach(function(s){
       var idx = s[0];
-      var name = val("itemNombre" + idx);
-      if (name) {
-        items.push({producto_nombre:name,cantidad_solicitada:num("itemCant"+idx),costo_estimado:num("itemCosto"+idx),unidad:"und",proveedor_sugerido:providerNameFromSelect("itemProv"+idx)});
+      var product = productById(val("itemNombre" + idx));
+      if (product) {
+        items.push({producto_id:Number(product.id),producto_nombre:product.nombre || "",cantidad_solicitada:num("itemCant"+idx),costo_estimado:num("itemCosto"+idx) || Number(product.costo || 0),unidad:product.unidad_medida || "und",proveedor_sugerido:providerNameFromSelect("itemProv"+idx)});
       }
     });
+    if (!items.length || items.some(function(item){ return item.cantidad_solicitada <= 0; })) {
+      setMsg("Selecciona al menos un producto y una cantidad mayor a cero.", "error");
+      return Promise.resolve();
+    }
     return post("requisicion", {requisicion:{
       codigo: val("reqCodigo"),
       solicitante: val("reqSolicitante"),
@@ -205,7 +310,7 @@
       estado_flujo: val("reqEstado") || "solicitada",
       justificacion: val("reqJustificacion"),
       items: items
-    }}).then(function(r){
+    }}, val("reqCodigo")).then(function(r){
       setMsg("Requisicion guardada #" + r.id, "success");
       el("cotReqID").value = r.id;
       el("aprReqID").value = r.id;
@@ -233,7 +338,7 @@
       impuestos:num("cotImpuestos"),
       condiciones_pago:val("cotCondiciones"),
       estado:"evaluacion"
-    }}).then(function(r){
+    }}, String(num("cotReqID")) + "." + val("cotNumero")).then(function(r){
       setMsg("Cotizacion guardada #" + r.id, "success");
       el("aprCotID").value = r.id;
       el("recCotID").value = r.id;
@@ -248,7 +353,7 @@
       decision:val("aprDecision"),
       monto_autorizado:num("aprMonto"),
       comentario:val("aprComentario")
-    }}).then(function(r){
+    }}, String(num("aprReqID")) + "." + String(num("aprCotID")) + "." + val("aprDecision")).then(function(r){
       setMsg("Decision registrada #" + r.id, "success");
       return loadDetalle(num("aprReqID")).then(loadDashboard);
     }).catch(function(err){ setMsg(err.message, "error"); });
@@ -261,30 +366,35 @@
       setMsg("Selecciona un proveedor creado para guardar la recepcion.", "error");
       return Promise.resolve();
     }
+    if (!num("recReqID") || !num("recItemID") || !num("recBodega") || num("recRecibida") <= 0) {
+      setMsg("Selecciona requisicion, item, bodega y una cantidad recibida mayor a cero.", "error");
+      return Promise.resolve();
+    }
     return post("recepcion", {recepcion:{
       requisicion_id:num("recReqID"),
+      bodega_id:num("recBodega"),
       cotizacion_id:num("recCotID"),
       proveedor_id:proveedorID,
       proveedor_nombre:proveedorNombre,
       documento:val("recDocumento"),
       fecha_recepcion:val("recFecha") || today(),
-      estado_recepcion:val("recEstado"),
       items:[{
         requisicion_item_id:num("recItemID"),
         producto_nombre:val("recProducto"),
         cantidad_ordenada:num("recOrdenada"),
         cantidad_recibida:num("recRecibida"),
         costo_unitario:num("recCosto"),
+        lote:val("recLote"),
         estado_calidad:"aprobado"
       }]
-    }}).then(function(r){
+    }}, String(num("recReqID")) + "." + val("recDocumento")).then(function(r){
       setMsg("Recepcion guardada #" + r.id, "success");
       return loadDetalle(num("recReqID")).then(loadDashboard);
     }).catch(function(err){ setMsg(err.message, "error"); });
   }
 
   function seed(){
-    return post("seed_demo", {}).then(function(r){
+    return post("seed_demo", {}, pageMutationKey).then(function(r){
       setMsg("Demo cargada #" + r.id, "success");
       return loadDashboard().then(function(){ return loadDetalle(r.id); });
     }).catch(function(err){ setMsg(err.message, "error"); });
@@ -299,12 +409,19 @@
       if (panel) panel.classList.add("is-active");
     });
   });
-  [["btnRefresh",loadDashboard],["btnSeed",seed],["btnSaveReq",saveRequisicion],["btnSaveCot",saveCotizacion],["btnSaveApr",saveAprobacion],["btnSaveRec",saveRecepcion]].forEach(function(pair){
+  [["btnRefresh",loadDashboard],["btnSaveReq",saveRequisicion],["btnSaveCot",saveCotizacion],["btnSaveApr",saveAprobacion],["btnSaveRec",saveRecepcion]].forEach(function(pair){
     var node = el(pair[0]);
     if (node) node.addEventListener("click", pair[1]);
   });
 
   ["reqFecha","cotFecha","recFecha"].forEach(function(id){ if (el(id)) el(id).value = today(); });
+  el("recItemID").addEventListener("change", fillReceptionItem);
+  ["1","2"].forEach(function(idx){
+    el("itemNombre" + idx).addEventListener("change", function(){
+      var product = productById(val("itemNombre" + idx));
+      if (product && !num("itemCosto" + idx)) el("itemCosto" + idx).value = Number(product.costo || 0);
+    });
+  });
   el("reqCodigo").value = "REQ-" + Date.now().toString().slice(-6);
   el("cotNumero").value = "COT-" + Date.now().toString().slice(-6);
   el("recDocumento").value = "REC-" + Date.now().toString().slice(-6);
@@ -312,8 +429,8 @@
   if (proveedoresLink && empresaId) {
     proveedoresLink.href = "/administrar_empresa/administrar_productos.html?view=proveedores&empresa_id=" + encodeURIComponent(empresaId);
   }
-  loadProveedores().then(loadDashboard).catch(function(err){
-    setMsg(err.message || "No se pudieron cargar proveedores", "error");
+  Promise.all([loadProveedores(), loadProductos(), loadBodegas()]).then(loadDashboard).catch(function(err){
+    setMsg(err.message || "No se pudieron cargar los catalogos de compras", "error");
     return loadDashboard();
   });
 })();

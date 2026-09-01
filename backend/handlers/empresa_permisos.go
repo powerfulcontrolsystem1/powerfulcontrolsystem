@@ -44,19 +44,13 @@ const (
 	permModuleVentaPublica         = "venta_publica"
 	permModuleReservasHotel        = "reservas_hotel"
 	permModuleChatTareas           = "chat_tareas"
-	permModuleGimnasio             = "gimnasio"
-	permModuleTaxiSystem           = "taxi_system"
 	permModuleDomicilios           = "domicilios"
 	permModuleParqueadero          = "parqueadero"
-	permModuleApartTuristicos      = "apartamentos_turisticos"
-	permModulePropiedadHorizontal  = "propiedad_horizontal"
 	permModuleAlquileres           = "alquileres"
-	permModuleOdontologia          = "odontologia"
 	permModuleTurnos               = "turnos_atencion"
 	permModuleControlElectrico     = "control_electrico"
 	permModuleEnergiaSolar         = "energia_solar"
 	permModuleCamaras              = "camaras"
-	permModuleGrafologia           = "grafologia"
 	permModuleBolsa                = "bolsa"
 	permModuleCarnets              = "carnets"
 	permModuleHorariosTrab         = "horarios_trabajadores"
@@ -80,10 +74,10 @@ const (
 	permModuleCumplimientoKYC      = "cumplimiento_kyc"
 	permModuleContratosOblig       = "contratos_obligaciones"
 	permModuleCalidadProcesos      = "calidad_procesos"
-	permModuleDrogueriaFarmacia    = "drogueria_farmacia"
 	permModuleAuditoria            = "auditoria"
 	permModuleBackups              = "backups"
 	permModuleDocumentosOnlyOffice = "documentos_onlyoffice"
+	permModuleVida                 = "vida"
 
 	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
 	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
@@ -294,19 +288,13 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleVentaPublica,
 	permModuleReservasHotel,
 	permModuleChatTareas,
-	permModuleGimnasio,
-	permModuleTaxiSystem,
 	permModuleDomicilios,
 	permModuleParqueadero,
-	permModuleApartTuristicos,
-	permModulePropiedadHorizontal,
 	permModuleAlquileres,
-	permModuleOdontologia,
 	permModuleTurnos,
 	permModuleControlElectrico,
 	permModuleEnergiaSolar,
 	permModuleCamaras,
-	permModuleGrafologia,
 	permModuleBolsa,
 	permModuleCarnets,
 	permModuleHorariosTrab,
@@ -330,10 +318,10 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleCumplimientoKYC,
 	permModuleContratosOblig,
 	permModuleCalidadProcesos,
-	permModuleDrogueriaFarmacia,
 	permModuleAuditoria,
 	permModuleBackups,
 	permModuleDocumentosOnlyOffice,
+	permModuleVida,
 }
 
 var permissionActionsCatalogOrdered = []string{
@@ -374,19 +362,13 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleVentaPublica:         "Venta publica y carta de productos",
 	permModuleReservasHotel:        "Reservas hoteleras",
 	permModuleChatTareas:           "Chat, tareas y agenda compartida",
-	permModuleGimnasio:             "Gimnasio y membresias",
-	permModuleTaxiSystem:           "Taxi system y despacho GPS",
 	permModuleDomicilios:           "Domicilios y delivery",
 	permModuleParqueadero:          "Parqueadero y tickets QR",
-	permModuleApartTuristicos:      "Apartamentos turisticos",
-	permModulePropiedadHorizontal:  "Propiedad horizontal",
 	permModuleAlquileres:           "Alquiler universal de activos",
-	permModuleOdontologia:          "Odontologia y agenda clinica",
 	permModuleTurnos:               "Turnos de atencion",
 	permModuleControlElectrico:     "Domotica e IoT",
 	permModuleEnergiaSolar:         "Energia solar y baterias",
 	permModuleCamaras:              "Camaras y DVR",
-	permModuleGrafologia:           "GRAFOLOGIX - Grafologia IA",
 	permModuleBolsa:                "Bolsa e indicadores de mercado",
 	permModuleCarnets:              "Carnets empresariales",
 	permModuleHorariosTrab:         "Horarios laborales",
@@ -410,10 +392,10 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleCumplimientoKYC:      "Cumplimiento KYC/KYB y riesgo LAFT",
 	permModuleContratosOblig:       "Contratos, obligaciones y firma electronica",
 	permModuleCalidadProcesos:      "Calidad, procesos y no conformidades",
-	permModuleDrogueriaFarmacia:    "Drogueria y farmacia",
 	permModuleAuditoria:            "Auditoria empresarial",
 	permModuleBackups:              "Backups empresariales",
 	permModuleDocumentosOnlyOffice: "Documentos OnlyOffice",
+	permModuleVida:                 "Vida personal",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -455,6 +437,7 @@ var defaultHiddenEnterpriseIAPages = map[string]bool{
 
 var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkPanelEmpresa", AlwaysVisible: true, Titulo: "Panel de empresa", Grupo: "Acceso general"},
+	{PaginaClave: "linkVida", Modulo: permModuleVida, Accion: permActionCreate, Titulo: "Vida", Grupo: "Acceso personal"},
 	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Permisos base de ventas"},
 	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa sin estacion", Grupo: "Operacion diaria y ventas"},
 	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Estaciones y terminales", Grupo: "Operacion diaria y ventas"},
@@ -469,24 +452,9 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleTurnos, Accion: permActionCreate, Titulo: "Turnos de atencion y fila", Grupo: "Plantillas de negocio"},
 
 	{PaginaClave: "linkPlantillasIntegracion", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Matriz de integracion de plantillas", Grupo: "Administracion y configuracion"},
-	{PaginaClave: "linkGimnasio", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gestion de gimnasio", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioDashboard", Modulo: permModuleGimnasio, Accion: permActionRead, Titulo: "Gimnasio - dashboard", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioSocios", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - socios", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioPlanes", Modulo: permModuleGimnasio, Accion: permActionUpdate, Titulo: "Gimnasio - planes", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioEntrenadores", Modulo: permModuleGimnasio, Accion: permActionUpdate, Titulo: "Gimnasio - entrenadores", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioClases", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - clases", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioInscripciones", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - inscripciones", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioAsistencias", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - asistencias", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioPagos", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - pagos", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkGimnasioAcceso", Modulo: permModuleGimnasio, Accion: permActionApprove, Titulo: "Gimnasio - control de acceso", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkTaxiSystem", Modulo: permModuleTaxiSystem, Accion: permActionCreate, Titulo: "Taxi system y despacho GPS", Grupo: "Plantillas de negocio"},
 	{PaginaClave: "linkDomicilios", Modulo: permModuleDomicilios, Accion: permActionCreate, Titulo: "Domicilios y delivery", Grupo: "Plantillas de negocio"},
 	{PaginaClave: "linkParqueadero", Modulo: permModuleParqueadero, Accion: permActionCreate, Titulo: "Parqueadero y tickets QR", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkApartamentosTuristicos", Modulo: permModuleApartTuristicos, Accion: permActionCreate, Titulo: "Apartamentos turisticos", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkPropiedadHorizontal", Modulo: permModulePropiedadHorizontal, Accion: permActionCreate, Titulo: "Propiedad horizontal", Grupo: "Plantillas de negocio"},
 	{PaginaClave: "linkAlquileres", Modulo: permModuleAlquileres, Accion: permActionCreate, Titulo: "Alquiler universal de activos", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkConsultorioOdontologico", Modulo: permModuleOdontologia, Accion: permActionCreate, Titulo: "Consultorio odontologico", Grupo: "Plantillas de negocio"},
-	{PaginaClave: "linkDrogueriaFarmacia", Modulo: permModuleDrogueriaFarmacia, Accion: permActionCreate, Titulo: "Drogueria / Farmacia", Grupo: "Plantillas de negocio"},
 	{PaginaClave: "linkAIUConstruccion", Modulo: permModuleAIUConstruccion, Accion: permActionCreate, Titulo: "AIU construccion y contratos de obra", Grupo: "Plantillas de negocio"},
 
 	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y compras"},
@@ -586,7 +554,6 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCalidadProcesos", Modulo: permModuleCalidadProcesos, Accion: permActionCreate, Titulo: "Calidad, procesos y no conformidades", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCamaras", Modulo: permModuleCamaras, Accion: permActionCreate, Titulo: "Camaras y DVR", Grupo: "Analisis y control"},
 	{PaginaClave: "linkEnergiaSolar", Modulo: permModuleEnergiaSolar, Accion: permActionCreate, Titulo: "Paneles solares", Grupo: "Domotica y Energia Solar"},
-	{PaginaClave: "linkGrafologia", Modulo: permModuleGrafologia, Accion: permActionCreate, Titulo: "GRAFOLOGIX - Grafologia IA", Grupo: "Analisis y control"},
 	{PaginaClave: "linkBolsa", Modulo: permModuleBolsa, Accion: permActionRead, Titulo: "Bolsa e indicadores de mercado", Grupo: "Analisis y control"},
 	{PaginaClave: "linkBackups", Modulo: permModuleBackups, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Analisis y control"},
 
@@ -1135,7 +1102,7 @@ func WithEmpresaUbicacionGPSPermissions(dbEmp, dbSuper *sql.DB, next http.Handle
 
 // WithEmpresaAuditoriaPermissions aplica permisos para auditoria empresarial.
 func WithEmpresaAuditoriaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAuditoria, resolveVerticalPermissionAction, next)
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAuditoria, resolveEmpresaAuditoriaPermissionAction, next)
 }
 
 // WithEmpresaBackupsPermissions aplica permisos para snapshots, restauracion y descargas de backups.
@@ -1146,6 +1113,12 @@ func WithEmpresaBackupsPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc
 // WithEmpresaDocumentosOnlyOfficePermissions aplica permisos para documentos OnlyOffice.
 func WithEmpresaDocumentosOnlyOfficePermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleDocumentosOnlyOffice, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaVidaPermissions protege el autoservicio financiero personal. La
+// empresa activa y la cuenta autenticada forman juntas el limite de datos.
+func WithEmpresaVidaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleVida, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaReportesPermissions aplica permisos para analitica y reportes ejecutivos.
@@ -1168,16 +1141,6 @@ func WithEmpresaVentaPublicaPermissions(dbEmp, dbSuper *sql.DB, next http.Handle
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleVentaPublica, resolveVerticalPermissionAction, next)
 }
 
-// WithEmpresaGimnasioPermissions aplica permisos independientes para gimnasio.
-func WithEmpresaGimnasioPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleGimnasio, resolveVerticalPermissionAction, next)
-}
-
-// WithEmpresaTaxiSystemPermissions aplica permisos independientes para taxi system.
-func WithEmpresaTaxiSystemPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleTaxiSystem, resolveVerticalPermissionAction, next)
-}
-
 // WithEmpresaDomiciliosPermissions aplica permisos independientes para domicilios.
 func WithEmpresaDomiciliosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleDomicilios, resolveVerticalPermissionAction, next)
@@ -1188,24 +1151,9 @@ func WithEmpresaParqueaderoPermissions(dbEmp, dbSuper *sql.DB, next http.Handler
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleParqueadero, resolveVerticalPermissionAction, next)
 }
 
-// WithEmpresaApartamentosTuristicosPermissions aplica permisos independientes para apartamentos turisticos.
-func WithEmpresaApartamentosTuristicosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleApartTuristicos, resolveVerticalPermissionAction, next)
-}
-
-// WithEmpresaPropiedadHorizontalPermissions aplica permisos independientes para copropiedades.
-func WithEmpresaPropiedadHorizontalPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModulePropiedadHorizontal, resolveVerticalPermissionAction, next)
-}
-
 // WithEmpresaAlquileresPermissions aplica permisos independientes para alquileres.
 func WithEmpresaAlquileresPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAlquileres, resolveVerticalPermissionAction, next)
-}
-
-// WithEmpresaOdontologiaPermissions aplica permisos independientes para odontologia.
-func WithEmpresaOdontologiaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleOdontologia, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaTurnosAtencionPermissions aplica permisos independientes para turnos.
@@ -1226,11 +1174,6 @@ func WithEmpresaEnergiaSolarPermissions(dbEmp, dbSuper *sql.DB, next http.Handle
 // WithEmpresaCamarasPermissions aplica permisos independientes para camaras, DVR y visores web.
 func WithEmpresaCamarasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCamaras, resolveVerticalPermissionAction, next)
-}
-
-// WithEmpresaGrafologiaPermissions aplica permisos independientes para GRAFOLOGIX y analisis grafológico.
-func WithEmpresaGrafologiaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleGrafologia, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaBolsaPermissions aplica permisos de lectura para indicadores de mercado.
@@ -1286,11 +1229,6 @@ func WithEmpresaContratosObligacionesPermissions(dbEmp, dbSuper *sql.DB, next ht
 // WithEmpresaCalidadProcesosPermissions aplica permisos para auditorias, procesos y no conformidades.
 func WithEmpresaCalidadProcesosPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCalidadProcesos, resolveVerticalPermissionAction, next)
-}
-
-// WithEmpresaDrogueriaFarmaciaPermissions aplica permisos para operacion sanitaria, lotes y dispensacion.
-func WithEmpresaDrogueriaFarmaciaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleDrogueriaFarmacia, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaPublicScope aplica validacion minima de alcance por empresa para endpoints publicos
@@ -1995,6 +1933,11 @@ func resolveVentasPermissionAction(r *http.Request) string {
 		return permActionUpdate
 	}
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if r.URL.Path == "/api/empresa/datafonos" && action == "config" {
+		// La configuracion de un adquirente controla destinos HTTP y referencias
+		// de secretos. No debe quedar disponible con el permiso operativo de caja.
+		return permActionApprove
+	}
 	switch action {
 	case "pagar_estacion", "pagar":
 		return permActionCreate
@@ -2289,6 +2232,21 @@ func resolveVerticalPermissionAction(r *http.Request) string {
 	return defaultPermissionActionFromMethod(r.Method)
 }
 
+// resolveEmpresaAuditoriaPermissionAction reserva el permiso de borrado para
+// la retencion/purga. Una confirmacion del navegador no es una barrera de
+// autorizacion: la mutacion elimina filas historicas y debe rechazarse tambien
+// cuando se invoque la API directamente.
+func resolveEmpresaAuditoriaPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "conexion", "conectividad", "connectivity", "export_forense", "forense_export", "cadena_custodia":
+		return permActionRead
+	case "retener", "purgar":
+		return permActionDelete
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
 func resolveControlElectricoPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
@@ -2399,6 +2357,9 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	if role == "administrador_total" {
 		return true
 	}
+	if module == permModuleVida {
+		return strings.TrimSpace(role) != "" && role != "sin_rol" && action != permActionApprove
+	}
 
 	allReadRoles := []string{"admin_empresa", "supervisor_sucursal", "cajero", "inventario", "compras", "contabilidad", "auditor"}
 	if isPermModuleNuevoVertical(module) {
@@ -2423,7 +2384,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero", "vendedor", "recepcion")
 		}
 
-	case permModuleVentaPublica, permModuleReservasHotel, permModuleChatTareas, permModuleGimnasio, permModuleTaxiSystem, permModuleDomicilios, permModuleParqueadero, permModuleApartTuristicos, permModulePropiedadHorizontal, permModuleAlquileres, permModuleOdontologia, permModuleDrogueriaFarmacia, permModuleTurnos, permModuleCarnets:
+	case permModuleVentaPublica, permModuleReservasHotel, permModuleChatTareas, permModuleDomicilios, permModuleParqueadero, permModuleAlquileres, permModuleTurnos, permModuleCarnets:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -2473,7 +2434,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "contabilidad")
 		}
 
-	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleCalidadProcesos, permModuleEnergiaSolar, permModuleCamaras, permModuleGrafologia, permModuleBolsa, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
+	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleCalidadProcesos, permModuleEnergiaSolar, permModuleCamaras, permModuleBolsa, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
 		switch action {
 		case permActionRead:
 			if module == permModuleEnergiaSolar {
@@ -3373,15 +3334,9 @@ func isEmpresaBusinessVerticalModule(module string) bool {
 		return false
 	}
 	switch clean {
-	case permModuleGimnasio,
-		permModuleTaxiSystem,
-		permModuleDomicilios,
+	case permModuleDomicilios,
 		permModuleParqueadero,
-		permModuleApartTuristicos,
-		permModulePropiedadHorizontal,
 		permModuleAlquileres,
-		permModuleOdontologia,
-		permModuleDrogueriaFarmacia,
 		permModuleAIUConstruccion,
 		permModuleReservasHotel:
 		return true
@@ -3394,18 +3349,8 @@ func normalizeVerticalScopeModule(module string) string {
 	clean := strings.ToLower(strings.TrimSpace(module))
 	clean = strings.ReplaceAll(clean, "-", "_")
 	switch clean {
-	case "consultorio", "consultorio_odontologico", "odontologico", "pacientes":
-		return permModuleOdontologia
-	case "taxi":
-		return permModuleTaxiSystem
-	case "apartamentos", "apartamento_turistico", "apartamentos_turisticos":
-		return permModuleApartTuristicos
-	case "propiedad", "copropiedad", "ph":
-		return permModulePropiedadHorizontal
 	case "alquiler", "rentas":
 		return permModuleAlquileres
-	case "drogueria", "farmacia":
-		return permModuleDrogueriaFarmacia
 	case "aiu", "constructora", "construccion":
 		return permModuleAIUConstruccion
 	case "hotel", "motel", "reservas":
@@ -3493,12 +3438,6 @@ func resolveEmpresaVerticalScope(dbSuper *sql.DB, empresaID int64, policy *dbpkg
 						scope.Source = "preconfiguracion_tipo_empresa"
 					}
 				}
-				if template.Modulos.Gimnasio != nil {
-					addVerticalScopeModule(&scope, permModuleGimnasio)
-				}
-				if template.Modulos.Odontologia != nil {
-					addVerticalScopeModule(&scope, permModuleOdontologia)
-				}
 			}
 		}
 	}
@@ -3566,7 +3505,6 @@ var permissionModuleLicenseFallbacks = map[string][]string{
 	permModuleAuditoria:            {permModuleSeguridad},
 	permModuleEnergiaSolar:         {permModuleControlElectrico, permModuleSeguridad},
 	permModuleCamaras:              {permModuleControlElectrico, permModuleSeguridad},
-	permModuleGrafologia:           {permModuleReportes, permModuleSeguridad},
 	permModuleBolsa:                {permModuleReportes, permModuleFinanzas},
 	permModuleBackups:              {permModuleSeguridad},
 	permModuleDocumentosOnlyOffice: {permModuleSeguridad},
@@ -3577,6 +3515,9 @@ func isModuloPermitidoByLicencia(modulo string, allowed map[string]bool) bool {
 		return true
 	}
 	key := strings.ToLower(strings.TrimSpace(modulo))
+	if key == permModuleVida {
+		return true
+	}
 	if key == "" {
 		return false
 	}
@@ -3842,8 +3783,6 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkEnergiaSolar"
 	case path == "/api/empresa/camaras":
 		return "linkCamaras"
-	case path == "/api/empresa/grafologia":
-		return "linkGrafologia"
 	case path == "/api/empresa/bolsa":
 		return "linkBolsa"
 	case path == "/api/empresa/ia_empresarial":
@@ -3910,24 +3849,14 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkVehiculosRegistro"
 	case path == "/api/empresa/carnets":
 		return "linkCarnets"
-	case path == "/api/empresa/gimnasio":
-		return "linkGimnasio"
-	case path == "/api/empresa/taxi_system":
-		return "linkTaxiSystem"
 	case path == "/api/empresa/domicilios":
 		return "linkDomicilios"
 	case path == "/api/empresa/parqueadero":
 		return "linkParqueadero"
-	case path == "/api/empresa/apartamentos_turisticos":
-		return "linkApartamentosTuristicos"
-	case path == "/api/empresa/propiedad_horizontal":
-		return "linkPropiedadHorizontal"
 	case path == "/api/empresa/alquileres":
 		return "linkAlquileres"
-	case path == "/api/empresa/odontologia":
-		return "linkConsultorioOdontologico"
-	case path == "/api/empresa/drogueria_farmacia":
-		return "linkDrogueriaFarmacia"
+	case path == "/api/empresa/vida":
+		return "linkVida"
 	case path == "/api/empresa/turnos_atencion":
 		return "linkTurnosAtencion"
 	case path == "/api/empresa/control_electrico":

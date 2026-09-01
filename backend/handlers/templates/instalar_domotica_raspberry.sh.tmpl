@@ -17,7 +17,7 @@ fi
 install -d -m 0750 /opt/pcs-domotica /etc/pcs-domotica
 
 cat > /etc/pcs-domotica/agent.json <<'PCS_CONFIG'
-{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.2.0"}
+{"base_url":{{.BaseURLJSON}},"device_uid":{{.DeviceUIDJSON}},"enrollment_token":{{.EnrollmentTokenJSON}},"device_token":"","agent_version":"1.3.0"}
 PCS_CONFIG
 chmod 0600 /etc/pcs-domotica/agent.json
 
@@ -38,6 +38,8 @@ CONFIG_PATH = "/etc/pcs-domotica/agent.json"
 API_PATH = "/api/public/domotica/tunnel"
 inputs_lock = threading.Lock()
 inputs_cache = []
+door_scan_lock = threading.Lock()
+door_scan_cache = {}
 stop_event = threading.Event()
 
 
@@ -241,6 +243,87 @@ def monitor_inputs(config):
         stop_event.wait(0.2)
 
 
+def monitor_door_sensors(config):
+    states = {}
+    pending = {}
+    configured_signature = None
+    active_outputs = []
+    last_full_report = 0.0
+    while not stop_event.is_set():
+        with door_scan_lock:
+            current = dict(door_scan_cache)
+        input_pins = [int(pin) for pin in current.get("input_pins", []) if 0 <= int(pin) <= 27]
+        output_pins = [int(pin) for pin in current.get("output_pins", []) if 0 <= int(pin) <= 27]
+        if len(input_pins) != 4 or not output_pins:
+            if active_outputs:
+                for pin in active_outputs:
+                    try: gpio.set_output(pin, False, True)
+                    except Exception as exc: log("No se pudo desactivar salida selectora: " + str(exc))
+                active_outputs = []
+            configured_signature = None
+            states.clear()
+            pending.clear()
+            stop_event.wait(0.5)
+            continue
+        delay_ms = max(10, min(5000, int(current.get("delay_ms", 100) or 100)))
+        signature = (tuple(input_pins), tuple(output_pins), delay_ms, str(current.get("input_pull", "up")))
+        if signature != configured_signature:
+            for pin in range(4, 20):
+                gpio.set_output(pin, False, True)
+            for pin in input_pins:
+                gpio.configure_input(pin, current.get("input_pull", "up"))
+            active_outputs = list(output_pins)
+            states.clear()
+            pending.clear()
+            configured_signature = signature
+            last_full_report = 0.0
+            log("Barrido de puertas activo: {} salidas x 4 entradas, {} ms".format(len(output_pins), delay_ms))
+        try:
+            for output_index, output_pin in enumerate(output_pins, 1):
+                try:
+                    gpio.set_output(output_pin, True, True)
+                    if stop_event.wait(delay_ms / 1000.0):
+                        break
+                    for input_index, input_pin in enumerate(input_pins, 1):
+                        value = gpio.read_input(input_pin)
+                        key = (output_index, input_index)
+                        previous = states.get(key)
+                        if previous is None:
+                            states[key] = (value, value, 1)
+                            pending[key] = value
+                            continue
+                        stable, observed, count = previous
+                        if value != observed:
+                            states[key] = (stable, value, 1)
+                        else:
+                            count += 1
+                            if value != stable and count >= 2:
+                                stable = value
+                                pending[key] = value
+                            states[key] = (stable, observed, count)
+                finally:
+                    gpio.set_output(output_pin, False, True)
+            now = time.monotonic()
+            full_report = now - last_full_report >= 30.0
+            report = {}
+            if full_report:
+                report = {key: value[0] for key, value in states.items()}
+            report.update(pending)
+            if report:
+                readings = [{"output_index": key[0], "input_index": key[1], "value": value} for key, value in sorted(report.items())]
+                request_json(config, "door_scan", {"readings": readings}, timeout=20)
+                for key in report:
+                    pending.pop(key, None)
+                if full_report:
+                    last_full_report = now
+        except Exception as exc:
+            log("Barrido de sensores de puertas no disponible: " + str(exc))
+            for pin in output_pins:
+                try: gpio.set_output(pin, False, True)
+                except Exception: pass
+            stop_event.wait(1.0)
+
+
 def read_vedirect(path="/dev/ttyUSB0"):
     import termios
     if not os.path.exists(path):
@@ -294,6 +377,8 @@ def main():
     boot_id = os.urandom(16).hex()
     watcher = threading.Thread(target=monitor_inputs, args=(config,), daemon=True)
     watcher.start()
+    door_watcher = threading.Thread(target=monitor_door_sensors, args=(config,), daemon=True)
+    door_watcher.start()
     backoff = 1
     next_solar = 0
     while not stop_event.is_set():
@@ -306,6 +391,11 @@ def main():
             }, timeout=35)
             with inputs_lock:
                 inputs_cache[:] = response.get("inputs", []) if isinstance(response.get("inputs"), list) else []
+            usage_type = str(response.get("usage_type", "domotica"))
+            with door_scan_lock:
+                door_scan_cache.clear()
+                if usage_type == "sensor_puertas" and isinstance(response.get("door_scan"), dict):
+                    door_scan_cache.update(response.get("door_scan"))
             command = response.get("command")
             if isinstance(command, dict) and command.get("command_id"):
                 ok = True
@@ -325,7 +415,7 @@ def main():
                 restore_delay_ms = int(command.get("restore_delay_ms", 0) or 0)
                 if ok and restore_delay_ms > 0:
                     stop_event.wait(min(1000, restore_delay_ms) / 1000.0)
-            if time.monotonic() >= next_solar:
+            if usage_type != "sensor_puertas" and time.monotonic() >= next_solar:
                 sample = read_vedirect()
                 if sample:
                     request_json(config, "solar_telemetry", sample, timeout=20)
@@ -355,7 +445,7 @@ chmod 0750 /opt/pcs-domotica/agent.py
 
 cat > /etc/systemd/system/pcs-domotica-agent.service <<'PCS_SERVICE'
 [Unit]
-Description=PCS Domotica Raspberry outbound HTTPS tunnel
+Description=PCS Raspberry outbound HTTPS tunnel (Domotica or door sensors)
 After=network-online.target nss-lookup.target
 Wants=network-online.target
 StartLimitIntervalSec=0
@@ -380,4 +470,4 @@ PCS_SERVICE
 
 systemctl daemon-reload
 systemctl enable --now pcs-domotica-agent.service
-echo "PCS Domotica instalado. Estado: systemctl status pcs-domotica-agent --no-pager"
+echo "PCS Raspberry instalado. Estado: systemctl status pcs-domotica-agent --no-pager"

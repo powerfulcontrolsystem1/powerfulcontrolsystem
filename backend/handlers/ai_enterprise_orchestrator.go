@@ -421,6 +421,14 @@ func enterpriseAIConfirmProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, "No se pudo confirmar la propuesta", http.StatusConflict)
 		return
 	}
+	if p.IdempotentReplay {
+		if p.Estado == dbpkg.AIProposalCompleted && json.Valid([]byte(p.ResultadoJSON)) {
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "proposal_id": p.ProposalID, "status": p.Estado, "result": json.RawMessage(p.ResultadoJSON), "idempotent_replay": true})
+			return
+		}
+		writeJSON(w, http.StatusConflict, map[string]interface{}{"ok": false, "proposal_id": p.ProposalID, "status": p.Estado, "error": "La ejecucion anterior sigue en curso o requiere reconciliacion; no se repetira automaticamente."})
+		return
+	}
 	if p.ToolName != aipkg.ToolHotelConfigureRoomStation {
 		if p.ToolName != aipkg.ToolCatalogCreateProduct {
 			_ = dbpkg.FinishEmpresaAIProposal(dbEmp, ctx.EmpresaID, p.ProposalID, dbpkg.AIProposalFailed, `{"error":"herramienta no habilitada"}`)

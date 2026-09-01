@@ -69,7 +69,7 @@
         <label class="form-help"><input id="cfgBrebEnabled" type="checkbox"> Habilitar medio Transferencia Bre-B</label>
         <label class="form-help"><input id="cfgMixed" type="checkbox"> Permitir pagos combinados</label>
         <label class="form-help"><input id="cfgRequireProof" type="checkbox"> Pedir comprobante o referencia al cajero</label>
-        <label class="form-help"><input id="cfgAutoReconcile" type="checkbox"> Conciliacion automatica cuando exista webhook/API</label>
+	        <label class="form-help"><input id="cfgAutoReconcile" type="checkbox" disabled> Conciliacion automatica no conectada</label>
         <label class="form-help"><input id="cfgCuentaCaja" type="checkbox"> Preferir cuenta/referencia por caja</label>
       </div>
       <div class="breb-form-grid">
@@ -82,8 +82,8 @@
           <input id="cfgAlertMin" class="form-input" type="number" min="0" step="1">
         </div>
         <div class="form-col">
-          <label class="form-label" for="cfgWebhook">Webhook/API bancaria</label>
-          <input id="cfgWebhook" class="form-input" placeholder="https://...">
+	          <label class="form-label" for="cfgWebhook">Conector bancario</label>
+	          <input id="cfgWebhook" class="form-input" value="No conectado" disabled>
         </div>
       </div>
       <div class="form-col">
@@ -93,7 +93,7 @@
       <div class="breb-section-header">
         <div>
           <h2>Cuentas receptoras y QR</h2>
-          <p>El payload oficial puede ser un QR estatico o una plantilla con {valor}, {referencia}, {llave}, {empresa_id}, {carrito_id} y {carrito_codigo}.</p>
+	          <p>Usa solamente el payload estatico exacto emitido por el banco, Nequi o participante Bre-B. Un QR dinamico debe generarse mediante su API oficial y no admite sustitucion de plantillas.</p>
         </div>
         <button id="brebAddAccountBtn" type="button" class="btn secondary">Agregar cuenta</button>
       </div>
@@ -118,7 +118,7 @@
         <div class="form-col"><label class="form-label" for="manualCaja">Caja</label><input id="manualCaja" class="form-input" maxlength="60" placeholder="Caja 1"></div>
         <div class="form-col"><label class="form-label" for="manualCarrito">Carrito / venta</label><input id="manualCarrito" class="form-input" type="number" min="0" step="1"></div>
         <div class="form-col"><label class="form-label" for="manualPagador">Pagador</label><input id="manualPagador" class="form-input" maxlength="160"></div>
-        <div class="form-col"><label class="form-label" for="manualEstado">Estado</label><select id="manualEstado" class="form-input"><option value="pendiente">Pendiente</option><option value="conciliado">Conciliado</option></select></div>
+	        <div class="form-col"><label class="form-label" for="manualEstado">Estado</label><select id="manualEstado" class="form-input" disabled><option value="pendiente">Pendiente de conciliacion bancaria</option></select></div>
       </div>
       <div class="form-col">
         <label class="form-label" for="manualObs">Observaciones</label>
@@ -163,7 +163,7 @@
       }
       function providerLabel(v){ const p=text(v).toLowerCase(); return p==='nequi'?'Nequi':(p==='otro'?'Otro':'Bre-B'); }
       function blankAccount(index){
-        return { id:'qr_account_'+index, activa:true, nombre:'Cuenta QR '+index, proveedor:'breb', tipo_llave:'', llave:'', comercio:'', caja_codigo:'', payload_oficial:'', instrucciones:'', cuenta_contable:'', banco_receptor:'', referencia_fija:'', qr_tipo:'dinamico' };
+	        return { id:'qr_account_'+index, activa:true, nombre:'Cuenta QR '+index, proveedor:'breb', tipo_llave:'', llave:'', comercio:'', caja_codigo:'', payload_oficial:'', instrucciones:'', cuenta_contable:'', banco_receptor:'', referencia_fija:'', qr_tipo:'estatico' };
       }
       function renderAccounts(rows){
         const list = Array.isArray(rows) && rows.length ? rows : [blankAccount(1)];
@@ -172,11 +172,11 @@
             <label class="form-help"><input data-field="activa" type="checkbox" ${row.activa !== false ? 'checked' : ''}> Activa</label>
             <div class="form-col"><label class="form-label">Nombre</label><input data-field="nombre" class="form-input" value="${esc(row.nombre)}"></div>
             <div class="form-col"><label class="form-label">Proveedor</label><select data-field="proveedor" class="form-input"><option value="breb">Bre-B</option><option value="nequi">Nequi</option><option value="otro">Otro</option></select></div>
-            <div class="form-col"><label class="form-label">Tipo llave</label><input data-field="tipo_llave" class="form-input" value="${esc(row.tipo_llave)}" placeholder="Celular, NIT, email"></div>
+	            <div class="form-col"><label class="form-label">Tipo llave</label><select data-field="tipo_llave" class="form-input"><option value="">Selecciona</option><option value="celular">Celular</option><option value="correo">Correo</option><option value="documento">Documento/NIT</option><option value="alfanumerica">Alfanumerica @</option><option value="comercio">Comercio 00</option></select></div>
             <div class="form-col"><label class="form-label">Llave / cuenta</label><input data-field="llave" class="form-input" value="${esc(row.llave)}"></div>
             <div class="form-col"><label class="form-label">Caja</label><input data-field="caja_codigo" class="form-input" value="${esc(row.caja_codigo)}" placeholder="Caja 1"></div>
-            <div class="form-col"><label class="form-label">QR</label><select data-field="qr_tipo" class="form-input"><option value="dinamico">Dinamico</option><option value="estatico">Estatico</option></select></div>
-            <div class="form-col"><label class="form-label">Payload / instrucciones</label><input data-field="payload_oficial" class="form-input" value="${esc(row.payload_oficial)}" placeholder="Plantilla oficial"></div>
+	            <div class="form-col"><label class="form-label">QR</label><select data-field="qr_tipo" class="form-input" disabled><option value="estatico">Estatico oficial</option></select></div>
+	            <div class="form-col"><label class="form-label">Payload QR oficial</label><input data-field="payload_oficial" class="form-input" value="${esc(row.payload_oficial)}" placeholder="Contenido estatico exacto"></div>
             <button type="button" class="btn secondary breb-remove-account">Quitar</button>
             <input data-field="comercio" type="hidden" value="${esc(row.comercio)}">
             <input data-field="instrucciones" type="hidden" value="${esc(row.instrucciones)}">
@@ -187,10 +187,12 @@
         list.forEach((row, index) => {
           const line = accountsBox.querySelector('[data-index="'+index+'"]');
           if (!line) return;
-          const provider = line.querySelector('[data-field="proveedor"]');
-          const qr = line.querySelector('[data-field="qr_tipo"]');
-          if (provider) provider.value = text(row.proveedor) || 'breb';
-          if (qr) qr.value = text(row.qr_tipo) || 'dinamico';
+	          const provider = line.querySelector('[data-field="proveedor"]');
+	          const keyType = line.querySelector('[data-field="tipo_llave"]');
+	          const qr = line.querySelector('[data-field="qr_tipo"]');
+	          if (provider) provider.value = text(row.proveedor) || 'breb';
+	          if (keyType) keyType.value = text(row.tipo_llave);
+	          if (qr) qr.value = 'estatico';
         });
       }
       function readAccounts(){
@@ -203,7 +205,7 @@
           return {
             id:'qr_account_'+(index+1), activa:get('activa'), nombre:get('nombre'), proveedor:get('proveedor') || 'breb',
             tipo_llave:get('tipo_llave'), llave:get('llave'), comercio:get('comercio'), caja_codigo:get('caja_codigo'),
-            qr_tipo:get('qr_tipo') || 'dinamico', payload_oficial:get('payload_oficial'), instrucciones:get('instrucciones'),
+	            qr_tipo:'estatico', payload_oficial:get('payload_oficial'), instrucciones:get('instrucciones'),
             cuenta_contable:get('cuenta_contable'), banco_receptor:get('banco_receptor'), referencia_fija:get('referencia_fija')
           };
         }).filter(row => row.nombre || row.llave || row.payload_oficial || row.caja_codigo);
@@ -213,11 +215,11 @@
         document.getElementById('cfgBrebEnabled').checked = cfg.metodo_pago_transferencia_bre_b !== false;
         document.getElementById('cfgMixed').checked = cfg.permitir_pago_mixto !== false;
         document.getElementById('cfgRequireProof').checked = cfg.breb_requiere_comprobante !== false;
-        document.getElementById('cfgAutoReconcile').checked = !!cfg.breb_conciliacion_automatica;
+	        document.getElementById('cfgAutoReconcile').checked = false;
         document.getElementById('cfgCuentaCaja').checked = !!cfg.breb_cuenta_default_por_caja;
         document.getElementById('cfgPrefix').value = text(cfg.breb_referencia_prefijo) || 'BREB';
         document.getElementById('cfgAlertMin').value = Number(cfg.breb_alerta_pagos_pendientes_min || 10);
-        document.getElementById('cfgWebhook').value = text(cfg.breb_webhook_url);
+	        document.getElementById('cfgWebhook').value = 'No conectado';
         document.getElementById('cfgInstructions').value = text(cfg.breb_instrucciones_operacion);
         renderAccounts(cfg.pago_qr_cuentas || []);
         document.getElementById('metricEnabled').textContent = cfg.pago_qr_habilitado ? 'Activo' : 'Inactivo';
@@ -262,18 +264,21 @@
           metodo_pago_transferencia_bre_b: document.getElementById('cfgBrebEnabled').checked,
           permitir_pago_mixto: document.getElementById('cfgMixed').checked,
           breb_requiere_comprobante: document.getElementById('cfgRequireProof').checked,
-          breb_conciliacion_automatica: document.getElementById('cfgAutoReconcile').checked,
+	          breb_conciliacion_automatica: false,
           breb_cuenta_default_por_caja: document.getElementById('cfgCuentaCaja').checked,
           breb_referencia_prefijo: document.getElementById('cfgPrefix').value,
           breb_alerta_pagos_pendientes_min: Number(document.getElementById('cfgAlertMin').value || 0),
-          breb_webhook_url: document.getElementById('cfgWebhook').value,
+	          breb_webhook_url: '',
           breb_instrucciones_operacion: document.getElementById('cfgInstructions').value,
           pago_qr_cuentas: readAccounts()
         };
-        const res = await fetch(api, { method:'PUT', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-        if (!res.ok) throw new Error('No se pudo guardar configuracion Bre-B QR.');
-        setStatus(msg, 'Configuracion Bre-B QR guardada.', true);
-        await load();
+	        const button = document.getElementById('brebSaveConfigBtn');
+	        button.disabled = true;
+	        const res = await fetch(api, { method:'PUT', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+	        if (!res.ok) { button.disabled = false; throw new Error((await res.text()) || 'No se pudo guardar configuracion Bre-B QR.'); }
+	        setStatus(msg, 'Configuracion Bre-B QR guardada.', true);
+	        await load();
+	        button.disabled = false;
       }
       async function registerManual(){
         const payload = {
@@ -289,14 +294,17 @@
           estado_conciliacion: document.getElementById('manualEstado').value,
           observaciones: document.getElementById('manualObs').value
         };
-        const res = await fetch(api + '&action=registro_manual', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-        if (!res.ok) throw new Error('No se pudo registrar el pago Bre-B. Revisa monto y referencia.');
-        setStatus(manualMsg, 'Pago Bre-B registrado para conciliacion.', true);
-        await load();
+	        const button = document.getElementById('brebManualBtn');
+	        button.disabled = true;
+	        const res = await fetch(api + '&action=registro_manual', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+	        if (!res.ok) { button.disabled = false; throw new Error((await res.text()) || 'No se pudo registrar el pago Bre-B. Revisa monto y referencia.'); }
+	        setStatus(manualMsg, 'Pago Bre-B registrado para conciliacion.', true);
+	        await load();
+	        button.disabled = false;
       }
       document.getElementById('brebReloadBtn').addEventListener('click', () => load().catch(err => setStatus(msg, err.message || 'Error al actualizar.', false)));
-      document.getElementById('brebSaveConfigBtn').addEventListener('click', () => saveConfig().catch(err => setStatus(msg, err.message || 'Error al guardar.', false)));
-      document.getElementById('brebManualBtn').addEventListener('click', () => registerManual().catch(err => setStatus(manualMsg, err.message || 'Error al registrar.', false)));
+	      document.getElementById('brebSaveConfigBtn').addEventListener('click', () => saveConfig().catch(err => setStatus(msg, err.message || 'Error al guardar.', false)).finally(() => { document.getElementById('brebSaveConfigBtn').disabled = false; }));
+	      document.getElementById('brebManualBtn').addEventListener('click', () => registerManual().catch(err => setStatus(manualMsg, err.message || 'Error al registrar.', false)).finally(() => { document.getElementById('brebManualBtn').disabled = false; }));
       document.getElementById('brebAddAccountBtn').addEventListener('click', () => {
         const rows = readAccounts();
         rows.push(blankAccount(rows.length + 1));

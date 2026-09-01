@@ -614,6 +614,33 @@ func TestWompiWebCheckoutReadyRequiresUsablePublicAndIntegrityKeys(t *testing.T)
 	}
 }
 
+func TestBuildWompiEventChecksumUsesOfficialDynamicPropertiesOrder(t *testing.T) {
+	obj := map[string]interface{}{
+		"data":      map[string]interface{}{"transaction": map[string]interface{}{"id": "tx-1", "status": "APPROVED", "amount_in_cents": float64(500000)}},
+		"timestamp": float64(1700000000),
+		"signature": map[string]interface{}{"properties": []interface{}{"transaction.id", "transaction.status", "transaction.amount_in_cents"}},
+	}
+	got, err := buildWompiEventChecksum(obj, "test_events_secret_123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedSource := "tx-1APPROVED5000001700000000test_events_secret_123"
+	sum := sha256.Sum256([]byte(expectedSource))
+	if got != hex.EncodeToString(sum[:]) {
+		t.Fatalf("checksum = %q", got)
+	}
+}
+
+func TestExtractWompiPaymentEvidencePreservesCOPAmount(t *testing.T) {
+	evidence := extractWompiPaymentEvidence(map[string]interface{}{
+		"environment": "test",
+		"data":        map[string]interface{}{"transaction": map[string]interface{}{"id": "tx-1", "reference": "LIC-1", "status": "APPROVED", "amount_in_cents": float64(125000), "currency": "COP"}},
+	})
+	if evidence.TransactionID != "tx-1" || evidence.Reference != "LIC-1" || evidence.AmountInCents != 125000 || evidence.Currency != "COP" || evidence.Environment != "test" {
+		t.Fatalf("unexpected evidence: %#v", evidence)
+	}
+}
+
 func TestDefaultLicenciaPaymentProviderEnabledFollowsConfigurationReadiness(t *testing.T) {
 	if !defaultLicenciaPaymentProviderEnabled(true) {
 		t.Fatal("configured license payment providers should be enabled by default")

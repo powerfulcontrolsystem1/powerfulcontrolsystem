@@ -1,3 +1,19 @@
+2026-08-31
+- `backend/handlers/auditoria_empresa.go`: valida de forma temprana el formato
+  de la exportacion forense y genera su manifiesto SHA-256/cadena de custodia.
+- `backend/handlers/auditoria_empresa_test.go`: cubre permisos destructivos,
+  rechazo de formatos no admitidos y encadenamiento verificable de hashes.
+- `web/administrar_empresa/auditoria.html`: distingue exportacion de vista de
+  exportacion forense por CSV/JSON.
+
+2026-08-25
+- `backend/handlers/empresa_inventory_idempotency.go`: wrappers de idempotencia durable y acotada por empresa para mutaciones web críticas de inventario y compras.
+- `backend/handlers/empresa_inventory_idempotency_test.go`: contratos de idempotencia, integración compra-inventario, seguridad multiempresa y frontend de producción.
+- `backend/db/inventario_atomicidad_test.go`: contratos de descuento condicional, agregados escalables y UPSERT atómico de existencias.
+- `backend/handlers/testdata/qa_factura_compra.xml`: factura XML sintética sin datos reales para repetir la carga documental de compras IA con un tipo admitido y verificable.
+- `documentos/evidencia_productos_inventario_2026-08-25.md`: matriz de pruebas reales/visuales, reparaciones, resultados y gates pendientes del módulo.
+- `documentos/evidencia_productos_inventario_2026-08-25_visual/*.jpg`: capturas del candidato local para Productos móvil, Inventario avanzado, carga de factura de compra y Configuración de impresoras.
+
 2026-08-08
 - `backend/handlers/soportes_compras_ia.go`: aplica cuota empresarial y maximo
   configurado antes de persistir adjuntos privados CxP/IA.
@@ -12740,3 +12756,109 @@ panel de seguridad para que el navegador reciba la correccion CSRF de staging.
 - `backend/db/control_electrico_governance_test.go` y `backend/handlers/control_electrico_governance_ui_test.go`: contratos de identidad, cuotas, acciones de sensor, menú y tutorial.
 - `web/img/raspberry-pi-40-pin-bcm.svg`: pinout determinista físico/BCM de 40 pines.
 - `web/img/raspberry-pi-40-pin-tutorial.png`: ilustración orientativa generada para el tutorial.
+2026-08-21 - Plan de producción de Productos, Servicios e Inventario.
+- `documentos/plan_productos_servicios_inventario_produccion_2026-08-21.md`:
+  plan modular autocontenido para GPT-5.6 Terra medio con alcance, hallazgos a
+  confirmar, fases, matrices, pruebas, evidencia y compuerta GO/NO-GO; su
+  creación no ejecuta cambios funcionales ni despliegues.
+
+2026-08-21 - Plan de revisión y reparación del login.
+- `documentos/plan_login_autenticacion_produccion_2026-08-21.md`:
+  plan autocontenido para GPT-5.6 Terra medio que separa autenticación
+  administrativa y empresarial, prioriza contraseñas, tenant, sesiones, tokens,
+  Mailu, abuso y accesibilidad, y define pruebas reales futuras en PCS sin
+  incluir credenciales ni autorizar implementación o despliegue.
+
+2026-08-21 - Validaciones de atomicidad y errores de inventario.
+- `backend/db/inventario_atomicidad_test.go`: prueba de regresión que exige
+  descuento condicional y verificación de fila afectada en las tres salidas
+  críticas de inventario.
+- `backend/handlers/inventario_avanzado_test.go`: prueba que impide filtrar
+  detalles internos desde el contrato público de inventario avanzado.
+2026-08-21 - Apertura confiable del Chat IA empresarial
+- `web/js/ai_chat_drawer.js`: al abrir desde una empresa cuyo contexto se resolvió después de la carga inicial, restablece el estado visual del chat para que el icono autorizado abra el drawer; no modifica permisos ni contratos backend.
+- `backend/handlers/ai_chat_drawer_single_switch_contract_test.go`: cubre el marcador de regresión de la recuperación de estado empresarial.
+
+2026-08-23 - Retiro de verticales y consolidacion en Inventario
+- `backend/db/vertical_modules_decommission_migration.go`: migracion empresarial idempotente que elimina las tablas exclusivas de los cinco verticales retirados, la columna heredada de Taxi en venta publica y los expedientes del modulo independiente de farmacia.
+- `backend/db/db.go`: aloja `nullableID` como utilidad comun para que Alquileres y Construccion no dependan accidentalmente del archivo retirado de Taxi.
+- Se eliminan los archivos backend, frontend, JavaScript, imagenes y documentos funcionales exclusivos de Gimnasio, Taxi System, Apartamentos turisticos, Propiedad horizontal, Odontologia y Drogueria/Farmacia.
+- `web/index.html`, `web/administrar_empresa.html`, permisos, licencias y catalogos dejan de anunciar o activar los modulos retirados.
+
+2026-08-23 - Sincronizacion de portada y landings publicas
+- `backend/handlers/pagina_principal_catalogo_test.go`: regresion del filtro de tarjetas retiradas y del resumen exacto de 13 plantillas.
+- `backend/handlers/pagina_principal_handlers.go`: normaliza configuraciones persistidas de portada y resumen para publicar solo el catalogo vigente.
+- `web/index.html`: publica 52 modulos activos, enumera 13 plantillas y combina las plantillas clasicas/nuevas sin duplicarlas.
+- `web/descripcion_de_los_sistemas.html` y `web/descripcion_de_los_sistemas.ht`: landings canonica y compatible con el mismo conteo, catalogo y filtro defensivo.
+- `web/super/pagina_principal.html`: informa al editor sobre el catalogo vigente y el descarte de elementos retirados.
+
+2026-08-24 - Administracion segura de disco VPS
+- `backend/cmd/pcs-disk-manager/main.go`: sidecar interno con autenticacion HMAC
+  y lista fija de limpiezas Docker recuperables; no interpreta comandos, rutas
+  ni IDs enviados por HTTP.
+- `backend/handlers/super_disk_manager.go`: API global auditada que exige rol
+  super, confirmación fuerte y categorías permitidas antes de llamar al sidecar.
+- `web/super/administrar_disco_vps.html`: consola responsive de uso de disco,
+  selección de recursos recuperables y resultado de limpieza.
+- `deploy/docker/backend.Dockerfile` y `deploy/docker-compose.platform.yml`:
+  construyen/ejecutan el sidecar en red interna; el socket Docker queda fuera
+  del backend principal y no se publica puerto.
+2026-08-25 - Chat IA simple, multimodal y por usuario
+- `web/js/ai_chat_drawer.js`, `web/js/administrar_empresa.js` y `web/estilos.css`: reparan el botón flotante, simplifican el drawer, agregan historial y mantienen adjuntos/voz en escritorio y móvil.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/super_chat_ia_logica.go`, `backend/handlers/ai_config_handlers.go` y `backend/db/chat_inteligencia_artificial.go`: aplican un modelo global, persisten `conversation_id` y autorizan el alcance de historial.
+- `web/super/configuracion_avanzada.html`: reemplaza políticas separadas por una selección global de modelo y esfuerzo.
+- `backend/handlers/ai_chat_modern_contract_test.go`: cubre identificadores de conversación y contratos de modelo global/historial.
+- `backend/handlers/empresa_ia_empresarial.go`, `backend/handlers/ia_pedidos_estacion.go`, `web/administrar_empresa/centro_ia_empresarial.html` y `web/administrar_empresa/estacion_ia_pedidos.html`: unifican Centro IA y Pedidos IA con Agente PCS y el modelo global, sin selectores.
+2026-08-25 - `documentos/auditoria_pagos_colombia_datafonos_breb_nequi_bascula_2026-08-25.md`: auditoria tecnica, normativa y matriz de alistamiento productivo para datafonos, Bre-B, Nequi/Wompi y bascula comercial en Colombia.
+
+2026-08-26 - Auditoria y endurecimiento de idempotencia punta a punta
+- `documentos/auditoria_idempotencia_punta_a_punta_2026-08-26.md`: dictamen,
+  matriz por flujo, garantias, limitaciones y compuertas de produccion.
+- `backend/db/payment_checkout_idempotency.go`: ledger durable de checkout y
+  efectos externos posteriores al pago, con claves hasheadas y estados
+  `procesando`, `completado` e `incierto`.
+- `backend/db/sale_accounting_idempotency_migration.go`: migracion empresarial
+  que impide dos eventos contables activos de venta pagada para el mismo
+  carrito y empresa.
+- `backend/db/operational_idempotency_migration.go`: migracion empresarial
+  aditiva para fingerprints CxP y claims de venta offline y DIAN, sin modificar
+  el checksum de migraciones historicas.
+- `backend/db/payment_checkout_idempotency_test.go`,
+  `backend/handlers/payment_checkout_idempotency_contract_test.go`,
+  `backend/db/facturacion_retry_claim_test.go`,
+  `backend/handlers/facturacion_retry_claim_contract_test.go`,
+  `backend/db/offline_ventas_idempotency_test.go`,
+  `backend/db/durable_payload_conflict_test.go`,
+  `backend/db/venta_publica_payment_monotonic_test.go`,
+  `backend/db/carrito_payment_atomic_effects_test.go`,
+  `backend/db/sale_accounting_idempotency_test.go` y
+  `backend/db/operational_idempotency_migration_test.go` y
+  `backend/handlers/rappi_idempotency_test.go`: regresiones de replay,
+  fingerprint, claims, monotonicidad, atomicidad y migraciones.
+2026-08-31 - Modulo Vida
+- `backend/db/vida.go`: esquema, CRUD, resumen y proyecciones de gastos y
+  suscripciones personales, historial de precios y transaccion gasto/productos
+  con frontera empresa/usuario.
+- `backend/db/vida_test.go`: contratos de esquema, aislamiento, idempotencia y
+  proyeccion de periodicidades.
+- `backend/handlers/vida.go`: API personal, validaciones, cargas privadas,
+  extraccion IA de facturas, precios, recordatorios y renovacion.
+- `backend/handlers/vida_test.go`: contratos de permisos, licencia, fechas,
+  importes y tipos privados admitidos.
+- `web/administrar_empresa/vida.html`: pagina responsive de resumen, gastos y
+  suscripciones con captura de recibo desde movil.
+- `web/administrar_empresa/vida.css`: estilos propios compatibles con los temas
+  y anchos del shell empresarial.
+- `web/js/vida.js`: consumo API, formularios, listas, idempotencia, historial,
+  lector de codigos con camara, captura IA y alarmas del navegador.
+- `documentos/vida.md`: alcance, seguridad, API, persistencia, recordatorios y
+  compuertas de activacion.
+- `web/index.html`, `web/descripcion_de_los_sistemas.html`, la compatibilidad
+  `.ht` y `web/super/pagina_principal.html`: publican el corte actual de 53
+  modulos y agregan Vida al fallback cuando la configuracion dinamica no carga.
+2026-08-31 - Raspberry sensores de puertas
+- `backend/db/control_electrico_door_sensor.go`: normaliza modalidad/cantidad/delay, genera canales OUT/IN por empresa, aplica lotes autenticados y conserva transiciones.
+- `backend/db/control_electrico_door_sensor_migration.go`: migración PostgreSQL versionada para configuración del controlador y coordenadas físicas de sensores.
+- `backend/db/control_electrico_door_sensor_test.go`: contratos de límites, disposición GPIO, aislamiento de IDs y catálogo de migraciones.
+- `web/administrar_empresa/tutorial_sensores_puertas_raspberry.html`: tutorial responsive con esquema SVG de la matriz 4×16, tabla BCM/pin físico, ciclo de lectura, instalación y advertencias de interfaz 3,3 V/contactos secos.
+- `web/administrar_empresa/control_electrico.html`, `configuracion_sensores_raspberry.html` y el submenu de Domótica en `modulo_menu.html`: enlazan el tutorial conservando `empresa_id`.

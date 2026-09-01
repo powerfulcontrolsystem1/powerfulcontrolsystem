@@ -1299,6 +1299,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					descuentoValor,
 					devolucionTotal,
 					totalPagadoCarrito,
+					montoEfectivoCaja,
 					codigoDescuentoID,
 					cierreCaja.ID,
 					cierreCaja.CajaCodigo,
@@ -1491,37 +1492,6 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					log.Printf("[carritos] get after pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, errCarritoPagado)
 					carritoPagado = carrito
 				}
-				estacionID, estacionCodigo, estacionNombre := dbpkg.ResolveCarritoStationIdentity(carritoPagado)
-				if _, errMetric := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
-					EmpresaID:           empresaID,
-					CarritoID:           id,
-					EstacionID:          estacionID,
-					EstacionCodigo:      estacionCodigo,
-					EstacionNombre:      estacionNombre,
-					EventoOperacion:     "venta_pagada",
-					MetodoPago:          metodoPago,
-					Moneda:              carritoPagado.Moneda,
-					MontoTotal:          carritoPagado.Total,
-					MontoPagado:         montoCobrado,
-					DevolucionTotal:     devolucionTotal,
-					ActivadoEn:          carritoPagado.ActivadoEn,
-					PagadoEn:            carritoPagado.PagadoEn,
-					ReferenciaOperacion: referenciaPago,
-					CierreCajaID:        cierreCaja.ID,
-					CajaCodigo:          cierreCaja.CajaCodigo,
-					CajaTurno:           cierreCaja.Turno,
-					CajaSucursalID:      cierreCaja.SucursalID,
-					UsuarioCreador:      usuarioOperacion,
-					Observaciones:       "cierre de venta simple por estacion",
-				}); errMetric != nil {
-					log.Printf("[carritos] metrica venta_pagada empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
-				}
-				if montoEfectivoCaja > 0 {
-					if errCaja := dbpkg.RegistrarIngresoEfectivoCierreCaja(dbEmp, empresaID, cierreCaja.ID, montoEfectivoCaja); errCaja != nil {
-						log.Printf("[carritos] actualizar efectivo cierre_caja empresa_id=%d cierre_id=%d carrito_id=%d error: %v", empresaID, cierreCaja.ID, id, errCaja)
-					}
-				}
-
 				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, montoDocumento, usuarioOperacion, modoDocumentoVenta)
 				if errDocumentoVenta != nil {
 					log.Printf("[carritos] documento_venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errDocumentoVenta)
@@ -1801,19 +1771,27 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if _, errMetric := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
 					EmpresaID:           empresaID,
 					CarritoID:           id,
+					CarritoCodigo:       carrito.Codigo,
+					CarritoNombre:       carrito.Nombre,
 					EstacionID:          estacionID,
 					EstacionCodigo:      estacionCodigo,
 					EstacionNombre:      estacionNombre,
 					EventoOperacion:     "venta_anulada",
+					OperacionCodigo:     dbpkg.BuildCarritoSaleOperationCode(carrito.Codigo, empresaID, id, carrito.PagadoEn) + "-ANULADA",
 					MetodoPago:          carrito.MetodoPago,
 					Moneda:              carritoActualizado.Moneda,
 					MontoTotal:          carritoActualizado.Total,
 					MontoPagado:         0,
 					MontoAnulado:        totalPagadoAnterior,
+					DescuentoTotal:      carrito.DescuentoTotal,
 					DevolucionTotal:     devolucionTotalNueva,
 					ActivadoEn:          carritoActualizado.ActivadoEn,
 					PagadoEn:            carritoActualizado.PagadoEn,
 					ReferenciaOperacion: motivo,
+					CierreCajaID:        carrito.CierreCajaID,
+					CajaCodigo:          carrito.CajaCodigo,
+					CajaTurno:           carrito.CajaTurno,
+					CajaSucursalID:      carrito.CajaSucursalID,
 					UsuarioCreador:      usuarioOperacion,
 					Observaciones:       "anulacion total de venta pagada",
 				}); errMetric != nil {
@@ -1930,19 +1908,27 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if _, errMetric := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
 					EmpresaID:           empresaID,
 					CarritoID:           id,
+					CarritoCodigo:       carrito.Codigo,
+					CarritoNombre:       carrito.Nombre,
 					EstacionID:          estacionID,
 					EstacionCodigo:      estacionCodigo,
 					EstacionNombre:      estacionNombre,
 					EventoOperacion:     "cierre_parcial_anulado",
+					OperacionCodigo:     dbpkg.BuildCarritoSaleOperationCode(carrito.Codigo, empresaID, id, carrito.PagadoEn) + fmt.Sprintf("-PARCIAL-%d", time.Now().UnixNano()),
 					MetodoPago:          carritoActualizado.MetodoPago,
 					Moneda:              carritoActualizado.Moneda,
 					MontoTotal:          carritoActualizado.Total,
 					MontoPagado:         totalPagadoNuevo,
 					MontoAnulado:        montoAnulado,
+					DescuentoTotal:      carrito.DescuentoTotal,
 					DevolucionTotal:     devolucionTotalNueva,
 					ActivadoEn:          carritoActualizado.ActivadoEn,
 					PagadoEn:            carritoActualizado.PagadoEn,
 					ReferenciaOperacion: motivo,
+					CierreCajaID:        carrito.CierreCajaID,
+					CajaCodigo:          carrito.CajaCodigo,
+					CajaTurno:           carrito.CajaTurno,
+					CajaSucursalID:      carrito.CajaSucursalID,
 					UsuarioCreador:      strings.TrimSpace(adminEmailFromRequest(r)),
 					Observaciones:       "correccion rapida post-cobro",
 				}); errMetric != nil {

@@ -43,14 +43,7 @@
     <form id="f" class="ia-pedidos-form">
       <label class="form-label" for="txt">Pedido (texto o voz)</label>
       <textarea id="txt" class="form-textarea" maxlength="2500" rows="2" placeholder="Ej.: agrega dos cervezas a la mesa 5"></textarea>
-      <div class="ia-pedidos-controls">
-        <label class="form-label" for="agentSelect">Agente
-          <select id="agentSelect" class="form-input"></select>
-        </label>
-        <label class="form-label" for="modelSelect">Modelo
-          <select id="modelSelect" class="form-input"></select>
-        </label>
-      </div>
+      <p id="aiPolicy" class="form-help">Agente PCS · modelo global del sistema</p>
       <div class="ia-pedidos-actions">
         <button type="button" id="mic" class="btn secondary">Dictar</button>
         <button type="submit" id="go" class="btn">Interpretar y agregar</button>
@@ -60,7 +53,7 @@
   </div>
   <script>
     (function () {
-      var state = { empresaID: 0, modelID: "", agentID: "ventas", models: [], agents: [], loading: false, messages: [] };
+      var state = { empresaID: 0, modelID: "", agentID: "agente_pcs", loading: false, messages: [] };
 
       function q(name) {
         try { return new URLSearchParams(window.location.search || "").get(name) || ""; } catch (e) { return ""; }
@@ -138,34 +131,13 @@
         return out.slice(-8);
       }
 
-      function renderSelectOptions(selectId, items, selected, fallbackLabel) {
-        var select = document.getElementById(selectId);
-        if (!select) return;
-        var html = "";
-        for (var i = 0; i < items.length; i++) {
-          var item = items[i] || {};
-          var id = norm(item.id);
-          if (!id) continue;
-          var label = norm(item.nombre || item.display_name || item.name || item.id) || fallbackLabel || id;
-          html += '<option value="' + esc(id) + '"' + (id === selected ? ' selected' : '') + '>' + esc(label) + '</option>';
-        }
-        select.innerHTML = html;
-        select.value = selected || (items[0] && items[0].id) || "";
-      }
-
       function loadModels() {
         return apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=" + encodeURIComponent(state.empresaID))
           .then(function (data) {
             var modelos = Array.isArray(data.modelos) ? data.modelos : [];
             if (!modelos.length) throw new Error("No hay modelos IA disponibles.");
-            state.models = modelos;
-            state.agents = Array.isArray(data.agentes) ? data.agentes : [];
             state.modelID = norm(data.modelo_preferido) || norm(modelos[0].id);
-            if (!state.agents.some(function(a){ return norm(a && a.id) === state.agentID; })) {
-              state.agentID = "ventas";
-            }
-            renderSelectOptions("modelSelect", state.models, state.modelID, "Modelo IA");
-            renderSelectOptions("agentSelect", state.agents, state.agentID, "Agente");
+            document.getElementById("aiPolicy").textContent = "Agente PCS · " + (norm(modelos[0].display_name) || state.modelID);
           });
       }
 
@@ -329,14 +301,6 @@
       var form = document.getElementById("f");
       var submitBtn = document.getElementById("go");
       form.addEventListener("submit", onSubmit);
-      var modelSelect = document.getElementById("modelSelect");
-      var agentSelect = document.getElementById("agentSelect");
-      if (modelSelect) {
-        modelSelect.addEventListener("change", function () { state.modelID = norm(modelSelect.value) || state.modelID; });
-      }
-      if (agentSelect) {
-        agentSelect.addEventListener("change", function () { state.agentID = norm(agentSelect.value) || "ventas"; });
-      }
       if (submitBtn) {
         submitBtn.addEventListener("click", function (ev) {
           ev.preventDefault();

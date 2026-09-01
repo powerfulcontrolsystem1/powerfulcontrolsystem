@@ -5,6 +5,12 @@ escrituras en produccion**.
 
 Fecha de corte: 2026-07-24.
 
+Actualizacion de implementacion 2026-08-25: el requisito histórico del único
+interruptor queda sustituido por un solo `Agente PCS` permanentemente activo.
+No se habilitan escrituras por este cambio: herramientas, permisos, flags,
+presupuesto, operación máxima y confirmación continúan bajo control del
+servidor. La activación en producción sigue en NO-GO hasta despliegue y UAT.
+
 Modelo ejecutor solicitado: **GPT-5.6 Terra con razonamiento medio**.
 
 Este documento complementa el Plan 106. No lo sustituye ni autoriza `rs`,
@@ -25,8 +31,8 @@ coherente y seguro que:
 4. no conceda a ningun usuario capacidades superiores a sus permisos;
 5. tenga memoria privada por empresa y usuario, con consentimiento, retencion y
    borrado;
-6. simplifique el chat: sin selector de agentes y con un unico interruptor
-   visible para activar `Modo agente`;
+6. simplifique el chat: sin selector ni interruptor, con un único `Agente PCS`
+   activo y gobernado por el servidor;
 7. deje toda lectura sensible, propuesta, confirmacion, ejecucion, rechazo y
    error trazados en la auditoria correcta;
 8. mida calidad, coste, latencia y seguridad antes de habilitar cada funcion.

@@ -2303,6 +2303,22 @@
             if (!options.headers.has("X-CSRF-Token")) options.headers.set("X-CSRF-Token", token);
           }
         }
+        if (method === "GET" && options.credentials === "same-origin") {
+          try {
+            var parentCache = window.parent && window.parent !== window ? window.parent.PCSRequestCache : null;
+            var targetURL = new URL(url, window.location.href);
+            if (parentCache && typeof parentCache.getJSON === "function" && targetURL.origin === window.location.origin) {
+              var ttlMs = targetURL.pathname === "/me" ? 30000 : (targetURL.searchParams.get("action") === "resumen" ? 2000 : 5000);
+              return parentCache.getJSON(targetURL.pathname + targetURL.search, {
+                credentials: "same-origin",
+                ttlMs: ttlMs
+              }).then(function (result) {
+                if (!result || !result.ok) throw new Error("No se pudo completar la operacion.");
+                return result.data || {};
+              });
+            }
+          } catch (error) {}
+        }
         return fetch(url, options)
           .then(function (res) {
             if (!res.ok) throw new Error("No se pudo completar la operacion.");

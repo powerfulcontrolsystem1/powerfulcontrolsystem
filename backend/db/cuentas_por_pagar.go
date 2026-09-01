@@ -20,6 +20,7 @@ var (
 	ErrEmpresaCxPIdempotencyKeyRequired = errors.New("la clave de idempotencia es obligatoria")
 	ErrEmpresaCxPAmountExceedsBalance   = errors.New("el monto supera el saldo pendiente de la cuenta por pagar")
 	ErrEmpresaCxPNoPendingBalance       = errors.New("la cuenta por pagar no tiene saldo pendiente")
+	ErrEmpresaCxPIdempotencyConflict    = errors.New("la clave de idempotencia ya fue usada con otro abono")
 )
 
 // EmpresaCxPAbonoInput is the explicit, tenant-scoped application of one
@@ -62,7 +63,7 @@ func applyEmpresaCxPAtomicSchemaTx(tx *sql.Tx) error {
 	if tx == nil {
 		return fmt.Errorf("migration transaction is required")
 	}
-	for _, statement := range empresaCxPAtomicSchemaStatements() {
+	for _, statement := range empresaCxPAtomicSchemaV1Statements() {
 		if _, err := execTxSQLCompat(tx, statement); err != nil {
 			return err
 		}
@@ -70,7 +71,7 @@ func applyEmpresaCxPAtomicSchemaTx(tx *sql.Tx) error {
 	return nil
 }
 
-func empresaCxPAtomicSchemaStatements() []string {
+func empresaCxPAtomicSchemaV1Statements() []string {
 	return []string{
 		`CREATE TABLE IF NOT EXISTS empresa_cxp_pagos (
 			id BIGSERIAL PRIMARY KEY,
@@ -90,8 +91,13 @@ func empresaCxPAtomicSchemaStatements() []string {
 			CHECK (monto > 0)
 		)`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_cxp_pagos_cuenta_fecha
-			ON empresa_cxp_pagos (empresa_id, cuenta_por_pagar_id, fecha_aplicacion DESC, id DESC)`,
+				ON empresa_cxp_pagos (empresa_id, cuenta_por_pagar_id, fecha_aplicacion DESC, id DESC)`,
 	}
+}
+
+func empresaCxPAtomicSchemaStatements() []string {
+	statements := append([]string{}, empresaCxPAtomicSchemaV1Statements()...)
+	return append(statements, `ALTER TABLE empresa_cxp_pagos ADD COLUMN IF NOT EXISTS request_hash TEXT NOT NULL DEFAULT ''`)
 }
 
 // RegistrarEmpresaCxPAbono rejects overpayments rather than silently reducing
@@ -126,6 +132,18 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	}
 
 	keyHash := empresaCxPIdempotencyHash(input.IdempotencyKey)
+	requestPayload, _ := json.Marshal(map[string]interface{}{
+		"empresa_id":          input.EmpresaID,
+		"cuenta_por_pagar_id": input.CuentaPorPagarID,
+		"monto":               input.Monto,
+		"periodo_contable":    input.PeriodoContable,
+		"metodo_pago":         input.MetodoPago,
+		"referencia_externa":  strings.TrimSpace(input.ReferenciaExterna),
+		"concepto":            strings.TrimSpace(input.Concepto),
+		"observaciones":       strings.TrimSpace(input.Observaciones),
+		"usuario":             input.Usuario,
+	})
+	requestHash := empresaCxPIdempotencyHash(string(requestPayload))
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return result, err
@@ -133,12 +151,13 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	defer func() { _ = tx.Rollback() }()
 
 	var existing EmpresaCxPAbonoResult
-	err = queryRowTxSQLCompat(tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto
+	var existingRequestHash string
+	err = queryRowTxSQLCompat(tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto, COALESCE(request_hash, '')
 		FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?`, input.EmpresaID, keyHash).
-		Scan(&existing.CuentaPorPagarID, &existing.PagoID, &existing.MovimientoFinanzasID, &existing.MontoAplicado)
+		Scan(&existing.CuentaPorPagarID, &existing.PagoID, &existing.MovimientoFinanzasID, &existing.MontoAplicado, &existingRequestHash)
 	if err == nil {
-		if existing.CuentaPorPagarID != input.CuentaPorPagarID {
-			return result, fmt.Errorf("la clave de idempotencia ya fue usada para otra cuenta por pagar")
+		if existing.CuentaPorPagarID != input.CuentaPorPagarID || roundReportesMoney(existing.MontoAplicado) != input.Monto || (existingRequestHash != "" && existingRequestHash != requestHash) {
+			return result, ErrEmpresaCxPIdempotencyConflict
 		}
 		var saldo float64
 		var estado string
@@ -175,12 +194,13 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 	// FOR UPDATE so it returns the committed application instead of reaching the
 	// unique constraint after creating a duplicate financial movement attempt.
 	var concurrentReplay EmpresaCxPAbonoResult
-	err = queryRowTxSQLCompat(tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto
+	var concurrentRequestHash string
+	err = queryRowTxSQLCompat(tx, `SELECT cuenta_por_pagar_id, id, movimiento_finanzas_id, monto, COALESCE(request_hash, '')
 		FROM empresa_cxp_pagos WHERE empresa_id = ? AND idempotency_key_hash = ?`, input.EmpresaID, keyHash).
-		Scan(&concurrentReplay.CuentaPorPagarID, &concurrentReplay.PagoID, &concurrentReplay.MovimientoFinanzasID, &concurrentReplay.MontoAplicado)
+		Scan(&concurrentReplay.CuentaPorPagarID, &concurrentReplay.PagoID, &concurrentReplay.MovimientoFinanzasID, &concurrentReplay.MontoAplicado, &concurrentRequestHash)
 	if err == nil {
-		if concurrentReplay.CuentaPorPagarID != input.CuentaPorPagarID {
-			return result, fmt.Errorf("la clave de idempotencia ya fue usada para otra cuenta por pagar")
+		if concurrentReplay.CuentaPorPagarID != input.CuentaPorPagarID || roundReportesMoney(concurrentReplay.MontoAplicado) != input.Monto || (concurrentRequestHash != "" && concurrentRequestHash != requestHash) {
+			return result, ErrEmpresaCxPIdempotencyConflict
 		}
 		concurrentReplay.EmpresaID = input.EmpresaID
 		concurrentReplay.SaldoNuevo = roundReportesMoney(saldoAnterior)
@@ -261,9 +281,9 @@ func RegistrarEmpresaCxPAbono(dbConn *sql.DB, input EmpresaCxPAbonoInput) (Empre
 		return result, err
 	}
 	pagoID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_cxp_pagos
-		(empresa_id, cuenta_por_pagar_id, movimiento_finanzas_id, monto, metodo_pago, referencia_externa, concepto, observaciones, usuario_creador, idempotency_key_hash)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, input.EmpresaID, input.CuentaPorPagarID, movementID, input.Monto,
-		input.MetodoPago, input.ReferenciaExterna, input.Concepto, input.Observaciones, input.Usuario, keyHash)
+		(empresa_id, cuenta_por_pagar_id, movimiento_finanzas_id, monto, metodo_pago, referencia_externa, concepto, observaciones, usuario_creador, idempotency_key_hash, request_hash)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, input.EmpresaID, input.CuentaPorPagarID, movementID, input.Monto,
+		input.MetodoPago, input.ReferenciaExterna, input.Concepto, input.Observaciones, input.Usuario, keyHash, requestHash)
 	if err != nil {
 		return result, err
 	}

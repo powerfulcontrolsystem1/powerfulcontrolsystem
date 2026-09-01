@@ -9,8 +9,8 @@ import (
 
 func TestNuevasPlantillasPermisosDerivadosDelCatalogo(t *testing.T) {
 	modules := NuevasPlantillasEmpresaModules()
-	if len(modules) != 20 {
-		t.Fatalf("NuevasPlantillasEmpresaModules() len = %d, want 20", len(modules))
+	if len(modules) != 9 {
+		t.Fatalf("NuevasPlantillasEmpresaModules() len = %d, want 9", len(modules))
 	}
 
 	seen := map[string]bool{}
@@ -33,15 +33,15 @@ func TestNuevasPlantillasPermisosDerivadosDelCatalogo(t *testing.T) {
 	if got := nuevoVerticalPageKey("transporte_carga_tms"); got != "linkTransporteCargaTMS" {
 		t.Fatalf("nuevoVerticalPageKey(transporte_carga_tms) = %q", got)
 	}
-	if page, ok := permissionPageForNuevoVerticalAPIPath("/api/empresa/agencia_viajes"); !ok || page != "linkAgenciaViajes" {
-		t.Fatalf("permissionPageForNuevoVerticalAPIPath agencia_viajes = %q, %v", page, ok)
+	if page, ok := permissionPageForNuevoVerticalAPIPath("/api/empresa/salon_spa"); !ok || page != "linkSalonSpa" {
+		t.Fatalf("permissionPageForNuevoVerticalAPIPath salon_spa = %q, %v", page, ok)
 	}
 }
 
 func TestEmpresaPlantillasNuevosCatalogoContrato(t *testing.T) {
 	items := buildEmpresaPlantillasNuevosCatalogo()
-	if len(items) != 20 {
-		t.Fatalf("catalogo plantillas len=%d, want 20", len(items))
+	if len(items) != 9 {
+		t.Fatalf("catalogo plantillas len=%d, want 9", len(items))
 	}
 	seen := map[string]bool{}
 	for _, item := range items {
@@ -92,7 +92,7 @@ func TestEmpresaPlantillasNuevosCatalogoProduccionMasiva(t *testing.T) {
 	for _, item := range items {
 		if item.ProduccionMasiva {
 			masivos++
-			if item.PrioridadProduccion < 1 || item.PrioridadProduccion > 20 {
+			if item.PrioridadProduccion < 1 || item.PrioridadProduccion > 9 {
 				t.Fatalf("prioridad masiva invalida para %s: %d", item.Modulo, item.PrioridadProduccion)
 			}
 			if item.DecisionPreconfig != "integrar_v1_produccion_masiva" {
@@ -102,8 +102,8 @@ func TestEmpresaPlantillasNuevosCatalogoProduccionMasiva(t *testing.T) {
 		}
 		t.Fatalf("%s debe estar marcado como produccion masiva", item.Modulo)
 	}
-	if masivos != 20 {
-		t.Fatalf("plantillas masivos=%d, want 20", masivos)
+	if masivos != 9 {
+		t.Fatalf("plantillas masivos=%d, want 9", masivos)
 	}
 }
 
@@ -122,7 +122,7 @@ func TestPublicPlantillasNuevosCatalogoHandler(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode payload: %v", err)
 	}
-	if !payload.OK || payload.Total != 20 || len(payload.Items) != 20 {
+	if !payload.OK || payload.Total != 9 || len(payload.Items) != 9 {
 		t.Fatalf("payload inesperado: %+v", payload)
 	}
 }
@@ -162,14 +162,14 @@ func TestLinkNuevasPlantillasRequiereAlgunVerticalPermitido(t *testing.T) {
 	}
 	rows := []permissionModuleMatrixRow{
 		{Modulo: permModuleVentas, Acciones: actionsOn},
-		{Modulo: "agencia_viajes", Acciones: actionsOff},
+		{Modulo: "salon_spa", Acciones: actionsOff},
 	}
 	pages := buildPermissionPagesMapFromModuleRows(rows, nil)
 	if pages["linkNuevasPlantillas"] {
 		t.Fatal("linkNuevasPlantillas permitido sin plantillas habilitados")
 	}
 
-	rows = append(rows, permissionModuleMatrixRow{Modulo: "operador_turistico", Acciones: actionsOn})
+	rows = append(rows, permissionModuleMatrixRow{Modulo: "salon_spa", Acciones: actionsOn})
 	pages = buildPermissionPagesMapFromModuleRows(rows, nil)
 	if !pages["linkNuevasPlantillas"] {
 		t.Fatal("linkNuevasPlantillas deberia permitirse con al menos una plantilla habilitado")

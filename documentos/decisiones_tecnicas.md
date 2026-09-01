@@ -170,3 +170,17 @@ trazabilidad en `documentos/historial_de_cambios`.
   funciones existentes, además de privilegios por defecto para objetos futuros.
 - La contraseña runtime debe tener al menos 32 caracteres URL-safe y nunca se
   versiona.
+
+## 2026-08-26 - Efectos idempotentes e incertidumbre remota
+
+- Una clave idempotente fija empresa, actor y solicitud canonica; reutilizarla
+  con otro payload es conflicto, no una nueva operacion.
+- La respuesta solo se reproduce despues de persistirla. Un fallo HTTP 5xx o
+  timeout posterior a un posible efecto remoto queda `incierto`.
+- Los efectos externos no se reapropian por vencimiento cuando un corte puede
+  haber ocurrido despues de ejecutarlos. La recuperacion exige conciliacion.
+- Los efectos locales relacionados deben compartir transaccion PostgreSQL o
+  una restriccion unica; un `SELECT` previo sin barrera no constituye
+  idempotencia bajo concurrencia.
+- Las claves crudas se hashean y toda identidad empresarial incluye
+  `empresa_id`.

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vida</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/administrar_empresa/vida.css?v=20260831-vida-v6">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage vida-page">
+  <main class="vida-shell" id="vidaApp">
+    <header class="vida-hero">
+      <div>
+        <span class="vida-kicker">Finanzas personales privadas</span>
+        <h1>Vida</h1>
+        <p>Tus gastos cotidianos, facturas y suscripciones, separados de las cuentas de la empresa y de los demás usuarios.</p>
+      </div>
+      <div class="vida-hero-actions">
+        <button class="btn secondary" type="button" id="vidaNotificationBtn">Activar alarmas</button>
+        <button class="btn secondary vida-ai-button" type="button" id="vidaAIOpen">IA: leer y registrar factura</button>
+        <button class="btn primary" type="button" data-open-expense>+ Registrar gasto</button>
+      </div>
+    </header>
+
+    <nav class="vida-tabs" aria-label="Secciones de Vida">
+      <button type="button" class="is-active" data-tab="resumen">Resumen</button>
+      <button type="button" data-tab="gastos">Gastos</button>
+      <button type="button" data-tab="precios">Historial de precios</button>
+      <button type="button" data-tab="suscripciones">Suscripciones</button>
+    </nav>
+
+    <div id="vidaMessage" class="vida-message" role="status" aria-live="polite" hidden></div>
+
+    <section class="vida-tab" data-panel="resumen">
+      <div class="vida-month-row">
+        <div>
+          <h2>Resumen del mes</h2>
+          <p>Solo incluye los movimientos de tu cuenta en esta empresa.</p>
+        </div>
+        <label>Mes
+          <input id="vidaMonth" type="month">
+        </label>
+      </div>
+
+      <div class="vida-kpis" aria-label="Indicadores personales">
+        <article><span>Gastos del mes</span><strong id="vidaTotalMonth">$ 0</strong><small id="vidaExpenseCount">0 registros</small></article>
+        <article><span>Promedio diario</span><strong id="vidaDailyAverage">$ 0</strong><small>Según el mes elegido</small></article>
+        <article><span>Suscripciones / mes</span><strong id="vidaSubscriptionMonth">$ 0</strong><small id="vidaSubscriptionCount">0 activas</small></article>
+        <article class="is-alert"><span>Recordatorios</span><strong id="vidaAlertCount">0</strong><small>Próximos o vencidos</small></article>
+      </div>
+
+      <div class="vida-grid-main">
+        <article class="vida-card">
+          <div class="vida-card-head"><div><h2>¿En qué se fue?</h2><p>Distribución por categoría.</p></div></div>
+          <div id="vidaCategoryChart" class="vida-category-chart"></div>
+        </article>
+        <article class="vida-card vida-alert-card">
+          <div class="vida-card-head"><div><h2>Próximos cobros</h2><p>Renueva o cancela a tiempo. Las alarmas del navegador aparecen mientras PCS esté abierto.</p></div></div>
+          <div id="vidaAlerts" class="vida-alert-list"></div>
+        </article>
+      </div>
+
+      <article class="vida-card">
+        <div class="vida-card-head">
+          <div><h2>Últimos gastos</h2><p>Tu actividad más reciente.</p></div>
+          <button type="button" class="vida-link-button" data-go-tab="gastos">Ver todos</button>
+        </div>
+        <div id="vidaRecentExpenses" class="vida-list"></div>
+      </article>
+    </section>
+
+    <section class="vida-tab" data-panel="gastos" hidden>
+      <article class="vida-card">
+        <div class="vida-card-head vida-wrap">
+          <div><h2>Mis gastos</h2><p>Supermercado, hogar y compras diarias adicionales.</p></div>
+          <div class="vida-inline-actions">
+            <label class="vida-filter">Desde <input id="vidaFilterFrom" type="date"></label>
+            <label class="vida-filter">Hasta <input id="vidaFilterTo" type="date"></label>
+            <button class="btn secondary" type="button" id="vidaFilterBtn">Filtrar</button>
+            <button class="btn primary" type="button" data-open-expense>+ Registrar gasto</button>
+          </div>
+        </div>
+        <div id="vidaExpenses" class="vida-list"></div>
+      </article>
+    </section>
+
+    <section class="vida-tab" data-panel="suscripciones" hidden>
+      <article class="vida-card">
+        <div class="vida-card-head vida-wrap">
+          <div><h2>Suscripciones</h2><p>Controla pagos mensuales, anuales o personalizados y recibe avisos antes del cobro.</p></div>
+          <button class="btn primary" type="button" data-open-subscription>+ Nueva suscripción</button>
+        </div>
+        <div class="vida-subscription-summary"><span>Proyección anual</span><strong id="vidaSubscriptionYear">$ 0</strong></div>
+        <div id="vidaSubscriptions" class="vida-subscription-grid"></div>
+      </article>
+    </section>
+
+    <section class="vida-tab" data-panel="precios" hidden>
+      <article class="vida-card">
+        <div class="vida-card-head vida-wrap">
+          <div><h2>Historial de precios</h2><p>Compara lo que has pagado por cada producto. Estos datos son privados para tu usuario.</p></div>
+          <div class="vida-inline-actions">
+            <label class="vida-filter">Código <input id="vidaPriceCodeFilter" inputmode="numeric" placeholder="Código de barras"></label>
+            <label class="vida-filter">Producto <input id="vidaPriceNameFilter" placeholder="Nombre"></label>
+            <button class="btn secondary" type="button" id="vidaPriceFilterBtn">Buscar</button>
+          </div>
+        </div>
+        <div id="vidaPrices" class="vida-price-list"></div>
+      </article>
+    </section>
+  </main>
+
+  <dialog id="vidaExpenseDialog" class="vida-dialog">
+    <form id="vidaExpenseForm" method="dialog">
+      <header><div><span class="vida-kicker">Gasto personal</span><h2 id="vidaExpenseTitle">Registrar gasto</h2></div><button type="button" class="vida-dialog-close" data-close-dialog aria-label="Cerrar">×</button></header>
+      <input type="hidden" id="vidaExpenseId">
+      <div class="vida-form-grid">
+        <label>Fecha<input id="vidaExpenseDate" name="fecha_gasto" type="date" required></label>
+        <label>Categoría<select id="vidaExpenseCategory" name="categoria" required><option value="supermercado">Supermercado</option><option value="alimentacion">Alimentación</option><option value="transporte">Transporte</option><option value="salud">Salud</option><option value="hogar">Hogar</option><option value="educacion">Educación</option><option value="familia">Familia</option><option value="entretenimiento">Entretenimiento</option><option value="servicios">Servicios</option><option value="ropa">Ropa</option><option value="mascotas">Mascotas</option><option value="otros">Otros</option></select></label>
+        <label>Comercio<input id="vidaExpenseMerchant" name="comercio" maxlength="160" placeholder="Ej. Supermercado del barrio"></label>
+        <label>Monto<input id="vidaExpenseAmount" name="monto" type="number" min="0.01" step="0.01" inputmode="decimal" required></label>
+        <label>Método de pago<select id="vidaExpensePayment" name="metodo_pago"><option value="efectivo">Efectivo</option><option value="debito">Tarjeta débito</option><option value="credito">Tarjeta crédito</option><option value="transferencia">Transferencia</option><option value="billetera">Billetera digital</option><option value="otro">Otro</option></select></label>
+        <label>Moneda<input id="vidaExpenseCurrency" name="moneda" value="COP" maxlength="3" required></label>
+        <label class="vida-field-full">Descripción<textarea id="vidaExpenseDescription" name="descripcion" maxlength="500" rows="2" placeholder="Compra semanal, medicamentos, transporte..."></textarea></label>
+        <label>Producto para historial<input id="vidaExpenseProduct" name="producto_nombre" maxlength="220" placeholder="Ej. Leche entera 1 L"></label>
+        <label>Código de barras
+          <span class="vida-input-action"><input id="vidaExpenseBarcode" name="codigo_barras" inputmode="numeric" maxlength="80" placeholder="Escanéalo o escríbelo"><button type="button" class="vida-icon-btn" id="vidaScanOpen">Usar cámara</button></span>
+        </label>
+        <label>Cantidad<input id="vidaExpenseQuantity" name="cantidad" type="number" min="0.001" step="0.001" value="1" inputmode="decimal"></label>
+        <label>Precio unitario<input id="vidaExpenseUnitPrice" name="precio_unitario" type="number" min="0" step="0.01" inputmode="decimal"><small>Si lo dejas vacío se calcula desde el monto.</small></label>
+      </div>
+      <label class="vida-camera-button" id="vidaReceiptLabel">
+        <span aria-hidden="true">▣</span><strong>Tomar foto de la factura</strong><small>También puedes elegir una imagen o PDF. Máximo 10 MB.</small>
+        <input id="vidaExpenseReceipt" name="recibo" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment">
+      </label>
+      <div id="vidaReceiptName" class="vida-receipt-name">Sin factura adjunta</div>
+      <footer><button type="button" class="btn secondary" data-close-dialog>Cancelar</button><button type="submit" class="btn primary" id="vidaExpenseSave">Guardar gasto</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="vidaAIDialog" class="vida-dialog">
+    <form id="vidaAIForm" method="dialog">
+      <header><div><span class="vida-kicker">Captura inteligente</span><h2>IA: leer y registrar factura</h2></div><button type="button" class="vida-dialog-close" data-close-dialog aria-label="Cerrar">×</button></header>
+      <p class="vida-dialog-copy">Al pulsar “Leer y registrar”, autorizas que la IA extraiga comercio, fecha, total y productos, y cree automáticamente el gasto personal. Podrás revisarlo y editarlo después.</p>
+      <label class="vida-camera-button">
+        <span aria-hidden="true">✦</span><strong>Tomar foto o elegir factura</strong><small>JPG, PNG, WEBP o PDF. Máximo 10 MB.</small>
+        <input id="vidaAIInvoice" name="factura" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" required>
+      </label>
+      <div id="vidaAIInvoiceName" class="vida-receipt-name">Sin factura seleccionada</div>
+      <div class="vida-form-grid">
+        <label>Método de pago<select name="metodo_pago" id="vidaAIPayment"><option value="efectivo">Efectivo</option><option value="debito">Tarjeta débito</option><option value="credito">Tarjeta crédito</option><option value="transferencia">Transferencia</option><option value="billetera">Billetera digital</option><option value="otro">Otro</option></select></label>
+      </div>
+      <footer><button type="button" class="btn secondary" data-close-dialog>Cancelar</button><button type="submit" class="btn primary vida-ai-button" id="vidaAISubmit">Leer y registrar</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="vidaScannerDialog" class="vida-dialog vida-scanner-dialog">
+    <div class="vida-scanner-content">
+      <header><div><span class="vida-kicker">Cámara del celular</span><h2>Escanear código de barras</h2></div><button type="button" class="vida-dialog-close" id="vidaScanClose" aria-label="Cerrar">×</button></header>
+      <div class="vida-video-frame"><video id="vidaScannerVideo" playsinline muted></video><span class="vida-scan-line" aria-hidden="true"></span></div>
+      <p id="vidaScannerStatus" class="vida-dialog-copy">Apunta la cámara al código de barras.</p>
+      <footer><button type="button" class="btn secondary" id="vidaScanCancel">Cancelar</button></footer>
+    </div>
+  </dialog>
+
+  <dialog id="vidaSubscriptionDialog" class="vida-dialog">
+    <form id="vidaSubscriptionForm" method="dialog">
+      <header><div><span class="vida-kicker">Cobro recurrente</span><h2 id="vidaSubscriptionTitle">Nueva suscripción</h2></div><button type="button" class="vida-dialog-close" data-close-dialog aria-label="Cerrar">×</button></header>
+      <input type="hidden" id="vidaSubscriptionId">
+      <div class="vida-form-grid">
+        <label>Nombre<input id="vidaSubscriptionName" maxlength="160" required placeholder="Ej. Netflix, gimnasio"></label>
+        <label>Proveedor<input id="vidaSubscriptionProvider" maxlength="160" placeholder="Empresa o plataforma"></label>
+        <label>Costo<input id="vidaSubscriptionCost" type="number" min="0" step="0.01" required></label>
+        <label>Moneda<input id="vidaSubscriptionCurrency" value="COP" maxlength="3" required></label>
+        <label>Periodicidad<select id="vidaSubscriptionPeriod"><option value="semanal">Semanal</option><option value="mensual" selected>Mensual</option><option value="trimestral">Trimestral</option><option value="semestral">Semestral</option><option value="anual">Anual</option><option value="personalizada">Personalizada (meses)</option></select></label>
+        <label>Intervalo<input id="vidaSubscriptionInterval" type="number" min="1" max="120" value="1" required></label>
+        <label>Fecha de inicio<input id="vidaSubscriptionStart" type="date" required></label>
+        <label>Próximo cobro / vencimiento<input id="vidaSubscriptionNext" type="date" required></label>
+        <label>Avisar con anticipación<input id="vidaSubscriptionReminder" type="number" min="0" max="365" value="5" required><small>días antes</small></label>
+        <label>Recordarme<select id="vidaSubscriptionReminderType"><option value="renovar">Renovar</option><option value="cancelar">Cancelar</option><option value="ambos">Renovar o cancelar</option></select></label>
+        <label>Estado<select id="vidaSubscriptionState"><option value="activa">Activa</option><option value="pausada">Pausada</option><option value="cancelada">Cancelada</option><option value="vencida">Vencida</option></select></label>
+        <label class="vida-check"><input id="vidaSubscriptionAuto" type="checkbox" checked><span>Se renueva automáticamente</span></label>
+        <label class="vida-field-full">Notas<textarea id="vidaSubscriptionNotes" maxlength="500" rows="2"></textarea></label>
+      </div>
+      <footer><button type="button" class="btn secondary" data-close-dialog>Cancelar</button><button type="submit" class="btn primary" id="vidaSubscriptionSave">Guardar suscripción</button></footer>
+    </form>
+  </dialog>
+
+  <script src="/js/vida.js?v=20260831-vida-v2"></script>
+</body>
+</html>

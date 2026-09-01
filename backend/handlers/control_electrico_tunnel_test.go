@@ -64,6 +64,12 @@ func TestDomoticaInstallerTemplateIsSelfContainedAndSecretSafe(t *testing.T) {
 		"backoff = min(30, backoff * 2)",
 		"boot_id = os.urandom(16).hex()",
 		"restore_delay_ms",
+		`"agent_version":"1.3.0"`,
+		"monitor_door_sensors",
+		`request_json(config, "door_scan"`,
+		"for pin in range(4, 20)",
+		"gpio.set_output(output_pin, True, True)",
+		"gpio.set_output(output_pin, False, True)",
 		"one-time-enrollment-token",
 	} {
 		if !strings.Contains(body, marker) {

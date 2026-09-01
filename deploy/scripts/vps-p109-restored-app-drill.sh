@@ -225,7 +225,7 @@ if [ "$P109_VERIFY_PRIVATE_INVENTORY" = "1" ]; then
   private_symlinks="$(find "$private_root" -type l | wc -l | tr -d ' ')"
   [ "$private_symlinks" = "0" ] || fail "El snapshot privado contiene symlinks."
   invalid_private_layout="$(awk '
-    !/^(buzon|chat_tareas|dian|finanzas|grafologia|soportes_compras_ia)\/empresa_[0-9]+\/[^/]+$/ {count++}
+    !/^(buzon|chat_tareas|dian|finanzas|soportes_compras_ia)\/empresa_[0-9]+\/[^/]+$/ {count++}
     END {print count+0}
   ' "$private_actual")"
   [ "$invalid_private_layout" = "0" ] ||
@@ -244,9 +244,6 @@ WITH refs(path) AS (
   UNION ALL
   SELECT 'finanzas/empresa_' || empresa_id || '/' || substring(comprobante_url FROM '[?&]ref=([^&]+)')
   FROM empresa_finanzas_movimientos WHERE comprobante_url ~ '[?&]ref='
-  UNION ALL
-  SELECT 'grafologia/empresa_' || empresa_id || '/' || substring(imagen_url FROM '[?&]ref=([^&]+)')
-  FROM empresa_grafologia_analisis WHERE imagen_url ~ '[?&]ref='
   UNION ALL
   SELECT substring(certificado_clave_ref FROM '^file:.*/private_storage/(.+)$')
   FROM empresa_dian_configuracion WHERE certificado_clave_ref ~ '^file:.*/private_storage/'
@@ -272,7 +269,6 @@ SQL
       SELECT nota_voz_url FROM chat_tareas UNION ALL
       SELECT file_url FROM empresa_buzon_adjuntos UNION ALL
       SELECT comprobante_url FROM empresa_finanzas_movimientos UNION ALL
-      SELECT imagen_url FROM empresa_grafologia_analisis UNION ALL
       SELECT certificado_clave_ref FROM empresa_dian_configuracion UNION ALL
       SELECT certificado_url FROM empresa_dian_configuracion
     )

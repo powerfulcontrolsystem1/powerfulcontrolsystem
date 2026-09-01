@@ -232,10 +232,10 @@
     <section class="help-hero">
       <div>
         <h1>Centro de ayuda Powerful Control System</h1>
-        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA, revisa APIs y resuelve bloqueos frecuentes sin romper el flujo diario. Actualizada el 2026-06-01 con energia solar, GRAFOLOGIX, preconfiguraciones, roles/licencias, APIs y ayuda operativa.</p>
+        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA, revisa APIs y resuelve bloqueos frecuentes sin romper el flujo diario.</p>
       </div>
       <div class="help-search-row">
-        <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, grafologia, inventario...">
+        <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, inventario...">
         <button id="helpClear" class="btn secondary" type="button">Limpiar</button>
       </div>
       <div class="help-chip-row">
@@ -264,7 +264,6 @@
         <a href="#pagos">Licencias y pagos <span>Epayco</span></a>
         <a href="#dian">Facturacion DIAN <span>Colombia</span></a>
         <a href="#ia">IA, voz y documentos <span>asistente</span></a>
-        <a href="#grafologia">GRAFOLOGIX <span>grafologia</span></a>
         <a href="#publico">Venta publica y red social <span>web</span></a>
         <a href="#reportes">Reportes y auditoria <span>control</span></a>
         <a href="#soporte-comunicaciones">Soporte y avisos <span>tickets</span></a>
@@ -605,57 +604,6 @@
             <article class="help-mini-card">
               <h3>Documentos dinamicos</h3>
               <p>El chat puede generar contratos, reportes, facturas, actas, cotizaciones, Excel, Word, PDF, TXT o JSON cuando el contenido aplica.</p>
-            </article>
-          </div>
-        </section>
-
-        <section id="grafologia" class="card empresa-section help-section" data-help="grafologia grafologix manuscrito gpt 5.5 imagen handwriting analisis reporte pdf word json csv cliente">
-          <h2>GRAFOLOGIX - analisis grafológico</h2>
-          <p class="form-help">GRAFOLOGIX permite cargar una fotografia de texto manuscrito, asociarla a un cliente de la empresa y generar un informe grafológico orientativo con métricas visuales, preprocesamiento, interpretación heurística y exportaciones. El resultado es una herramienta de apoyo empresarial y documental; no reemplaza una evaluación clínica, judicial o psicológica profesional.</p>
-          <div class="help-grid">
-            <article class="help-mini-card">
-              <h3>Ruta del modulo</h3>
-              <p>Abre <strong>Administrar empresa &gt; Analisis y control &gt; GRAFOLOGIX</strong>. El modulo trabaja siempre con la empresa activa y guarda cada informe separado por <code>empresa_id</code>.</p>
-              <span class="help-route">Ruta: /administrar_empresa/grafologia.html</span>
-            </article>
-            <article class="help-mini-card">
-              <h3>Flujo recomendado</h3>
-              <ol class="help-step-list">
-                <li>Busca o crea el cliente asociado al manuscrito.</li>
-                <li>Sube la foto o tomala desde camara.</li>
-                <li>Ajusta brillo, contraste, recorte, perspectiva y zoom.</li>
-                <li>Presiona <strong>Analizar manuscrito</strong> para generar el informe local.</li>
-                <li>Exporta el resultado en HTML, PDF, Word, JSON, CSV o TXT.</li>
-              </ol>
-            </article>
-            <article class="help-mini-card">
-              <h3>Motor local en Go</h3>
-              <p>El backend procesa la imagen con Go puro: escala de grises, umbral tipo Otsu, deteccion de bordes, correccion/estimacion de inclinacion, segmentacion de lineas, palabras y zonas de letras. Con esas medidas calcula inclinacion, presion estimada, tamano, espaciado, continuidad, direccion de lineas, margenes, velocidad estimada, regularidad y forma predominante.</p>
-            </article>
-            <article class="help-mini-card">
-              <h3>Transcripcion opcional</h3>
-              <p>El analisis se apoya en la imagen y en la IA GPT-5.5 configurada por la empresa. Si la foto no es clara, puedes pegar una transcripcion manual en el campo <strong>Transcripcion opcional</strong>.</p>
-            </article>
-            <article class="help-mini-card">
-              <h3>Analisis con GPT-5.5</h3>
-              <p>El boton <strong>Analizar con GPT-5.5</strong> genera una lectura complementaria usando la IA configurada en el sistema. Este analisis no reemplaza el informe local ni sus exportaciones; se registra como uso de IA por empresa y depende de que la configuracion global/empresarial de IA este activa.</p>
-            </article>
-            <article class="help-mini-card">
-              <h3>Informe y resultados</h3>
-              <p>El informe muestra resumen general, tabla de metricas, porcentajes, nivel de confianza, interpretacion orientativa, observaciones tecnicas, preprocesamiento visual e historial de informes recientes. Los documentos imprimibles se presentan en estilo profesional blanco y negro.</p>
-            </article>
-            <article class="help-mini-card">
-              <h3>Buenas practicas de imagen</h3>
-              <ul class="help-step-list">
-                <li>Usa una hoja plana, buena luz y enfoque nitido.</li>
-                <li>Evita sombras fuertes, reflejos, dobleces y fondos con textura.</li>
-                <li>Procura que todo el manuscrito quede dentro de la foto.</li>
-                <li>Si la letra es muy tenue, aumenta contraste antes de analizar.</li>
-              </ul>
-            </article>
-            <article class="help-mini-card">
-              <h3>Seguridad y permisos</h3>
-              <p>Las consultas, clientes e informes se validan por <code>empresa_id</code>. Un usuario solo puede analizar o consultar informes si tiene permiso para el modulo <code>grafologia</code> dentro de esa empresa.</p>
             </article>
           </div>
         </section>

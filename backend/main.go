@@ -1314,12 +1314,6 @@ func main() {
 				log.Printf("INFO: tipo constructora verificado: tipo_id=%d licencias=%d", tipoID, licencias)
 			}
 			startupTrace("after_ensure_constructora_tipo_licencias")
-			if tipoID, licencias, err := dbpkg.EnsureDrogueriaFarmaciaTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
-				log.Printf("warning: no se pudo asegurar drogueria/farmacia/licencias: %v", err)
-			} else {
-				log.Printf("INFO: tipo drogueria/farmacia verificado: tipo_id=%d licencias=%d", tipoID, licencias)
-			}
-			startupTrace("after_ensure_drogueria_farmacia_tipo_licencias")
 			if tipoID, licencias, err := dbpkg.EnsureAlquileresTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
 				log.Printf("warning: no se pudo asegurar alquileres/licencias: %v", err)
 			} else {
@@ -1488,20 +1482,11 @@ func main() {
 		if err := dbpkg.EnsureEmpresaCamarasSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure camaras schema in empresas db: %v", err)
 		}
-		if err := dbpkg.EnsureEmpresaGrafologiaSchema(dbEmpresas); err != nil {
-			log.Fatalf("failed to ensure grafologia schema in empresas db: %v", err)
-		}
 		if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
 		}
 		if err := dbpkg.EnsureEmpresaParqueaderoSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure parqueadero empresa schema in empresas db: %v", err)
-		}
-		if err := dbpkg.EnsureEmpresaApartamentosTuristicosSchema(dbEmpresas); err != nil {
-			log.Fatalf("failed to ensure apartamentos turisticos empresa schema in empresas db: %v", err)
-		}
-		if err := dbpkg.EnsureEmpresaPropiedadHorizontalSchema(dbEmpresas); err != nil {
-			log.Fatalf("failed to ensure propiedad horizontal empresa schema in empresas db: %v", err)
 		}
 		if err := dbpkg.EnsureEmpresaProduccionMRPSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure produccion mrp empresa schema in empresas db: %v", err)
@@ -1643,7 +1628,7 @@ func main() {
 	http.HandleFunc("/api/empresa/inventario/existencias", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioExistenciasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/configuracion", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/alertas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioAlertasHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/inventario/conteo_ciclico", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioConteoCiclicoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/inventario/conteo_ciclico", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventoryIdempotentMutation(dbEmpresas, "cycle_count", handlers.EmpresaInventarioConteoCiclicoHandler(dbEmpresas))))
 	http.HandleFunc("/api/empresa/inventario/resumen", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioResumenHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/tendencia", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioTendenciaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/balance_bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioBalanceBodegasHandler(dbEmpresas)))
@@ -1652,24 +1637,24 @@ func main() {
 	http.HandleFunc("/api/empresa/inventario/plan_reposicion_resumen", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioPlanReposicionResumenHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/plan_reposicion_borrador", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioPlanReposicionBorradorHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/movimientos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioMovimientosHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/inventario/transferir", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioTransferHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/inventario/ajustar", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioAjusteHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/inventario/cambiar_producto", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioCambioProductoHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/inventario_avanzado", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioAvanzadoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/inventario/transferir", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventoryIdempotentMutation(dbEmpresas, "transfer", handlers.EmpresaInventarioTransferHandler(dbEmpresas))))
+	http.HandleFunc("/api/empresa/inventario/ajustar", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventoryIdempotentMutation(dbEmpresas, "adjustment", handlers.EmpresaInventarioAjusteHandler(dbEmpresas))))
+	http.HandleFunc("/api/empresa/inventario/cambiar_producto", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventoryIdempotentMutation(dbEmpresas, "product_change", handlers.EmpresaInventarioCambioProductoHandler(dbEmpresas))))
+	http.HandleFunc("/api/empresa/inventario_avanzado", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventoryIdempotentMutation(dbEmpresas, "advanced", handlers.EmpresaInventarioAvanzadoHandler(dbEmpresas))))
 	http.HandleFunc("/api/empresa/productos/precios_historial", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductoPrecioHistorialHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/plan_reposicion/emitir_orden", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasPlanReposicionEmitirOrdenHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/plan_reposicion/actualizar_estado", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasPlanReposicionActualizarEstadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/documentos", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/documentos/comprobante", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentoComprobanteUploadHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/compras_avanzadas", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasAvanzadasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/compras_avanzadas", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPurchasesIdempotentMutation(dbEmpresas, "advanced", handlers.EmpresaComprasAvanzadasHandler(dbEmpresas))))
 	http.HandleFunc("/api/empresa/soportes_compras_ia", handlers.WithEmpresaSoportesComprasIAPermissions(dbEmpresas, dbSuper, handlers.EmpresaSoportesComprasIAHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/gestion_documental", handlers.WithEmpresaGestionDocumentalPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "gestion_documental")))
 	http.HandleFunc("/api/empresa/contratos_obligaciones", handlers.WithEmpresaContratosObligacionesPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "contratos_obligaciones")))
 	http.HandleFunc("/api/empresa/tickets_ayuda", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaAyudaTicketsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/buzon", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaBuzonHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/buzon/archivo", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaBuzonArchivoHandler()))
+	http.HandleFunc("/api/empresa/vida", handlers.WithEmpresaVidaPermissions(dbEmpresas, dbSuper, handlers.EmpresaVidaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/noticias", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaNoticiasPortalHandler(dbSuper)))
-	http.HandleFunc("/api/empresa/drogueria_farmacia", handlers.WithEmpresaDrogueriaFarmaciaPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "drogueria_farmacia")))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/importaciones_costeo", handlers.WithEmpresaImportacionesCosteoPermissions(dbEmpresas, dbSuper, handlers.EmpresaImportacionesCosteoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/aiu_construccion", handlers.WithEmpresaAIUConstruccionPermissions(dbEmpresas, dbSuper, handlers.EmpresaAIUConstruccionHandler(dbEmpresas)))
@@ -1690,14 +1675,9 @@ func main() {
 	http.HandleFunc("/api/empresa/nomina/agente_internet", handlers.WithEmpresaNominaSueldosPermissions(dbEmpresas, dbSuper, handlers.EmpresaAgenteInternetNominaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/vehiculos_registro", handlers.WithEmpresaVehiculosRegistroPermissions(dbEmpresas, dbSuper, handlers.EmpresaVehiculosRegistroHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carnets", handlers.WithEmpresaCarnetsPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarnetsHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/gimnasio", handlers.WithEmpresaGimnasioPermissions(dbEmpresas, dbSuper, handlers.EmpresaGimnasioHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/taxi_system", handlers.WithEmpresaTaxiSystemPermissions(dbEmpresas, dbSuper, handlers.EmpresaTaxiSystemHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/domicilios", handlers.WithEmpresaDomiciliosPermissions(dbEmpresas, dbSuper, handlers.EmpresaDomiciliosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/parqueadero", handlers.WithEmpresaParqueaderoPermissions(dbEmpresas, dbSuper, handlers.EmpresaParqueaderoHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/apartamentos_turisticos", handlers.WithEmpresaApartamentosTuristicosPermissions(dbEmpresas, dbSuper, handlers.EmpresaApartamentosTuristicosHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/propiedad_horizontal", handlers.WithEmpresaPropiedadHorizontalPermissions(dbEmpresas, dbSuper, handlers.EmpresaPropiedadHorizontalHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/alquileres", handlers.WithEmpresaAlquileresPermissions(dbEmpresas, dbSuper, handlers.EmpresaAlquileresHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/odontologia", handlers.WithEmpresaOdontologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaOdontologiaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/turnos_atencion", handlers.WithEmpresaTurnosAtencionPermissions(dbEmpresas, dbSuper, handlers.EmpresaTurnosAtencionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/publicaciones", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas))) // Protegido
 	http.HandleFunc("/api/empresa/publicaciones/", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas)))
@@ -1716,7 +1696,6 @@ func main() {
 	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/public/rappi/webhook", handlers.PublicRappiWebhookHandler(dbEmpresas))
 	http.HandleFunc("/api/public/turnos_atencion", handlers.PublicTurnosAtencionHandler(dbEmpresas))
-	http.HandleFunc("/api/public/taxi_system", handlers.PublicTaxiSystemHandler(dbEmpresas))
 	http.HandleFunc("/api/public/domicilios", handlers.PublicDomiciliosHandler(dbEmpresas))
 	http.HandleFunc("/api/public/parqueadero", handlers.PublicParqueaderoHandler(dbEmpresas))
 	http.HandleFunc("/api/public/estacion_vip", handlers.PublicEstacionVIPHandler(dbEmpresas))
@@ -1753,7 +1732,7 @@ func main() {
 	http.HandleFunc("/api/empresa/licencias/comprobantes", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaLicenciasComprobantesHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/email_corporativo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEmailCorporativoHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/api/empresa/db_admin", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaDBAdminHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPrinterQueueIdempotentMutation(dbEmpresas, handlers.EmpresaImpresorasHandler(dbEmpresas))))
 	http.HandleFunc("/api/empresa/impresoras/agente", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasAgenteHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras/resolver", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasResolverHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/estacion_prefs", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEstacionPrefsHandler(dbEmpresas)))
@@ -1767,8 +1746,6 @@ func main() {
 	http.HandleFunc("/api/empresa/impuestos/agente_internet", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaAgenteInternetImpuestosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/energia_solar", handlers.WithEmpresaEnergiaSolarPermissions(dbEmpresas, dbSuper, handlers.EmpresaEnergiaSolarHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/camaras", handlers.WithEmpresaCamarasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCamarasHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/api/empresa/grafologia", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/api/empresa/grafologia/archivo", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaArchivoHandler()))
 	http.HandleFunc("/api/empresa/bolsa", handlers.WithEmpresaBolsaPermissions(dbEmpresas, dbSuper, handlers.EmpresaBolsaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/ia_empresarial", handlers.WithEmpresaReportesPermissions(dbEmpresas, dbSuper, handlers.EmpresaIAEmpresarialHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
@@ -1966,6 +1943,7 @@ func main() {
 	http.HandleFunc("/super/api/outbox/recovery", handlers.WithSuperAuditoria(dbSuper, "super_outbox_recovery", handlers.SuperOutboxRecoveryHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/explorador_archivos", handlers.WithSuperAuditoria(dbSuper, "super_explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper)))
 	http.HandleFunc("/super/api/docker_portabilidad", handlers.WithSuperAuditoria(dbSuper, "super_docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper)))
+	http.HandleFunc("/super/api/administrar_disco_vps", handlers.WithSuperAuditoria(dbSuper, "super_administrar_disco_vps", handlers.SuperDiskManagerHandler(dbSuper)))
 	http.HandleFunc("/super/api/vps_snapshots", handlers.WithSuperAuditoria(dbSuper, "super_vps_snapshots", handlers.SuperVPSSnapshotsHandler(dbSuper)))
 	http.HandleFunc("/super/api/domotica_storage", handlers.WithSuperAuditoria(dbSuper, "super_domotica_storage", handlers.SuperDomoticaStorageHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/super/api/domotica_raspberry_trafico", handlers.WithSuperAuditoria(dbSuper, "super_domotica_raspberry_trafico", handlers.SuperDomoticaRaspberryTrafficHandler(dbSuper, dbEmpresas)))

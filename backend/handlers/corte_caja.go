@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -43,6 +44,8 @@ type corteCajaVenta struct {
 	EstacionID     int64   `json:"estacion_id"`
 	EstacionCodigo string  `json:"estacion_codigo"`
 	EstacionNombre string  `json:"estacion_nombre"`
+	MontoEfectivo  float64 `json:"-"`
+	DetalleItems   string  `json:"-"`
 }
 
 type corteCajaMovimientoGrupo struct {
@@ -1299,21 +1302,34 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		if amount <= 0 {
 			amount = venta.Total
 		}
-		switch normalizeCorteCajaMetodoDetalle(venta.MetodoPago) {
-		case "efectivo":
+		metodoDetalle := normalizeCorteCajaMetodoDetalle(venta.MetodoPago)
+		montoNoEfectivo := amount
+		if metodoDetalle == "efectivo" {
 			resp.Resumen.EfectivoVentas += amount
+			montoNoEfectivo = 0
+		} else if venta.MontoEfectivo > 0 {
+			montoEfectivo := venta.MontoEfectivo
+			if montoEfectivo > amount {
+				montoEfectivo = amount
+			}
+			resp.Resumen.EfectivoVentas += montoEfectivo
+			montoNoEfectivo -= montoEfectivo
+		}
+		switch metodoDetalle {
+		case "efectivo":
+			// Ya contabilizado con el componente exacto de efectivo.
 		case "tarjeta_credito":
-			resp.Resumen.CreditoVentas += amount
-			resp.Resumen.TarjetasVentas += amount
+			resp.Resumen.CreditoVentas += montoNoEfectivo
+			resp.Resumen.TarjetasVentas += montoNoEfectivo
 		case "tarjeta_debito":
-			resp.Resumen.DebitoVentas += amount
-			resp.Resumen.TarjetasVentas += amount
+			resp.Resumen.DebitoVentas += montoNoEfectivo
+			resp.Resumen.TarjetasVentas += montoNoEfectivo
 		case "tarjeta":
-			resp.Resumen.TarjetasVentas += amount
+			resp.Resumen.TarjetasVentas += montoNoEfectivo
 		case "transferencia":
-			resp.Resumen.TransferenciasVentas += amount
+			resp.Resumen.TransferenciasVentas += montoNoEfectivo
 		default:
-			resp.Resumen.OtrosMediosVentas += amount
+			resp.Resumen.OtrosMediosVentas += montoNoEfectivo
 		}
 	}
 
@@ -1335,10 +1351,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		resp.Resumen.VentasAnuladasTotal += amount
 	}
 
-	items, err := listCorteCajaItemsPorTipo(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID)
-	if err != nil {
-		return nil, err
-	}
+	items, productosVendidos := buildCorteCajaDetallesVentas(ventas, 50)
 	dbpkg.PerfLogf("[perf][corte] step items empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	resp.ItemsPorTipo = items
 	for _, item := range items {
@@ -1352,10 +1365,6 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		}
 	}
 
-	productosVendidos, err := listCorteCajaProductosVendidos(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID, 50)
-	if err != nil {
-		return nil, err
-	}
 	resp.ProductosVendidos = productosVendidos
 
 	movimientos, err := listCorteCajaMovimientos(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID)
@@ -1389,7 +1398,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		// reconstruido solo desde ventas no puede inferir ese desglose. Usamos el
 		// acumulado transaccional de la caja para que el reporte y el arqueo
 		// muestren el mismo efectivo sin duplicar movimientos manuales.
-		if cierre, cierreErr := getCorteCajaTurnoHistorico(dbEmp, empresaID, cierreCajaID); cierreErr == nil {
+		if cierre, cierreErr := getCorteCajaTurnoHistorico(dbEmp, empresaID, cierreCajaID); cierreErr == nil && corteCajaRangeCoversFullTurn(desde, hasta, cierre) {
 			applyCorteCajaPersistedCashSummary(&resp.Resumen, cierre)
 		}
 	}
@@ -1430,51 +1439,141 @@ func applyCorteCajaPersistedCashSummary(resumen *corteCajaResumen, cierre *dbpkg
 	resumen.EfectivoEsperadoCaja = cierre.AperturaMonto + cierre.IngresosEfectivo - cierre.EgresosEfectivo - cierre.RetirosEfectivo
 }
 
+func corteCajaRangeCoversFullTurn(desde, hasta string, cierre *dbpkg.EmpresaCierreCaja) bool {
+	if cierre == nil {
+		return false
+	}
+	desdeTS, desdeOK := parseCorteCajaTimestamp(desde)
+	aperturaTS, aperturaOK := parseCorteCajaTimestamp(cierre.FechaApertura)
+	if !desdeOK || !aperturaOK || desdeTS.After(aperturaTS) {
+		return false
+	}
+	fechaCierre := strings.TrimSpace(cierre.FechaCierre)
+	if fechaCierre == "" {
+		return true
+	}
+	hastaTS, hastaOK := parseCorteCajaTimestamp(hasta)
+	cierreTS, cierreOK := parseCorteCajaTimestamp(fechaCierre)
+	return hastaOK && cierreOK && !hastaTS.Before(cierreTS)
+}
+
+func parseCorteCajaTimestamp(raw string) (time.Time, bool) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05.999999999Z07:00",
+		"2006-01-02 15:04:05.999999999Z07",
+		"2006-01-02 15:04:05Z07:00",
+		"2006-01-02 15:04:05Z07",
+		"2006-01-02 15:04:05.999999999",
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		if parsed, err := time.ParseInLocation(layout, value, time.Local); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
+type corteCajaVentaItemSnapshot struct {
+	Tipo       string  `json:"tipo"`
+	Referencia string  `json:"referencia"`
+	Producto   string  `json:"producto"`
+	Cantidad   float64 `json:"cantidad"`
+	Total      float64 `json:"total"`
+}
+
+func buildCorteCajaDetallesVentas(ventas []corteCajaVenta, limit int) ([]corteCajaTipoItem, []corteCajaProductoVendido) {
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	aggregates := map[string]*corteCajaTipoItem{}
+	productos := make([]corteCajaProductoVendido, 0)
+	for ventaIndex := len(ventas) - 1; ventaIndex >= 0; ventaIndex-- {
+		venta := ventas[ventaIndex]
+		var detalle []corteCajaVentaItemSnapshot
+		if err := json.Unmarshal([]byte(strings.TrimSpace(venta.DetalleItems)), &detalle); err != nil {
+			continue
+		}
+		for itemIndex := len(detalle) - 1; itemIndex >= 0; itemIndex-- {
+			item := detalle[itemIndex]
+			tipo := normalizeCorteCajaTipoItem(item.Tipo)
+			if tipo == "" {
+				tipo = "producto"
+			}
+			aggregate := aggregates[tipo]
+			if aggregate == nil {
+				aggregate = &corteCajaTipoItem{Tipo: tipo}
+				aggregates[tipo] = aggregate
+			}
+			aggregate.Cantidad += item.Cantidad
+			aggregate.Total += item.Total
+			if len(productos) < limit {
+				productos = append(productos, corteCajaProductoVendido{
+					Fecha:       venta.FechaPago,
+					Producto:    strings.TrimSpace(item.Producto),
+					Cantidad:    item.Cantidad,
+					Tipo:        tipo,
+					Referencia:  strings.TrimSpace(item.Referencia),
+					VentaCodigo: venta.Codigo,
+				})
+			}
+		}
+	}
+	tipos := make([]string, 0, len(aggregates))
+	for tipo := range aggregates {
+		tipos = append(tipos, tipo)
+	}
+	sort.Strings(tipos)
+	items := make([]corteCajaTipoItem, 0, len(tipos))
+	for _, tipo := range tipos {
+		items = append(items, *aggregates[tipo])
+	}
+	return items, productos
+}
+
 func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64) ([]corteCajaVenta, error) {
 	startedAt := time.Now()
 	defer func() {
 		dbpkg.PerfLogf("[perf][corte] listCorteCajaVentas empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
 	}()
 	query := `SELECT
-		c.id,
-		COALESCE(c.codigo, ''),
-		COALESCE(c.nombre, ''),
-		COALESCE(c.activado_en, c.fecha_creacion, ''),
-		COALESCE(c.pagado_en, c.fecha_actualizacion, ''),
-		COALESCE(c.pagado_en, ''),
-		COALESCE(c.metodo_pago, 'efectivo'),
-		COALESCE(c.moneda, 'COP'),
-		COALESCE(c.total, 0),
-		COALESCE(c.total_pagado, 0),
-		COALESCE(c.devolucion_total, 0),
-		COALESCE(c.descuento_total, 0),
-		COALESCE(m.usuario_creador, c.usuario_creador, ''),
+		m.id,
+		COALESCE(NULLIF(m.operacion_codigo, ''), NULLIF(m.carrito_codigo, ''), 'VENTA-' || CAST(m.id AS TEXT)),
+		COALESCE(NULLIF(m.carrito_nombre, ''), NULLIF(m.estacion_nombre, ''), 'Venta'),
+		COALESCE(NULLIF(m.activado_en, ''), m.fecha_creacion, ''),
+		COALESCE(NULLIF(m.pagado_en, ''), m.fecha_evento, m.fecha_creacion, ''),
+		COALESCE(NULLIF(m.pagado_en, ''), m.fecha_evento, ''),
+		COALESCE(m.metodo_pago, 'efectivo'),
+		COALESCE(m.moneda, 'COP'),
+		COALESCE(m.monto_total, 0),
+		COALESCE(m.monto_pagado, 0),
+		COALESCE(m.devolucion_total, 0),
+		COALESCE(m.descuento_total, 0),
+		COALESCE(m.usuario_creador, ''),
 		COALESCE(m.estacion_id, 0),
 		COALESCE(m.estacion_codigo, ''),
-		COALESCE(m.estacion_nombre, '')
-	FROM carritos_compras c
-	LEFT JOIN (
-		SELECT carrito_id,
-		       MAX(COALESCE(usuario_creador, '')) AS usuario_creador,
-		       MAX(COALESCE(estacion_id, 0)) AS estacion_id,
-		       MAX(COALESCE(estacion_codigo, '')) AS estacion_codigo,
-		       MAX(COALESCE(estacion_nombre, '')) AS estacion_nombre
-		  FROM empresa_ventas_estacion_metricas
-		 WHERE empresa_id = ?
-		   AND LOWER(COALESCE(evento_operacion, '')) = 'venta_pagada'
-		 GROUP BY carrito_id
-	) m ON m.carrito_id = c.id
-	WHERE c.empresa_id = ?
-	  AND COALESCE(c.pagado_en, '') <> ''
-	  AND COALESCE(c.pagado_en, '') >= ?
-	  AND COALESCE(c.pagado_en, '') <= ?
-	  AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
-	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, '')) = LOWER(?))
-	  AND (? = 0 OR COALESCE(c.cierre_caja_id, 0) = ?)
-	  AND (? = '' OR UPPER(COALESCE(c.caja_codigo, '')) = ?)
-	ORDER BY c.pagado_en ASC, c.id ASC`
+		COALESCE(m.estacion_nombre, ''),
+		COALESCE(m.monto_efectivo, 0),
+		COALESCE(m.detalle_items_json, '[]')
+	FROM empresa_ventas_estacion_metricas m
+	WHERE m.empresa_id = ?
+	  AND LOWER(COALESCE(m.evento_operacion, '')) = 'venta_pagada'
+	  AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
+	  AND COALESCE(NULLIF(m.pagado_en, ''), m.fecha_evento, m.fecha_creacion, '') >= ?
+	  AND COALESCE(NULLIF(m.pagado_en, ''), m.fecha_evento, m.fecha_creacion, '') <= ?
+	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, '')) = LOWER(?))
+	  AND (? = 0 OR COALESCE(m.cierre_caja_id, 0) = ?)
+	  AND (? = '' OR UPPER(COALESCE(m.caja_codigo, '')) = ?)
+	ORDER BY COALESCE(NULLIF(m.pagado_en, ''), m.fecha_evento, m.fecha_creacion, '') ASC, m.id ASC`
 	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
 	if err != nil {
 		return nil, err
 	}
@@ -1482,7 +1581,7 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, 
 	out := []corteCajaVenta{}
 	for rows.Next() {
 		var item corteCajaVenta
-		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.DescuentoTotal, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
+		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.DescuentoTotal, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre, &item.MontoEfectivo, &item.DetalleItems); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -1496,46 +1595,34 @@ func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, u
 		dbpkg.PerfLogf("[perf][corte] listCorteCajaVentasAnuladas empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
 	}()
 	query := `SELECT
-		c.id,
-		COALESCE(c.codigo, ''),
-		COALESCE(c.nombre, ''),
-		COALESCE(c.activado_en, c.fecha_creacion, ''),
-		COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, ''),
-		COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, ''),
-		COALESCE(c.metodo_pago, 'efectivo'),
-		COALESCE(c.moneda, 'COP'),
-		COALESCE(c.total, 0),
-		COALESCE(m.monto_anulado, c.total_pagado, 0),
-		COALESCE(c.devolucion_total, 0),
-		COALESCE(c.descuento_total, 0),
-		COALESCE(m.usuario_creador, c.usuario_creador, ''),
+		m.id,
+		COALESCE(NULLIF(m.operacion_codigo, ''), NULLIF(m.carrito_codigo, ''), 'ANULACION-' || CAST(m.id AS TEXT)),
+		COALESCE(NULLIF(m.carrito_nombre, ''), NULLIF(m.estacion_nombre, ''), 'Venta anulada'),
+		COALESCE(NULLIF(m.activado_en, ''), m.fecha_creacion, ''),
+		COALESCE(m.fecha_evento, m.fecha_actualizacion, m.pagado_en, ''),
+		COALESCE(m.fecha_evento, m.fecha_actualizacion, m.pagado_en, ''),
+		COALESCE(m.metodo_pago, 'efectivo'),
+		COALESCE(m.moneda, 'COP'),
+		COALESCE(m.monto_total, 0),
+		COALESCE(m.monto_anulado, 0),
+		COALESCE(m.devolucion_total, 0),
+		COALESCE(m.descuento_total, 0),
+		COALESCE(m.usuario_creador, ''),
 		COALESCE(m.estacion_id, 0),
 		COALESCE(m.estacion_codigo, ''),
 		COALESCE(m.estacion_nombre, '')
-	FROM carritos_compras c
-	LEFT JOIN (
-		SELECT carrito_id,
-		       MAX(COALESCE(fecha_evento, '')) AS fecha_evento,
-		       MAX(COALESCE(usuario_creador, '')) AS usuario_creador,
-		       MAX(COALESCE(estacion_id, 0)) AS estacion_id,
-		       MAX(COALESCE(estacion_codigo, '')) AS estacion_codigo,
-		       MAX(COALESCE(estacion_nombre, '')) AS estacion_nombre,
-		       MAX(COALESCE(monto_anulado, 0)) AS monto_anulado
-		  FROM empresa_ventas_estacion_metricas
-		 WHERE empresa_id = ?
-		   AND LOWER(COALESCE(evento_operacion, '')) = 'venta_anulada'
-		 GROUP BY carrito_id
-	) m ON m.carrito_id = c.id
-	WHERE c.empresa_id = ?
-	  AND LOWER(COALESCE(c.estado_carrito, '')) IN ('anulado', 'anulada')
-	  AND COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') >= ?
-	  AND COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') <= ?
-	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, '')) = LOWER(?))
-	  AND (? = 0 OR COALESCE(c.cierre_caja_id, 0) = ?)
-	  AND (? = '' OR UPPER(COALESCE(c.caja_codigo, '')) = ?)
-	ORDER BY COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') ASC, c.id ASC`
+	FROM empresa_ventas_estacion_metricas m
+	WHERE m.empresa_id = ?
+	  AND LOWER(COALESCE(m.evento_operacion, '')) = 'venta_anulada'
+	  AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
+	  AND COALESCE(m.fecha_evento, m.fecha_actualizacion, m.pagado_en, '') >= ?
+	  AND COALESCE(m.fecha_evento, m.fecha_actualizacion, m.pagado_en, '') <= ?
+	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, '')) = LOWER(?))
+	  AND (? = 0 OR COALESCE(m.cierre_caja_id, 0) = ?)
+	  AND (? = '' OR UPPER(COALESCE(m.caja_codigo, '')) = ?)
+	ORDER BY COALESCE(m.fecha_evento, m.fecha_actualizacion, m.pagado_en, '') ASC, m.id ASC`
 	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
 	if err != nil {
 		return nil, err
 	}
@@ -1544,104 +1631,6 @@ func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, u
 	for rows.Next() {
 		var item corteCajaVenta
 		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.DescuentoTotal, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
-			return nil, err
-		}
-		out = append(out, item)
-	}
-	return out, rows.Err()
-}
-
-func listCorteCajaItemsPorTipo(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64) ([]corteCajaTipoItem, error) {
-	startedAt := time.Now()
-	defer func() {
-		dbpkg.PerfLogf("[perf][corte] listCorteCajaItemsPorTipo empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
-	}()
-	query := `SELECT
-		LOWER(COALESCE(i.tipo_item, 'producto')) AS tipo,
-		COALESCE(SUM(COALESCE(i.cantidad, 0)), 0) AS cantidad,
-		COALESCE(SUM(COALESCE(i.total_linea, 0)), 0) AS total
-	FROM carrito_compra_items i
-	JOIN carritos_compras c ON c.id = i.carrito_id AND c.empresa_id = i.empresa_id
-	LEFT JOIN (
-		SELECT carrito_id, MAX(COALESCE(usuario_creador, '')) AS usuario_creador
-		  FROM empresa_ventas_estacion_metricas
-		 WHERE empresa_id = ?
-		   AND LOWER(COALESCE(evento_operacion, '')) = 'venta_pagada'
-		 GROUP BY carrito_id
-	) m ON m.carrito_id = c.id
-	WHERE c.empresa_id = ?
-	  AND COALESCE(c.pagado_en, '') <> ''
-	  AND COALESCE(c.pagado_en, '') >= ?
-	  AND COALESCE(c.pagado_en, '') <= ?
-	  AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
-	  AND LOWER(COALESCE(i.estado, 'activo')) = 'activo'
-	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, '')) = LOWER(?))
-	  AND (? = 0 OR COALESCE(c.cierre_caja_id, 0) = ?)
-	  AND (? = '' OR UPPER(COALESCE(c.caja_codigo, '')) = ?)
-	GROUP BY LOWER(COALESCE(i.tipo_item, 'producto'))
-	ORDER BY total DESC`
-	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []corteCajaTipoItem{}
-	for rows.Next() {
-		var item corteCajaTipoItem
-		if err := rows.Scan(&item.Tipo, &item.Cantidad, &item.Total); err != nil {
-			return nil, err
-		}
-		out = append(out, item)
-	}
-	return out, rows.Err()
-}
-
-func listCorteCajaProductosVendidos(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64, limit int) ([]corteCajaProductoVendido, error) {
-	startedAt := time.Now()
-	defer func() {
-		dbpkg.PerfLogf("[perf][corte] listCorteCajaProductosVendidos empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
-	}()
-	if limit <= 0 || limit > 100 {
-		limit = 50
-	}
-	query := `SELECT
-		COALESCE(c.pagado_en, i.fecha_creacion, ''),
-		COALESCE(i.descripcion, ''),
-		COALESCE(i.cantidad, 0),
-		LOWER(COALESCE(i.tipo_item, 'producto')),
-		COALESCE(i.codigo_item, ''),
-		COALESCE(c.codigo, '')
-	FROM carrito_compra_items i
-	JOIN carritos_compras c ON c.id = i.carrito_id AND c.empresa_id = i.empresa_id
-	LEFT JOIN (
-		SELECT carrito_id, MAX(COALESCE(usuario_creador, '')) AS usuario_creador
-		  FROM empresa_ventas_estacion_metricas
-		 WHERE empresa_id = ?
-		   AND LOWER(COALESCE(evento_operacion, '')) = 'venta_pagada'
-		 GROUP BY carrito_id
-	) m ON m.carrito_id = c.id
-	WHERE c.empresa_id = ?
-	  AND COALESCE(c.pagado_en, '') <> ''
-	  AND COALESCE(c.pagado_en, '') >= ?
-	  AND COALESCE(c.pagado_en, '') <= ?
-	  AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
-	  AND LOWER(COALESCE(i.estado, 'activo')) = 'activo'
-	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, i.usuario_creador, '')) = LOWER(?))
-	  AND (? = 0 OR COALESCE(c.cierre_caja_id, 0) = ?)
-	  AND (? = '' OR UPPER(COALESCE(c.caja_codigo, '')) = ?)
-	ORDER BY COALESCE(c.pagado_en, i.fecha_creacion, '') DESC, i.id DESC
-	LIMIT ?`
-	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []corteCajaProductoVendido{}
-	for rows.Next() {
-		var item corteCajaProductoVendido
-		if err := rows.Scan(&item.Fecha, &item.Producto, &item.Cantidad, &item.Tipo, &item.Referencia, &item.VentaCodigo); err != nil {
 			return nil, err
 		}
 		out = append(out, item)

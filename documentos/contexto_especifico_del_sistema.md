@@ -1,6 +1,6 @@
 # Contexto especifico del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-16.
+Estado: vigente. Ultima actualizacion: 2026-08-31.
 
 Este documento amplia el
 [`Contexto general del sistema`](contexto_general_del_sistema.md). No se debe
@@ -32,6 +32,18 @@ permiso, filtrar SQL, sanear errores, no registrar secretos y validar llamadas
 forzadas aunque el boton se oculte en frontend.
 
 ## Modulos operativos
+
+- Catalogo publico, pagina principal y plantillas vigentes:
+  `mapa_modulos.md`, `matriz_integracion_plantillas.md`,
+  `web/index.html`, `web/descripcion_de_los_sistemas.html` y
+  `backend/handlers/pagina_principal_handlers.go`. El corte vigente es de 53
+  modulos y 13 plantillas; configuraciones publicas antiguas se filtran antes
+  de responder o renderizar.
+
+- Vida personal, gastos familiares, comprobantes privados, suscripciones y
+  recordatorios: `vida.md`, `estructura_bd.md`,
+  `matriz_roles_permisos_pos_multiempresa.md` y
+  `checklist_seguridad_endpoint_multiempresa.md`.
 
 - Ventas, carrito, caja, inventario, compras, clientes y credito:
   `mapa_modulos.md`, `flujos_operativos.md`, `descripcion_de_modulos`.

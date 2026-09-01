@@ -1168,7 +1168,7 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
 	systemPrompt := soporteComprasIASystemPrompt()
 	pregunta := "Extrae y normaliza este soporte de compra o gasto de Colombia. Responde solo JSON valido, sin explicaciones."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil, empresaAISafetyIdentifier(usuario))
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			recordSupportExtractionOutcome("canceled")

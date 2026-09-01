@@ -60,12 +60,6 @@ func TestEmpresaUbicacionGPSSchemaReadyRejectsNilDatabase(t *testing.T) {
 	}
 }
 
-func TestEmpresaGrafologiaSchemaReadyRejectsNilDatabase(t *testing.T) {
-	if err := EmpresaGrafologiaSchemaReady(nil); err == nil {
-		t.Fatal("expected nil database to be rejected")
-	}
-}
-
 func TestEmpresaEnergiaSolarSchemaReadyRejectsNilDatabase(t *testing.T) {
 	if err := EmpresaEnergiaSolarSchemaReady(nil); err == nil {
 		t.Fatal("expected nil database to be rejected")

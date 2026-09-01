@@ -1,6 +1,33 @@
 # Contexto general del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-07-24.
+Estado: vigente. Ultima actualizacion: 2026-08-31.
+
+## Actualizacion 2026-08-31 - modulo Vida personal
+
+- `Vida` registra gastos cotidianos, comprobantes privados y suscripciones por
+  `empresa_id + usuario_id`; no alimenta la contabilidad empresarial.
+- Esta disponible para toda cuenta empresarial autenticada sin depender del
+  catalogo comercial de la licencia. Ningun rol obtiene acceso a registros
+  personales ajenos.
+- Los comprobantes aceptan JPEG, PNG, WebP o PDF, maximo 10 MiB, fuera de la
+  raiz web y con descarga que valida empresa, usuario y gasto.
+- El catalogo vigente pasa a 53 modulos de permiso y 13 plantillas
+  empresariales. La migracion `20260831-001-vida-personal-v1` pertenece a
+  `pcs-migrate` y no se ejecuto en esta tarea.
+- Contrato completo: `documentos/vida.md`.
+
+## Actualizacion 2026-08-23 - catalogo publico simplificado
+
+- El catalogo vigente contenia 52 modulos de permiso y 13 plantillas
+  empresariales: cuatro clasicas y nueve nuevas.
+- `web/index.html`, `web/descripcion_de_los_sistemas.html` y la compatibilidad
+  `web/descripcion_de_los_sistemas.ht` comparten ese alcance.
+- `/api/public/pagina_principal` y `/api/public/informacion_de_modulos`
+  normalizan configuraciones antiguas para impedir que una tarjeta o resumen
+  guardado vuelva a publicar modulos o plantillas retirados.
+- Droguerias y farmacias usan Inventario, productos, compras, ventas y
+  facturacion centrales; no se anuncian como modulo separado.
+- Esta actualizacion es local: no ejecuta `rs`, despliegue ni migraciones.
 
 ## Actualizacion 2026-07-24 - Plan 106 P0 en ejecucion controlada
 

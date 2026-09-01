@@ -82,6 +82,68 @@ func TestCarritosPostgresFechaExpressionsCastToTextBeforeCoalesce(t *testing.T) 
 	}
 }
 
+func TestBuildCarritoSaleOperationCodeSeparatesReusableCartSessions(t *testing.T) {
+	first := BuildCarritoSaleOperationCode("VENTA-DIRECTA-12", 12, 117, "2026-08-26 00:21:51.175963-05")
+	second := BuildCarritoSaleOperationCode("VENTA-DIRECTA-12", 12, 117, "2026-08-26 00:25:09.100001-05")
+	if first == second {
+		t.Fatalf("reused cart sales must have distinct operation codes: %q", first)
+	}
+	if again := BuildCarritoSaleOperationCode("VENTA-DIRECTA-12", 12, 117, "2026-08-26 00:21:51.175963-05"); again != first {
+		t.Fatalf("same paid timestamp must generate a stable code: got %q want %q", again, first)
+	}
+	for _, want := range []string{"VENTA-DIRECTA-12", "CRT-117", "PG-2026082600215117596305"} {
+		if !strings.Contains(first, want) {
+			t.Fatalf("operation code %q does not contain %q", first, want)
+		}
+	}
+}
+
+func TestResolveCarritoAttentionDurationSecondsAcceptsPostgresFractionAndTimezone(t *testing.T) {
+	got := ResolveCarritoAttentionDurationSeconds(
+		"2026-08-26 00:17:07.000000-05",
+		"2026-08-26 00:21:51.175963-05",
+	)
+	if got != 284 {
+		t.Fatalf("duration=%d, want 284 seconds", got)
+	}
+}
+
+func TestCarritoStationMetricInsertArgumentsMatchQuery(t *testing.T) {
+	input, err := normalizeCarritoStationMetricInput(CarritoStationMetricInput{
+		EmpresaID:       12,
+		CarritoID:       117,
+		EventoOperacion: "venta_pagada",
+		PagadoEn:        "2026-08-26 00:21:51.175963-05:00",
+	})
+	if err != nil {
+		t.Fatalf("normalize metric input: %v", err)
+	}
+	args := carritoStationMetricInsertArgs(input)
+	if got, want := len(args), strings.Count(insertCarritoStationMetricQuery, "?"); got != want {
+		t.Fatalf("metric insert args=%d, placeholders=%d", got, want)
+	}
+	if input.DetalleItemsJSON != "[]" {
+		t.Fatalf("empty detail must be normalized to JSON array, got %q", input.DetalleItemsJSON)
+	}
+}
+
+func TestEmpresaCatalogIncludesImmutableCartSaleHistoryMigration(t *testing.T) {
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version != "20260826-002-cart-sale-history-v1" {
+			continue
+		}
+		if migration.Apply == nil || migration.Body != empresaCarritoSaleHistorySchemaFingerprint {
+			t.Fatal("cart sale history migration must be executable and immutable")
+		}
+		return
+	}
+	t.Fatal("cart sale history migration is missing from empresa catalog")
+}
+
 func containsSQLToken(query, token string) bool {
 	return strings.Contains(strings.ToLower(query), strings.ToLower(token))
 }

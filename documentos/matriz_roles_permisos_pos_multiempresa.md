@@ -1,3 +1,15 @@
+2026-08-25: Nota de historial y modelo global del Chat IA
+- Todo usuario con acceso efectivo al Chat IA consulta únicamente su propio
+  historial dentro de la empresa activa.
+- `super_administrador`, `administrador_total` y `admin_empresa` pueden leer el
+  historial de todos los usuarios de esa empresa; ningún rol obtiene acceso a
+  otra empresa ni a secretos por esta capacidad.
+- La selección de modelo corresponde al Super Administrador y es global. Los
+  usuarios empresariales no pueden sustituirla desde el navegador.
+- `agente_pcs` está siempre activo, pero no es un rol ni concede permisos. El
+  servidor continúa resolviendo empresa, licencia, rol y acción efectiva antes
+  de exponer o confirmar cualquier herramienta.
+
 2026-07-09: Infraestructura del panel super.
 - `/super/api/servidores`, `/super/api/servidores/probar` y
   `/super/api/servidores/toggle` exigen sesion con rol
@@ -2047,7 +2059,7 @@ Regla de lectura comun (R):
 | `/super/api/domotica_storage` | `WithSuperAuditoria` + sesion super | SA | SA | limites de imagenes y revision de carpetas empresariales de Domotica; no expone secretos |
 | `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta roles globales + roles propios por `empresa_id`; crea/edita/desactiva solo roles personalizados de la empresa con evidencia trazable |
 | `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
-| `/api/empresa/auditoria/eventos` | `WithEmpresaAuditoriaPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`); `action=conexion` registra perdida/restauracion de internet como accion de lectura operativa para usuarios con acceso a la empresa |
+| `/api/empresa/auditoria/eventos` | `WithEmpresaAuditoriaPermissions` | SA, AE | SA, AE con `auditoria:D` para `action=retener|purgar` | consulta, exportacion forense (`action=export_forense`, `auditoria:R`) y retencion/purga destructiva (`auditoria:D`); `action=conexion` registra perdida/restauracion de internet como accion de lectura operativa para usuarios con acceso a la empresa |
 | `/api/empresa/backups` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | snapshots/restauracion y depuracion por fecha (`action=restaurar|depurar_fecha` requiere `A`) |
 
 ### Endpoints fuera de wrapper (control alterno)
@@ -2134,3 +2146,31 @@ Para declarar un modulo listo en produccion se debe validar por rol: acceso a la
 - `/api/empresa/control_electrico` exige el wrapper empresarial y sobrescribe cualquier identificador del payload con el `empresa_id` autorizado.
 - `/api/public/domotica/tunnel` no acepta alcance empresarial del cliente: lo deriva del dispositivo autenticado.
 - `/super/api/domotica_raspberry_trafico` exige sesión super y auditoría para consultar o cambiar límites.
+
+## Actualizacion 2026-08-23: modulos retirados
+
+- Se eliminan las claves, paginas, wrappers y opciones de licencia de `gimnasio`, `taxi_system`, `apartamentos_turisticos`, `propiedad_horizontal`, `odontologia` y `drogueria_farmacia`.
+- Droguerias y farmacias se autorizan con los permisos centrales de `inventario`, productos, compras, ventas y facturacion; no existe un permiso sanitario paralelo.
+- Las rutas restantes conservan validacion de sesion, licencia, accion efectiva y `empresa_id`.
+## Actualizacion 2026-08-31: Vida personal
+
+- Se agrega el modulo `vida`, la pagina `linkVida` y el wrapper
+  `WithEmpresaVidaPermissions` para `/api/empresa/vida`.
+- Todos los roles empresariales autenticados obtienen `R/C/U/D`; `A` no aplica.
+  Vida no depende de `licencias.modulos_habilitados`, porque debe estar
+  disponible en todas las empresas.
+- La disponibilidad universal no crea privilegio transversal: cada handler y
+  consulta deriva `usuario_id` de la sesion y exige
+  `empresa_id + usuario_id + id`. Ni `admin_empresa` ni
+  `administrador_total` reciben una vista de los registros de otra cuenta.
+- Los comprobantes usan almacenamiento privado y solo se descargan despues de
+  validar la propiedad del gasto. Ocultar el enlace en frontend no sustituye la
+  autorizacion backend.
+- `precios` y `factura_ia` conservan la misma frontera. La IA no amplia permisos
+  ni puede crear movimientos en compras, inventario, caja o contabilidad.
+## Actualizacion 2026-08-31 - Raspberry de sensores de puertas
+
+- Ver controladores/canales/estados requiere lectura efectiva de `control_electrico`/seguridad según la página vigente.
+- Crear, cambiar uso, cantidad, delay, generar instalador, asignar canal o desactivar requiere administración efectiva (`A`) mediante el wrapper empresarial; ocultar botones no sustituye backend.
+- `/api/public/domotica/tunnel?action=door_scan` no usa sesión humana: exige `device_uid` y Bearer de dispositivo, deriva `empresa_id` y `raspberry_id` y rechaza una placa que no sea `sensor_puertas`.
+- La auditoría de ciclo de vida se escribe con el actor humano o la identidad de dispositivo. Ningún rol empresarial recibe acceso global ni tokens.

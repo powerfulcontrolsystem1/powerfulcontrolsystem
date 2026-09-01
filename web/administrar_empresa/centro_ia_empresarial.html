@@ -77,7 +77,7 @@
       <div class="ai-card">
         <h2>Ejecutar funcion IA</h2>
         <div class="ai-query">
-          <label><span class="form-label">Modo agente</span><input id="agentMode" type="checkbox" role="switch"> <small class="ai-muted">Solicita propuestas y confirma antes de ejecutar; no amplía permisos.</small></label>
+          <p class="ai-muted">Agente PCS activo. Analiza, prepara borradores y solicita confirmación antes de cualquier acción.</p>
           <textarea id="consulta" class="form-input" maxlength="1800" placeholder="Ej: prepara un borrador de factura para Cliente X por 2 servicios de consultoria de 350000 cada uno, o revisa por que no cuadran ventas e ingresos."></textarea>
           <div class="ai-center-actions" style="justify-content:flex-start">
             <button id="btnDiagnostico" class="btn" type="button" data-ai-button="true">Diagnostico ERP</button>
@@ -178,7 +178,7 @@
         $("resultado").className = "ai-result";
         $("resultado").textContent = "Consultando IA empresarial...";
         setEstado("Ejecutando funcion IA...", false);
-        var body = { empresa_id: state.empresaId, accion: state.accion, agent_id: "general", modo_agente: !!$("agentMode").checked, consulta: $("consulta").value.trim(), desde: $("desde").value, hasta: $("hasta").value };
+        var body = { empresa_id: state.empresaId, accion: state.accion, agent_id: "agente_pcs", modo_agente: true, consulta: $("consulta").value.trim(), desde: $("desde").value, hasta: $("hasta").value };
         var res = await fetch("/api/empresa/ia_empresarial", { method: "POST", credentials: "same-origin", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
         var data = await res.json().catch(function(){ return null; });
         if(!res.ok || !data){ throw new Error((data && data.error) || "No se pudo ejecutar IA empresarial."); }

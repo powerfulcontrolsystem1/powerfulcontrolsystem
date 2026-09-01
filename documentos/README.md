@@ -1,6 +1,6 @@
 # Indice documental del proyecto
 
-Fecha: 2026-07-16
+Fecha: 2026-08-31
 Estado: vigente. El indice conserva el historial funcional y enlaza la ruta
 tecnica vigente de produccion, sin declarar lista una salida general hasta
 cumplir sus gates de staging, restauracion, multiempresa y proveedores.
@@ -22,12 +22,21 @@ desarrollo, soporte y trabajo asistido por Codex.
 7. `documentos/diagramas/diagrama_entidad_relacion.md`
 8. `documentos/diagramas/estructura_del_codigo.md`
 9. `documentos/matriz_roles_permisos_pos_multiempresa.md`
-10. `documentos/reporte_estado_modulos_2026-05-05.md`
+10. `documentos/matriz_integracion_plantillas.md`
 11. `documentos/gobernanza_tecnica/README.md`
 12. `documentos/historial_de_cambios`
 13. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-08-31: `Vida` agrega gastos y suscripciones personales aislados por
+  empresa y cuenta autenticada. El catalogo actual queda en 53 modulos y 13
+  plantillas; consultar `vida.md`. Es un candidato local sin migracion ni
+  despliegue.
+- 2026-08-23: la portada publica y sus landings derivadas quedan alineadas con
+  52 modulos activos y 13 plantillas empresariales. El backend y el frontend
+  filtran configuraciones antiguas para que no reaparezcan anuncios retirados;
+  `matriz_integracion_plantillas.md` es la fuente vigente del catalogo de
+  plantillas. No se realizo despliegue.
 - 2026-07-16: `plan_final_para_produccion.md` consolida el diagnostico real de
   API, migrador, worker, cola, outbox, PostgreSQL, Docker, almacenamiento y API
   movil. Ordena las fases, backlog `PROD-*`, hitos y gates; la primera fase
@@ -78,7 +87,6 @@ desarrollo, soporte y trabajo asistido por Codex.
 - 2026-05-05: corregida y documentada la exposicion publica de `visualizar_productos_y_precios_publico.html`; la ruta directa y la ruta `/{empresa_slug}/visualizar_productos_y_precios_publico.html` quedan sin login y validadas en produccion.
 - 2026-05-05: documentado `Domicilios` profesional en `documentos/domicilios_profesional.md`, con central, restaurantes, domiciliarios, cliente publico, tracking GPS, codigo de entrega, endpoints, datos demo y control independiente por roles/licencias.
 - 2026-05-05: actualizada la matriz de roles/licencias para modulos plantillas (`venta_publica`, `gimnasio`, `taxi_system`, `domicilios`, `alquileres`, `odontologia`, `turnos_atencion`, `control_electrico`) con wrappers dedicados y activacion por licencia.
-- 2026-05-05: documentado `Taxi System` profesional en `documentos/taxi_system_profesional.md`, con mapa operativo, filtros, GPS por tipo/protocolo, asociacion de dispositivos a conductores y endpoints privados.
 - 2026-05-05: documentada la carta publica de productos en `documentos/carta_publica_productos.md`, con modulo administrativo, pagina publica `visualizar_productos_y_precios_publico.html`, rutas por slug/subdominio, permisos y pruebas.
 - 2026-05-03: estado de modulos actualizado en `documentos/reporte_estado_modulos_2026-05-03.md`; se documentan reparaciones de estaciones/carrito, retorno a estaciones al pagar, tarjetas adaptables al texto, `USD / COP` como primer indicador y despliegue VPS correcto.
 - 2026-05-03: ayuda del sistema actualizada con estado operativo, rutas criticas, configuracion de estaciones, flujo de pago del carrito y advertencia honesta sobre validacion integral por hardware/proveedores.
@@ -117,7 +125,6 @@ desarrollo, soporte y trabajo asistido por Codex.
 - Cierre y bloqueo fiscal: `documentos/cierre_fiscal.md`
 - Activos fijos NIIF/Fiscal: `documentos/activos_fijos_niif_fiscal.md`
 - Portal de terceros y certificados tributarios: `documentos/portal_terceros_certificados.md`
-- Propiedad horizontal: `documentos/propiedad_horizontal.md`
 - Promocion de licencias por asesor: `documentos/promocion_asesor_licencias.md`
 - Centros de costo y rentabilidad: `documentos/centros_costo.md`
 - Carnets empresariales: `documentos/carnets_empresariales.md`
@@ -133,7 +140,6 @@ desarrollo, soporte y trabajo asistido por Codex.
 - Inventario avanzado: `documentos/inventario_avanzado.md`
 - CRM y ventas avanzadas: `documentos/crm_ventas_avanzadas.md`
 - Reporte de estado integral vigente: `documentos/reporte_estado_modulos_2026-05-05.md`
-- Taxi System profesional y GPS: `documentos/taxi_system_profesional.md`
 - Domicilios profesional: `documentos/domicilios_profesional.md`
 - Inventario documental y de archivos: `documentos/descripcion_de_archivos`
 - Historial detallado de trabajo: `documentos/historial_de_cambios`

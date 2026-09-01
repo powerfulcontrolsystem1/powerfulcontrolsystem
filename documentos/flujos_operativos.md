@@ -4,6 +4,36 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Agente PCS empresarial
+
+1. El usuario abre el chat, Centro IA o Pedidos IA sin elegir modo, agente ni
+   modelo; el servidor aplica `agente_pcs` y el modelo global.
+2. Una consulta explicativa responde con el contexto permitido y consume la
+   cuota normal del chat.
+3. Si una tarea requiere herramienta, el servidor comprueba flag, tenant, rol,
+   licencia y límite antes de preparar una propuesta.
+4. La propuesta permite como máximo una operación y ninguna escritura ocurre
+   hasta una confirmación humana independiente e idempotente.
+
+## Recepción de compra con impacto en inventario
+
+1. El comprador crea la requisición eligiendo productos activos de la empresa,
+   obtiene cotización de un proveedor creado y registra la aprobación.
+2. En Recepción selecciona requisición, item pendiente, proveedor y bodega
+   destino; informa documento, cantidad, costo y lote opcional.
+3. El navegador conserva una `Idempotency-Key` estable para esa operación. El
+   backend vuelve a validar sesión, licencia, permiso y `empresa_id`.
+4. Una transacción bloquea requisición e item, impide recibir más de lo
+   solicitado o reutilizar el documento para esa requisición y valida producto,
+   proveedor y bodega dentro de la misma empresa.
+5. La misma transacción registra recepción, cantidad recibida/pendiente,
+   existencia, costo, lote avanzado opcional y movimiento de entrada en Kardex.
+6. Solo la suma real de items recibidos cambia la requisición a
+   `recibida_total`; elegir manualmente "total" no puede omitir pendientes.
+7. La validación operativa debe comprobar antes/después en existencia, Kardex y
+   valorización, repetir la solicitud con la misma llave y ensayar concurrencia
+   contra PostgreSQL aislado o staging.
+
 ## Cliente movil POS v1
 
 1. La app Android/iPhone obtiene una sesion de dispositivo y usa Bearer en
@@ -180,6 +210,21 @@ afecte dinero, documentos, licencias o seguridad.
    volumenes Docker PCS, `MANIFEST.json` y `RESTAURAR_VPS.md`; no incluye
    `.env.platform` ni secretos por defecto.
 
+## Administrar disco VPS
+
+1. Abrir `Super administrador > Plataforma > Administrar disco VPS`.
+2. Revisar el uso total y las cuatro categorías recuperables. La pantalla no
+   lista bases, archivos empresariales, certificados, código, respaldos ni
+   volúmenes Docker conectados.
+3. Seleccionar una o más categorías y escribir exactamente `LIBERAR ESPACIO`.
+4. La API super auditada firma la solicitud hacia el sidecar interno. El
+   navegador nunca recibe acceso al socket Docker, rutas del host o comandos.
+5. El sidecar solo puede eliminar contenedores detenidos por más de 24 horas,
+   imágenes no usadas por contenedores con más de 7 días, caché BuildKit vencida
+   y volúmenes Docker anónimos sin referencias.
+6. Al finalizar, revisar los bytes recuperados y el espacio disponible. Si una
+   categoría no tiene candidatos, la operación no altera recursos activos.
+
 ## Transferir cuenta entre mesas, habitaciones o estaciones
 
 1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
@@ -220,13 +265,23 @@ afecte dinero, documentos, licencias o seguridad.
    impresora directa.
 7. El agente local de cada caja consulta
    `/api/empresa/impresoras/agente?action=tomar` con `empresa_id`, `agente_id` y
-   `estacion_id`; solo recibe trabajos pendientes de su empresa, agente o estacion.
+   `estacion_id`; solo recibe trabajos pendientes de su empresa, agente o
+   estación. PostgreSQL reclama el lote en una sola operación con
+   `FOR UPDATE SKIP LOCKED`, por lo que varios agentes pueden trabajar sin tomar
+   la misma fila.
 8. Tras imprimir en la impresora fisica del equipo, el agente marca el trabajo
-   como `impreso` o `error` en `/api/empresa/impresoras/agente?action=estado`.
+   como `impreso` o `error` en `/api/empresa/impresoras/agente?action=estado`;
+   solo el `agente_id` propietario puede cerrarlo y repetir el mismo cierre es
+   idempotente.
 9. El administrador puede ver la cola reciente y reintentar trabajos fallidos
-   desde la pagina de configuracion.
+   desde la pagina de configuracion. Reintentar pone el trabajo en `pendiente` y
+   reinicia intentos para que vuelva a ser elegible.
 10. La ruta de agente usa permisos de ventas y no permite editar impresoras,
    reglas ni predeterminadas; esas acciones siguen bajo permisos de seguridad.
+11. Crear un trabajo desde web conserva una `Idempotency-Key` hasta obtener una
+   respuesta definitiva. Antes de producción se debe definir por flujo si la
+   salida se hará mediante agente local o mediante el diálogo de impresión del
+   navegador; activar ambos sobre el mismo comprobante puede duplicar papel.
 
 ## Factura electronica desde una venta existente
 
@@ -444,24 +499,6 @@ afecte dinero, documentos, licencias o seguridad.
    impresoras, menu visible, atajos POS, productos import/export,
    bodegas/traslados, verticales y analisis/control para revisar eventos
    reales y exportar CSV/JSON.
-
-## GRAFOLOGIX grafologia OCR
-
-1. Abrir `Administrar empresa > Analisis y control > GRAFOLOGIX`.
-2. Cargar imagen desde PC, arrastrar archivo o tomar fotografia con camara.
-3. Ajustar brillo, contraste, recorte central o recorte automatico por tinta.
-4. Presionar `Analizar manuscrito`.
-5. El frontend envia `multipart/form-data` a
-   `/api/empresa/grafologia?empresa_id={id}&action=analizar`.
-6. El backend valida empresa, permisos y tipo `image/*`, guarda la imagen en la
-   carpeta de la empresa y ejecuta el motor Go puro.
-7. Si la VPS tiene `GRAFOLOGIA_TESSERACT_ENABLED=1`, se intenta OCR por
-   Tesseract CLI; si falla, el analisis geometrico continua.
-8. El sistema guarda metricas, interpretacion y reporte HTML en
-   `empresa_grafologia_analisis`.
-9. El usuario puede abrir HTML imprimible, JSON o vista `PDF / imprimir`.
-10. El resultado es orientativo; no debe tratarse como diagnostico ni decision
-    automatizada.
 
 ## Camaras y DVR
 
@@ -1053,7 +1090,20 @@ afecte dinero, documentos, licencias o seguridad.
 7. Si el carrito ya fue seleccionado y una sincronizacion secundaria falla, la
    pantalla no debe desmontarse; debe conservar la venta visible y mostrar una
    advertencia operativa.
-8. Pruebas: entrar con rol `cajero` por `login_usuario`, crear/asignar cliente
+8. En la apertura, la estructura visual aparece antes de los datos. Las lecturas
+   independientes de configuracion, permisos, clientes, descuentos, cajas y
+   carrito se ejecutan en paralelo; la sesion `/me` se comparte y no se repite
+   el listado del carrito canonico si su ciclo de vida no cambio. La lectura de
+   `estacion_prefs` se comparte con las etiquetas globales de estaciones. El
+   render de clientes, cajas, reglas y carritos se agrupa al final de esa fase;
+   resumen e items solo vuelven a pintarse cuando llegan items y abonos del
+   carrito seleccionado. El boton de pago permanece bloqueado hasta terminar
+   carritos, items, abonos y reglas de cobro, y sigue bloqueado si no existe al
+   menos un producto, servicio o total cobrable. La primera lectura de venta directa
+   no debe filtrar todavía por el código canónico calculado: primero reconoce el
+   carrito empresarial existente, incluido el formato legado, y solo las
+   recargas posteriores pueden acotar por código.
+9. Pruebas: entrar con rol `cajero` por `login_usuario`, crear/asignar cliente
    natural y empresa, agregar item por nombre y por codigo, cambiar cantidad,
    devolver producto, pagar, imprimir, validar inventario y caja, abrir/salir
    de pantalla completa y revisar contraste fondo/tarjetas.
@@ -1086,7 +1136,15 @@ afecte dinero, documentos, licencias o seguridad.
    puede cambiarlo de abierto a pagado. Reintentos, doble clic o concurrencia
    reciben respuesta idempotente y no duplican caja, documento, metricas ni
    movimientos de inventario.
-5. Se registra venta/pago y se genera documento.
+5. En la misma transaccion del cierre se registra una venta inmutable en
+   `empresa_ventas_estacion_metricas`, con codigo unico por sesion del carrito,
+   caja/turno, componente en efectivo y snapshot de items. El outbox
+   `commerce.sale-paid` usa esa identidad; dos pagos sucesivos del mismo carrito
+   reutilizable no se absorben entre si. Corte de caja debe leer esa fuente
+   historica por `empresa_id`, `cierre_caja_id` y `caja_codigo`, nunca inferir la
+   venta desde el estado actual del carrito que se reabre para el siguiente
+   cliente. El esquema pertenece a la migracion de empresa
+   `20260826-002-cart-sale-history-v1`; despues se genera el documento de venta.
 6. En venta directa o estaciones, despues del pago exitoso PCS reabre la cuenta
    operativa con `reset_items=1` y la pantalla debe quedar sin items, abonos ni
    cliente para el siguiente cliente, sin recarga manual.
@@ -1381,20 +1439,21 @@ afecte dinero, documentos, licencias o seguridad.
    Bre-B`; ambos valores se guardan por `empresa_id` dentro de
    `empresa_estacion_prefs.estaciones_config.carrito_ui_global`.
 3. Registrar una o varias cuentas receptoras con proveedor, tipo de llave,
-   llave/cuenta, caja asignada y, cuando el banco lo entregue, payload oficial o
-   plantilla QR con `{valor}`, `{referencia}`, `{empresa_id}`, `{carrito_id}` y
-   `{carrito_codigo}`.
-4. Para varias cajas simultaneas, usar una cuenta por caja o una referencia
-   dinamica unica por venta. El cajero debe validar que la referencia recibida en
-   el banco coincide con la referencia del carrito antes de cerrar la venta.
+   llave/cuenta, caja asignada y, cuando el participante lo entregue, el payload
+   estatico oficial exacto. PCS rechaza plantillas, sustituciones y payloads con
+   saltos de linea porque pueden invalidar la estructura EMV o su CRC.
+4. Para varias cajas simultaneas, usar una cuenta por caja o una referencia unica
+   visible por venta. Un QR dinamico debe generarse mediante la API oficial del
+   participante; el cajero debe validar en el banco monto y referencia antes de
+   cerrar la venta mientras no exista ese conector.
 5. La pantalla lista ventas cerradas con `transferencia_bre_b`, abonos Bre-B y
    registros bancarios manuales de `empresa_finanzas_bancos_movimientos`.
 6. `Registrar pago recibido` crea un movimiento bancario de ingreso con origen
-   `breb_qr_manual`, hash idempotente y estado de conciliacion pendiente o
-   conciliado; no crea venta ni reemplaza el cierre del carrito.
-7. La conciliacion automatica solo debe activarse cuando exista webhook/API real
-   de banco o proveedor; hasta entonces PCS conserva trazabilidad y conciliacion
-   manual sin simular confirmaciones.
+   `breb_qr_manual`, hash idempotente y estado de conciliacion siempre pendiente;
+   no crea venta, no confirma fondos y no reemplaza el cierre del carrito.
+7. La UI y la API rechazan activar conciliacion automatica mientras no exista un
+   webhook/API firmado y homologado del banco o proveedor. Hasta entonces PCS
+   conserva trazabilidad y conciliacion manual sin simular confirmaciones.
 
 ## Rappi por empresa
 
@@ -1509,3 +1568,66 @@ afecte dinero, documentos, licencias o seguridad.
 11. Una entrada GPIO autenticada puede encender/apagar el aparato destino,
     iniciar su temporizador o respetar su agenda; todo ON reserva la cola única
     de la empresa.
+
+## Sensores de puertas: barrido de cuatro entradas por salida
+
+1. El administrador abre PCS desde la Raspberry y agrega el controlador eligiendo `Sistema de sensores en puertas`.
+2. Define 1–16 relés de salida y el retardo en milisegundos; guardar crea cuatro canales por salida sin empresa ni estación elegidas por el agente.
+3. Descarga y ejecuta una vez el instalador con `sudo`; `systemd` deja autoarranque y el túnel HTTPS saliente.
+4. En cada ciclo el agente mantiene todas las salidas bajas, eleva OUTn, espera el delay, lee IN1–IN4 y baja OUTn antes de avanzar.
+5. El túnel valida dispositivo, uso y rango, actualiza estado/`last_seen`, conserva transiciones y solo autoactiva la estación asociada cuando la política empresarial lo permite.
+6. En Configuración de sensores, el administrador pulsa `Asignar habitación` sobre cada OUT/IN y guarda una estación válida de la misma empresa.
+7. Cambiar cantidad conserva asociaciones dentro del rango y desactiva canales sobrantes; cambiar a Domótica desactiva todos los canales automáticos y detiene el barrido en el siguiente poll.
+8. La bitácora permite reconstruir alta, configuración, instalación, enrolamiento, asignaciones, operaciones y desactivación de la Raspberry.
+
+## Portal publico y plantillas vigentes
+
+1. El visitante abre `web/index.html`; la pagina solicita
+   `/api/public/pagina_principal` y `/api/public/informacion_de_modulos`.
+2. El backend normaliza las tarjetas guardadas y descarta cualquier destino de
+   un modulo o plantilla retirado.
+3. El frontend repite el filtro como defensa ante respuestas antiguas y combina
+   las tarjetas personalizadas con cuatro plantillas clasicas y nueve nuevas.
+4. La combinacion usa la clave `module` para no duplicar Parqueadero,
+   Domicilios, Alquileres o Construccion/AIU si ya llegaron desde la API.
+5. `descripcion_de_los_sistemas.html` y la ruta compatible `.ht` reciben el
+   mismo conjunto, muestran 53 modulos y 13 plantillas y llevan el CTA publico
+   al registro cuando el destino operativo exige autenticacion.
+6. El superadministrador puede editar hasta 12 tarjetas personalizadas; el
+   guardado nunca restaura elementos retirados.
+
+## Vida personal: gasto, comprobante y suscripcion
+
+1. Una cuenta autenticada abre `Vida` desde Administrar empresa; el backend
+   valida empresa, rol, permiso y deriva `usuario_id` de la sesion.
+2. Para un gasto, el usuario confirma fecha, categoria, comercio, valor, moneda
+   y medio de pago. Desde movil puede abrir la camara con el selector de recibo.
+3. Si adjunta comprobante, el backend limita el cuerpo, valida JPEG, PNG, WebP
+   o PDF y lo guarda fuera de `web/` bajo la empresa. La fila solo conserva la
+   referencia privada.
+4. La alta usa una clave idempotente ligada a empresa, usuario y contenido. Un
+   reintento devuelve el mismo gasto; otro contenido con la misma clave falla.
+5. Listar, editar, descargar o eliminar repite el filtro
+   `empresa_id + usuario_id + id`. Borrar un gasto propio elimina despues su
+   archivo privado, sin aceptar referencias aportadas por el cliente.
+6. Una suscripcion guarda costo, periodicidad, proxima renovacion, dias de
+   anticipacion y si el aviso es para renovar, cancelar o ambas acciones.
+7. Las alertas aparecen en Vida y en el contador del menu. Con permiso explicito
+   del navegador se muestra una alarma deduplicada mientras PCS permanece
+   abierto; no se contacta automaticamente al proveedor.
+8. `Renovar` avanza la fecha respetando el ultimo dia del mes. Ninguna accion de
+   Vida genera contabilidad, caja, inventario, CxP o documentos fiscales.
+
+## Idempotencia en pagos, ventas e integraciones
+
+1. La UI conserva una `Idempotency-Key` por intento logico de checkout y el
+   backend deriva una referencia estable sin exponer la clave.
+2. Antes de invocar una pasarela se reclama la clave y se fija el hash del
+   request. Una repeticion completada obtiene la misma respuesta.
+3. Un timeout de proveedor marca el intento como incierto y bloquea el reenvio
+   automatico hasta conciliar la referencia.
+4. Al pagar carrito, estado, caja, historial y outbox confirman juntos. El
+   worker recupera la proyeccion contable con unicidad por empresa/carrito.
+5. Offline, DIAN y workers reclaman filas con token/lease; Rappi manual usa
+   ledger durable y sus webhooks deduplican por empresa/orden.
+6. Toda conciliacion conserva `empresa_id`, permisos y propiedad de IDs hijos.

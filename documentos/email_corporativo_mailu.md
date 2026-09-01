@@ -254,3 +254,20 @@ Antes de activar correo real:
   inline ya usa el archivo oficial, pero la inicial generada por Gmail no se
   puede eliminar de forma garantizada hasta publicar el PEM del certificado en
   el campo `a=` del registro BIMI y repetir la prueba visual.
+
+## Validacion BIMI 2026-08-25
+
+- Se revalidaron publicamente SPF, DKIM, DMARC, MX, PTR y el TXT BIMI. Todos
+  permanecen publicados; el campo `a=` continua vacio hasta adquirir VMC/CMC.
+- Los ocho contenedores Mailu del VPS estaban activos y saludables durante la
+  comprobacion de solo lectura.
+- `web/img/bimi-pcs.svg` se corrigio para eliminar atributos y valores no
+  admitidos por el esquema SVG Tiny P/S. El archivo paso sin errores el esquema
+  oficial `SVG_PS-latest.rnc` del BIMI Group.
+- La fuente del VPS se actualizo con respaldo y hash verificado. El contenedor
+  activo usa filesystem de solo lectura y aun entrega la copia anterior; la
+  publicacion efectiva queda pendiente del siguiente despliegue normal.
+- Antes de comprar el certificado debe fijarse el logo exacto que se presentara
+  a la autoridad. Un CMC exige demostrar al menos 12 meses de uso previo; un VMC
+  exige que el logo este registrado como marca. El certificado queda ligado a
+  ese logo, por lo que no se debe sustituir despues sin reemitirlo.

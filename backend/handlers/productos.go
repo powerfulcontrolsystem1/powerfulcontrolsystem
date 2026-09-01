@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,6 +21,33 @@ import (
 )
 
 const productosImportMaxBytes int64 = 5 << 20
+
+func writeProductosInternalError(w http.ResponseWriter, r *http.Request, operation string, err error) {
+	requestID := ""
+	if r != nil {
+		requestID = strings.TrimSpace(r.Header.Get("X-Request-ID"))
+	}
+	log.Printf("[productos_inventario] operation=%s request_id=%s error_type=%T", strings.TrimSpace(operation), requestID, err)
+	http.Error(w, "No se pudo completar la operación de productos e inventario.", http.StatusInternalServerError)
+}
+
+func productosPublicError(err error, fallback string) string {
+	text := strings.TrimSpace(fmt.Sprint(err))
+	if text == "" || len(text) > 240 || strings.ContainsAny(text, "\r\n") {
+		return fallback
+	}
+	lower := strings.ToLower(text)
+	for _, internal := range []string{
+		"sqlstate", "pq:", "postgres", "driver", "constraint", "duplicate key",
+		"relation ", "column ", "syntax error", "select ", "insert into ",
+		"update ", "delete from ", "\\", "/var/", "/tmp/",
+	} {
+		if strings.Contains(lower, internal) {
+			return fallback
+		}
+	}
+	return text
+}
 
 var productoCSVHeaders = []string{
 	"sku",
@@ -247,7 +275,7 @@ func writeProductosExport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB,
 	categoriaID, _ := parseInt64QueryOptional(r, "categoria_id")
 	rows, err := dbpkg.GetProductosByEmpresa(dbEmp, empresaID, filtro, estado, bodegaID, categoriaID, 500, 0)
 	if err != nil {
-		http.Error(w, "failed to export productos: "+err.Error(), http.StatusInternalServerError)
+		writeProductosInternalError(w, r, "exportar_productos", err)
 		return
 	}
 	filename := "productos_empresa_" + strconv.FormatInt(empresaID, 10)
@@ -263,14 +291,14 @@ func writeProductosExport(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB,
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`_`+safeExportSizeSuffix(pageSize)+`.html"`)
 		if err := writeProductosPrintHTML(w, rows, pageSize); err != nil {
-			http.Error(w, "failed to build printable productos: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "imprimir_productos", err)
 		}
 	default:
 		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.csv"`)
 		_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
 		if err := writeProductosCSV(w, rows); err != nil {
-			http.Error(w, "failed to build csv productos: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "exportar_productos_csv", err)
 		}
 	}
 }
@@ -426,31 +454,31 @@ func writeProductoPrecioHistorialExport(w http.ResponseWriter, r *http.Request, 
 		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.csv"`)
 		_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
 		if err := writeProductoPrecioHistorialCSV(w, rows); err != nil {
-			http.Error(w, "failed to build historial csv: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "exportar_historial_precios_csv", err)
 		}
 	case "html", "carta", "imprimir":
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`.html"`)
 		if err := writeProductoPrecioHistorialHTML(w, rows); err != nil {
-			http.Error(w, "failed to build historial html: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "exportar_historial_precios_html", err)
 		}
 	case "pdf":
 		tmp, err := os.CreateTemp("", "pcs_historial_productos_*.pdf")
 		if err != nil {
-			http.Error(w, "failed to create historial pdf: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "crear_historial_precios_pdf", err)
 			return
 		}
 		path := tmp.Name()
 		_ = tmp.Close()
 		defer os.Remove(path)
 		if err := writeBasicPDF("Historial de productos", productoPrecioHistorialPlainText(rows), path); err != nil {
-			http.Error(w, "failed to build historial pdf: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "generar_historial_precios_pdf", err)
 			return
 		}
 		// #nosec G304 -- path is normalized and constrained to a server-controlled root before this operation.
 		content, err := os.ReadFile(path)
 		if err != nil {
-			http.Error(w, "failed to read historial pdf: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "leer_historial_precios_pdf", err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/pdf")
@@ -631,7 +659,7 @@ func importarProductosCSV(dbEmp *sql.DB, empresaID int64, usuario string, conten
 		}
 		exists, err := productoImportExists(dbEmp, empresaID, p)
 		if err != nil {
-			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: "no se pudo validar duplicado: " + err.Error(), Nombre: nombre, SKU: sku})
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: "No se pudo validar el producto.", Nombre: nombre, SKU: sku})
 			continue
 		}
 		if exists {
@@ -645,12 +673,12 @@ func importarProductosCSV(dbEmp *sql.DB, empresaID int64, usuario string, conten
 			}
 		}
 		if err := validateProductoCamposObligatorios(dbEmp, p, stockInicial, true, keys); err != nil {
-			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: err.Error(), Nombre: nombre, SKU: sku})
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: productosPublicError(err, "No se pudieron validar los campos obligatorios."), Nombre: nombre, SKU: sku})
 			continue
 		}
 		id, err := dbpkg.CreateProducto(dbEmp, p, stockInicial, "IMPORTACION_PRODUCTOS")
 		if err != nil {
-			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: err.Error(), Nombre: nombre, SKU: sku})
+			out = append(out, productoImportRowResult{Fila: fila, Estado: "error", Mensaje: productosPublicError(err, "No se pudo crear el producto."), Nombre: nombre, SKU: sku})
 			continue
 		}
 		out = append(out, productoImportRowResult{Fila: fila, Estado: "creado", Mensaje: "producto creado", ID: id, Nombre: nombre, SKU: sku})
@@ -758,13 +786,13 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			incluirInactivas := r.URL.Query().Get("include_inactive") == "1"
 			rows, err := dbpkg.GetBodegasByEmpresa(dbEmp, empresaID, incluirInactivas)
 			if err != nil {
-				http.Error(w, "failed to list bodegas: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "listar_bodegas", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -798,7 +826,7 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if q.Get("action") == "activar" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 					return
 				}
 				id, err := parseInt64Query(r, "id")
@@ -811,7 +839,7 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					estado = "activo"
 				}
 				if err := dbpkg.SetBodegaEstado(dbEmp, empresaID, id, estado); err != nil {
-					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
+					writeProductosInternalError(w, r, "actualizar_estado_bodega", err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -840,7 +868,7 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodDelete:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			id, err := parseInt64Query(r, "id")
@@ -849,7 +877,7 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.DeleteBodega(dbEmp, empresaID, id); err != nil {
-				http.Error(w, "failed to delete bodega: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "eliminar_bodega", err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -868,14 +896,14 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			includeInactive := r.URL.Query().Get("include_inactive") == "1"
 			q := r.URL.Query().Get("q")
 			rows, err := dbpkg.GetCategoriasProductoByEmpresa(dbEmp, empresaID, includeInactive, q)
 			if err != nil {
-				http.Error(w, "failed to list categorias de productos: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "listar_categorias", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -898,7 +926,7 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateCategoriaProducto(dbEmp, payload)
 			if err != nil {
-				http.Error(w, "failed to create categoria de producto: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "crear_categoria", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -909,7 +937,7 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if q.Get("action") == "activar" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 					return
 				}
 				id, err := parseInt64Query(r, "id")
@@ -926,7 +954,7 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 						http.Error(w, "categoria de producto no encontrada", http.StatusNotFound)
 						return
 					}
-					http.Error(w, "failed to set categoria estado: "+err.Error(), http.StatusInternalServerError)
+					writeProductosInternalError(w, r, "actualizar_estado_categoria", err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -951,7 +979,7 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "categoria de producto no encontrada", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "failed to update categoria de producto: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "actualizar_categoria", err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -959,7 +987,7 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodDelete:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			id, err := parseInt64Query(r, "id")
@@ -973,10 +1001,10 @@ func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				if strings.Contains(strings.ToLower(err.Error()), "asociada") {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 					return
 				}
-				http.Error(w, "failed to delete categoria de producto: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "eliminar_categoria", err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -995,7 +1023,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			qParams := r.URL.Query()
@@ -1014,7 +1042,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				offset, _ := parseIntQueryOptional(r, "offset")
 				rows, err := dbpkg.GetProductosVencimientoByEmpresa(dbEmp, empresaID, qParams.Get("estado_vencimiento"), diasVentana, limit, offset)
 				if err != nil {
-					http.Error(w, "failed to list productos por vencimiento: "+err.Error(), http.StatusInternalServerError)
+					writeProductosInternalError(w, r, "listar_productos_vencimiento", err)
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
@@ -1028,7 +1056,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 						http.Error(w, "producto not found", http.StatusNotFound)
 						return
 					}
-					http.Error(w, "failed to get producto: "+err.Error(), http.StatusInternalServerError)
+					writeProductosInternalError(w, r, "obtener_producto", err)
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
@@ -1044,7 +1072,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			offset, _ := parseIntQueryOptional(r, "offset")
 			rows, err := dbpkg.GetProductosByEmpresa(dbEmp, empresaID, q, estado, bodegaID, categoriaID, limit, offset)
 			if err != nil {
-				http.Error(w, "failed to list productos: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "listar_productos", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -1055,7 +1083,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if strings.EqualFold(strings.TrimSpace(q.Get("action")), "importar") || strings.EqualFold(strings.TrimSpace(q.Get("action")), "import") {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 					return
 				}
 				handleProductosImport(w, r, dbEmp, empresaID)
@@ -1090,13 +1118,13 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := validateProductoCamposObligatorios(dbEmp, payload.Producto, payload.StockInicial, true, payloadKeys); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateProducto(dbEmp, payload.Producto, payload.StockInicial, payload.ReferenciaInicial)
 			if err != nil {
-				http.Error(w, "failed to create producto: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "crear_producto", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -1107,7 +1135,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if q.Get("action") == "activar" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 					return
 				}
 				id, err := parseInt64Query(r, "id")
@@ -1124,7 +1152,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 						http.Error(w, "producto no encontrado", http.StatusNotFound)
 						return
 					}
-					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
+					writeProductosInternalError(w, r, "actualizar_estado_producto", err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -1157,7 +1185,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := validateProductoCamposObligatorios(dbEmp, payload, 0, false, payloadKeys); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
@@ -1166,7 +1194,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "producto no encontrado", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "failed to update producto: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "actualizar_producto", err)
 				return
 			}
 			updated, err := dbpkg.GetProductoByID(dbEmp, payload.EmpresaID, payload.ID)
@@ -1175,7 +1203,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "producto no encontrado despues de actualizar", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "producto actualizado, pero no se pudo recargar: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "recargar_producto_actualizado", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -1184,7 +1212,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodDelete:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			id, err := parseInt64Query(r, "id")
@@ -1197,7 +1225,7 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "producto no encontrado", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "failed to delete producto: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "eliminar_producto", err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -1218,7 +1246,7 @@ func EmpresaInventarioExistenciasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 		productoID, _ := parseInt64QueryOptional(r, "producto_id")
@@ -1230,7 +1258,7 @@ func EmpresaInventarioExistenciasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		if action == "alertas" || action == "alertas_quiebre" || action == "quiebre" {
 			rows, err := dbpkg.GetAlertasQuiebreByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
 			if err != nil {
-				http.Error(w, "failed to list alertas: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "listar_alertas_existencias", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -1240,7 +1268,7 @@ func EmpresaInventarioExistenciasHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		rows, err := dbpkg.GetExistenciasByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
 		if err != nil {
-			http.Error(w, "failed to list existencias: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "listar_existencias", err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -1257,7 +1285,7 @@ func EmpresaInventarioAlertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 		productoID, _ := parseInt64QueryOptional(r, "producto_id")
@@ -1271,7 +1299,7 @@ func EmpresaInventarioAlertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		if proactivo {
 			rows, err := dbpkg.GetAlertasOperativasByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
 			if err != nil {
-				http.Error(w, "failed to list alertas operativas: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "listar_alertas_operativas", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -1281,7 +1309,7 @@ func EmpresaInventarioAlertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		rows, err := dbpkg.GetAlertasQuiebreByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
 		if err != nil {
-			http.Error(w, "failed to list alertas: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "listar_alertas_inventario", err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -1296,12 +1324,12 @@ func EmpresaInventarioConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			conf, err := dbpkg.GetEmpresaInventarioConfiguracion(dbEmp, empresaID)
 			if err != nil {
-				http.Error(w, "failed to get inventario config: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "obtener_configuracion_inventario", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -1339,7 +1367,7 @@ func EmpresaInventarioConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 			} else {
 				actual, err := dbpkg.GetEmpresaInventarioConfiguracion(dbEmp, payload.EmpresaID)
 				if err != nil {
-					http.Error(w, "failed to get inventario config actual: "+err.Error(), http.StatusInternalServerError)
+					writeProductosInternalError(w, r, "obtener_configuracion_inventario_actual", err)
 					return
 				}
 				productoCampos = actual.ProductoCamposObligatorios
@@ -1354,7 +1382,7 @@ func EmpresaInventarioConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				Observaciones:              strings.TrimSpace(payload.Observaciones),
 			})
 			if err != nil {
-				http.Error(w, "failed to save inventario config: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "guardar_configuracion_inventario", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -1374,7 +1402,7 @@ func EmpresaInventarioConteoCiclicoHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			productoID, err := parseInt64QueryOptional(r, "producto_id")
@@ -1403,7 +1431,7 @@ func EmpresaInventarioConteoCiclicoHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 			rows, err := dbpkg.GetInventarioConteosCiclicosByEmpresa(dbEmp, empresaID, productoID, bodegaID, estadoConteo, desde, hasta, limit, offset)
 			if err != nil {
-				http.Error(w, "failed to list conteos ciclicos: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "listar_conteos_ciclicos", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -1446,7 +1474,7 @@ func EmpresaInventarioConteoCiclicoHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "stock insuficiente para ajuste de conteo", http.StatusConflict)
 					return
 				}
-				http.Error(w, "failed to register conteo ciclico: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "registrar_conteo_ciclico", err)
 				return
 			}
 
@@ -1469,7 +1497,7 @@ func EmpresaInventarioResumenHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 
@@ -1486,7 +1514,7 @@ func EmpresaInventarioResumenHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		resumen, err := dbpkg.GetInventarioResumenByEmpresa(dbEmp, empresaID, desde, hasta)
 		if err != nil {
-			http.Error(w, "failed to build inventario resumen: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "resumen_inventario", err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -1503,7 +1531,7 @@ func EmpresaInventarioTendenciaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 
@@ -1537,7 +1565,7 @@ func EmpresaInventarioTendenciaHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		rows, err := dbpkg.GetInventarioTendenciaByEmpresa(dbEmp, empresaID, bodegaID, desde, hasta, dias)
 		if err != nil {
-			http.Error(w, "failed to build inventario tendencia: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "tendencia_inventario", err)
 			return
 		}
 
@@ -1555,7 +1583,7 @@ func EmpresaInventarioBalanceBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 
@@ -1589,7 +1617,7 @@ func EmpresaInventarioBalanceBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		rows, err := dbpkg.GetInventarioBalanceBodegasByEmpresa(dbEmp, empresaID, bodegaID, desde, hasta, dias)
 		if err != nil {
-			http.Error(w, "failed to build inventario balance por bodega: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "balance_inventario_bodegas", err)
 			return
 		}
 
@@ -1607,7 +1635,7 @@ func EmpresaInventarioProyeccionQuiebreHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 
@@ -1640,7 +1668,7 @@ func EmpresaInventarioProyeccionQuiebreHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		rows, err := dbpkg.GetInventarioProyeccionQuiebreByEmpresa(dbEmp, empresaID, bodegaID, diasVentana, limit, offset)
 		if err != nil {
-			http.Error(w, "failed to build inventario proyeccion quiebre: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "proyeccion_quiebre_inventario", err)
 			return
 		}
 
@@ -1658,7 +1686,7 @@ func EmpresaInventarioPlanReposicionHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 
@@ -1706,7 +1734,7 @@ func EmpresaInventarioPlanReposicionHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		rows, err := dbpkg.GetInventarioPlanReposicionByEmpresa(dbEmp, empresaID, bodegaID, diasVentana, soloRiesgo, limit, offset)
 		if err != nil {
-			http.Error(w, "failed to build inventario plan reposicion: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "plan_reposicion_inventario", err)
 			return
 		}
 
@@ -1724,7 +1752,7 @@ func EmpresaInventarioPlanReposicionResumenHandler(dbEmp *sql.DB) http.HandlerFu
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 
@@ -1772,7 +1800,7 @@ func EmpresaInventarioPlanReposicionResumenHandler(dbEmp *sql.DB) http.HandlerFu
 
 		rows, err := dbpkg.GetInventarioPlanReposicionResumenByEmpresa(dbEmp, empresaID, bodegaID, diasVentana, soloRiesgo, limit, offset)
 		if err != nil {
-			http.Error(w, "failed to build inventario plan reposicion resumen: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "resumen_plan_reposicion", err)
 			return
 		}
 
@@ -1790,7 +1818,7 @@ func EmpresaInventarioPlanReposicionBorradorHandler(dbEmp *sql.DB) http.HandlerF
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 
@@ -1837,7 +1865,7 @@ func EmpresaInventarioPlanReposicionBorradorHandler(dbEmp *sql.DB) http.HandlerF
 
 		row, err := dbpkg.GetInventarioPlanReposicionBorradorByEmpresa(dbEmp, empresaID, proveedorID, bodegaID, diasVentana, soloRiesgo)
 		if err != nil {
-			http.Error(w, "failed to build inventario plan reposicion borrador: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "borrador_plan_reposicion", err)
 			return
 		}
 
@@ -1971,10 +1999,10 @@ func EmpresaComprasPlanReposicionEmitirOrdenHandler(dbEmp *sql.DB) http.HandlerF
 		)
 		if err != nil {
 			if strings.Contains(strings.ToLower(err.Error()), "no hay items sugeridos") {
-				http.Error(w, err.Error(), http.StatusConflict)
+				http.Error(w, productosPublicError(err, "La operación entra en conflicto con el estado actual."), http.StatusConflict)
 				return
 			}
-			http.Error(w, "failed to emitir orden de compra desde borrador: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "emitir_orden_reposicion", err)
 			return
 		}
 
@@ -2105,16 +2133,16 @@ func EmpresaComprasPlanReposicionActualizarEstadoHandler(dbEmp *sql.DB) http.Han
 			errLower := strings.ToLower(err.Error())
 			switch {
 			case strings.Contains(errLower, "documento no encontrado"):
-				http.Error(w, err.Error(), http.StatusNotFound)
+				http.Error(w, productosPublicError(err, "El registro solicitado no existe."), http.StatusNotFound)
 				return
 			case strings.Contains(errLower, "transicion invalida"):
-				http.Error(w, err.Error(), http.StatusConflict)
+				http.Error(w, productosPublicError(err, "La operación entra en conflicto con el estado actual."), http.StatusConflict)
 				return
 			case strings.Contains(errLower, "accion no soportada"), strings.Contains(errLower, "obligatori"), strings.Contains(errLower, "invalido"):
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			default:
-				http.Error(w, "failed to actualizar estado de orden de compra de reposicion: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "actualizar_orden_reposicion", err)
 				return
 			}
 		}
@@ -2165,7 +2193,7 @@ func EmpresaInventarioMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 		productoID, _ := parseInt64QueryOptional(r, "producto_id")
@@ -2185,7 +2213,7 @@ func EmpresaInventarioMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		offset, _ := parseIntQueryOptional(r, "offset")
 		rows, err := dbpkg.GetMovimientosByEmpresa(dbEmp, empresaID, productoID, bodegaID, tipo, desde, hasta, limit, offset)
 		if err != nil {
-			http.Error(w, "failed to list movimientos: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "listar_kardex", err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -2238,7 +2266,7 @@ func EmpresaInventarioTransferHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "stock insuficiente en la bodega origen", http.StatusBadRequest)
 				return
 			}
-			http.Error(w, "failed to transfer stock: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "transferir_stock", err)
 			return
 		}
 		notification, notifyErr := dbpkg.CreateEmpresaBodegaTransferNotification(
@@ -2311,7 +2339,7 @@ func EmpresaInventarioAjusteHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "stock insuficiente para la operación", http.StatusBadRequest)
 				return
 			}
-			http.Error(w, "failed to adjust inventario: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "ajustar_inventario", err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -2364,7 +2392,7 @@ func EmpresaInventarioCambioProductoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "stock insuficiente para cambio de producto", http.StatusBadRequest)
 				return
 			}
-			http.Error(w, "failed to register cambio de producto: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "cambiar_producto", err)
 			return
 		}
 
@@ -2382,7 +2410,7 @@ func EmpresaProductoPrecioHistorialHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 			return
 		}
 		productoID, _ := parseInt64QueryOptional(r, "producto_id")
@@ -2395,7 +2423,7 @@ func EmpresaProductoPrecioHistorialHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		rows, err := dbpkg.GetProductoPrecioHistorialByEmpresa(dbEmp, empresaID, productoID, limit, offset)
 		if err != nil {
-			http.Error(w, "failed to list historial de precios: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "listar_historial_precios", err)
 			return
 		}
 		if strings.TrimSpace(r.URL.Query().Get("formato")) != "" || strings.TrimSpace(r.URL.Query().Get("format")) != "" || strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("export")), "1") {
@@ -2414,13 +2442,13 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			includeInactive := r.URL.Query().Get("include_inactive") == "1"
 			rows, err := dbpkg.GetProveedoresByEmpresa(dbEmp, empresaID, includeInactive)
 			if err != nil {
-				http.Error(w, "failed to list proveedores: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "listar_proveedores", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -2439,7 +2467,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			// The tenant comes exclusively from the permission-validated request
@@ -2460,13 +2488,13 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := validateProveedorComercialPayload(payload.Proveedor); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateProveedor(dbEmp, payload.Proveedor)
 			if err != nil {
-				http.Error(w, "failed to create proveedor: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "crear_proveedor", err)
 				return
 			}
 			registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
@@ -2552,7 +2580,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 				transition, err := resolveComprasTransition(action, payload.EstadoActual)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusConflict)
+					http.Error(w, productosPublicError(err, "La operación entra en conflicto con el estado actual."), http.StatusConflict)
 					return
 				}
 
@@ -2615,7 +2643,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if q.Get("action") == "activar" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 					return
 				}
 				id, err := parseInt64Query(r, "id")
@@ -2632,7 +2660,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 						http.Error(w, "proveedor no encontrado", http.StatusNotFound)
 						return
 					}
-					http.Error(w, "failed to set proveedor estado: "+err.Error(), http.StatusInternalServerError)
+					writeProductosInternalError(w, r, "actualizar_estado_proveedor", err)
 					return
 				}
 				evento := "proveedor_desactivado"
@@ -2665,7 +2693,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			// Keep UPDATE scoped to the permission-validated tenant even when a
@@ -2676,7 +2704,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := validateProveedorComercialPayload(payload); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			if err := dbpkg.UpdateProveedor(dbEmp, payload); err != nil {
@@ -2684,7 +2712,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "proveedor no encontrado", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "failed to update proveedor: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "actualizar_proveedor", err)
 				return
 			}
 			registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
@@ -2714,7 +2742,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodDelete:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			id, err := parseInt64Query(r, "id")
@@ -2727,7 +2755,7 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "proveedor no encontrado", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "failed to delete proveedor: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "eliminar_proveedor", err)
 				return
 			}
 			registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
@@ -2760,7 +2788,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			q := r.URL.Query().Get("q")
@@ -2769,7 +2797,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			offset, _ := parseIntQueryOptional(r, "offset")
 			rows, err := dbpkg.GetServiciosByEmpresa(dbEmp, empresaID, q, estado, limit, offset)
 			if err != nil {
-				http.Error(w, "failed to list servicios: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "listar_servicios", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -2788,7 +2816,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateServicio(dbEmp, payload)
 			if err != nil {
-				http.Error(w, "failed to create servicio: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "crear_servicio", err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -2799,7 +2827,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if q.Get("action") == "activar" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 					return
 				}
 				id, err := parseInt64Query(r, "id")
@@ -2812,7 +2840,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					estado = "activo"
 				}
 				if err := dbpkg.SetServicioEstado(dbEmp, empresaID, id, estado); err != nil {
-					http.Error(w, "failed to set servicio estado: "+err.Error(), http.StatusInternalServerError)
+					writeProductosInternalError(w, r, "actualizar_estado_servicio", err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -2829,7 +2857,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.UpdateServicio(dbEmp, payload); err != nil {
-				http.Error(w, "failed to update servicio: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "actualizar_servicio", err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -2837,7 +2865,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodDelete:
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, productosPublicError(err, "Solicitud inválida."), http.StatusBadRequest)
 				return
 			}
 			id, err := parseInt64Query(r, "id")
@@ -2846,7 +2874,7 @@ func EmpresaServiciosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := dbpkg.DeleteServicio(dbEmp, empresaID, id); err != nil {
-				http.Error(w, "failed to delete servicio: "+err.Error(), http.StatusInternalServerError)
+				writeProductosInternalError(w, r, "eliminar_servicio", err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -2888,7 +2916,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "producto no encontrado", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "failed to query producto: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "consultar_producto_imagen", err)
 			return
 		}
 		oldImageURL := strings.TrimSpace(existing.ImagenURL)
@@ -2901,14 +2929,29 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 		defer file.Close()
 
 		ext := strings.ToLower(filepath.Ext(header.Filename))
-		allowed := map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true, ".svg": true}
-		if !allowed[ext] {
+		allowedContentTypes := map[string]string{".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp"}
+		expectedContentType, allowed := allowedContentTypes[ext]
+		if !allowed {
 			http.Error(w, "image extension not allowed", http.StatusBadRequest)
 			return
 		}
 		const maxProductImageBytes = 10 << 20
 		if header.Size > maxProductImageBytes {
 			http.Error(w, "la imagen supera 10 MB", http.StatusBadRequest)
+			return
+		}
+		// La extensión del navegador no es una prueba de contenido. SVG se
+		// excluye deliberadamente porque se sirve desde una URL pública y puede
+		// contener script activo.
+		prefix := make([]byte, 512)
+		n, readErr := io.ReadFull(file, prefix)
+		if readErr != nil && !errors.Is(readErr, io.ErrUnexpectedEOF) && !errors.Is(readErr, io.EOF) {
+			http.Error(w, "no se pudo leer la imagen", http.StatusBadRequest)
+			return
+		}
+		prefix = prefix[:n]
+		if http.DetectContentType(prefix) != expectedContentType {
+			http.Error(w, "el contenido de la imagen no coincide con su formato", http.StatusBadRequest)
 			return
 		}
 
@@ -2928,7 +2971,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		written, copyErr := io.Copy(out, io.LimitReader(file, maxProductImageBytes+1))
+		written, copyErr := io.Copy(out, io.LimitReader(io.MultiReader(bytes.NewReader(prefix), file), maxProductImageBytes+1))
 		closeErr := out.Close()
 		if copyErr != nil {
 			_ = os.Remove(absPath)
@@ -2953,7 +2996,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "producto no encontrado", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "failed to update image url in producto: "+err.Error(), http.StatusInternalServerError)
+			writeProductosInternalError(w, r, "actualizar_imagen_producto", err)
 			return
 		}
 		deletedPrevious := false

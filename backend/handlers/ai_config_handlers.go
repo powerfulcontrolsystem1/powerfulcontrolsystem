@@ -55,8 +55,8 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 		}
 	}
 
-	defs := aiCredentialCatalogModels()
-	if len(defs) == 0 {
+	modelID := firstAvailableEmpresaAIModelID(dbSuper)
+	if modelID == "" {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
 			"code":           "ai_catalog_missing",
@@ -65,7 +65,7 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 		}
 	}
 	modelMap := empresaAIModelMap()
-	model, ok := modelMap[defs[0].ModelID]
+	model, ok := modelMap[modelID]
 	if !ok {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
@@ -91,6 +91,7 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 		"Responde solo OK_PANEL_TEST",
 		nil,
 		"Eres un asistente de prueba. Responde solo OK_PANEL_TEST.",
+		empresaAISafetyIdentifier("super:ai_configuration_test"),
 	)
 	if err != nil {
 		status := http.StatusBadGateway
@@ -229,15 +230,9 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			modeloOperacion, _, _, _ := getChatIAEmpresaModeloOperacion(dbSuper)
-			modeloAdjuntos, _, _, _ := getChatIAEmpresaModeloAdjuntos(dbSuper)
-			modelosHabilitados, _ := getChatIAEmpresaModelosHabilitados(dbSuper)
+			modeloAdjuntos := modeloOperacion
+			modelosHabilitados := map[string]bool{modeloOperacion: true}
 			modelosEsfuerzo, _ := getChatIAEmpresaModelosEsfuerzo(dbSuper)
-			if len(modelosHabilitados) == 0 {
-				modelosHabilitados = map[string]bool{}
-				for _, model := range empresaAIModelCatalog() {
-					modelosHabilitados[model.ID] = true
-				}
-			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":                   true,
 				"google_account":       adminEmail,
@@ -334,46 +329,32 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 			if payload.OperationModelID != "" || payload.AttachmentModelID != "" || payload.EnabledModelIDs != nil || payload.ReasoningEffortByModel != nil {
 				catalog := empresaAIModelMap()
-				enabled := make([]string, 0, len(payload.EnabledModelIDs))
-				seen := map[string]bool{}
-				for _, raw := range payload.EnabledModelIDs {
-					id := strings.TrimSpace(raw)
-					if _, ok := catalog[id]; !ok {
-						http.Error(w, "modelo no soportado", http.StatusBadRequest)
-						return
-					}
-					if !seen[id] {
-						enabled = append(enabled, id)
-						seen[id] = true
-					}
-				}
-				if payload.EnabledModelIDs != nil && len(enabled) == 0 {
-					http.Error(w, "debe permanecer al menos un modelo habilitado", http.StatusBadRequest)
-					return
-				}
 				operation := strings.TrimSpace(payload.OperationModelID)
 				attachment := strings.TrimSpace(payload.AttachmentModelID)
-				if operation == "" {
-					operation, _, _, _ = getChatIAEmpresaModeloOperacion(dbSuper)
-				}
-				if attachment == "" {
-					attachment, _, _, _ = getChatIAEmpresaModeloAdjuntos(dbSuper)
-				}
-				if _, ok := catalog[operation]; !ok {
-					http.Error(w, "modelo de operaciones no soportado", http.StatusBadRequest)
+				if operation != "" && attachment != "" && operation != attachment {
+					http.Error(w, "PCS usa un solo modelo global para chat y adjuntos", http.StatusBadRequest)
 					return
 				}
-				if _, ok := catalog[attachment]; !ok {
-					http.Error(w, "modelo de adjuntos no soportado", http.StatusBadRequest)
+				primary := operation
+				if primary == "" {
+					primary = attachment
+				}
+				if primary == "" {
+					primary, _, _, _ = getChatIAEmpresaModeloOperacion(dbSuper)
+				}
+				if _, ok := catalog[primary]; !ok {
+					http.Error(w, "modelo principal no soportado", http.StatusBadRequest)
 					return
 				}
-				if payload.EnabledModelIDs != nil && (!seen[operation] || !seen[attachment]) {
-					http.Error(w, "los modelos elegidos deben permanecer habilitados", http.StatusBadRequest)
+				if payload.EnabledModelIDs != nil && (len(payload.EnabledModelIDs) != 1 || strings.TrimSpace(payload.EnabledModelIDs[0]) != primary) {
+					http.Error(w, "debe permanecer habilitado solo el modelo principal", http.StatusBadRequest)
 					return
 				}
 				entries := map[string]string{
-					superChatIAEmpresaModeloOperacionKey: operation,
-					superChatIAEmpresaModeloAdjuntosKey:  attachment,
+					superChatIAEmpresaModeloPrincipalKey:    primary,
+					superChatIAEmpresaModeloOperacionKey:    primary,
+					superChatIAEmpresaModeloAdjuntosKey:     primary,
+					superChatIAEmpresaModelosHabilitadosKey: primary,
 				}
 				if payload.ReasoningEffortByModel != nil {
 					allowedEfforts := map[string]map[string]bool{}
@@ -383,19 +364,14 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 							allowedEfforts[model.ID][effort] = true
 						}
 					}
-					validatedEfforts := map[string]string{}
-					for id, effort := range payload.ReasoningEffortByModel {
-						if _, ok := catalog[id]; !ok || !allowedEfforts[id][strings.TrimSpace(effort)] {
-							http.Error(w, "esfuerzo de razonamiento no soportado", http.StatusBadRequest)
-							return
-						}
-						validatedEfforts[id] = strings.TrimSpace(effort)
+					effort := strings.TrimSpace(payload.ReasoningEffortByModel[primary])
+					if !allowedEfforts[primary][effort] {
+						http.Error(w, "esfuerzo de razonamiento no soportado para el modelo principal", http.StatusBadRequest)
+						return
 					}
+					validatedEfforts := map[string]string{primary: effort}
 					rawEfforts, _ := json.Marshal(validatedEfforts)
 					entries[superChatIAEmpresaModelosEsfuerzoKey] = string(rawEfforts)
-				}
-				if payload.EnabledModelIDs != nil {
-					entries[superChatIAEmpresaModelosHabilitadosKey] = strings.Join(enabled, ",")
 				}
 				for key, value := range entries {
 					if err := dbpkg.SetConfigValue(dbSuper, key, value, false); err != nil {

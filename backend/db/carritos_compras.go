@@ -20,6 +20,31 @@ var (
 
 var ErrCarritoYaPagado = fmt.Errorf("carrito ya pagado o cerrado")
 
+const empresaCarritoSaleHistorySchemaFingerprint = "empresa-carrito-sale-history:v1:immutable-operation-items-cash-discount"
+
+func applyEmpresaCarritoSaleHistorySchemaTx(tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("cart sale history migration transaction is nil")
+	}
+	statements := []string{
+		`ALTER TABLE empresa_ventas_estacion_metricas ADD COLUMN IF NOT EXISTS carrito_codigo TEXT`,
+		`ALTER TABLE empresa_ventas_estacion_metricas ADD COLUMN IF NOT EXISTS carrito_nombre TEXT`,
+		`ALTER TABLE empresa_ventas_estacion_metricas ADD COLUMN IF NOT EXISTS operacion_codigo TEXT`,
+		`ALTER TABLE empresa_ventas_estacion_metricas ADD COLUMN IF NOT EXISTS monto_efectivo REAL DEFAULT 0`,
+		`ALTER TABLE empresa_ventas_estacion_metricas ADD COLUMN IF NOT EXISTS descuento_total REAL DEFAULT 0`,
+		`ALTER TABLE empresa_ventas_estacion_metricas ADD COLUMN IF NOT EXISTS detalle_items_json TEXT`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_ventas_estacion_metricas_operacion
+			ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, operacion_codigo)
+			WHERE COALESCE(operacion_codigo, '') <> ''`,
+	}
+	for _, statement := range statements {
+		if _, err := tx.Exec(statement); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func isCarritoWeightUnit(unidad string) bool {
 	normalized := strings.TrimSpace(strings.ToLower(unidad))
 	normalized = strings.ReplaceAll(normalized, ".", "")
@@ -209,19 +234,25 @@ type CarritoCompraProductoHistorial struct {
 type CarritoStationMetricInput struct {
 	EmpresaID           int64
 	CarritoID           int64
+	CarritoCodigo       string
+	CarritoNombre       string
 	EstacionID          int64
 	EstacionCodigo      string
 	EstacionNombre      string
 	EventoOperacion     string
+	OperacionCodigo     string
 	MetodoPago          string
 	Moneda              string
 	MontoTotal          float64
 	MontoPagado         float64
+	MontoEfectivo       float64
 	MontoAnulado        float64
+	DescuentoTotal      float64
 	DevolucionTotal     float64
 	DuracionSegundos    int64
 	ActivadoEn          string
 	PagadoEn            string
+	DetalleItemsJSON    string
 	ReferenciaOperacion string
 	CierreCajaID        int64
 	CajaCodigo          string
@@ -870,6 +901,7 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		"ix_carrito_producto_historial_carrito",
 		"ix_carrito_abonos_empresa_carrito",
 		"ix_ventas_estacion_metricas_carrito",
+		"ux_ventas_estacion_metricas_operacion",
 	}
 	for _, indexName := range requiredIndexes {
 		ok, err := empresaCarritosIndexExists(dbConn, indexName)
@@ -908,10 +940,12 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 			"fecha_creacion", "fecha_actualizacion", "usuario_creador", "estado", "observaciones",
 		},
 		"empresa_ventas_estacion_metricas": {
-			"id", "empresa_id", "carrito_id", "estacion_id", "estacion_codigo",
-			"estacion_nombre", "evento_operacion", "metodo_pago", "moneda", "monto_total",
-			"monto_pagado", "monto_anulado", "devolucion_total", "duracion_segundos",
-			"activado_en", "pagado_en", "referencia_operacion", "cierre_caja_id",
+			"id", "empresa_id", "carrito_id", "carrito_codigo", "carrito_nombre",
+			"estacion_id", "estacion_codigo", "estacion_nombre", "evento_operacion",
+			"operacion_codigo", "metodo_pago", "moneda", "monto_total", "monto_pagado",
+			"monto_efectivo", "monto_anulado", "descuento_total", "devolucion_total",
+			"duracion_segundos", "activado_en", "pagado_en", "detalle_items_json",
+			"referencia_operacion", "cierre_caja_id",
 			"caja_codigo", "caja_turno", "caja_sucursal_id", "fecha_evento", "fecha_creacion",
 			"fecha_actualizacion", "usuario_creador", "estado", "observaciones",
 		},
@@ -1174,6 +1208,12 @@ func parseCarritopcs_ts(raw string) (time.Time, bool) {
 		return time.Time{}, false
 	}
 	layouts := []string{
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05.999999999Z07:00",
+		"2006-01-02 15:04:05.999999999Z07",
+		"2006-01-02 15:04:05Z07:00",
+		"2006-01-02 15:04:05Z07",
+		"2006-01-02 15:04:05.999999999",
 		"2006-01-02 15:04:05",
 		"2006-01-02T15:04:05",
 		"2006-01-02 15:04",
@@ -1187,6 +1227,26 @@ func parseCarritopcs_ts(raw string) (time.Time, bool) {
 		}
 	}
 	return time.Time{}, false
+}
+
+// BuildCarritoSaleOperationCode identifica una venta concreta aunque el carrito
+// se reactive y conserve el mismo ID para la siguiente operacion.
+func BuildCarritoSaleOperationCode(carritoCodigo string, empresaID, carritoID int64, pagadoEn string) string {
+	base := strings.ToUpper(strings.TrimSpace(carritoCodigo))
+	base = strings.Join(strings.Fields(base), "-")
+	if base == "" {
+		base = fmt.Sprintf("VENTA-EMP-%d", empresaID)
+	}
+	var timestampToken strings.Builder
+	for _, r := range strings.TrimSpace(pagadoEn) {
+		if r >= '0' && r <= '9' {
+			timestampToken.WriteRune(r)
+		}
+	}
+	if timestampToken.Len() == 0 {
+		timestampToken.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
+	}
+	return fmt.Sprintf("%s-CRT-%d-PG-%s", base, carritoID, timestampToken.String())
 }
 
 // ResolveCarritoAttentionDurationSeconds calcula tiempo de atencion entre activacion y pago.
@@ -2930,8 +2990,9 @@ func TotalCarritoCompraAbonos(dbConn *sql.DB, empresaID, carritoID int64) (float
 	return round2(total), nil
 }
 
-// PayCarritoStationSession marca un carrito como pagado/inactivo y guarda resumen de cobro.
-func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64, codigoDescuentoID int64, cierreCajaID int64, cajaCodigo, cajaTurno string, cajaSucursalID int64, usuarioCreador string) error {
+// PayCarritoStationSession marca un carrito como pagado/inactivo y guarda una
+// instantanea inmutable de la venta dentro de la misma transaccion.
+func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado, montoEfectivo float64, codigoDescuentoID int64, cierreCajaID int64, cajaCodigo, cajaTurno string, cajaSucursalID int64, usuarioCreador string) error {
 	metodoPago = NormalizeMetodoPagoCarrito(metodoPago)
 	if metodoPago == "" {
 		return fmt.Errorf("metodo_pago invalido")
@@ -2948,6 +3009,9 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 	}
 	if totalPagado < 0 {
 		totalPagado = 0
+	}
+	if montoEfectivo < 0 {
+		montoEfectivo = 0
 	}
 	if cierreCajaID < 0 {
 		cierreCajaID = 0
@@ -3013,13 +3077,45 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 			return err
 		}
 	}
+	metricInput, err := buildCarritoPaidMetricInputTx(tx, empresaID, carritoID, montoEfectivo, usuarioCreador)
+	if err != nil {
+		return fmt.Errorf("preparar historial inmutable de venta: %w", err)
+	}
+	metricID, err := recordCarritoStationMetricTx(tx, metricInput)
+	if err != nil {
+		return fmt.Errorf("registrar historial inmutable de venta: %w", err)
+	}
+	if montoEfectivo > 0 && cierreCajaID > 0 {
+		cash := round2(montoEfectivo)
+		cashResult, err := execTxSQLCompat(tx, `UPDATE empresa_cierres_caja
+			SET ingresos_efectivo = COALESCE(ingresos_efectivo, 0) + ?,
+				caja_teorica = COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) + ? - COALESCE(egresos_efectivo, 0) - COALESCE(retiros_efectivo, 0),
+				diferencia_caja = (COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) + ? - COALESCE(egresos_efectivo, 0) - COALESCE(retiros_efectivo, 0)) - COALESCE(caja_fisica, 0),
+				fecha_actualizacion = CURRENT_TIMESTAMP
+			WHERE empresa_id = ? AND id = ?
+				AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
+				AND LOWER(COALESCE(estado, 'activo')) = 'activo'`,
+			cash, cash, cash, empresaID, cierreCajaID)
+		if err != nil {
+			return fmt.Errorf("registrar efectivo de venta en caja: %w", err)
+		}
+		cashAffected, _ := cashResult.RowsAffected()
+		if cashAffected != 1 {
+			return fmt.Errorf("registrar efectivo de venta en caja: %w", sql.ErrNoRows)
+		}
+	}
 	payloadJSON, err := json.Marshal(map[string]interface{}{
-		"empresa_id":      empresaID,
-		"carrito_id":      carritoID,
-		"metodo_pago":     metodoPago,
-		"referencia_pago": strings.TrimSpace(referenciaPago),
-		"total_pagado":    round2(totalPagado),
-		"usuario":         usuarioCreador,
+		"empresa_id":       empresaID,
+		"carrito_id":       carritoID,
+		"venta_metrica_id": metricID,
+		"operacion_codigo": metricInput.OperacionCodigo,
+		"metodo_pago":      metodoPago,
+		"referencia_pago":  strings.TrimSpace(referenciaPago),
+		"total_pagado":     round2(totalPagado),
+		"monto_efectivo":   round2(montoEfectivo),
+		"cierre_caja_id":   cierreCajaID,
+		"caja_codigo":      cajaCodigo,
+		"usuario":          usuarioCreador,
 	})
 	if err != nil {
 		return err
@@ -3030,7 +3126,7 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 		Version:        1,
 		PayloadJSON:    string(payloadJSON),
 		MaxAttempts:    10,
-		IdempotencyKey: fmt.Sprintf("sale-paid:%d:%d", empresaID, carritoID),
+		IdempotencyKey: "sale-paid:" + metricInput.OperacionCodigo,
 	}); err != nil {
 		return fmt.Errorf("registrar outbox de venta: %w", err)
 	}
@@ -3038,66 +3134,147 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 	return tx.Commit()
 }
 
-// RecordCarritoStationMetric persiste una metrica operativa de ventas simples por estacion.
-func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput) (int64, error) {
-	if dbConn == nil {
-		return 0, fmt.Errorf("conexion de base de datos no disponible")
-	}
-	if input.EmpresaID <= 0 {
-		return 0, fmt.Errorf("empresa_id invalido")
-	}
-	if input.CarritoID <= 0 {
-		return 0, fmt.Errorf("carrito_id invalido")
+type carritoSaleItemSnapshot struct {
+	Tipo       string  `json:"tipo"`
+	Referencia string  `json:"referencia,omitempty"`
+	Producto   string  `json:"producto"`
+	Cantidad   float64 `json:"cantidad"`
+	Total      float64 `json:"total"`
+}
+
+func buildCarritoPaidMetricInputTx(tx *sql.Tx, empresaID, carritoID int64, montoEfectivo float64, usuario string) (CarritoStationMetricInput, error) {
+	var carrito CarritoCompra
+	err := queryRowTxSQLCompat(tx, `SELECT
+		empresa_id,
+		id,
+		COALESCE(codigo, ''),
+		COALESCE(nombre, ''),
+		COALESCE(referencia_externa, ''),
+		COALESCE(moneda, 'COP'),
+		COALESCE(total, 0),
+		COALESCE(descuento_total, 0),
+		COALESCE(devolucion_total, 0),
+		COALESCE(total_pagado, 0),
+		COALESCE(metodo_pago, 'efectivo'),
+		COALESCE(activado_en, ''),
+		COALESCE(pagado_en, ''),
+		COALESCE(referencia_pago, ''),
+		COALESCE(cierre_caja_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(caja_turno, ''),
+		COALESCE(caja_sucursal_id, 0)
+	FROM carritos_compras
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, carritoID).Scan(
+		&carrito.EmpresaID,
+		&carrito.ID,
+		&carrito.Codigo,
+		&carrito.Nombre,
+		&carrito.ReferenciaExterna,
+		&carrito.Moneda,
+		&carrito.Total,
+		&carrito.DescuentoTotal,
+		&carrito.DevolucionTotal,
+		&carrito.TotalPagado,
+		&carrito.MetodoPago,
+		&carrito.ActivadoEn,
+		&carrito.PagadoEn,
+		&carrito.ReferenciaPago,
+		&carrito.CierreCajaID,
+		&carrito.CajaCodigo,
+		&carrito.CajaTurno,
+		&carrito.CajaSucursalID,
+	)
+	if err != nil {
+		return CarritoStationMetricInput{}, err
 	}
 
-	evento := normalizeCarritoStationMetricEvent(input.EventoOperacion)
-	metodoPago := NormalizeMetodoPagoCarrito(input.MetodoPago)
-	if metodoPago == "" {
-		metodoPago = "efectivo"
+	rows, err := queryTxSQLCompat(tx, `SELECT
+		LOWER(COALESCE(tipo_item, 'producto')),
+		COALESCE(codigo_item, ''),
+		COALESCE(descripcion, ''),
+		COALESCE(cantidad, 0),
+		COALESCE(total_linea, 0)
+	FROM carrito_compra_items
+	WHERE empresa_id = ? AND carrito_id = ?
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+	ORDER BY id ASC`, empresaID, carritoID)
+	if err != nil {
+		return CarritoStationMetricInput{}, err
 	}
-	moneda := strings.TrimSpace(strings.ToUpper(input.Moneda))
-	if moneda == "" {
-		moneda = "COP"
+	detalle := make([]carritoSaleItemSnapshot, 0)
+	for rows.Next() {
+		var item carritoSaleItemSnapshot
+		if err := rows.Scan(&item.Tipo, &item.Referencia, &item.Producto, &item.Cantidad, &item.Total); err != nil {
+			rows.Close()
+			return CarritoStationMetricInput{}, err
+		}
+		item.Cantidad = round2(item.Cantidad)
+		item.Total = round2(item.Total)
+		detalle = append(detalle, item)
 	}
-	estacionCodigo := strings.TrimSpace(input.EstacionCodigo)
-	if estacionCodigo == "" && input.EstacionID > 0 {
-		estacionCodigo = fmt.Sprintf("EST-%d-%d", input.EmpresaID, input.EstacionID)
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return CarritoStationMetricInput{}, err
 	}
-	estacionNombre := sanitizeLegacyUserVisibleText(input.EstacionNombre)
-	if estacionNombre == "" && input.EstacionID > 0 {
-		estacionNombre = fmt.Sprintf("Estaci\u00f3n %d", input.EstacionID)
+	rows.Close()
+	detalleJSON, err := json.Marshal(detalle)
+	if err != nil {
+		return CarritoStationMetricInput{}, err
 	}
-	duracionSegundos := input.DuracionSegundos
-	if duracionSegundos <= 0 {
-		duracionSegundos = ResolveCarritoAttentionDurationSeconds(input.ActivadoEn, input.PagadoEn)
-	}
-	if duracionSegundos < 0 {
-		duracionSegundos = 0
-	}
-	fechaEvento := strings.TrimSpace(input.FechaEvento)
-	if fechaEvento == "" {
-		fechaEvento = strings.TrimSpace(input.PagadoEn)
-	}
-	if fechaEvento == "" {
-		fechaEvento = strings.TrimSpace(input.ActivadoEn)
-	}
+	estacionID, estacionCodigo, estacionNombre := ResolveCarritoStationIdentity(&carrito)
+	return CarritoStationMetricInput{
+		EmpresaID:           empresaID,
+		CarritoID:           carritoID,
+		CarritoCodigo:       carrito.Codigo,
+		CarritoNombre:       carrito.Nombre,
+		EstacionID:          estacionID,
+		EstacionCodigo:      estacionCodigo,
+		EstacionNombre:      estacionNombre,
+		EventoOperacion:     "venta_pagada",
+		OperacionCodigo:     BuildCarritoSaleOperationCode(carrito.Codigo, empresaID, carritoID, carrito.PagadoEn),
+		MetodoPago:          carrito.MetodoPago,
+		Moneda:              carrito.Moneda,
+		MontoTotal:          carrito.Total,
+		MontoPagado:         carrito.TotalPagado,
+		MontoEfectivo:       montoEfectivo,
+		DescuentoTotal:      carrito.DescuentoTotal,
+		DevolucionTotal:     carrito.DevolucionTotal,
+		ActivadoEn:          carrito.ActivadoEn,
+		PagadoEn:            carrito.PagadoEn,
+		DetalleItemsJSON:    string(detalleJSON),
+		ReferenciaOperacion: carrito.ReferenciaPago,
+		CierreCajaID:        carrito.CierreCajaID,
+		CajaCodigo:          carrito.CajaCodigo,
+		CajaTurno:           carrito.CajaTurno,
+		CajaSucursalID:      carrito.CajaSucursalID,
+		UsuarioCreador:      usuario,
+		Observaciones:       "cierre transaccional inmutable de venta",
+	}, nil
+}
 
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_ventas_estacion_metricas (
+const insertCarritoStationMetricQuery = `INSERT INTO empresa_ventas_estacion_metricas (
 		empresa_id,
 		carrito_id,
+		carrito_codigo,
+		carrito_nombre,
 		estacion_id,
 		estacion_codigo,
 		estacion_nombre,
 		evento_operacion,
+		operacion_codigo,
 		metodo_pago,
 		moneda,
 		monto_total,
 		monto_pagado,
+		monto_efectivo,
 		monto_anulado,
+		descuento_total,
 		devolucion_total,
 		duracion_segundos,
 		activado_en,
 		pagado_en,
+		detalle_items_json,
 		referencia_operacion,
 		cierre_caja_id,
 		caja_codigo,
@@ -3109,31 +3286,110 @@ func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput)
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CAST(CURRENT_TIMESTAMP AS TEXT)), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), CAST(CURRENT_TIMESTAMP AS TEXT)), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'activo', ?)`
+
+func normalizeCarritoStationMetricInput(input CarritoStationMetricInput) (CarritoStationMetricInput, error) {
+	if input.EmpresaID <= 0 {
+		return input, fmt.Errorf("empresa_id invalido")
+	}
+	if input.CarritoID <= 0 {
+		return input, fmt.Errorf("carrito_id invalido")
+	}
+	input.EventoOperacion = normalizeCarritoStationMetricEvent(input.EventoOperacion)
+	input.MetodoPago = NormalizeMetodoPagoCarrito(input.MetodoPago)
+	if input.MetodoPago == "" {
+		input.MetodoPago = "efectivo"
+	}
+	input.Moneda = strings.TrimSpace(strings.ToUpper(input.Moneda))
+	if input.Moneda == "" {
+		input.Moneda = "COP"
+	}
+	input.CarritoCodigo = strings.TrimSpace(input.CarritoCodigo)
+	input.CarritoNombre = sanitizeLegacyUserVisibleText(input.CarritoNombre)
+	input.OperacionCodigo = strings.ToUpper(strings.TrimSpace(input.OperacionCodigo))
+	input.EstacionCodigo = strings.TrimSpace(input.EstacionCodigo)
+	if input.EstacionCodigo == "" && input.EstacionID > 0 {
+		input.EstacionCodigo = fmt.Sprintf("EST-%d-%d", input.EmpresaID, input.EstacionID)
+	}
+	input.EstacionNombre = sanitizeLegacyUserVisibleText(input.EstacionNombre)
+	if input.EstacionNombre == "" && input.EstacionID > 0 {
+		input.EstacionNombre = fmt.Sprintf("Estaci\u00f3n %d", input.EstacionID)
+	}
+	if input.DuracionSegundos <= 0 {
+		input.DuracionSegundos = ResolveCarritoAttentionDurationSeconds(input.ActivadoEn, input.PagadoEn)
+	}
+	if input.DuracionSegundos < 0 {
+		input.DuracionSegundos = 0
+	}
+	input.FechaEvento = strings.TrimSpace(input.FechaEvento)
+	if input.FechaEvento == "" {
+		input.FechaEvento = strings.TrimSpace(input.PagadoEn)
+	}
+	if input.FechaEvento == "" {
+		input.FechaEvento = strings.TrimSpace(input.ActivadoEn)
+	}
+	input.DetalleItemsJSON = strings.TrimSpace(input.DetalleItemsJSON)
+	if input.DetalleItemsJSON == "" {
+		input.DetalleItemsJSON = "[]"
+	}
+	return input, nil
+}
+
+func carritoStationMetricInsertArgs(input CarritoStationMetricInput) []interface{} {
+	return []interface{}{
 		input.EmpresaID,
 		input.CarritoID,
+		input.CarritoCodigo,
+		input.CarritoNombre,
 		input.EstacionID,
-		estacionCodigo,
-		estacionNombre,
-		evento,
-		metodoPago,
-		moneda,
+		input.EstacionCodigo,
+		input.EstacionNombre,
+		input.EventoOperacion,
+		input.OperacionCodigo,
+		input.MetodoPago,
+		input.Moneda,
 		round2(input.MontoTotal),
 		round2(input.MontoPagado),
+		round2(input.MontoEfectivo),
 		round2(input.MontoAnulado),
+		round2(input.DescuentoTotal),
 		round2(input.DevolucionTotal),
-		duracionSegundos,
+		input.DuracionSegundos,
 		strings.TrimSpace(input.ActivadoEn),
 		strings.TrimSpace(input.PagadoEn),
+		input.DetalleItemsJSON,
 		strings.TrimSpace(input.ReferenciaOperacion),
 		input.CierreCajaID,
 		sanitizeCajaCodigo(input.CajaCodigo),
 		strings.ToLower(strings.TrimSpace(input.CajaTurno)),
 		maxInt64(input.CajaSucursalID, 0),
-		fechaEvento,
+		input.FechaEvento,
 		strings.TrimSpace(input.UsuarioCreador),
 		strings.TrimSpace(input.Observaciones),
-	)
+	}
+}
+
+func recordCarritoStationMetricTx(tx *sql.Tx, input CarritoStationMetricInput) (int64, error) {
+	if tx == nil {
+		return 0, fmt.Errorf("transaccion no disponible")
+	}
+	normalized, err := normalizeCarritoStationMetricInput(input)
+	if err != nil {
+		return 0, err
+	}
+	return insertTxSQLCompat(tx, insertCarritoStationMetricQuery, carritoStationMetricInsertArgs(normalized)...)
+}
+
+// RecordCarritoStationMetric persiste una metrica operativa de ventas simples por estacion.
+func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("conexion de base de datos no disponible")
+	}
+	normalized, err := normalizeCarritoStationMetricInput(input)
+	if err != nil {
+		return 0, err
+	}
+	id, err := insertSQLCompat(dbConn, insertCarritoStationMetricQuery, carritoStationMetricInsertArgs(normalized)...)
 	if err != nil {
 		return 0, err
 	}

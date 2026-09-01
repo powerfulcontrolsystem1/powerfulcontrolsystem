@@ -4,10 +4,13 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 )
+
+var ErrAsyncJobIdempotencyConflict = errors.New("async job idempotency key conflict")
 
 const (
 	AsyncJobPending    = "pending"
@@ -219,6 +222,9 @@ func EnqueueAsyncJobIdempotent(dbConn *sql.DB, job AsyncJob) (*AsyncJob, bool, e
 	stored, err := getAsyncJobByIdempotencyKey(dbConn, job.EmpresaID, job.Kind, job.IdempotencyKeyHash)
 	if err != nil {
 		return nil, false, err
+	}
+	if stored.Version != job.Version || strings.TrimSpace(stored.PayloadJSON) != strings.TrimSpace(job.PayloadJSON) {
+		return nil, false, ErrAsyncJobIdempotencyConflict
 	}
 	return stored, false, nil
 }

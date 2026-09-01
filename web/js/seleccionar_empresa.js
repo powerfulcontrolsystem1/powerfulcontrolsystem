@@ -612,13 +612,10 @@
 
   function getVerticalTone(item) {
     var module = String(item && item.module ? item.module : "").trim().toLowerCase();
-    if (/(agencia_viajes|operador_turistico)/.test(module)) return "lodging";
     if (/(eventos_boleteria|parque_recreativo)/.test(module)) return "digital";
-    if (/(clinica_consultorios|laboratorio_clinico|veterinaria_petshop|salon_spa)/.test(module)) return "services";
-    if (/(colegio_academia|guarderia_infantil|capacitacion_empresarial|club_deportivo)/.test(module)) return "generic";
+    if (/(veterinaria_petshop|salon_spa)/.test(module)) return "services";
     if (/(transporte_carga_tms)/.test(module)) return "logistics";
-    if (/(lavanderia_tintoreria|taller_mecanico|servicios_tecnicos|seguridad_privada|funeraria_exequial)/.test(module)) return "services";
-    if (/(inmobiliaria_comercial|cooperativa_fondo)/.test(module)) return "retail";
+    if (/(lavanderia_tintoreria|taller_mecanico|servicios_tecnicos|funeraria_exequial)/.test(module)) return "services";
     return "generic";
   }
 
@@ -708,24 +705,6 @@
         eyebrow: "Barra y eventos",
         activeCopy: "Operacion lista para bebidas, mesas, barra, eventos, consumos y caja.",
         pendingCopy: "Configura la licencia para activar control de barra, mesas, inventario y cobros."
-      },
-      {
-        pattern: /(gimnasio|gym|fitness|entrenamiento|deporte)/,
-        tone: "health",
-        icon: "/img/gym-logo.svg",
-        alt: "Logo de gimnasio",
-        eyebrow: "Planes y socios",
-        activeCopy: "Gestion lista para membresias, socios, entrenadores, clases y control de accesos.",
-        pendingCopy: "Activa la licencia para operar planes, renovaciones, clases y recaudo de socios."
-      },
-      {
-        pattern: /(odontologia|odontologico|dental|dentista|consultorio dental)/,
-        tone: "health",
-        icon: "/img/dental-logo.svg",
-        alt: "Logo de odontologia",
-        eyebrow: "Atencion clinica",
-        activeCopy: "Gestion lista para pacientes, agenda, tratamientos, presupuestos y recaudo por consulta.",
-        pendingCopy: "Activa la licencia para organizar consultorios, profesionales y tratamientos odontologicos."
       },
       {
         pattern: /(turno|turnos|fila|colas|ticket|llamado|atencion al cliente)/,

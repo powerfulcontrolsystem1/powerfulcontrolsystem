@@ -175,13 +175,13 @@ func TestEmpresaVerticalScopeKeepsCoreAndOnlyChosenVertical(t *testing.T) {
 	rows := []permissionModuleMatrixRow{
 		{Modulo: permModuleVentas, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
 		{Modulo: permModuleInventario, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
-		{Modulo: permModuleGimnasio, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
-		{Modulo: permModuleOdontologia, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
+		{Modulo: permModuleAlquileres, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
+		{Modulo: permModuleAIUConstruccion, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
 	}
 	scope := empresaVerticalScope{
 		Enabled:     true,
-		Allowed:     map[string]bool{permModuleGimnasio: true},
-		AllowedList: []string{permModuleGimnasio},
+		Allowed:     map[string]bool{permModuleAlquileres: true},
+		AllowedList: []string{permModuleAlquileres},
 	}
 
 	filtered := applyEmpresaVerticalScopeToModuleRows(rows, scope)
@@ -190,26 +190,44 @@ func TestEmpresaVerticalScopeKeepsCoreAndOnlyChosenVertical(t *testing.T) {
 		t.Fatal("expected core modules to remain enabled under plantilla scope")
 	}
 	if !filtered[2].Acciones[permActionCreate] {
-		t.Fatal("expected selected gimnasio plantilla to remain enabled")
+		t.Fatal("expected selected alquileres plantilla to remain enabled")
 	}
 	for _, action := range permissionActionsCatalogOrdered {
 		if filtered[3].Acciones[action] {
-			t.Fatalf("expected odontologia action %s to be hidden for gimnasio company", action)
+			t.Fatalf("expected construccion action %s to be hidden for alquileres company", action)
 		}
 	}
 }
 
 func TestNormalizeVerticalScopeAliases(t *testing.T) {
 	cases := map[string]string{
-		"consultorio_odontologico": permModuleOdontologia,
-		"taxi":                     permModuleTaxiSystem,
-		"constructora":             permModuleAIUConstruccion,
-		"apartamento-turistico":    permModuleApartTuristicos,
+		"constructora": permModuleAIUConstruccion,
+		"rentas":       permModuleAlquileres,
 	}
 	for raw, want := range cases {
 		if got := normalizeVerticalScopeModule(raw); got != want {
 			t.Fatalf("normalizeVerticalScopeModule(%q)=%q, want %q", raw, got, want)
 		}
+	}
+}
+
+func TestRetiredVerticalModulesAreNotPermissionOrLicenseModules(t *testing.T) {
+	retired := map[string]bool{
+		"gimnasio":                true,
+		"taxi_system":             true,
+		"apartamentos_turisticos": true,
+		"propiedad_horizontal":    true,
+		"odontologia":             true,
+		"drogueria_farmacia":      true,
+	}
+	for _, module := range permissionModulesCatalogOrdered {
+		if retired[module] {
+			t.Fatalf("retired module %q remains in permissions catalog", module)
+		}
+	}
+	allowed, ordered := parseLicenciaModulosCSV("gimnasio,taxi_system,apartamentos_turisticos,propiedad_horizontal,odontologia,drogueria_farmacia,inventario")
+	if len(ordered) != 1 || ordered[0] != permModuleInventario || !allowed[permModuleInventario] {
+		t.Fatalf("retired modules must be ignored and farmacia must use inventario: %v", ordered)
 	}
 }
 

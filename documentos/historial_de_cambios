@@ -1,3 +1,106 @@
+2026-08-31: Auditoria empresarial de punta a punta.
+- La purga y retencion de `empresa_auditoria_eventos` se clasifican como
+  `auditoria:D` en backend. La confirmacion visual es complementaria, no la
+  autorizacion decisiva; un rol de solo consulta no puede borrar eventos al
+  invocar la API directamente.
+- La interfaz separa exportacion de la vista actual de exportacion forense.
+  Esta ultima solicita al servidor JSON/CSV con manifiesto SHA-256, hashes por
+  registro y cadena de custodia, e informa que la evidencia corresponde a la
+  pagina filtrada.
+- Se corrige la documentacion de datos: PostgreSQL usa busqueda parametrizada
+  e indices reales, no las tablas virtuales FTS heredadas de SQLite.
+- QA local: pruebas unitarias de permisos, validacion de formato y cadena de
+  custodia; falta la validacion visual autenticada contra un runtime local o
+  de staging antes de considerar una publicacion.
+
+2026-08-25: Auditoría integral y deduplicación del arranque del carrito POS.
+- La carga inicial conserva el shell visible y agrupa el pintado de clientes,
+  usuarios de comisión, cajas, reglas operativas, carritos y controles en una
+  sola fase coherente; resumen e ítems se pintan una segunda vez únicamente
+  cuando llegan los datos del carrito seleccionado.
+- `loadCarritos`, `loadClientes`, `loadActiveCashRegisters`, configuración
+  operativa, propinas, comisiones y usuarios aceptan carga sin render parcial
+  durante el `Promise.all`, eliminando repintados y parpadeos repetidos.
+- La corrida autenticada en venta directa PCS midió 16 lecturas API en la
+  versión publicada y encontró dos listados empresariales iguales. El candidato
+  completó 15 lecturas reales con estado 200 en una cascada de 1,179 s, una sola
+  lectura principal del listado y una de `estacion_prefs`; la búsqueda real de
+  `Menta` respondió en 113 ms, sin errores de consola.
+- La primera prueba real también detectó que filtrar prematuramente por
+  `VENTA-DIRECTA-12-0` ocultaba el carrito legado e intentaba crearlo con un POST
+  inválido. La carga inicial ahora trae primero la lista empresarial sin ese
+  filtro, reconoce el carrito existente y conserva el filtro canónico para las
+  recargas posteriores.
+- La revisión operativa encontró el botón de pago habilitado sobre el carrito
+  vacío. Ahora permanece bloqueado hasta que exista al menos un producto,
+  servicio o total cobrable y explica la condición en su `title`.
+- QA local aprobada: `go test ./...`, compilación global, `go vet ./...`, pruebas
+  enfocadas de carrito/roles/base de datos y sintaxis de siete scripts inline.
+- El 2026-08-26 se completó una venta sola real en Powerful Control System:
+  referencia QA 104, subtotal COP 100, IVA COP 19 y efectivo COP 119. La
+  interacción produjo un solo `PUT pagar_estacion` 200 en 562 ms, comprobante
+  de pago 123, código
+  `CP-VENTA-DIRECTA-12-CRT-117-PG-2026082600215117596305`, y sumó COP 119 a la
+  caja `QA-FE`, cierre 29.
+- Inventario registró una sola salida, movimiento 204 por cantidad 1, durante la
+  reserva del ítem; el pago no repitió la salida. La existencia resultante -1
+  corresponde a la política vigente `permitir_venta_sin_stock_carrito=true`.
+  Después del cobro el siguiente carrito quedó vacío, sin la referencia QA y con
+  el botón de pago bloqueado; no hubo errores de consola.
+- El total diario agregado devolvió dos ventas por COP 238 y no ofrece detalle
+  temporal para atribuir ambas; la traza del flujo observado sí contiene una
+  sola solicitud de pago y un solo comprobante.
+- Estado: candidato local aprobado para promoción controlada; sin despliegue y
+  sin sesión real específica de cajero, por lo que la versión publicada todavía
+  no recibe certificación final de producción.
+
+2026-08-25: Optimización de carga inicial de Administrar empresa.
+- Se paralelizan las lecturas independientes de catálogo, sesión, URLs,
+  preferencias y permisos sin adelantar la selección de página sobre el gate de
+  autorización visual.
+- Una caché efímera de promesas comparte `/me`, `estacion_prefs` y preferencias
+  de chat/radio; el panel reutiliza sesión, permisos, configuración guiada y
+  resumen del buzón ya solicitados por el contenedor.
+- El puente de ayuda omite el iframe transitorio `about:blank` y se instala al
+  cargar la página real.
+- No cambian endpoints, handlers, permisos, licencias, tablas ni aislamiento por
+  `empresa_id`. Se agrega contrato de regresión y no se despliega.
+
+2026-08-25: Endurecimiento integral de Productos, Servicios, Inventario y Compras.
+- Se probaron en la empresa PCS productos, categorías, servicios, bodegas,
+  existencias, Kardex, conteos, traslados, precios, lotes, seriales, reservas,
+  recetas, carga IA e impresoras, incluyendo recorridos responsive.
+- Se corrigió la doble mutación mediante idempotencia durable por empresa y se
+  cambió la entrada de stock a UPSERT atómico.
+- La recepción avanzada ahora bloquea la requisición/item, impide
+  sobre-recepción y documento repetido, valida todos los IDs hijos por
+  `empresa_id` y escribe documento, costo, lote, existencia y Kardex en una sola
+  transacción.
+- Requisiciones y recepciones usan catálogos reales de productos/bodegas; se
+  retiró la siembra demo visible, se sanearon errores y se reparó el marcado que
+  ocultaba Compras/Precios.
+- El selector de factura de compra anuncia únicamente los formatos admitidos
+  por backend y las respuestas HTML de infraestructura se convierten en un
+  mensaje operativo limpio; ambos contratos tienen regresión automatizada.
+- La cola de impresión reclama trabajos con `FOR UPDATE SKIP LOCKED`, restringe
+  el cierre al agente propietario, permite reintento efectivo y protege la
+  creación web con una llave durable por empresa. El carrito dejó un único
+  resolver compartido para orden, cajón y ticket.
+- La revisión de duplicados cerró con 322 rutas, 889 IDs de marcado y 789
+  funciones nombradas en ocho pantallas críticas, sin repeticiones. Productos
+  móvil, Inventario avanzado, Compras/IA e Impresoras se comprobaron visualmente
+  sin desbordamiento de página en los anchos observados.
+- Evidencia: `documentos/evidencia_productos_inventario_2026-08-25.md`.
+- La repetición final aprobó `go test ./... -count=1`, compilación global,
+  `go test ./db ./handlers`, `go vet ./db ./handlers`, sintaxis y contratos
+  enfocados.
+- Estado: candidato local aprobado para staging; NO-GO de producción hasta
+  PostgreSQL/staging, carga real de archivo, impresión física y autorización
+  explícita de despliegue.
+- Cierre adicional: se corrigió el parser de tamaños Docker que bloqueaba la
+  suite global. El paquete `cmd/pcs-disk-manager` y la suite global aprueban en
+  el árbol actual.
+
 2026-08-08: Plan 109 / cuota empresarial para soportes CxP/IA.
 - La carga privada de `soportes_compras_ia` suma ahora archivos publicos y
   privados del mismo `empresa_id`, aplica la configuracion corporativa de
@@ -41339,3 +41442,87 @@ acumulativa.
 - El alta de Raspberry GPIO ya no exige IP local: el instalador de un solo uso conserva ID aleatorio global `RPI-<128 bits>`, token con huella SHA-256 y túnel saliente que deriva la empresa desde la identidad autenticada.
 - Las reglas de entrada GPIO admiten encendido normal, temporizador y activación condicionada a la agenda del aparato; todo encendido conserva la cola empresarial.
 - El tutorial incorpora imagen orientativa y diagrama exacto de los 40 pines con numeración física/BCM y advertencias eléctricas.
+2026-08-21: Plan de preparación para producción de Productos, Servicios e Inventario.
+- Se crea una hoja de ruta modular para revisar catálogo, servicios, bodegas,
+  Kardex, costeo, lotes, seriales, reservas, recetas e integraciones del núcleo.
+- El plan fija ejecución futura con GPT-5.6 Terra en razonamiento medio,
+  evidencia por SHA/digest, aislamiento A/B, pruebas PostgreSQL de concurrencia,
+  validación visual y compuerta GO/NO-GO.
+- No se ejecutaron pruebas, cambios funcionales, migraciones ni despliegues.
+
+2026-08-21: Plan de revisión y reparación del login para producción.
+- Se documentan hallazgos confirmados en protección de contraseñas, aislamiento
+  empresarial, principal de sesión, estados/contrato, DDL runtime, revocación,
+  reCAPTCHA, enumeración, tokens, Mailu y accesibilidad.
+- Se define una ejecución en 13 fases para GPT-5.6 Terra medio con pruebas
+  PostgreSQL, A/B, dos réplicas, correo real y recorridos futuros autorizados en
+  PCS, más rollback y compuerta GO/NO-GO.
+- La creación del plan no transmitió credenciales, no creó usuarios, no cambió
+  código funcional, no aplicó migraciones, no desplegó y no ejecutó `rs`.
+
+2026-08-21: Endurecimiento local de Productos, Servicios e Inventario.
+- Las salidas de transferencia, movimiento, cambio de producto y confirmación
+  de reserva verifican el descuento condicional y la fila afectada para evitar
+  stock negativo bajo concurrencia.
+- Reservas, seriales y lotes avanzados pasan por transacciones con validación
+  tenant, bloqueos y transición de serial atómica; el handler público deja de
+  exponer detalles internos.
+- La carga de imágenes valida MIME real y excluye SVG servido públicamente.
+- Se agregan pruebas locales de contrato público y de la invariante de
+  descuento. No se ejecutó despliegue ni se declara GO de producción.
+2026-08-21 | Chat IA empresarial | Se corrige la apertura del icono flotante cuando la empresa y sus permisos se resuelven después de cargar el drawer: una preferencia local antigua ya no deja visible un botón que no abre el panel. La corrección solo restablece el estado visual en contexto empresarial; las consultas conservan validación backend de sesión, rol, licencia y `empresa_id`. | web/js/ai_chat_drawer.js, backend/handlers/ai_chat_drawer_single_switch_contract_test.go
+2026-08-23 | Retiro de verticales y consolidacion en Inventario | Se retiran Gimnasio, Taxi System, Apartamentos turisticos, Propiedad horizontal y Odontologia de rutas, permisos, licencias, menus, catalogos, frontend, reportes y datos guia. Drogueria/Farmacia deja de ser modulo independiente: el tipo de empresa puede conservar datos guia, pero lotes, vencimientos, productos, compras, ventas y facturacion quedan gobernados por Inventario y el nucleo. Se agrega migracion empresarial idempotente para retirar tablas y datos exclusivos, sin desplegar ni ejecutar la migracion en servidores. | backend, web, documentos
+2026-08-23 | Portal publico y documentacion del catalogo vigente | Se sincronizan `index.html`, las landings `.html`/`.ht`, el editor super y los valores backend con 52 modulos activos y 13 plantillas. Se agregan filtros backend/frontend para que configuraciones persistidas antiguas no vuelvan a anunciar elementos retirados, y se actualizan contexto, mapa, flujos, estructura, indice, descripcion de archivos/modulos y changelog. Sin despliegue. | backend/handlers/pagina_principal_handlers.go, backend/handlers/pagina_principal_catalogo_test.go, web/index.html, web/descripcion_de_los_sistemas.html, web/descripcion_de_los_sistemas.ht, web/super/pagina_principal.html, web/estilos.css, documentos
+2026-08-23 | Carrito POS / carga inicial rapida | La estructura visual se muestra antes de completar datos; catorce lecturas independientes se cargan en paralelo, `/me` se comparte, `estacion_prefs` se reutiliza con las etiquetas globales y se evita un segundo listado del carrito canonico sin cambios. El pago sigue bloqueado hasta completar items, abonos y reglas operativas. Se agrego contrato frontend y comparacion visual autenticada sin pagos ni mutaciones. Sin despliegue. | web/administrar_empresa/carrito_de_compras.html, web/js/estaciones_labels.js, backend/handlers/carrito_frontend_contract_test.go, documentos/flujos_operativos.md, documentos/descripcion_de_modulos, documentos/CHANGELOG.md
+2026-08-24 | Super administrador / Administrar disco VPS | Se incorpora una consola global para mostrar y eliminar únicamente recursos Docker recuperables: contenedores detenidos, imágenes no usadas, caché BuildKit vencida y volúmenes anónimos sin referencias. La API exige rol super, auditoría, categorías cerradas y confirmación `LIBERAR ESPACIO`; un sidecar interno firmado contiene el socket Docker y no expone rutas, comandos, bases, archivos empresariales, respaldos, certificados o volúmenes conectados. Sin despliegue. | backend/cmd/pcs-disk-manager/main.go, backend/handlers/super_disk_manager.go, backend/main.go, deploy/docker/backend.Dockerfile, deploy/docker-compose.platform.yml, web/super/administrar_disco_vps.html, web/super_administrador.html
+2026-08-25 | Correo corporativo / BIMI | Se auditan DNS y Mailu, se corrige el SVG BIMI para cumplir el esquema oficial SVG Tiny P/S y se amplia la prueba de contrato contra los dos valores incompatibles detectados. La fuente del VPS queda respaldada y actualizada, pero el contenedor de solo lectura aun sirve la copia anterior hasta el siguiente despliegue normal. La compra y publicacion de VMC/CMC permanecen pendientes de definir si el logo tiene marca registrada o evidencia de 12 meses de uso. | web/img/bimi-pcs.svg, backend/main_mailu_relay_contract_test.go, documentos/email_corporativo_mailu.md
+2026-08-25: Chat IA simple, multimodal y por usuario.
+- Se repara el botón flotante: abrir retira `hidden`, cerrar lo restaura y la
+  habilitación visual queda coordinada con el permiso empresarial resuelto.
+- El drawer queda compacto, sin selector de modelo, configuración local ni
+  minimizar; conserva nuevo chat, historial, voz, adjuntos y envío.
+- Cada turno persiste `conversation_id`; historial por defecto filtra la cuenta
+  autenticada y el alcance empresa exige rol administrativo autorizado.
+- Super Administrador elige un único modelo para todo el sistema. El valor
+  inicial es `openai:gpt-5.6-terra` con razonamiento `medium`.
+- Se elimina el interruptor `Modo agente`: `agente_pcs` queda activo en chat,
+  adjuntos, Centro IA y Pedidos IA. La cuota ligera se reserva solo si el chat
+  solicita una herramienta real; preguntas normales no reciben doble cuota.
+- Validación local: pruebas Go enfocadas, sintaxis JavaScript/HTML, contrato de
+  seguridad y revisión visual responsive. Sin despliegue ni petición viva al
+  proveedor.
+2026-08-25: Endurecimiento de pagos Colombia, datafonos, Bre-B, Nequi/Wompi y bascula
+- Datafonos: saldo y moneda calculados por servidor, doble validacion antes del cierre POS, bloqueo SSRF/DNS/redirecciones, respuesta sensible depurada y adaptador generico deshabilitado salvo homologacion explicita.
+- Bre-B: conciliacion automatica deshabilitada hasta disponer de conector firmado, llaves colombianas validadas, QR estatico exacto sin plantillas y registros manuales siempre pendientes en COP.
+- Wompi: firma de eventos conforme a `signature.properties + timestamp + events secret`, comprobacion de monto/referencia/contexto/ambiente y nuevo secreto cifrado `wompi.events_secret`.
+- Bascula: consenso de muestras, marcas de estabilidad, frescura, limite de buffer y advertencia de control metrologico antes de aplicar peso.
+- Documentacion: se agrega `documentos/auditoria_pagos_colombia_datafonos_breb_nequi_bascula_2026-08-25.md` con fuentes y bloqueos externos de GO.
+2026-08-26 | Carrito POS / historial inmutable y corte de caja | La venta real PCS demostro que reactivar el carrito 117 borraba del corte diario una venta ya cobrada. El pago persiste ahora, en la misma transaccion, una operacion unica con caja, efectivo y snapshot de items; el outbox deja de deduplicar cierres distintos del mismo carrito. Corte de caja usa esa fuente multiempresa, elimina dos consultas mutables y no mezcla en rangos parciales todo el efectivo de una caja abierta desde otra fecha. Se agregaron pruebas de identidad, timestamps PostgreSQL, argumentos SQL, dos cierres reutilizados, filtros de empresa/caja y rango completo de turno. La migracion de empresa `20260826-002-cart-sale-history-v1` cubre bases existentes; requiere pcs-migrate y permanece local, sin despliegue. | backend/db/carritos_compras.go, backend/db/platform_migrations.go, backend/handlers/carritos_compras.go, backend/handlers/corte_caja.go, backend/db/carritos_compras_schema_test.go, backend/handlers/corte_caja_test.go, documentos
+2026-08-26 | Idempotencia punta a punta | Se auditan y endurecen los flujos criticos de API movil, checkout Wompi/Epayco, activacion y correo de licencia, carrito/caja/contabilidad, venta offline, CxP, DIAN, Rappi, venta publica, propuestas IA, outbox y jobs. Las claves se hashean, una reutilizacion con payload distinto falla, los efectos remotos ambiguos quedan `incierto` sin reintento automatico y los efectos financieros locales usan transaccion, claim o unicidad PostgreSQL. Se agregan migraciones super/empresa, pruebas y documento de dictamen. Validacion local; no se ejecutaron migraciones, sandbox de proveedores, CI, despliegue ni produccion. | backend/db, backend/handlers, backend/internal/ventas, backend/cmd/pcs-worker, web/pagar_licencia.html, web/administrar_empresa/rappi.html, documentos/auditoria_idempotencia_punta_a_punta_2026-08-26.md
+2026-08-28 | APIs IA / privacidad y errores | Las solicitudes OpenAI Responses ahora envian un `safety_identifier` estable y pseudonimo derivado con SHA-256, sin exponer correos, IP ni identidad original; se conserva `store=false`. Se propaga a chat empresarial/super, adjuntos, soportes, reportes, pedidos, documentos, DIAN y portal. Los flujos revisados devuelven errores genericos de proveedor al cliente. Se agregan pruebas de contrato de payload y de estabilidad del identificador. Validacion local; sin solicitudes reales al proveedor, despliegue ni produccion. | backend/handlers/chat_con_inteligencia_artificial_controller.go, backend/handlers/chat_con_inteligencia_artificial_responses_test.go, backend/handlers/soportes_compras_ia.go, backend/handlers/modulos_faltantes.go, documentos/ia_orquestador_empresarial.md
+2026-08-31: Modulo Vida personal por empresa y usuario.
+- Se agrega `Vida` en Administrar empresa para registrar gastos cotidianos,
+  fotos/PDF privados de recibos y suscripciones con recordatorios configurables.
+- La cuenta autenticada es la propietaria dentro de la empresa: API, SQL y
+  descargas filtran `empresa_id + usuario_id`; ningun administrador puede leer
+  registros personales ajenos mediante este modulo.
+- El modulo queda disponible para todos los roles empresariales autenticados y
+  fuera del filtro comercial de licencias, sin integrarse con contabilidad,
+  caja, compras, inventario ni facturacion.
+- La migracion `20260831-001-vida-personal-v1` crea las dos tablas mediante
+  `pcs-migrate`; API y worker no ejecutan DDL.
+- Los recordatorios se muestran en la pagina y el menu. La alarma nativa solo
+  se emite con permiso previo del navegador y mientras PCS esta abierto.
+- Cambio local: no se ejecuto migracion, `rs` ni despliegue.
+2026-08-31: Ampliacion de Vida con precios, codigos de barras e IA.
+- Se agrega `empresa_vida_precios` mediante la migracion aditiva
+  `20260831-003-vida-price-history-ai-v1`, siempre aislada por empresa/usuario y
+  sin relacion con productos o cuentas empresariales.
+- El formulario manual admite producto, cantidad, precio unitario y codigo; la
+  camara usa APIs nativas del navegador, se activa por clic y se detiene al salir.
+- `factura_ia` reutiliza OpenAI Responses con archivo privado, `store=false` y
+  salida JSON validada; un clic explicito crea gasto y lineas atomicamente y
+  muestra aviso cuando corresponde revision.
+- Pruebas locales Go, vet, sintaxis JS y visual desktop/movil. Sin migracion,
+  despliegue, llamada real a OpenAI ni insercion autenticada en produccion.
+2026-08-31 | Raspberry / sensores de puertas para moteles | Se agrega modalidad exclusiva `sensor_puertas` por controlador: 4 entradas BCM 0-3, 1-16 selectores BCM 4-19, delay 10-5000 ms, hasta 64 canales automáticos y asignación a habitaciones. El túnel deriva empresa/Raspberry, bloquea mezcla con aparatos Domótica y el agente systemd autoarranca/reconecta. La auditoría registra alta, configuración antes/después, instalador, enrolamiento, canal, operaciones y desactivación; las transiciones físicas quedan en mensajes de sensores. Se agrega tutorial visual con matriz 4×16, equivalencias BCM/pin físico, instalación y límites de 3,3 V/contactos secos. Migración y validación local, sin hardware real, `pcs-migrate`, `rs` ni despliegue. | backend/db/control_electrico_door_sensor*.go, backend/handlers/control_electrico*.go, backend/handlers/sensor_puertas.go, backend/handlers/templates/instalar_domotica_raspberry.sh.tmpl, web/administrar_empresa/control_electrico.html, web/administrar_empresa/configuracion_sensores_raspberry.html, web/administrar_empresa/tutorial_sensores_puertas_raspberry.html, documentos

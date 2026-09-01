@@ -11,9 +11,6 @@ func TestNormalizeEmpresaModuloColombia(t *testing.T) {
 	if got := NormalizeEmpresaModuloColombia(" bancos_pagos "); got != "bancos_pagos" {
 		t.Fatalf("NormalizeEmpresaModuloColombia = %q", got)
 	}
-	if got := NormalizeEmpresaModuloColombia(" drogueria_farmacia "); got != "drogueria_farmacia" {
-		t.Fatalf("NormalizeEmpresaModuloColombia drogueria = %q", got)
-	}
 	if got := NormalizeEmpresaModuloColombia("modulo_inexistente"); got != "" {
 		t.Fatalf("modulo desconocido deberia quedar vacio, got %q", got)
 	}
@@ -57,21 +54,11 @@ func TestGetEmpresaModuloColombiaPlantillaPorModulo(t *testing.T) {
 	if got.Tipos[0] != "conciliacion" {
 		t.Fatalf("tipos inesperados para bancos: %#v", got.Tipos)
 	}
-	farma := GetEmpresaModuloColombiaPlantilla("drogueria_farmacia")
-	if farma.Modulo != "drogueria_farmacia" || !strings.Contains(strings.Join(farma.Tipos, ","), "lote") {
-		t.Fatalf("plantilla farmacia incompleta: %#v", farma)
-	}
-	if farma.EtiquetaReferencia == "" || !strings.Contains(farma.MetadataEjemplo, "registro_invima") {
-		t.Fatalf("plantilla farmacia sin trazabilidad sanitaria: %#v", farma)
-	}
-	if !strings.Contains(strings.Join(farma.Tipos, ","), "formula_medica") || !strings.Contains(strings.Join(farma.Categorias, ","), "controlados") {
-		t.Fatalf("plantilla farmacia debe ser expediente sanitario, no inventario paralelo: %#v", farma)
-	}
 }
 
 func TestBuildEmpresaModuloColombiaDiagnostico(t *testing.T) {
-	plantilla := GetEmpresaModuloColombiaPlantilla("agencia_viajes")
-	got := buildEmpresaModuloColombiaDiagnostico(7, "agencia_viajes", plantilla, 0, true, "")
+	plantilla := GetEmpresaModuloColombiaPlantilla("salon_spa")
+	got := buildEmpresaModuloColombiaDiagnostico(7, "salon_spa", plantilla, 0, true, "")
 	if got.Estado != "listo" || got.Puntuacion != 100 {
 		t.Fatalf("diagnostico listo inesperado: %#v", got)
 	}

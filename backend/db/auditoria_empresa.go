@@ -1253,7 +1253,6 @@ func auditAIQuestionFilter(pregunta string) EmpresaAuditoriaEventoFilter {
 		{"licencias", []string{"licencias", "licencia"}},
 		{"propinas", []string{"propinas", "propina"}},
 		{"comisiones", []string{"comisiones", "comision"}},
-		{"gimnasio", []string{"gimnasio", "socios", "membresias"}},
 		{"parqueadero", []string{"parqueadero", "parking"}},
 		{"domicilios", []string{"domicilios", "delivery"}},
 		{"turnos_atencion", []string{"turnos_atencion", "turnos", "fila"}},

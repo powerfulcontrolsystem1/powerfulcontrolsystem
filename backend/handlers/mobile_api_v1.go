@@ -389,7 +389,14 @@ func mobileIdempotentMutation(dbEmp *sql.DB, operation string, next http.Handler
 				return
 			}
 		}
-		claim, claimed, err := dbpkg.ClaimMobileAPIIdempotency(dbEmp, empresaID, operation, key, string(body))
+		requestFingerprint := strings.Join([]string{
+			r.Method,
+			r.URL.EscapedPath(),
+			r.URL.Query().Encode(),
+			strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r))),
+			string(body),
+		}, "\n")
+		claim, claimed, err := dbpkg.ClaimMobileAPIIdempotency(dbEmp, empresaID, operation, key, requestFingerprint)
 		if err != nil {
 			if errors.Is(err, dbpkg.ErrMobileAPIIdempotencyConflict) {
 				http.Error(w, "Idempotency-Key ya fue usado con otra solicitud", http.StatusConflict)
@@ -404,6 +411,10 @@ func mobileIdempotentMutation(dbEmp *sql.DB, operation string, next http.Handler
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
 				w.WriteHeader(claim.ResponseCode)
 				_, _ = io.WriteString(w, claim.ResponseJSON)
+				return
+			}
+			if claim.Status == "incierto" {
+				http.Error(w, "resultado de operacion incierto; requiere reconciliacion antes de reintentar", http.StatusConflict)
 				return
 			}
 			w.Header().Set("Retry-After", "2")
@@ -424,6 +435,8 @@ func mobileIdempotentMutation(dbEmp *sql.DB, operation string, next http.Handler
 				http.Error(w, "no se pudo cerrar la operacion", http.StatusServiceUnavailable)
 				return
 			}
+		} else if status >= 500 {
+			_ = dbpkg.MarkMobileAPIIdempotencyUncertain(dbEmp, claim)
 		} else {
 			_ = dbpkg.AbandonMobileAPIIdempotency(dbEmp, claim)
 		}
@@ -744,7 +757,7 @@ func RegisterMobileAPIV1Routes(dbEmp, dbSuper *sql.DB) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
-	http.HandleFunc("/api/v1/empresa/carritos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentWhenMutating(dbEmp, "carritos_mutar", carritosV1))))))
+	http.HandleFunc("/api/v1/empresa/carritos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, carritosV1)))))
 
 	itemsV1 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -761,7 +774,7 @@ func RegisterMobileAPIV1Routes(dbEmp, dbSuper *sql.DB) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
-	http.HandleFunc("/api/v1/empresa/carritos/items", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentWhenMutating(dbEmp, "carrito_items_mutar", itemsV1))))))
+	http.HandleFunc("/api/v1/empresa/carritos/items", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, itemsV1)))))
 	http.HandleFunc("/api/v1/empresa/ventas", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, WithEmpresaVentasPermissions(dbEmp, dbSuper, MobileVentasHandler(dbEmp)))))
 	http.HandleFunc("/api/v1/empresa/pagos", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentMutation(dbEmp, "venta_cobrar", mobileLegacyAction(carritosLegacy, "pagar_estacion")))))))
 	http.HandleFunc("/api/v1/empresa/ventas/offline/sync", mobileAPIJSON(mobileBearerSessionAdapter(dbSuper, mobileNormalizeEmpresaJSON(WithEmpresaVentasPermissions(dbEmp, dbSuper, mobileIdempotentMutation(dbEmp, "ventas_offline_sync", mobileLegacyAction(offlineLegacy, "sync")))))))

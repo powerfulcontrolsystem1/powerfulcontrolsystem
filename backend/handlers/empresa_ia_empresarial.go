@@ -12,10 +12,7 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
-const (
-	empresaIAEmpresarialUsageID = "openai:gpt-5.4-mini:centro_ia_empresarial"
-	empresaIAEmpresarialLimit   = 12
-)
+const empresaIAEmpresarialLimit = 12
 
 type empresaIAFuncion struct {
 	ID          string `json:"id"`
@@ -112,10 +109,9 @@ func parseEmpresaIAEmpresarialPayload(r *http.Request) (empresaIAEmpresarialPayl
 	if strings.TrimSpace(payload.AgentID) == "" {
 		payload.AgentID = strings.TrimSpace(q.Get("agent_id"))
 	}
-	payload.AgentID = normalizeEmpresaAIChatAgentID(payload.AgentID)
-	if payload.AgentID == "general" {
-		payload.AgentID = defaultEmpresaIAAgentForAction(payload.Accion)
-	}
+	// El Centro IA comparte el único agente PCS; el cliente no puede escoger
+	// agentes especializados ni ampliar sus permisos con agent_id.
+	payload.AgentID = "agente_pcs"
 	payload.Desde, payload.Hasta = normalizeEmpresaIADateRange(payload.Desde, payload.Hasta)
 	if len([]rune(payload.Consulta)) > 1800 {
 		payload.Consulta = string([]rune(payload.Consulta)[:1800])
@@ -160,21 +156,6 @@ func normalizeEmpresaIAAccion(raw string) string {
 			return ""
 		}
 		return "diagnostico_erp"
-	}
-}
-
-func defaultEmpresaIAAgentForAction(accion string) string {
-	switch normalizeEmpresaIAAccion(accion) {
-	case "borrador_factura", "cobranza_pagos":
-		return "ventas"
-	case "inventario_productos":
-		return "inventario"
-	case "compras_gastos":
-		return "compras"
-	case "cumplimiento_dian":
-		return "impuestos"
-	default:
-		return "general"
 	}
 }
 
@@ -292,12 +273,14 @@ func buildEmpresaIAEmpresarialResponse(r *http.Request, dbEmp, dbSuper *sql.DB, 
 	if err != nil || !empresaChatEnabled {
 		return map[string]interface{}{"ok": false, "code": "ai_empresa_disabled", "error": "El chat IA empresarial esta desactivado; el snapshot real queda disponible."}
 	}
-	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.4-mini"]
+	modelID := firstAvailableEmpresaAIModelID(dbSuper)
+	model, ok := availableEmpresaAIModelMap(dbSuper)[modelID]
 	if !ok {
-		return map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "GPT-5.4 mini no esta disponible en el catalogo IA."}
+		return map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "El modelo global del sistema no esta disponible en el catalogo IA."}
 	}
+	usageID := model.ID + ":centro_ia_empresarial"
 	fechaUso := time.Now().Format("2006-01-02")
-	uso, err := dbpkg.GetEmpresaAIUsoDiario(dbEmp, payload.EmpresaID, model.Provider, empresaIAEmpresarialUsageID, fechaUso)
+	uso, err := dbpkg.GetEmpresaAIUsoDiario(dbEmp, payload.EmpresaID, model.Provider, usageID, fechaUso)
 	if err != nil {
 		return map[string]interface{}{"ok": false, "code": "usage_error", "error": "No se pudo consultar uso diario de IA."}
 	}
@@ -308,15 +291,6 @@ func buildEmpresaIAEmpresarialResponse(r *http.Request, dbEmp, dbSuper *sql.DB, 
 			"usage": reportesIAUsagePayload(uso.Consultas, empresaIAEmpresarialLimit, 0, 0),
 		}
 	}
-	if payload.AgentID != "general" {
-		user := adminEmailFromRequest(r)
-		if user == "" {
-			user = googleAccountFromRequest(r)
-		}
-		if _, _, err := reserveAgenteInternetLightUsage(dbEmp, dbSuper, payload.EmpresaID, user); err != nil {
-			return map[string]interface{}{"ok": false, "code": "empresa_agent_limit_reached", "error": err.Error()}
-		}
-	}
 	consulta := strings.TrimSpace(payload.Consulta)
 	if consulta == "" {
 		consulta = defaultEmpresaIAConsulta(payload.Accion)
@@ -325,23 +299,23 @@ func buildEmpresaIAEmpresarialResponse(r *http.Request, dbEmp, dbSuper *sql.DB, 
 	system := "Eres un agente IA ERP y contable para Powerful Control System. Responde en espanol profesional y accionable. Usa solo el snapshot real filtrado por empresa_id; no inventes cifras, NIT, estados DIAN ni registros. No ejecutes mutaciones: si el usuario pide factura, pago, cliente o producto, entrega un borrador revisable, datos faltantes y siguiente boton/ruta sugerida. No digas que emitiste, registraste o conciliaste algo. Entrega secciones cortas: diagnostico, hallazgos, riesgos, siguiente accion y datos faltantes. Si la accion es borrador_factura, usa formato JSON visible con cliente, items, impuestos sugeridos, faltantes y advertencias.\n\nACCION_SOLICITADA: " + payload.Accion + "\nSNAPSHOT_REAL_JSON:\n" + truncateText(string(raw), 9000)
 	system += "\n\n" + buildEmpresaAIChatAgentInstruction(payload.AgentID)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
-	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, consulta, nil, system)
+	respuesta, pt, ct, err := ctrl.generateResponseWithSystemPrompt(model, consulta, nil, system, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
 	if err != nil {
-		return map[string]interface{}{"ok": false, "code": "ai_error", "error": "No se pudo ejecutar la funcion IA: " + err.Error()}
+		return map[string]interface{}{"ok": false, "code": "ai_error", "error": publicAIProviderError(err)}
 	}
 	respuesta = strings.TrimSpace(respuesta)
 	if _, err := dbpkg.RegisterEmpresaAIConsulta(dbEmp, dbpkg.EmpresaAIConsulta{
-		EmpresaID: payload.EmpresaID, Provider: model.Provider, ModelID: empresaIAEmpresarialUsageID,
+		EmpresaID: payload.EmpresaID, Provider: model.Provider, ModelID: usageID,
 		Pregunta: consulta, Respuesta: respuesta, PromptTokens: pt, CompletionTokens: ct, TotalTokens: pt + ct,
 		FechaConsulta: time.Now().Format("2006-01-02 15:04:05"), PlanActual: strings.TrimSpace(uso.PlanActual),
 		UsuarioCreador: adminEmailFromRequest(r), Estado: "activo", Observaciones: "centro_ia_empresarial:" + payload.Accion + " agente=" + payload.AgentID,
 	}); err != nil {
 		return map[string]interface{}{"ok": false, "code": "usage_register_error", "error": "No se pudo registrar uso IA."}
 	}
-	usoNuevo, _ := dbpkg.GetEmpresaAIUsoDiario(dbEmp, payload.EmpresaID, model.Provider, empresaIAEmpresarialUsageID, fechaUso)
+	usoNuevo, _ := dbpkg.GetEmpresaAIUsoDiario(dbEmp, payload.EmpresaID, model.Provider, usageID, fechaUso)
 	return map[string]interface{}{
 		"ok":        true,
-		"modelo":    "openai:gpt-5.4-mini",
+		"modelo":    model.ID,
 		"agent_id":  payload.AgentID,
 		"respuesta": respuesta,
 		"usage":     reportesIAUsagePayload(usoNuevo.Consultas, empresaIAEmpresarialLimit, pt, ct),
