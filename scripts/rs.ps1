@@ -252,7 +252,7 @@ function Complete-WorkBranchIntegration {
         if ($prState.state -eq "MERGED") { break }
         if ($prState.state -eq "CLOSED") { throw "La PR se cerro sin fusionar. El VPS permanece sin cambios." }
         if ($prState.state -eq "OPEN" -and $prState.mergeStateStatus -eq "DIRTY") {
-          throw "La PR tiene conflictos con $ProductionBranch: $prUrl. Reconcilia la rama y repite rs; el VPS permanece sin cambios."
+          throw "La PR tiene conflictos con ${ProductionBranch}: $prUrl. Reconcilia la rama y repite rs; el VPS permanece sin cambios."
         }
       }
       if ((Get-Date) -ge $deadline) {
