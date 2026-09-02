@@ -3148,19 +3148,24 @@ func registrarEventoContableVentaCarrito(dbEmp *sql.DB, r *http.Request, carrito
 	if monto <= 0 {
 		monto = carrito.Total
 	}
+	claveIdempotencia := ""
+	if strings.EqualFold(strings.TrimSpace(evento), "venta_pagada") {
+		claveIdempotencia = dbpkg.BuildCarritoSaleOperationCode(carrito.Codigo, carrito.EmpresaID, carrito.ID, carrito.PagadoEn)
+	}
 	registrarEventoContableNoBloqueante(dbEmp, r, "carritos", dbpkg.EmpresaEventoContable{
-		EmpresaID:       carrito.EmpresaID,
-		Modulo:          "ventas",
-		Evento:          evento,
-		Entidad:         "carrito_compra",
-		EntidadID:       carrito.ID,
-		DocumentoTipo:   "carrito",
-		DocumentoCodigo: strings.TrimSpace(carrito.Codigo),
-		MontoTotal:      monto,
-		Moneda:          strings.TrimSpace(carrito.Moneda),
-		Origen:          "api_carritos_compra",
-		Estado:          "activo",
-		Observaciones:   strings.TrimSpace(observaciones),
+		EmpresaID:         carrito.EmpresaID,
+		Modulo:            "ventas",
+		Evento:            evento,
+		Entidad:           "carrito_compra",
+		EntidadID:         carrito.ID,
+		ClaveIdempotencia: claveIdempotencia,
+		DocumentoTipo:     "carrito",
+		DocumentoCodigo:   strings.TrimSpace(carrito.Codigo),
+		MontoTotal:        monto,
+		Moneda:            strings.TrimSpace(carrito.Moneda),
+		Origen:            "api_carritos_compra",
+		Estado:            "activo",
+		Observaciones:     strings.TrimSpace(observaciones),
 	}, payload)
 }
 

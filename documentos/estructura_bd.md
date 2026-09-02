@@ -2619,3 +2619,12 @@ reconciliación operativa explícita.
 - `empresa_dian_configuracion` conserva secretos cifrados con propósito por
   `empresa_id` y campo. La API no expone valores descifrados; certificado y
   llave privada se referencian en almacenamiento privado del tenant.
+## 2026-09-01 - Idempotencia contable por operacion de venta
+
+- `empresa_eventos_contables.clave_idempotencia` identifica una sesion pagada
+  durable, no el carrito reutilizable.
+- El indice `ux_empresa_eventos_contables_venta_pagada_carrito` conserva su
+  nombre historico pero aplica unicidad a `(empresa_id, clave_idempotencia)`
+  solo para ventas pagadas activas con clave no vacia.
+- Los eventos historicos sin clave permanecen intactos y fuera del indice; no
+  se eliminan, anulan ni reasignan asientos durante la migracion.

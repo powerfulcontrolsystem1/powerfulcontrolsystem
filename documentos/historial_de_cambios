@@ -43743,3 +43743,7 @@ Archivos modificados:
 - `rs` reutiliza ahora el worktree limpio que ya posea `main`, evitando ramas
   duplicadas y fallos de `git switch`; solo admite actualizacion fast-forward y
   bloquea el despliegue si ese checkout contiene cambios locales.
+- La migracion contable de ventas deja de asumir que un carrito reutilizable
+  equivale a una sola venta. La unicidad usa el codigo durable de cada sesion,
+  preserva 24 eventos y asientos historicos detectados en produccion y no muta
+  datos empresariales durante la preparacion.

@@ -4993,3 +4993,5 @@
   cargar estilos y comportamiento desde recursos estaticos externos.
 - 2026-09-01: `rs` reconoce un worktree existente de `main`, exige que este
   limpio y lo reutiliza mediante fast-forward antes del despliegue.
+- 2026-09-01: La idempotencia contable de ventas se vincula a cada operacion
+  pagada y permite reutilizar carritos sin alterar eventos historicos.
