@@ -476,8 +476,16 @@ if (-not (Test-Path $gitignorePath)) {
 }
 
 Write-Step "4/8 Preparando cambios para commit"
-if (-not (Invoke-GitAddQuietLineEndingAdvice -Paths @('-A'))) {
-    Write-ErrMsg "git add -A fallo."
+$commitPaths = @(
+    '-A'
+    '--'
+    '.'
+    ':(exclude)reports/**'
+    ':(exclude)documentos/reportes_profesionales/**'
+    ':(exclude)scripts/logs/**'
+)
+if (-not (Invoke-GitAddQuietLineEndingAdvice -Paths $commitPaths)) {
+    Write-ErrMsg "git add -A fallo al excluir artefactos operativos."
     Exit-WithCode 1
 }
 $statusLines = @(git status --porcelain)

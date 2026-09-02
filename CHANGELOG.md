@@ -5000,3 +5000,8 @@
 
 - La imagen frontend actualiza `libexpat` a `2.8.4-r0` o superior para corregir `CVE-2026-66046` y `CVE-2026-76641`, ambas clasificadas HIGH por Trivy.
 - El cambio queda limitado al paquete del sistema operativo de la imagen; no agrega dependencias Go ni modifica contratos funcionales.
+
+## 2026-09-02 - `rs` excluye reportes operativos
+
+- `actualizar_repositorio.ps1` deja fuera del staging automatico `reports/`, `documentos/reportes_profesionales/` y `scripts/logs/`.
+- Se retiran los dos reportes temporales incorporados accidentalmente por el PR #222 y `reports/` queda ignorado de forma permanente.

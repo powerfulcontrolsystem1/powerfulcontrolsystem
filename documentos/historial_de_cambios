@@ -43754,3 +43754,10 @@ Archivos modificados:
 - Correccion: `deploy/docker/frontend.Dockerfile` exige `libexpat>=2.8.4-r0` durante la construccion reproducible.
 - Alcance: solo imagen frontend; sin cambios en PostgreSQL, datos productivos, permisos, APIs o dependencias Go.
 - Evidencia previa: SARIF de Professional CI run `33592520722`; queda pendiente la confirmacion del nuevo run asociado al commit de correccion.
+
+## 2026-09-02 - Prevencion de commits automaticos con reportes de diagnostico
+
+- Incidente: una ejecucion de `rs` encontro dos archivos temporales bajo `reports/professional`, los comprometio y genero el PR #222.
+- Correccion: el staging automatico usa exclusiones explicitas para reportes operativos y `.gitignore` incorpora `reports/`.
+- Limpieza: se eliminan unicamente `migration_audit_20260902_051559.json` y `migration_audit_20260902_051559.md`, creados durante el diagnostico local.
+- Alcance: ramas y artefactos del repositorio; sin cambios de datos, migraciones, APIs ni runtime productivo.

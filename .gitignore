@@ -33,6 +33,7 @@ tmp/*-profile/
 tmp/playwright-*/
 tmp_*.png
 outputs/
+reports/
 test_runs/
 .tmp-go-test/
 __pycache__/
