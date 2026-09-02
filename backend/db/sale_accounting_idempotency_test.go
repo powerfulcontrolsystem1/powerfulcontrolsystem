@@ -32,7 +32,7 @@ func TestSaleAccountingOperationKeyPrecedesImmutableCartMigration(t *testing.T) 
 	legacyIndex := -1
 	for i, migration := range migrations {
 		switch migration.Version {
-		case "20260826-000-sale-accounting-operation-key-v1":
+		case "20260826-001-sale-accounting-idempotency-operation-key-v1":
 			operationKeyIndex = i
 			if migration.Apply == nil || migration.Body != empresaSaleAccountingOperationKeyFingerprint {
 				t.Fatal("la migracion de clave operacional debe ser ejecutable e inmutable")

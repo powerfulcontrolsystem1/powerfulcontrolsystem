@@ -201,7 +201,7 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260826-001-productos-inventario-v1", Description: "warehouse receipt ownership and tenant product listing index", Body: empresaProductosInventarioSchemaFingerprint, Apply: func(ctx context.Context, tx *sql.Tx) error {
 				return applyEmpresaProductosInventarioSchemaTx(ctx, tx)
 			}},
-			{Version: "20260826-000-sale-accounting-operation-key-v1", Description: "durable paid-session key preserving reusable cart history", Body: empresaSaleAccountingOperationKeyFingerprint, Apply: applyEmpresaSaleAccountingOperationKeyTx},
+			{Version: "20260826-001-sale-accounting-idempotency-operation-key-v1", Description: "durable paid-session key preserving reusable cart history", Body: empresaSaleAccountingOperationKeyFingerprint, Apply: applyEmpresaSaleAccountingOperationKeyTx},
 			{Version: "20260826-001-sale-accounting-idempotency-v1", Description: "one active paid-sale accounting event per tenant cart", Body: empresaSaleAccountingIdempotencyFingerprint, Apply: applyEmpresaSaleAccountingIdempotencyTx},
 			{Version: "20260826-002-cart-sale-history-v1", Description: "immutable cart sale history for cash reports", Body: empresaCarritoSaleHistorySchemaFingerprint, Apply: func(_ context.Context, tx *sql.Tx) error {
 				return applyEmpresaCarritoSaleHistorySchemaTx(tx)
