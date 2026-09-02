@@ -7,7 +7,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 ## Resumen
 
 - Funciones inventariadas: 141.
-- Huella del catalogo legado: `2def85762b145df54547dd90454027bbafa6d53ef4b065396f8bb54d49d99d82` (117 pasos).
+- Huella del catalogo legado: `b327dcba705f35df6d432082d7c6474e1b3d443536fda266e9f06c693650582e` (117 pasos).
 - DDL / indice / funcion: 113.
 - DDL catalogado de plataforma: 4.
 - compatibilidad PostgreSQL: 2.
@@ -84,7 +84,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaEnergiaSolarSchema` | [backend/db/energia_solar.go:108](../../backend/db/energia_solar.go#L108) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaEstacionColumnPreferencesSchema` | [backend/db/estacion_columnas_pref.go:24](../../backend/db/estacion_columnas_pref.go#L24) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEstacionVIPCodigosSchema` | [backend/db/estacion_vip_codigos.go:26](../../backend/db/estacion_vip_codigos.go#L26) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaEventosContablesSchema` | [backend/db/eventos_contables.go:262](../../backend/db/eventos_contables.go#L262) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaEventosContablesSchema` | [backend/db/eventos_contables.go:263](../../backend/db/eventos_contables.go#L263) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaFacturacionElectronicaSchema` | [backend/db/facturacion_electronica.go:343](../../backend/db/facturacion_electronica.go#L343) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaFinanzasSchema` | [backend/db/finanzas.go:187](../../backend/db/finanzas.go#L187) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaHojaVidaOperativaSchema` | [backend/db/hoja_vida_operativa.go:99](../../backend/db/hoja_vida_operativa.go#L99) | DDL / indice / funcion | empresas o por confirmar |
