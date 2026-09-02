@@ -43761,3 +43761,9 @@ Archivos modificados:
 - Correccion: el staging automatico usa exclusiones explicitas para reportes operativos y `.gitignore` incorpora `reports/`.
 - Limpieza: se eliminan unicamente `migration_audit_20260902_051559.json` y `migration_audit_20260902_051559.md`, creados durante el diagnostico local.
 - Alcance: ramas y artefactos del repositorio; sin cambios de datos, migraciones, APIs ni runtime productivo.
+
+## 2026-09-02 - Ajuste final del guard de artefactos de `rs`
+
+- Diagnostico: Git rechazaba los pathspec negativos dirigidos a directorios ignorados durante `git add -A`.
+- Correccion: el staging respeta `.gitignore` y un segundo control de solo lectura bloquea rutas operativas que ya estuvieran versionadas.
+- Resultado esperado: un arbol limpio no crea commits por reportes locales y las rutas operativas rastreadas requieren tratamiento explicito.

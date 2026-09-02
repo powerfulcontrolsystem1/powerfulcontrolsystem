@@ -476,16 +476,17 @@ if (-not (Test-Path $gitignorePath)) {
 }
 
 Write-Step "4/8 Preparando cambios para commit"
-$commitPaths = @(
-    '-A'
-    '--'
-    '.'
-    ':(exclude)reports/**'
-    ':(exclude)documentos/reportes_profesionales/**'
-    ':(exclude)scripts/logs/**'
+if (-not (Invoke-GitAddQuietLineEndingAdvice -Paths @('-A'))) {
+    Write-ErrMsg "git add -A fallo."
+    Exit-WithCode 1
+}
+$operationalStagedPaths = @(
+    & git diff --cached --name-only -- reports/ documentos/reportes_profesionales/ scripts/logs/ |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 )
-if (-not (Invoke-GitAddQuietLineEndingAdvice -Paths $commitPaths)) {
-    Write-ErrMsg "git add -A fallo al excluir artefactos operativos."
+if ($operationalStagedPaths.Count -gt 0) {
+    Write-ErrMsg "El staging contiene artefactos operativos. Commitelos de forma explicita o retirelos antes de ejecutar rs."
+    $operationalStagedPaths | ForEach-Object { Write-Host "  - $_" }
     Exit-WithCode 1
 }
 $statusLines = @(git status --porcelain)

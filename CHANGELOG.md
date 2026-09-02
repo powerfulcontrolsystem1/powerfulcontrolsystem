@@ -5005,3 +5005,8 @@
 
 - `actualizar_repositorio.ps1` deja fuera del staging automatico `reports/`, `documentos/reportes_profesionales/` y `scripts/logs/`.
 - Se retiran los dos reportes temporales incorporados accidentalmente por el PR #222 y `reports/` queda ignorado de forma permanente.
+
+## 2026-09-02 - Guard de staging operativo ajustado
+
+- `actualizar_repositorio.ps1` respeta `.gitignore` durante `git add -A` y valida despues el indice para impedir artefactos operativos versionados.
+- Se elimina el uso de pathspec negativos sobre carpetas ignoradas, que hacia fallar Git aunque no hubiera cambios publicables.
