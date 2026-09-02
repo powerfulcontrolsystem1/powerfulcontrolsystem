@@ -43747,3 +43747,10 @@ Archivos modificados:
   equivale a una sola venta. La unicidad usa el codigo durable de cada sesion,
   preserva 24 eventos y asientos historicos detectados en produccion y no muta
   datos empresariales durante la preparacion.
+
+## 2026-09-02 - Correccion del gate Trivy de la imagen frontend
+
+- Causa: `nginxinc/nginx-unprivileged:1.30.3-alpine3.23` resolvia `libexpat 2.8.2-r0`, afectado por `CVE-2026-66046` y `CVE-2026-76641`.
+- Correccion: `deploy/docker/frontend.Dockerfile` exige `libexpat>=2.8.4-r0` durante la construccion reproducible.
+- Alcance: solo imagen frontend; sin cambios en PostgreSQL, datos productivos, permisos, APIs o dependencias Go.
+- Evidencia previa: SARIF de Professional CI run `33592520722`; queda pendiente la confirmacion del nuevo run asociado al commit de correccion.
