@@ -21,6 +21,7 @@ type EmpresaEventoContable struct {
 	Evento                string  `json:"evento"`
 	Entidad               string  `json:"entidad"`
 	EntidadID             int64   `json:"entidad_id"`
+	ClaveIdempotencia     string  `json:"clave_idempotencia,omitempty"`
 	DocumentoTipo         string  `json:"documento_tipo"`
 	DocumentoCodigo       string  `json:"documento_codigo"`
 	PeriodoContable       string  `json:"periodo_contable"`
@@ -268,6 +269,7 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 			evento TEXT NOT NULL,
 			entidad TEXT NOT NULL,
 			entidad_id INTEGER,
+			clave_idempotencia TEXT,
 			documento_tipo TEXT,
 			documento_codigo TEXT,
 			periodo_contable TEXT,
@@ -318,10 +320,6 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_fecha ON empresa_eventos_contables(empresa_id, fecha_evento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_modulo_evento ON empresa_eventos_contables(empresa_id, modulo, evento);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_pendientes ON empresa_eventos_contables(empresa_id, procesado, fecha_evento);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_eventos_contables_venta_pagada_carrito
-			ON empresa_eventos_contables(empresa_id, modulo, evento, entidad, entidad_id)
-			WHERE modulo = 'ventas' AND evento = 'venta_pagada' AND entidad = 'carrito_compra'
-				AND entidad_id IS NOT NULL AND estado = 'activo';`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_fecha ON empresa_asientos_contables(empresa_id, fecha_asiento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_modulo_evento ON empresa_asientos_contables(empresa_id, modulo, evento);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_periodo ON empresa_asientos_contables(empresa_id, periodo_contable, estado);`,
@@ -333,6 +331,15 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "entidad_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "clave_idempotencia", "TEXT"); err != nil {
+		return err
+	}
+	if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_eventos_contables_venta_pagada_carrito
+		ON empresa_eventos_contables(empresa_id, clave_idempotencia)
+		WHERE modulo = 'ventas' AND evento = 'venta_pagada' AND entidad = 'carrito_compra'
+			AND NULLIF(TRIM(clave_idempotencia), '') IS NOT NULL AND estado = 'activo'`); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "documento_tipo", "TEXT"); err != nil {
@@ -496,6 +503,11 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 	if e.Estado == "" {
 		e.Estado = "activo"
 	}
+	e.ClaveIdempotencia = strings.TrimSpace(e.ClaveIdempotencia)
+	isActivePaidCart := e.Modulo == "ventas" && e.Evento == "venta_pagada" && e.Entidad == "carrito_compra" && e.EntidadID > 0 && e.Estado == "activo"
+	if isActivePaidCart && e.ClaveIdempotencia == "" {
+		return 0, fmt.Errorf("clave de idempotencia obligatoria para venta pagada")
+	}
 	e.Observaciones = strings.TrimSpace(e.Observaciones)
 	e.PayloadJSON = strings.TrimSpace(e.PayloadJSON)
 	e.FechaEvento = strings.TrimSpace(e.FechaEvento)
@@ -514,6 +526,7 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		evento,
 		entidad,
 		entidad_id,
+		clave_idempotencia,
 		documento_tipo,
 		documento_codigo,
 		periodo_contable,
@@ -529,10 +542,10 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
-	ON CONFLICT (empresa_id, modulo, evento, entidad, entidad_id)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?)
+	ON CONFLICT (empresa_id, clave_idempotencia)
 		WHERE modulo = 'ventas' AND evento = 'venta_pagada' AND entidad = 'carrito_compra'
-			AND entidad_id IS NOT NULL AND estado = 'activo'
+			AND NULLIF(TRIM(clave_idempotencia), '') IS NOT NULL AND estado = 'activo'
 	DO NOTHING`
 
 	id, err := insertSQLCompat(dbConn, query,
@@ -541,6 +554,7 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		e.Evento,
 		e.Entidad,
 		entidadID,
+		e.ClaveIdempotencia,
 		e.DocumentoTipo,
 		e.DocumentoCodigo,
 		e.PeriodoContable,
@@ -554,12 +568,12 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		e.Observaciones,
 	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) && e.Modulo == "ventas" && e.Evento == "venta_pagada" && e.Entidad == "carrito_compra" && e.EntidadID > 0 && e.Estado == "activo" {
+		if errors.Is(err, sql.ErrNoRows) && isActivePaidCart {
 			var existingID int64
 			lookupErr := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_eventos_contables
-				WHERE empresa_id = ? AND modulo = 'ventas' AND evento = 'venta_pagada'
-					AND entidad = 'carrito_compra' AND entidad_id = ? AND estado = 'activo'
-				ORDER BY id LIMIT 1`, e.EmpresaID, e.EntidadID).Scan(&existingID)
+				WHERE empresa_id = ? AND clave_idempotencia = ? AND modulo = 'ventas'
+					AND evento = 'venta_pagada' AND entidad = 'carrito_compra' AND estado = 'activo'
+				ORDER BY id LIMIT 1`, e.EmpresaID, e.ClaveIdempotencia).Scan(&existingID)
 			return existingID, lookupErr
 		}
 		return 0, err

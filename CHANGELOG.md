@@ -4993,3 +4993,10 @@
   cargar estilos y comportamiento desde recursos estaticos externos.
 - 2026-09-01: `rs` reconoce un worktree existente de `main`, exige que este
   limpio y lo reutiliza mediante fast-forward antes del despliegue.
+- 2026-09-01: La idempotencia contable de ventas se vincula a cada operacion
+  pagada y permite reutilizar carritos sin alterar eventos historicos.
+
+## 2026-09-02 - Endurecimiento de la imagen frontend
+
+- La imagen frontend actualiza `libexpat` a `2.8.4-r0` o superior para corregir `CVE-2026-66046` y `CVE-2026-76641`, ambas clasificadas HIGH por Trivy.
+- El cambio queda limitado al paquete del sistema operativo de la imagen; no agrega dependencias Go ni modifica contratos funcionales.

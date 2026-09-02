@@ -13408,3 +13408,6 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
   administracion de disco VPS, sin bloques ni atributos CSS inline.
 - `web/js/administrar_disco_vps.js`: comportamiento externo del panel para
   consultar el estado, ejecutar limpieza segura y mostrar el resultado.
+- `backend/db/sale_accounting_operation_key_migration.go`: prepara la clave
+  durable de sesion pagada y reemplaza el indice por carrito sin modificar los
+  eventos contables historicos.
