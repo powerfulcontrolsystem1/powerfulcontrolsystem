@@ -31,3 +31,12 @@ func TestAuditoriaPostgresNormalizesTimestampExpressions(t *testing.T) {
 		t.Fatal("empresa audit insert must avoid mixing text and PostgreSQL timestamps")
 	}
 }
+
+func TestAuditoriaInventarioUsesOperationalRetentionPolicy(t *testing.T) {
+	if got := resolveAuditoriaSeveridad("inventario", "ajustar", "ok", 200, `{}`); got != auditoriaSeveridadMedia {
+		t.Fatalf("inventario severity = %q, want %q", got, auditoriaSeveridadMedia)
+	}
+	if got := resolveAuditoriaPoliticaRetencionDias("inventario", auditoriaSeveridadMedia); got != 730 {
+		t.Fatalf("inventario medium retention = %d, want 730", got)
+	}
+}
