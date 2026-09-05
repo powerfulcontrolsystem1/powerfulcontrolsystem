@@ -43783,3 +43783,11 @@ Archivos modificados:
 
 - Se actualiza la dependencia directa `golang.org/x/crypto` de `v0.55.0` a `v0.56.0`, la versión corregida para `GO-2026-6354` y `GO-2026-6355` en canales SSH.
 - El alcance alcanza `ssh.NewClientConn` en el instalador controlado de Domótica; no cambia su contrato, permisos, aislamiento empresarial ni comportamiento de hardware.
+
+2026-09-05: fix: resolver gates de seguridad de PR 225
+PushStatus: OK
+Archivos modificados:
+- backend/go.mod
+- backend/go.sum
+- deploy/docker/frontend.Dockerfile
+- documentos/historial_de_cambios

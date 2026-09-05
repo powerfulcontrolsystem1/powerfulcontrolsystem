@@ -17065,3 +17065,10 @@ Archivos modificados:
 - backend/handlers/facturacion_xml_legacy_rebuild_test.go
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
+
+2026-09-05 14:39:32 - Mensaje: fix: resolver gates de seguridad de PR 225; Commit: 7f9a810d; PushStatus: OK
+Archivos modificados:
+- backend/go.mod
+- backend/go.sum
+- deploy/docker/frontend.Dockerfile
+- documentos/historial_de_cambios
