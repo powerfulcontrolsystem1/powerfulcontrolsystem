@@ -1,5 +1,14 @@
 # Contexto general del sistema
 
+## Auditoria fiscal 2026-09-05: cierre global pendiente
+
+La auditoria de seguridad/paises detecto herencia fiscal entre jurisdicciones,
+aceptacion simulada y uso potencial de numeracion CO fuera de Colombia.
+El candidato bloquea estos caminos; no esta desplegado. Ecuador/Panama son
+perfiles de configuracion, no adaptadores fiscales operativos. Consultar
+`documentos/auditoria_facturacion_seguridad_20260905.md` para pruebas, riesgos
+y compuertas. No declarar el modulo completo al 100 %.
+
 Estado: vigente. Ultima actualizacion: 2026-08-25.
 
 ## Actualizacion 2026-08-25 - cierre seguro integral DIAN

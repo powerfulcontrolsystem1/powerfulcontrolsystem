@@ -1,3 +1,12 @@
+2026-09-05
+- `backend/db/facturacion_country_boundary_test.go`: regresiones de herencia
+  fiscal, paises desconocidos, reserva extranjera y checklist no habilitante.
+- `backend/handlers/facturacion_transport_boundary_test.go`: aislamiento final
+  por empresa/pais/ambiente, estado activo y bloqueo de proveedores simulados
+  o sin adaptador fiscal.
+- `documentos/auditoria_facturacion_seguridad_20260905.md`: hallazgos,
+  evidencia visual PCS, pruebas, fuentes oficiales y pendientes de produccion.
+
 2026-08-26
 - `backend/db/dian_nomina_electronica.go`: fuente mensual canonica, perfil
   fiscal DIAN, validaciones, reserva atomica/idempotente, snapshot y espejo de

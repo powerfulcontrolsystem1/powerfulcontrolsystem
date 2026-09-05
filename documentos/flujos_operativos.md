@@ -1,5 +1,13 @@
 # Flujos operativos
 
+## Configuracion fiscal internacional (2026-09-05)
+
+Elegir un pais distinto de la empresa no debe copiar su identidad, resolucion
+o ambiente productivo. EC/PA permiten preparar datos, pero no emitir mediante
+el transporte generico. Un adaptador nuevo exige fuente, numeracion propia,
+firma y acuse oficial antes de habilitarlo. El detalle y las pruebas pendientes
+estan en `documentos/auditoria_facturacion_seguridad_20260905.md`.
+
 Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.

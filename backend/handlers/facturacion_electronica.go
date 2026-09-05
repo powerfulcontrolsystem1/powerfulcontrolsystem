@@ -2805,6 +2805,7 @@ func dispatchFacturacionProveedorHTTP(url string, payload map[string]interface{}
 		}
 		return facturacionProveedorDispatchResult{
 			Success:           true,
+			Pending:           true, // HTTP delivery alone is not fiscal acceptance.
 			ReferenciaExterna: ref,
 			RespuestaJSON:     rawResp,
 		}
@@ -3207,6 +3208,22 @@ func dispatchFacturacionDIANAcusePendiente(dbEmp *sql.DB, doc dbpkg.EmpresaDocum
 }
 
 func dispatchFacturacionProveedor(dbEmp *sql.DB, cfg *dbpkg.FacturacionElectronicaPaisConfig, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion, accion string, allowLegacySignedXMLRegeneration bool) facturacionProveedorDispatchResult {
+	// Recheck the immutable document boundary at the final transport hop. A
+	// caller or queued job must never dispatch with another tenant's settings.
+	if cfg == nil || doc.EmpresaID <= 0 || cfg.EmpresaID != doc.EmpresaID ||
+		(payload.EmpresaID != 0 && payload.EmpresaID != doc.EmpresaID) {
+		return facturacionProveedorDispatchResult{FinalFailure: true, Error: "configuracion, documento y solicitud fiscal deben pertenecer a la misma empresa"}
+	}
+	if strings.TrimSpace(doc.PaisCodigo) == "" || !strings.EqualFold(strings.TrimSpace(cfg.PaisCodigo), strings.TrimSpace(doc.PaisCodigo)) ||
+		(strings.TrimSpace(payload.PaisCodigo) != "" && !strings.EqualFold(strings.TrimSpace(payload.PaisCodigo), strings.TrimSpace(doc.PaisCodigo))) {
+		return facturacionProveedorDispatchResult{FinalFailure: true, Error: "pais fiscal del documento no coincide con la configuracion o solicitud"}
+	}
+	if !strings.EqualFold(strings.TrimSpace(doc.AmbienteFE), "produccion") {
+		return facturacionProveedorDispatchResult{FinalFailure: true, Error: "un documento de pruebas no puede transmitirse en produccion"}
+	}
+	if !strings.EqualFold(strings.TrimSpace(cfg.Estado), "activo") {
+		return facturacionProveedorDispatchResult{FinalFailure: true, Error: "configuracion fiscal inactiva: transmision bloqueada"}
+	}
 	proveedor := "manual"
 	ambiente := "sandbox"
 	apiBaseURL := ""
@@ -3235,96 +3252,23 @@ func dispatchFacturacionProveedor(dbEmp *sql.DB, cfg *dbpkg.FacturacionElectroni
 	if ambiente != "produccion" {
 		return facturacionProveedorDispatchResult{Success: false, Error: "integracion fiscal no aplica fuera de produccion"}
 	}
+	if proveedor == "manual" || proveedor == "interno" || proveedor == "local" || strings.HasPrefix(strings.ToLower(apiBaseURL), "mock:") {
+		return facturacionProveedorDispatchResult{FinalFailure: true, Error: "produccion requiere un proveedor fiscal real; no se permiten proveedores locales ni simulados"}
+	}
 
 	camposPais := facturacionTryParseJSONMap(camposPaisJSON)
 	if facturacionAnyToBool(camposPais["force_fail"]) || facturacionAnyToBool(camposPais["simular_error"]) {
 		return facturacionProveedorDispatchResult{Success: false, Error: "simulacion de fallo de proveedor fiscal"}
 	}
 
-	if paisCodigo == "CO" && (proveedor == "dian" || strings.Contains(strings.ToLower(apiBaseURL), "dian.gov.co")) {
+	if paisCodigo == "CO" && proveedor == "dian" {
 		return dispatchFacturacionDIANOficial(dbEmp, payload, doc, accion, apiBaseURL, allowLegacySignedXMLRegeneration)
 	}
 
-	referenciaLocal := fmt.Sprintf("%s-%d-%s", strings.ToUpper(proveedor), doc.EmpresaID, strings.ToUpper(strings.TrimSpace(doc.DocumentoCodigo)))
-	if proveedor == "manual" || proveedor == "interno" || proveedor == "local" {
-		if paisCodigo == "CO" {
-			return facturacionProveedorDispatchResult{
-				Success: false,
-				Error:   "proveedor DIAN real no configurado para Colombia en produccion",
-			}
-		}
-		respuesta := map[string]interface{}{
-			"ok":                 true,
-			"provider":           proveedor,
-			"ambiente":           ambiente,
-			"referencia_externa": referenciaLocal,
-			"accion":             strings.ToLower(strings.TrimSpace(accion)),
-			"documento_codigo":   strings.TrimSpace(doc.DocumentoCodigo),
-			"numero_legal":       strings.TrimSpace(doc.NumeroLegal),
-			"codigo_validacion":  strings.TrimSpace(doc.CodigoValidacion),
-			"timestamp":          facturacionNowLocal(),
-		}
-		raw, _ := json.Marshal(respuesta)
-		return facturacionProveedorDispatchResult{
-			Success:           true,
-			ReferenciaExterna: referenciaLocal,
-			RespuestaJSON:     string(raw),
-		}
-	}
-
-	if strings.HasPrefix(strings.ToLower(apiBaseURL), "mock://") {
-		if strings.Contains(strings.ToLower(apiBaseURL), "ok") {
-			respuesta := map[string]interface{}{
-				"ok":                 true,
-				"provider":           proveedor,
-				"referencia_externa": referenciaLocal,
-				"modo":               "mock",
-			}
-			raw, _ := json.Marshal(respuesta)
-			return facturacionProveedorDispatchResult{Success: true, ReferenciaExterna: referenciaLocal, RespuestaJSON: string(raw)}
-		}
-		return facturacionProveedorDispatchResult{Success: false, Error: "proveedor fiscal mock en estado de error", ConnectivityFailure: true}
-	}
-
-	if apiBaseURL == "" {
-		return facturacionProveedorDispatchResult{Success: false, Error: "api_base_url no configurado para proveedor fiscal"}
-	}
-
-	endpoint := strings.TrimRight(apiBaseURL, "/")
-	payloadReq := map[string]interface{}{
-		"empresa_id":        doc.EmpresaID,
-		"accion":            strings.ToLower(strings.TrimSpace(accion)),
-		"tipo_documento":    strings.TrimSpace(doc.TipoDocumento),
-		"documento_codigo":  strings.TrimSpace(doc.DocumentoCodigo),
-		"numero_legal":      strings.TrimSpace(doc.NumeroLegal),
-		"codigo_validacion": strings.TrimSpace(doc.CodigoValidacion),
-		"pais_codigo":       strings.ToUpper(strings.TrimSpace(facturacionFirstNonBlank(doc.PaisCodigo, payload.PaisCodigo))),
-		"ambiente":          ambiente,
-		"monto_total":       doc.MontoTotal,
-		"moneda":            strings.ToUpper(strings.TrimSpace(facturacionFirstNonBlank(doc.Moneda, payload.Moneda))),
-		"periodo_contable":  strings.TrimSpace(facturacionFirstNonBlank(doc.PeriodoContable, payload.PeriodoContable)),
-		"campos_pais":       camposPais,
-	}
-	if m, _ := payloadReq["moneda"].(string); strings.TrimSpace(m) == "" {
-		def := "COP"
-		if cfg != nil {
-			if mc := strings.TrimSpace(cfg.MonedaCodigo); mc != "" {
-				def = strings.ToUpper(mc)
-			} else {
-				switch strings.ToUpper(strings.TrimSpace(cfg.PaisCodigo)) {
-				case "EC":
-					def = "USD"
-				case "PA":
-					def = "PAB"
-				case "CO":
-					def = "COP"
-				}
-			}
-		}
-		payloadReq["moneda"] = def
-	}
-
-	return dispatchFacturacionProveedorHTTP(endpoint, payloadReq)
+	// Country configuration is not an implemented fiscal adapter. Do not send
+	// private fiscal data to an arbitrary JSON endpoint or treat its 2xx as an
+	// authority acknowledgement. Each adapter must implement both contracts.
+	return facturacionProveedorDispatchResult{FinalFailure: true, Error: "emision bloqueada: falta un adaptador fiscal especifico con validacion de acuse para este pais y proveedor"}
 }
 
 func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisConfig) map[string]interface{} {
@@ -3354,13 +3298,16 @@ func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisC
 	out["ambiente"] = ambiente
 
 	if paisCodigo != "CO" {
-		out["online"] = true
-		out["estado_conexion"] = "no_aplica"
-		out["mensaje"] = "validacion de conexion DIAN solo aplica para Colombia"
-		out["accion_recomendada"] = "continuar_online"
+		out["estado_conexion"] = "sin_adaptador_fiscal"
+		out["mensaje"] = "configuracion por pais disponible; emision bloqueada hasta implementar y validar su adaptador fiscal"
 		return out
 	}
-	if ambiente != "produccion" || strings.ToLower(strings.TrimSpace(cfg.Estado)) == "inactivo" {
+	if !strings.EqualFold(strings.TrimSpace(cfg.Estado), "activo") {
+		out["estado_conexion"] = "configuracion_inactiva"
+		out["mensaje"] = "configuracion fiscal inactiva: transmision bloqueada"
+		return out
+	}
+	if ambiente != "produccion" {
 		out["online"] = true
 		out["estado_conexion"] = "no_aplica"
 		out["mensaje"] = "la integracion DIAN no aplica fuera de produccion o esta inactiva"
@@ -3374,16 +3321,14 @@ func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisC
 		out["accion_recomendada"] = "bloquear_facturacion_electronica"
 		return out
 	}
+	if proveedor != "dian" {
+		out["estado_conexion"] = "sin_adaptador_fiscal"
+		out["mensaje"] = "proveedor sin adaptador fiscal validado"
+		return out
+	}
 	if strings.HasPrefix(strings.ToLower(apiBaseURL), "mock://") {
-		if strings.Contains(strings.ToLower(apiBaseURL), "ok") {
-			out["online"] = true
-			out["estado_conexion"] = "online"
-			out["mensaje"] = "proveedor mock disponible"
-			out["accion_recomendada"] = "continuar_online"
-			return out
-		}
-		out["estado_conexion"] = "offline"
-		out["mensaje"] = "proveedor mock en estado de error"
+		out["estado_conexion"] = "proveedor_simulado_bloqueado"
+		out["mensaje"] = "un proveedor simulado no habilita conectividad fiscal en produccion"
 	} else if apiBaseURL == "" {
 		out["estado_conexion"] = "sin_endpoint"
 		out["mensaje"] = "api_base_url no configurado para proveedor DIAN"
@@ -3431,7 +3376,9 @@ func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisC
 
 func facturacionDIANConnectionStatus(dbEmp *sql.DB, empresaID int64, paisCodigo string, cfg *dbpkg.FacturacionElectronicaPaisConfig) map[string]interface{} {
 	status := facturacionProveedorConnectionStatus(cfg)
-	if strings.ToUpper(strings.TrimSpace(paisCodigo)) != "CO" || empresaID <= 0 || dbEmp == nil {
+	if strings.ToUpper(strings.TrimSpace(paisCodigo)) != "CO" || empresaID <= 0 || dbEmp == nil ||
+		cfg == nil || cfg.EmpresaID != empresaID || !strings.EqualFold(strings.TrimSpace(cfg.PaisCodigo), "CO") ||
+		!strings.EqualFold(strings.TrimSpace(cfg.Proveedor), "dian") || !strings.EqualFold(strings.TrimSpace(cfg.Estado), "activo") {
 		return status
 	}
 

@@ -1,3 +1,10 @@
+## [2026-09-05] Frontera fiscal por empresa y pais
+
+- Bloqueo de proveedores simulados y conectores sin acuse/adaptador especifico.
+- Herencia de configuracion limitada al mismo pais y numeracion CO no compartida.
+- EC/PA informan alcance de configuracion, no disponibilidad de emision.
+- Nuevas regresiones y auditoria visual PCS con pendientes explicitos de cierre.
+
 ## [2026-08-28] Cola de impresión con cierre físico explícito
 
 - [Operación] Reclamar un trabajo se identifica como una reserva de cola y no

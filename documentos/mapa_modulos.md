@@ -1,5 +1,11 @@
 # Mapa de modulos
 
+Actualizacion 2026-09-05: `facturacion_electronica` refuerza la frontera por
+pais/empresa y bloquea conectores productivos no implementados. Las pantallas
+EC/PA explican que solo configuran datos. La reserva CO no se comparte con
+otras jurisdicciones. Estado de entrega y QA en
+`documentos/auditoria_facturacion_seguridad_20260905.md`.
+
 Actualizacion 2026-08-26 - Nomina electronica mensual DIAN: el submodulo de
 Nomina consolida todas las liquidaciones pagadas de un trabajador en un unico
 `NominaIndividual` por mes calendario cerrado. La fuente se reconstruye en

@@ -85,7 +85,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaEstacionColumnPreferencesSchema` | [backend/db/estacion_columnas_pref.go:24](../../backend/db/estacion_columnas_pref.go#L24) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEstacionVIPCodigosSchema` | [backend/db/estacion_vip_codigos.go:26](../../backend/db/estacion_vip_codigos.go#L26) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaEventosContablesSchema` | [backend/db/eventos_contables.go:263](../../backend/db/eventos_contables.go#L263) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaFacturacionElectronicaSchema` | [backend/db/facturacion_electronica.go:343](../../backend/db/facturacion_electronica.go#L343) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaFacturacionElectronicaSchema` | [backend/db/facturacion_electronica.go:345](../../backend/db/facturacion_electronica.go#L345) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaFinanzasSchema` | [backend/db/finanzas.go:187](../../backend/db/finanzas.go#L187) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaHojaVidaOperativaSchema` | [backend/db/hoja_vida_operativa.go:99](../../backend/db/hoja_vida_operativa.go#L99) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureHorariosTrabajadoresSchema` | [backend/db/horarios_trabajadores.go:140](../../backend/db/horarios_trabajadores.go#L140) | DDL / indice / funcion | empresas o por confirmar |

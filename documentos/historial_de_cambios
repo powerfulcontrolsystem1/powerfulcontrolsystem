@@ -1,3 +1,14 @@
+2026-09-05: Seguridad y separacion fiscal de paises (candidato).
+- Evita heredar NIT/resolucion/ambiente de un pais distinto y rechaza codigos
+  desconocidos. La numeracion CO no se reserva para otros paises.
+- Transporte valida tenant/pais/ambiente/estado; bloquea manual/local/mock y
+  proveedores sin adaptador. HTTP 2xx no es acuse de aceptacion.
+- Checklists EC/PA no habilitan emision y sus pantallas explican el bloqueo.
+- Se actualiza solo la linea del inventario Ensure generada mecanicamente;
+  no hay migraciones, dependencias ni modificacion de datos productivos.
+- QA autenticado PCS confirma pendientes de nomina/soporte y guards de 1PCS8.
+  Informe: documentos/auditoria_facturacion_seguridad_20260905.md.
+
 2026-08-26: Nomina electronica mensual DIAN como candidato local seguro.
 - Se reemplaza el borrador manual por una fuente fiscal mensual construida en
   servidor desde liquidaciones activas y pagos reales del trabajador. Periodos

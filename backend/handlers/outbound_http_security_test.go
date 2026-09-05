@@ -194,7 +194,7 @@ func TestFacturacionProveedorHTTPDoesNotReachLoopback(t *testing.T) {
 		EmpresaID:  12,
 		PaisCodigo: "CO",
 		Ambiente:   "produccion",
-		Proveedor:  "proveedor_externo",
+		Proveedor:  "dian", // Reach the endpoint guard, not the unsupported-adapter guard.
 		APIBaseURL: server.URL,
 		Estado:     "activo",
 	})

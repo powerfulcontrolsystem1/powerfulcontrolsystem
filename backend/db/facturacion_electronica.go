@@ -14,6 +14,7 @@ import (
 
 // FacturacionPanamaChecklist resume los requisitos operativos propios del SFEP/DGI.
 type FacturacionPanamaChecklist struct {
+	EmisionHabilitada    bool                               `json:"emision_habilitada"`
 	PaisCodigo           string                             `json:"pais_codigo"`
 	Ok                   bool                               `json:"ok"`
 	Estado               string                             `json:"estado"`
@@ -40,6 +41,7 @@ type FacturacionPanamaFuenteNormativa struct {
 
 // FacturacionEcuadorChecklist resume los requisitos operativos propios del SRI Ecuador.
 type FacturacionEcuadorChecklist struct {
+	EmisionHabilitada    bool                                `json:"emision_habilitada"`
 	PaisCodigo           string                              `json:"pais_codigo"`
 	Ok                   bool                                `json:"ok"`
 	Estado               string                              `json:"estado"`
@@ -775,6 +777,7 @@ func hydrateFacturacionFromEmpresaConfig(ctx context.Context, dbConn *sql.DB, cf
 	var prefijoFactura string
 	var resolucionNumero string
 	var ambienteFE string
+	var paisFiscal string
 
 	err := dbConn.QueryRowContext(ctx, `SELECT
 		COALESCE(tipo_documento_emisor, ''),
@@ -785,7 +788,8 @@ func hydrateFacturacionFromEmpresaConfig(ctx context.Context, dbConn *sql.DB, cf
 		COALESCE(direccion_fiscal, ''),
 		COALESCE(prefijo_factura, ''),
 		COALESCE(resolucion_numero, ''),
-		COALESCE(ambiente_fe, 'habilitacion')
+		COALESCE(ambiente_fe, 'habilitacion'),
+		COALESCE(pais_codigo, '')
 	FROM empresa_configuracion_avanzada
 	WHERE empresa_id = ?
 	LIMIT 1`, cfg.EmpresaID).Scan(
@@ -798,12 +802,18 @@ func hydrateFacturacionFromEmpresaConfig(ctx context.Context, dbConn *sql.DB, cf
 		&prefijoFactura,
 		&resolucionNumero,
 		&ambienteFE,
+		&paisFiscal,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil
 		}
 		return err
+	}
+	// Company defaults belong to their registered fiscal jurisdiction. Never
+	// copy a Colombian NIT, resolution or production flag into a foreign profile.
+	if !facturacionCanHydrateCountry(cfg.PaisCodigo, paisFiscal) {
+		return nil
 	}
 
 	if strings.TrimSpace(cfg.TipoDocumentoEmisor) == "" {
@@ -837,6 +847,12 @@ func hydrateFacturacionFromEmpresaConfig(ctx context.Context, dbConn *sql.DB, cf
 	}
 
 	return nil
+}
+
+func facturacionCanHydrateCountry(requested, source string) bool {
+	requested, source = normalizePaisCodigo(requested), normalizePaisCodigo(source)
+	_, supported := supportedPaisesFacturacionMap()[requested]
+	return supported && requested == source
 }
 
 func normalizeFacturacionConfig(payload *FacturacionElectronicaPaisConfig) {
@@ -900,6 +916,9 @@ func UpsertFacturacionElectronicaPaisConfigContext(ctx context.Context, dbConn *
 	}
 	if normalizePaisCodigo(payload.PaisCodigo) == "" {
 		return 0, fmt.Errorf("pais_codigo es obligatorio")
+	}
+	if _, ok := supportedPaisesFacturacionMap()[normalizePaisCodigo(payload.PaisCodigo)]; !ok {
+		return 0, fmt.Errorf("pais fiscal no soportado")
 	}
 	normalizeFacturacionConfig(&payload)
 
@@ -999,6 +1018,9 @@ func GetFacturacionElectronicaPaisConfigContext(ctx context.Context, dbConn *sql
 	paisCodigo = normalizePaisCodigo(paisCodigo)
 	if empresaID <= 0 || paisCodigo == "" {
 		return nil, fmt.Errorf("empresa_id y pais_codigo son obligatorios")
+	}
+	if _, ok := supportedPaisesFacturacionMap()[paisCodigo]; !ok {
+		return nil, fmt.Errorf("pais fiscal no soportado")
 	}
 
 	cfg := defaultFacturacionConfig(empresaID, paisCodigo)
@@ -1334,6 +1356,11 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 		paisCodigo = paisDetectado.Codigo
 	}
 
+	// This reservation uses Colombian invoice numbering. Other jurisdictions
+	// need independent numbering and authority contracts before reserving it.
+	if paisCodigo != "CO" {
+		return nil, fmt.Errorf("reserva fiscal bloqueada: falta adaptador y numeracion independiente para el pais solicitado")
+	}
 	cfg, err := GetFacturacionElectronicaPaisConfigContext(ctx, dbConn, empresaID, paisCodigo)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
@@ -2216,13 +2243,14 @@ func BuildFacturacionPanamaChecklist(cfg *FacturacionElectronicaPaisConfig) Fact
 		estado = "pendiente"
 	}
 	return FacturacionPanamaChecklist{
+		EmisionHabilitada:    false,
 		PaisCodigo:           "PA",
 		Ok:                   len(faltantes) == 0,
 		Estado:               estado,
 		Modalidad:            modalidad,
 		Ambiente:             ambiente,
 		Faltantes:            faltantes,
-		Advertencias:         advertencias,
+		Advertencias:         append(advertencias, "Checklist de datos, no certificacion fiscal: emision bloqueada sin adaptador DGI/PAC y validacion de acuse oficial."),
 		DocumentosSoportados: facturacionPanamaDocumentos(extra),
 		Items:                items,
 		Fuentes: []FacturacionPanamaFuenteNormativa{
@@ -2368,13 +2396,14 @@ func BuildFacturacionEcuadorChecklist(cfg *FacturacionElectronicaPaisConfig) Fac
 		estado = "pendiente"
 	}
 	return FacturacionEcuadorChecklist{
+		EmisionHabilitada:    false,
 		PaisCodigo:           "EC",
 		Ok:                   len(faltantes) == 0,
 		Estado:               estado,
 		Ambiente:             ambiente,
 		Integracion:          integracion,
 		Faltantes:            faltantes,
-		Advertencias:         advertencias,
+		Advertencias:         append(advertencias, "Checklist de datos, no certificacion fiscal: emision bloqueada sin adaptador SRI y validacion de acuse oficial."),
 		DocumentosSoportados: facturacionEcuadorDocumentos(extra),
 		Items:                items,
 		Fuentes: []FacturacionEcuadorFuenteNormativa{
