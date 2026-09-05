@@ -1475,7 +1475,7 @@ func resolveAuditoriaSeveridad(modulo, accion, resultado string, codigoHTTP int6
 		return auditoriaSeveridadAlta
 	case modulo == "seguridad" || modulo == "auditoria" || modulo == "backups" || modulo == "licencias" || modulo == "menu_visible":
 		return auditoriaSeveridadAlta
-	case modulo == "finanzas" || modulo == "breb_qr" || modulo == "facturacion" || modulo == "compras" || modulo == "nomina" || modulo == "documentos_onlyoffice" || modulo == "buzon" || modulo == "tareas_buzon" || modulo == "chat_empresarial" || modulo == "impresoras" || modulo == "productos_import_export" || modulo == "bodegas_traslados" || modulo == "atajos_pos":
+	case modulo == "inventario" || modulo == "finanzas" || modulo == "breb_qr" || modulo == "facturacion" || modulo == "compras" || modulo == "nomina" || modulo == "documentos_onlyoffice" || modulo == "buzon" || modulo == "tareas_buzon" || modulo == "chat_empresarial" || modulo == "impresoras" || modulo == "productos_import_export" || modulo == "bodegas_traslados" || modulo == "atajos_pos":
 		return auditoriaSeveridadMedia
 	default:
 		return auditoriaSeveridadBaja
@@ -1537,7 +1537,7 @@ func resolveAuditoriaPoliticaRetencionDias(modulo, severidad string) int64 {
 		default:
 			return 365
 		}
-	case "facturacion", "compras", "nomina", "documentos_onlyoffice", "buzon", "tareas_buzon", "chat_empresarial", "impresoras", "productos_import_export", "bodegas_traslados", "atajos_pos":
+	case "inventario", "facturacion", "compras", "nomina", "documentos_onlyoffice", "buzon", "tareas_buzon", "chat_empresarial", "impresoras", "productos_import_export", "bodegas_traslados", "atajos_pos":
 		switch severidad {
 		case auditoriaSeveridadCritica:
 			return 1825
