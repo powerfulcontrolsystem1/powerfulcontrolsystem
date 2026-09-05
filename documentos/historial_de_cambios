@@ -43767,3 +43767,27 @@ Archivos modificados:
 - Diagnostico: Git rechazaba los pathspec negativos dirigidos a directorios ignorados durante `git add -A`.
 - Correccion: el staging respeta `.gitignore` y un segundo control de solo lectura bloquea rutas operativas que ya estuvieran versionadas.
 - Resultado esperado: un arbol limpio no crea commits por reportes locales y las rutas operativas rastreadas requieren tratamiento explicito.
+
+## 2026-09-05 - Salida correcta del menú Super hacia una empresa en móvil
+
+- El enrutador del menú de Super Administrador ahora intercepta solamente enlaces destinados de forma explícita a su `contentFrame`.
+- Los destinos estándar como `_top`, `_parent`, `_self` y `_blank` conservan su navegación nativa. En particular, `Seleccionar empresa` sale del panel Super antes de abrir la empresa, por lo que no anida ni repite el menú Super, el menú empresarial ni los asistentes flotantes en celular.
+- No cambian roles, permisos, endpoints, datos empresariales ni licencias; la autorización efectiva continúa en backend.
+
+## 2026-09-05 - Gate Trivy de la imagen frontend
+
+- El Dockerfile del frontend exige `libuuid>=2.41.6-r0` junto con las demás actualizaciones explícitas de la capa Alpine.
+- La medida elimina los hallazgos HIGH `CVE-2026-53612`, `CVE-2026-53613`, `CVE-2026-53614`, `CVE-2026-76642`, `CVE-2026-78408` y `CVE-2026-78410` detectados en la imagen de la PR; no altera el código web, datos, permisos ni rutas.
+
+## 2026-09-05 - Gate govulncheck del instalador SSH de Domótica
+
+- Se actualiza la dependencia directa `golang.org/x/crypto` de `v0.55.0` a `v0.56.0`, la versión corregida para `GO-2026-6354` y `GO-2026-6355` en canales SSH.
+- El alcance alcanza `ssh.NewClientConn` en el instalador controlado de Domótica; no cambia su contrato, permisos, aislamiento empresarial ni comportamiento de hardware.
+
+2026-09-05: fix: resolver gates de seguridad de PR 225
+PushStatus: OK
+Archivos modificados:
+- backend/go.mod
+- backend/go.sum
+- deploy/docker/frontend.Dockerfile
+- documentos/historial_de_cambios
