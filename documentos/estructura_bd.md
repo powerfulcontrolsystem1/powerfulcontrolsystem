@@ -7,6 +7,12 @@ la herencia desde `empresa_configuracion_avanzada` comprueba pais antes de
 copiar datos. La reserva comun rechaza pais distinto de CO antes de abrir
 transaccion. No se reescriben filas historicas ni numeraciones existentes.
 
+Un país nuevo usa la misma llave única `(empresa_id, pais_codigo)` y guarda su
+nombre y moneda en la fila de esa empresa. Al no pertenecer al catálogo de
+adaptadores, se persiste forzosamente como perfil inactivo en sandbox, sin API
+base ni correo fiscal automático; no requiere migración ni crea numeración,
+cola o documento fiscal.
+
 ## Actualizacion 2026-08-31: Raspberry de sensores de puertas
 
 La migracion `20260831-002-raspberry-door-sensor-v1` agrega:

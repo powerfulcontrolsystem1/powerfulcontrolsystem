@@ -1,3 +1,14 @@
+## [2026-09-05] Perfiles de país configurables sin emisión implícita
+
+- [Multiempresa] La configuración de facturación admite un país nuevo por
+  empresa, identificado por un código de dos letras, sin ampliar el acceso a
+  datos de otras empresas.
+- [Seguridad fiscal] Los perfiles fuera del catálogo se fuerzan a `manual`,
+  `sandbox` e `inactivo`, sin URL de proveedor ni correo automático; el
+  transporte y la numeración permanecen fail-closed hasta un adaptador oficial.
+- [UX] La pantalla permite crear y volver a cargar perfiles inactivos y deja
+  explícito que agregarlos no habilita emisión.
+
 ## [2026-09-05] Frontera fiscal por empresa y pais
 
 - Bloqueo de proveedores simulados y conectores sin acuse/adaptador especifico.

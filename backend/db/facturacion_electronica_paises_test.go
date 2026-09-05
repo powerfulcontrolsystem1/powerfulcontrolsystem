@@ -101,6 +101,55 @@ func TestDefaultFacturacionConfigPaisAplicaProveedorYCampos(t *testing.T) {
 	}
 }
 
+func TestPerfilPaisNuevoPermaneceSoloConfiguracion(t *testing.T) {
+	cfg := defaultFacturacionConfig(12, "PE")
+	cfg.PaisNombre = "Perú"
+	cfg.MonedaCodigo = "PEN"
+	cfg.Proveedor = "proveedor_no_validado"
+	cfg.Ambiente = "produccion"
+	cfg.Estado = "activo"
+	cfg.APIBaseURL = "https://proveedor.example.test"
+	cfg.EnviarFacturaEmailClienteAuto = true
+	normalizeFacturacionConfig(&cfg)
+
+	if cfg.PaisCodigo != "PE" || cfg.PaisNombre != "Perú" || cfg.MonedaCodigo != "PEN" {
+		t.Fatalf("new country profile lost its identity: %#v", cfg)
+	}
+	if cfg.Estado != "inactivo" || cfg.Ambiente != "sandbox" || cfg.Proveedor != "manual" || cfg.APIBaseURL != "" || cfg.EnviarFacturaEmailClienteAuto {
+		t.Fatalf("new country must remain configuration-only: %#v", cfg)
+	}
+	var campos map[string]interface{}
+	if err := json.Unmarshal([]byte(cfg.CamposPaisJSON), &campos); err != nil {
+		t.Fatalf("invalid custom country JSON: %v", err)
+	}
+	if campos["integracion"] != "pendiente_adaptador_fiscal" || campos["emision_habilitada"] != false {
+		t.Fatalf("custom country must declare a blocked adapter: %#v", campos)
+	}
+}
+
+func TestValidacionCodigoPaisNuevoYMoneda(t *testing.T) {
+	for _, code := range []string{"PE", "pe", "ZZ"} {
+		if !facturacionPaisCodigoValido(code) {
+			t.Fatalf("expected valid two-letter country code %q", code)
+		}
+	}
+	for _, code := range []string{"", "P", "PER", "P1", "PÉ"} {
+		if facturacionPaisCodigoValido(code) {
+			t.Fatalf("expected invalid country code %q", code)
+		}
+	}
+	for _, currency := range []string{"", "PEN", "pen"} {
+		if !facturacionMonedaValida(currency) {
+			t.Fatalf("expected valid currency %q", currency)
+		}
+	}
+	for _, currency := range []string{"PE", "PENN", "P3N"} {
+		if facturacionMonedaValida(currency) {
+			t.Fatalf("expected invalid currency %q", currency)
+		}
+	}
+}
+
 func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.T) {
 	cfg := defaultFacturacionConfig(10, "CO")
 	var extra map[string]interface{}
