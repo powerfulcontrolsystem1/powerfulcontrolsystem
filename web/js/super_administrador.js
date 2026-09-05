@@ -406,8 +406,11 @@
 
   links.forEach(function (a) {
     a.addEventListener("click", function (e) {
-      var targetAttr = a.getAttribute("target");
-      if (targetAttr === "_blank" || a.classList.contains("select-company")) {
+      // Solo el destino explícito del iframe pertenece al panel super. Respetar
+      // _top, _parent, _self y destinos externos evita anidar otro shell con
+      // menú al salir hacia el selector o cualquier contexto distinto.
+      var targetAttr = String(a.getAttribute("target") || "").trim().toLowerCase();
+      if ((targetAttr && targetAttr !== "contentframe") || a.classList.contains("select-company")) {
         return;
       }
 

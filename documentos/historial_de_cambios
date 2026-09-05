@@ -43767,3 +43767,9 @@ Archivos modificados:
 - Diagnostico: Git rechazaba los pathspec negativos dirigidos a directorios ignorados durante `git add -A`.
 - Correccion: el staging respeta `.gitignore` y un segundo control de solo lectura bloquea rutas operativas que ya estuvieran versionadas.
 - Resultado esperado: un arbol limpio no crea commits por reportes locales y las rutas operativas rastreadas requieren tratamiento explicito.
+
+## 2026-09-05 - Salida correcta del menú Super hacia una empresa en móvil
+
+- El enrutador del menú de Super Administrador ahora intercepta solamente enlaces destinados de forma explícita a su `contentFrame`.
+- Los destinos estándar como `_top`, `_parent`, `_self` y `_blank` conservan su navegación nativa. En particular, `Seleccionar empresa` sale del panel Super antes de abrir la empresa, por lo que no anida ni repite el menú Super, el menú empresarial ni los asistentes flotantes en celular.
+- No cambian roles, permisos, endpoints, datos empresariales ni licencias; la autorización efectiva continúa en backend.
