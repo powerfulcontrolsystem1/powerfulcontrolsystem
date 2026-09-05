@@ -43808,3 +43808,16 @@ Archivos modificados:
 - Corrección: `backend/db/auditoria_empresa.go` clasifica `inventario` como severidad media y aplica la retención operativa de 730 días, consistente con compras y bodegas/traslados.
 - Seguridad: no cambia rutas, permisos, payloads, consultas de inventario ni datos existentes; los eventos conservan `empresa_id`, usuario, acción, resultado y `request_id` mediante el wrapper empresarial.
 - Prueba: `TestAuditoriaInventarioUsesOperationalRetentionPolicy` fija la severidad y retención para prevenir regresiones.
+2026-09-05: Alta de país configurable en facturación electrónica (sin emisión).
+
+- Alcance: `backend/db/facturacion_electronica.go`, handler de configuración y
+  `web/administrar_empresa/facturacion_electronica.html`.
+- La configuración acepta un código de dos letras, nombre y moneda opcional
+  por `empresa_id`; la tabla existente conserva su unicidad
+  `(empresa_id, pais_codigo)` y no se modifican filas ni numeraciones previas.
+- Defensa: todo perfil fuera del catálogo de adaptadores queda forzado a
+  proveedor manual, sandbox, inactivo, sin URL remota ni correo automático.
+  La reserva colombiana y el transporte genérico continúan bloqueando países
+  sin adaptador fiscal oficial.
+- QA: regresiones de normalización, campos bloqueados y contrato visual; no se
+  creó configuración ni documento fiscal en producción durante esta tarea.

@@ -72,6 +72,8 @@
     .fe-country-status{padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);min-height:58px}
     .fe-country-status strong{display:block;color:var(--text);font-size:.95rem;line-height:1.25}
     .fe-country-status span{display:block;margin-top:3px;color:var(--muted);font-size:.8rem;line-height:1.35}
+    .fe-country-add{border:1px solid color-mix(in srgb,#38bdf8 42%,var(--border));background:color-mix(in srgb,#38bdf8 7%,var(--surface));}
+    .fe-country-add h2{margin:0 0 5px;font-size:1.05rem}
     .fe-detected-card,
     #feVistaBloque{display:none !important}
     .fe-page-stack > .card{order:20}
@@ -378,6 +380,18 @@
         <div class="form-col"><label class="form-label" for="fe_ve_proveedor">Proveedor homologado</label><input id="fe_ve_proveedor" class="form-input" autocomplete="off"></div>
       </div>
     </div>
+
+    <section class="card fe-country-add" aria-labelledby="newCountryTitle">
+      <h2 id="newCountryTitle">Agregar perfil de país</h2>
+      <p class="form-help">Crea una configuración separada para esta empresa usando el código ISO de dos letras. Un país nuevo queda en sandbox, inactivo y sin transmisión fiscal hasta que PCS implemente y valide su adaptador oficial.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="new_country_code">Código de país</label><input id="new_country_code" class="form-input" maxlength="2" placeholder="PE" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="pais_nombre">Nombre del país</label><input id="pais_nombre" class="form-input" maxlength="120" placeholder="Perú" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="new_country_currency">Moneda (opcional)</label><input id="new_country_currency" class="form-input" maxlength="3" placeholder="PEN" autocomplete="off"></div>
+      </div>
+      <div class="form-actions"><button id="addCountryBtn" type="button" class="btn secondary">Agregar país sin habilitar emisión</button></div>
+      <div id="newCountryMsg" class="form-help"></div>
+    </section>
 
     <form id="feForm" class="form card">
       <h2>Configuracion de facturacion por pais</h2>
@@ -1202,7 +1216,32 @@
 
     function countryLabel(item) {
       if (!item) return "";
-      return (item.bandera || "") + " " + (item.nombre || item.codigo || "");
+      return (item.bandera || item.bandera_pais || "") + " " + (item.nombre || item.pais_nombre || item.codigo || item.pais_codigo || "");
+    }
+
+    function ensureCountryOption(item) {
+      if (!item) return;
+      const code = txt(item.codigo || item.pais_codigo).toUpperCase();
+      if (!/^[A-Z]{2}$/.test(code)) return;
+      const normalized = {
+        codigo: code,
+        nombre: txt(item.nombre || item.pais_nombre) || ("Perfil " + code),
+        bandera: txt(item.bandera || item.bandera_pais),
+        moneda: txt(item.moneda || item.moneda_codigo),
+        vista: item.vista || null
+      };
+      state.catalog = Array.isArray(state.catalog) ? state.catalog : [];
+      if (!findCatalogItem(code)) state.catalog.push(normalized);
+      state.paises = state.catalog;
+      const select = document.getElementById("pais_codigo");
+      if (!select) return;
+      let option = Array.from(select.options).find(function(candidate) { return txt(candidate.value).toUpperCase() === code; });
+      if (!option) {
+        option = document.createElement("option");
+        option.value = code;
+        select.appendChild(option);
+      }
+      option.textContent = countryLabel(normalized).trim() || code;
     }
 
     function findCatalogItem(code) {
@@ -2542,6 +2581,10 @@
         hint.textContent = "Venezuela: perfil para RIF, serie fiscal, imprenta digital y proveedor homologado SENIAT. La emision final depende del proveedor autorizado.";
         return;
       }
+      if (key !== "CO") {
+        hint.textContent = "Perfil de configuración sin adaptador fiscal implementado. La emisión y la transmisión están bloqueadas hasta contar con un contrato legal y técnico específico para este país.";
+        return;
+      }
       hint.textContent = "Colombia: extras para proveedor/integración (ej. tipo_operación). Las pruebas DIAN y la emisión documental manual están separadas en su propia página del submenú.";
     }
 
@@ -2592,6 +2635,7 @@
       return {
         empresa_id: Number(state.empresaID),
         pais_codigo: txt(document.getElementById("pais_codigo").value).toUpperCase(),
+        pais_nombre: txt(document.getElementById("pais_nombre").value),
         proveedor: txt(document.getElementById("proveedor").value),
         ambiente: txt(document.getElementById("ambiente").value),
         moneda_codigo: txt(document.getElementById("moneda_codigo").value).toUpperCase(),
@@ -2611,7 +2655,9 @@
     }
 
     function setFormData(cfg) {
+      ensureCountryOption(cfg);
       document.getElementById("pais_codigo").value = txt(cfg.pais_codigo || state.paisSeleccionado || "CO");
+      document.getElementById("pais_nombre").value = txt(cfg.pais_nombre) || countryLabel(findCatalogItem(document.getElementById("pais_codigo").value));
       document.getElementById("proveedor").value = txt(cfg.proveedor) || "manual";
       document.getElementById("ambiente").value = txt(cfg.ambiente) || "sandbox";
       document.getElementById("moneda_codigo").value = txt(cfg.moneda_codigo);
@@ -2689,10 +2735,78 @@
     }
 
     async function loadList() {
-      const res = await fetch("/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID));
+      const res = await fetch("/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID) + "&incluir_inactivas=1");
       await ensureOk(res);
       const data = await res.json();
-      renderList(data.items || []);
+      const items = data.items || [];
+      items.forEach(ensureCountryOption);
+      renderList(items);
+    }
+
+    function setNewCountryMessage(message, isError) {
+      const el = document.getElementById("newCountryMsg");
+      if (!el) return;
+      el.textContent = message || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    var addCountryBtn = document.getElementById("addCountryBtn");
+    if (addCountryBtn) {
+      addCountryBtn.addEventListener("click", async function() {
+        const code = txt(document.getElementById("new_country_code").value).toUpperCase();
+        const name = txt(document.getElementById("pais_nombre").value).replace(/\s+/g, " ").trim();
+        const currency = txt(document.getElementById("new_country_currency").value).toUpperCase();
+        if (!/^[A-Z]{2}$/.test(code)) {
+          setNewCountryMessage("Usa un código de país de dos letras mayúsculas (por ejemplo, PE).", true);
+          return;
+        }
+        if (name.length < 2 || name.length > 120) {
+          setNewCountryMessage("Indica el nombre del país (entre 2 y 120 caracteres).", true);
+          return;
+        }
+        if (currency && !/^[A-Z]{3}$/.test(currency)) {
+          setNewCountryMessage("La moneda es opcional; si la indicas debe usar tres letras mayúsculas.", true);
+          return;
+        }
+        const payload = {
+          empresa_id: Number(state.empresaID),
+          pais_codigo: code,
+          pais_nombre: name,
+          moneda_codigo: currency,
+          proveedor: "manual",
+          ambiente: "sandbox",
+          estado: "inactivo",
+          enviar_factura_email_cliente_auto: false,
+          campos_pais_json: JSON.stringify({
+            perfil_configuracion: true,
+            integracion: "pendiente_adaptador_fiscal",
+            emision_habilitada: false
+          }),
+          observaciones: "Perfil creado sin habilitar emisión; requiere adaptador fiscal específico validado."
+        };
+        addCountryBtn.disabled = true;
+        try {
+          const res = await fetch("/api/empresa/facturacion_electronica?action=config_pais&empresa_id=" + encodeURIComponent(state.empresaID), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          await ensureOk(res);
+          const response = await res.json();
+          const cfg = response && response.configuracion ? response.configuracion : payload;
+          ensureCountryOption(cfg);
+          document.getElementById("pais_codigo").value = code;
+          state.paisSeleccionado = code;
+          await loadCountryConfig(code);
+          await loadList();
+          setNewCountryMessage("Perfil " + code + " agregado en modo seguro: inactivo, sandbox y sin transmisión fiscal.", false);
+          setMessage("País agregado sin habilitar emisión", false);
+        } catch (err) {
+          setNewCountryMessage(err && err.message ? err.message : "No se pudo agregar el país", true);
+        } finally {
+          addCountryBtn.disabled = false;
+        }
+      });
     }
 
     document.getElementById("pais_codigo").addEventListener("change", function() {

@@ -310,6 +310,30 @@ func TestFacturasElectronicasCancellationConfirmationStartsAndStaysFailClosed(t 
 	}
 }
 
+func TestFacturacionFrontendAddsCountryAsBlockedProfile(t *testing.T) {
+	path := filepath.Join("..", "..", "web", "administrar_empresa", "facturacion_electronica.html")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read country configuration page: %v", err)
+	}
+	page := string(raw)
+	for _, marker := range []string{
+		`id="new_country_code"`,
+		`id="pais_nombre"`,
+		`id="addCountryBtn"`,
+		`Agregar país sin habilitar emisión`,
+		`integracion: "pendiente_adaptador_fiscal"`,
+		`emision_habilitada: false`,
+		`estado: "inactivo"`,
+		`ambiente: "sandbox"`,
+		`&incluir_inactivas=1`,
+	} {
+		if !strings.Contains(page, marker) {
+			t.Fatalf("country profile UI missing safe marker %q", marker)
+		}
+	}
+}
+
 func TestNominaFrontendCannotCallGenericFiscalEndpoint(t *testing.T) {
 	path := filepath.Join("..", "..", "web", "administrar_empresa", "nomina_sueldos.html")
 	raw, err := os.ReadFile(path)

@@ -1,3 +1,13 @@
+2026-09-05: Alta segura de perfiles de país para facturación electrónica.
+- Una empresa puede agregar un país con código de dos letras, nombre y moneda
+  opcional desde `facturacion_electronica.html`; cada perfil usa la llave
+  existente `(empresa_id, pais_codigo)` y nunca aparece en otra empresa.
+- Un código fuera del catálogo de adaptadores se conserva solo como perfil de
+  configuración: el backend fuerza proveedor `manual`, ambiente `sandbox`,
+  estado `inactivo`, sin API base ni correo automático. La reserva de
+  numeración y el transporte siguen bloqueados hasta un adaptador legal y
+  técnico específico.
+
 2026-09-05: Facturacion electronica internacional.
 - EC/PA/CR/AR/VE son perfiles, no adaptadores productivos; CO/DIAN mantiene las
   familias implementadas y exige configuracion activa y fuente genuina.

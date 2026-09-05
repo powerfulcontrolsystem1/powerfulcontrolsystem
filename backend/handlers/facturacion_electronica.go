@@ -697,18 +697,9 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "No se pudo resolver la configuración", http.StatusInternalServerError)
 					return
 				}
-				if errors.Is(err, sql.ErrNoRows) {
-					pais, source, derr := dbpkg.DetectFacturacionPaisContext(r.Context(), dbEmp, empresaID, r.URL.Query().Get("tz"), r.URL.Query().Get("lang"))
-					if derr == nil {
-						cfg.PaisCodigo = pais.Codigo
-						cfg.PaisNombre = pais.Nombre
-						cfg.BanderaPais = pais.Bandera
-						cfg.MonedaCodigo = pais.Moneda
-						if cfg.Observaciones == "" {
-							cfg.Observaciones = "Pais detectado por " + source
-						}
-					}
-				}
+				// A requested profile must be returned exactly as requested. Falling
+				// back to browser/company detection here used to turn a new country
+				// into Colombia before its configuration could be saved.
 				writeJSON(w, http.StatusOK, cfg)
 				return
 			}
@@ -1795,6 +1786,14 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			if monedaEvento == "" && cfg != nil {
 				monedaEvento = strings.ToUpper(strings.TrimSpace(cfg.MonedaCodigo))
 			}
+			ambienteEvento := strings.ToLower(strings.TrimSpace(payload.Ambiente))
+			proveedorEvento := strings.TrimSpace(payload.Proveedor)
+			estadoEvento := strings.ToLower(strings.TrimSpace(payload.Estado))
+			if cfg != nil {
+				ambienteEvento = strings.ToLower(strings.TrimSpace(cfg.Ambiente))
+				proveedorEvento = strings.TrimSpace(cfg.Proveedor)
+				estadoEvento = strings.ToLower(strings.TrimSpace(cfg.Estado))
+			}
 			registrarEventoContableNoBloqueante(dbEmp, r, "facturacion", dbpkg.EmpresaEventoContable{
 				EmpresaID:       payload.EmpresaID,
 				Modulo:          "facturacion",
@@ -1808,9 +1807,9 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				Observaciones:   "configuracion de facturacion electronica actualizada",
 			}, map[string]interface{}{
 				"pais_codigo": strings.ToUpper(strings.TrimSpace(payload.PaisCodigo)),
-				"ambiente":    strings.ToLower(strings.TrimSpace(payload.Ambiente)),
-				"proveedor":   strings.TrimSpace(payload.Proveedor),
-				"estado":      strings.ToLower(strings.TrimSpace(payload.Estado)),
+				"ambiente":    ambienteEvento,
+				"proveedor":   proveedorEvento,
+				"estado":      estadoEvento,
 			})
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":            true,

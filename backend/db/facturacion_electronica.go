@@ -310,6 +310,49 @@ func normalizePaisCodigo(v string) string {
 	return strings.ToUpper(strings.TrimSpace(v))
 }
 
+// facturacionPaisCodigoValido accepts the ISO 3166-1 alpha-2 shape. The
+// catalogue below represents adapters that PCS knows how to operate; a valid
+// code outside that catalogue is a configuration-only profile, never a fiscal
+// transport adapter.
+func facturacionPaisCodigoValido(v string) bool {
+	v = normalizePaisCodigo(v)
+	if len(v) != 2 {
+		return false
+	}
+	for _, r := range v {
+		if r < 'A' || r > 'Z' {
+			return false
+		}
+	}
+	return true
+}
+
+func facturacionPaisCatalogado(codigo string) bool {
+	_, ok := supportedPaisesFacturacionMap()[normalizePaisCodigo(codigo)]
+	return ok
+}
+
+func facturacionNombrePaisValido(v string) bool {
+	v = strings.Join(strings.Fields(v), " ")
+	return len([]rune(v)) >= 2 && len([]rune(v)) <= 120
+}
+
+func facturacionMonedaValida(v string) bool {
+	v = strings.ToUpper(strings.TrimSpace(v))
+	if v == "" {
+		return true
+	}
+	if len(v) != 3 {
+		return false
+	}
+	for _, r := range v {
+		if r < 'A' || r > 'Z' {
+			return false
+		}
+	}
+	return true
+}
+
 func defaultPaisFacturacion() PaisFacturacion {
 	return supportedPaisesFacturacionMap()["CO"]
 }
@@ -319,6 +362,9 @@ func paisFacturacionByCodigo(codigo string) PaisFacturacion {
 	codigo = normalizePaisCodigo(codigo)
 	if p, ok := catalog[codigo]; ok {
 		return p
+	}
+	if facturacionPaisCodigoValido(codigo) {
+		return PaisFacturacion{Codigo: codigo, Nombre: "Perfil " + codigo}
 	}
 	return defaultPaisFacturacion()
 }
@@ -571,6 +617,11 @@ func defaultFacturacionConfig(empresaID int64, paisCodigo string) FacturacionEle
 		Estado:         "activo",
 		CamposPaisJSON: "{}",
 	}
+	if !facturacionPaisCatalogado(pais.Codigo) {
+		// A profile can be prepared before PCS implements a jurisdiction's
+		// authority adapter. It cannot be activated merely by saving it.
+		cfg.Estado = "inactivo"
+	}
 	applyFacturacionPaisDefaults(&cfg)
 	return cfg
 }
@@ -691,12 +742,17 @@ func defaultCamposPaisJSON(paisCodigo string) string {
 		fields["imprenta_digital"] = ""
 		fields["proveedor_homologado"] = ""
 		fields["moneda_referencia"] = "VES"
-	default:
+	case "CO":
 		fields["integracion"] = "dian_ubl_2_1"
 		fields["documentos_soportados"] = DefaultFacturacionDianDocumentosSoportados()
 		fields["documentos_contadores_colombia"] = []string{"declaraciones_tributarias", "informacion_exogena", "certificados_retencion", "conciliacion_fiscal"}
 		fields["documentos_dian_catalogo_version"] = "2026-08-21"
 		fields["documentos_siigo_referencia"] = []string{"documento_soporte", "nota_credito_ventas", "nota_debito_ventas", "nomina_electronica", "pos_electronico"}
+	default:
+		fields["integracion"] = "pendiente_adaptador_fiscal"
+		fields["perfil_configuracion"] = true
+		fields["emision_habilitada"] = false
+		fields["nota"] = "Perfil de país creado por la empresa. La emisión permanece bloqueada hasta implementar y validar un adaptador fiscal específico."
 	}
 	raw, _ := json.Marshal(fields)
 	return string(raw)
@@ -738,8 +794,10 @@ func applyFacturacionPaisDefaults(cfg *FacturacionElectronicaPaisConfig) {
 			cfg.TipoDocumentoEmisor = "RUC"
 		case "VE":
 			cfg.TipoDocumentoEmisor = "RIF"
-		default:
+		case "CO":
 			cfg.TipoDocumentoEmisor = "NIT"
+		default:
+			cfg.TipoDocumentoEmisor = ""
 		}
 	}
 	if strings.TrimSpace(cfg.PrefijoFactura) == "" {
@@ -754,8 +812,10 @@ func applyFacturacionPaisDefaults(cfg *FacturacionElectronicaPaisConfig) {
 			cfg.PrefijoFactura = "0001"
 		case "VE":
 			cfg.PrefijoFactura = "A"
-		default:
+		case "CO":
 			cfg.PrefijoFactura = "FE"
+		default:
+			cfg.PrefijoFactura = ""
 		}
 	}
 	if strings.TrimSpace(cfg.CamposPaisJSON) == "" || strings.TrimSpace(cfg.CamposPaisJSON) == "{}" {
@@ -860,9 +920,18 @@ func normalizeFacturacionConfig(payload *FacturacionElectronicaPaisConfig) {
 		return
 	}
 	pais := paisFacturacionByCodigo(payload.PaisCodigo)
+	catalogado := facturacionPaisCatalogado(pais.Codigo)
 	payload.PaisCodigo = pais.Codigo
-	payload.PaisNombre = pais.Nombre
-	payload.BanderaPais = pais.Bandera
+	if catalogado || strings.TrimSpace(payload.PaisNombre) == "" {
+		payload.PaisNombre = pais.Nombre
+	} else {
+		payload.PaisNombre = strings.Join(strings.Fields(payload.PaisNombre), " ")
+	}
+	if catalogado {
+		payload.BanderaPais = pais.Bandera
+	} else {
+		payload.BanderaPais = ""
+	}
 	applyFacturacionPaisDefaults(payload)
 	if strings.TrimSpace(payload.MonedaCodigo) == "" {
 		payload.MonedaCodigo = pais.Moneda
@@ -892,6 +961,15 @@ func normalizeFacturacionConfig(payload *FacturacionElectronicaPaisConfig) {
 	if payload.Estado != "inactivo" {
 		payload.Estado = "activo"
 	}
+	if !catalogado {
+		// Do not make the presence of a country profile look like a validated
+		// legal integration. A later, dedicated adapter can change this policy.
+		payload.Proveedor = "manual"
+		payload.Ambiente = "sandbox"
+		payload.Estado = "inactivo"
+		payload.APIBaseURL = ""
+		payload.EnviarFacturaEmailClienteAuto = false
+	}
 
 	payload.CamposPaisJSON = strings.TrimSpace(payload.CamposPaisJSON)
 	if payload.CamposPaisJSON == "" {
@@ -917,8 +995,16 @@ func UpsertFacturacionElectronicaPaisConfigContext(ctx context.Context, dbConn *
 	if normalizePaisCodigo(payload.PaisCodigo) == "" {
 		return 0, fmt.Errorf("pais_codigo es obligatorio")
 	}
-	if _, ok := supportedPaisesFacturacionMap()[normalizePaisCodigo(payload.PaisCodigo)]; !ok {
-		return 0, fmt.Errorf("pais fiscal no soportado")
+	if !facturacionPaisCodigoValido(payload.PaisCodigo) {
+		return 0, fmt.Errorf("pais_codigo debe usar dos letras mayusculas")
+	}
+	if !facturacionPaisCatalogado(payload.PaisCodigo) {
+		if !facturacionNombrePaisValido(payload.PaisNombre) {
+			return 0, fmt.Errorf("pais_nombre es obligatorio y debe tener entre 2 y 120 caracteres para un perfil nuevo")
+		}
+		if !facturacionMonedaValida(payload.MonedaCodigo) {
+			return 0, fmt.Errorf("moneda_codigo debe usar tres letras mayusculas")
+		}
 	}
 	normalizeFacturacionConfig(&payload)
 
@@ -1019,8 +1105,8 @@ func GetFacturacionElectronicaPaisConfigContext(ctx context.Context, dbConn *sql
 	if empresaID <= 0 || paisCodigo == "" {
 		return nil, fmt.Errorf("empresa_id y pais_codigo son obligatorios")
 	}
-	if _, ok := supportedPaisesFacturacionMap()[paisCodigo]; !ok {
-		return nil, fmt.Errorf("pais fiscal no soportado")
+	if !facturacionPaisCodigoValido(paisCodigo) {
+		return nil, fmt.Errorf("pais_codigo debe usar dos letras mayusculas")
 	}
 
 	cfg := defaultFacturacionConfig(empresaID, paisCodigo)

@@ -28,13 +28,22 @@ func TestFacturacionForeignNumberingBlockedBeforeDatabaseIO(t *testing.T) {
 	}
 }
 
-func TestFacturacionUnknownCountryCannotReadOrOverwriteColombia(t *testing.T) {
-	for _, country := range []string{"ZZ", "COL", "CO-invalid"} {
+func TestFacturacionNewCountryDoesNotFallbackToColombia(t *testing.T) {
+	pais := paisFacturacionByCodigo("ZZ")
+	if pais.Codigo != "ZZ" || pais.Codigo == "CO" {
+		t.Fatalf("new country fell back to Colombia: %#v", pais)
+	}
+	cfg := defaultFacturacionConfig(12, "ZZ")
+	if cfg.PaisCodigo != "ZZ" || cfg.Estado != "inactivo" || cfg.Ambiente != "sandbox" || cfg.Proveedor != "manual" {
+		t.Fatalf("new country must be an isolated, blocked profile: %#v", cfg)
+	}
+
+	for _, country := range []string{"COL", "CO-invalid", "P1"} {
 		if _, err := GetFacturacionElectronicaPaisConfigContext(context.Background(), nil, 12, country); err == nil {
-			t.Fatalf("unknown country %q allowed for read", country)
+			t.Fatalf("invalid country %q allowed for read", country)
 		}
 		if _, err := UpsertFacturacionElectronicaPaisConfigContext(context.Background(), nil, FacturacionElectronicaPaisConfig{EmpresaID: 12, PaisCodigo: country}); err == nil {
-			t.Fatalf("unknown country %q allowed for write", country)
+			t.Fatalf("invalid country %q allowed for write", country)
 		}
 	}
 }
