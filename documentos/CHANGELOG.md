@@ -3735,3 +3735,11 @@
 - Se actualiza `golang.org/x/crypto` a `v0.55.0` para corregir
   `CVE-2026-56854`; la alternativa de reimplementar criptografia en Go puro se
   descarta por seguridad y mantenibilidad.
+## [2026-09-05] Auditoría operativa de inventario
+
+- [Trazabilidad] Los eventos del módulo `inventario` —incluidos lotes,
+  reservas, ajustes, existencias y Kardex— se clasifican como severidad media
+  y se conservan por política durante 730 días.
+- [Seguridad] La modificación no altera datos, permisos, endpoints ni la
+  idempotencia de movimientos; refuerza la retención de la auditoría automática
+  ya aislada por `empresa_id`.

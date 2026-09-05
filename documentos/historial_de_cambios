@@ -43802,3 +43802,9 @@ Archivos modificados:
 - backend/go.sum
 - deploy/docker/frontend.Dockerfile
 - documentos/historial_de_cambios
+2026-09-05: Auditoría operativa para Inventario, Lotes y Bodegas.
+
+- Causa: el wrapper empresarial ya generaba eventos de auditoría para el módulo `inventario`, pero su severidad caía en la política genérica baja aunque registra ajustes, reservas, lotes, stock y Kardex.
+- Corrección: `backend/db/auditoria_empresa.go` clasifica `inventario` como severidad media y aplica la retención operativa de 730 días, consistente con compras y bodegas/traslados.
+- Seguridad: no cambia rutas, permisos, payloads, consultas de inventario ni datos existentes; los eventos conservan `empresa_id`, usuario, acción, resultado y `request_id` mediante el wrapper empresarial.
+- Prueba: `TestAuditoriaInventarioUsesOperationalRetentionPolicy` fija la severidad y retención para prevenir regresiones.

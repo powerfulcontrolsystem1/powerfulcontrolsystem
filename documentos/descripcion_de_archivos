@@ -13420,3 +13420,8 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
 - `backend/db/sale_accounting_operation_key_migration.go`: prepara la clave
   durable de sesion pagada y reemplaza el indice por carrito sin modificar los
   eventos contables historicos.
+2026-09-05 - Auditoría operativa de Inventario
+- `backend/db/auditoria_empresa.go`: clasifica la trazabilidad automática del
+  módulo `inventario` como operativa de severidad media y retención de 730 días.
+- `backend/db/auditoria_postgres_test.go`: regresión de política de severidad y
+  retención para inventario, lotes, reservas, ajustes y Kardex.
