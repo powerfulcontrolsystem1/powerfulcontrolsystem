@@ -15,6 +15,7 @@
 
     <div class="card">
       <h2>Ruta DGI Panama</h2>
+      <p role="status" class="form-help">Emisión bloqueada: este perfil guarda configuración, pero PCS aún no dispone de un adaptador DGI/PAC con validación del acuse oficial. Completar el checklist no habilita producción ni reutiliza numeración DIAN.</p>
       <p class="form-help">Configura RUC, DV, modalidad SFEP, firma electronica y PAC o Facturador Gratuito. Usa esta pagina para preparar pruebas y produccion por empresa.</p>
       <div class="form-actions">
         <a class="btn secondary" href="https://dgi.mef.gob.pa/_7facturaelectronica/felectronica" target="_blank" rel="noopener">Abrir DGI Factura Electronica</a>
@@ -162,7 +163,7 @@
         var resumen = byId("checklistResumen");
         var items = byId("checklistItems");
         checklist = checklist || {};
-        if (resumen) resumen.textContent = checklist.ok ? "Perfil Panama listo para pruebas operativas." : "Faltan datos: " + ((checklist.faltantes || []).join(", ") || "sin detalle");
+        if (resumen) resumen.textContent = checklist.ok ? "Datos del perfil completos. Emisión bloqueada hasta validar el adaptador DGI/PAC." : "Faltan datos: " + ((checklist.faltantes || []).join(", ") || "sin detalle");
         if (!items) return;
         var rows = (checklist.items || []).map(function (it) {
           return '<tr><td>' + esc(it.estado === "ok" ? "OK" : "Pendiente") + '</td><td><strong>' + esc(it.titulo) + '</strong><br><span class="form-help">' + esc(it.detalle) + '</span></td></tr>';

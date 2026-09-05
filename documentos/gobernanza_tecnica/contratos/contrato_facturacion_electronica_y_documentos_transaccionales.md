@@ -1,5 +1,18 @@
 # Contrato tecnico: facturacion electronica y documentos transaccionales
 
+## Frontera fiscal por pais y empresa (2026-09-05)
+
+La configuracion heredada exige igualdad con el pais de
+`empresa_configuracion_avanzada`. Un pais desconocido no se convierte en CO.
+La reserva legal comun solo opera para CO; otros paises necesitan numeracion
+y adaptador propios. El transporte requiere configuracion activa y coincidencia
+de empresa/pais/ambiente; solo CO con proveedor DIAN tiene adaptador productivo.
+Manual/local/mock y HTTP generico no acreditan aceptacion fiscal.
+Los checklists EC/PA exponen `emision_habilitada=false`, incluso completos.
+No se alteran configuraciones persistidas ni documentos historicos.
+Ver `documentos/auditoria_facturacion_seguridad_20260905.md`; candidato, no
+certificacion integral de produccion.
+
 Fecha: 2026-04-18
 Estado: vigente
 

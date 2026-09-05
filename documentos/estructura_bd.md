@@ -1,5 +1,12 @@
 # Estructura del Base de Datos
 
+## Frontera fiscal 2026-09-05
+
+Sin migraciones: `facturacion_electronica_pais` mantiene empresa+pais;
+la herencia desde `empresa_configuracion_avanzada` comprueba pais antes de
+copiar datos. La reserva comun rechaza pais distinto de CO antes de abrir
+transaccion. No se reescriben filas historicas ni numeraciones existentes.
+
 ## Actualizacion 2026-08-31: Raspberry de sensores de puertas
 
 La migracion `20260831-002-raspberry-door-sensor-v1` agrega:

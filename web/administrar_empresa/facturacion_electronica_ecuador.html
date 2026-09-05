@@ -15,6 +15,7 @@
 
     <div class="card">
       <h2>Ruta SRI Ecuador</h2>
+      <p role="status" class="form-help">Emisión bloqueada: este perfil guarda configuración, pero PCS aún no dispone de un adaptador SRI con validación del acuse oficial. Completar el checklist no habilita producción ni reutiliza numeración DIAN.</p>
       <p class="form-help">Configura RUC, establecimiento, punto de emision, firma electronica, ambiente SRI y proveedor o sistema propio para generar, firmar, enviar y notificar comprobantes.</p>
       <div class="form-actions">
         <a class="btn secondary" href="https://www.sri.gob.ec/facturacion-electronica" target="_blank" rel="noopener">Abrir SRI Facturacion Electronica</a>
@@ -164,7 +165,7 @@
         var resumen = byId("checklistResumen");
         var items = byId("checklistItems");
         checklist = checklist || {};
-        if (resumen) resumen.textContent = checklist.ok ? "Perfil Ecuador listo para pruebas operativas." : "Faltan datos: " + ((checklist.faltantes || []).join(", ") || "sin detalle");
+        if (resumen) resumen.textContent = checklist.ok ? "Datos del perfil completos. Emisión bloqueada hasta validar el adaptador SRI." : "Faltan datos: " + ((checklist.faltantes || []).join(", ") || "sin detalle");
         if (!items) return;
         var rows = (checklist.items || []).map(function (it) {
           return '<tr><td>' + esc(it.estado === "ok" ? "OK" : "Pendiente") + '</td><td><strong>' + esc(it.titulo) + '</strong><br><span class="form-help">' + esc(it.detalle) + '</span></td></tr>';

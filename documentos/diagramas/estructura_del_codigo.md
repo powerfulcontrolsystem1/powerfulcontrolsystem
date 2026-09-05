@@ -1,3 +1,10 @@
+## Actualizacion 2026-09-05 - Frontera fiscal antes del transporte
+
+Configuracion empresa+pais -> fuente/documento del mismo tenant y pais ->
+reserva CO (otros paises bloqueados) -> adaptador CO/DIAN ->
+acuse oficial. El conector JSON generico no es un adaptador productivo.
+EC/PA mantienen pantallas de configuracion con emision deshabilitada.
+
 ## Actualizacion 2026-08-26 - Adaptador mensual de nomina electronica DIAN
 
 - `backend/db/dian_nomina_electronica.go` construye/valida la fuente mensual,
