@@ -5042,3 +5042,4 @@ Se resolvió la disposición de 138 referencias pendientes: fuentes temáticas r
 
 - El preflight conserva el fallo ante un `go test` fallido, pero informa las omisiones declaradas por pruebas opcionales sin convertirlas en un falso fallo del candidato.
 - Se regeneraron el inventario de migraciones y el catálogo documental exigidos por el preflight.
+- CI usa `govulncheck` 1.7.0 antes del preflight y en su comprobación explícita; conserva los fallos por vulnerabilidades alcanzables sin bloquear por un subpaquete no importado.

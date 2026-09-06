@@ -46,6 +46,10 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Setup Go vulnerability scanner
+        working-directory: backend
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
+
       - name: Documentation validator tests
         run: node --test tools/docs_catalog.test.mjs
 
@@ -77,9 +81,7 @@ jobs:
 
       - name: Go vulnerability scan
         working-directory: backend
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-          govulncheck -show verbose ./...
+        run: govulncheck -show verbose ./...
 
       - name: Go static security scan
         working-directory: backend

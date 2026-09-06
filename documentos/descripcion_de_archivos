@@ -13455,3 +13455,4 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
 2026-09-06 - Corrección de controles de PR.
 - `scripts/profesional_preflight.ps1`: conserva el fallo ante pruebas Go fallidas e informa las omisiones declaradas por pruebas opcionales sin tratarlas como fallo del candidato.
 - `backend/db/legacy_schema_catalog_manifest_generated.go` y `documentos/arquitectura/inventario_bootstrap_ensure.md`: inventario Ensure regenerado.
+- `.github/workflows/professional-ci.yml`: fija `govulncheck` 1.7.0 antes del preflight y reutiliza ese mismo análisis de vulnerabilidades alcanzables.
