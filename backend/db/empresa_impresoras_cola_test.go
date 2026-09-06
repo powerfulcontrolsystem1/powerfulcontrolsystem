@@ -25,6 +25,9 @@ func TestEmpresaImpresorasColaUsaPostgreSQLYEmpresaID(t *testing.T) {
 		"UpsertEmpresaImpresoraDispositivo",
 		"DeleteEmpresaImpresoraDispositivo",
 		"ResolveEmpresaImpresoraOperacionConDispositivo",
+		"CrearEmpresaImpresoraTrabajoConCapacidad",
+		"pg_advisory_xact_lock",
+		"ErrEmpresaPrinterQueueCapacity",
 	} {
 		if !strings.Contains(src, required) {
 			t.Fatalf("cola de impresoras debe conservar %s", required)

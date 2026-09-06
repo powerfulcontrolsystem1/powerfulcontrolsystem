@@ -2051,6 +2051,13 @@ func ListFacturacionElectronicaRetriesByEmpresaContext(ctx context.Context, dbCo
 // ListFacturacionElectronicaRetryEmpresaIDsDueContext lista tenants con trabajo
 // fiscal vencido para que pcs-worker procese cada cola de forma aislada.
 func ListFacturacionElectronicaRetryEmpresaIDsDueContext(ctx context.Context, dbConn *sql.DB, limit int) ([]int64, error) {
+	return ListFacturacionElectronicaRetryEmpresaIDsDueShardContext(ctx, dbConn, limit, 0, 1)
+}
+
+// ListFacturacionElectronicaRetryEmpresaIDsDueShardContext divides tenants into
+// disjoint lanes and rotates each lane by its last service time. A tenant with a
+// large backlog therefore cannot keep lower-volume tenants outside every batch.
+func ListFacturacionElectronicaRetryEmpresaIDsDueShardContext(ctx context.Context, dbConn *sql.DB, limit, shardIndex, shardCount int) ([]int64, error) {
 	if dbConn == nil {
 		return nil, fmt.Errorf("conexion empresarial no disponible")
 	}
@@ -2060,14 +2067,21 @@ func ListFacturacionElectronicaRetryEmpresaIDsDueContext(ctx context.Context, db
 	if limit > 1000 {
 		limit = 1000
 	}
-	rows, err := dbConn.QueryContext(ctx, `SELECT DISTINCT empresa_id
-		FROM facturacion_electronica_reintentos
-		WHERE estado = 'activo'
-		  AND estado_envio IN ('pendiente','fallido','contingencia')
-		  AND COALESCE(intentos, 0) < COALESCE(max_intentos, 5)
-		  AND (COALESCE(proximo_intento, '') = '' OR CASE WHEN proximo_intento ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T]' THEN CAST(proximo_intento AS TIMESTAMPTZ) ELSE CURRENT_TIMESTAMP END <= CURRENT_TIMESTAMP)
-		ORDER BY empresa_id
-		LIMIT $1`, limit)
+	if shardCount < 1 || shardCount > 32 || shardIndex < 0 || shardIndex >= shardCount {
+		return nil, fmt.Errorf("shard fiscal invalido")
+	}
+	rows, err := dbConn.QueryContext(ctx, `SELECT fr.empresa_id
+		FROM facturacion_electronica_reintentos fr
+		LEFT JOIN pcs_queue_tenant_state qs
+		  ON qs.queue_name='fiscal' AND qs.empresa_id=fr.empresa_id
+		WHERE fr.estado = 'activo'
+		  AND fr.estado_envio IN ('pendiente','fallido','contingencia')
+		  AND COALESCE(fr.intentos, 0) < COALESCE(fr.max_intentos, 5)
+		  AND (COALESCE(fr.proximo_intento, '') = '' OR CASE WHEN fr.proximo_intento ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T]' THEN CAST(fr.proximo_intento AS TIMESTAMPTZ) ELSE CURRENT_TIMESTAMP END <= CURRENT_TIMESTAMP)
+		  AND MOD(fr.empresa_id, $2) = $3
+		GROUP BY fr.empresa_id, qs.last_served_at
+		ORDER BY qs.last_served_at ASC NULLS FIRST, MIN(fr.id), fr.empresa_id
+		LIMIT $1`, limit, shardCount, shardIndex)
 	if err != nil {
 		return nil, err
 	}
