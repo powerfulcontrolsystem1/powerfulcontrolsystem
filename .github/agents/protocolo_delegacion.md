@@ -1,5 +1,7 @@
 # Protocolo de delegacion del equipo de agentes
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 ## Aislamiento Git obligatorio
 
 El checkout `D:\powerfulcontrolsystem` pertenece al integrador y se mantiene en

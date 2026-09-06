@@ -5037,3 +5037,8 @@ Se resolvió la disposición de 138 referencias pendientes: fuentes temáticas r
   integración/release se reserva a `main` limpio.
 - Se incorpora `scripts/agent_worktree.ps1` para crear y retirar worktrees con
   comprobaciones de limpieza e integración.
+
+## 2026-09-06 — Corrección de controles de PR
+
+- El preflight conserva el fallo ante un `go test` fallido, pero informa las omisiones declaradas por pruebas opcionales sin convertirlas en un falso fallo del candidato.
+- Se regeneraron el inventario de migraciones y el catálogo documental exigidos por el preflight.

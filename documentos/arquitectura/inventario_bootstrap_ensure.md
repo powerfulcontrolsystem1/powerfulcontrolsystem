@@ -108,7 +108,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaNextcloudSchema` | [backend/db/nextcloud.go:14](../../backend/db/nextcloud.go#L14) | DDL catalogado de plataforma | empresas |
 | `EnsureEmpresaNominaColombiaAvanzadaSchema` | [backend/db/nomina_colombia_avanzada.go:100](../../backend/db/nomina_colombia_avanzada.go#L100) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaNominaSchema` | [backend/db/nomina_sueldos.go:388](../../backend/db/nomina_sueldos.go#L388) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaVentasOfflineSchema` | [backend/db/offline_ventas.go:43](../../backend/db/offline_ventas.go#L43) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaVentasOfflineSchema` | [backend/db/offline_ventas.go:59](../../backend/db/offline_ventas.go#L59) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureOutboxSchema` | [backend/db/outbox.go:42](../../backend/db/outbox.go#L42) | DDL catalogado de plataforma | superadministrador |
 | `EnsureEmpresaParqueaderoSchema` | [backend/db/parqueadero.go:89](../../backend/db/parqueadero.go#L89) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsurePaymentCheckoutIdempotencySchema` | [backend/db/payment_checkout_idempotency.go:61](../../backend/db/payment_checkout_idempotency.go#L61) | DDL / indice / funcion | empresas o por confirmar |

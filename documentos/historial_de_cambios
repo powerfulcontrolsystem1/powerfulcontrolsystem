@@ -43913,3 +43913,8 @@ Archivos modificados:
 - Se retiraron del árbol vigente archivos de notas y scripts temporales que
   contenían datos sensibles o no tenían consumidor. Su eliminación del historial
   y la rotación de credenciales requieren una operación de seguridad separada.
+
+2026-09-06 - Corrección de controles de PR 231.
+- Se resolvieron los conflictos con `main`, preservando el protocolo de worktrees y la trazabilidad de seguridad.
+- El preflight continúa fallando cuando `go test` falla; sus pruebas opcionales que se omiten por falta de integración se registran como evidencia, sin invalidar un resultado exitoso.
+- Se regeneraron el inventario Ensure y el catálogo documental requeridos por la auditoría de migraciones.

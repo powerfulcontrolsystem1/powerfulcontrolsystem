@@ -1,5 +1,7 @@
 # Plantilla de trabajo por modulo
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 ## Datos de aislamiento cuando intervienen agentes
 
 - Worktree: `D:\powerfulcontrolsystem.worktrees\...`

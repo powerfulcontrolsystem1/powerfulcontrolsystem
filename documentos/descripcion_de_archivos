@@ -13451,3 +13451,7 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
 - `scripts/agent_worktree.ps1`: crea, lista, bloquea, desbloquea y retira
   worktrees aislados de agentes; el retiro exige limpieza y evidencia de
   integración por ancestro o head exacto de una PR fusionada.
+
+2026-09-06 - Corrección de controles de PR.
+- `scripts/profesional_preflight.ps1`: conserva el fallo ante pruebas Go fallidas e informa las omisiones declaradas por pruebas opcionales sin tratarlas como fallo del candidato.
+- `backend/db/legacy_schema_catalog_manifest_generated.go` y `documentos/arquitectura/inventario_bootstrap_ensure.md`: inventario Ensure regenerado.

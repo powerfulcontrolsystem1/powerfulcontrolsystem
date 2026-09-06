@@ -140,21 +140,21 @@
     },
     {
       "path": ".github/agents/plantilla_trabajo_por_modulo.md",
-      "title": "Plantilla de trabajo por módulo",
+      "title": "Plantilla de trabajo por modulo",
       "state": "vigente",
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "cf32529c51937428f7c8186d392496c90514ecd63ec7deee0a25686eb38a6ec3"
+      "sha256_lf": "4cb526eb456d8c3aae1ecc64ac3d2e3e7048ca474ca51776c0d5fa7157590f64"
     },
     {
       "path": ".github/agents/protocolo_delegacion.md",
-      "title": "Protocolo de coordinación y delegación",
+      "title": "Protocolo de delegacion del equipo de agentes",
       "state": "vigente",
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "5172b2235b7ec9fc8f730a8f4deaf151cb53b3952ff2888cba97e0fb01c17c5a"
+      "sha256_lf": "152219120f1db7eb5054f94afe1df9dfb00b95bd15ea3de92cb9097647341944"
     },
     {
       "path": "AGENTS.md",
@@ -172,7 +172,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "8972842a52acff182b9d3d302021b77e9dad426ea039b7c2370f5e52b24d209a"
+      "sha256_lf": "31715f0cdadbceb123647d52bb258e8fb836b85db57aa991353f000da8e8756c"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -388,7 +388,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "1d4e46d8d5c688ba53df0624669e11033aa7e93b6e6eb3108669b26a5630495f"
+      "sha256_lf": "fe65eec19f2e2f48278bb1be1d7f81d5a906b7c456cab5e6a507caa5dcc37373"
     },
     {
       "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
@@ -775,7 +775,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "fcb8235e86bda8b191301128103999dfa21f00c288da133dcb3e6376f921a800"
+      "sha256_lf": "d75124a5c4b6e82ebeb7ef954503e1b9cc0d0ca9ed1addde3ae661a44d962a5a"
     },
     {
       "path": "documentos/descripcion_de_modulos",
@@ -3691,7 +3691,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "26e6a9926cb523ee70c055723c4a4aedd2ccfb9d747e269a91e06cd6729901ca"
+      "sha256_lf": "d41f4936f795b9ff8a64362e94f5f58306911f410166c0211a8497536d35a1be"
     },
     {
       "path": "documentos/historico/2026-09-05/README.md",
