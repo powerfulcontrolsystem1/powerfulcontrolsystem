@@ -32,3 +32,11 @@ Cada módulo/candidato debe indicar requisito, SHA/digests, cambios locales incl
 Un registro anterior de DIAN aceptada solo acredita ese documento y ambiente. `/health` o `/ready`, un botón visible y un inventario de rutas no acreditan aislamiento, corrección comercial ni preparación general.
 
 No hay una hoja de ruta global vigente inferida de los planes 101–110. Los pendientes se priorizan por [riesgo](gobernanza_tecnica/riesgos_y_brechas.md) y alcance acordado. Al cerrar un hallazgo, enlazar la prueba que lo refuta o resuelve; no borrar la evidencia anterior.
+
+## Evidencia nueva del 2026-09-06
+
+La [revisión VPS](seguridad/revision_vps_2026-09-06.md) confirma reparaciones reales
+de Nginx/SSH, HSTS, CSP Webmail y TLS de venta digital. Login autenticado funciona;
+MFA obligatorio no está acreditado en el backend publicado. Persisten vulnerabilidades
+altas/críticas de imágenes auxiliares, wildcard vencido y reinicio pendiente.
+Las nuevas correcciones Go están probadas localmente; verificar su release aparte.

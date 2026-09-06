@@ -42,3 +42,27 @@ El script no cambia configuraciones; solo informa hallazgos para actuar con segu
 [vps-hardening-audit.sh](../../../deploy/scripts/vps-hardening-audit.sh), [manual_vps_seguridad.md](../../manual_vps_seguridad.md).
 
 Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).
+
+## Aplicación y evidencia del 2026-09-06
+
+[Revisión del VPS](../../seguridad/revision_vps_2026-09-06.md) e
+[inventario de imágenes](../../seguridad/revision_vps_2026-09-06_imagenes.json).
+`vps-hardening-audit.sh --strict` devuelve error con advertencias y consulta
+`sshd -T`; encontrar un archivo no demuestra que sus directivas estén activas.
+El verificador Node es documental y nunca certifica el host.
+
+El [aplicador HTTP](../../../deploy/scripts/vps-http-hardening.py) exige
+`--main-site` explícito; sin `--apply` solo calcula archivos afectados. Antes de
+usarlo confirmar que el host es el borde directo, sin CDN/LB cuyos encabezados
+necesiten tratamiento propio. Con `--apply` respalda, valida y recarga o revierte.
+Solo el sitio PCS seleccionado recibe límites; los demás sitios saneamiento de
+cabeceras. La CSP Webmail del proveedor se conserva.
+
+El [aplicador SSH](../../../deploy/scripts/vps-ssh-hardening.sh) exige acceso
+existente por llave y conserva puerto/credenciales. Mantener una sesión abierta,
+validar la configuración efectiva y comprobar una segunda conexión tras recargar.
+Los respaldos privados quedan bajo `/var/backups/pcs-security/`.
+
+Cambiar cookies no reinicia el presupuesto del chat público: 30 peticiones por IP
+cada cinco minutos y 10 por conversación. Se limita a 16.384 contadores por proceso;
+para varias réplicas se requiere un contador compartido o protección equivalente.

@@ -48,6 +48,25 @@ type corteCajaVenta struct {
 	DetalleItems   string  `json:"-"`
 }
 
+type corteCajaVentaOffline struct {
+	ID              int64   `json:"id"`
+	CarritoID       int64   `json:"carrito_id"`
+	Codigo          string  `json:"codigo"`
+	SyncKey         string  `json:"sync_key"`
+	DocumentoCodigo string  `json:"documento_codigo"`
+	FechaOffline    string  `json:"fecha_offline"`
+	FechaSync       string  `json:"fecha_sync"`
+	FechaPago       string  `json:"fecha_pago"`
+	MetodoPago      string  `json:"metodo_pago"`
+	Moneda          string  `json:"moneda"`
+	Total           float64 `json:"total"`
+	Cajero          string  `json:"cajero"`
+	EstacionNombre  string  `json:"estacion_nombre"`
+	CajaCodigo      string  `json:"caja_codigo"`
+	CajaTurno       string  `json:"caja_turno"`
+	CierreCajaID    int64   `json:"cierre_caja_id"`
+}
+
 type corteCajaMovimientoGrupo struct {
 	Tipo      string  `json:"tipo"`
 	Metodo    string  `json:"metodo"`
@@ -116,12 +135,15 @@ type corteCajaResumen struct {
 	TotalServicios         float64 `json:"total_servicios"`
 	TotalOtrosItems        float64 `json:"total_otros_items"`
 	EstacionesSinFactura   int64   `json:"estaciones_sin_factura"`
+	VentasOfflineCantidad  int64   `json:"ventas_offline_cantidad"`
+	VentasOfflineTotal     float64 `json:"ventas_offline_total"`
 }
 
 type corteCajaResponse struct {
 	OK                 bool                                 `json:"ok"`
 	Resumen            corteCajaResumen                     `json:"resumen"`
 	Ventas             []corteCajaVenta                     `json:"ventas"`
+	VentasOffline      []corteCajaVentaOffline              `json:"ventas_offline"`
 	Anulaciones        []corteCajaVenta                     `json:"anulaciones"`
 	Movimientos        []corteCajaMovimientoGrupo           `json:"movimientos"`
 	ItemsPorTipo       []corteCajaTipoItem                  `json:"items_por_tipo"`
@@ -463,13 +485,15 @@ func buildCorteCajaUsuarioCajaActualReport(dbEmp *sql.DB, r *http.Request, empre
 
 func emptyCorteCajaUsuarioCajaActualResponse(empresaID int64, desde, hasta, usuario, cajaCodigo string) *corteCajaResponse {
 	return &corteCajaResponse{
-		OK:                true,
-		Ventas:            []corteCajaVenta{},
-		Anulaciones:       []corteCajaVenta{},
-		Movimientos:       []corteCajaMovimientoGrupo{},
-		ItemsPorTipo:      []corteCajaTipoItem{},
-		ProductosVendidos: []corteCajaProductoVendido{},
-		GeneradoEn:        time.Now().Format("2006-01-02 15:04:05"),
+		OK:                 true,
+		Ventas:             []corteCajaVenta{},
+		VentasOffline:      []corteCajaVentaOffline{},
+		Anulaciones:        []corteCajaVenta{},
+		Movimientos:        []corteCajaMovimientoGrupo{},
+		ItemsPorTipo:       []corteCajaTipoItem{},
+		ProductosVendidos:  []corteCajaProductoVendido{},
+		SensoresSinFactura: []corteCajaSensorAlerta{},
+		GeneradoEn:         time.Now().Format("2006-01-02 15:04:05"),
 		Resumen: corteCajaResumen{
 			EmpresaID:     empresaID,
 			Desde:         desde,
@@ -654,18 +678,20 @@ func parseCorteCajaReportesWithConfig(raw string, cfg *dbpkg.EmpresaCorteCajaCon
 
 func normalizeCorteCajaReportes(items []string) []string {
 	allowed := map[string]string{
-		"resumen":       "resumen",
-		"ejecutivo":     "resumen",
-		"movimientos":   "movimientos",
-		"ventas":        "ventas",
-		"anulaciones":   "anulaciones",
-		"items":         "items",
-		"productos":     "items",
-		"servicios":     "items",
-		"sensores":      "sensores",
-		"estaciones":    "sensores",
-		"auditoria":     "auditoria",
-		"observaciones": "auditoria",
+		"resumen":        "resumen",
+		"ejecutivo":      "resumen",
+		"movimientos":    "movimientos",
+		"ventas":         "ventas",
+		"anulaciones":    "anulaciones",
+		"items":          "items",
+		"productos":      "items",
+		"servicios":      "items",
+		"sensores":       "sensores",
+		"estaciones":     "sensores",
+		"auditoria":      "auditoria",
+		"observaciones":  "auditoria",
+		"offline":        "offline",
+		"ventas_offline": "offline",
 	}
 	seen := map[string]bool{}
 	out := []string{}
@@ -683,7 +709,7 @@ func normalizeCorteCajaReportes(items []string) []string {
 }
 
 func defaultCorteCajaReportes() []string {
-	return []string{"resumen", "movimientos", "ventas", "anulaciones", "items", "sensores", "auditoria"}
+	return []string{"resumen", "movimientos", "ventas", "offline", "anulaciones", "items", "sensores", "auditoria"}
 }
 
 func applyCorteCajaReportSelection(resp *corteCajaResponse, reportes []string) {
@@ -1185,6 +1211,8 @@ func buildCorteCajaTurnoDataset(dbEmp *sql.DB, empresaID, cierreID int64) (empre
 			"ventas":                resumen.VentasCantidad,
 			"cantidad_ventas":       resumen.VentasCantidad,
 			"total_ventas":          reportesRound(resumen.VentasTotal),
+			"ventas_offline":        resumen.VentasOfflineCantidad,
+			"total_ventas_offline":  reportesRound(resumen.VentasOfflineTotal),
 			"descuentos_cantidad":   resumen.DescuentosCantidad,
 			"descuentos_total":      reportesRound(resumen.DescuentosTotal),
 			"efectivo_esperado":     reportesRound(resumen.EfectivoEsperadoCaja),
@@ -1215,6 +1243,8 @@ func buildCorteCajaTurnoDataset(dbEmp *sql.DB, empresaID, cierreID int64) (empre
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Ingresos", resumen.IngresosFinancieros)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Egresos", resumen.EgresosFinancieros)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Cantidad de ventas", float64(resumen.VentasCantidad))
+	addRow("offline", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Cantidad de ventas offline", float64(resumen.VentasOfflineCantidad))
+	addRow("offline", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total ventas offline", resumen.VentasOfflineTotal)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total descuentos", resumen.DescuentosTotal)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total productos", resumen.TotalProductos)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total servicios", resumen.TotalServicios)
@@ -1225,6 +1255,9 @@ func buildCorteCajaTurnoDataset(dbEmp *sql.DB, empresaID, cierreID int64) (empre
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Debe haber en caja", resumen.EfectivoEsperadoCaja)
 	for _, venta := range resp.Ventas {
 		addRow("venta", venta.FechaPago, venta.Codigo, venta.EstacionNombre, venta.Cajero, venta.MetodoPago, "Venta", venta.TotalPagado)
+	}
+	for _, venta := range resp.VentasOffline {
+		addRow("venta_offline", venta.FechaOffline, venta.Codigo, venta.CajaCodigo, venta.Cajero, venta.MetodoPago, "Venta facturada sin internet", venta.Total)
 	}
 	for _, mov := range resp.Movimientos {
 		addRow("movimiento", resumen.Hasta, "", cierre.CajaCodigo, mov.Usuario, mov.Metodo, mov.Tipo+" "+mov.Categoria, mov.Total)
@@ -1250,6 +1283,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	resp := &corteCajaResponse{
 		OK:                 true,
 		Ventas:             []corteCajaVenta{},
+		VentasOffline:      []corteCajaVentaOffline{},
 		Anulaciones:        []corteCajaVenta{},
 		Movimientos:        []corteCajaMovimientoGrupo{},
 		ItemsPorTipo:       []corteCajaTipoItem{},
@@ -1278,6 +1312,17 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	}
 	dbpkg.PerfLogf("[perf][corte] step ventas empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	resp.Ventas = ventas
+
+	ventasOffline, err := listCorteCajaVentasOffline(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID)
+	if err != nil {
+		return nil, err
+	}
+	resp.VentasOffline = ventasOffline
+	for _, ventaOffline := range ventasOffline {
+		resp.Resumen.VentasOfflineCantidad++
+		resp.Resumen.VentasOfflineTotal += ventaOffline.Total
+	}
+	dbpkg.PerfLogf("[perf][corte] step ventas_offline empresa=%d dur=%s", empresaID, time.Since(startedAt))
 
 	soldStationIDs := make(map[int64]bool)
 	for _, venta := range ventas {
@@ -1582,6 +1627,54 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, 
 	for rows.Next() {
 		var item corteCajaVenta
 		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.DescuentoTotal, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre, &item.MontoEfectivo, &item.DetalleItems); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func listCorteCajaVentasOffline(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64) ([]corteCajaVentaOffline, error) {
+	query := `SELECT
+		o.id,
+		COALESCE(o.carrito_id, 0),
+		COALESCE(NULLIF(o.operacion_codigo, ''), NULLIF(o.documento_codigo, ''), o.sync_key),
+		COALESCE(o.sync_key, ''),
+		COALESCE(o.documento_codigo, ''),
+		COALESCE(o.fecha_offline, ''),
+		COALESCE(o.fecha_sync, ''),
+		COALESCE(NULLIF(o.fecha_venta, ''), NULLIF(o.fecha_sync, ''), o.fecha_actualizacion, ''),
+		COALESCE(NULLIF(o.metodo_pago, ''), 'efectivo'),
+		COALESCE(NULLIF(o.moneda, ''), 'COP'),
+		COALESCE(o.monto_total, 0),
+		COALESCE(NULLIF(o.usuario_cajero, ''), o.usuario_creador, ''),
+		COALESCE(NULLIF(o.estacion_nombre, ''), 'Venta'),
+		COALESCE(o.caja_codigo, ''),
+		COALESCE(o.caja_turno, ''),
+		COALESCE(o.cierre_caja_id, 0)
+	FROM empresa_ventas_offline_sync o
+	WHERE o.empresa_id = ?
+	  AND LOWER(COALESCE(o.estado_sync, '')) = 'sincronizado'
+	  AND COALESCE(NULLIF(o.fecha_venta, ''), NULLIF(o.fecha_sync, ''), o.fecha_actualizacion, '') >= ?
+	  AND COALESCE(NULLIF(o.fecha_venta, ''), NULLIF(o.fecha_sync, ''), o.fecha_actualizacion, '') <= ?
+	  AND (? = '' OR LOWER(COALESCE(NULLIF(o.usuario_cajero, ''), o.usuario_creador, '')) = LOWER(?))
+	  AND (? = 0 OR COALESCE(o.cierre_caja_id, 0) = ?)
+	  AND (? = '' OR UPPER(COALESCE(o.caja_codigo, '')) = ?)
+	ORDER BY COALESCE(NULLIF(o.fecha_venta, ''), NULLIF(o.fecha_sync, ''), o.fecha_actualizacion, '') ASC, o.id ASC`
+	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []corteCajaVentaOffline{}
+	for rows.Next() {
+		var item corteCajaVentaOffline
+		if err := rows.Scan(
+			&item.ID, &item.CarritoID, &item.Codigo, &item.SyncKey, &item.DocumentoCodigo,
+			&item.FechaOffline, &item.FechaSync, &item.FechaPago, &item.MetodoPago, &item.Moneda,
+			&item.Total, &item.Cajero, &item.EstacionNombre, &item.CajaCodigo, &item.CajaTurno, &item.CierreCajaID,
+		); err != nil {
 			return nil, err
 		}
 		out = append(out, item)

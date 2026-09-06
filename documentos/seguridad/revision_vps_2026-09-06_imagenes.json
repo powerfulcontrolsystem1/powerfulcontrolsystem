@@ -1,0 +1,280 @@
+{
+  "date_utc": "2026-09-06",
+  "scope": "running_container_image_inventory",
+  "limitations": "Package findings, not proof of exploitability; exact image IDs matched to running containers.",
+  "images": [
+    {
+      "containers": [
+        "pcs-frontend"
+      ],
+      "image_id": "sha256:0c0460cd82cf66a86c91783cd732ec8dec1ade6972d6ff20367449fa044bc648",
+      "scanned": true,
+      "critical": 0,
+      "high": 0,
+      "fixed_versions_available": 0
+    },
+    {
+      "containers": [
+        "pcs-rustdesk-hbbr",
+        "pcs-rustdesk-hbbs"
+      ],
+      "image_id": "sha256:10818ec05b179039c6660f4d8e74b303f0db2858bbad2b18e24992ea22d54cd6",
+      "scanned": true,
+      "critical": 0,
+      "high": 0,
+      "fixed_versions_available": 0
+    },
+    {
+      "containers": [
+        "pcs-mailu-front"
+      ],
+      "image_id": "sha256:204b90d649f04b419eb52d532004312fe72d70fe6062ff796728a19530f44ad9",
+      "scanned": true,
+      "critical": 0,
+      "high": 16,
+      "fixed_versions_available": 16
+    },
+    {
+      "containers": [
+        "pcs-prometheus"
+      ],
+      "image_id": "sha256:2659f4c2ebb718e7695cb9b25ffa7d6be64db013daba13e05c875451cf51b0d3",
+      "scanned": true,
+      "critical": 6,
+      "high": 94,
+      "fixed_versions_available": 96
+    },
+    {
+      "containers": [
+        "pcs-mailu-antispam"
+      ],
+      "image_id": "sha256:2d29b328118e6db90714660d8914c1d8063847bf00b9e55fe5885a1118dcfa3f",
+      "scanned": true,
+      "critical": 0,
+      "high": 16,
+      "fixed_versions_available": 16
+    },
+    {
+      "containers": [
+        "pcs-mailu-imap"
+      ],
+      "image_id": "sha256:2f6b63782393235c07080d94e56740b088179c23d101f51793d9b7862b381def",
+      "scanned": true,
+      "critical": 0,
+      "high": 16,
+      "fixed_versions_available": 16
+    },
+    {
+      "containers": [
+        "pcs-cadvisor"
+      ],
+      "image_id": "sha256:3cde6faf0791ebf7b41d6f8ae7145466fed712ea6f252c935294d2608b1af388",
+      "scanned": true,
+      "critical": 6,
+      "high": 60,
+      "fixed_versions_available": 64
+    },
+    {
+      "containers": [
+        "pcs-node-exporter"
+      ],
+      "image_id": "sha256:4032c6d5bfd752342c3e631c2f1de93ba6b86c41db6b167b9a35372c139e7706",
+      "scanned": true,
+      "critical": 2,
+      "high": 43,
+      "fixed_versions_available": 45
+    },
+    {
+      "containers": [
+        "pcs-staging-worker"
+      ],
+      "image_id": "sha256:4fafca14b2fe2fb1ef7fd623a8a1af3cbda05211fbe8a0a617bf5c182870493c",
+      "scanned": false,
+      "critical": null,
+      "high": null,
+      "fixed_versions_available": null
+    },
+    {
+      "containers": [
+        "pcs-onlyoffice-documentserver"
+      ],
+      "image_id": "sha256:53a06109f1f4029a78f913a061e14f01bff023d109024073a13d4416b54d2195",
+      "scanned": true,
+      "critical": 25,
+      "high": 424,
+      "fixed_versions_available": 273
+    },
+    {
+      "containers": [
+        "pcs-fiscal-qa-20260906",
+        "pcs-postgres",
+        "pcs-staging-postgres"
+      ],
+      "image_id": "sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777",
+      "scanned": true,
+      "critical": 1,
+      "high": 30,
+      "fixed_versions_available": 31
+    },
+    {
+      "containers": [
+        "pcs-mailu-webmail"
+      ],
+      "image_id": "sha256:58ec8c0cbee0ca8a4e4d37606dd8c2d6dc473e0164aacb016f5734d85eea7abd",
+      "scanned": true,
+      "critical": 0,
+      "high": 18,
+      "fixed_versions_available": 18
+    },
+    {
+      "containers": [
+        "pcs-disk-manager"
+      ],
+      "image_id": "sha256:5b5a979daba9c34d7f8c73c72d350eea2033c407ead6fdec211e317fb677f1fb",
+      "scanned": true,
+      "critical": 0,
+      "high": 0,
+      "fixed_versions_available": 0
+    },
+    {
+      "containers": [
+        "pcs-mailu-redis"
+      ],
+      "image_id": "sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99",
+      "scanned": true,
+      "critical": 0,
+      "high": 0,
+      "fixed_versions_available": 0
+    },
+    {
+      "containers": [
+        "pcs-staging-backend"
+      ],
+      "image_id": "sha256:744345cf867dccb16b70e4f85af0badcd51d46844a5fb876c6c2be8c7656955d",
+      "scanned": true,
+      "critical": 2,
+      "high": 0,
+      "fixed_versions_available": 2
+    },
+    {
+      "containers": [
+        "pcs-nextcloud-db"
+      ],
+      "image_id": "sha256:78a5047d3ba33975f183f183c2464cc7f1eab13ec8667e57cc9a5821d6da7577",
+      "scanned": true,
+      "critical": 1,
+      "high": 25,
+      "fixed_versions_available": 26
+    },
+    {
+      "containers": [
+        "pcs-nextcloud-redis"
+      ],
+      "image_id": "sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6",
+      "scanned": true,
+      "critical": 4,
+      "high": 52,
+      "fixed_versions_available": 56
+    },
+    {
+      "containers": [
+        "pcs-staging-clamav"
+      ],
+      "image_id": "sha256:8117550b0e762eeabe5376c9f6f9c6adbf1a2da50c1bc70c08ae600930817523",
+      "scanned": true,
+      "critical": 4,
+      "high": 86,
+      "fixed_versions_available": 30
+    },
+    {
+      "containers": [
+        "pcs-mailu-admin"
+      ],
+      "image_id": "sha256:873428bbbbb1def492d472db1a26eb449777a73c856b9e470f90cf7b67902a34",
+      "scanned": true,
+      "critical": 0,
+      "high": 16,
+      "fixed_versions_available": 16
+    },
+    {
+      "containers": [
+        "pcs-staging-frontend"
+      ],
+      "image_id": "sha256:9e18530c9a1a41ff35ce404f5700d8e45dc65c880d0fbfb302341631d825d372",
+      "scanned": true,
+      "critical": 0,
+      "high": 22,
+      "fixed_versions_available": 22
+    },
+    {
+      "containers": [
+        "pcs-nextcloud"
+      ],
+      "image_id": "sha256:a7fbfcd4759bdd19b8fb8b1044b47ee3a9471d2e2c8bc68d56a2e671f86cebd2",
+      "scanned": true,
+      "critical": 93,
+      "high": 1296,
+      "fixed_versions_available": 950
+    },
+    {
+      "containers": [
+        "pcs-mailu-resolver"
+      ],
+      "image_id": "sha256:be64f8a1265f5b9b8ed4b6c92461d169bb82f880500e3404a954ecc7148b2b00",
+      "scanned": true,
+      "critical": 0,
+      "high": 16,
+      "fixed_versions_available": 16
+    },
+    {
+      "containers": [
+        "pcs-mailu-smtp"
+      ],
+      "image_id": "sha256:cbbb8e941aec7a8016be05bb06671b84d7224f7d7f40c86dfdf52671a422e773",
+      "scanned": true,
+      "critical": 0,
+      "high": 16,
+      "fixed_versions_available": 16
+    },
+    {
+      "containers": [
+        "pcs-backend"
+      ],
+      "image_id": "sha256:d709b455847eb752cd8aab3ec092440a41a52d7fdcc3372fb54633e9bda0a3ca",
+      "scanned": true,
+      "critical": 0,
+      "high": 0,
+      "fixed_versions_available": 0
+    },
+    {
+      "containers": [
+        "pcs-grafana"
+      ],
+      "image_id": "sha256:d8ea37798ccc41061a62ab080f2676dda6bf7815558499f901bdb0f533a456fb",
+      "scanned": true,
+      "critical": 10,
+      "high": 121,
+      "fixed_versions_available": 131
+    },
+    {
+      "containers": [
+        "pcs-alertmanager"
+      ],
+      "image_id": "sha256:e13b6ed5cb929eeaee733479dce55e10eb3bc2e9c4586c705a4e8da41e5eacf5",
+      "scanned": true,
+      "critical": 6,
+      "high": 90,
+      "fixed_versions_available": 96
+    },
+    {
+      "containers": [
+        "pcs-worker"
+      ],
+      "image_id": "sha256:f8286aceb280fda8b74bca5de5fb37161b99fb5cb5c6d831ff640256e00c6601",
+      "scanned": true,
+      "critical": 0,
+      "high": 0,
+      "fixed_versions_available": 0
+    }
+  ]
+}

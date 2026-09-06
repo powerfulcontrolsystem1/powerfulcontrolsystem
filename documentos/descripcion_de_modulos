@@ -5027,3 +5027,11 @@ Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
 - El backend comprueba que la clave pública y la clave privada sean utilizables
   y persiste la configuración compuesta atómicamente; la interfaz distingue una
   clave cifrada almacenada de una clave realmente descifrable.
+
+## Seguridad y abuso HTTP — revisión 2026-09-06
+
+La IP para auditoría, certificados, mensajes y chat públicos y túnel Domótica se
+resuelve desde el socket y la cadena de proxies confiables. El chat público añade
+un presupuesto por IP que no se reinicia cambiando la cookie, y acota su memoria.
+No cambian permisos, tenant ni tablas. [Evidencia](seguridad/revision_vps_2026-09-06.md)
+distingue cambios locales, reparaciones del host y vulnerabilidades pendientes.

@@ -45,3 +45,30 @@ func TestQueueSaturationUsesMostRestrictiveSignal(t *testing.T) {
 		t.Fatalf("saturacion inesperada: got %.2f want 150", got)
 	}
 }
+
+func TestQueueCapacityMigrationsAreRegistered(t *testing.T) {
+	targets := []struct {
+		target      string
+		version     string
+		fingerprint string
+	}{
+		{MigrationTargetEmpresas, "20260906-001-queue-capacity-business-v1", queueCapacityBusinessSchemaFingerprint},
+		{MigrationTargetSuper, "20260906-001-queue-capacity-super-v1", queueCapacitySuperSchemaFingerprint},
+	}
+	for _, target := range targets {
+		migrations, err := PlatformMigrations(target.target)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := false
+		for _, migration := range migrations {
+			if migration.Version != target.version {
+				continue
+			}
+			found = migration.Body == target.fingerprint && migration.Apply != nil
+		}
+		if !found {
+			t.Fatalf("migracion de capacidad ausente o incompleta: %s", target.version)
+		}
+	}
+}

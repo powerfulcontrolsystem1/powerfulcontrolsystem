@@ -595,6 +595,8 @@
     "documentos/erp_multiempresa/03_especificaciones_funcionales_erp_multiempresa.md": "historico",
     "documentos/erp_multiempresa/04_guia_implementacion_erp_multiempresa.md": "historico",
     "documentos/cierre_reparaciones_produccion_seguridad_2026-09-05.md": "evidencia",
+    "documentos/seguridad/revision_vps_2026-09-06.md": "evidencia",
+    "documentos/seguridad/revision_vps_2026-09-06_imagenes.json": "evidencia",
     "documentos/gobernanza_tecnica/matriz_revision_semantica_2026-09-06.json": "control_documental"
   }
 }

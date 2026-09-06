@@ -30,6 +30,35 @@ restricciones y evidencia esperada; integrar resultados sin revertir cambios
 ajenos. No delegar autoridad de compra, emisión, despliegue ni borrado por el
 mero hecho de crear un agente.
 
+### Aislamiento Git obligatorio
+
+El checkout `D:\powerfulcontrolsystem` pertenece al integrador y se mantiene en
+`main` limpio. Cada agente trabaja exclusivamente en un worktree propio bajo
+`D:\powerfulcontrolsystem.worktrees\` y una rama
+`codex/<fecha>-<tarea>-<id>`, creada con:
+
+```powershell
+.\scripts\agent_worktree.ps1 -Action Create -Task modulo-acotado
+```
+
+El coordinador asigna globs sin solapamiento. Quedan reservados para integración:
+`AGENTS.md`, `CONTRIBUTING.md`, `.github/`, `backend/main.go`, migraciones y su
+catálogo, `go.mod`, `go.sum`, estilos globales, historial/changelog, registro de
+archivos y catálogos generados. Si dos tareas necesitan uno de esos archivos, el
+coordinador secuencia la edición; no se resuelve compartiendo un mismo checkout.
+
+El worktree se bloquea al crearse. El agente entrega su SHA, rutas, pruebas,
+estado limpio y efectos externos; solo el coordinador lo desbloquea y retira con
+`agent_worktree.ps1 -Action Remove`. La retirada exige árbol limpio y evidencia
+de que el HEAD está integrado (ancestro de `origin/main` o head exacto de una PR
+fusionada). Los squash merges se verifican por head de PR, no solo por
+`merge-base`.
+
+Ningún subagente ejecuta `rs.ps1`, `actualizar_repositorio.ps1`, despliegues,
+limpieza masiva, merge ni push de integración. Esas acciones se realizan una vez
+por el integrador desde el checkout limpio; el staging automático de
+`actualizar_repositorio.ps1` no es seguro en un árbol compartido.
+
 ## Cierre integrado
 
 Backend entrega causa, rutas/tablas y riesgos. Frontend entrega comportamiento

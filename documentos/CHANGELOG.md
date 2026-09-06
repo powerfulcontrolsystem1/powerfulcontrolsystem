@@ -3774,3 +3774,12 @@
 - [Seguridad] La modificación no altera datos, permisos, endpoints ni la
   idempotencia de movimientos; refuerza la retención de la auditoría automática
   ya aislada por `empresa_id`.
+
+## [2026-09-06] Seguridad VPS y control de abuso
+
+- Limites HTTP contra abuso, saneamiento de IP y host reenviados, SSH efectivo,
+  HSTS, CSP de Webmail conservada y TLS de venta digital reparados en el VPS.
+- Chat publico: presupuesto adicional por IP y contadores con memoria acotada;
+  auditoria, certificados y Domotica comparten resolucion de IP verificada.
+- [Evidencia y riesgos pendientes](seguridad/revision_vps_2026-09-06.md): el cierre
+  integral permanece abierto por imagenes auxiliares, wildcard, MFA y reinicio.

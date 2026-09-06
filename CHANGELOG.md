@@ -5028,3 +5028,12 @@ QA/seguridad/operación y catálogo verificable. Detalle y límites en
 ## 2026-09-06 — Reconciliación documental empresarial
 
 Se resolvió la disposición de 138 referencias pendientes: fuentes temáticas revisadas, historia separada y contratos manuales identificados. Entradas de proyecto/módulos/código/BD/permisos/flujos y operación consolidadas; corregidos Epayco classic_js, alcance fiscal por familia, catálogo de plantillas y límites de integraciones. Detalle y brechas en `documentos/gobernanza_tecnica/revision_semantica_2026-09-06.md`; matriz por archivo en el mismo directorio. Sin despliegue ni pruebas comerciales en esta revisión.
+
+## 2026-09-06 — Higiene Git y trabajo paralelo
+
+- GitHub borra automáticamente las ramas después de fusionar una PR; las ramas
+  ya integradas se podan solo con evidencia de la PR exacta.
+- Los agentes trabajan en worktrees aislados y bloqueados; el checkout de
+  integración/release se reserva a `main` limpio.
+- Se incorpora `scripts/agent_worktree.ps1` para crear y retirar worktrees con
+  comprobaciones de limpieza e integración.

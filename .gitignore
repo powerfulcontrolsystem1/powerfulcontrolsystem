@@ -33,8 +33,13 @@ tmp/*-profile/
 tmp/playwright-*/
 tmp_*.png
 outputs/
+output/
 reports/
 test_runs/
+node_modules/
+coverage/
+.coverage/
+*.coverprofile
 .tmp-go-test/
 __pycache__/
 *.pyc
@@ -47,6 +52,10 @@ Desktop.ini
 backend/.gotmp/
 backend/.env.local
 .env.local
+.env
+.env.*
+!*.env.example
+!**/*.env.example
 deploy/.env.platform
 deploy/.env.staging
 deploy/monitoring/.env.monitoring
@@ -58,6 +67,13 @@ deploy/monitoring/alertmanager.runtime.yml
 .codex-chrome*/
 .codex_tmp/
 .codex-remote-attachments/
+# Estado efimero y entregables de agentes; nunca se comparten por Git.
+scripts/logs/*.pid
+scripts/logs/*.err
+Pendiente Notas
+pendiete new
+mobile/**/build/
+mobile/**/.dart_tool/
 # Credenciales y llaves privadas locales
 *.ppk
 *.pem

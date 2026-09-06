@@ -32,6 +32,22 @@ type EmpresaVentaOfflineSync struct {
 	ProcessingToken    string `json:"-"`
 }
 
+// EmpresaVentaOfflineSaleContext fija la identidad de la venta y de la caja
+// resultante. No se infiere por carrito_id porque un carrito puede reutilizarse.
+type EmpresaVentaOfflineSaleContext struct {
+	OperacionCodigo string
+	CierreCajaID    int64
+	CajaCodigo      string
+	CajaTurno       string
+	CajaSucursalID  int64
+	MetodoPago      string
+	Moneda          string
+	MontoTotal      float64
+	FechaVenta      string
+	EstacionNombre  string
+	UsuarioCajero   string
+}
+
 var ErrEmpresaVentaOfflineIdempotencyConflict = errors.New("offline sync key conflict")
 
 func empresaVentaOfflineHash(value string) string {
@@ -213,7 +229,7 @@ func ClaimEmpresaVentaOfflineSync(dbConn *sql.DB, empresaID int64, syncKey, payl
 }
 
 // MarkEmpresaVentaOfflineSyncResult guarda el resultado final o error de sincronizacion.
-func MarkEmpresaVentaOfflineSyncResult(dbConn *sql.DB, empresaID int64, syncKey, estadoSync string, carritoID int64, documentoCodigo, resultadoJSON, errorMensaje string) error {
+func MarkEmpresaVentaOfflineSyncResult(dbConn *sql.DB, empresaID int64, syncKey, estadoSync string, carritoID int64, documentoCodigo, resultadoJSON, errorMensaje string, saleContext ...EmpresaVentaOfflineSaleContext) error {
 	if err := EnsureEmpresaVentasOfflineSchema(dbConn); err != nil {
 		return err
 	}
@@ -224,6 +240,10 @@ func MarkEmpresaVentaOfflineSyncResult(dbConn *sql.DB, empresaID int64, syncKey,
 	if carritoID < 0 {
 		carritoID = 0
 	}
+	ctx := EmpresaVentaOfflineSaleContext{MontoTotal: -1}
+	if len(saleContext) > 0 {
+		ctx = saleContext[0]
+	}
 	_, err := ExecCompat(dbConn, `UPDATE empresa_ventas_offline_sync SET
 		estado_sync=?,
 		carrito_id=?,
@@ -233,6 +253,17 @@ func MarkEmpresaVentaOfflineSyncResult(dbConn *sql.DB, empresaID int64, syncKey,
 		fecha_sync=CASE WHEN ?='sincronizado' THEN `+sqlNowExpr()+` ELSE fecha_sync END,
 		processing_token=NULL,
 		processing_until=NULL,
+		operacion_codigo=CASE WHEN ? <> '' THEN ? ELSE operacion_codigo END,
+		cierre_caja_id=CASE WHEN ? > 0 THEN ? ELSE cierre_caja_id END,
+		caja_codigo=CASE WHEN ? <> '' THEN ? ELSE caja_codigo END,
+		caja_turno=CASE WHEN ? <> '' THEN ? ELSE caja_turno END,
+		caja_sucursal_id=CASE WHEN ? > 0 THEN ? ELSE caja_sucursal_id END,
+		metodo_pago=CASE WHEN ? <> '' THEN ? ELSE metodo_pago END,
+		moneda=CASE WHEN ? <> '' THEN ? ELSE moneda END,
+		monto_total=CASE WHEN ? >= 0 THEN ? ELSE monto_total END,
+		fecha_venta=CASE WHEN ? <> '' THEN ? ELSE fecha_venta END,
+		estacion_nombre=CASE WHEN ? <> '' THEN ? ELSE estacion_nombre END,
+		usuario_cajero=CASE WHEN ? <> '' THEN ? ELSE usuario_cajero END,
 		fecha_actualizacion=`+sqlNowExpr()+`
 	WHERE empresa_id=? AND sync_key=?`,
 		estadoSync,
@@ -241,6 +272,17 @@ func MarkEmpresaVentaOfflineSyncResult(dbConn *sql.DB, empresaID int64, syncKey,
 		strings.TrimSpace(resultadoJSON),
 		strings.TrimSpace(errorMensaje),
 		estadoSync,
+		strings.TrimSpace(ctx.OperacionCodigo), strings.TrimSpace(ctx.OperacionCodigo),
+		ctx.CierreCajaID, ctx.CierreCajaID,
+		strings.TrimSpace(ctx.CajaCodigo), strings.TrimSpace(ctx.CajaCodigo),
+		strings.TrimSpace(ctx.CajaTurno), strings.TrimSpace(ctx.CajaTurno),
+		ctx.CajaSucursalID, ctx.CajaSucursalID,
+		strings.TrimSpace(ctx.MetodoPago), strings.TrimSpace(ctx.MetodoPago),
+		strings.TrimSpace(ctx.Moneda), strings.TrimSpace(ctx.Moneda),
+		ctx.MontoTotal, ctx.MontoTotal,
+		strings.TrimSpace(ctx.FechaVenta), strings.TrimSpace(ctx.FechaVenta),
+		strings.TrimSpace(ctx.EstacionNombre), strings.TrimSpace(ctx.EstacionNombre),
+		strings.TrimSpace(ctx.UsuarioCajero), strings.TrimSpace(ctx.UsuarioCajero),
 		empresaID,
 		strings.TrimSpace(syncKey),
 	)

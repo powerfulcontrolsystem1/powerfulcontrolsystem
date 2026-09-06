@@ -43,7 +43,10 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 	}
 	add(jobSuperAlerts, 2*time.Minute, 5, func(context.Context) error {
 		handlers.EvaluateSuperAlertasSistema(dbSuper, false)
-		handlers.EvaluateQueueCapacity(dbEmp, dbSuper, false)
+		evaluation := handlers.EvaluateQueueCapacity(dbEmp, dbSuper, false)
+		if !evaluation.OK {
+			return fmt.Errorf("queue capacity evaluation unavailable: %s", evaluation.Error)
+		}
 		return nil
 	})
 	add(jobAuditRetention, 10*time.Minute, 5, func(context.Context) error { _, err := dbpkg.PurgeExpiredEmpresaAuditoriaEventos(dbEmp); return err })

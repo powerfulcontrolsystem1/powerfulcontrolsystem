@@ -174,3 +174,11 @@ Este contrato cubre el acceso administrativo por Google o correo, el registro y 
 [auth_admin_handlers.go](../../../backend/handlers/auth_admin_handlers.go), [usuarios_empresa.go](../../../backend/handlers/usuarios_empresa.go), [main.go](../../../backend/main.go).
 
 Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).
+
+## Defensa HTTP e IP — 2026-09-06
+
+En el VPS con Nginx directamente expuesto, el borde reemplaza cabeceras IP/host
+recibidas del cliente y aplica límites por IP a login, registro y recuperación.
+Backend resuelve la IP desde el socket y recorre únicamente proxies confiables.
+El acceso legítimo se comprobó visualmente; entró sin OTP y por ello el MFA del
+artefacto productivo sigue siendo un hallazgo abierto. [Evidencia](../../seguridad/revision_vps_2026-09-06.md).

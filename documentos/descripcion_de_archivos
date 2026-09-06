@@ -8,6 +8,8 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 - `backend/db/empresa_impresoras.go`: admission por empresa con maximo configurable y bloqueo asesor transaccional para la cola de impresion.
 - `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go` y `backend/cmd/pcs-worker/business_registry.go`: shards fiscales disjuntos, rotacion justa y continuidad cuando falla una empresa.
 - `backend/internal/platform/worker/worker.go`: concurrencia acotada y configurable para trabajos durables.
+- `backend/main.go`, `deploy/monitoring/alert_rules.yml`, `deploy/docker-compose.platform.yml` y `deploy/.env.platform.example`: metricas por carril, alerta Prometheus y parametros operativos del worker/shards.
+- `backend/db/queue_capacity_test.go`, `backend/handlers/super_queue_capacity_test.go`, `backend/main_queue_capacity_frontend_test.go` y pruebas actualizadas de impresoras, rate limit y worker: regresiones de migracion, aislamiento, umbrales, navegacion y scheduling.
 - `tools/qa_queue_capacity_ui.cjs`: render sintetico desktop/movil del panel, con tres carriles, estados y control de desborde horizontal; no autentica ni toca datos reales.
 
 2026-09-05
@@ -13437,3 +13439,15 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
   módulo `inventario` como operativa de severidad media y retención de 730 días.
 - `backend/db/auditoria_postgres_test.go`: regresión de política de severidad y
   retención para inventario, lotes, reservas, ajustes y Kardex.
+
+2026-09-06 - Seguridad VPS y defensas contra abuso HTTP.
+- deploy/scripts/vps-http-hardening.py: aplica limites HTTP y sanea proxies del host con respaldo, validacion Nginx y rollback.
+- deploy/scripts/vps-ssh-hardening.sh: aplica politica SSH efectiva sin cambiar puerto ni credenciales, con respaldo y validacion.
+- backend/handlers/client_ip_security_test.go: regresiones de IP falsificada, rotacion de cookies y memoria acotada del limitador publico.
+- documentos/seguridad/revision_vps_2026-09-06.md: evidencia de reparaciones, pruebas, riesgos y condiciones de cierre.
+- documentos/seguridad/revision_vps_2026-09-06_imagenes.json: inventario minimizado de vulnerabilidades por image ID realmente activo.
+
+2026-09-06 - Coordinación Git para agentes concurrentes
+- `scripts/agent_worktree.ps1`: crea, lista, bloquea, desbloquea y retira
+  worktrees aislados de agentes; el retiro exige limpieza y evidencia de
+  integración por ancestro o head exacto de una PR fusionada.

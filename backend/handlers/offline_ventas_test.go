@@ -5,6 +5,22 @@ import (
 	"testing"
 )
 
+func TestCarritoOfflineFacturacionDefaultsEnabledAndHonorsDisable(t *testing.T) {
+	if !carritoOfflineFacturacionHabilitadaDesdeRoot(map[string]interface{}{}) {
+		t.Fatal("offline billing must default to enabled when the company has no explicit setting")
+	}
+	if carritoOfflineFacturacionHabilitadaDesdeRoot(map[string]interface{}{
+		"carrito_ui_global": map[string]interface{}{"facturacion_offline_habilitada": false},
+	}) {
+		t.Fatal("explicit company disable must be honored")
+	}
+	if !carritoOfflineFacturacionHabilitadaDesdeRoot(map[string]interface{}{
+		"carrito_ui_global": map[string]interface{}{"facturacion_offline_habilitada": true},
+	}) {
+		t.Fatal("explicit company enable must be honored")
+	}
+}
+
 func TestValidateOfflineVentaSessionOwnerRejectsDifferentCashier(t *testing.T) {
 	err := validateOfflineVentaSessionOwner(offlineVentaPayload{
 		UsuarioEmail: "cajero.uno@example.com",

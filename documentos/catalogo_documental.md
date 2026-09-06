@@ -7,13 +7,13 @@ No editar manualmente. Generar con `node tools/docs_catalog.mjs --write`; valida
 Política y significado de estados: [marco documental](gobernanza_tecnica/marco_documental.md).
 Inventario y hallazgos detallados: [JSON](catalogo_documental.json). La clasificación no acredita revisión semántica ni producción.
 
-Documentos: 504. Hallazgos locales: 4; bloqueantes: 0.
+Documentos: 506. Hallazgos locales: 0; bloqueantes: 0.
 
 | Estado | Cantidad |
 | --- | --- |
 | contrato_maquina | 1 |
 | control_documental | 2 |
-| evidencia | 276 |
+| evidencia | 278 |
 | generado | 20 |
 | historico | 62 |
 | referencia_externa | 1 |
@@ -520,6 +520,8 @@ Documentos: 504. Hallazgos locales: 4; bloqueantes: 0.
 | [documentos/rollback_production_2026_07_13.md](<rollback_production_2026_07_13.md>) | historico | Coordinación técnica | Pendiente / no aplica |
 | [documentos/seguridad/csp_inline_baseline.json](<seguridad/csp_inline_baseline.json>) | generado | Seguridad | Pendiente / no aplica |
 | [documentos/seguridad/modelo_amenazas_y_privacidad.md](<seguridad/modelo_amenazas_y_privacidad.md>) | vigente | Seguridad | 2026-09-05 |
+| [documentos/seguridad/revision_vps_2026-09-06.md](<seguridad/revision_vps_2026-09-06.md>) | evidencia | Seguridad | Pendiente / no aplica |
+| [documentos/seguridad/revision_vps_2026-09-06_imagenes.json](<seguridad/revision_vps_2026-09-06_imagenes.json>) | evidencia | Seguridad | Pendiente / no aplica |
 | [documentos/soportes_compras_ia.md](<soportes_compras_ia.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/staging_execution_report.md](<staging_execution_report.md>) | evidencia | QA/operación | Pendiente / no aplica |
 | [documentos/staging_validation_checklist_2026_07_13.md](<staging_validation_checklist_2026_07_13.md>) | evidencia | Coordinación técnica | Pendiente / no aplica |
