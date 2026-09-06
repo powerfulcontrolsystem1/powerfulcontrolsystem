@@ -478,9 +478,6 @@ func EmpresaCorteCajaReportesDesdeConfiguracion(cfg *EmpresaCorteCajaConfiguraci
 	if cfg.MostrarVentasDetalle || cfg.MostrarNumeroFacturas || cfg.MostrarCantidadVentas || cfg.MostrarTotalDescuentos || cfg.MostrarTotalVentas || cfg.MostrarEfectivo || cfg.MostrarDebito || cfg.MostrarCredito {
 		out = append(out, "ventas")
 	}
-	// El desglose offline se ofrece por defecto y la pantalla de corte permite
-	// omitirlo de una generacion concreta enviando una seleccion explicita.
-	out = append(out, "offline")
 	if cfg.MostrarAnulaciones || cfg.MostrarDevoluciones {
 		out = append(out, "anulaciones")
 	}

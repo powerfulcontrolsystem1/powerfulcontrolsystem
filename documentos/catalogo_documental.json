@@ -145,7 +145,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "bac5435a6ff46fd03a303b9fd75055f644505563efcefa9e0b922daf8e0d5344"
+      "sha256_lf": "cf32529c51937428f7c8186d392496c90514ecd63ec7deee0a25686eb38a6ec3"
     },
     {
       "path": ".github/agents/protocolo_delegacion.md",
@@ -154,7 +154,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "73442fcb0bfab9ec8cb77cd4579472e583f6f0ae9308cd02e3787c3c27af227a"
+      "sha256_lf": "5172b2235b7ec9fc8f730a8f4deaf151cb53b3952ff2888cba97e0fb01c17c5a"
     },
     {
       "path": "AGENTS.md",
@@ -163,7 +163,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "adecd05aa0fc64aed7ab2a860abd1ff63e68c6e46e79818a411b6d83cfcf27d4"
+      "sha256_lf": "5f995a7c0d8f7669db8b69df9f4dc5c0c4eda71f9c35bb1fdef4ea5226b8b7c7"
     },
     {
       "path": "CHANGELOG.md",
@@ -172,7 +172,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "0fa6e650bd3691d1b0d60e9c5904562bfeeea6850cc98c164f96cb6417b6e386"
+      "sha256_lf": "8972842a52acff182b9d3d302021b77e9dad426ea039b7c2370f5e52b24d209a"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -775,7 +775,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "3b0b1b25871c5cd317332188838652ef0a26ed43c4797cd870f65bc47af0a7ea"
+      "sha256_lf": "fcb8235e86bda8b191301128103999dfa21f00c288da133dcb3e6376f921a800"
     },
     {
       "path": "documentos/descripcion_de_modulos",
@@ -3691,7 +3691,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "36dcdeaee4b19f4ff89bad150d5da39ec58ff6735b87dcb1a7647e0899159ab8"
+      "sha256_lf": "26e6a9926cb523ee70c055723c4a4aedd2ccfb9d747e269a91e06cd6729901ca"
     },
     {
       "path": "documentos/historico/2026-09-05/README.md",
