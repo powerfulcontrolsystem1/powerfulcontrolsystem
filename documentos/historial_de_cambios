@@ -1,3 +1,10 @@
+2026-09-06: Se restaura el contrato reproducible de Docker para staging.
+- `deploy/.env.staging.example` incorpora los marcadores no secretos
+  `PCS_BACKUP_DB_USER` y `PCS_BACKUP_DB_PASSWORD`, exigidos por migrador y API
+  para operar con el rol PostgreSQL limitado de respaldo.
+- La CI valida la configuración con `docker compose ... config --quiet`; no se
+  modifican entornos ni credenciales reales.
+
 2026-09-06: Capacidad de colas multiempresa (candidato local).
 - Se separan los presupuestos operativos de impresion, altas de producto y
   emision fiscal por empresa; una empresa que excede su admision no bloquea a

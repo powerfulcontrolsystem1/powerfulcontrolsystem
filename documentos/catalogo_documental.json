@@ -172,7 +172,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "0fa85235af85d609829b409fa83ea03ae8596062e3eaff1a3d859e4f9061f92a"
+      "sha256_lf": "ae41b94a6b1dd2ded3b86fc970c4a83f36d984474403295c42fad6d93c4ab007"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -775,7 +775,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "0cec5a66a116fa043c22e107777c7404390d7dc5bf59f51a69fe9e689fd5a4a8"
+      "sha256_lf": "6fb02c6f176b09a886db4119332a887fa2a036193a17a4b473fe3ee60dc5daf3"
     },
     {
       "path": "documentos/descripcion_de_modulos",
@@ -3691,7 +3691,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "568c8dfba3d80687b113d0d6743019df60d2adf4b72d3bdc8b1511f11a67c4c3"
+      "sha256_lf": "7d7b3b2616a44dc696788b7113f5a60b0513a5ca2d2c4d6d59577c50dedbb0a1"
     },
     {
       "path": "documentos/historico/2026-09-05/README.md",

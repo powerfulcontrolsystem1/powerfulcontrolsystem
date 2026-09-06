@@ -257,7 +257,8 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
   omite `unsafe-inline` sin alterar la politica aplicada.
 - `deploy/.env.staging.example`, `deploy/.env.platform.example` y
   `deploy/docker-compose.platform.yml`: documentan y propagan el switch
-  `PCS_CSP_REPORT_ONLY_STRICT` con valor seguro por defecto.
+  `PCS_CSP_REPORT_ONLY_STRICT` con valor seguro por defecto y las credenciales
+  separadas, no administrativas, de respaldo PostgreSQL requeridas por Compose.
 - `documentos/evidencia_plan_109/P109-012/2026-08-08_preflight_full_candidato_local.md`:
   documenta las 22 compuertas automatizadas del preflight completo y sus limites
   frente a la certificacion operativa y humana.
