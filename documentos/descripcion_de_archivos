@@ -1,3 +1,29 @@
+2026-09-06
+- `backend/db/facturacion_numeracion_reservas.go`: migracion aditiva y reserva
+  fiscal transaccional durable, aislada por empresa/documento y numero legal.
+- `backend/db/facturacion_numeracion_integration_test.go`: regresiones reales
+  PostgreSQL optativas de numeracion, frecuencia multicaja, contingencia,
+  talonario, aislamiento, reintentos y claims offline;
+  requieren PCS_TEST_POSTGRES_DSN de una base exclusivamente de pruebas.
+- `backend/db/carrito_document_intent.go`: congela dentro del pago la decision
+  documental y serializa por empresa el contador de frecuencia automatica.
+- `backend/handlers/carrito_document_recovery.go`: reconstruccion idempotente
+  por worker del comprobante o factura decididos en el outbox de pago.
+- `backend/db/facturacion_contingencias.go`: migracion y dominio tenant-scoped
+  de autorizacion de papel, incidentes, documentos, plazos y consecutivo.
+- `backend/db/facturacion_contingencias_test.go`: validaciones unitarias y
+  registro de la migracion de contingencia.
+- `backend/handlers/facturacion_contingencias.go`: API operativa fail-closed de
+  configuracion, apertura, recuperacion, registro real de papel y cierre.
+- `backend/handlers/facturacion_contingencias_contract_test.go`: permisos,
+  confirmaciones, fuente inmutable y orden de recuperacion del worker.
+- `tools/qa_offline_queue.test.cjs`: almacenamiento, concurrencia entre pestanas,
+  identidad y confirmacion local del comprobante offline.
+- `tools/qa_fiscal_ui.test.cjs`: sintaxis inline, fechas civiles y alerta de
+  concordancia de consecutivos en HTML real, sin trafico fiscal.
+- `documentos/auditoria_facturacion_multicaja_offline_20260906.md`: evidencia,
+  hallazgos corregidos, contraste DIAN y pendientes de produccion/offline legal.
+
 2026-09-05
 - `backend/db/facturacion_country_boundary_test.go`: regresiones de herencia
   fiscal, paises desconocidos, reserva extranjera y checklist no habilitante.

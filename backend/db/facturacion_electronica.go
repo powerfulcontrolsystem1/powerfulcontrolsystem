@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -1428,8 +1429,8 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 	if documentoCodigo == "" {
 		return nil, fmt.Errorf("documento_codigo es obligatorio")
 	}
-	if montoTotal < 0 {
-		montoTotal = 0
+	if math.IsNaN(montoTotal) || math.IsInf(montoTotal, 0) || montoTotal < 0 || montoTotal >= 1e16 {
+		return nil, fmt.Errorf("importe fiscal invalido")
 	}
 	moneda = strings.ToUpper(strings.TrimSpace(moneda))
 
@@ -1457,6 +1458,12 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 	if strings.ToLower(strings.TrimSpace(cfg.Estado)) == "inactivo" {
 		return nil, fmt.Errorf("la configuracion de facturacion electronica esta inactiva para %s", cfg.PaisCodigo)
 	}
+	if moneda == "" {
+		moneda = strings.ToUpper(strings.TrimSpace(cfg.MonedaCodigo))
+	}
+	if moneda == "" {
+		moneda = "COP"
+	}
 
 	tx, err := dbConn.BeginTx(ctx, nil)
 	if err != nil {
@@ -1465,6 +1472,7 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 	defer tx.Rollback()
 
 	var tipoDocumentoEmisor string
+	var lockedCountry string
 	var nit string
 	var razonSocial string
 	var ambienteFE string
@@ -1477,6 +1485,7 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 	var proximoConsecutivo int64
 
 	err = tx.QueryRowContext(ctx, `SELECT
+		COALESCE(pais_codigo, ''),
 		COALESCE(tipo_documento_emisor, ''),
 		COALESCE(nit, ''),
 		COALESCE(razon_social, ''),
@@ -1491,6 +1500,7 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 	FROM empresa_configuracion_avanzada
 	WHERE empresa_id = ?
 	FOR UPDATE`, empresaID).Scan(
+		&lockedCountry,
 		&tipoDocumentoEmisor,
 		&nit,
 		&razonSocial,
@@ -1510,6 +1520,25 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 		return nil, err
 	}
 
+	if normalizePaisCodigo(lockedCountry) != paisCodigo ||
+		(strings.TrimSpace(cfg.Ambiente) != "" && cfg.Ambiente != normalizeAmbienteFEFromConfig(ambienteFE)) {
+		return nil, fmt.Errorf("pais o ambiente inconsistente entre configuracion fiscal y avanzada")
+	}
+	reserved, err := getFacturacionNumeroReservado(ctx, tx, empresaID, documentoCodigo, paisCodigo, moneda, montoTotal)
+	if err != nil {
+		return nil, err
+	}
+	if reserved != nil {
+		if reserved.Ambiente != normalizeAmbienteFEFromConfig(ambienteFE) {
+			return nil, fmt.Errorf("la reserva pertenece a otro ambiente; no se puede reutilizar en el ambiente actual")
+		}
+		return reserved, nil
+	}
+	// Never combine an old country prefix/resolution with a newly locked counter.
+	if (strings.TrimSpace(cfg.PrefijoFactura) != "" && !strings.EqualFold(strings.TrimSpace(cfg.PrefijoFactura), strings.TrimSpace(prefijoFactura))) ||
+		(strings.TrimSpace(cfg.ResolucionNumero) != "" && strings.TrimSpace(cfg.ResolucionNumero) != strings.TrimSpace(resolucionNumero)) {
+		return nil, fmt.Errorf("numeracion inconsistente entre configuracion de pais y avanzada; recargue y concilie antes de emitir")
+	}
 	if strings.TrimSpace(cfg.TipoDocumentoEmisor) == "" {
 		cfg.TipoDocumentoEmisor = strings.TrimSpace(tipoDocumentoEmisor)
 	}
@@ -1620,11 +1649,7 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 		codigoValidacion = ""
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return &FacturacionDocumentoLegal{
+	legal := &FacturacionDocumentoLegal{
 		EmpresaID:            empresaID,
 		PaisCodigo:           strings.ToUpper(strings.TrimSpace(cfg.PaisCodigo)),
 		Ambiente:             normalizeAmbienteFEFromConfig(cfg.Ambiente),
@@ -1639,7 +1664,14 @@ func PrepareFacturacionDocumentoLegalContext(ctx context.Context, dbConn *sql.DB
 		FechaEmisionLegal:    fechaEmisionLegal,
 		ResolucionFechaDesde: strings.TrimSpace(resolucionFechaDesde),
 		ResolucionFechaHasta: strings.TrimSpace(resolucionFechaHasta),
-	}, nil
+	}
+	if err := persistFacturacionNumeroReservado(ctx, tx, documentoCodigo, moneda, montoTotal, legal); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return legal, nil
 }
 
 func normalizeFacturacionRetryEstado(raw string) string {

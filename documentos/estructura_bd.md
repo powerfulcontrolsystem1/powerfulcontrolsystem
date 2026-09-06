@@ -1,5 +1,29 @@
 # Estructura del Base de Datos
 
+## Reserva fiscal multicaja 2026-09-06 (candidato)
+
+`20260906-001-facturacion-reservas-v1`, aplicada exclusivamente por pcs-migrate,
+crea `empresa_facturacion_reservas_numeracion`. PK empresa_id+documento_codigo;
+unicidad empresa_id+pais_codigo+ambiente+numero_legal; monto NUMERIC(18,2),
+moneda, fecha_reserva y legal_json inmutable sin credenciales. El incremento de
+empresa_configuracion_avanzada y la reserva comparten transaccion y FOR UPDATE.
+Dos indices de busqueda por empresa/numero en documentos y reintentos impiden
+reutilizar historia accidentalmente. No hay backfill ni cambios de checksums.
+Reintentos conservan el numero; importe/moneda distintos y colisiones fallan.
+No eliminar reservas ni retroceder contadores como reparacion operativa.
+
+`20260906-002-facturacion-contingencias-v1`, tambien exclusiva de pcs-migrate,
+crea tres tablas aisladas por empresa: historial de autorizaciones de papel o
+talonario; incidentes `falla_dian`/`falla_facturador`; y documentos vinculados.
+La autorizacion conserva rango, vigencia, resolucion y proximo numero separado
+de la factura electronica ordinaria. Indices parciales permiten una sola
+autorizacion activa por empresa y un incidente activo por empresa/tipo. Claves
+foraneas compuestas vinculan autorizacion, incidente y documento dentro del mismo
+`empresa_id`; la numeracion de papel es unica por empresa. Renovar resolucion
+conserva la anterior y no puede reemplazarla durante un incidente activo. El
+cierre requiere recuperacion previa y cero documentos sin aceptar. No crea XML
+tipo 03 ni convierte comprobantes por si sola.
+
 ## Frontera fiscal 2026-09-05
 
 Sin migraciones: `facturacion_electronica_pais` mantiene empresa+pais;

@@ -807,6 +807,9 @@
     function portalDateValue(value) {
       const v = txt(value);
       if (!v) return "No registrado";
+      // Authorization dates are calendar dates, not UTC instants.
+      const calendar = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+      if (calendar) return Number(calendar[3]) + "/" + Number(calendar[2]) + "/" + calendar[1];
       const parsed = new Date(v);
       if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString("es-CO");
       return v;
@@ -898,6 +901,7 @@
     function asDateTimeLocal(raw) {
       raw = txt(raw);
       if (!raw) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw + "T00:00";
       if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) return raw.slice(0, 16);
       const parsed = new Date(raw);
       if (!Number.isNaN(parsed.getTime())) {
