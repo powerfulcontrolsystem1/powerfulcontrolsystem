@@ -36,8 +36,22 @@ func TestSuperQueueCapacitySurfaceAndMetricsAreRegistered(t *testing.T) {
 		t.Fatal(err)
 	}
 	page := string(pageRaw)
+	for _, asset := range []string{
+		`/super/capacidad_colas.css`,
+		`/js/super_capacidad_colas.js`,
+	} {
+		if !strings.Contains(page, asset) {
+			t.Fatalf("la UI no carga el recurso externo %s", asset)
+		}
+	}
+
+	scriptRaw, err := os.ReadFile(filepath.Join("..", "web", "js", "super_capacidad_colas.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	script := string(scriptRaw)
 	for _, lane := range []string{"printing", "product_add", "fiscal"} {
-		if !strings.Contains(page, lane) {
+		if !strings.Contains(script, lane) {
 			t.Fatalf("la UI no contempla el carril %s", lane)
 		}
 	}

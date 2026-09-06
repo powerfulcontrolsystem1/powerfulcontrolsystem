@@ -1,12 +1,21 @@
-## [2026-09-06] Capacidad de colas multiempresa
+## [2026-09-06] Facturación multicaja, recuperación y contingencia (candidato)
 
-- [Aislamiento] Impresion, altas de producto y emision fiscal reciben controles
-  por empresa; la presion de un tenant no consume el presupuesto de otro.
-- [Escalabilidad] Worker concurrente y facturacion en shards con rotacion justa.
-- [Operacion] Nuevo panel Super, configuracion persistente, metricas agregadas y
-  alerta de saturacion con el canal y cooldown existentes.
-- [Evidencia] Candidato local. Falta prueba controlada de 1000 empresas en el
-  VPS objetivo, despliegue, proveedor fiscal e impresora fisica.
+- Reserva durable por empresa/documento y contador monotónico ante formularios
+  antiguos; conflicto fiscal revierte la transacción sin renumerar históricos.
+- Cola offline protege fallos de almacenamiento, operadores y escrituras entre
+  pestañas; backend exige llave idempotente e identidad antes de reclamar ventas.
+- Comprobante provisional no acredita DIAN. Aviso de contadores divergentes y
+  fechas civiles del centro DIAN sin desplazamiento de un día.
+- El pago congela en su transacción la decisión factura/comprobante y la guarda
+  en outbox; el worker reconstruye documentos ausentes sin repetir el cobro ni
+  recalcular la frecuencia mutable.
+- Base de contingencia Colombia separada por empresa: autorización de papel,
+  incidente verificable, ledger, fecha límite operativa de 48 horas y cierre
+  bloqueado con pendientes. El XML tipo 03 continúa bloqueado hasta implementar
+  y validar su contrato DIAN específico.
+- PostgreSQL aislado: 32 reservas, 32 cajas/frecuencia y 32 claims simultáneos;
+  regresiones frontend y Go verdes. Ver auditoría 20260906; candidato aún no
+  desplegado.
 
 ## [2026-09-06] Worker: idempotencia estable de tareas programadas
 
@@ -3774,12 +3783,3 @@
 - [Seguridad] La modificación no altera datos, permisos, endpoints ni la
   idempotencia de movimientos; refuerza la retención de la auditoría automática
   ya aislada por `empresa_id`.
-
-## [2026-09-06] Seguridad VPS y control de abuso
-
-- Limites HTTP contra abuso, saneamiento de IP y host reenviados, SSH efectivo,
-  HSTS, CSP de Webmail conservada y TLS de venta digital reparados en el VPS.
-- Chat publico: presupuesto adicional por IP y contadores con memoria acotada;
-  auditoria, certificados y Domotica comparten resolucion de IP verificada.
-- [Evidencia y riesgos pendientes](seguridad/revision_vps_2026-09-06.md): el cierre
-  integral permanece abierto por imagenes auxiliares, wildcard, MFA y reinicio.

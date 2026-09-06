@@ -26,7 +26,8 @@ func TestCarritoPaymentPersistsCashAndOutboxInSameTransaction(t *testing.T) {
 		"ingresos_efectivo = COALESCE(ingresos_efectivo, 0) + ?",
 		"recordCarritoStationMetricTx(tx",
 		"InsertOutboxEvent(tx",
-		"return tx.Commit()",
+		"document_intent",
+		"if err := tx.Commit(); err != nil",
 	} {
 		if !strings.Contains(body, required) {
 			t.Errorf("el pago de carrito no conserva efecto atomico %q", required)

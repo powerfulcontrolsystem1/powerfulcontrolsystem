@@ -3871,15 +3871,26 @@ func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp
 		} else if offlineAplicaDIAN && dispatch.ConnectivityFailure {
 			resultado.ConexionEstado = "offline"
 			resultado.ConexionMensaje = facturacionConnectivityMessage(dispatch.Error)
-			retryPayload.EstadoEnvio = "fallido"
-			retryPayload.ContingenciaActiva = false
-			retryPayload.FechaContingencia = ""
 			retryPayload.ProximoIntento = facturacionNextRetryAt(retryPayload.Intentos)
-			retryPayload.UltimoError = "No hay conexion activa con DIAN/proveedor; la facturacion electronica no puede continuar"
-			resultado.EstadoEnvio = "fallido"
+			contingenciaActiva, contingenciaErr := dbpkg.GetActiveEmpresaFacturacionContingencia(dbEmp, doc.EmpresaID, dbpkg.FacturacionContingenciaFallaDIAN)
+			if contingenciaErr == nil && contingenciaActiva != nil {
+				retryPayload.EstadoEnvio = "contingencia"
+				retryPayload.ContingenciaActiva = true
+				retryPayload.FechaContingencia = strings.TrimSpace(contingenciaActiva.FechaInicio)
+				retryPayload.UltimoError = "Documento firmado y conservado durante contingencia DIAN declarada; transmision pendiente"
+				resultado.EstadoEnvio = "contingencia"
+				resultado.ContingenciaActiva = true
+				resultado.AccionRecomendada = "reintentar_despues_recuperacion"
+			} else {
+				retryPayload.EstadoEnvio = "fallido"
+				retryPayload.ContingenciaActiva = false
+				retryPayload.FechaContingencia = ""
+				retryPayload.UltimoError = "No hay conexion activa con DIAN/proveedor y no existe una contingencia fiscal declarada"
+				resultado.EstadoEnvio = "fallido"
+				resultado.AccionRecomendada = "declarar_incidente_o_revisar_conexion"
+			}
 			resultado.ProximoIntento = retryPayload.ProximoIntento
 			resultado.RequiereConfirmacionOffline = false
-			resultado.AccionRecomendada = "bloquear_facturacion_electronica"
 		} else {
 			retryPayload.EstadoEnvio = "fallido"
 			retryPayload.ContingenciaActiva = false
@@ -3895,6 +3906,14 @@ func processFacturacionIntegracionForDocumentoContext(ctx context.Context, dbEmp
 	if err != nil {
 		resultado.Error = "no se pudo persistir estado de integracion FE"
 		return resultado, nil, err
+	}
+	if normalizeFacturacionEstadoEnvio(persistido.EstadoEnvio) == "contingencia" {
+		if _, linkErr := dbpkg.RegisterEmpresaFacturacionContingenciaDocumento(dbEmp, doc.EmpresaID, dbpkg.FacturacionContingenciaFallaDIAN, doc.TipoDocumento, doc.DocumentoCodigo, persistido.ID); linkErr != nil {
+			resultado.Error = "el documento quedo pendiente, pero no se pudo registrar en el incidente de contingencia"
+			return resultado, persistido, linkErr
+		}
+	} else if normalizeFacturacionEstadoEnvio(persistido.EstadoEnvio) == "aceptado" || normalizeFacturacionEstadoEnvio(persistido.EstadoEnvio) == "reconciliado" {
+		_ = dbpkg.SetEmpresaFacturacionContingenciaDocumentoEstado(dbEmp, doc.EmpresaID, doc.TipoDocumento, doc.DocumentoCodigo, "aceptado")
 	}
 	if estadoPersistido := normalizeFacturacionEstadoEnvio(persistido.EstadoEnvio); estadoPersistido == "fallido" || estadoPersistido == "fallido_terminal" {
 		notificarFalloFacturacionElectronica(dbEmp, dbSuper, persistido, resultado, doc, usuario)

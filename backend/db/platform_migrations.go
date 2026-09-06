@@ -229,8 +229,10 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260831-003-vida-price-history-ai-v1", Description: "personal price history barcode captures and AI invoice line items", Body: empresaVidaPriceHistorySchemaFingerprint, Apply: applyEmpresaVidaPriceHistorySchemaTx},
 			{Version: "20260901-001-retire-vertical-modules-v1", Description: "remove retired vertical module tables and references", Body: empresaVerticalModulesDecommissionFingerprint, Apply: applyEmpresaVerticalModulesDecommissionTx},
 			{Version: "20260905-001-vida-reports-reminders-v1", Description: "filtered personal reports and opt-in email WhatsApp subscription reminders", Body: empresaVidaReportsNotificationsSchemaFingerprint, Apply: applyEmpresaVidaReportsNotificationsSchemaTx},
-			{Version: "20260906-001-queue-capacity-business-v1", Description: "fair tenant queue service state and operational queue indexes", Body: queueCapacityBusinessSchemaFingerprint, Apply: applyQueueCapacityBusinessSchemaTx},
-			{Version: "20260906-002-offline-cash-report-v1", Description: "tenant cash-register breakdown for synchronized offline sales", Body: empresaOfflineCashReportSchemaFingerprint, Apply: applyEmpresaOfflineCashReportSchemaTx},
+			{Version: "20260906-001-facturacion-reservas-v1", Description: "durable tenant invoice number reservations for concurrent cash registers and crash recovery", Body: empresaFacturacionNumeracionReservasFingerprint, Apply: applyEmpresaFacturacionNumeracionReservasTx},
+			{Version: "20260906-002-facturacion-contingencias-v1", Description: "tenant fiscal outage incidents, paper authorization and 48-hour transmission ledger", Body: empresaFacturacionContingenciasFingerprint, Apply: applyEmpresaFacturacionContingenciasTx},
+			{Version: "20260906-003-queue-capacity-business-v1", Description: "fair tenant queue service state and operational queue indexes", Body: queueCapacityBusinessSchemaFingerprint, Apply: applyQueueCapacityBusinessSchemaTx},
+			{Version: "20260906-004-offline-cash-report-v1", Description: "tenant cash-register breakdown for synchronized offline sales", Body: empresaOfflineCashReportSchemaFingerprint, Apply: applyEmpresaOfflineCashReportSchemaTx},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

@@ -81,6 +81,7 @@
     #feDianConfigCard{order:1}
     #feFirmaCard{order:2}
     #feDianDocumentosCard{order:3}
+	#feContingenciaCard{order:4}
     #feForm{order:5}
     #advancedConfigCard{order:6}
     .fe-page-stack{display:flex;flex-direction:column;gap:14px;padding-bottom:18px}
@@ -308,6 +309,56 @@
       </div>
       <div id="feDianDocumentosMsg" class="form-help"></div>
     </div>
+
+    <section id="feContingenciaCard" class="card is-hidden" aria-labelledby="feContingenciaTitle">
+      <h2 id="feContingenciaTitle">Contingencia fiscal Colombia</h2>
+      <p class="form-help"><strong>El comprobante offline no es una factura de contingencia.</strong> La falla DIAN conserva XML firmado pendiente de transmisi&oacute;n; la falla del facturador exige numeraci&oacute;n de talonario o papel autorizada previamente y posterior documento electr&oacute;nico tipo 03.</p>
+      <div class="dian-capture-panel">
+        <h3>Autorizaci&oacute;n de talonario o papel</h3>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cont_prefijo">Prefijo autorizado</label><input id="cont_prefijo" class="form-input" autocomplete="off"></div>
+          <div class="form-col"><label class="form-label" for="cont_resolucion">Resoluci&oacute;n DIAN</label><input id="cont_resolucion" class="form-input" autocomplete="off"></div>
+          <div class="form-col"><label class="form-label" for="cont_estado">Estado</label><select id="cont_estado" class="form-input"><option value="configurando">Configurando</option><option value="activo">Activo</option><option value="suspendido">Suspendido</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cont_fecha_desde">Vigencia desde</label><input id="cont_fecha_desde" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cont_fecha_hasta">Vigencia hasta</label><input id="cont_fecha_hasta" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cont_rango_desde">Rango desde</label><input id="cont_rango_desde" type="number" min="1" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cont_rango_hasta">Rango hasta</label><input id="cont_rango_hasta" type="number" min="1" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cont_proximo">Pr&oacute;ximo n&uacute;mero</label><input id="cont_proximo" type="number" min="1" class="form-input"></div>
+        </div>
+        <div class="form-actions"><button id="contGuardarTalonario" type="button" class="btn secondary">Guardar autorizaci&oacute;n</button></div>
+      </div>
+      <div class="dian-capture-panel">
+        <h3>Declarar incidente real</h3>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cont_tipo">Origen</label><select id="cont_tipo" class="form-input"><option value="falla_dian">Servicio DIAN no disponible</option><option value="falla_facturador">Sistema del facturador no disponible</option></select></div>
+          <div class="form-col"><label class="form-label" for="cont_motivo">Motivo verificado</label><input id="cont_motivo" class="form-input" minlength="20" autocomplete="off"></div>
+          <div class="form-col"><label class="form-label" for="cont_evidencia">Referencia de evidencia</label><input id="cont_evidencia" class="form-input" placeholder="Incidente, monitoreo o respuesta DIAN" autocomplete="off"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cont_confirmacion">Confirmaci&oacute;n</label><input id="cont_confirmacion" class="form-input" placeholder="ACTIVAR CONTINGENCIA" autocomplete="off"></div>
+          <div class="form-col" style="display:flex;align-items:flex-end"><button id="contAbrir" type="button" class="btn">Activar contingencia</button></div>
+        </div>
+        <p class="form-help">No actives este flujo para pruebas ni por una venta offline. Debe existir un incidente real, evidencia verificable y la configuraci&oacute;n fiscal de producci&oacute;n correspondiente.</p>
+      </div>
+	  <div class="dian-capture-panel">
+		<h3>Registrar factura de papel realmente expedida</h3>
+		<div class="form-row">
+		  <div class="form-col"><label class="form-label" for="cont_reg_incidente">ID contingencia</label><input id="cont_reg_incidente" type="number" min="1" class="form-input"></div>
+		  <div class="form-col"><label class="form-label" for="cont_reg_carrito">ID venta pagada</label><input id="cont_reg_carrito" type="number" min="1" class="form-input"></div>
+		  <div class="form-col"><label class="form-label" for="cont_reg_numero">N&uacute;mero exacto del papel</label><input id="cont_reg_numero" class="form-input" autocomplete="off"></div>
+		  <div class="form-col"><label class="form-label" for="cont_reg_fecha">Fecha de expedici&oacute;n</label><input id="cont_reg_fecha" type="date" class="form-input"></div>
+		</div>
+		<div class="form-row">
+		  <div class="form-col"><label class="form-label" for="cont_reg_confirmacion">Confirmaci&oacute;n</label><input id="cont_reg_confirmacion" class="form-input" placeholder="REGISTRAR TALONARIO" autocomplete="off"></div>
+		  <div class="form-col" style="display:flex;align-items:flex-end"><button id="contRegistrarTalonario" type="button" class="btn">Registrar expedici&oacute;n</button></div>
+		</div>
+		<p class="form-help">Solo registra una factura que haya sido entregada f&iacute;sicamente durante una falla real del facturador. PCS exige venta pagada, fuente fiscal inmutable, rango vigente y siguiente consecutivo exacto. La transmisi&oacute;n tipo 03 permanece pendiente hasta superar su preflight espec&iacute;fico.</p>
+	  </div>
+      <div id="feContingenciaMsg" class="form-help"></div>
+      <div id="feContingenciaList" class="dian-readable-result is-empty"></div>
+    </section>
 
     <div id="feEstructuradoEC" class="card is-hidden fe-estructurado fe-estructurado-ec">
       <h3>Campos estructurados — Ecuador (SRI)</h3>
@@ -757,6 +808,7 @@
           <button type="button" id="advReloadBtn" class="btn secondary">Recargar configuración avanzada</button>
         </div>
         <div id="adv_msg" class="form-help"></div>
+        <p id="fiscalNumberingConsistency" role="alert" class="form-help" hidden></p>
       </form>
     </div>
   </div>
@@ -1211,7 +1263,22 @@
       advancedConfigState.allowed = true;
       setAdvancedSectionVisibility(true);
       setAdvancedFormData(cfg || {});
+      renderFiscalNumberingConsistency();
       return true;
+    }
+
+    function renderFiscalNumberingConsistency() {
+      var notice = document.getElementById("fiscalNumberingConsistency");
+      if (!notice) return;
+      var value = function(id) { var el = document.getElementById(id); return el ? String(el.value || "").trim() : ""; };
+      var sameRange = value("dian_prefijo").toUpperCase() === value("adv_prefijo_factura").toUpperCase() &&
+        value("dian_resolucion_numero") && value("dian_resolucion_numero") === value("adv_resolucion_numero");
+      var dianNext = Number(value("dian_consecutivo_actual"));
+      var salesNext = Number(value("adv_proximo_consecutivo"));
+      var mismatch = sameRange && dianNext > 0 && salesNext > 0 && dianNext !== salesNext;
+      notice.hidden = !mismatch;
+      notice.style.color = "#dc2626";
+      notice.textContent = mismatch ? "Numeración por revisar: DIAN muestra " + dianNext + " y ventas muestra " + salesNext + ". Contrasta documentos, cola y portal DIAN antes de emitir. No reduzcas consecutivos. El 100 % de campos completos no valida esta concordancia." : "";
     }
 
     function countryLabel(item) {
@@ -1318,6 +1385,10 @@
         if (dianDocumentosCard) {
           dianDocumentosCard.classList.toggle("is-hidden", codeU !== "CO");
         }
+		var contingenciaCard = document.getElementById("feContingenciaCard");
+		if (contingenciaCard) {
+		  contingenciaCard.classList.toggle("is-hidden", codeU !== "CO");
+		}
         if (vista.label_identificador) {
           var li = document.getElementById("labelIdentificador");
           if (li) li.textContent = vista.label_identificador;
@@ -2313,6 +2384,7 @@
       var data = await readJSONResponse(res);
       var item = Array.isArray(data) && data.length ? data[0] : null;
       setDianConfigFormData(item || {});
+      renderFiscalNumberingConsistency();
       if (item && item.id) {
         verificarDianFirmaVencimiento(false).catch(function() {});
         verificarDianResolucionVencimiento(true).catch(function() {});
@@ -2922,6 +2994,182 @@
       });
     }
 
+    function setContingenciaMessage(message, isError) {
+      var el = document.getElementById("feContingenciaMsg");
+      if (!el) return;
+      el.textContent = message || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setContingenciaConfig(config) {
+      config = config || {};
+      var values = {
+        cont_prefijo: config.prefijo || "",
+        cont_resolucion: config.resolucion_numero || "",
+        cont_estado: config.estado || "configurando",
+        cont_fecha_desde: config.fecha_desde || "",
+        cont_fecha_hasta: config.fecha_hasta || "",
+        cont_rango_desde: config.rango_desde || "",
+        cont_rango_hasta: config.rango_hasta || "",
+        cont_proximo: config.proximo_numero || ""
+      };
+      Object.keys(values).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = values[id];
+      });
+    }
+
+    function renderContingencias(data) {
+      setContingenciaConfig(data && data.configuracion_talonario);
+      var box = document.getElementById("feContingenciaList");
+      if (!box) return;
+      var items = Array.isArray(data && data.contingencias) ? data.contingencias : [];
+      box.innerHTML = "";
+      if (!items.length) {
+        box.classList.add("is-empty");
+        box.textContent = "No hay contingencias fiscales declaradas para esta empresa.";
+        return;
+      }
+      box.classList.remove("is-empty");
+      var table = document.createElement("table");
+      table.className = "table";
+      table.innerHTML = "<thead><tr><th>Tipo</th><th>Estado</th><th>Inicio</th><th>Límite operativo</th><th>Pendientes</th><th>Acción</th></tr></thead>";
+      var tbody = document.createElement("tbody");
+      items.forEach(function(item) {
+        var tr = document.createElement("tr");
+        [item.tipo, item.estado, item.fecha_inicio, item.fecha_limite_transmision || "—", String(item.documentos_pendientes || 0)].forEach(function(value) {
+          var td = document.createElement("td");
+          td.textContent = value || "—";
+          tr.appendChild(td);
+        });
+        var actionCell = document.createElement("td");
+        if (item.estado === "activa") {
+          var recover = document.createElement("button");
+          recover.type = "button";
+          recover.className = "btn secondary";
+          recover.textContent = "Marcar recuperada";
+          recover.addEventListener("click", function() { mutateContingencia("recuperar", item.id); });
+          actionCell.appendChild(recover);
+        } else if (item.estado === "recuperada") {
+          var close = document.createElement("button");
+          close.type = "button";
+          close.className = "btn secondary";
+          close.textContent = "Cerrar sin pendientes";
+          close.addEventListener("click", function() { mutateContingencia("cerrar", item.id); });
+          actionCell.appendChild(close);
+        } else {
+          actionCell.textContent = "Cerrada";
+        }
+        tr.appendChild(actionCell);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      box.appendChild(table);
+
+	  var documents = Array.isArray(data && data.documentos) ? data.documentos : [];
+	  var documentsTitle = document.createElement("h3");
+	  documentsTitle.textContent = "Documentos vinculados";
+	  box.appendChild(documentsTitle);
+	  if (!documents.length) {
+		var emptyDocuments = document.createElement("p");
+		emptyDocuments.className = "form-help";
+		emptyDocuments.textContent = "No hay documentos vinculados a contingencias de esta empresa.";
+		box.appendChild(emptyDocuments);
+		return;
+	  }
+	  var documentsTable = document.createElement("table");
+	  documentsTable.className = "table";
+	  documentsTable.innerHTML = "<thead><tr><th>Incidente</th><th>Documento</th><th>Papel</th><th>Estado</th><th>Actualizado</th></tr></thead>";
+	  var documentsBody = document.createElement("tbody");
+	  documents.forEach(function(item) {
+		var row = document.createElement("tr");
+		[
+		  String(item.contingencia_id || "—"),
+		  item.documento_codigo || "—",
+		  item.numero_papel || "—",
+		  item.estado_transmision || "—",
+		  item.fecha_actualizacion || "—"
+		].forEach(function(value) {
+		  var cell = document.createElement("td");
+		  cell.textContent = value;
+		  row.appendChild(cell);
+		});
+		documentsBody.appendChild(row);
+	  });
+	  documentsTable.appendChild(documentsBody);
+	  box.appendChild(documentsTable);
+    }
+
+    async function loadContingencias() {
+      if (!state.empresaID) return null;
+      var res = await fetch("/api/empresa/facturacion_electronica/contingencias?empresa_id=" + encodeURIComponent(state.empresaID), { credentials: "same-origin" });
+      var data = await readJSONResponse(res);
+      renderContingencias(data || {});
+      return data;
+    }
+
+    async function postContingencia(payload) {
+      payload.empresa_id = state.empresaID;
+      var res = await fetch("/api/empresa/facturacion_electronica/contingencias", {
+        method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+      });
+      var data = await readJSONResponse(res);
+      renderContingencias(data || {});
+      return data;
+    }
+
+    async function mutateContingencia(action, id) {
+      var confirmation = txt(document.getElementById("cont_confirmacion").value);
+      var required = action === "recuperar" ? "RECUPERAR SERVICIO" : "CERRAR CONTINGENCIA";
+      if (confirmation !== required) {
+        document.getElementById("cont_confirmacion").placeholder = required;
+        setContingenciaMessage("Escribe " + required + " exactamente antes de continuar.", true);
+        return;
+      }
+      try {
+        await postContingencia({ action: action, contingencia_id: Number(id), confirmacion: confirmation });
+        document.getElementById("cont_confirmacion").value = "";
+        setContingenciaMessage(action === "recuperar" ? "Servicio marcado como recuperado; empieza el control de 48 horas." : "Contingencia cerrada sin documentos pendientes.", false);
+      } catch (err) {
+        setContingenciaMessage(err && err.message ? err.message : "No se pudo actualizar la contingencia.", true);
+      }
+    }
+
+    var contGuardar = document.getElementById("contGuardarTalonario");
+    if (contGuardar) contGuardar.addEventListener("click", function() {
+      postContingencia({
+        action: "guardar_talonario", pais_codigo: "CO", prefijo: txt(document.getElementById("cont_prefijo").value),
+        resolucion_numero: txt(document.getElementById("cont_resolucion").value), estado: txt(document.getElementById("cont_estado").value),
+        fecha_desde: txt(document.getElementById("cont_fecha_desde").value), fecha_hasta: txt(document.getElementById("cont_fecha_hasta").value),
+        rango_desde: Number(document.getElementById("cont_rango_desde").value || 0), rango_hasta: Number(document.getElementById("cont_rango_hasta").value || 0),
+        proximo_numero: Number(document.getElementById("cont_proximo").value || 0)
+      }).then(function() { setContingenciaMessage("Autorización de talonario guardada sin retroceder el consecutivo.", false); })
+        .catch(function(err) { setContingenciaMessage(err && err.message ? err.message : "No se pudo guardar la autorización.", true); });
+    });
+
+    var contAbrir = document.getElementById("contAbrir");
+    if (contAbrir) contAbrir.addEventListener("click", function() {
+      postContingencia({
+        action: "abrir", tipo: txt(document.getElementById("cont_tipo").value), motivo: txt(document.getElementById("cont_motivo").value),
+        evidencia_referencia: txt(document.getElementById("cont_evidencia").value), confirmacion: txt(document.getElementById("cont_confirmacion").value)
+      }).then(function() {
+        document.getElementById("cont_confirmacion").value = "";
+        setContingenciaMessage("Contingencia declarada y auditada. No sustituye la expedición legal aplicable.", false);
+      }).catch(function(err) { setContingenciaMessage(err && err.message ? err.message : "No se pudo declarar la contingencia.", true); });
+    });
+
+	var contRegistrar = document.getElementById("contRegistrarTalonario");
+	if (contRegistrar) contRegistrar.addEventListener("click", function() {
+	  postContingencia({
+		action: "registrar_talonario", contingencia_id: Number(document.getElementById("cont_reg_incidente").value || 0),
+		carrito_id: Number(document.getElementById("cont_reg_carrito").value || 0), numero_papel: txt(document.getElementById("cont_reg_numero").value),
+		fecha_expedicion_papel: txt(document.getElementById("cont_reg_fecha").value), confirmacion: txt(document.getElementById("cont_reg_confirmacion").value)
+	  }).then(function() {
+		document.getElementById("cont_reg_confirmacion").value = "";
+		setContingenciaMessage("Factura de papel registrada con consecutivo reservado; transmisión electrónica tipo 03 pendiente.", false);
+	  }).catch(function(err) { setContingenciaMessage(err && err.message ? err.message : "No se pudo registrar la factura de papel.", true); });
+	});
+
     var btnDianNumeracionAplicar = document.getElementById("btnDianNumeracionAplicar");
     if (btnDianNumeracionAplicar) {
       btnDianNumeracionAplicar.addEventListener("click", applyDianNumeracionPdfValues);
@@ -3119,6 +3367,11 @@
         await loadCountryConfig(initialCountry);
         if (txt(document.getElementById("pais_codigo").value).toUpperCase() === "CO") {
           await loadDianConfig();
+		  try {
+			await loadContingencias();
+		  } catch (contingenciaErr) {
+			setContingenciaMessage(contingenciaErr && contingenciaErr.message ? contingenciaErr.message : "No se pudo cargar contingencia fiscal.", true);
+		  }
         }
         await loadList();
       } catch (err) {

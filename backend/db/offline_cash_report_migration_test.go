@@ -12,7 +12,7 @@ func TestOfflineCashReportMigrationIsRegistered(t *testing.T) {
 	}
 	found := false
 	for _, migration := range migrations {
-		if migration.Version != "20260906-002-offline-cash-report-v1" {
+		if migration.Version != "20260906-004-offline-cash-report-v1" {
 			continue
 		}
 		found = true

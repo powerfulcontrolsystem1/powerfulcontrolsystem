@@ -969,6 +969,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/facturacion_electronica/contingencias":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/contingencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/contingencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/facturacion_electronica/ecuador":
     get:
       tags: [empresa]

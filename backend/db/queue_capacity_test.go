@@ -52,7 +52,7 @@ func TestQueueCapacityMigrationsAreRegistered(t *testing.T) {
 		version     string
 		fingerprint string
 	}{
-		{MigrationTargetEmpresas, "20260906-001-queue-capacity-business-v1", queueCapacityBusinessSchemaFingerprint},
+		{MigrationTargetEmpresas, "20260906-003-queue-capacity-business-v1", queueCapacityBusinessSchemaFingerprint},
 		{MigrationTargetSuper, "20260906-001-queue-capacity-super-v1", queueCapacitySuperSchemaFingerprint},
 	}
 	for _, target := range targets {

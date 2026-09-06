@@ -33,6 +33,26 @@ func TestValidateOfflineVentaSessionOwnerRejectsDifferentCashier(t *testing.T) {
 	}
 }
 
+func TestOfflineIdentityFailsClosedBeforeClaim(t *testing.T) {
+	valid := offlineVentaPayload{EmpresaID: 12, SyncKey: "OFF-CAJA2-UNIQUE", UsuarioEmail: "qa@example.invalid", Pago: offlinePagoPayload{CajaCodigo: "CAJA-2"}}
+	if err := validateOfflineVentaIdentity(12, valid, "qa@example.invalid"); err != nil {
+		t.Fatal(err)
+	}
+	for _, change := range []func(*offlineVentaPayload){
+		func(v *offlineVentaPayload) { v.EmpresaID = 13 },
+		func(v *offlineVentaPayload) { v.SyncKey = "" },
+		func(v *offlineVentaPayload) { v.UsuarioEmail = "" },
+		func(v *offlineVentaPayload) { v.UsuarioEmail = "otro@example.invalid" },
+		func(v *offlineVentaPayload) { v.Pago.CajaCodigo = "" },
+	} {
+		v := valid
+		change(&v)
+		if err := validateOfflineVentaIdentity(12, v, "qa@example.invalid"); err == nil {
+			t.Fatal("invalid offline identity accepted")
+		}
+	}
+}
+
 func TestValidateOfflineVentaSessionOwnerAllowsSameCashier(t *testing.T) {
 	err := validateOfflineVentaSessionOwner(offlineVentaPayload{
 		UsuarioEmail: "Cajero.Uno@Example.com",

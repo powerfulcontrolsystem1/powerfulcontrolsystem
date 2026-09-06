@@ -5826,7 +5826,7 @@
         const offlineProvisional = Boolean(pay && pay.offlineProvisional);
         const markOfflinePending = offlineProvisional && shouldMarkOfflineInvoicePending();
         const printed = printPCSPrintDocument({
-          title: markOfflinePending ? 'Factura provisional offline' : 'Recibo de cobro',
+          title: markOfflinePending ? 'Comprobante provisional offline' : 'Recibo de cobro',
           kind: 'recibo',
           format: printFormat,
           logos: window.PCSPrint.resolveDocumentLogos(cfg),
@@ -5849,7 +5849,7 @@
           totalValue: formatAmount(pay.totalPagarFinal, moneda),
           totalWords: receiptItemEnabled(printItems, 'total_en_letras') && window.PCSPrint && typeof window.PCSPrint.amountToWords === 'function' ? window.PCSPrint.amountToWords(Number(pay.totalPagarFinal || 0), moneda) : '',
           summaryRows: taxSummaryRows.concat(operationalRows),
-          footer: markOfflinePending ? 'Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.' : 'Gracias por su compra.',
+          footer: markOfflinePending ? 'Sin validación DIAN. Este comprobante no sustituye la factura electrónica ni la factura de contingencia autorizada.' : 'Gracias por su compra.',
           qr: invoiceQR,
           signatures: false
         }, printTarget);
@@ -5866,7 +5866,7 @@
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Recibo de cobro</title>' +
         '<style>' + pageStyle + baseStyle + '</style>' +
         '</head><body>' +
-        '<h1>' + (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? 'Factura provisional offline' : 'Recibo de cobro') + '</h1>' +
+        '<h1>' + (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? 'Comprobante provisional offline' : 'Recibo de cobro') + '</h1>' +
         (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p><strong>Estado:</strong> Pendiente de sincronizar</p>' : '') +
         (receiptItemEnabled(printItems, 'empresa') ? '<p><strong>Empresa ID:</strong> ' + escapeHtml(state.empresaID) + '</p>' : '') +
         (receiptItemEnabled(printItems, 'carrito') ? '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && carrito.nombre) || '') + '</p>' : '') +
@@ -5888,7 +5888,7 @@
           receiptItemEnabled(printItems, 'fecha') ? ('Fecha: ' + escapeHtml(now.toLocaleString())) : '',
           receiptItemEnabled(printItems, 'copias') ? ('Copias: ' + escapeHtml(String(copias))) : ''
         ].filter(Boolean).join(' | ') + '</p>' : '') +
-        (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p class="muted">Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.</p>' : '') +
+        (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p class="muted">Sin validación DIAN. Este comprobante no sustituye la factura electrónica ni la factura de contingencia autorizada.</p>' : '') +
         electronicInvoiceQRFallbackHTML(invoiceQR) +
         '</body></html>';
 
@@ -6164,16 +6164,17 @@
     function offlineRowBelongsToCurrentOperator(row) {
       const currentEmail = currentOfflineOperatorEmail().toLowerCase();
       const rowEmail = normalize(row && (row.usuario_email || row.usuarioEmail || row.cajero_email || row.cajeroEmail)).toLowerCase();
-      return !currentEmail || !rowEmail || currentEmail === rowEmail;
+      return Boolean(currentEmail && rowEmail && currentEmail === rowEmail && Number(row.empresa_id) === Number(state.empresaID));
     }
 
     function readOfflineQueueKey(key) {
       try {
         const raw = localStorage.getItem(key);
         const rows = raw ? JSON.parse(raw) : [];
-        return Array.isArray(rows) ? rows : [];
+        if (!Array.isArray(rows)) throw new Error('Formato offline inválido');
+        return rows;
       } catch (_) {
-        return [];
+        throw new Error('No se pudo leer la cola offline. No se sobrescribirá; conserva este navegador y solicita revisión.');
       }
     }
 
@@ -6185,7 +6186,9 @@
         } else {
           localStorage.removeItem(key);
         }
-      } catch (_) {}
+      } catch (_) {
+        throw new Error('No se pudo guardar la venta offline. Revisa el almacenamiento del navegador; la venta no está confirmada.');
+      }
     }
 
     function loadOfflineQueue() {
@@ -6209,7 +6212,11 @@
 
     function saveOfflineQueue(rows) {
       const currentRows = (Array.isArray(rows) ? rows : []).filter(offlineRowBelongsToCurrentOperator);
-      writeOfflineQueueKey(offlineQueueKey(), currentRows);
+      // Preserve legacy key collisions between normalized operator names.
+      const foreignRows = readOfflineQueueKey(offlineQueueKey()).filter(function(row) {
+        return !offlineRowBelongsToCurrentOperator(row);
+      });
+      writeOfflineQueueKey(offlineQueueKey(), foreignRows.concat(currentRows));
       const legacy = offlineLegacyQueueKey();
       if (legacy !== offlineQueueKey()) {
         const legacyRows = readOfflineQueueKey(legacy).filter(function(row) {
@@ -6320,15 +6327,26 @@
       };
     }
 
-    function enqueueOfflineSale(payload) {
-      if (!payload || !payload.sync_key) return false;
-      const rows = loadOfflineQueue();
-      const exists = rows.some(function(row) { return row && row.sync_key === payload.sync_key; });
-      if (!exists) {
-        rows.push(Object.assign({}, payload, { estado_local: 'pendiente' }));
-        saveOfflineQueue(rows);
+    async function withOfflineQueueLock(action) {
+      if (!navigator.locks || typeof navigator.locks.request !== 'function') {
+        throw new Error('Este navegador no permite una cola offline segura entre pestañas. Recupera la conexión antes de cobrar.');
       }
-      return true;
+      // The legacy queue is shared by operators, so its migration needs this lock too.
+      return navigator.locks.request(offlineLegacyQueueKey(), action);
+    }
+
+    async function enqueueOfflineSale(payload) {
+      if (!payload || !payload.sync_key) return false;
+      if (!offlineRowBelongsToCurrentOperator(payload)) throw new Error('La venta offline requiere empresa y operador autenticados.');
+      return withOfflineQueueLock(function() {
+        const rows = loadOfflineQueue();
+        const exists = rows.some(function(row) { return row && row.sync_key === payload.sync_key; });
+        if (!exists) {
+          rows.push(Object.assign({}, payload, { estado_local: 'pendiente' }));
+          saveOfflineQueue(rows);
+        }
+        return true;
+      });
     }
 
     async function printOfflineSaleReceipt(carrito, pay, items, printTarget) {
@@ -6338,7 +6356,7 @@
       });
       const printed = await printSaleReceiptIfEnabled(carrito, payCopy, items, printTarget);
       if (!printed) return false;
-      setStationPaymentPersistentMessage('Factura/comprobante provisional impreso en modo sin internet. Queda pendiente de sincronizar.', false);
+      setStationPaymentPersistentMessage('Comprobante provisional impreso sin validación DIAN. Queda pendiente de sincronizar.', false);
       return true;
     }
 
@@ -6369,10 +6387,21 @@
             item.ultimo_error = err && err.message ? err.message : 'No se pudo sincronizar.';
           }
         }
-        const remaining = pending.filter(function(row) { return row.estado_local !== 'sincronizado'; });
-        saveOfflineQueue(remaining);
+        await withOfflineQueueLock(function() {
+          // Another tab may have captured a sale while the HTTP requests ran.
+          // Merge against the current queue; never replace it with an old snapshot.
+          const outcomes = new Map(pending.map(function(row) { return [row.sync_key, row]; }));
+          const remaining = loadOfflineQueue().filter(function(row) {
+            const outcome = outcomes.get(row.sync_key);
+            if (!outcome) return true;
+            if (outcome.estado_local === 'sincronizado') return false;
+            row.ultimo_error = outcome.ultimo_error;
+            return true;
+          });
+          saveOfflineQueue(remaining);
+        });
         if (synced > 0) {
-          const syncedMessage = 'Internet restablecido. Se sincronizaron ' + synced + ' venta(s) offline; inventario, caja y documentos quedaron actualizados.';
+          const syncedMessage = 'Internet restablecido. Se sincronizaron ' + synced + ' venta(s) offline. Revisa la bandeja documental: sincronizar una venta no acredita aceptación DIAN.';
           setStationPaymentPersistentMessage(syncedMessage, false);
           showOnlineFloatingNotice(syncedMessage);
           try {
@@ -6393,7 +6422,7 @@
         return true;
       }
       const payload = buildOfflineSalePayload(carrito, pay, itemsSnapshot, cashForPayment);
-      enqueueOfflineSale(payload);
+      if (!await enqueueOfflineSale(payload)) throw new Error('No se guardó la venta offline.');
       notifyOfflineModeEntered();
       await printOfflineSaleReceipt(carrito, pay, itemsSnapshot, printTargets && printTargets.receipt);
       closeUnusedPaymentPrintTargets(printTargets);
