@@ -1,7 +1,16 @@
 # Declaraciones Tributarias y Motor de Impuestos Colombia
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El módulo registra y preliquida información parametrizable. Cambiar una declaración a pagada/revisada localmente no demuestra presentación, pago ni aceptación de la autoridad.
+- Los calendarios y tasas requieren fuente y vigencia por empresa/jurisdicción; esta revisión describe el código, no recalcula obligaciones legales.
+- Las URLs normativas del documento son referencias de consulta; no constituyen validación actual de calendario o tasas.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
-Estado: implementado
 
 ## Alcance
 
@@ -52,3 +61,9 @@ Todas las tablas incluyen `empresa_id`; la API queda protegida por `WithEmpresaD
 ## Pruebas
 
 Se agregan pruebas unitarias en `backend/db/declaraciones_tributarias_test.go` para rango de periodo, normalizacion de tipo y calculo de saldos IVA/saldo a favor.
+
+## Fuentes y aceptación de la revisión
+
+[declaraciones_tributarias.go](../backend/handlers/declaraciones_tributarias.go), [declaraciones_tributarias.go](../backend/db/declaraciones_tributarias.go), [declaraciones_tributarias_test.go](../backend/db/declaraciones_tributarias_test.go), [declaraciones_tributarias.html](../web/administrar_empresa/declaraciones_tributarias.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

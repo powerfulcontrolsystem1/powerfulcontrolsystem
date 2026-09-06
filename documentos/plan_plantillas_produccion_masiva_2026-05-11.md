@@ -1,3 +1,7 @@
+> Estado documental: histórico. Plan de veinte plantillas anterior al catálogo actual; sus afirmaciones de producción masiva no son evidencia vigente.
+> Fuentes actuales: [matriz_integracion_plantillas.md](matriz_integracion_plantillas.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan de plantillas para produccion masiva
 
 Fecha: 2026-05-11

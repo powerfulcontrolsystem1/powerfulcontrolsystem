@@ -1,5 +1,14 @@
 # Checklist de seguridad por endpoint multiempresa
 
+Estado: Vigente. Responsable: Seguridad e ingeniería. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Checklist de aceptación por ruta: presencia de wrapper no demuestra pertenencia de IDs secundarios, atomicidad, integridad de archivo ni permisos de efectos diferidos.
+- Usar pruebas negativas A/B y datos aislados; no ejecutar un borrado, importación o backup real por el solo hecho de revisar la lista.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Checklist obligatoria antes de crear, modificar o revisar endpoints que lean,
 creen, actualicen, eliminen, exporten, importen o sincronicen datos de una
 empresa. Aplica a rutas `/api/empresa/*`, acciones empresariales embebidas en
@@ -157,3 +166,9 @@ Al cerrar una tarea que toque endpoint multiempresa, el resumen debe indicar:
   `super_administrador` validado en backend y sin exponer secretos.
 - Jobs internos deben registrar alcance, origen y filtros por empresa aunque no
   reciban `empresa_id` desde HTTP.
+
+## Fuentes y aceptación de la revisión
+
+[empresa_permisos.go](../backend/handlers/empresa_permisos.go), [main_empresa_routes_security_test.go](../backend/main_empresa_routes_security_test.go), [AGENTS.md](../AGENTS.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

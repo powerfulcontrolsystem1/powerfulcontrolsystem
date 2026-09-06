@@ -1,5 +1,15 @@
 # Suite Contable Colombia Avanzada
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La escritura manual nomina_electronica devuelve 409 nomina_manual_no_permitida. Los datos fiscales se derivan del flujo mensual dedicado, no de campos editables CUNE/estado.
+- Las nuevas CxP y abonos a CxP histórica están bloqueados en esta superficie; usar la cuenta canónica de Finanzas y conciliar el legado.
+- El documento soporte cuenta con preflight y adaptador dedicado; no se acredita aceptación externa con la presencia del código.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha de actualización: 2026-08-26
 
 El módulo `contabilidad_colombia_avanzada` complementa `contabilidad_colombia` con los submódulos que suelen requerir los sistemas contables colombianos profesionales.
@@ -49,10 +59,10 @@ POST/PUT:
 - `exogena_formatos`
 - `exogena_registros`
 - `generar_exogena`
-- `nomina_electronica`
+- `nomina_electronica`: operación manual bloqueada (409); usar el flujo mensual dedicado.
 - `documentos_soporte`
 - `activos_fijos`
-- `cartera_cxp`
+- `cartera_cxp`: nuevas CxP bloqueadas; el legado se consulta/concilia según contrato.
 
 ## Separación por empresa
 
@@ -92,3 +102,9 @@ de facturación electrónica, pero su numeración y su fuente fiscal son propias
 Que el adaptador esté implementado no sustituye la configuración DIAN de cada
 empresa ni constituye evidencia de aceptación: producción solo se confirma con
 despliegue verificado y acuse real del documento emitido.
+
+## Fuentes y aceptación de la revisión
+
+[contabilidad_colombia_avanzada.go](../backend/handlers/contabilidad_colombia_avanzada.go), [contabilidad_colombia_avanzada.go](../backend/db/contabilidad_colombia_avanzada.go), [contabilidad_colombia_avanzada_test.go](../backend/db/contabilidad_colombia_avanzada_test.go), [contabilidad_colombia_avanzada.html](../web/administrar_empresa/contabilidad_colombia_avanzada.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go), [dian_documento_soporte.go](../backend/handlers/dian_documento_soporte.go), [dian_nomina_electronica.go](../backend/handlers/dian_nomina_electronica.go).
+
+Requisitos aplicables: PCS-REQ-001 a PCS-REQ-009, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

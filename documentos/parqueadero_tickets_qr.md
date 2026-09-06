@@ -1,5 +1,14 @@
 # Modulo Parqueadero: tickets QR y cobro automatico
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La API pública de QR es de consulta. El cierre/cobro pertenece al endpoint empresarial y sus permisos.
+- El cálculo de tarifa y el registro local de pago no acreditan confirmación de pasarela ni apertura física de una barrera. Probar reintento de salida y consistencia del enlace al carrito.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 El modulo de parqueadero permite operar entradas y salidas de vehiculos por empresa, con aislamiento por `empresa_id`.
 
 ## Funciones principales
@@ -41,3 +50,9 @@ Parqueadero no debe duplicar ventas ni pagos. La tabla `empresa_parqueadero_tick
 ## Permisos y licencia
 
 El modulo usa la llave `parqueadero`, integrada a permisos finos, roles y configuracion de licencias. Los roles operativos autorizados pueden registrar entradas, calcular cobros y cerrar salidas segun las reglas del plan activo.
+
+## Fuentes y aceptación de la revisión
+
+[parqueadero.go](../backend/handlers/parqueadero.go), [parqueadero.go](../backend/db/parqueadero.go), [parqueadero.html](../web/administrar_empresa/parqueadero.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001 a PCS-REQ-005, PCS-REQ-009, PCS-REQ-013, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

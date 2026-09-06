@@ -1,5 +1,39 @@
 # Comandos para Codex
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Se retiraron recetas con datos personales/folios reales y se enlazan contratos vigentes.
+- Los comandos son interfaces de herramientas, no aprobación de sus efectos. Inventariar target SSH, nombres Compose y dependencias antes de ejecución; Skip no equivale a PASS.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
+## Control documental
+
+Desde la raíz del repositorio, con Node disponible:
+
+```powershell
+node --test tools/docs_catalog.test.mjs
+node tools/docs_catalog.mjs --write
+node tools/docs_catalog.mjs --check
+git diff --check
+```
+
+`--write` regenera únicamente `documentos/catalogo_documental.md` y su JSON;
+revisar su diff antes de entregar. `--check` es de solo lectura y falla ante
+drift, fuentes mantenidas ausentes, metadatos incompletos o enlaces locales
+rotos de esas fuentes. La política de responsables/fechas se edita en
+`documentos/gobernanza_tecnica/politica_catalogo.json`, no se autogenera.
+
+El inventario usa archivos Git y nuevos no ignorados, con hashes normalizados a
+LF. No inspecciona archivos privados ignorados ni ejecuta PCS. Verifica enlaces
+Markdown explícitos, referencias completas y anclas; no interpreta rutas en
+backticks como enlaces, URLs externas, todos los dialectos Markdown ni contenido
+semántico. Los documentos heredados conservan estado de revisión pendiente y
+sus hallazgos visibles. Este control no sustituye seguridad ni aceptación funcional.
+
+
 Comandos confirmados para operar y validar este repositorio desde PowerShell.
 No imprimir secretos ni variables privadas completas.
 
@@ -395,6 +429,45 @@ local y un restaurador `restore_to_new_vps.sh` dentro del paquete. No imprimir
 secretos, `.env`, claves privadas, certificados ni DSN durante la ejecucion o al
 reportar resultados.
 
+En el propio VPS, el generador operativo admite tres alcances cerrados:
+
+```bash
+BACKUP_SCOPE=database bash deploy/scripts/vps-backup-operacion.sh
+BACKUP_SCOPE=system bash deploy/scripts/vps-backup-operacion.sh
+BACKUP_SCOPE=vps bash deploy/scripts/vps-backup-operacion.sh
+```
+
+`database` crea dumps lógicos; `system` añade proyecto y archivos persistentes
+PCS; `vps` añade los volúmenes permitidos de los contenedores activos y el dump
+lógico de Nextcloud cuando está disponible. No se archivan en caliente los
+volúmenes físicos de PostgreSQL/MariaDB. Cada ejecución genera `MANIFEST.txt` y
+`SHA256SUMS`. La retención local predeterminada es de dos días: la conservación
+larga debe ocurrir fuera del VPS.
+
+Para nube se usa `rclone` (Google Drive, OneDrive, Mega, Dropbox, Box, pCloud,
+Backblaze B2, S3 y proveedores compatibles) o AWS CLI para S3. Configurar OAuth
+fuera del repositorio, preferiblemente con un remoto `crypt`, y guardar solo la
+referencia en `/etc/pcs-external-backup.env` con permisos `600`:
+
+```text
+EXTERNAL_BACKUP_TARGET=rclone
+RCLONE_REMOTE=nombre_crypt:PCS/backups
+BACKUP_SCOPE=vps
+KEEP_LOCAL_DAYS=2
+```
+
+Después se valida manualmente y solo entonces se activa el cron:
+
+```bash
+set -a; . /etc/pcs-external-backup.env; set +a
+bash deploy/scripts/vps-external-backup.sh
+bash deploy/scripts/vps-install-external-backup-cron.sh
+```
+
+La subida no se considera correcta hasta que `rclone check --checksum` termina
+sin diferencias. No activar el cron con destino `none` ni conservar tokens en
+Git, logs o la base de datos.
+
 Para arrancar la API y el migrador exactos contra un snapshot restaurado sin
 tocar los servicios activos, ejecutar en la VPS:
 
@@ -618,7 +691,7 @@ if ($script:PcsVpsIdentityFile) { $args += @("-i", [string]$script:PcsVpsIdentit
 Para revisar errores del backend sin exponer secretos:
 
 ```powershell
-& $ssh @args $target "docker logs --tail 160 pcs-backend"
+& $ssh @args $target "docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml logs --tail 160 backend"
 ```
 
 Para revisar PostgreSQL por consola del contenedor:
@@ -719,218 +792,14 @@ Checklist:
 - No presionar `Pagar y cerrar carrito`, `Cancelar carrito` ni acciones de
   devolucion/cierre si el usuario no lo autorizo para datos reales.
 
-## Pruebas reales en produccion PCS
+## Validación de flujos con efectos reales
 
-### Login API seguro para pruebas PCS
-
-- Usar solo credenciales autorizadas explicitamente por el usuario en el chat.
-- No escribir claves en documentacion, commits ni respuestas finales.
-- Guardar cookies solo en `.gotmp` y eliminarlas al terminar si ya no se
-  necesitan.
-
-Ejemplo de flujo sin imprimir secretos:
-
-```powershell
-$cookie = ".gotmp\pcs_api_cookie.txt"
-# Construir el payload en memoria con la clave autorizada por el usuario.
-curl.exe --ssl-no-revoke -sS -c $cookie -b $cookie `
-  -X POST "https://powerfulcontrolsystem.com/super/api/administradores/login" `
-  -H "Content-Type: application/json" `
-  --data-binary "@.gotmp\login_payload.json"
-```
-
-El login por correo de `login.html` usa `/super/api/administradores/login`.
-Si reCAPTCHA o 2FA estan activos, preferir la sesion real del navegador interno
-o Chrome autorizado por el usuario.
-
-### Numeracion DIAN PCS 2026-06-17
-
-PDF autorizado por el usuario:
-
-```text
-C:\Users\ivanm\Documents\18764111318575 Autorizacion numercion DIAN 17 JUNIO 2026.pdf
-```
-
-Importar PDF Formulario 1876 con IA GPT-5.5, igual que el boton visible de
-`facturacion_electronica.html`:
-
-```powershell
-curl.exe --ssl-no-revoke -sS -b .gotmp\pcs_api_cookie.txt `
-  -X POST "https://powerfulcontrolsystem.com/api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf_ia&empresa_id=12" `
-  -F "archivo=@C:\Users\ivanm\Documents\18764111318575 Autorizacion numercion DIAN 17 JUNIO 2026.pdf;type=application/pdf" `
-  -F "empresa_id=12"
-```
-
-El endpoint `action=importar_numeracion_pdf` queda como respaldo tecnico local
-para pruebas automatizadas cuando IA no este disponible, pero el flujo visual
-principal debe usar IA y permitir digitacion manual en los campos existentes.
-
-### RUT DIAN por empresa
-
-El Formulario 001 RUT se carga desde el control independiente `RUT por empresa`
-en `facturacion_electronica.html`. No usar el boton del Formulario 1876: ese
-documento solo corresponde a autorizacion de numeracion.
-
-La accion empresarial es
-`POST /api/empresa/facturacion_electronica/dian?action=importar_rut_pdf_ia` con
-multipart `archivo` y `empresa_id`. El wrapper autenticado conserva el tenant
-canonico aunque el multipart sea manipulado. Solo acepta PDF real de hasta
-12 MB, lo procesa temporalmente con GPT-5.5 y devuelve valores revisables; no
-almacena el archivo, no guarda automaticamente la extraccion y no emite ni
-transmite documentos DIAN.
-
-En la interfaz, revisar la previsualizacion, pulsar `Aplicar datos revisados` y
-confirmar por separado `Guardar DIAN Colombia` y `Guardar configuracion
-avanzada`. No completar regimen de renta ni responsabilidades ausentes por
-inferencia: deben corresponder a los campos visibles del RUT vigente.
-
-### Pruebas visuales con navegador desde Codex
-
-Cuando el usuario pida "prueba visualmente", Codex debe intentar primero la
-herramienta de navegador interna o la extension de Chrome si esta disponible en
-el hilo. Si esas herramientas no aparecen en `tool_search`, usar Playwright
-desde el workspace contra la URL publicada o local.
-
-Flujo recomendado con Playwright:
-
-```powershell
-# Usar una carpeta temporal ignorada por Git para capturas.
-New-Item -ItemType Directory -Force .gotmp\visual | Out-Null
-
-# Abrir paginas publicadas y guardar evidencia visual.
-node .gotmp\visual_check.mjs
-```
-
-El script debe:
-
-- Abrir `https://powerfulcontrolsystem.com/login.html` y autenticar solo si el
-  usuario autorizo credenciales en el chat actual.
-- Entrar a PCS con `empresa_id=12`.
-- Probar escritorio y celular con `page.setViewportSize`.
-- Capturar consola, errores de pagina y screenshots en `.gotmp\visual`.
-- Revisar que no haya texto cortado, botones fuera de tarjeta, selects
-  ilegibles, spinners numericos indeseados ni errores JavaScript.
-- Para carrito, probar busqueda por nombre, botones `+`/`-`, cantidad visible,
-  pagos combinados y flujo de cliente sin enviar documentos externos si el
-  usuario no lo autorizo.
-
-No guardar claves ni cookies en documentacion. Borrar cookies temporales de
-`.gotmp` al terminar si contienen sesiones.
-
-Valores esperados del PDF PCS:
-
-```text
-Formulario: 18764111318575
-Prefijo: 1PCS
-Rango: 1-100000
-Fecha desde: 2026-06-17
-Fecha hasta: 2028-06-17
-Vigencia: 24 meses
-```
-
-### Venta de prueba DIAN PCS
-
-Datos controlados:
-
-- Empresa: PCS, `empresa_id=12`.
-- Producto: `menta`, producto `id=103`, SKU `1`, precio COP 100.
-- Cliente: IVAN FRANCISCO CAYON GUARNIZO, cliente `id=22`, CC `84456779`.
-
-Flujo API equivalente al carrito:
-
-1. Crear carrito en `/api/empresa/carritos_compra?empresa_id=12&modo=venta_directa&perm_page=linkVentaDirecta`.
-2. Activarlo con `PUT action=activar_estacion`.
-3. Agregar producto por `/api/empresa/carritos_compra/items` con `permitir_sin_stock=true` si la empresa lo permite.
-4. Abrir caja con `PUT action=abrir_caja_cobro`.
-5. Cerrar pago con `PUT action=pagar_estacion`.
-6. Si no autoemite FE, llamar `/api/empresa/facturacion_electronica?action=facturar_desde_venta&empresa_id=12` con `tipo_documento=comprobante_pago`, `documento_codigo` y `cliente_id=22`.
-7. Revisar `integracion_fiscal.cola_reintentos`, numero legal y reglas DIAN.
-
-Resultado historico de referencia 2026-06-17: factura `FV-FE-MENTA-20260617151719`,
-numero legal `1PCS1`, enviada a DIAN y rechazada por `FAK61`, `FAB05c` y
-`FAD06`. El error de rango/prefijo de la resolucion anterior ya no aparecio.
-
-Revalidacion historica 2026-06-18: despues de asociar la numeracion en portal DIAN
-produccion y consultar `GetNumberingRange`, PCS emitio factura `1PCS2` por
-producto `menta`. Luego el usuario confirmo en portal DIAN produccion que
-`1PCS2` aparece como `Aprobado con notificacion`. Si un reenvio devuelve
-`Regla: 90, Documento procesado anteriormente`, tratar esa regla como pendiente
-de consulta del acuse original y revisar portal/CUFE antes de reenviar.
-
-Resultado historico real 2026-06-18: prueba viva en VPS emitio `1PCS3` contra DIAN
-produccion por SOAP/WCF `SendBillSync`; DIAN respondio HTTP 200 con
-`estado_dian=aceptado`, `acuse_estado=aceptado`, CUFE registrado y notificacion
-`RUT01` informativa.
-
-Confirmacion historica de portal DIAN 2026-06-18: el usuario encontro en produccion, consulta
-de documentos recibidos, las facturas `1PCS3` del 18-06-2026 y `1PCS2` del
-17-06-2026 como `Aprobado con notificacion`, valor `$ 100`. Despues de esa
-prueba los contadores quedaron entonces en siguiente consecutivo `1PCS4`. No
-usar ese numero para una emision actual.
-
-Auditoria real 2026-08-24: PCS supero preflight de credenciales/firma y
-`GetNumberingRange` confirmo resolucion `18764111318575`, prefijo `1PCS`, rango
-`1-100000` y siguiente visible 12. El diagnostico quedo
-`pre_envio_validable`; alcance HTTP no equivale a aceptacion SOAP. Una
-reconsulta historica devolvio codigo DIAN 66 y expuso que el binario publicado
-degradaba el estado global; se restauro a `enviado` y el candidato restringe
-esa mutacion al historial individual.
-
-Cuando el usuario pida probar `powerfulcontrolsystem.com`, DIAN, carrito o una
-venta real de la empresa Powerful Control System, no iniciar probando en local
-salvo que la tarea diga explicitamente localhost. Usar:
-
-```text
-https://powerfulcontrolsystem.com
-empresa_id=12
-```
-
-Si el usuario entrego credenciales para esa prueba, autenticar por navegador real
-o por API con cookie temporal bajo `.gotmp`, sin imprimir la clave. Ejemplo de
-patron API:
-
-```powershell
-$base = "https://powerfulcontrolsystem.com"
-$cookie = "D:\powerfulcontrolsystem\.gotmp\pcs_cookie.txt"
-curl.exe --ssl-no-revoke -sS -c $cookie -H "Content-Type: application/json" -X POST "$base/super/api/administradores/login" --data-binary "@D:\powerfulcontrolsystem\.gotmp\login_payload.json"
-curl.exe --ssl-no-revoke -sS -b $cookie "$base/api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=12"
-```
-
-Para facturacion electronica DIAN de PCS, el cierre minimo es:
-
-- Verificar diagnostico oficial y configuracion DIAN sin mostrar secretos.
-- Crear o reutilizar venta de producto `menta` y cliente natural/empresa segun
-  lo pedido.
-- Emitir una factura exclusivamente desde una venta pagada que haya capturado
-  `fuente_fiscal_json` inmutable. No usar formularios/actions de XML, firma o
-  envio libres. Un reintento debe reutilizar el XML del mismo documento y
-  volver a validar su fuente.
-- Revisar `integracion_fiscal.estado_envio`, `numero_legal`, `cola_reintentos`
-  y reglas DIAN (`FAB05c`, `FAD06`, etc.).
-- Interpretar el cuerpo funcional aunque HTTP sea 200. `ok=false`, `StatusCode`
-  de rechazo o `Fault` son fallos; una prueba HEAD/HTTP solo demuestra alcance
-  de red, no credenciales, SOAP ni aceptacion fiscal.
-- Si el rechazo incluye `FAB05c`, verificar primero la asociacion del rango en
-  `https://catalogo-vpfe.dian.gov.co/User/Login`.
-- Si incluye `FAD06`, volver a consultar clave tecnica DIAN y revisar CUFE,
-  prefijo, consecutivo, fecha/hora, impuestos y totales.
-- Si incluye `Regla 90`, no marcar como aceptado por esa regla sola; consultar
-  primero portal DIAN, CUFE o acuse original. Si el documento ya aparece
-  aprobado, continuar con el siguiente consecutivo y no reenviar el mismo folio.
-- `Aprobado con notificacion` en DIAN cuenta como documento aprobado; documentar
-  la notificacion (`RUT01`, etc.) y corregir datos maestros si aplica.
-- Nota credito/debito, soporte, nomina, equivalentes y RADIAN permanecen
-  bloqueados con HTTP 422 hasta tener fuentes y adaptadores especificos. No
-  consumir consecutivos ni transmitir fixtures para simular compatibilidad.
-
-Usar navegador interno o Chrome solo para validar pantallas y flujo visible:
-login, seleccionar empresa, carrito, cliente, totales, factura/impresion. Para
-consultas de estado y reintentos DIAN preferir API autenticada porque conserva
-la evidencia exacta y reduce errores visuales.
-
-Despues de `.\scripts\rs.ps1`, validar siempre contra el dominio publico con parametro
-`qa={timestamp}`. Si el navegador conserva cache anterior, recargar la pestana
-o cambiar el parametro `qa`.
+Usar los contratos de [pagos](gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md),
+[fiscal](gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md)
+y [domótica](domotica_raspberry_tunnel.md). No reutilizar clientes, documentos,
+tarifas, folios ni identidad de ejemplos históricos como datos de prueba.
+Una consulta documental no autoriza cobros, emisión, correo, GPIO ni despliegue.
+Registrar alcance autorizado, fuente genuina, candidato, entorno y evidencia.
 
 ## Validacion de diff
 
@@ -948,3 +817,9 @@ El proyecto no usa Python como runtime. Para tareas del repositorio preferir Go,
 PowerShell o Node segun corresponda. Python solo seria una herramienta local
 temporal si no hay alternativa razonable y nunca debe introducirse como
 dependencia del proyecto.
+
+## Fuentes y aceptación de la revisión
+
+[rs.ps1](../scripts/rs.ps1), [sync_to_vps.ps1](../scripts/sync_to_vps.ps1), [profesional_preflight.ps1](../scripts/profesional_preflight.ps1), [docs_catalog.mjs](../tools/docs_catalog.mjs).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

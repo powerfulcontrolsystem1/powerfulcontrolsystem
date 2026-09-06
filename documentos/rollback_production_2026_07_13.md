@@ -1,3 +1,7 @@
+> Estado documental: histórico. Borrador de rollback sustituido por el runbook de release y continuidad actuales.
+> Fuentes actuales: [runbook_release_profesional.md](gobernanza_tecnica/runbooks/runbook_release_profesional.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Procedimiento de rollback para futura produccion - 2026-07-13
 
 Este documento no autoriza un despliegue. Es la guia que debe validarse primero

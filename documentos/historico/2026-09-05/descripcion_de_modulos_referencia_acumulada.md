@@ -1,0 +1,5023 @@
+> Histórico de referencia acumulada, conservado al reorganizar el documento de entrada. No es contrato actual ni instrucción de ejecución. Enlaces relativos ajustados al traslado.
+
+> Referencia acumulada: contiene detalle técnico y actualizaciones históricas.
+> Para contexto vigente consultar [estado actual](../../estado_actual.md) y
+> [marco documental](../../gobernanza_tecnica/marco_documental.md).
+> La fecha o existencia de una sección no acredita producción; cotejar contrato y código del módulo.
+
+2026-09-05: Facturacion electronica internacional.
+- EC/PA/CR/AR/VE son perfiles, no adaptadores productivos; CO/DIAN mantiene las
+  familias implementadas y exige configuracion activa y fuente genuina.
+- Las nuevas fronteras de herencia y transporte se documentan en
+  documentos/auditoria_facturacion_seguridad_20260905.md. No hay cierre global.
+
+2026-08-26: Nomina electronica mensual DIAN desde liquidaciones pagadas.
+- Modulos afectados: `nomina_sueldos`, `facturacion_electronica`, `DIAN
+  Colombia`, `permisos` y `seguridad_multiempresa`.
+- PCS consolida por trabajador/mes cerrado todas las liquidaciones activas con
+  pagos reales. Perfil fiscal incompleto, solapes, periodos cruzados, pagos
+  ambiguos, diferencias o intervalos horarios ausentes bloquean sin numerar.
+- La configuracion de familia es independiente de factura. La reserva atomica
+  sella fuente/configuracion, genera `NominaIndividual`, CUNE SHA-384 y XAdES,
+  valida el XSD oficial y transmite produccion mediante `SendNominaSync`.
+- La UI de Nomina administra perfil fiscal, periodicidad/configuracion,
+  candidatos mensuales, preflight y confirmacion exacta. El preflight no
+  reserva ni transmite.
+- Facturacion + Nomina son una frontera compuesta para lectura, configuracion,
+  artefactos, emision y reenvio. El listado general oculta nomina cuando falta
+  permiso adicional y la cola manual no la transmite.
+- `NominaIndividualDeAjuste`, habilitacion automatica y entrega/PDF dedicado
+  siguen bloqueados. QA local y XSD oficial quedaron verdes; no hubo emision
+  real ni despliegue en este candidato.
+
+2026-08-26: Documento soporte DIAN 1.1 desde fuente contable estructurada.
+- Modulos afectados: `contabilidad_colombia_avanzada`,
+  `facturacion_electronica`, `DIAN Colombia`, `permisos` y
+  `seguridad_multiempresa`.
+- El formulario crea solo borradores con vendedor, ubicación, pago y líneas;
+  el servidor recalcula importes y elimina número, CUDS, respuesta y estado
+  fiscal suministrados por el navegador.
+- El preflight es de solo lectura. La emisión dedicada requiere configuración
+  separada válida, fuente sellada, confirmación escrita y reserva atómica por
+  `(empresa_id,documento_soporte_id)` antes de generar CUDS, firmar XAdES y usar
+  `SendBillSync`.
+- La numeración admite prefijo opcional de hasta cuatro caracteres y no puede
+  retroceder. La autorización usa 14 dígitos, vigencia completa y rango máximo
+  999999999. La caja DIAN 1.1 aporta el catálogo exacto de 1.093 unidades
+  UN/ECE Revision 4 validado en backend.
+- XML, acuse y representación usan el almacenamiento fiscal privado existente;
+  el espejo contable solo acepta CUDS SHA-384 del XML firmado o del acuse.
+- La emisión libre del Centro DIAN permanece deshabilitada. Nota de ajuste de
+  soporte, nómina, equivalentes, contingencia y RADIAN siguen bloqueados.
+- QA local: pruebas enfocadas, XSD/Schematron oficial, catálogo unidad por
+  unidad y preflight profesional correctos. Una prueba real requiere primero
+  un borrador de compra genuino y configuración propia de la empresa; no se
+  fabrican datos fiscales para forzarla. Esta actualización sustituye solo las
+  afirmaciones históricas que listaban documento soporte entre las familias sin
+  adaptador.
+
+2026-08-26: Facturacion electronica - reconciliacion local de acuses aceptados.
+- Nueva accion `reconciliar_aceptados_local` para reparar exclusivamente el
+  documento y la cola locales desde un acuse DIAN ya aceptado/reconciliado.
+- No consulta ni retransmite XML, no procesa pendientes y conserva intentos y
+  fechas fiscales. Requiere `facturacion:A` y mantiene aislamiento por
+  `empresa_id` resuelto en backend.
+
+2026-08-25: Cierre seguro de facturacion electronica Colombia.
+- Modulos afectados: `facturacion_electronica`, `carritos`, `permisos`,
+  `nomina`, `correo_fiscal` y `seguridad_multiempresa`.
+- La factura solo se crea desde una venta pagada y demuestra su fuente fiscal
+  inmutable antes de reservar numeracion. El endpoint generico no fabrica
+  facturas, notas ni otras familias desde payload libre.
+- La nota credito total nace de una factura aceptada con CUFE, se serializa por
+  documento origen, inicia pendiente y solo anula la factura cuando documento y
+  cola conservan el mismo CUDE oficial y acuse aceptado.
+- Acciones de envio, reintento, credenciales, rangos, firma e importacion fiscal
+  exigen aprobacion efectiva; la anulacion conserva `facturacion:D`. Las
+  consultas de vencimiento sin notificacion usan lectura y toda accion GET DIAN
+  desconocida falla antes de exponer el CRUD interno.
+- La bandeja exige CUFE oficial para habilitar anulacion y permite consultar
+  artefactos privados de factura y nota credito. Tambien verifica la existencia
+  de la fuente inmutable y mantiene en solo lectura los documentos historicos
+  que no la conservan.
+- La reconciliacion repara estado y CUFE/CUDE locales de una cola ya aceptada o
+  reconciliada antes de cualquier despacho, sin aumentar intentos ni volver a
+  transmitir. Nomina solo prepara el lote; no llama el adaptador de factura ni
+  transmite a DIAN.
+
+2026-08-25: RUT DIAN separado y revisable por empresa.
+- Modulos afectados: `facturacion_electronica`, `configuracion_avanzada`,
+  `IA empresarial` y `seguridad_multiempresa`.
+- La configuracion DIAN Colombia muestra un control independiente para el
+  Formulario 001 RUT; no reutiliza ni confunde el importador de autorizacion de
+  numeracion Formulario 1876.
+- El backend resuelve la empresa desde el wrapper de facturacion, limita la
+  carga a PDF real de 12 MB, extrae NIT/DV, nombre legal, ubicacion, codigos
+  DANE y responsabilidades con GPT-5.5, y normaliza los valores fiscales antes
+  de devolverlos.
+- El PDF se procesa temporalmente y no se conserva. La extraccion solo llena
+  controles en pantalla; el administrador debe revisar y guardar por separado
+  DIAN Colombia y Configuracion avanzada. No emite, firma ni transmite ningun
+  documento fiscal.
+
+2026-08-24: Facturacion electronica Colombia, alcance comercial verificable.
+- Factura electronica de venta es la unica familia disponible para emision.
+- La fuente fiscal privada conserva lineas, partes, pago y totales reales por
+  `empresa_id`; el UBL no acepta defaults ni datos comerciales del request.
+- Nota credito/debito, soporte, nomina, equivalentes, contingencia y RADIAN se
+  muestran bloqueados hasta implementar su contrato documental propio.
+- Estado: candidato local con XSD y XMLDSig independientes aprobados. Las
+  pruebas PostgreSQL aisladas y Schematron DIAN siguen pendientes de un DSN y
+  procesador XSLT 3 compatibles; NO-GO hasta completar esas puertas, clon del
+  esquema vigente, prueba visual autenticada, acuse DIAN, despliegue y emision
+  real controlada.
+
+2026-08-21: Cierre especifico de facturacion electronica Colombia.
+- Backend/worker: la conectividad GET es de solo lectura; reintentos manuales
+  usan POST y el worker consulta acuses pendientes con bloqueo por empresa.
+- Datos/seguridad: consecutivos bajo `FOR UPDATE`, montos `NUMERIC(18,2)` y
+  artefactos XML/acuse/PDF privados con SHA-256 y filtro obligatorio por
+  `empresa_id`.
+- Frontend/correo: no hay preset DIAN; la bandeja descarga artefactos y el
+  correo de produccion espera aceptacion y exige XML/PDF integros. En Colombia
+  no se persiste ni muestra un hash local como CUFE: el valor nace del XML/acuse
+  DIAN y debe cumplir SHA-384.
+
+2026-08-11: Plan 110 / guardia de fuente canónica CxP.
+- Módulos afectados: `finanzas`, `cartera de proveedores`, `contabilidad
+  avanzada` y `outbox CxP`.
+- Cambio funcional: la capa de datos bloquea nuevas CxP y abonos CxP en
+  `empresa_contabilidad_cartera_cxp`, incluso fuera del handler; las nuevas
+  obligaciones y pagos deben usar `empresa_cuentas_por_pagar` y
+  `empresa_cxp_pagos` por empresa.
+- Seguridad: la guardia conserva CxC histórico, no permite eludir la fuente
+  canónica mediante una llamada interna y no altera datos existentes.
+
+2026-08-09: Dialogos verificables para acciones CxP/IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria` y
+  `frontend_ux`.
+- Aprobar, rechazar, contabilizar, enviar a papelera, recuperar y depurar usan
+  un dialogo accesible propio en vez de `confirm`/`prompt` nativos.
+- Papelera, recuperacion y depuracion exigen motivo; la depuracion conserva la
+  confirmacion fuerte por codigo. El backend mantiene permisos, aislamiento
+  por `empresa_id`, retencion, idempotencia y auditoria como autoridad final.
+
+2026-08-09: Integridad y descarga segura de soportes CxP/IA.
+- Modulos afectados: `soportes_compras_ia`, `almacenamiento_privado`,
+  `seguridad_multiempresa`, `IA empresarial` y `observabilidad`.
+- Descarga y extracción verifican SHA-256, tamaño y archivo regular antes de
+  consumir contenido. MIME/cabeceras fuerzan una respuesta adjunta y aislada.
+- Los fallos se observan agregados, sin tenant, hash, nombre ni ruta privada.
+- El incidente bloquea por empresa, invalida una aprobación abierta y registra
+  evento mínimo en la misma transacción; terminales contables se conservan.
+
+2026-08-09: Evals y telemetria de extracción IA de soportes.
+- Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `evaluaciones`,
+  `observabilidad`, `Prometheus`, `Grafana` y `Alertmanager`.
+- La respuesta IA queda limitada por tamaño, claves, tipos, textos, importes,
+  fechas y confianza antes de persistir; anomalías fallan cerradas o fuerzan
+  revisión humana.
+- Resultados operativos agregados distinguen éxito consistente, revisión,
+  cancelación y fallos de proveedor, contrato o persistencia sin datos privados.
+
+2026-08-09: Observabilidad del antivirus de soportes CxP/IA.
+- Modulos afectados: `soportes_compras_ia`, `antivirus`, `observabilidad`,
+  `Prometheus`, `Grafana` y `Alertmanager`.
+- El scanner publica contadores atomicos agregados por resultado y estado de
+  configuracion/obligatoriedad, sin dimensiones de empresa, usuario o archivo.
+- Alertas cubren fail-closed sin endpoint, indisponibilidad, omision y malware.
+
+2026-08-09: Observabilidad de depuracion CxP/IA.
+- Modulos afectados: `observabilidad`, `soportes_compras_ia`, `Prometheus`,
+  `Grafana`, `Alertmanager` y `operacion_vps`.
+- Las metricas agregan pendientes, vencidos y finalizados sin etiquetas de
+  empresa/soporte/usuario; una alerta y panel operativos conducen al runbook
+  seguro de reanudacion.
+
+2026-08-09: Depuracion segura de soportes de compras IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `almacenamiento_privado`,
+  `auditoria`, `seguridad_multiempresa` y `frontend_ux`.
+- Un soporte no contabilizado que supera la retencion en papelera puede quedar
+  `purgado`: se destruye el archivo mediante cuarentena/rollback coordinado,
+  pero se conservan fila, datos contables y eventos como tumba no recuperable.
+- La accion exige Delete, motivo, codigo exacto y `empresa_id` en lectura,
+  bloqueo y escritura. Las rutas privadas se atan a la empresa y el JSON manual
+  no puede fabricar metadatos de adjunto.
+- La depuracion usa una saga reanudable `eliminado -> purga_pendiente -> purgado`:
+  recupera caidas en cada frontera archivo/base y rechaza cuarentenas ambiguas.
+  Un diagnostico de solo lectura compara pendientes, archivos y bytes del tenant.
+- Un advisory lock PostgreSQL serializa depuraciones por empresa entre replicas;
+  replays completos y `os.ErrNotExist` concurrente no duplican efectos. El
+  diagnostico alerta pendientes envejecidos con umbral acotado.
+
+2026-08-08: Admision hostil, cancelacion IA y retencion de soportes.
+- Modulos afectados: `soportes_compras_ia`, `IA empresarial`, `almacenamiento`,
+  `seguridad_multiempresa` y `frontend_ux`.
+- La carga contrasta extensión y firma, usa MIME canónico, analiza XML estricto
+  y rechaza DTD, entidades, instrucciones y elementos activos. Integra ClamAV
+  `clamd` por INSTREAM con modo opcional u obligatorio fail-closed.
+- Un fallo de persistencia limpia únicamente el archivo privado recién creado;
+  la extracción IA usa el contexto de la petición y puede cancelarse desde UI.
+- La vista previa de retención filtra eliminados antiguos no contabilizados por
+  `empresa_id`, reporta cantidad/bytes y no borra ni expone archivos.
+- El protocolo antivirus se probó con un clamd local simulado para limpio,
+  malware, desactivado y obligatorio sin servicio; falta el daemon real de VPS.
+
+2026-08-08: Papelera recuperable de soportes de compras IA.
+- Modulos afectados: `soportes_compras_ia`, `CxP`, `auditoria`,
+  `seguridad_multiempresa` y `frontend_ux`.
+- La bandeja separa activos y eliminados. Enviar o recuperar exige motivo y
+  conserva archivo, estado funcional, actor y eventos; no existe borrado fisico.
+- Los adjuntos eliminados no se exponen ni descargan, y las acciones de IA,
+  revision, aprobacion, rechazo y contabilizacion fallan cerradas hasta recuperar.
+- La recuperacion rechaza duplicados activos por hash/documento y un soporte
+  contabilizado o ya convertido nunca puede ocultarse. Todas las consultas y
+  transiciones mantienen `empresa_id` en lectura, bloqueo y escritura.
+
+2026-08-08: Soportes de compras IA y cuota empresarial.
+- Modulos afectados: `soportes_compras_ia`, `almacenamiento_empresarial`,
+  `compras`, `CxP`, `seguridad_multiempresa`.
+- Backend: al radicar un adjunto privado, el uso de almacenamiento suma la
+  carpeta publica empresarial y `private_storage/soportes_compras_ia/empresa_<id>`.
+  Aplica limite, maximo por archivo y bloqueo configurados desde super; un exceso
+  responde HTTP 507 saneado antes de crear archivo o fila.
+- Seguridad: la empresa viene del wrapper/parametro validado, no de la ruta del
+  archivo; no agrega permisos, tablas, dependencias ni expone rutas privadas.
+- Operacion: retencion, borrado recuperable, antivirus y prueba entre replicas
+  continúan como pendientes de certificacion P109-008.
+
+2026-07-28 - Migraciones P108 desde base vacía
+- El migrador es propietario del esquema; API y worker usan un login runtime
+  separado con DML y sin DDL.
+- El rol `migrate` puede crear las cinco raíces históricas mínimas antes de
+  aplicar el catálogo heredado, solamente cuando el bootstrap se habilita de
+  forma explícita.
+- API y worker conservan `PCS_RUNTIME_SCHEMA_BOOTSTRAP=0`; no reciben una ruta
+  alternativa para ejecutar DDL.
+- El ensayo Docker usa red, volumen y contenedores efímeros con nombre validado
+  y limpieza automática.
+- El ensayo de upgrade solo acepta un origen `pcs-staging-*`, usa `pg_dump`
+  lógico y comprueba que el migrador no pierda tablas.
+
+2026-07-10: Super administrador - diagramas tecnicos consolidados.
+
+2026-07-13: API movil POS y facturacion.
+- Modulos afectados: `api_movil`, `ventas`, `carritos`, `pagos`,
+  `facturacion_electronica`, `offline_ventas`, `buzon`.
+- La fachada `/api/v1` normaliza respuestas para Android/iPhone y delega las
+  reglas de negocio al mismo backend de la web. Las mutaciones requieren clave
+  de idempotencia por empresa para resistir reintentos moviles.
+- `Super administrador > Diagramas tecnicos` conserva solamente los 19 accesos de la documentacion tecnica completa: arquitectura, modulos, navegacion, ERD PostgreSQL, UML, procesos, estados, componentes, despliegue, paquetes y flujo de datos.
+- `ERD PostgreSQL completo` abre el catalogo navegable de las 365 tablas extraidas, con atributos, PK, FKs fisicas y relaciones logicas por tabla.
+- El paquete previo de esquemas generales se retira de la navegacion para evitar duplicidad; queda como referencia historica sin presentarse como flujo operativo.
+- El visor completo y cada pagina individual se mantienen disponibles para favoritos y retorno al panel super.
+
+2026-07-09: Documentacion tecnica completa con diagramas profesionales.
+- Modulos afectados: `documentacion_tecnica`, `super_administrador`, `arquitectura`, `base_de_datos`.
+- Se agrega un paquete documental ampliado en `documentos/diagramas/documentacion_tecnica_completa.md` con diagramas Mermaid alineados: arquitectura general, mapa de modulos, mapa de navegacion, ERD, casos de uso, clases UML, secuencias, actividades, estados, componentes, despliegue, paquetes y flujo de datos.
+- Para Codex queda un manifiesto JSON en `documentos/diagramas/documentacion_tecnica_completa_manifest.json` con inventario estructurado de tablas, columnas, FKs fisicas detectadas y relaciones logicas de aplicacion.
+- Navegacion: `Super administrador > Diagramas tecnicos > Documentacion tecnica completa` abre el visor completo, y el submenu incluye paginas individuales para mapa de navegacion, casos de uso, clases UML, secuencias, actividades, estados, componentes, paquetes y flujo de datos.
+- Alcance: documentacion y frontend estatico; no agrega endpoints, tablas, permisos, dependencias ni cambios de runtime.
+
+2026-07-09: Panel super - continuidad Docker real.
+- Modulos afectados: `super_administrador`, `infraestructura`, `qa_operacion`.
+- `/super/api/servidores` detecta `pcs-backend`, `pcs-frontend`/`pcs-edge` y `pcs-postgres` por Docker, evitando falsos errores de `systemd` en el panel.
+- RustDesk sin configurar queda en estado `disabled` y no reduce el score ni se muestra como prioridad critica.
+- Seguridad: cada accion del endpoint exige sesion y rol `super_administrador`, queda trazada con `WithSuperAuditoria` y no recibe empresa_id, mutaciones nuevas ni secretos.
+
+2026-07-09: Retiro de juegos y emuladores.
+- Modulos afectados: `portal_publico`, `super_administrador`, `documentacion_tecnica`, `infraestructura`.
+- Se retiran de codigo, frontend, Docker, rutas publicas, pruebas, OpenAPI y datos el arcade, el emulador y los records globales.
+- `DecommissionRemovedEntertainmentArtifacts` elimina la tabla exclusiva `super_juegos_records` al arrancar, de forma idempotente.
+- No se afecta el catalogo fiscal DIAN de documentos equivalentes para juegos de suerte y azar, porque corresponde a una categoria legal ajena al modulo recreativo.
+- La nueva lectura obligatoria de agentes inicia en `contexto_general_del_sistema.md` y se amplia por `contexto_especifico_del_sistema.md`.
+
+2026-08-08: Salidas HTTP seguras para DIAN e integraciones.
+- Modulos afectados: `facturacion_electronica`, `DIAN Colombia` e
+  `integraciones empresariales`.
+- Backend: probes, envio, acuse, `GetStatusZip`, `GetNumberingRange` y reconexion
+  bloquean SSRF por protocolo, DNS/IP, redes privadas y redirecciones cruzadas;
+  la regla tambien cubre despacho y health de proveedores por `api_base_url`.
+- Multiempresa: un endpoint recibido en payload debe conservar el origen de
+  `url_dian` guardado para la misma empresa; no cambia wrappers ni permisos.
+- Alcance fiscal: no modifica XML, firma, CUFE, consecutivos, tablas ni estados
+  DIAN y no ejecuta emisiones durante la validacion local.
+
+2026-07-09: Facturas electronicas compactas y tutorial DIAN.
+- Modulos afectados: `facturacion_electronica`, `ventas`, `super_administrador`, `documentacion_ayuda`.
+- Bandeja: `web/administrar_empresa/facturas_electronicas.html` conserva una sola pagina documental, compacta `Filtros de busqueda`, mejora `Visualizar` con tablas organizadas y marca ventas con factura asociada como `Factura electronica` en la columna Tipo.
+- Tutorial: `facturacion_electronica_tutorial_dian.html` muestra pasos desplegables, con `Software propio` como unica modalidad operativa para PCS y enlaces oficiales DIAN por paso.
+- Navegacion: `Tutorial DIAN` queda al final del menu de facturacion y `Diagramas tecnicos` queda debajo de Configuracion en el super administrador.
+
+2026-07-09: Panel super compacto, consumo WhatsApp y ventas de licencias.
+- Modulos afectados: `super_administrador`, `licencias`, `whatsapp_notificaciones`, `panel_control`.
+- Navegacion: `Panel` queda como primer acceso independiente del menu super, `Auditoria global` pasa a Plataforma y el shell de super administrador carga el panel al entrar.
+- Panel: `web/super/licencias_resumen.html` muestra Favoritos, Seleccionar empresa, OpenAI, WhatsApp API, conteo compacto de empresas con/sin licencia y ventas mensuales de licencias de la empresa interna `Powerful Control System`.
+- Backend: `/super/api/consumos` agrega serie diaria de WhatsApp y `/super/api/licencias/ventas_resumen` consolida pagos aprobados de Epayco/Wompi con idempotencia de lectura.
+- Alcance: no agrega tablas nuevas ni dependencias; usa `pcs_superadministrador.configuraciones`, `pagos_epayco`, `pagos_wompi` y `licencias`.
+
+2026-07-09: Facturas electronicas - filtros por usuario y permisos de anulacion.
+- Modulos afectados: `facturacion_electronica`, `ventas`, `roles_permisos`, `frontend_ux`.
+- Filtros: la bandeja `Facturas electronicas` muestra el usuario actual en `Filtros de busqueda`, carga usuarios/cajeros de la empresa para administradores y mantiene filtro automatico por usuario cuando el rol efectivo es `cajero`.
+- UX: se elimina la subtarjeta interna de opciones de filtros y se fijan iconos compactos para evitar superposicion visual.
+- Seguridad: el boton `Anular` depende del permiso efectivo `facturacion:D`; si el rol no lo tiene, no se renderiza. El backend conserva la autorizacion en el wrapper de facturacion para bloquear llamadas forzadas.
+
+2026-07-07: Favoritos y retorno al panel super.
+- Modulos afectados: `super_administrador`, `navegacion_super`.
+- Favoritos: todas las paginas listadas en el menu super quedan permitidas para el boton de estrella del shell; se completan rutas faltantes como `Empresas`, `WhatsApp notificaciones`, `Vencimientos externos` y `VPS2`.
+- Retorno al panel: todas las paginas bajo `web/super` cargan una herramienta comun con boton `Panel super`; si la pagina esta dentro del iframe, lleva el iframe a `licencias_resumen.html`, y si esta abierta directamente, vuelve al shell `/super_administrador.html`.
+- Alcance: frontend estatico; no agrega endpoints, tablas, permisos ni dependencias.
+
+2026-07-07: Diagramas tecnicos en super administrador.
+- Modulos afectados: `super_administrador`, `documentacion_tecnica`, `arquitectura`.
+- Navegacion: `Super administrador > Diagramas tecnicos` abre una pagina propia para cada diagrama solicitado: modulos, base de datos/ERD, multiempresa, arquitectura, ventas POS, facturacion DIAN, inventario, roles/permisos, API/endpoints, despliegue, seguridad, auditoria/logs, reportes, integraciones y agentes automaticos.
+- Fuente para Codex: `documentos/diagramas/diagramas_sistema_pcs.md` y `documentos/diagramas/diagramas_sistema_pcs_manifest.json` conservan las fuentes Mermaid y metadatos para uso interno de programacion asistida.
+- Alcance: frontend y documentacion estatica; no agrega endpoints, tablas, permisos empresariales ni dependencias externas.
+
+2026-06-24: Carritos de compra con historial no agrupado.
+- Modulos afectados: `carritos`, `ventas`, `corte_caja`.
+- Nuevo historial operativo: cada adicion de producto al carrito se guarda con hora, usuario, cantidad, precio y total, sin agrupar aunque el detalle visible del carrito consolide cantidades.
+- Uso operativo: desde el selector de acciones del carrito se abre `Historial de productos` para auditar a que hora pidio cada producto el cliente.
+
+2026-06-19: Empresas en super administrador.
+- Modulos afectados: `super_administrador`, `empresas`, `licencias`, `auditoria_super`.
+- Navegacion: `Super administrador > Comercial y licencias > Empresas` abre `web/super/empresas.html`.
+- Centro de mando: `web/super/licencias_resumen.html` muestra empresas con licencia activa y empresas sin licencia activa; el boton `Ver` abre la lista filtrada por activas.
+- Backend: `/super/api/empresas_estado` consolida empresas operativas con licencias asignadas y devuelve resumen total, activas, sin activa, 15 dias y vencidas.
+- Seguridad: vista solo lectura, sin botones de edicion, sin mutaciones y con auditoria super mediante `WithSuperAuditoria`.
+
+2026-06-18: Configuracion interactiva y captura IA documental.
+- Modulos afectados: `empresas`, `configuracion_guiada`, `chat_ia`, `productos`, `compras`, `ingresos`, `egresos`, `soportes_compras_ia`, `frontend_ux`.
+- Flujo de empresa nueva: al crear una empresa con tipo/preconfiguracion se abre en el primer ingreso un asistente interactivo que pregunta datos reales por negocio y guarda `configuracion_guiada_interactiva` por `empresa_id`.
+- IA empresarial: el chat agrega selector de agente y el nuevo `agente_configuracion_de_empresa`, especializado en guiar administradores para productos, tarifas, estaciones, impresoras, caja y parametros; las acciones UI requieren confirmacion y selectores permitidos.
+- Captura documental: Ingresos, Egresos y Compras pueden analizar foto/PDF con GPT-5.5 mediante `soportes_compras_ia`; la IA precarga formularios, descuenta cuota avanzada de agente y no guarda sin revision humana.
+- Productos: el panel de importacion incluye acceso para cargar carta/lista de precios con IA desde el chat y confirmar antes de crear productos reales.
+
+2026-06-18: Agentes de mantenimiento IA super
+- Modulos afectados: `super_administrador`, `IA global`, `mensajeria_y_alertas`, `DIAN Colombia`.
+- Navegacion: `Super administrador > Mensajeria y alertas > Agentes mantenimiento` abre `web/super/agentes_de_mantenimiento_qutomatico.html`.
+- Backend: `/super/api/agentes_mantenimiento` gestiona configuracion y ejecucion del agente `dian_noticias`; el worker lo evalua una vez al dia despues de la hora configurada.
+- Operacion: lee fuentes oficiales DIAN, usa OpenAI para clasificar impacto cuando la IA global esta disponible, registra hallazgos y envia notificacion por Gmail SMTP si hay correo configurado.
+- Seguridad: acceso exclusivo super administrador, sin credenciales DIAN, sin secretos en logs y sin `empresa_id` porque es gobierno global del sistema.
+
+2026-06-18: Facturacion electronica DIAN produccion PCS
+- Modulos afectados: `facturacion_electronica`, `DIAN Colombia`, `auditoria`, `qa_operacion`.
+- Evidencia real: el portal DIAN produccion muestra `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien fue aceptada por SOAP/WCF `SendBillSync`.
+- Operacion: el siguiente consecutivo de PCS quedo en `1PCS4`; no reutilizar `1PCS2` ni `1PCS3`.
+- Regla fiscal: `Regla 90, Documento procesado anteriormente` no es aceptacion automatica; requiere portal DIAN, acuse original, CUFE/TrackId o evidencia oficial equivalente.
+- Ayuda: `facturacion_electronica_tutorial_dian.html` queda adaptada a PCS con estado real, control diario, lectura de `RUT01`, `Aprobado con notificacion` y pasos para no reenviar documentos ya aprobados.
+- Auditoria: conservar evidencia en historial DIAN, cola de reintentos, portal DIAN, bitacora de cambios y contadores antes/despues de pruebas directas.
+
+2026-06-16: Carrito PCS - agregar por nombre
+- Modulos afectados: `carritos`, `venta_directa` y `estaciones`.
+- UX: el buscador rapido por nombre selecciona la primera coincidencia visible para que el boton `Agregar` agregue el producto seleccionado sin exigir un clic adicional sobre la lista.
+- Detalle: las tablas de productos del carrito resaltan nombre, cantidad, precio y total de linea en negrita para lectura POS.
+- Persistencia/API: no cambia endpoints, tablas ni permisos; reutiliza `/api/empresa/productos` y `/api/empresa/carritos_compra/items`.
+
+2026-06-12: Carrito cantidades y pagos combinados legibles
+- Modulo afectado: Carrito / Venta directa / Estaciones.
+- Cambio UX: `web/estilos.css` fija ancho, contraste y numeracion tabular para las cantidades editables dentro de `Productos agregados al carrito`.
+- Cambio UX: los importes de `Detalle del pago` y pago combinado conservan color/fondo legible en temas oscuros y claros, incluyendo estados deshabilitados.
+- Alcance: cambio visual solamente; no modifica pagos, caja, inventario, endpoints, permisos ni persistencia por `empresa_id`.
+- QA: validacion visual local con Chrome sobre `carrito_de_compras.html` confirma cantidades `2` y `1,25` visibles y valores de pago Efectivo/Credito/Debito/Bre-B/Nequi legibles.
+
+2026-06-12: Configuracion de impresion con fuente por empresa
+- Modulo afectado: Configuracion de impresora / Impresion de facturas y reportes.
+- Cambio funcional: `configuracion_impresora.html` agrega tamano de fuente para facturas POS/carta y reportes POS/carta.
+- Backend: `empresa_configuracion_avanzada` persiste `impresion_factura_fuente_pos`, `impresion_factura_fuente_carta`, `impresion_reporte_fuente_pos` e `impresion_reporte_fuente_carta` con saneamiento de rangos.
+- Integracion: `print_documents.js`, carrito, ventas, facturas electronicas, corte de caja, reportes de turno e ingresos/egresos aplican la configuracion al imprimir.
+- Alcance legal: no cambia XML DIAN, QR, CUFE/CUDE, totales, impuestos, contabilidad ni obligatoriedad de campos legales.
+
+2026-06-11: Configuracion del rol cajero
+- Modulo afectado: Configuracion empresarial / Seguridad / Carritos.
+- Navegacion: `Administrar empresa > Configuracion > Ventas y cobro > Rol cajero` abre `web/administrar_empresa/configuracion_rol_cajero.html`.
+- Alcance: permite al administrador revisar y guardar desde una sola pantalla la regla operativa `cajero` de cobro/caja, los checks principales de carrito POS, medios de pago, botones visibles, control de estaciones por cajero y un perfil personalizado de rol basado en el rol global `cajero`.
+- Persistencia: reutiliza `/api/empresa/configuracion_operativa?action=rol`, `/api/empresa/estacion_prefs` con `estaciones_config.carrito_ui_global` y `/api/empresa/roles_de_usuario`; no crea tablas ni endpoints nuevos.
+- Seguridad: todos los datos se consultan y guardan con `empresa_id`; modificar el perfil visible crea/actualiza un rol personalizado de la misma empresa, sin alterar el rol global ni mezclar permisos entre empresas.
+
+2026-06-11: Roles personalizados por empresa
+- Modulo afectado: Administrar usuarios / Seguridad empresarial.
+- Navegacion: `Administrar empresa > Administrar usuarios` muestra la tarjeta `Roles personalizados de esta empresa`.
+- Backend: `/api/empresa/roles_de_usuario` lista roles globales y roles propios, y permite crear/editar/desactivar roles personalizados con `empresa_id`, `origen=empresa` y `rol_base_id`.
+- Operacion: el administrador define nombre, descripcion y rol base; el rol queda disponible de inmediato para asignarlo a usuarios de la misma empresa.
+- Seguridad: el rol propio no se puede asignar a otra empresa; permisos efectivos heredan el rol base global para evitar permisos accidentales por nombre libre.
+
+2026-06-11: Impresoras por computador detectado
+- Modulo: Configuracion de impresora / agente local.
+- Backend: `empresa_impresoras.go` agrega `empresa_impresoras_dispositivos` para vincular un `dispositivo_id` detectado por navegador/agente a una impresora activa por `empresa_id` y funcionalidad.
+- Resolucion: el backend mantiene prioridad por documento/producto/receta/categoria, luego computador detectado, luego funcionalidad y finalmente predeterminada.
+- Frontend: `configuracion_impresora.html` muestra el computador detectado, permite nombrarlo como caja, asociarle impresora y eliminar reglas desde una tabla.
+- Seguridad: no se leen seriales reales ni impresoras del sistema operativo desde el navegador; la seleccion fisica sigue dependiendo de la impresora registrada o agente local, siempre aislado por empresa.
+
+2026-06-11: Auditoria transversal de opciones nuevas
+- Modulos afectados: `auditoria`, `reportes`, `breb_qr`, `buzon`, `tareas_buzon`, `chat_empresarial`, `impresoras`, `menu_visible`, `atajos_pos`, `productos_import_export` y `bodegas_traslados`.
+- Auditoria: las acciones de configuracion Bre-B, pagos manuales, mensajes, tareas, adjuntos, lectura, preferencias e impresoras quedan en `empresa_auditoria_eventos` con modulo propio y metadata saneada.
+- Reportes: el resumen operativo de modulos lista las tablas reales relacionadas para validar existencia, totales, activos y rango de fechas por `empresa_id`.
+- Frontend: `Administrar empresa > Auditoria` agrega filtros visibles para revisar y exportar actividad de estos modulos sin depender de busquedas manuales.
+- Seguridad: no se registra contenido de mensajes, archivos, claves, tokens ni payloads QR; se conservan solo IDs, estados, tamanos y banderas operativas.
+
+2026-06-11: Menu visible por empresa
+- Modulos afectados: `administrar_empresa`, `configuracion` y `frontend_ux`.
+- Navegacion: `Administrar empresa > Configuracion > Menu visible` abre `web/administrar_empresa/configuracion/menu_visual.html`.
+- Persistencia: usa `empresa_estacion_prefs` con clave `menu_visual_config`, `estacion_id=0` y lista `hidden_links`.
+- Comportamiento: el menu principal y submenus aplican permisos/licencia/rol y despues ocultan visualmente los links marcados por la empresa. `Panel`, `Configuracion`, `Menu visible` y `Volver a empresas` quedan protegidos contra ocultamiento para permitir recuperacion.
+- Seguridad: es una preferencia visual; no otorga ni revoca permisos ni reemplaza validaciones backend.
+
+2026-06-11: Atajos POS configurables por empresa
+- Modulos afectados: `carritos`, `configuracion_carrito`, `estaciones` y `venta_directa`.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` permite activar atajos POS y asignar tecla por accion dentro de `estaciones_config.carrito_ui_global.atajos_pos`.
+- Operacion: `web/administrar_empresa/carrito_de_compras.html` captura F1-F12 y combinaciones definidas para ayuda, busqueda, cliente, descuento, cantidad, precio, suspender/recuperar, inventario, cobro, cajon, impresion, cancelar, agregar y salir.
+- Seguridad: no hay endpoint nuevo; cada accion reutiliza controles y APIs existentes con permisos por rol y filtro `empresa_id`.
+
+2026-06-10: Nomina en Finanzas y cumplimiento
+- Modulo afectado: `nomina`.
+- Navegacion: `Administrar empresa > Finanzas y cumplimiento > Nomina` abre `web/administrar_empresa/nomina_menu.html`.
+- Submenu propio: Centro, Empleados de nomina, Configuracion legal, Liquidaciones, Pagos y PILA, Nomina electronica DIAN y Tutorial de nomina.
+- Operacion: las subpaginas reutilizan `nomina_sueldos.html?seccion=...` para no duplicar formularios ni reglas; el filtro visual solo cambia la superficie mostrada.
+- DIAN: esta entrada es historica. La preparacion sigue siendo un preflight sin
+  efectos, pero desde la actualizacion 2026-08-26 la emision ordinaria usa el
+  adaptador dedicado `NominaIndividual`, no el XML/PDF de factura.
+
+2026-06-10: E-mail Corporativo independiente
+- Modulo afectado: `Email corporativo Mailu`.
+- Navegacion: `Administrar empresa > Canales digitales y colaboracion > E-mail Corporativo` abre `web/administrar_empresa/email_corporativo.html`.
+- Panel: `web/administrar_empresa/panel.html` ya no incrusta el webmail; debajo de Favoritos muestra una tarjeta de notificaciones para administradores con enlace al modulo.
+- Backend: `/api/empresa/email_corporativo` acepta `check_unread=1` y consulta IMAP `STATUS INBOX (MESSAGES UNSEEN RECENT)` con la clave cifrada del buzon; si IMAP no responde, devuelve error operativo saneado sin bloquear la apertura del webmail.
+- Seguridad: conserva `WithEmpresaSeguridadPermissions`, `empresa_id`, autologin temporal y cifrado de clave; no imprime ni devuelve contrasenas, tokens ni secretos.
+
+2026-06-10: Snapshot completo de VPS
+- Modulo afectado: `Docker y VPS` dentro de super administrador.
+- Configuracion: `web/super/docker_portabilidad.html` permite activar snapshots, definir intervalo automatico, retencion local, subida a nube por `rclone`, proveedor visual y limpieza remota.
+- Backend: `/super/api/vps_snapshots` exige rol `super_administrador`, queda envuelto en auditoria super y no acepta `empresa_id` porque es operacion global de infraestructura.
+- Contenido: proyecto portable sin secretos, dump logico PostgreSQL si esta disponible, volumenes Docker PCS, manifiesto, guia de restauracion y opcion manual para incluir imagenes Docker.
+- Seguridad: `.env.platform`, certificados, claves y uploads privados del paquete portable se excluyen por defecto; la ruta de descarga se valida para que solo pueda servir archivos dentro de `backup/vps_snapshots`.
+- Nube: PCS no guarda tokens de Google/Mega/OneDrive/S3; la autenticacion vive en la configuracion externa de `rclone` en la VPS.
+
+2026-06-10: Retencion de empresas con licencia vencida
+- Modulo afectado: `licencias` y `super_administrador`.
+- Configuracion: en `web/super/configuracion_avanzada.html`, la tarjeta de alertas de vencimiento incluye `Retencion de empresas vencidas` con activacion global, dias de espera, dias de preaviso, limite por ejecucion, vista previa y procesamiento manual.
+- Backend: `/super/api/licencias/vencimiento_alertas` expone `retencion_empresas`, acciones `retencion_preview` y `retencion_run_now`, y reporte reciente de `licencia_empresa_retencion_log`.
+- Operacion: el worker de vencimientos evalua empresas no operativas sin licencia base vigente; si corresponde, envia preaviso al administrador y solo elimina en una ejecucion posterior si el plazo ya se cumplio y el preaviso quedo registrado.
+- Reporte: las empresas preavisadas, errores y eliminaciones quedan en `licencia_empresa_retencion_log` usando `empresa_ref_id`, no `empresa_id`, para que la evidencia sobreviva al borrado total de la empresa.
+- Seguridad: no aplica a empresas activas/operativas, no borra por falta de correo y conserva aislamiento multiempresa mediante `DeleteEmpresaCascade` y limpieza de carpetas empresariales.
+
+2026-06-09: Transferencia de cuenta entre estaciones
+- Modulos afectados: `carritos`, `estaciones` y `configuracion_carrito`.
+- Configuracion: desde `Configuracion carrito` se activa el check `Visualizar boton Transferir cuenta`, guardado por empresa en `estaciones_config.carrito_ui_global.mostrar_boton_transferir_cuenta_carrito`, `permitir_transferir_cuenta_carrito` y `transferencia_cuenta_habilitada`.
+- Operacion: en `carrito_de_compras.html`, la barra de acciones muestra `Transferir cuenta` solo cuando la empresa lo habilita; el usuario elige mesa, habitacion o estacion destino y registra un motivo operativo.
+- Backend: el traslado se ejecuta por `/api/empresa/carritos_compra?action=transferir_estacion` o `transferir_cuenta`, siempre filtrado por `empresa_id`, usuario y permisos de estacion.
+- Validaciones: origen abierto/no pagado, destino disponible, destino diferente, carritos asociados a estacion y tarifa equivalente para flujos de motel/hotel.
+- Alcance: mueve items, abonos, cliente, descuentos, caja y estado de sesion; no duplica inventario, no crea ventas nuevas y deja el origen cerrado/en cero.
+
+2026-06-09: Powerful Control System con licencia comercial normal
+- Modulo afectado: `licencias`.
+- Alcance: la empresa interna/emisora Powerful Control System se sigue usando para emitir documentos de compra de licencias, pero su acceso propio ya no se sostiene con una licencia tecnica perpetua.
+- Comportamiento: una licencia heredada `PCS_SYSTEM_INTERNAL_PERPETUAL` activa se retira automaticamente; la empresa debe tener una licencia comercial vigente o queda bloqueada igual que cualquier empresa.
+
+2026-06-09: Factura electronica manual desde ventas con cliente
+- Modulos afectados: `ventas`, `facturacion_electronica` y `clientes`.
+- Ventas: el boton `Hacer factura electronica` abre un modal para seleccionar un cliente existente o crear un cliente rapido antes de generar la factura electronica desde el comprobante.
+- Facturacion electronica: el backend valida el cliente por `empresa_id`, lo asocia al documento origen y genera la factura electronica con fecha/hora fiscal nueva segun la preparacion legal del documento.
+- Alcance: no modifica el valor de la venta, pagos, inventario ni total; solo crea/asocia el documento fiscal derivado y permite enviar correo al cliente.
+
+2026-06-09: Campo adicional configurable en recibo de venta
+- Modulos afectados: `configuracion_impresora`, `carritos` y `ventas`.
+- Configuracion: el panel `Documento de venta e impresion` permite activar un campo adicional para el recibo operativo, editar su etiqueta, valor y descripcion, y decidir con checks si se imprime el campo y si se imprime la descripcion.
+- Recibo: el carrito agrega ese dato al recibo impreso como informacion operativa no fiscal; no participa en total, pagos, impuestos, inventario, XML DIAN ni contabilidad.
+- Persistencia: se reutiliza `empresa_configuracion_avanzada.impresion_recibo_items_json` por `empresa_id`, sin tablas nuevas.
+
+2026-06-09: Produccion local DIAN con control unico
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: en `facturacion_electronica_pruebas_dian.html` se elimina el boton repetido `Activar produccion local y emitir real`; la activacion se realiza desde el check explicativo `DIAN ya habilito esta empresa para produccion`.
+- UX: el check pide confirmacion antes de enviar la activacion y vuelve a desmarcarse si el usuario cancela o si el backend rechaza la solicitud.
+- Alcance: no cambia backend, endpoint, permisos, datos DIAN ni aislamiento por empresa.
+
+2026-06-09: Centro DIAN sin titulo superior visible
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: el centro de habilitacion DIAN retira el H1 visible de pagina y ajusta el padding superior para que la tarjeta `Estado del centro DIAN` quede como primer elemento operativo.
+- Alcance: mejora de presentacion sin cambios de API, permisos, DIAN ni persistencia por empresa.
+
+2026-06-09: Estado DIAN compacto en centro de habilitacion
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: los indicadores superiores de `facturacion_electronica_pruebas_dian.html` muestran Ambiente, Estado DIAN, TestSetId y Rango en cuadros mas compactos, con texto menor y lectura estable para identificadores largos.
+- Alcance: mejora visual sin cambios de API, almacenamiento, envio DIAN ni aislamiento por empresa.
+
+2026-06-09: Modo POS tactil por empresa.
+- Modulos afectados: `carritos`, `estaciones`, `corte_de_caja`, `configuracion_carrito` y `frontend_ux`.
+- Cambio funcional: la empresa puede activar un modo POS tactil unico desde `Configuracion carrito`; el valor se guarda en `estaciones_config.carrito_ui_global.modo_pantalla_tactil`.
+- Carrito y venta directa: al estar activo, botones, campos, descuentos, taxi, pagos mixtos, cliente, busqueda de productos y acciones principales reciben objetivos tactiles mas grandes sin cambiar pagos, stock ni facturacion.
+- Catalogo por botones: el carrito envia `touch=1` y la pagina de productos aplica la misma ergonomia para agregar items en tablet, monitor POS o pantalla tactil.
+- Estaciones: el tablero aplica tarjetas y especiales tactiles usando la misma preferencia global, manteniendo filtros por cajero, portero y servicio de limpieza.
+- Corte de caja: la pantalla lee la preferencia de la empresa y agranda generar corte, reporte mi turno, corte automatico, cerrar/imprimir e impresion seleccionada.
+- Arquitectura: no agrega endpoints, tablas, dependencias ni permisos; reutiliza `/api/empresa/estacion_prefs`, conserva `empresa_id` y preserva campos desconocidos del JSON para no romper configuraciones futuras.
+
+2026-06-09: Imagenes profesionales para Mas sistemas en index.
+- Modulo afectado: `Portal publico e index`.
+- Frontend: `web/index.html` enlaza una imagen secundaria unica para cada tarjeta base del carrusel `Mas sistemas`, `web/js/plantillas_nuevas_catalogo.js` hace lo mismo con las plantillas verticales publicas y el render deja de reutilizar la misma foto de punto de venta.
+- Assets: `web/img/portal-systems/` contiene 46 ilustraciones SVG nuevas, generadas por titulo y proposito operativo de cada tarjeta.
+- Alcance: no cambia APIs, permisos, base de datos ni contenido dinamico del super; el fallback estatico del portal queda mas coherente visualmente.
+
+2026-06-09: Correo de bienvenida de licencias con factura electronica y descarga separada.
+- Modulos afectados: `licencias`, `pagos`, `facturacion_electronica`, `super_administrador` y `mensajeria_super`.
+- Cambio funcional: al aprobarse una compra de licencia, PCS puede enviar un correo de bienvenida al cliente y adjuntar la factura electronica PDF emitida por la empresa interna Powerful Control System; la licencia del software ya no se adjunta por correo.
+- Descarga: la licencia queda disponible solo desde Administrar empresa > Licencia > Licencia del sistema, usando `/api/empresa/licencia_sistema/pdf` y la plantilla `licencia_software_pdf`.
+- Super administrador: `web/super/licencias.html` permite activar/desactivar correo de bienvenida, emision automatica de factura electronica y adjunto PDF de factura; `web/super/formato_para_emviar_email.html` expone el texto configurable del correo.
+- Seguridad: no se agregan dependencias, no se imprimen secretos, se conserva idempotencia de pagos y los documentos/facturas siguen aislados por `empresa_id`.
+
+2026-06-09: Impresoras por empresa con cola para agente local
+- Modulo afectado: `configuracion_impresora`.
+- Backend: `empresa_impresoras.go` agrega `empresa_impresoras_cola` y operaciones para crear trabajos, listarlos, tomarlos por `agente_id`/`estacion_id`, marcarlos impresos/error y reintentarlos, siempre por `empresa_id`.
+- API: `/api/empresa/impresoras` administra configuracion y prueba de cola; `/api/empresa/impresoras/agente` queda limitado al contrato operativo del agente local con permisos de ventas.
+- Frontend: `configuracion_impresora.html` muestra agente local, estacion/caja, prueba de impresion y cola reciente, conservando impresoras por funcionalidad, producto, categoria y predeterminada.
+- Seguridad: no se agregan dependencias ni motores distintos a PostgreSQL; el agente no edita impresoras ni reglas.
+
+2026-06-09: ERP extendido retirado de navegacion
+- Modulos afectados: `administrar_empresa`, `configuracion_menu`, permisos empresariales.
+- Frontend: el acceso real `Integraciones` usa `linkConfiguracionIntegraciones`; los IDs `linkERPExtendido` y `linkERPExtendidoMenu` dejan de usarse en menus vigentes y se retiran los archivos del hub ERP extendido.
+- Backend: `empresa_permisos.go` publica `linkConfiguracionIntegraciones` y deja de publicar los permisos de pagina ERP extendido.
+- Alcance: no se borran datos ni endpoints especializados; se retira el hub duplicado para que cada dominio se opere desde su modulo propio.
+
+2026-06-09: Limpieza UX de facturacion electronica y finanzas
+- Modulos afectados: `facturacion_electronica` y `finanzas_menu`.
+- Facturacion electronica: se separan visualmente las tarjetas y se agregan encabezados descriptivos al selector fiscal y a la configuracion por pais.
+- Finanzas: se retira `ERP extendido` del menu financiero y se eliminan accesos superiores duplicados para que la navegacion quede concentrada en la barra lateral.
+
+2026-06-09: Obligatorios visibles en facturacion electronica
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: la pagina muestra avisos de campos obligatorios en configuracion DIAN y configuracion por pais, marca labels con asterisco y resalta campos faltantes en tiempo real.
+- UX: la opcion de envio automatico de factura electronica al correo del cliente queda visible solo en la seccion principal; configuracion avanzada conserva el valor oculto para compatibilidad de payload.
+
+2026-06-09: Eventos RADIAN declarados operativos en facturacion electronica (historico, corregido 2026-08-21)
+- Modulo afectado: `facturacion_electronica`.
+- Backend: el catalogo DIAN Colombia marca `eventos_radian_recepcion` como `operativo`, con firma requerida, bandera de evento y alcance de habilitacion mientras la empresa no active produccion.
+- Frontend: el resumen de cobertura esencial muestra RADIAN como operativo en habilitacion y enlaza al Centro de habilitacion DIAN para registrar el evento documental.
+- Alcance: RADIAN sigue separado de factura, nota, documento soporte y nomina; opera sobre facturas electronicas existentes y no crea una venta nueva.
+- Correccion vigente: esa declaracion no correspondia al generador disponible.
+  RADIAN queda `bloqueado_contrato` hasta implementar ApplicationResponse,
+  AttachedDocument, CUDE, eventos y habilitacion propios.
+
+2026-06-18: Centro de mando super con reinicio de indicadores.
+- Modulo afectado: `super_administrador`.
+- Frontend: `web/super/licencias_resumen.html` agrega botones para reiniciar
+  metricas del panel e indicadores de errores, ambos con confirmacion.
+- Backend: `/super/api/panel_control/reset` acepta `action=metricas` o
+  `action=errores`, valida super administrador y deja auditoria.
+- Datos: solo limpia `metrics` o `super_errores_sistema`; no afecta empresas,
+  licencias, usuarios, consumos ni configuraciones.
+
+2026-06-18: Facturacion electronica, IA GPT-5.5 y barras de preparacion.
+- Modulos afectados: `facturacion_electronica`, `soportes_compras_ia`,
+  `nomina`, `impuestos`, `grafologia` y permisos empresariales.
+- OCR documental queda retirado como modulo activo: se eliminan pagina
+  empresarial, configuracion super, rutas backend, permisos, licencias y
+  dependencias Docker asociadas a Tesseract/pdftoppm. Los nombres internos
+  historicos que existan en datos previos quedan solo por compatibilidad.
+- Soportes de compras y gastos opera como captura con IA GPT-5.5 y limites de
+  Super Administrador, sin flujo OCR independiente.
+- Facturacion electronica compacta tarjetas de cumplimiento/filtros, exporta
+  resultados de busqueda, deja un unico boton `Visualizar`, agrega vista carta
+  y POS con tamano de letra ajustable y anula facturas emitidas mediante nota
+  credito electronica total.
+- Nomina e Impuestos muestran barra 0-100 con faltantes operativos para
+  preparar nomina electronica/nomina e impuestos usando datos existentes por
+  `empresa_id`.
+
+2026-06-08: OCR documental sin IA
+- Modulo afectado: `ocr`.
+- Objetivo: permitir que una empresa cargue imagenes o PDFs para extraer texto con OCR libre y obtener campos sugeridos para configurar DIAN, inventario, usuarios, clientes u otros procesos, sin usar inteligencia artificial.
+- Backend: `/api/empresa/ocr` queda detras de `WithEmpresaOCRPermissions`, guarda historial en `empresa_ocr_documentos` y filtra todo por `empresa_id`.
+- Super administrador: `/super/api/config/ocr` permite activar/probar Tesseract, `pdftoppm`, idioma, PSM y limites de carga.
+- Seguridad: el OCR no aplica cambios automaticos en modulos destino; entrega sugerencias revisables porque una lectura OCR puede confundir caracteres o numeros.
+
+2026-06-08: Cobertura esencial de documentos DIAN visible
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: `facturacion_electronica.html` agrega un resumen de cobertura esencial para factura electronica, notas credito/debito, documento soporte, nomina electronica y eventos RADIAN, usando el catalogo real del backend.
+- Centro de habilitacion: `facturacion_electronica_pruebas_dian.html` permite seleccionar y registrar `eventos_radian_recepcion` desde la emision documental manual, con preflight de conexion DIAN igual que los otros documentos Colombia.
+- Backend: la prueba `TestResolveFacturacionTransitionForDocumentosElectronicosNuevos` cubre RADIAN para asegurar que el flujo generico de documentos DIAN no se rompa.
+- Alcance: RADIAN queda visible y operable como evento DIAN catalogado; no reemplaza el flujo fiscal especifico de titulo valor que pueda exigir servicios/eventos adicionales.
+
+2026-06-08: Tutorial DIAN con documentos oficiales y pasos post-habilitacion
+- Modulo afectado: `facturacion_electronica`.
+- `facturacion_electronica_tutorial_dian.html` agrega enlaces oficiales DIAN para instructivo de registro/habilitacion, proceso de registro y habilitacion, requerimientos del facturador electronico y guia de facturacion gratuita.
+- El tutorial incluye el flujo posterior al estado aceptado/habilitado: fecha de produccion, RUT responsabilidad 52, numeracion MUISCA, talonario de contingencia, asociacion de prefijos, configuracion en PCS y emision real.
+
+2026-06-08: Produccion local DIAN con explicacion visible
+- Modulo afectado: `facturacion_electronica`.
+- `facturacion_electronica_pruebas_dian.html` convierte la confirmacion de habilitacion DIAN en un panel grande que diferencia ambiente de pruebas/habilitacion y produccion local.
+- La pantalla aclara que produccion local permite emitir documentos fiscales reales y alimentar trazabilidad contable configurada, pero no crea contabilidad automaticamente sin ventas reales y reglas contables activas.
+
+2026-06-08: Asistente DIAN con capturas OCR/IA
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega la tarjeta `Asistente DIAN con capturas` entre `Configuracion DIAN Colombia` y `Cargar firma electronica`.
+- UX: guia al administrador sobre las pantallas que debe capturar en el portal DIAN: set de pruebas, numeracion, modo de operacion y datos fiscales del emisor.
+- Backend: `/api/empresa/facturacion_electronica/dian?action=analizar_captura_dian` recibe imagenes PNG/JPG/TIFF por `empresa_id`, las guarda en carpeta privada empresarial y ejecuta OCR local para proponer campos DIAN aplicables al formulario.
+- Seguridad: los valores sensibles como PIN, llave tecnica, tokens o certificados se enmascaran en vistas tecnicas; el endpoint no escribe automaticamente la configuracion ni imprime secretos en logs.
+- Persistencia: el usuario debe presionar `Aplicar campos detectados` y luego `Guardar DIAN Colombia`; tambien se conservan campos internos del set como modo de operacion y totales requeridos cuando la captura los contiene.
+
+2026-06-08: UBL DIAN realista y diagnostico de rechazo
+- Modulo afectado: `facturacion_electronica`.
+- Cambio funcional: el generador Colombia ya diferencia factura electronica,
+  nota credito y nota debito con estructuras UBL propias y lineas correctas por
+  tipo documental.
+- Ajuste DIAN: el XML usa `ProfileID` detallado por tipo documental,
+  `PrepaidAmount` con la capitalizacion UBL oficial, `PaymentMeans` y el literal
+  exacto de agencia DIAN que aparece en la caja de herramientas oficial.
+- Consumidor final: cuando el adquiriente es el NIT DIAN de consumidor final, el
+  XML usa el bloque minimo con `TaxScheme` `ZZ / No aplica`, autorizado por la
+  lista de codigos DIAN vigente, evitando tratarlo como cliente RUT normal.
+- Flujo de notas: las notas credito/debito no se envian contra facturas solo
+  generadas o pendientes; requieren una factura aceptada por DIAN con codigo,
+  CUFE y fecha de emision para evitar rechazos por referencia inexistente.
+- Validacion: antes de enviar, el preflight bloquea faltantes criticos de UBL
+  DIAN como `DianExtensions`, `SoftwareSecurityCode`, `CUFE/CUDE-SHA384`,
+  `InvoiceLine/CreditNoteLine/DebitNoteLine` y referencias obligatorias de
+  notas.
+- Diagnostico: cuando DIAN responde `ErrorMessageList`, el sistema conserva la
+  lista completa saneada y clasifica la respuesta como rechazo real si
+  `IsValid=false` contiene errores.
+- Firma: la firma XAdES base firma el `SignedInfo` canonicalizado y calcula
+  digest de documento, `KeyInfo` y `SignedProperties` como XML con namespaces
+  explicitos, usando solo Go estandar.
+- Operacion: un `TrackId/ZipKey` solo demuestra recepcion del ZIP; la empresa
+  queda habilitada o un documento aceptado solo con acuse final DIAN positivo.
+
+2026-06-08: Historial TrackId / ZipKey DIAN
+- Modulo afectado: `facturacion_electronica`.
+- Backend: `/api/empresa/facturacion_electronica/dian?action=historial_tracks` lista por `empresa_id` los TrackId/ZipKey guardados.
+- Persistencia: `SendTestSetAsync` y `GetStatusZip` actualizan `empresa_dian_track_historial` con estado, mensaje, documento, tipo y fechas.
+- Frontend: `facturacion_electronica_pruebas_dian.html` agrega una tarjeta visible para recargar historial y reconsultar acuses sin depender de consola temporal.
+- Seguridad: el historial no guarda XML crudo ni secretos de firma, software, PIN, certificados o tokens.
+
+2026-06-08: Centro de habilitacion DIAN legible
+- Modulo afectado: `facturacion_electronica`.
+- El boton y acceso antes llamados `Pasar test DIAN` ahora se muestran como `Centro de habilitación DIAN`.
+- El diagnostico oficial DIAN deja de mostrarse como JSON crudo abierto: se resume en estado, ambiente, configuracion, preparacion, siguiente paso, faltantes y observaciones.
+- El detalle JSON queda plegado en `Ver detalle técnico`, con saneamiento de secretos para soporte.
+- No cambia backend, tablas, credenciales ni envio real a DIAN.
+
+2026-06-08: Facturacion electronica multi-pais en Otros paises
+- Modulo afectado: `facturacion_electronica`.
+- El menu de facturacion electronica mantiene Colombia/DIAN como flujo principal.
+- Los accesos Ecuador/SRI y Panamá/DGI quedan al final dentro del grupo colapsado `Otros paises`, visible solo cuando la deteccion de pais y la licencia/permisos de la empresa lo permiten.
+- No cambia el backend, las tablas, las credenciales ni la emision real de documentos electronicos por pais.
+
+2026-06-08: Facturacion electronica con DIAN primero
+- Modulo afectado: `facturacion_electronica`.
+- La pagina principal de facturacion electronica deja de mostrar las tarjetas `Pais detectado automaticamente` y `Perfil de facturacion`.
+- El flujo operativo inicia directamente con `Configuracion DIAN Colombia` y luego `Cargar firma electronica (Colombia / DIAN)`.
+- La deteccion de pais se conserva como proceso interno para cargar el perfil correcto, sin tarjeta visible.
+
+2026-06-08: Ayuda contextual en formularios de Producto y DIAN
+- Modulos afectados: `inventario`, `productos`, `facturacion_electronica` y `DIAN`.
+- `administrar_productos.html` muestra un boton `?` al lado de cada etiqueta del formulario `Nuevo producto`; al presionarlo se abre una ventana pequena que explica que dato debe ir en el campo.
+- `facturacion_electronica.html` aplica el mismo patron a la carga de firma, configuracion DIAN Colombia, configuracion por pais y configuracion avanzada de facturacion/impresion.
+- Los mensajes son operativos y no reemplazan validaciones backend; solo orientan al administrador antes de guardar.
+- No se agregan endpoints, tablas, permisos ni dependencias externas.
+
+2026-06-07: Bodega base por empresa
+- Modulos afectados: `seleccion_empresas`, `preconfiguraciones`, `inventario`, `bodegas`.
+- Cambio funcional: toda empresa nueva queda con una bodega activa llamada `Bodega 1`; si la bodega ya existe, el backend la conserva y la reactiva.
+- Backfill: el arranque aplica `20260607_bodega_1_default` para empresas existentes de preproduccion.
+- Alcance: no crea productos, existencias, movimientos ni stock simulado; solo deja la ubicacion minima para operar inventario real.
+
+2026-06-07: Apariencia profesional de Suite contador
+- Modulo afectado: `suite_contador`.
+- Frontend: `web/administrar_empresa/suite_contador.html` usa variables de tema, tarjetas compactas, acciones con iconos textuales y estados visuales consistentes para modulos disponibles o bloqueados.
+- Responsive: escritorio/tablet sin scroll horizontal; en movil la grilla pasa a una columna y el boton de apertura ocupa el ancho disponible.
+- Seguridad/alcance: no cambia permisos, endpoints, datos ni rutas; cada enlace conserva `empresa_id` y cada destino mantiene su wrapper.
+
+2026-06-09: IA empresarial activa sin robot ni secretaria
+
+- Actualizacion 2026-06-10: en contexto empresarial la IA flotante queda activa
+  para todas las empresas. El backend ignora apagados heredados de
+  `chat_flotante.chat_enabled`, el arranque reaplica `chat_enabled=1` con la
+  migracion `20260610_chat_ia_activo_empresas_reaplicar` y el frontend evita que
+  `localStorage` viejo oculte el icono circular.
+- Frontend: el asistente IA del panel empresarial usa solo el recuadro normal;
+  los accesos historicos de robot/secretaria se redirigen al drawer para no
+  romper ayuda contextual ni configuracion guiada.
+- Presentacion de respuestas: el recuadro interpreta de forma segura titulos y
+  tablas Markdown producidos por el modelo, mostrando indicadores en filas y
+  datos tabulares en columnas. Cada empresa configura tema (`normal`,
+  `corporativo`, `oceano`, `esmeralda` o `vino`) y tamaño (`pequeno`, `mediano`
+  o `grande`) desde `Configuracion > Chat IA`; la preferencia se persiste por
+  empresa mediante `chat_flotante.theme` y `chat_flotante.text_size`.
+- Configuracion: `configuracion_chat_flotante.html` permite activar/desactivar
+  IA por empresa, emisora online y modo voz; ya no muestra tarjetas de avatar.
+- Backend: `/api/chat_flotante/preferencias` responde siempre
+  `robot_enabled=false` y `personality_mode=normal`, incluso ante caches viejas.
+- Preconfiguracion: empresas existentes y plantillas por tipo quedan con chat IA
+  activo por defecto en preproduccion y emisora apagada salvo preferencia.
+- Seguridad IA: las respuestas pueden proponer `PCS_ACTION` solo contra endpoints
+  permitidos y confirmables; no se habilita SQL libre ni mutaciones sin wrapper.
+- Permisos: `linkChatIA` y `linkCentroIAEmpresarial` dejan de estar ocultos por
+  default, pero siguen sujetos a rol, licencia y permisos efectivos.
+
+2026-06-07: Ayuda integrada con robot/caja IA
+- Modulos afectados: `ayuda`, `chat_flotante`, `robot_ia`, `nomina_sueldos` y paginas empresariales en iframe.
+- Frontend: `web/js/help_ai_bridge.js` captura enlaces de ayuda/tutorial, conserva `empresa_id` y solicita al panel padre abrir la ayuda en el robot/caja IA.
+- Chat: `web/js/ai_chat_drawer.js` agrega `PCSAIChatHelp`, muestra una guia contextual estatica y deja listo un prompt en modo `Ayudante por pasos` si el usuario quiere consultar.
+- Respaldo: cuando chat/IA estan apagados por empresa, el enlace conserva su destino HTML normal, sin activar IA ni cambiar permisos.
+- Nomina: el boton `Ayuda` queda integrado al robot/caja IA y mantiene `tutorial_nomina.html` como guia completa.
+
+2026-06-07: Configuracion de campos imprimibles por empresa
+- Modulos afectados: `configuracion_impresora`, `carrito_de_compras`, `corte_de_caja` y `reportes_turnos`.
+- Backend: `empresa_configuracion_avanzada` guarda `impresion_recibo_items_json` e `impresion_corte_items_json` como JSON saneado de booleanos por `empresa_id`.
+- Frontend: `configuracion_impresora.html` muestra checks de recibo operativo y corte/cierre; `carrito_de_compras.html` filtra metadatos del recibo; `corte_de_caja.html` y `reportes_turnos.html` filtran encabezado y detalle de reportes.
+- Alcance: no modifica factura electronica DIAN, XML, CUFE/CUDE ni campos legales; aplica solo a recibos de venta y reportes operativos impresos.
+- Seguridad: se reutiliza `/api/empresa/configuracion_avanzada` con permisos empresariales y aislamiento por `empresa_id`.
+
+2026-06-07: Barra de configuracion DIAN Colombia
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega una barra 0-100% dentro de `Configuracion DIAN Colombia`.
+- Criterios: identidad fiscal, ambiente/TestSetId, software, numeracion, llave tecnica y firma/certificado.
+- UX: muestra hitos por grupo y lista de campos pendientes para completar la configuracion antes de validar credenciales o pasar pruebas DIAN.
+- Alcance: no agrega endpoint, tabla ni dato simulado; solo calcula estado visual sobre los campos reales de la pagina.
+
+2026-06-07: Catalogo legal versionado
+- Modulos afectados: `nomina_sueldos`, `impuestos`, `seleccion_empresas` y configuracion legal empresarial.
+- Backend: el sistema mantiene versiones legales por pais y parametros asociados; Colombia queda cargado como `CO-2026-06`.
+- Operacion manual: el administrador puede aplicar la version vigente desde Nomina con el boton `Aplicar actualizacion legal`.
+- Operacion automatica: cada empresa puede activar `Autoactualizar`; el worker diario aplica versiones pendientes registradas en el catalogo interno.
+- Modelo hibrido: si autoactualizar esta apagado, la pantalla muestra version pendiente y el administrador/contador decide cuando aplicarla.
+- Seguridad/alcance: todo queda por `empresa_id`, bajo permisos de nomina, sin scraping externo ni mutaciones contables/documentales.
+
+2026-06-07: Preconfiguracion Colombia por empresa
+- Modulos afectados: `seleccion_empresas`, `impuestos`, `nomina_sueldos` y configuracion empresarial.
+- Creacion de empresa: al registrar una empresa nueva se aplica una base fiscal y laboral Colombia versionada como `CO-2026-06`, independiente de la plantilla por tipo de empresa.
+- Impuestos: el catalogo operativo queda prellenado por `empresa_id` con IVA 19%, IVA 0%, INC 8% inactivo, ICA y retenciones base inactivas para que el administrador active/ajuste lo que corresponda.
+- Nomina: la configuracion legal incluye salario minimo mensual, auxilio de transporte legal, jornada, recargos, deducciones, aportes y provisiones Colombia; al crear empleado se sugieren salario minimo y auxilio.
+- Backfill: empresas existentes reciben la misma base en arranque mientras el proyecto esta en preproduccion.
+- Seguridad/alcance: no se crean datos simulados ni documentos; cada registro queda aislado por `empresa_id` y debe validarse con contador antes de produccion.
+
+2026-06-07: Finanzas y cumplimiento sin accesos repetidos
+- Modulo afectado: `administrar_empresa` y `finanzas`.
+- Frontend: `web/administrar_empresa.html` reduce el grupo `Finanzas y cumplimiento` a `Centro financiero y contable`, `Facturacion electronica` y `Reportes ejecutivos`.
+- Navegacion: `Suite contador`, `NIIF`, `Creditos y cartera`, `Gestion de cobranza` e `Impuestos` quedan como accesos internos del Centro financiero para evitar duplicidad visible.
+- Permisos: no cambian paginas, wrappers, rutas ni acciones; los ids retirados del menu principal se conservan para submenus, enlaces historicos y control por rol.
+
+2026-06-07: Modulo NIIF
+- Modulo afectado: `finanzas`, `suite_contador`, `contabilidad_colombia` y `activos_fijos_niif_fiscal`.
+- Frontend: `web/administrar_empresa/niif.html` agrega diagnostico de adopcion NIIF, politicas contables, calculos de deterioro/depreciacion/valor razonable, conciliacion contable-fiscal, checklist de cierre y notas exportables.
+- Navegacion: se enlaza desde el Centro financiero y desde Suite contador; el menu principal entra por `Centro financiero y contable`.
+- Datos: lee el dashboard real de contabilidad Colombia cuando el usuario tiene acceso; no crea endpoint ni tablas nuevas y no inventa cifras contables.
+- Permisos: `linkNIIF` usa `finanzas:R`; el rol `contador` puede verlo sin recibir escritura ni aprobacion.
+
+2026-06-07: Auditoria integral de modulos nuevos
+- Modulos afectados: `auditoria`, `reportes`, `DIAN`, `bolsa`, `renta_ia`, `suite_contador`, `niif`, `centro_ia_empresarial`, `compras_avanzadas`, `soportes_compras_ia`, `contabilidad_colombia`, `tesoreria`, `nomina`, `onlyoffice`, `gestion_documental`, `verticales`, `analisis_control` y `seguridad`.
+- Backend: `operativo_modulos_resumen` consolida existencia de tabla, totales, activos, anulados, rangos de fecha y ultimo registro para los modulos con tabla empresarial; los hubs sin tabla quedan marcados como `sin_tabla`.
+- Frontend: `auditoria.html` permite filtrar eventos por los nuevos modulos y el Centro de reportes ofrece `Auditoria de modulos`.
+- Permisos: no hay permisos nuevos; consulta y exportacion siguen bajo `reportes:R` o permisos de auditoria existentes, siempre con `empresa_id`.
+
+2026-06-07: Suite contador por empresa
+- Modulos afectados: `finanzas`, `portal_contador`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `facturacion_electronica`, `declaraciones_tributarias`, `portal_terceros_certificados`, `cierre_fiscal`, `activos_fijos_niif_fiscal`, `nomina_sueldos`, `reportes`, `roles/licencias`, `administrar_empresa`.
+- Frontend: `web/administrar_empresa/suite_contador.html` agrega una vista profesional tipo contador 360 inspirada en suites contables como Siigo Contador, usando solo modulos reales existentes.
+- Navegacion: se enlaza desde el `Centro financiero y contable` con chip `Contador 360`, sin duplicarlo como boton directo del menu principal.
+- Permisos: `linkSuiteContador` usa `finanzas:R`; el rol `contador` puede ver el hub y accesos contables clave sin recibir permisos de escritura ni aprobacion por este cambio.
+- Seguridad/alcance: no crea endpoint, tablas ni datos simulados; conserva `empresa_id` al abrir modulos y cada destino mantiene su wrapper/licencia.
+
+2026-06-06: Renta IA en finanzas
+- Modulo afectado: `finanzas`.
+- Frontend: `web/administrar_empresa/renta_ia.html` permite seleccionar periodo, tarifa, sobretasa y ajustes fiscales para calcular renta estimada.
+- Backend: `/api/empresa/finanzas/renta_ia` consolida datos por `empresa_id` desde ventas cerradas, movimientos financieros, compras de inventario y nomina liquidada.
+- IA: el analisis con GPT-5.4 mini se basa exclusivamente en el JSON del calculo; si IA no esta activa, la pantalla conserva el resultado numerico.
+- Permisos: `linkRentaIA` usa `finanzas:R`, queda disponible para contador y roles con lectura financiera.
+- Seguridad/alcance: no crea tablas ni mutaciones; todas las consultas filtran por `empresa_id` y el wrapper financiero valida sesion, licencia y rol.
+
+2026-06-06: Bolsa empresarial
+- Modulo afectado: `bolsa`.
+- Frontend: `web/administrar_empresa/bolsa.html` agrega una vista de indicadores internacionales y locales con resumen, tablas, estados por indicador y boton de actualizacion.
+- Backend: `/api/empresa/bolsa` detecta el pais de la empresa, consulta indicadores de mercado desde servidor usando Go puro, aplica cache corta y devuelve resultados saneados.
+- Permisos: se agrega `linkBolsa`, modulo `bolsa` y wrapper `WithEmpresaBolsaPermissions` de lectura; licencias actuales pueden habilitarlo por fallback desde `reportes` o `finanzas`.
+- Seguridad/alcance: endpoint GET, sin tablas nuevas ni mutaciones; `empresa_id` se valida por el wrapper empresarial y los errores de proveedor no exponen secretos.
+
+2026-06-06: OnlyOffice JWT y presentaciones PPTX reales
+- Modulo afectado: `documentos_onlyoffice`.
+- Operacion: se alineo en VPS el secreto JWT usado por `pcs-backend` y `pcs-onlyoffice-documentserver` sin imprimir el secreto; esto elimina el error visual de token mal formado al abrir el editor.
+- Backend: las nuevas presentaciones `.pptx` usan `onlyOfficeBuildBlankPPTX`, que incluye partes PresentationML minimas de master, layout, theme, propiedades y relaciones para que OnlyOffice pueda abrirlas.
+- Seguridad: se conservan tokens temporales por archivo/callback, JWT HS256, aislamiento por `empresa_id` y permisos `documentos_onlyoffice`.
+- QA: `go test ./handlers -run OnlyOffice -count=1`; prueba visual autenticada de Word y Excel correctos y reproduccion/fix de la presentacion.
+
+2026-06-06: Barra de avance DIAN
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Frontend: `facturacion_electronica_pruebas_dian.html` muestra una barra 0-100% de avance de validacion DIAN con hitos visibles de configuracion, firma, TestSetId, objetivo, credenciales, envio real, acuse final y produccion local.
+- Operacion: el porcentaje se recalcula al cargar configuracion, validar credenciales, guardar objetivo, enviar pruebas reales y activar produccion local.
+- Seguridad/alcance: el avance es orientativo y no sustituye el acuse final aceptado de DIAN ni expone secretos.
+
+2026-06-06: Tutorial operativo DIAN
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Frontend: `facturacion_electronica_tutorial_dian.html` agrega una guia corta dentro del submenu para conectar DIAN, cargar firma, validar credenciales, guardar objetivo del portal, ejecutar set completo y cerrar acuse final.
+- Navegacion: `facturacion_electronica_menu.html` muestra `Tutorial DIAN` solo para Colombia y usuarios con permiso de lectura de facturacion.
+- Seguridad: la guia usa placeholders operativos y no imprime PIN, claves tecnicas, certificados, contrasenas ni tokens.
+
+2026-06-06: Set DIAN completo sin timeout de proxy
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Frontend: el boton `Ejecutar set automatico` divide el set completo en tandas reales de 3 documentos cuando no hay limite manual, para evitar `504 Gateway Time-out`.
+- Operacion historica: cada tanda mantenia TestSetId, firma y envio real a habilitacion. Desde 2026-08-21 la pantalla acumula exclusivamente el objetivo exacto guardado para la empresa; las cantidades observadas en ejecuciones anteriores no son presets.
+- Seguridad: no se agrega simulacion ni se exponen secretos en la consola.
+
+2026-06-06: Resumen portal DIAN en centro de pruebas
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Frontend: `facturacion_electronica_pruebas_dian.html` muestra una ficha con los datos operativos del portal DIAN: contribuyente, TestSetId, modo, fechas, rango, resolucion, software, documentos requeridos y aceptados requeridos.
+- Seguridad: PIN y clave tecnica quedan ocultos por defecto y requieren accion explicita para verse.
+- Operacion: el resumen evita que el administrador tenga que comparar el portal DIAN contra campos dispersos antes de enviar pruebas reales.
+
+2026-06-06: Consola operativa DIAN en pagina de pruebas
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Frontend: `facturacion_electronica_pruebas_dian.html` muestra una consola de respuestas DIAN/proveedor con hora, accion, estado HTTP, duracion y JSON saneado.
+- Seguridad: se ocultan claves, PIN, tokens, certificados y llave tecnica en la consola y al copiar la bitacora.
+- Operacion: la consola registra recarga de configuracion, validacion, diagnostico, set automatico, envios manuales, conexion, cola y operaciones documentales para soporte sin depender de F12.
+
+2026-06-06: DIAN SOAP real recibido y acuse final pendiente
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Backend: el transporte oficial SOAP/WCF conserva WS-Security con `BinarySecurityToken`, firma de `wsa:To` e `InclusiveNamespaces`; la prueba real 2+2+2 ya debe llegar a DIAN y recibir TrackId/ZipKey sin `InvalidSecurity`.
+- Operacion: `Batch en proceso de validacion` es recepcion inicial, no aceptacion final. Lo faltante es consultar `GetStatusZip` hasta acuse aceptado/rechazado, persistir ese cierre por documento/lote y actualizar conteos aceptados.
+- Frontend: la pantalla `Centro de habilitación DIAN` debe mostrar los pendientes de acuse de forma resumida y permitir comprobar el cierre real sin exponer XML, certificados ni secretos.
+- QA: el cierre del modulo requiere ejecutar el set real configurado por empresa, validar TrackId/ZipKey y capturar acuse final.
+
+2026-06-06: DIAN set real sin simulacion
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Backend: `action=pruebas_dian` y `action=enviar_set_pruebas` ya no aceptan simulacion; el flujo automatico envia documentos reales al ambiente de habilitacion, recibe `ZipKey` y consulta `GetStatusZip` para cerrar el acuse final.
+- Frontend: `facturacion_electronica_pruebas_dian.html` elimina el checkbox de simulacion y presenta las pruebas como envio real.
+- Permisos: las acciones criticas de set DIAN, firma XAdES, validacion documental y activacion de produccion local requieren accion de aprobacion.
+- QA: la cobertura 2+2+2 usa servidor SOAP local con `SendTestSetAsync` y `GetStatusZip`, validando ZIP firmado y cero documentos simulados.
+
+2026-06-05: Set automatico DIAN configurable por empresa
+- Modulo afectado: `facturacion_electronica`, `DIAN`, `licencias`.
+- Cambio historico: en esa fecha el Centro mostraba el objetivo observado de Powerful Control System. Desde 2026-08-21 el preset fue retirado y el backend bloquea `action=pruebas_dian` hasta que exista un objetivo exacto guardado por la empresa.
+- Operacion: el flujo vigente de pruebas DIAN exige `test_set_id`, firma y acuse aceptado; la simulacion queda bloqueada para `action=pruebas_dian` y `action=enviar_set_pruebas`.
+- Licencias: se documenta que el correo unificado solo adjunta factura electronica cuando el pago comercial aprobado es mayor que cero; descuento total o valor cero no emite factura.
+
+2026-06-05: Eliminacion integral de empresa en selector
+- Modulo afectado: `seleccion_empresas` y `seguridad_multiempresa`.
+- Cambio funcional: la eliminacion total de una empresa limpia registros con `empresa_id` en la base operativa y en la base super, incluyendo comparticiones, invitaciones, licencias, pagos y datos de modulos cuando existen.
+- Persistencia: `usuario_configuracion.selector_empresas_orden_json` se depura para todos los usuarios, de modo que una empresa eliminada no queda en el orden personalizado del selector.
+- Seguridad: se invalidan caches de licencia, resolucion de empresa y acceso compartido para evitar accesos residuales o tarjetas visibles a otros administradores despues del borrado.
+
+2026-06-05: Validacion DIAN oficial sin token proveedor
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Cambio funcional: la validacion de credenciales distingue endpoint oficial SOAP/WCF de DIAN (`*.dian.gov.co`) de endpoints de proveedor/API. En DIAN oficial `token_emisor_ref` queda opcional; para proveedor/API bearer sigue siendo obligatorio.
+- Operacion: `test_set_id` continua siendo obligatorio para envios reales de habilitacion porque DIAN lo usa para asociar los documentos al set asignado.
+- Frontend: `facturacion_electronica_pruebas_dian.html` agrega boton rapido `Enviar prueba 2 + 2 + 2` para enviar 2 facturas, 2 notas debito y 2 notas credito con el mismo flujo de confirmacion.
+- QA: `go test ./handlers -run "DIANCredential|DIANPruebasHabilitacion|DIANDocumentPreflight|DIANSOAP|DIANSignature|DIANDefaultSet|DIANEffectiveSet|CalculateColombianNITDV" -count=1`; validacion de sintaxis del script embebido de la pagina de pruebas DIAN.
+
+2026-06-05: Selector de empresas ordenable
+- Modulo afectado: `seleccion_empresas`.
+- Cambio funcional: `seleccionar_empresa.html` permite reordenar tarjetas con clic sostenido en PC o con el asa de mover en celular, tanto en empresas con licencia activa como en empresas sin licencia activa.
+- Persistencia: el orden se guarda por administrador en `usuario_configuracion.selector_empresas_orden_json` mediante `/api/user/configuracion`, con respaldo local si el guardado remoto falla.
+- Seguridad: no cambia el alcance de empresas; solo se ordenan las tarjetas que `/super/api/empresas` ya devolvio para la sesion autenticada.
+- UX: la tarjeta informativa `Orden de tarjetas` y el boton visible `Restablecer orden` fueron retirados del selector; el arrastre conserva su soporte interno.
+
+2026-06-05: Centro de habilitacion DIAN por empresa
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Cambio funcional: la subpagina `facturacion_electronica_pruebas_dian.html` se convierte en un centro para pasar test DIAN con estado de alistamiento, validacion de credenciales, diagnostico oficial, objetivo del set y resultados por documento.
+- Persistencia: `empresa_dian_configuracion` guarda modo de operacion, fechas del set, totales requeridos y minimos aceptados para facturas, notas debito y notas credito; la llave tecnica se mantiene separada del token de emisor y no se documenta en claro.
+- Operacion: el usuario puede guardar el objetivo asignado en el portal DIAN, ejecutar el set automatico completo o enviar manualmente una factura/nota debito/nota credito de prueba y ver si fue recibida, aceptada, rechazada o queda pendiente.
+
+2026-06-05: OnlyOffice corrige token JWT del editor
+- Modulo afectado: `documentos_onlyoffice`.
+- Cambio funcional: `editor_config` envia el JWT de seguridad en el nivel raiz `config.token`, sin duplicarlo en `document.token` ni `editorConfig.token`.
+- Motivo: Document Server 9.x interpreta esos tokens internos como tokens de seccion y muestra `The document security token is not correctly formed`.
+- Seguridad: se conserva el JWT HS256, tokens temporales para archivo/callback y aislamiento por `empresa_id`.
+- QA: `go test ./handlers -run OnlyOffice -count=1` y prueba visual autenticada del editor Word.
+
+2026-06-05: Tutorial guiado de nomina
+- Modulo afectado: `nomina_sueldos`.
+- Cambio funcional: se agrega `web/ayuda/tutorial_nomina.html` como presentacion paso a paso para configurar empleados, liquidar, revisar pagos y preparar documentos electronicos de nomina.
+- UX: cada seccion de `Narracion` tiene un boton con icono de play que usa sintesis de voz del navegador; la pagina de nomina agrega un boton `Ayuda` con icono que abre la presentacion conservando `empresa_id`.
+- Documentacion: `web/ayuda/ayuda.html` enlaza el tutorial desde el centro de ayuda.
+
+2026-06-05: Alertas de vencimiento de certificado DIAN
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `mensajeria`.
+- Backend: `/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado` calcula estado, fecha y dias restantes desde el certificado X.509 registrado por empresa.
+- Persistencia: `empresa_dian_configuracion` guarda `certificado_vencimiento`, `certificado_vencimiento_en`, `certificado_alerta_dias`, `certificado_alerta_ultimo_envio` y `certificado_alerta_email`.
+- Notificacion: si el certificado esta vencido o a 30 dias de vencer, se envia correo al administrador de la empresa y se evita repetir la alerta dentro de 24 horas.
+- Frontend: la tarjeta `Cargar firma electronica (Colombia / DIAN)` muestra vencimiento y agrega boton `Verificar vencimiento`.
+
+2026-06-05: Carpetas empresariales para firma electronica
+- Modulos afectados: `seleccion_empresas`, `facturacion_electronica`, `backups/borrado`.
+- Cambio funcional: cada empresa asegura una carpeta base `web/uploads/empresas/empresa_{id}_{slug}/`; la firma DIAN se guarda en `facturacion_electronica/firma_electronica/` dentro de esa carpeta.
+- Seguridad: la firma se guarda con permisos privados y se referencia como `file:` interno; no se publica como URL navegable. La eliminacion de empresa limpia tambien la carpeta empresarial unificada.
+
+2026-06-04: Licencias comerciales con factura electronica de Powerful Control System
+- Modulos afectados: `licencias`, `pagos`, `facturacion_electronica`, `mensajeria_super`.
+- Cambio funcional: cuando una licencia comercial queda pagada/aprobada con valor mayor que cero, el sistema emite automaticamente una factura electronica desde la empresa interna `Powerful Control System` y la envia al correo del cliente comprador.
+- Backend: `backend/db/licencias_empresa_sistema.go` resuelve la empresa interna existente, incluyendo la variante historica `Powerful Control Systen`, y guarda su `empresa_id` como emisora. Desde 2026-06-09 ya no asegura licencia tecnica interna; si el codigo heredado existe activo, se retira. `backend/handlers/payments_handlers.go` conecta Epayco, Wompi y activacion manual con el flujo de facturacion electronica ya existente.
+- Persistencia: `configuraciones.licencias.facturacion_empresa_sistema_id` guarda la empresa emisora; `pagos_epayco` y `pagos_wompi` marcan `licencia_factura_electronica_emitida` en `raw_payload` para idempotencia; `empresa_facturacion_documentos` guarda la factura bajo el `empresa_id` de la emisora interna.
+- Seguridad: no se crean facturas para licencias de valor cero; los documentos usan la configuracion fiscal real de la empresa interna y no inventan credenciales DIAN. Si falta configuracion legal, el documento queda pendiente para reintento sin duplicar. La empresa interna debe cargar carrito, correo corporativo, configuracion y reportes como cualquier empresa.
+
+2026-06-05: Licencia interna normalizada para Powerful Control System (reemplazada el 2026-06-09)
+- Modulos afectados: `licencias`, `carritos`, `email_corporativo`, `portal_publico`, `documentacion`.
+- Cambio funcional vigente: `Powerful Control System` deja de depender de una licencia tecnica sin fecha de fin y, desde 2026-06-09, tambien deja de usar la licencia interna fechada. Debe tener licencia comercial activa como cualquier empresa.
+- Portal publico: el respaldo editable de `Modulos y caracteristicas principales` agrega GRAFOLOGIX y Camaras/DVR, y completa esos modulos si existe una configuracion antigua en base.
+- Licencias: las consultas PostgreSQL de licencias vigentes/vencidas toleran fechas heredadas vacias o no fechables para evitar que registros antiguos bloqueen permisos empresariales, carrito, correo corporativo o reportes.
+- Permisos: el rol `super_administrador` validado en backend puede operar globalmente para soporte y gobierno del sistema, conservando aislamiento por `empresa_id` en handlers y SQL.
+- QA: probar que la empresa interna abre carrito y bandeja de correo corporativo igual que las demas empresas despues de ejecutar el arranque/`rs`.
+
+2026-06-02: Login usuario con rol Cajero restringido
+- Modulo afectado: `usuarios_empresa`.
+- Cambio funcional: al entrar por `login_usuario.html`, las variantes de rol `Caja`, `Caja principal`, `Caja turno` y similares se normalizan como `cajero`.
+- UX: el selector de roles de Administrar usuarios deduplica `Caja/Cajero` y el catalogo global prefiere mostrar `Cajero`.
+- Permisos: el cajero solo ve `Venta directa`, `Estaciones` y `Corte de Caja`; no ve panel general, usuarios, configuracion, inventario, finanzas completas ni reportes ejecutivos.
+
+2026-06-02: Primer ingreso de usuario operativo pendiente
+- Modulo afectado: `usuarios_empresa`.
+- Cambio funcional: `login_usuario.html` puede completar el alta inicial de un usuario invitado que aun aparece como `inactivo` porque esta pendiente de confirmar.
+- Backend: `/api/empresa/usuarios/establecer_password` permite `estado=inactivo` solo cuando el token de invitacion es valido y el correo aun no estaba confirmado; despues confirma correo, consume token y activa el usuario.
+- Seguridad: si el usuario ya estaba confirmado e inactivo, el bloqueo se mantiene.
+
+2026-06-02: Usuario existente visible para reenviar confirmacion
+- Modulo afectado: `usuarios_empresa`.
+- Cambio funcional: si el administrador intenta crear un usuario con un correo ya existente dentro de la misma empresa, el backend responde `409` con el registro saneado en `usuario_existente`.
+- UX: Administrar usuarios recarga la lista incluyendo inactivos/pendientes, resalta el registro y orienta al administrador a usar `Reenviar confirmacion`.
+- Base de datos: la migracion PostgreSQL elimina constraints e indices unicos heredados compuestos solo por `email`, manteniendo `ux_users_lower_email_empresa`.
+- Seguridad: no se exponen tokens ni claves; las acciones siguen aisladas por `empresa_id` e `id`.
+
+2026-06-02: Deducido de impuesto en factura impresa
+- Modulos afectados: Configuracion empresarial, carrito unificado, documentos imprimibles y facturacion.
+- Cambio funcional: Configuracion > Impresora > Documento de venta agrega el check `Mostrar deducido del impuesto en la impresion` por empresa.
+- Persistencia: se agrega `empresa_configuracion_avanzada.mostrar_deducido_impuesto_factura` como bandera `0/1`.
+- Impresion: recibos y facturas del carrito muestran base gravable e impuesto deducido usando los valores ya calculados del item (`base_gravable`, `valor_impuesto`), en POS 80mm o carta.
+- Alcance: no cambia payload electronico, XML, CUFE/CUDE, envio ni validacion DIAN; es una opcion visual de impresion.
+
+2026-06-02: GRAFOLOGIX con medidas tecnicas en reportes
+- Modulo afectado: `grafologia`.
+- Cambio funcional: los resultados del motor Go agregan `details` por cada metrica y la UI muestra esas medidas debajo del resultado.
+- Reportes: HTML, PDF multipagina, Word, JSON, CSV y TXT incluyen angulos, separaciones, margenes, alturas, continuidad, densidad, regularidad y forma.
+- QA: `go test ./internal/grafologia -count=1`, `node --check web/js/grafologia.js` y captura visual del reporte generado con Chrome.
+
+2026-06-01: GRAFOLOGIX con analisis GPT-5.5
+- Modulo afectado: `grafologia`.
+- Cambio funcional: la pantalla agrega el boton `Analizar con GPT-5.5` para obtener una lectura grafologica complementaria desde el modelo de vision configurado como `openai:gpt-5.5`.
+- Backend: `/api/empresa/grafologia?action=analizar_ia` reutiliza el cliente Chat IA existente, valida activacion global/empresarial, limite diario por empresa y cliente asociado por `empresa_id`.
+- UX: el resultado GPT-5.5 se muestra en una tarjeta separada del informe local Go/Tesseract para no reemplazar exportaciones ni historial.
+- Seguridad: la consulta queda registrada como uso IA de la empresa y no agrega dependencias ni expone datos entre empresas.
+
+2026-06-01: GRAFOLOGIX con cliente asociado
+- Modulos afectados: `grafologia`, `clientes`, `reportes`.
+- Cambio funcional: GRAFOLOGIX agrega una tarjeta `Cliente asociado` para buscar clientes centrales por nombre/documento, seleccionar uno o crear un cliente nuevo sin salir del modulo.
+- Backend: `/api/empresa/grafologia?action=analizar` recibe `cliente_id`, valida que pertenezca al mismo `empresa_id` en `clientes` y guarda snapshot de cliente, descripcion y caracteristicas de la persona.
+- Reportes: HTML, PDF, Word, JSON, CSV y TXT incluyen la persona asociada cuando existe.
+- Seguridad: no se confia en el cliente enviado por el navegador; se verifica `empresa_id + cliente_id` antes de persistir el analisis.
+
+2026-06-01: GRAFOLOGIX grafologia OCR
+- Modulo afectado: `grafologia`.
+- Cambio funcional: Administrar empresa incorpora `Analisis y control > GRAFOLOGIX` para cargar o tomar una fotografia de texto manuscrito, ajustar brillo/contraste/recorte y generar un informe grafológico orientativo.
+- Backend: `backend/internal/grafologia` usa Go puro para escala de grises, umbral Otsu, segmentacion por proyecciones, metricas graficas e interpretacion heuristica; `/api/empresa/grafologia` maneja dashboard, catalogo, upload multipart, analisis y reportes.
+- Preprocesamiento visual: cada analisis genera PNG de escala de grises, binarizacion, bordes y lineas/margenes para auditar lo que leyo el motor.
+- Persistencia: `empresa_grafologia_analisis` guarda imagen, resumen, metricas JSON, interpretacion JSON, preprocesamiento JSON, reporte HTML y confianza por `empresa_id`.
+- Exportaciones: HTML imprimible blanco y negro, PDF real generado por Go estandar, Word compatible, JSON, CSV y TXT.
+- OCR: Tesseract queda disponible como CLI opcional en VPS sin agregar dependencias Go.
+- Seguridad: endpoint protegido por `WithEmpresaGrafologiaPermissions`, permiso `grafologia` y consultas aisladas por empresa.
+
+2026-06-01: Cantidades naturales positivas en carrito
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `inventario` y `modo_offline`.
+- Cambio funcional: los campos de cantidad del carrito solo aceptan enteros positivos, evitando cantidades decimales, negativas o en cero.
+- Backend: `/api/empresa/carritos_compra/items` valida la regla antes de crear o actualizar y la capa `db` la repite para flujos internos/offline.
+- Impacto: inventario, reservas, kardex y totales quedan calculados con unidades naturales.
+
+2026-06-01: Invitacion de administrador existente en panel super
+- Modulos afectados: `super_administrador`, `administradores_delegados` y `autenticacion_admin`.
+- Cambio funcional: desde `web/super/administradores.html`, si se intenta agregar un correo que ya existe y tiene cuenta confirmada, `/super/api/administradores` responde OK con mensaje claro en vez de 409.
+- Roles: si el actor es super administrador y selecciona un rol distinto, se actualiza el rol del administrador existente con protecciones para roles super y contralores.
+- UX: la pagina muestra errores JSON como texto legible, evitando presentar el objeto tecnico completo al usuario.
+
+2026-05-31: Licencia del sistema descargable por empresa
+- Modulos afectados: `licencias`, `administrar_empresa`, `permisos_empresa` y `mensajeria_super`.
+- Cambio funcional: Administrar empresa incorpora el grupo principal `Licencia` con la pagina `Licencia del sistema`.
+- Descarga: el boton `Descargar licencia PDF` usa `/api/empresa/licencia_sistema/pdf` y genera el documento con la licencia activa de esa empresa.
+- Configuracion: el contenido legal del PDF se edita desde Super administrador > Formatos de email, plantilla `licencia_software_pdf`; el PDF se descarga desde la empresa y ya no se adjunta al correo de bienvenida.
+- Seguridad: el endpoint queda asociado a `linkLicenciaSistema` y al alcance efectivo de `empresa_id`.
+
+2026-05-31: Catalogo base de roles empresariales comunes
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `inventario`, `energia_solar`, `recursos_humanos` y `frontend_ux`.
+- Roles agregados o formalizados: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`, `recursos_humanos` y `tecnico_solar`.
+- Alcance: `tecnico_solar` consulta energia solar; `jefe_bodega` administra bodega/inventario sin eliminar ni vender; `recursos_humanos` gestiona horarios, asistencia y nomina operativa.
+- UX: los roles especializados reciben menus reducidos para que cada usuario vea solo el area que debe operar.
+
+2026-05-31: Rol Servicio de limpieza para estaciones
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `estaciones`, `control_aseo` y `carritos`.
+- Cambio funcional: se agrega el rol `servicio_limpieza`, orientado a personal de aseo que solo debe ver estaciones y reportar como limpias las estaciones marcadas como sucias.
+- Permisos: el rol recibe solo `R` en `ventas` para cargar el tablero de estaciones; no recibe aprobacion, creacion, edicion, eliminacion, reportes ni configuracion.
+- UX: el menu empresarial solo muestra `Estaciones`; el clic en estacion sucia finaliza el evento de aseo y el clic en estacion limpia no activa ni abre carrito.
+
+2026-05-31: Rol empresario para resultados y reportes
+- Modulos afectados: `usuarios_empresa`, `roles_permisos` y `reportes`.
+- Cambio funcional: se agrega el rol `empresario`, orientado a propietarios o directivos que solo deben consultar resultados y reportes ejecutivos de la empresa.
+- Permisos: el rol recibe solo `R` en `reportes`; las paginas permitidas se reducen a `linkReportes` y `linkReportesEjecutivos`.
+- UX: el menu principal y el submenu de reportes ocultan accesos operativos y reportes de turnos/caja para mantener una vista ejecutiva.
+
+2026-05-31: Rol contador para finanzas e impuestos
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `finanzas`, `impuestos` y `facturacion`.
+- Cambio funcional: se agrega el rol `contador`, orientado a usuarios que solo deben consultar finanzas empresariales e impuestos.
+- Permisos: el rol recibe solo `R` en `finanzas` y `facturacion`; las paginas permitidas se reducen a `linkFinanzas`, `linkFinanzasMain` y `linkImpuestos`.
+- UX: el menu principal y el centro financiero ocultan accesos no autorizados; las APIs mantienen bloqueo de escritura por backend.
+
+2026-05-31: Rol portero para estaciones
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `estaciones` y `carritos`.
+- Cambio funcional: se agrega el rol `portero`, orientado a personal que solo debe ver estaciones y activarlas sin entrar al carrito.
+- Permisos: el rol recibe `ventas:R` y `ventas:A` solo para el flujo `activar_estacion`; la visibilidad de paginas se reduce a `linkEstaciones` y las APIs de items/cobro quedan bloqueadas en backend.
+- UX: en el menu empresarial solo aparece `Estaciones`; el clic sobre una estacion activa la estacion y nunca abre carrito para este rol.
+
+2026-05-31: Feedback sonoro y tactil del carrito
+- Modulo: `Configuracion carrito` y `Carrito y venta directa`.
+- Configuracion: `carrito_ui_global` agrega checks por empresa para pitido y vibracion separados entre PC y celular.
+- UX: el carrito emite un pitido breve si esta activo y aplica vibracion visual; en celulares compatibles tambien llama a `navigator.vibrate`.
+- Alcance: no cambia backend ni tablas nuevas; se reutiliza `empresa_estacion_prefs` y el endpoint empresarial existente.
+
+2026-05-31: Login con titulo texto e iconos PWA
+- Modulo: `autenticacion administrador`.
+- Cambio funcional/UX: el encabezado del login vuelve a texto `Powerful Control System`, y los botones inferiores `Instalar app` e `Ir al inicio` quedan con iconos visuales propios.
+- PWA: `pwa_install.js` conserva el icono al cambiar el texto del boton por estados de instalacion, evitando que el DOM pierda la marca visual.
+- QA: verificado en Chrome/Playwright con viewport escritorio y movil, incluyendo click sobre el instalador PWA simulado.
+
+2026-05-31: Licencia de prueba historica bloqueada
+- Modulos afectados: `licencias`, `checkout_licencias`.
+- Cambio funcional: una empresa no puede activar por segunda vez la prueba gratis de 15 dias aunque la primera prueba ya este vencida, inactiva o provenga de datos antiguos.
+- Backend: `licencias_activaciones_gratis` se consulta como historial permanente por `empresa_id`; el fallback revisa licencias asignadas antiguas de valor cero con duracion 15 dias o textos de prueba/gratis/trial.
+- Impacto de permisos: sin cambios; `/licencias/activar_sin_pago` conserva el flujo publico de checkout, pero la validacion de reutilizacion queda en backend antes de insertar o activar.
+
+2026-05-31: Super administrador sin paginas de metricas y reportes globales
+- Modulo: `super_administrador`.
+- Cambio funcional: el menu principal del panel super ya no muestra `Reportes globales` ni `Metricas de trafico` dentro de Gobierno.
+- Navegacion: `web/js/super_administrador.js` deja de restaurar o marcar como favoritas esas rutas desde el panel super; si estaban guardadas en `localStorage`, se filtran automaticamente.
+- Alcance conservado: `web/super/reportes_globales.html` continua disponible desde `seleccionar_empresa.html`, porque alli se usa para consolidar solo las empresas visibles del administrador autenticado.
+- Limpieza: `web/super/metricas_de_trafico_general.html` se elimina como pagina independiente; las metricas permanecen en `Centro de mando`.
+
+2026-05-30: Licencias globales compartidas
+- Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `plantillas`.
+- Cambio funcional: el catalogo base queda normalizado en ocho planes globales para todos los tipos de empresa: prueba gratis 15 dias, prueba pagada de 1 dia por COP 1000, mensuales de 1000, 2000 y 4000 documentos, y anuales de 12000, 24000 y 36000 documentos.
+- Backend: `EnsureLicenciasSchema` asegura esos planes con `tipo_id=0` y `pais_codigo=GLOBAL`; los bootstraps de nuevos tipos y plantillas dejan de crear planes repetidos por tipo y ocultan licencias base heredadas no asignadas.
+- UX: `web/super/licencias.html` agrega una tarjeta de reglas comerciales donde se deja visible que la prueba de 15 dias solo se aplica una vez por empresa y permite configurar cuantas compras adelantadas de la misma licencia se permiten, por defecto 2.
+- Seguridad/datos: las licencias ya asignadas a empresas no se eliminan; solo se oculta el catalogo base legado. El bloqueo de prueba gratis por empresa sigue en `licencias_activaciones_gratis`.
+
+2026-05-30: Informacion de contacto corporativa
+- Modulo: `Portal publico`.
+- Alcance: `web/Informacion_de_contacto.html` se convierte en una pagina corporativa sin logo en el hero, con informacion ampliada sobre Powerful Control System, vision para pequenas empresas, canales de contacto, asesor y acompanamiento.
+- Resultado: la pagina comunica mejor el proposito del sistema: acercar herramientas empresariales profesionales a negocios pequenos y medianos para que puedan desarrollarse, progresar y operar con mas control.
+
+2026-05-30: Domotica en paginas separadas
+- Modulo: `Domotica`; clave tecnica conservada: `control_electrico`.
+- Navegacion: el submenu de `Administrar empresa > Domotica` abre vistas independientes mediante `pagina=resumen`, `pagina=conexion`, `pagina=raspberry`, `pagina=reles`, `pagina=automatizaciones`, `pagina=reportes` y `pagina=bitacora`; `Sensores Raspberry` conserva su pagina dedicada.
+- UX: la pagina operativa deja de mostrar enlaces internos duplicados en el resumen y cada vista presenta solo su tarjeta o seccion funcional, evitando que toda la configuracion quede apilada en una sola pantalla.
+
+2026-05-30: Ayuda y APIs actualizadas
+- Modulo: `Ayuda y documentacion tecnica`.
+- Alcance: centro de ayuda, ayuda contextual, pagina visible de APIs y guia Markdown para integradores.
+- Resultado: los operadores tienen ayuda actualizada para carrito/venta directa/offline, y los desarrolladores cuentan con una guia clara de familias de endpoints, seguridad multiempresa, errores y carritos.
+
+2026-05-31: Refuerzo multi-caja del modo offline.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `caja`, `facturacion_offline`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` separa la cola local por empresa y cajero, agrega el correo/rol del operador al payload offline y exige una caja abierta cargada antes de guardar una venta sin internet.
+- Backend: `/api/empresa/offline_ventas` valida que la venta offline pertenezca al usuario autenticado, rechaza payloads sin `caja_codigo` y convierte el reintento sobre carrito ya pagado en respuesta idempotente.
+- Alcance operativo: varias cajas de una misma empresa pueden seguir vendiendo sin internet sin mezclar colas, caja esperada ni sincronizaciones.
+
+2026-05-30: Documentacion del carrito unificado
+- Modulo: `Documentacion operativa`.
+- Alcance: contexto, mapa, flujos, decisiones, descripcion del proyecto, estructura tecnica e indice documental quedan alineados con el carrito actual.
+- Resultado: las futuras tareas de carrito deben partir de venta directa/estaciones como una sola UI plana, con pantalla completa en venta directa y fondo estructural diferenciado.
+
+2026-05-29: Fondo diferenciado en carrito
+- Modulo: `Carrito y venta directa`.
+- UX: el fondo estructural del carrito queda mas oscuro que las tarjetas reales, usando variables de apariencia para temas claros, oscuros, negro absoluto y obsidiana.
+- Restriccion visual: se conserva la apariencia plana, sin sombras ni efecto 3D.
+
+2026-05-29: Venta directa en pantalla completa
+- Modulo: `Venta directa`.
+- UX: el carrito directo incluye un boton con icono para abrir la pantalla completa y volver a la vista normal sin salir de la operacion.
+- Integracion: cuando venta directa se abre embebida en `administrar_empresa.html`, el iframe permite la accion fullscreen del navegador.
+- Seguridad/datos: no cambia endpoints, tablas, permisos ni configuraciones por empresa.
+
+2026-05-29: Email corporativo con temas del sistema
+- Modulo: `Email corporativo Mailu`.
+- Apariencia: el panel empresarial aplica modo claro/oscuro a la tarjeta y envia la preferencia al autologin de SnappyMail.
+- Panel empresa: la bandeja se muestra sin email visible ni mensaje de estado activo; las alertas siguen apareciendo solo si hay error o provision pendiente.
+- Configuracion empresa: `Configuracion > Email corporativo` permite decidir si la bandeja se abre automaticamente y actualizar la contrasena interna del buzon.
+- SnappyMail: se agregan temas personalizados `PCSLight@custom` y `PCSDark@custom`; el despliegue Docker los monta desde `deploy/mailu/themes`.
+- Provision: el script directo de Mailu puede guardar la preferencia de tema por buzon en archivos locales de SnappyMail sin mostrar contrasenas al usuario.
+
+2026-05-29: Panel empresa - favoritos tipo menu
+- Modulo: `Panel administrar empresa`.
+- Cambio visual: el bloque de favoritos muestra `Accesos rapidos / Favoritos` en una sola fila y renderiza cada favorito como boton compacto similar al menu principal.
+- Alcance: no cambia almacenamiento de favoritos, endpoints, permisos ni reglas de empresa.
+
+2026-05-29: Portal publico - informacion de contacto empresarial
+- Modulo: `Portal publico`.
+- Cambio visual: `web/Informacion_de_contacto.html` adopta una pagina empresarial moderna con hero comercial, canales de contacto, asesor de ventas y areas de atencion.
+- UX: `web/estilos.css` agrega layout responsive, tarjetas compactas, botones claros y ajuste de textos largos en movil.
+- Seguridad: no cambia endpoints, permisos ni rutas protegidas; la pagina sigue siendo publica segun `AuthMiddleware`.
+
+2026-05-29: Fotos de usuarios en storage empresarial
+- Modulo: `Usuarios empresa`.
+- Cambio funcional: los usuarios creados por el administrador pueden tener foto de perfil desde `web/administrar_empresa/administrar_usuarios.html`.
+- Persistencia: `users.foto_url` guarda la URL publica de la imagen y el archivo se almacena en `/uploads/empresas/empresa_{id}_{slug}/imagenes/usuarios/`.
+- Seguridad: `/api/empresa/usuarios?action=foto` valida que el usuario pertenezca al mismo `empresa_id`, limita tamano y acepta solo PNG, JPG, GIF o WEBP.
+- Storage: `Storage Imagenes` de super administrador revisa la carpeta general `/imagenes/` de cada empresa, incluyendo Domotica y usuarios.
+
+2026-05-29: Domotica empresarial con fotos, sensores y reportes
+- Modulo visible: `Domotica`; clave tecnica conservada: `control_electrico`.
+- Alcance: por empresa se configuran controladores, aparatos por estacion, fotos, consumo electrico, agendas, reglas de sensores, alarmas/eventos y reportes.
+- Integraciones: el sistema permite registrar equipos por GPIO/Raspberry, Home Assistant, HomeKit/Siri mediante bridge, Matter, Shelly RPC, Philips Hue, Tuya/Smart Life, Zigbee2MQTT, Z-Wave JS y HTTP generico. Los tokens se manejan como configuracion sensible y no se imprimen en UI.
+- Fotos: cada aparato acepta imagen y se almacena en la subcarpeta `/uploads/empresas/empresa_{id}_{slug}/imagenes/domotica/`, manteniendo aislamiento por `empresa_id`.
+- Super administrador: `web/super/domotica_storage.html` permite revisar carpetas empresariales, uso, numero de imagenes y tamano maximo permitido para cargas de Domotica.
+- QA: `backend/tools/seed_domotica_motel_calipso` crea datos demo para Motel Calipso cuando exista `DB_EMPRESAS_DSN`.
+
+2026-05-29: Domotica como modulo principal
+- Modulo visible: `Domotica`; clave tecnica conservada: `control_electrico`.
+- Navegacion: el acceso sale de `Configuracion` y queda como boton principal en `web/administrar_empresa.html`, abriendo `web/administrar_empresa/modulo_menu.html?module=control_electrico`.
+- Subpaginas: el submenu concentra resumen, conexion GPIO, controladores, sensores Raspberry, estaciones/aparatos y bitacora.
+- Seguridad: se conservan permisos por `empresa_id` con `linkControlElectrico` y `linkConfiguracionSensoresRaspberry` agrupados bajo Domotica.
+
+2026-05-29: Domotica por estacion en carrito
+- Modulo visible: `Domotica`; clave tecnica conservada: `control_electrico`.
+- Cambio funcional: el sistema mantiene las tablas y rutas existentes de control GPIO, pero la experiencia de usuario se renombra a Domotica para cubrir lamparas, motobombas, puertas, aires, jacuzzi y otros aparatos por estacion.
+- Carrito: al entrar a una estacion con carrito activo, si Domotica esta habilitada y hay aparatos activos para esa estacion, aparece automaticamente la tarjeta `Domotica`. Cada aparato se muestra como boton y abre una ventana con estado, encendido, apagado y programacion horaria.
+- Configuracion carrito: `mostrar_tarjeta_domotica_carrito` permite mostrar u ocultar la tarjeta automatica sin desactivar el modulo ni el boton Domotica.
+- Configuracion: `web/administrar_empresa/control_electrico.html` opera como pagina de Domotica; permite registrar controladores locales y aparatos por estacion con GPIO, tipo, nombre, imagen, agenda y bitacora.
+- Persistencia: se reutilizan `empresa_control_electrico_config`, `empresa_control_electrico_raspberry_pis`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos`, siempre filtradas por `empresa_id`.
+
+2026-05-29: Renovacion de licencias vencidas
+- Modulos afectados: `licencias`, `checkout_licencias`, `pagos`, `seleccion_empresas`.
+- Funcion: desde `Seleccionar empresa > Licencias`, el boton `Renovar licencia` puede abrir el checkout de una licencia vencida asignada a esa misma empresa, sin exponer planes ocultos ni licencias de otras empresas.
+- Regla comercial: las licencias gratis de prueba con valor cero, sean de 15 o 30 dias, no se renuevan; la UI ofrece elegir un plan comercial.
+- Endpoints: `/api/public/licencias/checkout_summary` y los flujos Wompi/Epayco/activar sin pago comparten la validacion de disponibilidad para checkout; `/api/public/licencias/payment_methods` responde de forma tolerante ante pasarelas incompletas.
+
+2026-05-29: Accesos IA y emisoras en menu flotante
+- Modulos afectados: `menu_flotante`, `chat_flotante`, `radio_online`, `frontend_ux`.
+- Cambio funcional: el menu flotante autenticado agrega botones `Robot / IA` y `Emisoras`.
+- UX: `Robot / IA` abre el avatar si el robot esta activo o la ventana del Asistente IA si no lo esta; `Emisoras` abre el panel de radio y permite activar el reproductor desde su propio switch sin encenderlo automaticamente por defecto.
+
+2026-05-29: Email corporativo Mailu
+- Modulo: `Email corporativo` y despliegue VPS.
+- Archivos: `deploy/docker-compose.platform.yml`, `deploy/scripts/vps-compose-sidecar-up.sh`, `deploy/scripts/vps-configure-mailu-host-nginx.sh`, `deploy/scripts/vps-provision-mailu-mailbox.sh`, `scripts/sync_to_vps.ps1`.
+- Cambio funcional: se elimina el proveedor anterior y se integra Mailu con SnappyMail en el perfil Docker `mail`.
+- Provision: el modo `mailu_direct` ejecuta el script directo contra `pcs-mailu-admin` y crea/actualiza buzones con `flask mailu user`.
+- Diagnostico: `/super/api/email_corporativo` expone `mailu_direct_enabled`, estado webmail, cuentas y accion `POST ?action=test_mailu`.
+- UX: la tarjeta `Bandeja de correo corporativo` del panel empresarial abre la bandeja automaticamente con un token temporal; el usuario no escribe la clave del buzon.
+- Seguridad: el backend firma autologin con HMAC, entra a SnappyMail por `/webmail/sso.php` usando cabeceras internas y el proxy publico limpia esas cabeceras antes de pasar trafico externo; la UI no muestra secretos.
+
+2026-05-28: Email corporativo para todas las empresas existentes
+- Modulos afectados: `email_corporativo`, `administrar_empresa`, `backend_db`, `frontend_ux`.
+- Cambio funcional: al iniciar el backend, si `email_corporativo.auto_create` esta activo, el sistema genera registros de correo corporativo para todas las empresas existentes que no tengan correo asignado.
+- UX: la tarjeta `Bandeja de correo corporativo` muestra diagnosticos de estado del buzon, estado del webmail y dominio, con avisos claros cuando falta provisionar Mailu.
+- Alcance: no expone claves iniciales ni contrasenas; el buzon real sigue requiriendo provision correcta de Mailu para leer mensajes.
+
+2026-05-28: Panel empresarial sin carga automatica de webmail
+- Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
+- Cambio funcional: la tarjeta `Bandeja de correo corporativo` deja de cargar automaticamente rutas internas del webmail dentro de un iframe cuando el buzon no esta provisionado.
+- UX: el panel conserva el estado del buzon y el boton `Abrir buzón`; el webmail se abre en su propia ventana segura para iniciar sesion y leer mensajes sin mezclar contrasenas o sesiones dentro del panel empresarial.
+
+2026-05-28: Bandeja de correo visible en panel empresarial
+- Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`, `backend_db`.
+- Cambio funcional: `web/administrar_empresa/panel.html` ya no oculta por completo la tarjeta de correo cuando el modulo esta desactivado, falta el buzon o falla la consulta; ahora muestra el estado operativo debajo de Favoritos.
+- Backend: `/api/empresa/email_corporativo` recibe tambien la base empresarial y, si la empresa antigua no tiene fila de correo y la autocreacion esta activa, genera el email corporativo al consultar el panel.
+- UX: el boton `Actualizar estado` vuelve a consultar el endpoint, `Abrir buzón` queda disponible solo cuando hay URL de webmail y el visor integrado se muestra solo cuando el modulo esta activo.
+
+2026-05-28: Bandeja de correo corporativo en panel empresarial
+- Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
+- Cambio funcional: la tarjeta bajo Favoritos en `web/administrar_empresa/panel.html` se convierte en `Bandeja de correo corporativo`.
+- UX: muestra el correo de la empresa, estado del buzon, boton para actualizar, boton `Abrir buzón` y un visor integrado del webmail apuntando a `INBOX`.
+- Seguridad: no expone contrasenas ni claves iniciales del buzon; si el webmail bloquea iframe por cabeceras de seguridad, la tarjeta conserva el acceso en ventana completa.
+
+2026-05-28: Apariencia por defecto blanco corporativo
+- Modulos afectados: `autenticacion`, `apariencias`, `menu_flotante`.
+- Cambio funcional: los usuarios nuevos arrancan con `Blanco Corporativo` como tema predeterminado.
+- Backend: `usuario_configuracion.apariencia` usa default `light`; cuando no existe preferencia guardada para el email, los logins y `/api/user/configuracion` devuelven `light`.
+- Frontend: las paginas super con bootstrap propio ya no usan oscuro como fallback si no existe cookie o localStorage.
+
+2026-05-28: Codigo de asesor en prueba gratis de 15 dias
+- Modulos afectados: `licencias`, `checkout_licencias`, `asesor_comercial`.
+- Cambio funcional: la tarjeta de licencia gratis de 15 dias en `web/elegir_licencia.html` permite escribir el codigo de asesor comercial antes de continuar.
+- Flujo: el codigo viaja como `asesor_id` a `pagar_licencia.html`; el checkout conserva la validacion existente y al activar sin pago lo guarda en la activacion gratis, trazabilidad de pago y comisiones.
+- UX: el campo solo se muestra en la prueba gratis de 15 dias para no duplicar el formulario de planes pagos.
+
+2026-05-28: Licencias del selector con tabla global paginada
+- Modulos afectados: `seleccion_empresas`, `licencias`, `frontend_ux`.
+- Cambio funcional: `web/super/licencias.html?scope=mine&con_empresa=1` conserva el selector superior para destacar una empresa y operar sobre ella primero.
+- UX: debajo se muestra la tarjeta `Todas las empresas y vencimientos`, con todas las empresas visibles para el administrador, ordenadas por dias de licencia, paginadas de 10 en 10 y con botones de elegir/cambiar/renovar licencia, editar empresa y abrir empresa.
+- Alcance: la tabla global no se filtra al elegir una empresa arriba; el selector solo controla la tarjeta destacada y las tablas de detalle de licencias de esa empresa.
+
+2026-05-28: Selector de licencias oculta prueba ya usada
+- Modulos afectados: `licencias`, `seleccion_empresas`, `checkout_licencias`.
+- Cambio funcional: al abrir `elegir_licencia.html` para una empresa, la pagina consulta `/super/api/licencias` con `empresa_id` y `ocultar_prueba_usada=1`.
+- Backend: `LicenciasHandler` usa `HasAnyLicenciaGratisActivationForEmpresa` para detectar si la empresa ya tuvo una activacion gratis/prueba. Si ya la uso, quita del catalogo la licencia base valor cero de 15 dias y marca la respuesta con `X-PCS-Trial-Used`.
+- UX: el selector muestra un aviso y deja visibles solo planes comerciales del tipo de empresa; `pagar_licencia.html` mantiene el bloqueo de activacion sin pago para enlaces antiguos.
+
+2026-05-28: Robot IA y emisora desactivados por defecto
+- Modulos afectados: `chat_flotante`, `radio_online`, `administrar_empresa`, `frontend_ux`.
+- Cambio funcional: en contexto empresarial, el robot/secretaria IA 3D y la emisora flotante quedan apagados si la empresa no tiene una preferencia explicita guardada. Ya no heredan un encendido global ni una preferencia vieja de `localStorage`; por estar en preproduccion, el arranque crea o actualiza en `0` estas preferencias para todas las empresas activas existentes.
+- Configuracion: `Configuracion > Configurar chat y robot` conserva los checks para activar chat, avatares IA 3D y emisora online por empresa. Restablecer el chat cuadrado mantiene robot y emisora apagados.
+- Preconfiguraciones: `tipo_empresa_preconfiguraciones.config_json.asistente_ia` normaliza `robot_enabled=false` y `radio_online_enabled=false`; al aplicar una plantilla a una empresa se escriben tambien `chat_flotante.robot_enabled=0` y `chat_flotante.radio_online_enabled=0`.
+- UX: el icono flotante de la emisora en `administrar_empresa.html` inicia oculto y solo aparece cuando `/api/chat_flotante/preferencias?empresa_id=...` responde `radio_online_enabled=true`; el avatar del robot solo aparece cuando `robot_enabled=true` y el modo avatar esta activo.
+- Alcance: no agrega tablas, endpoints ni dependencias; reutiliza `empresa_estacion_prefs` y conserva el chat flotante tradicional con su configuracion independiente.
+
+2026-05-28: Licencias del selector con prueba no renovable
+- Proposito: desde `Seleccionar empresa > Licencias`, el administrador ve todas las licencias de las empresas que puede administrar.
+- Funciones: el historial se organiza en tablas separadas de licencias activas/por vencer y licencias vencidas, mostrando empresa, plan, estado, fecha de inicio, vencimiento, valor, modulos y dias restantes. Entre ambas se agrega `Resumen por empresa`, que lista cada empresa visible para el administrador ordenada desde la que menos dias tiene hasta la que mas tiene, con acciones de renovar, cambiar o elegir licencia.
+- Regla comercial: una licencia de prueba de 15 dias con valor cero se detecta como no renovable; el boton dirige a escoger otras licencias en vez de renovar la misma prueba.
+- Backend: `/super/api/licencias?scope=mine&con_empresa=1` filtra por el alcance efectivo del selector, incluyendo empresas propias, delegadas o compartidas, sin exponer licencias de empresas ajenas.
+
+2026-05-28: Campos obligatorios configurables para productos
+- Proposito: cada empresa puede decidir desde `Inventario y compras > Productos` que datos adicionales debe diligenciar al registrar o editar productos.
+- Funciones: nueva tarjeta de checks para SKU, codigo de barras, categoria, marca, unidad, costo, precio, impuesto, stocks, bodega, proveedor, imagen, descripcion, observaciones, vencimiento, dias de alerta y lote. El nombre sigue siendo obligatorio fijo.
+- Backend: `/api/empresa/inventario/configuracion` persiste `producto_campos_obligatorios` en `empresa_inventario_configuracion.producto_campos_obligatorios_json`; `POST/PUT /api/empresa/productos` valida la regla por `empresa_id` antes de guardar.
+- Seguridad: se conserva permiso `inventario`, aislamiento por `empresa_id` y validacion tambien del lado servidor para que la regla no dependa solo del formulario.
+
+2026-06-01: Selector de impuesto configurado en productos
+- Proposito: al crear o editar un producto, el impuesto ya no se escribe manualmente sino que se elige desde la configuracion tributaria de la empresa.
+- Frontend: `web/administrar_empresa/administrar_productos.html` carga `/api/empresa/impuestos?action=context&empresa_id=...`, filtra impuestos activos de tipo `impuesto` aplicables a ventas o ambos, y muestra un selector con `Sin impuesto / exento`.
+- Persistencia: se mantiene el contrato existente de productos guardando `impuesto_porcentaje`, sin agregar columnas ni dependencias; si un producto antiguo tiene una tasa no configurada, el formulario conserva esa tasa como `Impuesto guardado`.
+- Seguridad: la lista se obtiene por `empresa_id` y reutiliza el endpoint protegido de impuestos, manteniendo aislamiento multiempresa.
+
+2026-05-28: Auditoria especial del panel super administrador
+- Proposito: registrar acciones de usuarios super administradores dentro de `super_administrador.html` y sus paginas internas criticas.
+- Pagina: `Super Administrador > Acceso > Auditoria super`, implementada en `web/super/auditoria_super_admin.html`.
+- Funciones: KPIs, filtros por fecha/modulo/usuario/empresa/resultado, detalle JSON saneado y exportacion CSV/JSON para navegacion, ediciones, guardados y pruebas de configuracion super.
+- Backend: `/super/api/auditoria?scope=super_panel` queda reservado para roles super; `WithSuperAuditoria` audita configuracion de Gmail, Wompi/Nequi, Epayco, reCAPTCHA, IA global, OnlyOffice, RustDesk, voz IA, respaldo, seguridad VPS, mantenimiento, consumos y contenido publico.
+- Seguridad: la metadata redacta tokens, claves, passwords y secretos; las tarjetas sensibles mantienen boton `Editar` antes de modificar credenciales guardadas.
+
+2026-05-28: Auditoria global del selector de empresas
+- Proposito: centralizar la trazabilidad de movimientos administrativos antes de entrar a una empresa.
+- Pagina: `Seleccionar empresa > Auditoria`, implementada en `web/super/auditoria_global.html`.
+- Funciones: KPIs, filtros por fecha/modulo/usuario/empresa/resultado, tabla de movimientos, detalle JSON saneado, exportacion CSV/JSON y acceso directo para agregar administradores.
+- Backend: `/super/api/auditoria` consulta `super_auditoria_eventos` y registra eventos visuales `ui_event`; `WithSuperAuditoria` audita endpoints globales usados por el selector.
+- Seguridad: los administradores normales ven solo su alcance principal/delegado y el super administrador puede ver el alcance global; no se guardan secretos.
+
+2026-05-28: Energia solar multiempresa
+- Proposito: monitorear sistemas de energia solar por empresa, incluyendo paneles, inversores, controladoras, baterias y BMS.
+- Proveedores base: Victron VRM/VictronConnect, SMA Sunny Portal powered by ennexOS, SolarEdge Monitoring Platform y gateway local para Modbus/CAN/RS485/MQTT/API.
+- Baterias catalogadas: Tesla Powerwall, BYD Battery-Box Premium, Pylontech US5000/US3000C, Enphase IQ Battery y Victron Lithium NG/Smart Lithium.
+- Funciones: registro de sistemas, capacidad kWp/kWh, referencia segura de API, gateway local, correos de alerta, alertas por SOC/SOH/carga/temperatura/celdas/paneles/inversor/BMS, lecturas historicas y eventos auditables.
+- Integracion: menu `Administrar empresa > Analisis y control > Energia solar`, permiso `energia_solar`, endpoint `/api/empresa/energia_solar` y descripcion publica en index editable por super administrador.
+
+2026-05-27: Empresas compartidas en administrar empresa
+- Modulos afectados: `administracion_empresa`, `empresas_compartidas`, `seguridad_multiempresa`.
+- Cambio funcional: se agrega una pagina empresarial para ver a quienes se compartio la empresa actual y cancelar/desactivar accesos compartidos o invitaciones pendientes.
+- Frontend: `web/administrar_empresa/empresas_compartidas.html` consume `/super/api/empresas/compartidos?empresa_id=...` y usa `DELETE` para revocar.
+- Navegacion: `Administrar empresa > Administracion > Empresas compartidas`, con permiso `seguridad:U`.
+
+2026-05-27: Estado de invitacion en administradores
+- Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `super_administrador`.
+- Cambio funcional: el listado muestra `Invitacion` separado del estado de cuenta para indicar si el invitado acepto o sigue pendiente.
+- Backend: `filterAdministradoresForPrincipalScope` completa `invitation_status`; `GetAdministradores` entrega `email_confirmado`.
+- Frontend: `web/super/administradores.html` muestra columnas `Invitacion` y `Estado cuenta`.
+
+2026-05-27: Administradores del selector filtrados y super administradores por invitacion
+- Modulos afectados: `seleccion_empresas`, `administradores_delegados`, `super_administrador`, `autenticacion_admin`.
+- Cambio funcional: el selector abre Administradores en modo `scope=principal`, mostrando solo los invitados por el administrador autenticado.
+- Super administrador: desde el panel super, crear rol `super_administrador` genera invitacion; el registro exige token y conserva rol super para entrar al modulo super.
+- Backend: `GetAdministradores` expone `email_confirmado` para que la UI diferencie activos de pendientes.
+
+2026-05-27: Delegacion de portafolio entre administradores
+- Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `seguridad_multiempresa`, `correo`.
+- Cambio funcional: un administrador confirmado puede recibir el portafolio de otro administrador sin duplicar cuenta ni perder sus empresas propias.
+- Backend: `admin_principal_delegaciones` guarda la relacion muchos-a-muchos; `CanAdminAccessEmpresaIA` y el selector reconocen esos principales activos.
+- Correo: `admin_portfolio_delegated` avisa al administrador registrado que ya vera sus empresas mas las compartidas al iniciar sesion.
+- Seguridad: al eliminar desde el listado del principal, si la cuenta no fue creada por el, se revoca solo la delegacion.
+
+2026-05-27: Invitacion de administradores delegados
+- Modulos afectados: `autenticacion_admin`, `administradores_delegados`, `correo`, `seguridad_multiempresa`.
+- Cambio funcional: el alta de administradores desde `Administradores` envia invitacion por correo; el invitado debe aceptar el enlace, completar registro y crear contrasena antes de iniciar sesion.
+- Backend: `AdminRegisterHandler` exige `invitation_token` cuando la cuenta pendiente tiene `usuario_creador`; `validatePendingAdminInvitationToken` valida token vigente y no usado antes de confirmar la cuenta.
+- Correo: `admin_scoped_invitation` define asunto, texto y HTML de invitacion con enlace de registro.
+- Frontend: `registrar_nuevo_usuario_administrador.html` precarga el correo invitado, bloquea edicion del correo y envia el token al backend.
+
+2026-05-27: Administradores por administrador principal
+- Modulos afectados: `seleccion_empresas`, `autenticacion_admin`, `permisos`, `empresas_compartidas`.
+- Cambio funcional: un administrador principal puede abrir `Administradores` desde el selector y gestionar solo las cuentas administrativas que agrego para su propia operacion.
+- Backend: `/super/api/administradores` resuelve el principal autenticado, filtra por `administradores.usuario_creador`, excluye al principal y fuerza rol `administrador` cuando el creador no es super panel.
+- Empresas: los administradores delegados heredan acceso a las empresas creadas por el principal con `access_source=delegated`; el propietario sigue siendo el principal y solo el puede compartir.
+- Seguridad: `CanAdminAccessEmpresaIA` valida el alcance delegado en backend y no depende de botones visibles en frontend.
+
+2026-05-27: Checklist de seguridad por endpoint multiempresa
+- Modulos afectados: `seguridad`, `permisos`, `backend_db`, `qa_operacion`, `documentacion`.
+- Cambio funcional: se formaliza una checklist obligatoria para endpoints empresariales, consultas multiempresa, permisos, licencias y operaciones masivas.
+- Cobertura: sesion, `empresa_id`, IDs secundarios, wrappers, licencias, SQL aislado, validacion de entrada, respuestas saneadas, auditoria, borrados/importaciones/exportaciones y pruebas negativas de cruce entre empresas.
+- Archivos: `documentos/checklist_seguridad_endpoint_multiempresa.md`, con referencias desde `AGENTS.md`, `contexto_codex.md`, `decisiones_tecnicas.md` y `matriz_roles_permisos_pos_multiempresa.md`.
+- Alcance: no cambia runtime, endpoints, tablas ni permisos existentes; establece una regla de QA y seguridad para cambios futuros.
+
+2026-05-27: Contexto operativo para Codex
+- Modulos afectados: `documentacion`, `agente_go`, `qa_operacion`.
+- Cambio funcional: se agrega una capa documental de contexto permanente para acelerar cambios futuros y reducir busqueda repetida de rutas, endpoints, tablas, configuraciones y comandos.
+- Archivos: `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/comandos_codex.md`, `documentos/decisiones_tecnicas.md` y referencia directa desde `AGENTS.md`.
+- Alcance: no cambia funcionalidades del producto, datos, permisos ni dependencias.
+
+2026-05-27: Alertas de sistema para registros administrativos y empresas nuevas
+- Modulos afectados: `super_administrador`, `alertas_sistema`, `autenticacion_admin`, `seleccion_empresas`, `correo`.
+- Configuracion: `web/super/alertas_sistema.html` agrega checks para avisar por correo cuando se registra un administrador desde `login.html` y cuando se crea una empresa nueva.
+- Backend: `backend/db/super_alertas.go` agrega `admin_register_enabled` y `empresa_nueva_enabled`; `backend/handlers/super_alertas.go` centraliza el envio y registro de eventos.
+- Integracion: `backend/handlers/auth_admin_handlers.go` notifica despues de preparar la cuenta administrativa y `backend/handlers/system_empresas_handlers.go` notifica despues de crear la empresa y aplicar la preconfiguracion.
+- Seguridad: no se envian contrasenas, tokens ni secretos; los avisos usan el correo destino configurado y se auditan en `super_alertas_eventos`.
+
+2026-05-27: QR DIAN en factura o recibo de venta
+- Modulos afectados: `carritos`, `facturacion_electronica`, `impresion_documental`, `configuracion_empresarial`, `frontend_ux`.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega el check por empresa `mostrar_qr_factura_electronica`; `web/administrar_empresa/configuracion_de_estaciones.html` permite que un override de estacion lo herede o lo sobrescriba.
+- Carrito: `web/administrar_empresa/carrito_de_compras.html` detecta CUFE/CUDE/codigo de validacion despues de pagar, construye la URL de consulta DIAN y agrega el QR al final del recibo y de la factura electronica si la opcion esta activa.
+- Impresion: `web/js/print_documents.js` incorpora un bloque QR generico para documentos POS/carta, monocromatico y estable para impresion.
+- Alcance: no cambia tablas, endpoints ni permisos; reutiliza `empresa_estacion_prefs.estaciones_config.carrito_ui_global` y `/vendor/qrcode.min.js`.
+
+2026-05-27: Analitica publica visible solo en super administrador
+- Modulos afectados: `portal_publico`, `super_administrador`, `analitica_publica`, `frontend_ux`.
+- Cambio funcional: la tarjeta `Visitas al portal` se retira del index publico y la visualizacion queda solo en el panel de super administrador.
+- UX: el portal publico ya no muestra la tarjeta de visitas; el panel super conserva mapa real, ranking y total.
+- Alcance: el index mantiene registro invisible de visitas agregadas por pais para alimentar la analitica; no cambia backend, endpoints, tablas, permisos ni privacidad.
+
+2026-05-27: Mapa real para analitica publica de visitas
+- Modulos afectados: `portal_publico`, `super_administrador`, `analitica_publica`, `frontend_ux`.
+- Cambio funcional: el contador `Visitas al portal por pais` usa un mapa mundial real basado en Natural Earth en lugar de continentes esquematicos dibujados a mano.
+- UX: el asset se muestra como capa base dentro del mismo widget reutilizable y conserva marcadores, ranking y total por pais.
+- Alcance: no cambia endpoint `/api/public/portal_visitas`, almacenamiento agregado, privacidad, permisos ni dependencias.
+
+2026-05-27: Vinetas visibles por tema en modulos del index
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: las vinetas de `Modulos y caracteristicas principales` se renderizan con una viñeta visual propia en lugar de depender del marcador nativo.
+- UX: el color se calcula desde variables de tema para que se vea en modo claro y en temas oscuros.
+- Alcance: solo cambia CSS embebido de `web/index.html`; no cambia backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-27: Informacion editable de modulos del index
+- Modulos afectados: `portal_publico`, `super_administrador`, `frontend_ux`.
+- Cambio funcional: la lista `Modulos y caracteristicas principales` del index se vuelve editable desde el panel super administrador.
+- Backend: `/super/api/informacion_de_modulos` permite leer/guardar la configuracion y `/api/public/informacion_de_modulos` expone titulo, icono y vinetas al portal publico.
+- Frontend: `web/super/informacion_de_modulos.html` administra modulos, iconos y vinetas; `web/index.html` renderiza el contenido dinamico con fallback estatico.
+- Alcance: usa `pcs_superadministrador.configuraciones`; no agrega tablas, permisos empresariales ni dependencias.
+
+2026-05-27: Logo imagen en login administrador
+- Modulos afectados: `autenticacion_admin`, `login`, `frontend_ux`.
+- Cambio funcional: el encabezado de `web/login.html` usa la imagen `web/img/titulo-powerful-control-system-login.png` en lugar del titulo textual.
+- UX: `web/estilos.css` limita el ancho y alto del asset para que se vea pequeno, centrado y responsive sobre el formulario.
+- Alcance: no cambia backend, endpoints, tablas, permisos, reCAPTCHA ni Google OAuth.
+
+2026-05-27: Subtitulo publico POS multiempresa con domotica
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: el encabezado del index muestra `Sistema de Facturacion Electronica con domotica integrada`.
+- Alcance: cambio de texto publico sin backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-27: Index con vinetas reales por caracteristica
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: cada tarjeta de `Modulos y caracteristicas principales` usa una lista `ul/li` para que cada caracteristica del modulo tenga su propia vineta.
+- UX: las vinetas quedan en una grilla compacta dentro de cada tarjeta, con buena lectura en escritorio y movil, manteniendo icono y titulo de cada modulo.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-26: Cliente general configurable para ventas de carrito
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: cada empresa puede definir el nombre universal para ventas sin cliente registrado, con `Cliente General` como valor por defecto.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` guarda el campo global y `web/administrar_empresa/configuracion_de_estaciones.html` permite heredarlo o sobrescribirlo por estacion.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` muestra ese nombre en el cliente actual, en listados de carritos y en recibos/facturas provisionales offline cuando `cliente_id` es cero.
+- Alcance: no cambia tablas, endpoints, permisos ni dependencias; se usa `estaciones_config.carrito_ui_global.cliente_general_nombre`.
+
+2026-05-25: Creditos y cartera con submenu operativo.
+- Modulos afectados: `creditos`, `cartera`, `finanzas`, `administrar_empresa`.
+- Cambio funcional: `web/administrar_empresa/creditos_menu.html` concentra el modulo con botones de subpagina para Panel, Nuevo credito, Cartera, Morosidad, Riesgo y limites, Abonos y operaciones, Aprobaciones y Estado de cuenta.
+- Frontend: `web/administrar_empresa/creditos.html` soporta `view=panel|crear|cartera|morosidad|limites|operaciones|aprobaciones|estado|todo` para mostrar solo la seccion correspondiente; los botones de cartera/ranking saltan a la subpagina correcta conservando el credito seleccionado.
+- Permisos: los botones nuevos usan el modulo `finanzas` con accion `C`, igual que el acceso principal de creditos; no se agregan endpoints, tablas ni dependencias.
+
+2026-05-25: Licencia del sistema descargable por empresa
+- Modulos afectados: `administrar_empresa`, `licencias`, `seguridad`, `frontend_ux`.
+- Cambio funcional: se agrega el boton `Licencia del sistema` al final del grupo `Administracion` en `Administrar empresa`.
+- UX: la pagina muestra empresa, licencia activa, rol efectivo, alcance SaaS y modulos habilitados; permite descargar TXT, descargar HTML o imprimir/guardar PDF.
+- Permisos: usa `linkLicenciaSistema` con modulo `seguridad` y accion lectura; no crea endpoints, tablas ni dependencias nuevas.
+
+2026-05-25: Menu flotante sin ayuda administrador
+- Modulos afectados: `menu_flotante`, `frontend_ux`.
+- Cambio funcional: se elimina el enlace `Ayuda administrador` del menu flotante centralizado.
+- Alcance: se conserva `Crear ticket de ayuda`; no cambia backend, permisos, endpoints, tablas ni dependencias.
+
+2026-05-25: Finanzas debajo de inventario y compras
+- Modulos afectados: `administrar_empresa`, `finanzas`, `frontend_ux`.
+- Cambio funcional: el grupo `Finanzas y cumplimiento` se mueve para quedar justo debajo de `Inventario y compras` en el menu principal empresarial.
+- Alcance: solo cambia orden de navegacion; no cambia rutas, permisos, APIs, tablas ni dependencias.
+
+2026-05-25: Navegacion financiera y paginas empresariales conectadas
+- Modulos afectados: `finanzas`, `creditos`, `cobranza`, `chat_ia`, `configuracion`, `frontend_ux`.
+- Cambio funcional: `Creditos y cartera` y `Gestion de cobranza` quedan visibles como botones directos en `Finanzas y cumplimiento` y como accesos rapidos del `Centro financiero y contable`.
+- Navegacion adicional: se agregan accesos a `Chat IA centralizado`, `Configuracion guiada` e `Integraciones`, que ya existian como paginas pero no tenian entrada directa en el menu empresarial.
+- Alcance: no cambia APIs, tablas, reglas de negocio, licencias ni dependencias.
+
+2026-05-25: Index modulos mas compactos
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: la seccion `Modulos y caracteristicas principales` reduce margenes internos y usa tarjetas mas anchas para que las caracteristicas ocupen mejor el area.
+- UX: las caracteristicas se muestran como flujo punteado compacto, sin justificar cada item corto de forma independiente para evitar huecos visuales.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-25: Licencia gratis valor cero sin rollback
+- Modulos afectados: `licencias`, `checkout_publico`, `backend_db`.
+- Cambio funcional: la activacion sin pago guarda una sola marca gratis por empresa y la asocia a la licencia activa realmente asignada.
+- Persistencia: si la licencia base se copia para la empresa, no se inserta una segunda fila con la licencia origen; asi se respeta el indice unico de prueba por empresa sin abortar la transaccion PostgreSQL.
+- UX checkout: si el resumen esta en total cero, `pagar_licencia.html` muestra activacion directa y no consulta Wompi/terminos porque no habra pasarela.
+- QA: pruebas dirigidas de `db` y `handlers` para el flujo de licencias.
+
+2026-05-25: Licencia gratis de 15 dias reparada
+- Modulos afectados: `licencias`, `checkout_publico`, `pwa`, `backend_db`.
+- Cambio funcional: la activacion sin pago vuelve a aceptar licencias de prueba o valor cero y responde de forma segura ante reintentos de usuario.
+- Persistencia: `licencias_activaciones_gratis.id` queda autogenerado en PostgreSQL con `BIGSERIAL` y reparacion de secuencia para tablas existentes.
+- Acceso publico controlado: el middleware deja pasar el resumen publico del checkout y la activacion sin pago; la autorizacion efectiva sigue en el handler mediante total cero, empresa valida y uso unico por empresa.
+- Operacion: se conserva la regla de una sola prueba/gratis por empresa; si la activacion ya esta vigente, el reintento retorna exito y redireccion. La preconfiguracion posterior no bloquea la licencia si falla.
+- QA: pruebas dirigidas de `db`, `handlers` y sintaxis de `web/sw.js`.
+
+2026-05-25: Super administrador con analitica al final
+- Modulos afectados: `super_administrador`, `analitica_publica`, `frontend_ux`.
+- Cambio funcional: la tarjeta de visitas al portal por pais queda al final del panel, debajo del iframe principal.
+- UX: el panel principal mantiene una vista completa y la analitica se consulta al bajar, sin ocupar espacio superior.
+- Alcance: no cambia backend, endpoints, tablas, permisos, privacidad ni dependencias.
+
+2026-05-25: Login y registro administrador verificados
+- Modulos afectados: `autenticacion_admin`, `registro_admin`, `frontend_ux`.
+- Cambio funcional: se comprueba el flujo de login por correo, registro de nuevo administrador desde `login.html` e inicio OAuth Google en escritorio y celular.
+- UX: el titulo de registro administrador ahora envuelve texto en celular para evitar recortes y mantener el formulario usable.
+- Alcance: no cambia backend, endpoints, tablas, permisos, reCAPTCHA, Google OAuth ni dependencias.
+
+2026-05-25: Index con caracteristicas punteadas por modulo
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: cada modulo de la seccion publica `Modulos y caracteristicas principales` muestra sus caracteristicas como items separados.
+- UX: los items usan punto negro grande y texto justificado para aprovechar mejor el ancho de cada tarjeta.
+- Alcance: no cambia backend, endpoints, tablas, permisos, licencias ni dependencias.
+
+2026-05-25: Portal y super administrador comparten analitica publica
+- Modulos afectados: `portal_publico`, `super_administrador`, `frontend_ux`, `analitica_publica`.
+- Cambio funcional: el index muestra iconos medianos por cada modulo principal y el panel de super administrador agrega en la parte baja el mismo contador/mapa de visitas por pais.
+- Implementacion: `web/js/portal_visits.js` se convierte en componente reutilizable para varios widgets. El index usa `data-count-visit="1"` para registrar visitas y el super admin usa `data-count-visit="0"` para solo consultar, evitando duplicar la funcion o inflar el contador.
+- Alcance: no cambia backend, endpoint `/api/public/portal_visitas`, tablas, permisos, privacidad ni dependencias.
+
+2026-05-25: Selector de empresa con tipos invertidos
+- Modulos afectados: `selector_empresas`, `frontend_ux`.
+- Cambio funcional: al abrir `Agregar Empresa` en `seleccionar_empresa.html`, el selector `Tipo de empresa` presenta los tipos en orden inverso al catalogo recibido.
+- Alcance: cambio de presentacion en `web/js/seleccionar_empresa.js`, sin backend, tablas, endpoints, permisos, licencias ni preconfiguraciones.
+
+2026-05-25: Contador de visitas compacto con mapa realista
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`, `analitica_publica`.
+- Cambio funcional: la tarjeta publica de visitas por pais queda mas pequena, centrada y con total, mapa y ranking dentro del mismo contenedor.
+- Frontend: `web/js/portal_visits.js` renderiza una silueta mundial SVG mas realista con graticula, continentes y marcadores por pais; `web/index.html` ajusta la tarjeta a una sola columna centrada.
+- Alcance: no cambia backend, endpoints, tablas, privacidad ni datos almacenados.
+
+2026-05-25: Index con modulos y documentos electronicos en lista
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`, `facturacion_electronica`.
+- Cambio funcional: la seccion de modulos del `index` pasa de parrafo compacto a lista de caracteristicas principales.
+- Contenido visible: inventario profesional, ventas POS, pagos y hardware, documentos electronicos, finanzas/cumplimiento, estaciones, IA, control fisico, gestion empresarial y plantillas listas.
+- Documentos electronicos visibles: factura electronica, notas credito/debito, documento soporte, notas de ajuste, nomina electronica, documentos equivalentes electronicos/POS electronico, contingencia y eventos RADIAN para Colombia; factura, nota credito y nota debito para Panama y Ecuador segun configuracion por pais.
+- Alcance: cambio HTML/CSS del portal publico sin backend, tablas, endpoints, permisos ni dependencias.
+
+2026-05-22: Index con resumen de modulos principales
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: la seccion de modulos del `index` deja de usar tarjetas individuales y presenta un unico parrafo comercial con las funciones principales.
+- Contenido visible: inventario profesional con bodegas, compras, datafonos, cajon monedero, cajas simultaneas, cortes de caja por usuario, pagos QR, facturacion offline, facturacion electronica, impuestos, modulo del contador, finanzas, nomina, IA, domotica, sensores, reportes y plantillas.
+- Alcance: cambio HTML/CSS sin backend, tablas, endpoints, permisos ni dependencias.
+
+2026-05-21: Impuestos dentro de Finanzas y cumplimiento
+- Modulos afectados: `impuestos`, `finanzas`, `administrar_empresa`.
+- Cambio funcional: el area `Impuestos` pasa de Configuracion al grupo `Finanzas y cumplimiento` del panel empresarial.
+- Navegacion: `Impuestos` queda dentro del Centro financiero en barra lateral y accesos rapidos; el menu principal conserva solo la entrada general de Finanzas, Facturacion electronica y Reportes.
+- Alcance: no cambia APIs, tablas ni calculos tributarios; solo reubica el acceso operativo.
+
+2026-05-21: Emisoras online por pais
+- Modulos afectados: `radio_online`, `chat_flotante`, `administrar_empresa`.
+- Cambio funcional: la emisora online deja de usar un listado latino generico y carga catalogo por pais solo para Panama y Ecuador, con 10 emisoras principales por pais y emisoras personalizadas por empresa.
+- Configuracion: la pagina `Radio online` permite activar/desactivar el reproductor, elegir/detectar pais y agregar URL de streaming personalizada. El reproductor flotante ofrece el mismo control sin salir del panel.
+- Persistencia: se reutiliza `/api/chat_flotante/preferencias` y `empresa_estacion_prefs` para `radio_country` y `radio_custom_stations`.
+- Alcance: no cambia permisos, licencias, tablas ni dependencias.
+
+2026-05-21: Compactacion visual de tarjetas del carrito
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `frontend_ux`.
+- Cambio funcional: la tarjeta de codigo/SKU y cantidad queda en una grilla compacta con los botones `Agregar` y `Buscar Productos` en la misma fila cuando hay ancho suficiente.
+- Cliente: el panel de cliente del carrito muestra el cliente actual en el encabezado, compacta la busqueda por nombre o identificacion y convierte el formulario rapido de nuevo cliente en una grilla de mas columnas y menos filas.
+- Pago: el mensaje de cambio de efectivo queda como bloque compacto `Vuelto:` / `Falta:` con texto mas grande dentro de valores por medio de pago.
+- Responsive: en celular las grillas se reorganizan para conservar campos completos y botones tactiles sin regresar al formato largo anterior.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni configuracion del carrito.
+
+2026-05-21: Busqueda de cliente del carrito
+- Modulos afectados: `carritos`, `clientes`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: el panel de cliente del carrito muestra primero un buscador de clientes existentes y mantiene oculto el formulario de nuevo cliente hasta que el usuario presiona `Nuevo cliente`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega selector de busqueda por `Nombre` o `NIT / cedula / identificacion`, genera sugerencias segun el modo y asigna el cliente al carrito al elegir una coincidencia.
+- Alcance: no cambia backend, tablas, permisos ni la regla de cliente obligatorio; conserva la creacion rapida y asignacion automatica del cliente nuevo.
+
+2026-05-21: Botones configurables en acciones del carrito
+- Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: el panel de cliente y cada boton de la barra de acciones del carrito puede visualizarse u ocultarse desde la configuracion global del carrito o desde la configuracion propia de una estacion.
+- Botones cubiertos: `Descuentos`, `Cambiar tarifa`, `Domotica`, `Cancelar carrito`, `Taxi`, `Clientes`, `Abonos` y `Vehiculo`. `QR de pago` conserva su configuracion especializada de pagos QR.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` aplica las nuevas banderas de visibilidad y oculta la tarjeta de acciones si no queda ningun control visible.
+- Alcance: no cambia tablas, endpoints ni permisos; las preferencias se guardan dentro de `estaciones_config.carrito_ui_global` o en `estaciones[].carrito.configuracion`.
+
+2026-05-21: Alerta visual configurable en carrito
+- Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: la alerta visual del carrito deja de ser fija de 10 minutos y pasa a configurarse por empresa o por estacion: mostrar/ocultar el check, minutos de alerta y activacion por defecto.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` lee `mostrar_alerta_tiempo_carrito`, `alerta_tiempo_minutos` y `alerta_tiempo_activa_default`; si la opcion no esta visible, el temporizador se apaga. Si esta visible, el cajero puede activarla manualmente y el sistema respeta el tiempo configurado.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` y `web/administrar_empresa/configuracion_de_estaciones.html` guardan los campos nuevos dentro de `estaciones_config.carrito_ui_global` o en la configuracion propia de la estacion. Los defaults del backend quedan apagados por defecto con 10 minutos.
+- Alcance: no cambia tablas, endpoints ni permisos; mantiene el JSON existente de preferencias de estaciones.
+
+2026-05-21: Clientes en carrito por busqueda de nombre
+- Modulos afectados: `carritos`, `clientes`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: el panel de cliente del carrito deja de mostrar textos redundantes y permite buscar clientes existentes desde el campo `Nombre / razon social`.
+- Frontend: el campo de nombre usa sugerencias de clientes activos; al elegir una sugerencia se actualiza `cliente_id` del carrito con el flujo existente. Si se crea un cliente nuevo desde el panel, tambien queda asignado al carrito activo.
+- Alcance: no cambia backend, tablas, permisos ni configuracion; conserva la validacion de cliente obligatorio para pagar.
+
+2026-05-21: Carrito movil con busqueda primero
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `frontend_ux`.
+- Cambio funcional: en celular, la tarjeta para buscar/agregar productos por codigo/SKU o por boton queda como primer bloque operativo del carrito.
+- Frontend: `web/estilos.css` ajusta el orden responsive de `scannerPanel`, `carrito-primary-main`, `carrito-primary-layout` y la columna de totales para evitar que los totales aparezcan antes que la busqueda.
+- Alcance: no cambia backend, base de datos, permisos, configuracion de carrito ni flujo desktop.
+
+2026-05-21: Panel movil sin indicadores economicos
+- Modulos afectados: `administrar_empresa`, `pwa`, `frontend_ux`.
+- Cambio funcional: se fuerza actualizacion de cache para celulares/PWA con `pcs-shell-v4` y se evita que navegaciones, JS y CSS usen copias viejas donde aun existia la tarjeta de indicadores economicos.
+- Frontend: `web/administrar_empresa.html`, `web/sw.js`, `web/js/service_worker_update.js` y `web/ayuda/ayuda.html`.
+- Alcance: no cambia APIs, tablas, permisos ni el panel desktop; solo limpia cache movil y documentacion de ayuda.
+
+2026-05-20: Catalogo DIAN Colombia de documentos electronicos
+- Modulos afectados: `facturacion_electronica`, `frontend_ux`, `contabilidad_colombia`.
+- Backend: `/api/empresa/facturacion_electronica?action=documentos_dian_colombia` expone catalogo Colombia con documentos del SFE, eventos RADIAN, obligaciones de contador y fuentes normativas. Las transiciones documentales aceptan nuevos tipos canonicos sin agregar rutas ni tablas.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` muestra una tarjeta Colombia para activar documentos/eventos DIAN y otra lista separada de obligaciones contables que preparan contadores.
+- Configuracion: `facturacion_electronica_pais.campos_pais_json` guarda `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version` por empresa y pais.
+- Alcance: no implementa transporte real nuevo para cada anexo DIAN; deja catalogo, configuracion, persistencia documental y cola fiscal preparados para proveedor/API real por empresa.
+
+2026-05-20: Centro de reportes por selector y vista imprimible
+- Modulos afectados: `reportes`, `frontend_ux`, `exportaciones`.
+- Cambio funcional: el centro unico de reportes deja de presentar tarjetas por informe y usa un selector/lista compacta para todos los datasets disponibles.
+- Vista previa: el reporte seleccionado se renderiza como documento imprimible en papel POS 80mm o carta, tomando como base la configuracion previa de corte/reporte de la empresa.
+- Exportacion: se conservan los formatos PDF, Excel, CSV, JSON y TXT sobre `/api/empresa/reportes`, con filtros de fecha, caja, turno, usuario y cierre.
+- Alcance: no agrega endpoints, permisos, tablas ni dependencias externas.
+
+2026-05-20: Nombres configurables para estaciones por tipo de empresa.
+- Modulos afectados: `configuracion`, `estaciones`, `carritos`, `preconfiguracion_tipos_empresa`, `administrar_empresa`.
+- Cambio funcional: `Configuracion > Estaciones` agrega campos para definir el nombre singular y plural del recurso operativo de la empresa; por ejemplo `Mesa/Mesas`, `Habitacion/Habitaciones`, `Bahia/Bahias` o `Consultorio/Consultorios`.
+- Frontend: `web/js/estaciones_labels.js` aplica esos nombres en el panel de Administrar empresa, submenu de configuracion, tablero de estaciones, carrito unificado y configuracion del carrito, incluyendo textos generados despues de cargar la configuracion.
+- Backend/defaults: las plantillas de tipo de empresa guardan `estacion_nombre_singular`, `estacion_nombre_plural`, `tipo_recurso` y `tipo_recurso_plural` en `estaciones_config`; motel y hotel quedan preconfigurados como habitaciones.
+- Empresas existentes: el normalizador de preferencias completa o reemplaza etiquetas genericas `Estacion/Estaciones` usando el tipo de empresa cuando crea/actualiza `estaciones_config` antes de produccion.
+- Alcance: no cambia rutas, permisos ni tablas; mantiene aislamiento por `empresa_id`.
+
+2026-05-20: Pagos QR desde carrito.
+- Modulos afectados: `carritos`, `ventas_simple`, `pagos`, `caja`, `configuracion_empresarial`, `frontend_ux`.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega `Pagos por QR` con activacion y lista de cuentas receptoras para Bre-B, Nequi u otro proveedor, guardadas en `estaciones_config.carrito_ui_global.pago_qr_cuentas`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` muestra el boton `QR de pago`, permite elegir la cuenta receptora, genera el codigo con `/vendor/qrcode.min.js` y aplica el cobro como `transferencia_bancaria` con referencia automatica.
+- Integracion: acepta payload oficial o plantilla del proveedor con placeholders `{valor}`, `{referencia}`, `{llave}`, `{comercio}`, `{empresa_id}`, `{carrito_id}` y `{carrito_codigo}`; sin payload oficial genera un QR operativo interno que requiere verificacion manual del abono.
+- Alcance: no agrega tablas, endpoints, permisos ni dependencias; conserva reportes, caja por usuario, pagos mixtos y facturacion existentes.
+
+2026-05-20: Facturacion offline desde carrito.
+- Modulos afectados: `carritos`, `ventas_simple`, `inventario`, `caja`, `facturacion`, `frontend_ux`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` detecta caida de internet, muestra aviso flotante permanente mientras dure el modo offline, imprime soporte provisional y guarda la venta en `localStorage` por empresa.
+- Control local: cuando una venta ya quedo guardada offline para el mismo carrito/codigo, el boton de pago queda bloqueado y muestra la referencia pendiente para evitar cierres duplicados antes de sincronizar.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega checks para activar/desactivar facturacion offline y para mostrar/ocultar la marca `OFFLINE/Pendiente de sincronizar` en el impreso, activa por defecto.
+- Backend: `/api/empresa/offline_ventas` sincroniza ventas pendientes, mantiene idempotencia por `empresa_id + sync_key`, reutiliza el carrito unificado, reserva/descarga inventario al crear items, paga el carrito, actualiza caja del usuario, metricas y documento de venta.
+- Caja multiusuario: la sincronizacion respeta `usuario_creador`, `cierre_caja_id`, `caja_codigo`, `turno` y `sucursal_id`; si el usuario no tiene caja abierta, abre una para ese usuario sin mezclar otras cajas de la misma empresa.
+- Alcance: agrega una tabla de bitacora offline, sin dependencias externas ni cambios de permisos fuera del wrapper empresarial de ventas.
+
+2026-05-19: Envio y WhatsApp para codigos de descuento.
+- Modulos afectados: `codigos_descuento`, `ventas`, `comunicaciones`, `frontend_ux`.
+- Backend: `/api/empresa/codigos_de_descuento?action=enviar_correo` envia el codigo por correo usando SMTP global configurado y respeta el modo de prueba de correos mediante `captureEmpresaUsuarioMailNotification`.
+- Seguridad: el envio valida `empresa_id`, `id`, correo destino y consulta el cupon por empresa antes de construir el mensaje, manteniendo aislamiento multiempresa y el wrapper existente `WithEmpresaVentasPermissions`.
+- Frontend: `web/administrar_empresa/codigos_de_descuento.html` agrega botones `Enviar correo` y `WhatsApp` por fila; WhatsApp abre `wa.me` con codigo, descuento, vigencia, minimo, usos disponibles y enlace del modulo.
+- Alcance: sin tablas nuevas, sin dependencias externas y sin permisos nuevos.
+
+2026-05-19: Compactacion POS del reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` compacta la vista actual del reporte de turno en POS 80mm: datos del turno, resumen financiero y detalle de ventas usan dos columnas cuando hay espacio.
+- `web/administrar_empresa/reportes_turnos.html` aplica la misma compactacion al reporte historico imprimible.
+- Alcance: cambio visual de vista previa/impresion; no cambia backend, endpoints, permisos ni tablas.
+
+2026-05-19: Docker VPS portable desde Super Administrador.
+- Modulos afectados: `super_administrador`, `deploy`, `docker`, `operacion_vps`.
+- Backend: se agrega `/super/api/docker_portabilidad` con acciones `status` y `download`, protegido por `paginaPrincipalRequireSuperAdmin`.
+- Exportacion: el handler genera un `.tar.gz` con el proyecto base Docker, un `LEEME_MIGRACION_DOCKER.md` y los artefactos necesarios para reconstruir en otra VPS.
+- Seguridad: se excluyen secretos reales, `.env`, llaves, uploads, descargas, backups, logs, caches, evidencias QA, binarios y datos runtime. La descarga no reemplaza los backups de PostgreSQL ni los volumenes Docker.
+- Docker: `deploy/docker/backend.Dockerfile` copia un snapshot limpio a `/app/project_export` y define `PCS_PROJECT_EXPORT_ROOT` para que el endpoint funcione dentro del contenedor.
+- Frontend: `web/super/docker_portabilidad.html` muestra estado, perfiles Docker, politica de exclusion y boton `Descargar proyecto Docker`. `web/super_administrador.html` agrega el acceso `Docker VPS` en Plataforma.
+- Sin tablas nuevas ni dependencias externas.
+
+2026-05-19: Facturacion electronica Ecuador independiente.
+- Modulos afectados: `facturacion_electronica`, `frontend_ux`, `permisos`, `licencias`.
+- Backend: se agrega `/api/empresa/facturacion_electronica/ecuador`, separado de DIAN Colombia y DGI Panama, reutilizando `facturacion_electronica_pais` con `pais_codigo=EC` para conservar aislamiento por `empresa_id` y por pais.
+- Permisos/licencia: Ecuador queda bajo el modulo independiente `facturacion_ecuador`; el endpoint EC usa `WithEmpresaFacturacionEcuadorPermissions` y no se habilita por tener DIAN Colombia o Panama.
+- Ecuador/SRI: el perfil EC incorpora defaults SRI: RUC, establecimiento, punto de emision, ambiente SRI `1` pruebas o `2` produccion, firma electronica, autorizacion de produccion, clave de acceso, numero de autorizacion, RIDE y documentos soportados `factura`, `nota_credito`, `nota_debito`, `retencion` y `guia_remision`.
+- Frontend: nueva pagina `web/administrar_empresa/facturacion_electronica_ecuador.html` en el submenu de facturacion electronica, con formulario propio, checklist, enlaces oficiales SRI y guardado independiente. El submenu muestra `Ecuador / SRI` solo cuando el pais detectado es EC y la licencia/rol lo permiten.
+- Alcance normativo: se basa en documentacion publica SRI Ecuador sobre facturacion electronica, comprobantes de venta/retencion/documentos complementarios, firma electronica, Facturador SRI, Facturador Electronico Gratuito, RIDE y autorizacion de comprobantes. No implementa aun transporte real SRI; deja preparado el endpoint de proveedor por `api_base_url`.
+- Sin dependencias externas ni tablas nuevas.
+
+2026-05-19: Facturacion electronica Panama independiente.
+- Modulos afectados: `facturacion_electronica`, `frontend_ux`, `permisos`.
+- Backend: se agrega `/api/empresa/facturacion_electronica/panama`, separado del endpoint DIAN, reutilizando `facturacion_electronica_pais` con `pais_codigo=PA` para conservar aislamiento por `empresa_id` y por pais.
+- Permisos/licencia: Panama queda bajo el modulo independiente `facturacion_panama`; el endpoint PA usa `WithEmpresaFacturacionPanamaPermissions` y no se habilita solo por tener DIAN Colombia. La deteccion de pais sigue disponible para usuarios autenticados de la empresa para decidir que paginas mostrar.
+- Panamá/DGI: el perfil PA incorpora defaults SFEP: RUC, DV, modalidad `pac` o `facturador_gratuito`, registro SFEP, declaracion jurada, certificado de firma, PAC, CAFE, CUFE, QR y documentos soportados `factura_electronica`, `nota_credito` y `nota_debito`.
+- Frontend: nueva pagina `web/administrar_empresa/facturacion_electronica_panama.html` en el submenu de facturacion electronica, con formulario propio, checklist, enlaces oficiales DGI/e-Tax2.0 en ventana nueva y guardado independiente. El submenu de facturacion permanece visible como contenedor y muestra paginas internas segun pais detectado: CO para DIAN/pruebas/proveedores y PA para DGI/SFEP.
+- Alcance normativo: se basa en la documentacion publica de DGI Panama sobre SFEP, Facturador Gratuito, PAC, declaracion jurada de adopcion desde e-Tax2.0 y certificado/firma electronica. No implementa aun transporte real PAC/DGI; deja preparado el endpoint de proveedor por `api_base_url`.
+- Sin dependencias externas ni tablas nuevas.
+
+2026-05-19: Caja y turno independientes por usuario.
+- Modulos afectados: `finanzas`, `corte_de_caja`, `carritos`, `estaciones`, `ventas_simple`.
+- Backend: `empresa_cierres_caja` queda identificado tambien por `usuario_creador`; al iniciar o reutilizar una caja abierta se busca primero la caja del usuario autenticado.
+- Carritos: `action=cajas_abiertas`, abonos y pagos solo aceptan cajas abiertas del usuario actual, evitando que un cajero cobre o abone sobre el turno de otro usuario de la misma empresa.
+- Finanzas: ingresos/egresos asociados a caja validan la caja abierta del usuario que registra el movimiento, y la apertura repetida del mismo usuario devuelve la caja existente.
+- Estaciones: el estado ocupada/disponible/sucia sigue compartido por `empresa_id`; la pantalla refresca cada 3 segundos para que varios usuarios/cajas vean cambios de estaciones realizados por otros usuarios.
+- Flujo operativo: el usuario inicia sesion, abre o reutiliza su caja desde `Corte de Caja`, o el sistema abre una caja automaticamente al primer cobro si no existe una caja abierta para ese usuario. Durante el turno, ventas, abonos, ingresos, egresos y pagos mixtos quedan asociados a su `cierre_caja_id`. Al finalizar, el usuario genera/revisa el reporte de turno, imprime cuando aplique y cierra caja; despues del cierre no se deben registrar nuevos cobros en ese turno.
+- Alcance: sin permisos nuevos, sin dependencias externas y manteniendo aislamiento por `empresa_id`.
+
+2026-05-19: Documentos imprimibles blanco y negro.
+- Modulos afectados: `facturacion`, `ventas`, `documentos`, `corte_de_caja`, `reportes`, `frontend_ux`.
+- Facturas, ventas, notas, documentos imprimibles y reportes de turno/corte quedan visualmente independientes del modo claro u oscuro del panel.
+- Las vistas previas y paginas de impresion usan papel blanco, texto negro/gris, bordes simples y sin sombras, para coincidir con lo que saldra en la hoja o ticket POS.
+- Se conserva la configuracion existente de logo corporativo, logo de factura y logo del sistema; ventas y facturas esperan la configuracion avanzada antes de pintar la primera vista previa, y los logos se muestran en escala de grises en documentos imprimibles.
+- Sin cambios de backend, endpoints, permisos ni tablas.
+
+2026-05-19: Legibilidad POS reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- El resumen financiero en formato POS 80mm evita partir importes monetarios en varias lineas y mantiene la informacion compacta para rollo de 80mm.
+- Sin cambios de backend, endpoints, permisos ni tablas.
+
+2026-05-19: Prueba operativa Motel Calipso.
+- Modulos afectados: `carritos`, `corte_de_caja`, `inventario`, `codigos_descuento`, `reportes`.
+- Las rutas transaccionales de pago y anulacion de carritos usan helpers compatibles con PostgreSQL para consultas, actualizaciones, restauracion de inventario y reversion de codigos de descuento.
+- El cierre de pago persiste `descuento_total` junto con `descuento_valor`, para que el reporte de turno muestre el total de descuentos del turno.
+- Sin nuevas tablas, endpoints, permisos ni dependencias.
+
+2026-05-19: Login de usuarios operativos.
+- Modulos afectados: `autenticacion`, `permisos`, `usuarios_empresa`.
+- El acceso empresarial compartido que se asegura al iniciar sesion como usuario de empresa corrige el `INSERT` de `estado` y `observaciones`.
+- Esto desbloquea el login operativo y la carga del panel empresarial para cajeros y otros roles de empresa.
+- Sin cambios de tablas, endpoints, permisos efectivos ni dependencias.
+
+2026-05-19: Reporte de turno profesional compacto.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- El reporte de turno actual e historico queda como informe operativo profesional, compacto y completo, con encabezado, datos del turno, resumen y detalle fila a fila sin cuadriculas.
+- Las ventas y facturas electronicas conservan el estilo de representacion grafica de factura electronica en POS y carta.
+- Se conservan los mismos datos, checks de configuracion, endpoints y formatos POS/carta del reporte.
+- Sin cambios de backend, permisos ni tablas.
+
+2026-05-19: Titulo compacto del login.
+- Modulos afectados: `login`, `frontend_ux`.
+- El titulo `Powerful Control System` del login de administradores queda mas pequeno, en una sola fila y con una familia visual mas cuadrada.
+- Sin cambios de autenticacion, permisos ni endpoints.
+
+2026-05-19: Instalacion de app desde login.
+- Modulos afectados: `login`, `frontend_ux`, `operacion_sistema`.
+- El login de administradores agrega el boton `Instalar app`, que usa el prompt nativo del navegador cuando esta disponible.
+- Se agrega soporte PWA con manifest, service worker e iconos para escritorio y celular; el service worker evita interceptar `/api`, `/super/api` y `/auth`.
+- Nginx sirve `.webmanifest` con `application/manifest+json` para mejorar compatibilidad de instalacion.
+- En iPhone/iPad o navegadores sin prompt disponible, el boton muestra la ruta de instalacion desde el menu del navegador.
+- Sin cambios de autenticacion, permisos ni backend.
+
+2026-05-19: Titulo principal del login.
+- Modulos afectados: `login`, `frontend_ux`.
+- El titulo `Powerful Control System` del login de administradores queda mas grande y con regla responsive propia para escritorio y movil.
+- Sin cambios de autenticacion, permisos ni endpoints.
+
+2026-05-19: Botones de Lectura rapida en corte de caja.
+- Modulos afectados: `corte_de_caja`, `frontend_ux`.
+- Los botones de la tarjeta `Lectura rapida` ahora usan el mismo color, ligeramente mas claro que el panel, para mejorar lectura y consistencia visual.
+- Se conserva el estado deshabilitado para las acciones que dependen de generar un reporte o encontrar una caja abierta.
+- Sin cambios de backend, permisos ni tablas.
+
+2026-05-19: Cajas multiples configurables por empresa.
+- Modulos afectados: `configuracion_empresarial`, `finanzas`, `corte_de_caja`, `carritos`.
+- `Configuracion de empresa > Caja y cajon monedero` permite activar/desactivar varias cajas abiertas al mismo tiempo y definir un limite interno opcional por empresa.
+- El limite efectivo de apertura lo define solo la configuracion empresarial; si el check de cajas simultaneas esta apagado, la empresa opera con una sola caja abierta. Si el limite interno queda en 0, no hay cupo interno de cajas.
+- La apertura automatica desde carrito y la apertura/reapertura desde finanzas validan caja activa, limite interno empresarial y cajas abiertas existentes. La licencia no limita cajas.
+- `corte_de_caja.html` conserva caja, turno, sucursal y `cierre_caja_id` al consultar `Ver reporte de mi turno` o `Corte automatico`, dejando cada caja con reporte independiente.
+- Sin dependencias nuevas ni cambios de permisos.
+
+2026-05-19: Impresora POS por defecto global.
+- Modulos afectados: `impresoras`, `configuracion_empresarial`, `corte_de_caja`, `reportes`.
+- Todas las empresas activas pueden recibir `POS_80MM` como impresora activa y predeterminada, con formato `pos` y area operativa `caja`.
+- La asignacion funcional por empresa cubre `general`, `corte_caja`, `turno_reporte` y `cajon_monedero` para que reportes y operaciones usen POS 80mm sin configuracion manual.
+- Las empresas nuevas intentan crear esta configuracion al registrarse, conservando el aislamiento por `empresa_id`.
+
+2026-05-18: POS 80mm como formato de prueba del reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `impresoras`.
+- El reporte de turno/corte toma `Ticket POS 80mm` como formato predeterminado si la empresa no tenia configuracion previa o se restaura la configuracion profesional.
+- `reportes_turnos.html` consulta la configuracion de corte por `empresa_id` antes de imprimir historicos y bloquea papel grande cuando la empresa esta configurada en POS 80mm.
+- La utilidad operativa `backend/tools/set_pos80_config` permite activar la impresora POS predeterminada y las funcionalidades de caja para una empresa puntual.
+
+2026-05-18: Contraste del efectivo esperado en caja.
+- Modulos afectados: `corte_de_caja`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` corrige el bloque final `Efectivo esperado en caja` para que fondo, borde y texto respeten el tema activo.
+- En modo oscuro se evita texto blanco sobre fondo blanco; la impresion conserva los estilos de papel existentes.
+
+2026-05-18: Contraste del reporte de turno en modo oscuro.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` fuerza los textos de tarjetas, encabezados, metadatos y tablas del reporte a usar `var(--text)` y `var(--muted)` en pantalla.
+- `web/administrar_empresa/reportes_turnos.html` elimina colores fijos de la vista imprimible historica y los reemplaza por variables del tema.
+- La impresion sigue usando fondo blanco y texto oscuro mediante `@media print`.
+
+2026-05-18: Cerrar turno, imprimir y cerrar sesion.
+- Modulos afectados: `corte_de_caja`, `autenticacion`, `frontend_ux`, `operacion_sistema`.
+- `web/administrar_empresa/corte_de_caja.html` agrega el boton `Cerrar turno e imprimir reporte` junto a las acciones de Lectura rapida.
+- La accion reutiliza el cierre canonico de caja, imprime el reporte y despues llama `/auth/logout` para cerrar la sesion del usuario.
+- No se agregan rutas, tablas ni permisos nuevos.
+
+2026-05-18: Descuentos en reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `finanzas`.
+- `empresa_corte_caja_configuracion` incorpora `mostrar_total_descuentos` para activar o apagar la metrica por empresa.
+- `backend/handlers/corte_caja.go` acumula `descuentos_total` y `descuentos_cantidad` desde `carritos_compras.descuento_total` de ventas cerradas.
+- `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` muestran `Total descuentos` dentro del resumen.
+- Las exportaciones historicas agregan una fila de resumen con el total descontado del turno.
+
+2026-05-18: Cantidad de ventas en reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `finanzas`.
+- `empresa_corte_caja_configuracion` incorpora `mostrar_cantidad_ventas` para activar o apagar la metrica por empresa.
+- `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` muestran `Cantidad de ventas` dentro del resumen.
+- Las exportaciones historicas agregan una fila de resumen con el conteo de ventas del turno.
+
+2026-05-18: Tema visual del reporte de mi turno.
+- Modulos afectados: `corte_de_caja`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` deja de forzar fondo claro en la vista previa en pantalla de `Ver reporte de mi turno`.
+- La previsualizacion usa `var(--bg)`, `var(--card)`, `var(--text)` y `var(--muted)` para verse coherente en modo claro u oscuro.
+- La salida de impresion sigue forzando papel blanco con texto oscuro para carta, ejecutivo y POS.
+
+2026-05-18: Reporte de turno en papel grande y POS.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- `corte_de_caja.html` mejora el modo `Ticket POS 80mm` para imprimir el detalle como bloques plantillas con etiquetas y sin scroll horizontal.
+- `reportes_turnos.html` agrega selector `Papel grande / Papel POS 80mm` para la vista imprimible historica.
+- Papel grande mantiene tabla y resumen de ancho carta; POS reduce tipografia, encabezado, tarjetas y detalle para rollo de 80mm.
+
+2026-05-18: Reportes de turnos historicos.
+- Modulos afectados: `reportes`, `corte_de_caja`, `finanzas`, `frontend_ux`.
+- `web/administrar_empresa/reportes_turnos.html` lista turnos/cortes antiguos desde `empresa_cierres_caja` con filtros por rango, caja, estado y busqueda.
+- Cada turno permite ver vista imprimible, imprimir, compartir enlace, exportar en `json/csv/txt/xls/pdf` y enviar por email con adjunto.
+- Backend reutiliza `/api/empresa/corte_caja` con acciones `turnos`, `turno_reporte`, `turno_export` y `turno_email`, reconstruyendo el reporte con `cierre_caja_id`.
+- Permisos: nueva pagina `linkReportesTurnos` bajo modulo `reportes` y accion lectura; las acciones historicas del endpoint se mapean a ese permiso sin cambiar el flujo operativo de cerrar caja.
+
+2026-05-18: Reporte de turno configurable.
+- Modulos afectados: `corte_de_caja`, `configuracion_empresarial`, `finanzas`, `frontend_ux`.
+- El reporte de turno muestra primero datos de empresa, fecha/hora, usuario y consecutivo; luego lista cada venta ordenada por fecha/hora y despues presenta resumenes operativos.
+- La configuracion del reporte permite activar/desactivar encabezado, datos de empresa, fecha/hora, usuario, consecutivo, detalle de ventas, columnas del detalle y metricas como ingresos, egresos, productos, servicios, efectivo, tarjetas, otros medios y caja esperada.
+- El efectivo esperado conserva la formula operativa de caja abierta: apertura + efectivo vendido + ingresos en efectivo - egresos en efectivo.
+- Backend agrega los campos de entrada/salida de venta y NIT de empresa al payload de `/api/empresa/corte_caja`; no cambia rutas ni permisos.
+
+2026-05-18: Panel ejecutivo de Super Administrador.
+- Modulos afectados: `super_administrador`, `frontend_ux`, `operacion_sistema`.
+- Frontend: `web/super/licencias_resumen.html` reduce el panel inicial a una vista ejecutiva con 6 KPIs unicos, prioridades, accesos clave e incidentes recientes.
+- UX: se retiran bloques duplicados como `Negocio SaaS`, `Servicios y componentes` y `Costos` del tablero inicial para dejar la informacion profesional y accionable.
+- Alcance tecnico: reutiliza endpoints existentes de metricas, PostgreSQL, alertas, errores, servidores, licencias y empresas; no cambia permisos, tablas, backend ni dependencias.
+
+2026-05-18: Login administrador con titulo en imagen.
+- `web/login.html` muestra `Powerful Control System` encima del formulario de acceso.
+- El titulo `Acceso de administradores` se presenta sobre la imagen lateral derecha y el boton `Ir al inicio` queda debajo del login.
+- Cambio visual sin impacto en autenticacion, reCAPTCHA, permisos ni endpoints.
+
+2026-05-18: Configuracion de empresa por paginas independientes.
+- El submenu `Configuracion empresarial` deja de concentrar todas las tarjetas en una sola vista general y ahora ofrece botones propios para Productos y pedidos, Identidad visual, Formato monetario, Cobro operativo, Reporte de corte, Respaldo y Pasarelas de pago.
+- `web/administrar_empresa/configuracion.html` reutiliza los formularios existentes en modo aislado por `section`, conservando cada boton de guardado y los endpoints actuales.
+- Se agregan paginas ligeras en `web/administrar_empresa/configuracion/` para abrir cada seccion como pantalla independiente y se incorporan sus claves al catalogo de permisos de configuracion.
+- No se agregan tablas, dependencias externas ni contratos nuevos de API.
+
+2026-05-18: Guardado de formato monetario y numerico.
+- El endpoint `/api/empresa/configuracion_avanzada` vuelve a guardar correctamente `moneda_codigo`, `sistema_numerico`, `usar_decimales` y `cantidad_decimales` por empresa.
+- Backend regulariza columnas legacy de tipo boolean en `empresa_configuracion_avanzada` a enteros `0/1` antes del `UPSERT`, manteniendo compatibilidad con instalaciones previas de PostgreSQL.
+- El guardado deja de usar `datetime('now','localtime')` en runtime y usa `sqlNowExpr()` para fechas compatibles con PostgreSQL.
+- El catalogo de permisos mantiene etiquetas universales en grupos de ventas/configuracion sin cambiar permisos efectivos.
+
+2026-05-18: Historial de configuracion operativa en PostgreSQL.
+- Los guardados de configuracion operativa de cobro, reglas por rol, politicas e historial devuelven el `id` con `RETURNING id`.
+- Esto repara la trazabilidad de snapshots usada por historial y rollback en `Cobro operativo`, manteniendo aislamiento por `empresa_id` y sin agregar tablas ni dependencias.
+
+2026-05-18: Corte de Caja con acciones en Lectura rapida.
+- La pagina `web/administrar_empresa/corte_de_caja.html` mueve `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` a la tarjeta `Lectura rapida`, apilados uno debajo del otro.
+- `Ver reporte de mi turno` reinicia el contexto automatico antes de consultar el turno del usuario autenticado, para evitar arrastrar un `cierre_caja_id` previo, y presenta el reporte como vista previa de impresion en pantalla.
+- Los textos visibles de control por sensores se normalizan a `Estaciones ocupadas sin factura`.
+
+2026-05-18: Panel empresarial sin mercado externo.
+- El panel de `Administrar empresa` ya no muestra la tarjeta `Mercado en contexto`.
+- Se eliminan del panel las consultas a divisas, criptoactivos y simbolos de mercado para mantener el tablero enfocado en operacion interna.
+- No se cambian permisos, rutas ni endpoints.
+
+2026-05-18: Configuracion de reporte de corte en Configuracion de empresa.
+- Las tarjetas `Configuracion del reporte de corte` y `Reportes a imprimir al cerrar` salen de la pantalla operativa `Corte de Caja`.
+- `Configuracion de empresa` agrega la seccion `Reporte de corte` con formato por defecto, reportes a imprimir, checks de metricas y botones para guardar/restaurar.
+- El flujo usa el endpoint existente `/api/empresa/corte_caja/configuracion`, sin tablas ni rutas nuevas.
+
+2026-05-18: Corte de Caja directo en Operacion y ventas.
+- El menu de `Administrar empresa` muestra `Corte de Caja` debajo de `Estaciones`.
+- El boton abre la misma pagina de corte de caja que se usa al hacer clic en la estacion Caja, con autogeneracion del corte y regreso a estaciones.
+- El acceso `linkCorteCaja` queda visible como accion operativa directa del menu principal, sin crear ruta ni endpoint nuevo.
+
+2026-05-18: Reporte de mi turno en corte de caja.
+- La pagina `corte_de_caja.html`, abierta desde la estacion Caja, incluye el boton `Ver reporte de mi turno`.
+- El reporte usa la caja abierta del usuario autenticado y permite revisar/imprimir el turno sin cerrar caja.
+- `Corte automatico` sigue siendo la accion para preparar el cierre y guardar turno.
+
+2026-05-17: Venta directa y estaciones comparten acciones del carrito.
+- La vista `modo=venta_directa` usa la misma resolucion de configuracion operativa que estaciones para items, pago y acciones.
+- La tarjeta de acciones del carrito ya no depende exclusivamente de `stationMode`, por lo que venta directa tambien muestra botones como `Abonos` cuando la configuracion lo permite.
+- No cambia el contrato de API ni la identificacion del carrito directo `VENTA-DIRECTA-{empresa_id}-0`.
+
+2026-05-17: Menu flotante compartido.
+- Se retira `Compartir por WhatsApp` del submenu `Utilidades` del menu flotante.
+- `Cambiar apariencia` queda penultimo y el enlace de sesion queda ultimo, mostrando `Cerrar sesion` cuando hay sesion activa o `Iniciar sesion` cuando no la hay.
+- Se conserva `Compartir por correo`, calculadora, juegos, emulador, tickets y ayuda.
+
+2026-05-17: Orden del menu empresarial.
+- En `Administrar empresa`, el grupo `Inventario y compras` queda inmediatamente debajo de `Operacion y ventas`.
+- El cambio facilita entrar desde venta/estaciones hacia productos, compras, importaciones, produccion y WMS sin cambiar permisos ni rutas.
+
+2026-05-17: Abonos operativos en carrito de estacion.
+- El boton `Abonos` del carrito de estacion ya no redirige a creditos; abre una tarjeta propia para registrar dinero recibido en la cuenta activa.
+- Cada abono queda asociado a `empresa_id`, `carrito_id`, metodo de pago y caja abierta, y se muestra en la cuenta antes del pago final.
+- Al cerrar con `Pagar y cerrar carrito`, el sistema descuenta los abonos activos del saldo a cobrar, sin tratarlos como devoluciones.
+- Alcance: agrega persistencia propia `carrito_compra_abonos` y endpoints dentro de `/api/empresa/carritos_compra`; no agrega dependencias externas.
+
+2026-05-17: Venta directa y estaciones comparten vista de carrito.
+- `carrito_de_compras.html?modo=venta_directa` usa la misma vista enfocada que las estaciones para mostrar items, totales, lector y pago.
+- La diferencia sigue siendo solo de contexto: venta directa usa el carrito `VENTA-DIRECTA-{empresa_id}-0`, mientras estaciones usan `EST-{empresa_id}-{estacion_id}`.
+- No se agregan rutas, tablas, dependencias ni permisos.
+
+2026-05-17: Favoritos del panel empresarial.
+- El panel de `Administrar empresa` muestra los favoritos de `Accesos rapidos` como botones de accion.
+- El cambio es visual y conserva la lista guardada en `localStorage`, las rutas internas y los permisos efectivos.
+
+2026-05-17: Comunicaciones super unificadas.
+- El Super Administrador concentra mensajes y configuraciones de comunicacion en el modulo `Comunicaciones`.
+- El grupo incluye mantenimiento, mensajes masivos por email, alertas del sistema, Gmail SMTP, alertas de licencia y WhatsApp portal.
+- No cambia backend ni permisos; solo se unifica la navegacion.
+
+2026-05-17: Mantenimiento super como modulo principal.
+- `Mantenimiento sistema` queda como grupo propio en el menu principal de Super Administrador.
+- El modulo permite crear, cargar/editar, desactivar, eliminar avisos puntuales y limpiar alertas viejas.
+- La limpieza de alertas viejas elimina avisos desactivados o vencidos sin cambiar el bloqueo real `mantenimiento_activo`.
+
+2026-05-17: Configuracion super por paginas independientes.
+- El submenu principal de Super Administrador agrega el grupo `Configuracion`.
+- Cada seccion avanzada tiene pagina propia bajo `/super/configuracion/`, cargando solo la tarjeta operativa correspondiente.
+- El guardado sigue usando los endpoints existentes de configuracion super, sin duplicar backend ni cambiar tablas.
+
+2026-05-17: Super administra avisos de mantenimiento programados.
+- El submenu principal de Super Administrador agrega `Mantenimiento`, que abre `/super/mantenimiento_sistema.html`.
+- La pagina muestra una tabla de avisos programados y la tarjeta de configuracion ya no vive dentro de `Configuracion avanzada`.
+- Cada aviso se puede cargar al formulario, desactivar o eliminar.
+- El bloqueo real `mantenimiento_activo` sigue separado y no cambia al eliminar/desactivar avisos.
+- Alcance: no cambia rutas empresariales, tablas ni permisos; se reutiliza `/super/api/config/mantenimiento`.
+
+2026-05-17: Venta directa usa icono `$` adaptable.
+- El boton `Venta directa` del menu empresarial ya no usa imagen fija.
+- El simbolo `$` hereda el color de la apariencia activa y del estado del enlace.
+- Alcance: cambio visual; no cambia rutas, endpoints, tablas ni permisos.
+
+2026-05-17: Administrar empresa deja Panel como primer boton.
+- El menu lateral ya no usa la pestaña `Inicio`.
+- `Panel` queda como primer boton directo y mantiene `linkPanelEmpresa` como acceso general.
+- Alcance: no cambia rutas, endpoints, tablas ni permisos operativos.
+
+2026-05-17: Carrito simplificado como default por tipo de empresa.
+- Las empresas nuevas, tipos de empresa y empresas antiguas heredan el preset limpio del carrito.
+- Quedan activos por defecto: buscar productos, catalogo, lector, items, totales, acciones, valores por medio de pago, pago mixto y boton pagar.
+- Quedan apagados por defecto: `Cobro y estados del carrito`, descuentos, propina, comision, desglose de cobro y `Lavador / comision`.
+- Alcance: no cambia endpoints, tablas ni permisos; el arranque actualiza o crea el JSON `estaciones_config` para dejar todas las empresas activas alineadas antes de produccion.
+
+2026-05-17: Carrito acerca busqueda de productos al alta rapida.
+- El boton `Buscar Productos` queda al lado de `Agregar` en el bloque operativo del carrito.
+- La pagina `buscar_producto_botones.html` muestra una barra `Buscar producto` para filtrar escribiendo el nombre.
+- Alcance: no cambia backend, endpoints, tablas ni permisos.
+
+2026-05-17: Carrito sin encabezado descriptivo en modo operativo.
+- En venta directa o estacion, el carrito oculta el encabezado superior y el texto de ayuda de venta directa.
+- La pantalla inicia directamente con los controles operativos del carrito.
+- Alcance: no cambia backend, endpoints, tablas ni permisos.
+
+2026-05-17: Carrito calcula vuelto de efectivo.
+- En la seccion de valores por medio de pago se agrega `Efectivo recibido`.
+- El carrito muestra `Cambio a devolver` o `Falta recibir` segun el efectivo esperado en la cuenta.
+- Alcance: no cambia backend, endpoints, tablas ni permisos.
+
+2026-05-17: Carrito con secciones avanzadas opcionales.
+- `Cobro y estados del carrito` se activa con el check `Mostrar opciones de cobro`.
+- `Lavador` se activa con el check `Mostrar lavador`.
+- Por defecto ambas secciones quedan ocultas para reducir ruido operativo; el pago principal y los valores por medio de pago siguen disponibles.
+- Alcance: no cambia backend, endpoints, tablas ni permisos.
+
+2026-05-17: Administrar empresa abre el Panel por defecto.
+- Al entrar al shell empresarial, `web/js/administrar_empresa.js` carga `linkPanelEmpresa` como pagina inicial del iframe.
+- El menu puede seguir mostrando `Operacion y ventas` arriba, pero la primera vista es el tablero de administracion de la empresa.
+- Alcance: no cambia permisos, endpoints, tablas ni dependencias.
+
+2026-05-17: Menu principal de Administrar empresa enfocado en operacion diaria.
+- `Operacion y ventas` queda limitado a `Venta directa` y `Estaciones`.
+- `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` se agrupan en `Canales digitales y colaboracion`.
+- `Reservas` se ubica en `Soluciones por negocio`.
+- `Punto de venta / TPV` queda como permiso base de ventas, fuera del grupo operativo visible.
+- El catalogo de permisos refleja esos grupos sin cambiar acciones, rutas, endpoints, tablas ni dependencias.
+
+2026-05-17: Revision de facturacion electronica por pais y DIAN Colombia.
+- La configuracion principal de facturacion electronica conserva perfiles separados por `empresa_id + pais_codigo` para Colombia, Ecuador, Panama, Costa Rica, Argentina y Venezuela.
+- Colombia muestra configuracion DIAN propia dentro de la pagina principal y envia las pruebas, diagnostico, cola y emision documental manual a `facturacion_electronica_pruebas_dian.html`.
+- En esa revision se documento un set numerico hoy historico. Desde 2026-08-21 no existe set base local: gobierna exclusivamente el objetivo asignado y guardado por empresa desde el portal DIAN.
+- En esa revision los documentos operativos eran factura, nota credito y nota
+  debito. Ese alcance fue sustituido el 2026-08-24: solo
+  `factura_electronica` puede emitirse; nota credito/debito, soporte, nomina,
+  equivalentes y RADIAN quedan catalogados/bloqueados con HTTP 422 antes de
+  generar XML, consumir consecutivo o persistir una emision.
+- Esa revision no adjuntaba XML/PDF. Desde 2026-08-21 Colombia produccion exige aceptacion DIAN y artefactos XML/PDF privados e integros antes de enviar el correo fiscal.
+
+2026-05-17: Estaciones con primer clic solo activa.
+- Modulo: `estaciones`, `carritos`, `configuracion`.
+- UX: la configuracion de estaciones agrega el check `Primer clic solo activa`.
+- Operacion: si el check esta activo, el primer clic sobre una estacion disponible solo activa el carrito base de esa estacion y actualiza la tarjeta; el segundo clic entra al carrito.
+- Persistencia: se guarda en `estaciones_config.station_card_ui.solo_activar_primer_clic`; la bandera legacy `abrir_carrito_al_activar=false` conserva el mismo comportamiento.
+- QA: validado con parseo JS, pruebas Go enfocadas y capturas visuales en `test_runs/estacion_primer_clic_2026-05-17/`.
+- Alcance: sin tablas, endpoints ni dependencias nuevas; conserva `empresa_id`.
+
+2026-05-17: Reporte de turno y corte de caja validados.
+- Modulo: `reportes`, `corte_caja`, `carritos`.
+- Centro de reportes: `web/administrar_empresa/reportes_ejecutivos.html` muestra filtros de usuario/cajero, caja, turno y cierre ID para consultar/exportar `reporte_de_turno` con el mismo contrato backend de `/api/empresa/reportes`.
+- Corte de caja: el flujo visual de `Corte automatico`, `Cerrar turno` e impresion queda validado con datos controlados de caja abierta, ventas, movimientos, items y sensores.
+- Reporte automatico de movimientos: `ultimos_movimientos_de_caja.html` se valida visualmente mostrando solo caja, turno y usuario actual.
+- QA: pruebas Go enfocadas de reportes/corte/configuracion, parseo de scripts inline y capturas visuales en `test_runs/caja_turno_reportes_2026-05-17/`.
+- Alcance: sin tablas ni dependencias nuevas; conserva aislamiento por `empresa_id`.
+
+2026-05-15: Asistencia de empleados reparada y profesionalizada.
+- Modulo: `asistencia_empleados`, `personas_activos`, `nomina`.
+- Backend: `backend/db/asistencia_empleados.go` usa helpers SQL compatibles con PostgreSQL y `sqlNowExpr()` en configuracion, cierres, listados, CRUD y marcacion de entrada/salida.
+- Frontend: `web/administrar_empresa/asistencia_empleados.html` cambia automaticamente al tab Registro al crear/editar, quita prompts de Entrada/Salida y compacta acciones de tabla.
+- QA: se agrega `backend/db/asistencia_empleados_postgres_test.go` y se valida visualmente crear, marcar entrada, marcar salida, editar, configurar, filtrar, cerrar periodo y descargar reporte.
+- Alcance: no modifica tablas, permisos ni dependencias; conserva `empresa_id` en todas las operaciones.
+
+2026-05-15: Centro de reportes retira IA dedicada.
+- Modulo: `reportes`, `administrar_empresa`, `permisos`.
+- Frontend: `web/administrar_empresa/reportes_menu.html` queda solo con `Centro de reportes`; `reportes_ejecutivos.html` elimina boton/tarjeta `Asistente IA`; se elimina `web/administrar_empresa/reportes_ia_chat.html`.
+- Permisos: `linkReportesIAChat` deja de ser pagina administrable; las rutas de reportes usan `linkReportes`.
+- Alcance: el endpoint tecnico del asistente global de reportes se conserva, sin pagina dedicada dentro del centro.
+
+2026-05-15: Facturacion electronica retira regreso a empresas del submenu.
+- Modulo: `facturacion_electronica`, `administrar_empresa`.
+- Frontend: `web/administrar_empresa/facturacion_electronica_menu.html` elimina el enlace `Volver a empresas`.
+- Alcance: cambio visual/navegacion; no modifica APIs, permisos, tablas ni dependencias.
+
+2026-05-15: Creditos crea nuevos creditos en PostgreSQL sin SQL SQLite en la transaccion.
+- Modulo: `creditos`, `cartera`, `finanzas`.
+- Backend: `backend/db/creditos.go` usa `insertTxSQLCompat`, `execTxSQLCompat` y `sqlNowExpr()` al crear el credito, asignar codigo automatico y generar cuotas.
+- Operacion: corrige el 500 observado al presionar `Nuevo credito` cuando el flujo generaba cuotas.
+- QA: se agrega prueba enfocada en `backend/db/creditos_postgres_test.go` y se valida con `go test ./db ./handlers`.
+
+2026-05-15: Productos avisa cuando falta bodega
+- Modulos afectados: `inventario`, `productos`, `bodegas`.
+- Cambio UX: al intentar crear un producto sin bodegas activas, `web/administrar_empresa/administrar_productos.html` ya no abre el formulario de producto ni desplaza al usuario sin contexto; muestra un aviso indicando que primero debe crear una bodega.
+- Accion guiada: el aviso incluye el boton `Crear bodega`, que abre explicitamente el formulario de bodega para que el usuario complete el requisito.
+- Validacion: el guardado de producto tambien bloquea creaciones nuevas sin bodega activa para evitar errores tardios.
+- Alcance: solo frontend; no cambia tablas, endpoints, permisos ni dependencias.
+
+2026-05-15: Compras elige proveedores previamente creados
+- Modulos afectados: `compras`, `compras_avanzadas`, `proveedores`, `inventario`.
+- Cambio funcional: `web/administrar_empresa/compras_avanzadas.html` reemplaza los proveedores escritos a mano por selectores cargados desde `/api/empresa/proveedores` para requisiciones, cotizaciones y recepciones.
+- Backend: `backend/handlers/compras_avanzadas.go` valida que `proveedor_id` pertenezca a un proveedor activo de la misma empresa antes de guardar cotizaciones o recepciones.
+- Persistencia: `empresa_compras_recepciones_avanzadas` agrega `proveedor_id` para trazar la recepcion contra el proveedor creado; cotizaciones ya conservaban `proveedor_id`.
+- UX: `compras.html` agrega acceso directo a gestionar proveedores y autocompleta el documento del proveedor seleccionado.
+- Alcance: sin dependencias nuevas; mantiene PostgreSQL y aislamiento por `empresa_id`.
+
+2026-05-15: Venta directa abre Buscar por botones
+- Modulos afectados: `carritos`, `ventas_simple`, `venta_directa`, `administrar_empresa`.
+- Cambio funcional: el boton `Buscar (botones)` prepara o recupera automaticamente el carrito enfocado antes de abrir el catalogo de productos, por lo que en `modo=venta_directa` ya no queda inactivo cuando el carrito 0 aun se esta resolviendo.
+- Backend: `/api/empresa/carritos_compra` ahora atiende `id` en GET y devuelve el carrito puntual de la misma empresa.
+- UX: `buscar_producto_botones.html` conserva el retorno a `modo=venta_directa`, envia el contexto de venta directa en las APIs de carrito/items y tolera respuestas antiguas tipo lista al resolver contexto.
+- Permisos: las subrutas de carritos heredan la resolucion de `linkVentaDirecta` cuando llega `modo=venta_directa`, `perm_page=linkVentaDirecta` o un codigo `VENTA-DIRECTA`.
+- Alcance: no cambia tablas, permisos ni dependencias; mantiene aislamiento por `empresa_id`.
+
+2026-05-15: Menu empresarial con Venta directa primero
+- Modulos afectados: `administrar_empresa`, `ventas`, `carritos`, `configuracion`.
+- Cambio UX: el menu principal prioriza la venta inmediata moviendo `Operacion y ventas` al inicio; `Venta directa` queda como primer acceso real de Administrar Empresa y `Estaciones` como segundo.
+- Reubicacion: el acceso general `Carritos` deja de aparecer en `Operacion y ventas` y queda disponible desde el submenu de configuracion, en el grupo `Ventas y cobro`.
+- Permisos: `linkCarritoCompras` se cataloga bajo `Configuracion - Ventas y cobro`; no cambian wrappers, rutas ni controles existentes.
+
+2026-05-15: Alta de bodegas compatible con PostgreSQL
+- Modulos afectados: `inventario`, `bodegas`, `productos`.
+- Cambio funcional: `POST /api/empresa/bodegas` conserva el contrato existente, pero el guardado de fechas en `CreateBodega` usa la expresion PostgreSQL central (`sqlNowExpr`) para que crear una bodega funcione en runtime real.
+- UX validada: desde `web/administrar_empresa/bodega.html`, la accion `Nueva` abre el formulario, `Guardar bodega` crea el registro, oculta el formulario, actualiza el KPI y lista la fila creada.
+- Alcance: no agrega tablas, endpoints, permisos ni dependencias; se conserva aislamiento por `empresa_id`.
+
+2026-05-15: Login y registro movil con areas tactiles
+- Modulos afectados: `autenticacion`, `login_usuario`, `registro_administrador`.
+- Cambio UX: `login.html`, `login_usuario.html` y `registrar_nuevo_usuario_administrador.html` comparten reglas moviles para botones, enlaces de recuperacion/registro, inputs y control de mostrar contrasena con areas tactiles de al menos 44 px.
+- Registro administrador: el chat flotante queda compacto en celular mediante `register-admin-body`, reduciendo interferencias sobre el formulario publico de alta administrativa.
+- Alcance: frontend solamente; no cambia contratos de login, recuperacion, registro, permisos, sesiones, tablas ni dependencias.
+
+2026-05-15: Venta directa con carrito 0 automatico
+- Modulos afectados: `carritos`, `ventas_simple`, `administrar_empresa`.
+- Cambio funcional: `web/administrar_empresa/carrito_de_compras.html?modo=venta_directa` crea o reutiliza automaticamente el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` cuando la URL no trae `carrito_codigo`.
+- Compatibilidad: si ya existe el carrito legacy `VENTA-DIRECTA-{empresa_id}` o un carrito con `referencia_externa=CAJA_DIRECTA`, la pantalla lo reutiliza antes de crear uno nuevo.
+- UX: venta directa deja de mostrar error de carrito faltante y oculta el boton `Regresar a estaciones`; estaciones mantienen su asignacion `EST-{empresa_id}-{estacion_id}`.
+- Alcance: cambio frontend; no agrega tablas, endpoints ni dependencias y conserva aislamiento por `empresa_id`.
+
+2026-05-19: Reinicio operativo seguro desde backups empresariales
+- Modulos afectados: `backups`, `carritos`, `ventas`, `finanzas`, `facturacion`, `auditoria`.
+- Cambio funcional: `web/administrar_empresa/backups.html` agrega `Reiniciar datos operativos` con previsualizacion, modo `hasta fecha` o `todos los tiempos`, backup previo opcional y confirmacion exacta antes de eliminar.
+- Backend: `/api/empresa/backups?action=reset_operativo` usa `ResetEmpresaOperationalData` para borrar solo tablas operativas con `empresa_id`; la configuracion del sistema, usuarios, permisos, impresoras, integraciones, tarifas, preferencias y backups internos quedan protegidos aunque se intenten incluir manualmente.
+- Seguridad: el endpoint exige `REINICIAR EMPRESA {empresa_id}` para ejecucion real, permite `dry_run` sin borrar y conserva aislamiento por `empresa_id`.
+- Persistencia: no agrega tablas ni dependencias; reutiliza el modulo de backups y deja trazabilidad mediante backup previo cuando esta activado.
+
+2026-05-19: Codigos de descuento y promocion de asesor de un solo uso
+- Modulos afectados: `carritos`, `pagos`, `licencias`, `asesor_comercial`.
+- Cambio funcional: los codigos de descuento del carrito quedan consumidos una sola vez por empresa; anular, reabrir o revertir el carrito conserva la redencion como auditoria y no devuelve el cupo.
+- Checkout de licencias: el descuento por codigo de asesor solo se aplica cuando la promocion global esta activa y tiene porcentaje configurado; si la empresa ya uso un asesor en pagos, activaciones gratis o comisiones, el asesor puede seguir asociado para comision pero no se vuelve a descontar.
+- Persistencia: no agrega tablas ni dependencias; reutiliza `codigos_de_descuento`, `codigos_descuento_redenciones`, `pagos_wompi`, `pagos_epayco`, `licencias_activaciones_gratis` y `asesor_comercial_comisiones`.
+- Seguridad: mantiene aislamiento por `empresa_id` y recalcula descuentos en backend antes de activar o abrir pasarela.
+
+2026-05-15: Empresas compartidas con alcance profesional
+- Modulos afectados: `empresas compartidas`, `administrar empresa`, `seleccionar empresa`, `permisos`.
+- Cambio funcional: al compartir una empresa, el propietario puede elegir `Solo ver`, `Acceso total` o `Solo ciertos modulos`; el alcance viaja en la invitacion y se aplica al aceptar.
+- Seguridad: el alcance compartido se integra al contexto efectivo de permisos, por lo que APIs y paginas protegidas quedan limitadas por lectura o por modulos seleccionados, siempre despues de licencia, vertical y reglas finas de empresa.
+- UX: el editor de empresa muestra selector de rol, checklist de modulos, alcance en accesos/invitaciones y accion clara para dejar de compartir; el selector de empresas ofrece el mismo rol desde la tarjeta rapida.
+- Persistencia: `admin_empresa_compartida` y `admin_empresa_compartida_invitaciones` agregan `nivel_acceso` y `modulos_permitidos`.
+- Alcance: sin dependencias nuevas; conserva PostgreSQL, sesiones existentes, auditoria y aislamiento por `empresa_id`.
+
+2026-05-15: Licencias con prueba unica por empresa y codigo de asesor
+- Modulos afectados: `licencias`, `pagos`, `asesor_comercial`, `super_administrador`.
+- Cambio funcional: la licencia de prueba de 15 dias y cualquier activacion gratis/sin pago quedan limitadas a una sola activacion activa por empresa.
+- Persistencia: `licencias_activaciones_gratis` registra `asesor_id` y un indice unico activo por `empresa_id`; duplicados activos existentes se marcan como `historico_duplicado` al asegurar esquema.
+- Checkout: `crear_prueba_15_dias` acepta `asesor_id` o `codigo_asesor`, valida que el asesor exista, tenga invitacion aceptada y no este inactivo, y guarda la referencia en pagos/comisiones.
+- Activacion sin pago: `POST /licencias/activar_sin_pago` aplica la misma validacion de asesor y usa la marca unica por empresa antes de activar.
+- Limites: la prueba automatica de 15 dias se crea con 250 documentos/ventas mensuales.
+- Impacto de permisos: no cambia roles ni permisos; el flujo conserva checkout publico/control super existente y aislamiento por `empresa_id`.
+
+2026-05-14: Reportes con centro unico y limpieza preproduccion
+- Modulos afectados: `reportes`, `administrar_empresa`.
+- Cambio UX: `web/administrar_empresa/reportes_menu.html` reduce el submenu principal a Centro de reportes y Asistente IA.
+- Unificacion: `web/administrar_empresa/reportes_ejecutivos.html` agrega catalogo unificado, vista previa, busqueda, categorias, rango de fechas y exportacion directa de datasets.
+- Categorias: Direccion, Ventas/POS, Inventario/compras, Finanzas/cartera, Contabilidad/impuestos y Control operativo, incluyendo acceso al reporte de aseo de estaciones.
+- Limpieza: se eliminan las vistas antiguas de reportes independientes y la ruta `/api/empresa/graficos_estadisticas`.
+- Preproduccion: se retiran datos viejos de QA/demo en base de datos y evidencias locales antiguas; las plantillas quedan con codigos `BASE-*`.
+- Alcance: no agrega tablas, permisos ni dependencias; reutiliza `/api/empresa/reportes` y mantiene aislamiento por `empresa_id`.
+
+2026-05-14: Lobby de juegos con tarjetas uniformes y Doon FPS
+- Modulos afectados: `juegos`, `portal_publico`.
+- Cambio UX: `web/Juegos/menu_juegos.html` muestra todas las tarjetas del catalogo con el mismo formato visual, portada 16:9, descripcion y acceso claro.
+- Limpieza: se retiran del lobby las tarjetas 3D y el acceso generico a `/emulador/`; queda visible solo el emulador N64 como ultimo emulador integrado.
+- Nuevo juego: `web/Juegos/doon_fps/index.html` agrega un shooter retro original con raycasting en canvas, enemigos, salud, municion, botiquines, dos sectores y records.
+- Assets: se regeneran portadas raster originales en `web/img/juegos`, incluyendo `doon_fps.png`, sin usar capturas comerciales ni ROMs.
+- Alcance: no cambia base de datos, endpoints, permisos ni dependencias; conserva `/api/public/juegos/records`.
+
+2026-05-14: Valores por medio de pago editables en carrito
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio funcional: los importes visibles de `Efectivo`, `Debito`, `Credito` y `Otro` en el carrito de estacion dejan de ser solo lectura y pueden editarse para distribuir el cobro.
+- Flujo de pago: si hay mas de un medio con valor, el frontend arma automaticamente `metodo_pago=mixto` y envia los tramos en `pagos_mixtos`; `Otro` se registra como `transferencia_bancaria`.
+- Validacion: la suma de los cuatro valores debe coincidir con el total final a pagar; tarjetas y transferencia conservan referencia obligatoria.
+- Alcance: no cambia tablas, permisos ni endpoints; reutiliza el contrato existente de pago mixto del carrito y mantiene aislamiento por `empresa_id`.
+
+2026-05-14: Carrito de compras con encabezado compacto y acciones destacadas
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: `web/administrar_empresa/carrito_de_compras.html` elimina los textos repetidos `Items del carrito`, `Lector de código de barras`, `Valores por medio de pago` y `Acciones del carrito`.
+- Encabezado: en modo estacion, `Carrito de compras` y `Estacion: <nombre>` se muestran en una misma fila cuando el ancho lo permite.
+- Acciones: los botones operativos del carrito recuperan apariencia de boton dentro del bloque de acciones, sin devolver sombras o relieve a las tarjetas del carrito.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-14: Juegos publicos incluidos en imagen frontend
+- Modulos afectados: `juegos`, `portal_publico`.
+- Cambio operativo: `web/Juegos/menu_juegos.html` y los juegos HTML asociados se incluyen en el build Docker del frontend para que `/Juegos/menu_juegos.html` este disponible en produccion.
+- Records: `/api/public/juegos/records` queda permitido por el middleware publico para cargar rankings sin sesion ni errores 401.
+- Alcance: no cambia base de datos ni modelo de records; conserva el emulador raiz montado por Compose.
+
+2026-05-13: Corte de caja valida columnas de finanzas
+- Modulos afectados: `corte_caja`, `finanzas`, `estaciones`.
+- Cambio funcional: el corte automatico de turno puede recuperar bases empresariales donde el modulo financiero ya existia, pero faltaban columnas de caja necesarias para filtrar movimientos por `cierre_caja_id`, codigo y turno.
+- Backend: la verificacion de esquema de `finanzas` revisa columnas criticas antes de marcar la migracion como lista; si faltan, ejecuta la migracion ligera existente.
+- UX: al guardar un cierre de turno, la pantalla deja el boton de cierre deshabilitado y marcado como `Turno cerrado` para impedir reintentos accidentales.
+- Alcance: no cambia permisos, tablas nuevas ni dependencias; mantiene el cierre por usuario/caja actual y el aislamiento por `empresa_id`.
+
+2026-05-13: Boton pagar y cerrar carrito con reintento visual
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `permisos`.
+- Cambio funcional: `pagar_estacion` y `pagar` se clasifican como registro operativo de venta, no como aprobacion gerencial, para que roles de caja personalizados puedan cerrar cobros segun sus permisos de ventas.
+- UX: si no se pudieron cargar cajas abiertas al inicio, el boton queda habilitado con mensaje de reintento; al hacer clic vuelve a cargar cajas y continua el pago si encuentra una caja abierta.
+- Seguridad: el backend sigue validando caja abierta, `cierre_caja_id`, codigo, turno y `empresa_id` antes de cerrar el carrito.
+- Alcance: no cambia tablas ni dependencias.
+
+2026-05-13: Carrito de compras cobra con caja abierta desde Ventas
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `corte_caja`.
+- Cambio funcional: el boton `Pagar y cerrar carrito` ya puede habilitarse para usuarios operativos que tienen permisos de ventas/estaciones/venta directa aunque no tengan permiso completo de Finanzas.
+- Backend: `backend/handlers/carritos_compras.go` expone `action=cajas_abiertas` para listar cajas abiertas activas por `empresa_id`, reutilizando `empresa_cierres_caja` y manteniendo la validacion final de caja abierta en `pagar_estacion`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` carga el selector de caja desde `/api/empresa/carritos_compra?action=cajas_abiertas` y deja de bloquear el cobro por permisos del endpoint financiero.
+- Alcance: no cambia tablas, dependencias ni motores; mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Carrito plano reforzado contra estilos posteriores
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: se garantiza que el carrito de compras se vea plano en escritorio y movil, sin sombras, radios ni margenes visibles entre tarjetas.
+- Implementacion: `web/estilos.css` agrega un override final para `carrito-flat-page`, despues de temas, modo tactil y reglas legacy.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: Panel empresarial detecta ciudad por IP antes que GPS
+- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
+- Cambio UX: el clima y los indicadores del panel toman como primera fuente automatica la ciudad detectada por IP.
+- Flujo: la ciudad manual guardada conserva prioridad; si no existe, se consulta IP; si falla, se usan GPS guardado/GPS autorizado, zona horaria o perfil como respaldo.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: Carrito de compras compacto sin separaciones entre tarjetas
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: las tarjetas del carrito se pegan entre si y adoptan lectura plana tipo tabla, sin espacios visuales, radios ni sombras.
+- Implementacion: `web/estilos.css` ajusta gaps, margenes, radios y sombras dentro de `carrito-flat-page`, manteniendo el alcance limitado a `web/administrar_empresa/carrito_de_compras.html`.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: Carrito de compras con tarjetas planas
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: la pagina `web/administrar_empresa/carrito_de_compras.html` elimina sombras de tarjetas y formularios para una apariencia plana, sin relieve ni efecto 3D.
+- Implementacion: se usa la clase scoped `carrito-flat-page` y reglas en `web/estilos.css`, sin afectar otras paginas del sistema.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: Carrito de estacion con contexto en encabezado
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: en `web/administrar_empresa/carrito_de_compras.html`, el nombre de la estacion se muestra arriba como `Estacion: <nombre>` junto al encabezado principal.
+- Limpieza visual: la tarjeta de items ya no repite `Items de estacion: <nombre>` y queda como `Items del carrito`.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: OnlyOffice corrige apertura visual del editor
+- Modulo: `documentos_onlyoffice`.
+- Cambio funcional: al crear y abrir un documento, `editor_config` devuelve una URL de Document Server alcanzable por el navegador cuando la configuracion interna viene de Docker.
+- Backend: `backend/handlers/onlyoffice.go` corrige la ruta temporal por `empresa_id`, evita duplicar `/empresas/empresas` y deriva `https://onlyoffice.<dominio>` desde la URL publica del sistema cuando detecta hosts internos como `onlyoffice-documentserver`.
+- Frontend: `web/administrar_empresa/documentos_onlyoffice.html` verifica que `api.js` cargue `DocsAPI.DocEditor` y deja un mensaje visible si la URL de OnlyOffice no es publica o no responde correctamente.
+- Seguridad: no agrega permisos, tablas ni dependencias; conserva `empresa_id`, tokens temporales y `WithEmpresaDocumentosOnlyOfficePermissions`.
+
+2026-05-13: Reportes ejecutivos profesionales
+- Modulos afectados: `reportes`, `administrar_empresa`.
+- Cambio UX: `web/administrar_empresa/reportes_menu.html` simplifica el submenu y evita exponer una lista larga de datasets como navegacion principal.
+- Nueva portada: `web/administrar_empresa/reportes_ejecutivos.html` organiza accesos gerenciales por direccion, ventas/margen, inventario/compras, finanzas/cartera, contabilidad/impuestos e IA.
+- Reparacion: `web/administrar_empresa/reportes_finanzas.html` deja de usar `alert()` placeholder; ahora consulta `contable_movimientos_financieros`, muestra KPIs y permite exportar en PDF/CSV/XLS/JSON/TXT.
+- Alcance: no cambia endpoints, tablas, permisos ni dependencias; reutiliza `/api/empresa/reportes` y conserva `empresa_id`.
+
+2026-05-13: Facturacion electronica separa configuracion y pruebas DIAN
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Cambio UX: `web/administrar_empresa/facturacion_electronica.html` queda enfocada en configurar la facturacion electronica de la empresa y elimina el boton `Abrir modulo DIAN / documental`.
+- Nueva subpagina: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` concentra diagnostico DIAN, set de habilitacion, conexion/procesamiento de cola y emision documental manual.
+- Navegacion: el submenu `facturacion_electronica_menu.html` agrega `Pruebas DIAN y documentos`.
+- Alcance: no cambia backend, tablas, permisos ni dependencias; reutiliza los endpoints existentes de facturacion electronica.
+
+2026-05-13: Control y reporte de aseo por estacion
+- Modulos afectados: `estaciones`, `usuarios_empresa`, `reportes`, `carritos`.
+- Cambio funcional: los usuarios creados pueden activar/desactivar la opcion `Control de aseo`; si esta activa, al hacer clic sobre una estacion sucia se reporta el aseo terminado en vez de abrir el carrito.
+- Backend: `/api/empresa/estacion_aseo` usa autoservicio autenticado para contexto y finalizacion, crea eventos en `empresa_estacion_aseo_eventos` y calcula `duracion_segundos` desde que el pago marco la estacion como sucia.
+- Reporte: `web/administrar_empresa/reporte_aseo_estaciones.html` lista estacion, aseadora, hora sucia, hora de fin y demora, con resumen promedio/minimo/maximo.
+- Seguridad: mantiene `empresa_id`, atribuye el cierre al usuario autenticado y deja el reporte gerencial para roles administrativos/supervision.
+
+2026-05-13: Corte automatico de turno de caja
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`.
+- Cambio funcional: `web/administrar_empresa/corte_de_caja.html` incorpora `Corte automatico` para generar el corte del usuario actual sin escoger fechas manualmente.
+- Operacion: el sistema resuelve la caja abierta del usuario, usa su `fecha_apertura` como inicio del turno y la hora actual del corte como fin; autocompleta caja, turno, usuario y efectivo inicial.
+- Cierre: al guardar desde el modo automatico se envia `cierre_caja_id` y el backend cierra esa caja abierta existente, evitando duplicar cierres.
+- Alcance: no agrega tablas, permisos ni dependencias; reutiliza el modo seguro `mi_caja_actual` de `corte_caja`.
+
+2026-05-13: Ultimos movimientos de caja aislados por usuario y caja actual
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`, `carritos`.
+- Cambio funcional: el boton `Ver ultimos movimientos` de la tarjeta especial `Caja` abre la pagina con alcance `solo_usuario_actual` y `mi_caja_actual`, evitando listados globales de la empresa.
+- Backend: `corte_caja` agrega el modo `mi_caja_actual`, que resuelve la caja abierta del usuario autenticado y genera el reporte solo con ventas, productos y movimientos de ese `cierre_caja_id`/`caja_codigo`.
+- UX: `web/administrar_empresa/ultimos_movimientos_de_caja.html` muestra el contexto de caja, usuario, turno y apertura, y lista productos vendidos, ventas/facturas y movimientos financieros del alcance actual.
+- Alcance: no cambia tablas, permisos ni dependencias; mantiene aislamiento por `empresa_id` y evita ver movimientos de otros usuarios.
+
+2026-05-13: Factura electronica automatica exige acuse fiscal en Colombia produccion
+- Modulos afectados: `carritos`, `venta_directa`, `facturacion_electronica`, `DIAN`.
+- Backend: al generar factura electronica desde una venta/comprobante, `backend/handlers/carritos_compras.go` conserva la venta cerrada pero no mantiene la factura asociada como `emitida` si la integracion fiscal aplicable a Colombia en produccion falla o queda sin confirmar.
+- Backend: `backend/handlers/facturacion_electronica.go` ya no considera `manual`, `local` o `interno` como proveedor fiscal valido para Colombia en produccion.
+- Nuevo comportamiento: cuando DIAN/proveedor no confirma `estado_envio=enviado`, la factura electronica queda `pendiente_emision`, con `factura_integracion_fallida`, observacion operativa y cola de reintentos para seguimiento.
+- Cumplimiento: evita presentar como factura fiscal aceptada un documento que aun no tiene confirmacion DIAN/proveedor, en linea con validacion previa y acuse fiscal.
+- Alcance: no cambia tablas, permisos, endpoints ni dependencias; mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Logos empresariales para Motel Calipso y Gimnasio el bollon
+- Modulos afectados: `administrar_empresa`, `configuracion_empresa`, `carritos`, `facturacion`, `reportes`.
+- Cambio funcional: Motel Calipso (`empresa_id=7`) y Gimnasio el bollon (`empresa_id=32`) quedan con logos propios cargados y activados desde `empresa_configuracion_avanzada`.
+- Activos: los SVG viven en `web/uploads/empresa_logos/empresa_7/motel-calipso-logo.svg` y `web/uploads/empresa_logos/empresa_32/gimnasio-el-bollon-logo.svg`.
+- Alcance: no cambia backend, base de datos estructural, permisos ni dependencias; esos activos quedan como historicos de logo corporativo. La configuracion vigente separa `logo_url` como logo corporativo y `logo_factura_url` como logo de factura.
+
+2026-05-13: Indicadores economicos moviles completos
+- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
+- Cambio UX: la seccion `Indicadores economicos importantes` de `web/administrar_empresa/panel.html` aumenta legibilidad en celulares y deja de ocultar referencias o recortar nombres/valores.
+- Responsive: usa dos columnas en movil normal y una columna en pantallas muy estrechas o de poca altura, con scroll vertical cuando sea necesario.
+- Alcance: solo frontend; conserva las mismas fuentes publicas de mercado y no cambia backend, permisos, base de datos ni dependencias.
+
+2026-05-13: Facturacion electronica muestra proveedor para adquirir firma digital
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Cambio UX: la tarjeta `Cargar firma electronica (Colombia / DIAN)` agrega el boton `Adquirir Firma Electronica` en la misma fila del boton `Cargar firma`.
+- Nueva pagina: `web/administrar_empresa/proveedores_firma_digital.html` abre dentro del submenu de facturacion electronica y lista proveedores externos de certificado/firma digital.
+- Proveedor inicial: Sensiyo queda enlazado como opcion externa para comprar certificado digital compatible con facturacion electronica DIAN Colombia.
+- Alcance: solo frontend y navegacion; no cambia backend, base de datos, permisos, licencias ni manejo de secretos.
+
+2026-05-13: Caja recupera tarjeta compacta con ultimos movimientos
+- Modulos afectados: `estaciones`, `corte_caja`.
+- Cambio UX: la tarjeta especial `Caja` vuelve al formato compacto con titulo, totales de efectivo/debito/credito y boton `Ver ultimos movimientos`, sin el texto descriptivo largo.
+- Navegacion: hacer clic o usar teclado sobre la tarjeta completa conserva el flujo nuevo hacia `corte_de_caja.html`; el boton interno mantiene la ruta a `ultimos_movimientos_de_caja.html`.
+- Alcance: solo frontend; no cambia backend, permisos, tablas, endpoints ni dependencias.
+
+2026-05-13: Recuperacion profesional del listado de carritos por estacion
+- Modulos afectados: `estaciones`, `carritos`, `ventas_simple`.
+- Problema corregido: abrir una estacion como `Zona 1` podia terminar en `No se pudo abrir esta estacion` cuando `/api/empresa/carritos_compra?empresa_id=...&include_inactive=1` respondia 500 por columnas faltantes en una base empresarial con migraciones rezagadas.
+- Backend: `backend/db/carritos_compras.go` valida y completa la matriz completa de columnas de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` antes de cachear el esquema como listo, y esa cache queda atada a la base/esquema PostgreSQL actual.
+- Recuperacion: ante errores de columna o relacion inexistente, el listado marca el esquema como pendiente, ejecuta de nuevo las migraciones ligeras y reintenta la consulta sin perder el aislamiento por `empresa_id`.
+- Compatibilidad: el listado degradado sin conteo de items ya no referencia el alias `ic`, de modo que la ruta puede responder aun si debe omitir temporalmente `carrito_compra_items`.
+- QA: prueba enfocada `backend/db/carritos_compras_schema_test.go`, corridas dirigidas de `db` y `handlers`, y smoke visual controlado de apertura de `Zona 1`.
+
+2026-05-13: Juegos moviles con sonido, records y emulador tactil
+- Modulos afectados: `juegos`, `emulador`, `portal_publico`.
+- Backend: `backend/main.go` registra el esquema `super_juegos_records` en el arranque y publica `/api/public/juegos/records` para guardar/consultar records globales por juego, jugador y empresa/publico.
+- Frontend: `web/Juegos/juegos_records.js` centraliza envio de records, lectura de ranking y deteccion de puntajes; `arcade_embed.js` y `open_game_embed.js` reportan scores desde iframes, agregan sonido WebAudio y mejoran controles tactiles.
+- UX: `web/Juegos/menu_juegos.html` usa tarjetas de igual tamano con portadas PNG reales capturadas visualmente desde cada juego en `web/img/juegos/`.
+- Emulador: `/emulador/` agrega controles tactiles para movil y `/Juegos/n64/index.html` pasa a ser una vista responsive que embebe el emulador real.
+- Alcance: usa PostgreSQL existente para records, sin dependencias nuevas ni motores adicionales; `/Juegos/*` y records siguen siendo publicos.
+
+2026-05-13: Caja en estaciones se blinda contra apertura accidental de carrito
+- Modulos afectados: `estaciones`, `corte_caja`.
+- Cambio funcional: `web/administrar_empresa/estaciones.html` agrega una guarda explicita para que la tarjeta especial `Caja` nunca entre al flujo generico de activacion/apertura de carrito, aunque cambie la configuracion visual de estaciones.
+- Nuevo comportamiento: clic o teclado sobre `Caja` siempre abre `web/administrar_empresa/corte_de_caja.html` para cerrar turno, hacer corte de caja e imprimir el reporte del cajero o usuario actual.
+- Alcance: solo frontend y navegacion; no agrega tablas, permisos ni dependencias.
+
+2026-05-13: Estaciones recuperan carritos legado por nombre al abrir una estacion
+- Modulos afectados: `estaciones`, `carritos`.
+- Cambio funcional: `web/administrar_empresa/carrito_de_compras.html` deja de limitar la carga inicial al filtro `estacion_id` cuando entra en modo estacion, para volver a encontrar carritos legado de la misma empresa aunque solo coincidan por nombre visible.
+- Estabilizacion: si el carrito rescatado pertenece a la estacion pero aun no tenia `codigo` o `referencia_externa` canonicos (`EST-{empresa}-{estacion}` / `ESTACION_{id}`), la misma apertura lo normaliza antes de activar o reanudar la sesion.
+- Impacto operativo: estaciones como `Zona 1` vuelven a abrir sin chocar por nombre duplicado ni mostrar el error `No se pudo abrir esta estación`, incluso en empresas con datos previos a la sincronizacion canonica de `estaciones_config`.
+- Alcance: solo frontend sobre el flujo del carrito de estacion; no agrega tablas, permisos ni dependencias y mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Estacion Caja orientada a cierre de turno
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`.
+- Cambio funcional: la tarjeta especial `Caja` dentro de `web/administrar_empresa/estaciones.html` deja de abrir `carrito_de_compras.html` en modo venta directa.
+- Nuevo flujo operativo: al hacer clic en `Caja`, el usuario abre `web/administrar_empresa/corte_de_caja.html` con contexto de estaciones, regreso directo al tablero, auto-generacion del corte y foco en cierre de turno del cajero.
+- UX: la pantalla de corte muestra titulo contextual, boton `Cerrar turno`, enlace `Regresar a estaciones` y carga el `caja_codigo` configurado por empresa cuando existe.
+- Alcance: solo frontend y navegacion; no agrega tablas, permisos ni dependencias y mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Nucleo operativo, auditoria y compartido documental
+- Modulos afectados: `ventas`, `carritos`, `finanzas`, `facturacion`, `reportes`, `auditoria`, `backups`, `menu_flotante`.
+- Revision profesional: se valida el nucleo de ventas/documentos/ingresos/egresos con pruebas Go completas y parseo de scripts de las pantallas criticas tocadas.
+- Auditoria: el filtro empresarial y el contexto IA reconocen modulos recientes como carritos, venta publica, CRM, reportes, backups, OnlyOffice, tickets, mantenimiento, propinas, comisiones y plantillas operativos.
+- Documentos: ventas, facturas electronicas, comprobantes de ingreso/egreso, reportes de inventario y menu flotante agregan opciones de compartir por WhatsApp o correo usando enlace/documento activo, sin exponer secretos ni crear dependencias.
+- Backups: se confirma el flujo automatico local existente: se programa en el navegador, descarga al dispositivo del usuario y no guarda archivos permanentes en el VPS.
+- Alcance: no agrega tablas, motores, dependencias externas ni permisos nuevos; mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Proporcion de tarjetas en carrusel publico
+- Modulo: `portal_publico`.
+- Cambio UX: el carrusel horizontal de `web/index.html` evita que todas las tarjetas se estiren al alto de la tarjeta mas larga; las tarjetas de la barra conservan una proporcion similar a las 6 superiores.
+- Alcance: solo frontend; no cambia rutas, endpoints, permisos, tablas ni dependencias.
+
+2026-05-13: Backup profesional junto a Configuracion
+- Modulo: `backups`.
+- Cambio UX: el acceso `Backup profesional` se mueve al grupo `Administracion` del menu principal de `administrar_empresa.html`, justo junto a `Configuracion`.
+- Permisos: conserva `linkBackups`, ruta `modulo_menu.html?module=backups` y control existente por modulo `backups`/accion de aprobacion; no cambia backend, tablas ni dependencias.
+
+2026-05-13: Login unico para usuarios de todas las empresas
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `login_usuario`, `permisos`.
+- Cambio funcional: `login_usuario.html` queda como entrada global para usuarios operativos de cualquier empresa, sin exigir subdominio empresarial ni parametro `empresa_id`.
+- Backend: el login busca las cuentas por correo y solo abre sesion cuando la clave identifica una cuenta concreta; la invitacion inicial se valida por `token_invitacion`, email y documento, y las recuperaciones usan el mismo portal central.
+- UX: el formulario comunica acceso por correo y contrasena; al autenticar se persiste `empresa_id` y se redirige a `administrar_empresa.html?id=...` para cargar rol y permisos de la empresa.
+- Seguridad: si un mismo correo queda asociado a varias empresas sin poder resolverse con la clave/token, el sistema no selecciona una empresa al azar y devuelve conflicto o respuesta enmascarada segun el flujo.
+
+2026-05-13: Submenu de Configuracion super alineado
+- Modulo: `configuracion_avanzada`.
+- Cambio UX: el submenu interno del super administrador se alinea con el patron de `seleccionar_empresa.html`, usando sidebar simple, ancho estable, navegacion compacta y colapso movil.
+- Alcance tecnico: solo cambia frontend (`web/super/configuracion_avanzada.html` y comportamiento comun en `web/menu.js`); no modifica API, permisos, configuraciones, base de datos ni dependencias.
+
+2026-05-13: Aviso de mantenimiento programado
+- Modulos afectados: `super_administrador`, `configuracion_avanzada`, `administrar_empresa`, `operacion_sistema`.
+- Cambio funcional: super administrador programa fecha, hora inicio/fin, zona horaria y mensaje publico de mantenimiento. Un check independiente publica el aviso en el panel empresarial sin activar el bloqueo real del sistema.
+- Backend: `/super/api/config/mantenimiento` conserva `mantenimiento_activo` y agrega claves `mantenimiento_programado.*`; `/api/empresa/mantenimiento_programado` expone solo el aviso activo a usuarios autenticados con alcance sobre la empresa.
+- UX empresa: `web/administrar_empresa/panel.html` muestra una franja de aviso sobre los indicadores cuando `aviso_activo` esta habilitado.
+- Seguridad: no se agregan tablas ni dependencias; el aviso empresarial usa `WithEmpresaSelfServicePermissions` y el bloqueo global sigue separado en `mantenimiento_activo`.
+
+2026-05-13: OnlyOffice local editable en una sola pantalla
+- Modulo: `documentos_onlyoffice`.
+- Definicion: herramienta empresarial para crear documentos ofimaticos con OnlyOffice y conservar el archivo final en el dispositivo del usuario, no como repositorio permanente del VPS.
+- Cambio funcional: la empresa elige tipo de documento y nombre, el editor se carga embebido en `documentos_onlyoffice.html`, y la accion `Guardar en este dispositivo` descarga el archivo al PC/celular eliminando la copia temporal usada por el editor.
+- Backend: `/api/empresa/documentos?action=create_edit_local` crea la sesion temporal editable y `/api/empresa/documentos?action=download&delete=1` entrega el archivo final como attachment y borra el temporal.
+- Seguridad: se mantiene `WithEmpresaDocumentosOnlyOfficePermissions`, aislamiento por `empresa_id`, nombres saneados y sin permisos nuevos, tablas nuevas ni dependencias externas.
+
+2026-05-13: Apariencia claro/oscuro del Explorador de Archivos super
+- Modulo: `explorador_archivos`.
+- Cambio UX: la pagina super de exploracion de archivos respeta el tema visual global del panel, incluyendo oscuro, claro y variantes.
+- Alcance tecnico: solo se ajusta `web/super/explorador_archivos.html`; no cambia API, permisos, filesystem, backend, base de datos ni dependencias.
+
+2026-05-12: Tickets de ayuda empresariales profesionalizados
+- Modulo: `tickets_ayuda`.
+- Definicion: canal central de soporte SaaS para que cada empresa solicite ayuda desde cualquier pantalla operativa y el super administrador atienda el caso con contexto, conversacion y trazabilidad.
+- Alcance empresa: el menu flotante permite enviar ticket asociado al `empresa_id`, modulo/ruta activa, categoria, prioridad, preferencia de contacto, telefono opcional y diagnostico tecnico seguro; el panel muestra tickets recientes de la misma empresa.
+- Alcance super administrador: `/super/tickets_ayuda.html` agrega triage con categoria, modulo, ruta, contacto y contexto tecnico, manteniendo respuesta, notas internas, asignacion, prioridad y cierre.
+- Datos: `super_tickets_ayuda` conserva `contacto_telefono`, `contacto_preferido` y `contexto_json`; `super_ticket_ayuda_mensajes` separa mensajes visibles de notas internas.
+- Permisos: empresas solo ven y comentan tickets de su `empresa_id`; administracion global exclusiva de `super_administrador`.
+
+2026-05-12: Control electrico reubicado en configuracion empresarial
+- Modulo: `control_electrico`.
+- Cambio funcional: el boton deja de mostrarse como acceso independiente en el sidebar principal de Administrar empresa y pasa a `Configuracion > Estaciones, sensores y tarifas`.
+- UX: la pantalla principal de configuracion agrega una tarjeta de acceso para Raspberry Pi, reles y salidas por estacion.
+- Alcance tecnico: conserva `linkControlElectrico`, ruta `/administrar_empresa/modulo_menu.html?module=control_electrico`, permisos existentes y backend sin cambios.
+
+2026-05-12: Mesa de ayuda por tickets
+- Modulo: `tickets_ayuda`.
+- Definicion: sistema central de soporte SaaS donde una empresa registra una solicitud de ayuda y el super administrador la atiende como conversacion trazable por ticket.
+- Alcance empresa: desde el menu flotante global, el usuario autenticado crea un ticket asociado a su `empresa_id`, modulo/ruta activa, categoria, prioridad, asunto y mensaje.
+- Alcance super administrador: `/super/tickets_ayuda.html` lista, filtra, revisa mensajes, responde, marca notas internas, cambia estado/prioridad, asigna responsable y cierra tickets.
+- Datos: `pcs_superadministrador.super_tickets_ayuda` y `super_ticket_ayuda_mensajes`; los registros guardan `empresa_id` para trazabilidad multiempresa sin mezclar tickets entre empresas.
+- Permisos: creacion empresarial validada por alcance de empresa; administracion central exclusiva de `super_administrador`.
+
+2026-05-12: Carrusel publico con tarjetas consistentes
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: la barra horizontal de sistemas restantes en `index.html` mantiene tarjetas del mismo tamano que las 6 tarjetas destacadas superiores.
+- UX: el carrusel conserva navegacion por flechas izquierda/derecha y mantiene los modulos del sistema debajo.
+- Alcance: no cambia backend, permisos, tablas ni dependencias.
+
+2026-05-12: Seguridad VPS y puerto SSH 49222
+- Modulos afectados: `deploy`, `operacion_vps`, `seguridad`, `arranque_local`.
+- Cambio operativo: SSH queda escuchando solo en el puerto `49222`; el puerto `22` queda cerrado despues de validar conexion externa por el puerto nuevo.
+- Integracion local: despliegue, tuneles PostgreSQL, RustDesk remoto y escaneo VPS quedan alineados con el puerto `49222`.
+- Alcance: no cambia backend de negocio, permisos empresariales, tablas ni dependencias externas.
+
+2026-05-12: Portada publica con tarjetas destacadas y carrusel
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: la portada separa la oferta de sistemas en 6 tarjetas principales y un carrusel horizontal para las demas tarjetas.
+- UX: el carrusel usa flechas de navegacion, conserva tarjetas en una sola hilera y deja los `Modulos del sistema` inmediatamente despues de esta barra.
+- Alcance: no cambia contratos API, permisos, tablas, backend ni dependencias externas.
+
+2026-05-12: Fotos del index en landing descriptiva
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: `descripcion_de_los_sistemas.html` reutiliza la foto grande de las tarjetas del index (`imagen_secundaria_url`) dentro de cada tarjeta descriptiva.
+- UX: la landing conserva continuidad visual entre `index.html` y la descripcion ampliada; el logo del sistema se mantiene como apoyo pequeno.
+- Alcance: no cambia backend, permisos, tablas ni dependencias.
+
+2026-05-12: VPS portable 100% Docker
+- Modulos afectados: `deploy`, `operacion_vps`, `seguridad`, `staging`, `backups`.
+- Cambio funcional: el despliegue oficial permite dejar backend, frontend, PostgreSQL, TLS/Nginx publico, certificados, OnlyOffice opcional, voz IA opcional y RustDesk opcional dentro de Docker.
+- Operacion: `deploy/scripts/vps-docker-edge-up.sh` mueve `80/443` a `pcs-edge` con confirmacion explicita y `deploy/scripts/vps-docker-edge-renew.sh` renueva certificados con Certbot en contenedor.
+- Portabilidad: el traslado futuro a otro VPS depende de restaurar volumenes Docker, copiar `deploy/.env.platform` privado y levantar Compose con perfiles necesarios.
+- Alcance: no cambia base de datos de la aplicacion, permisos empresariales, rutas de negocio ni dependencias Go.
+
+2026-05-12: Explorador de Archivos super
+- Modulos afectados: `super_administrador`, `seguridad`, `operacion_vps`.
+- Cambio funcional: el panel super incorpora `Explorador de Archivos` para navegar por carpetas del filesystem visible para el backend en el VPS.
+- UX: la vista presenta raices, ruta editable, boton de subir a carpeta padre, recarga y tabla con nombre, tipo, tamano, fecha, permisos y ruta.
+- Seguridad: modo solo lectura, exclusivo de `super_administrador`; no hay lectura de contenido, descargas, cargas, edicion ni borrado.
+- Alcance: no cambia bases de datos, permisos empresariales, tablas ni dependencias.
+
+2026-05-12: Retiro de Nextcloud y cuota DB empresarial
+- Modulos afectados: `administrar_empresa`, `super_administrador`, `permisos`, `licencias`, `backups`, `postgresql`, `deploy`.
+- Cambio funcional: `nextcloud` deja de ser modulo empresarial, licencia visible y servicio VPS administrado por el sistema.
+- UX: `super_administrador > Configuracion > Limitaciones` reemplaza la cuota Nextcloud por `Base de datos por empresa (tamano maximo, GB)`.
+- Backend: `/api/empresa/nextcloud` y `/super/api/config/nextcloud` quedan retirados; el arranque elimina credenciales legacy y el panel PostgreSQL muestra cuota/uso/estado por empresa.
+- Operacion: el Compose oficial ya no define Nextcloud y `deploy/scripts/vps-remove-nextcloud.sh` retira contenedores legacy.
+
+2026-05-12: Regreso a estaciones desde ultimos movimientos de caja
+- Modulos afectados: `estaciones`, `caja`.
+- Cambio funcional: `web/administrar_empresa/ultimos_movimientos_de_caja.html` agrega la accion `Regresar a estaciones` junto a `Actualizar`.
+- UX: el enlace conserva `empresa_id` para volver al tablero de estaciones de la misma empresa.
+- Alcance: sin cambios de backend, permisos, tablas ni dependencias.
+
+2026-05-12: Login operativo simplificado y recuperacion de invitacion
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `login_usuario`.
+- Cambio funcional: `login_usuario.html` retira selector de apariencia, acceso al inicio, acceso de administradores y enlaces redundantes del formulario principal.
+- UX: el login muestra solo acciones necesarias: recuperar contrasena y recuperar email de invitacion.
+- Backend: se agrega `POST /api/empresa/usuarios/recuperar_invitacion`, publico con reCAPTCHA y respuesta enmascarada, que reenvia la invitacion solo si el usuario ya existe, esta activo y aun no completo su contrasena.
+- Seguridad: el reenvio genera un nuevo token de invitacion de 48 horas y no revela si el correo existe o si ya esta registrado.
+
+2026-05-12: Registro de usuarios operativos solo por invitacion
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `administrar_empresa`, `permisos`.
+- Cambio funcional: el alta de usuarios operativos queda cerrada al enlace de invitacion enviado por el administrador; el primer password exige `token_invitacion`, documento, contrato vigente y reCAPTCHA.
+- Seguridad: el token de invitacion se valida contra `users.email_confirm_token`, vence a las 48 horas, se consume al crear la contrasena y en ese mismo paso confirma el correo.
+- UX: `login_usuario.html` ya no presenta un registro publico abierto; si no hay enlace de invitacion, informa que debe solicitar reenvio al administrador.
+- Permisos: al completar invitacion o iniciar sesion se crea sesion, se persiste `empresa_id`, se redirige a `administrar_empresa.html?id=...` y el panel carga rol/permisos desde `/api/empresa/permisos_contexto`.
+- Alcance: no agrega dependencias ni columnas; reutiliza los campos existentes de confirmacion en `users`.
+
+2026-05-12: Tema automatico en login de usuarios operativos
+- Modulos afectados: `autenticacion`, `login_usuario`, `apariencia`.
+- Cambio funcional: `login_usuario.html` carga automaticamente el tema claro/oscuro desde la cookie `pcs_theme` del navegador antes de usar `localStorage`.
+- UX: la pantalla queda sincronizada con la apariencia del ultimo usuario que inicio sesion o cambio tema en ese navegador, evitando que un valor local antiguo fuerce otro color.
+- Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
+
+2026-05-12: Ayuda contextual en CRM unificado
+- Modulos afectados: `crm_unificado`, `administrar_empresa`.
+- Cambio funcional: el menu del CRM incorpora un boton inferior `Ayuda` y el modulo muestra una pestana dedicada que comienza definiendo CRM como Gestion de Relaciones con Clientes.
+- UX: la ayuda explica el uso de tablero, leads, seguimientos, cotizaciones, forecast, metas y embudo documental, y recuerda que CRM no duplica clientes, ventas ni facturacion.
+- Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
+
+2026-05-12: Carritos adaptables por tipo de empresa
+- Modulos afectados: `carritos`, `ventas`, `administrar_empresa`, `plantillas_integracion`.
+- Cambio funcional: la tarjeta de totales del carrito usa el contexto `vertical_scope` de `/api/empresa/permisos_contexto` para presentar nombres de cuenta, cliente, servicios, productos, tiempos, total y saldo acordes al negocio activo.
+- Gobernanza: el carrito sigue siendo el nucleo unico de venta/pago/facturacion por `empresa_id`; la adaptacion es de UX y nomenclatura, sin duplicar modelos por vertical.
+- Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
+
+2026-05-12: Gimnasio empresarial
+- Modulos afectados: `gimnasio`, `administrar_empresa`.
+- Cambio funcional: el modulo presenta un tablero empresarial con salud operativa, alertas ejecutivas, acciones rapidas, busqueda/filtro global y estados visuales por tabla.
+- UX: el menu de gimnasio queda agrupado por Direccion, Comercial, Operacion deportiva y Acceso; la pagina principal muestra el logo del vertical y mantiene el flujo de socios, planes, entrenadores, clases, inscripciones, asistencias, pagos y acceso.
+- Gobernanza: los datos siguen aislados por `empresa_id` y el modulo conserva la integracion con clientes, servicios, ventas y pagos centrales sin duplicar el nucleo comercial.
+- Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
+
+2026-05-12: Configuracion avanzada del super administrador
+- Modulos afectados: `super_administrador`, `configuracion_avanzada`.
+- Cambio funcional: la pagina `web/super/configuracion_avanzada.html` presenta sus ajustes globales con el mismo menu lateral agrupado usado por Administrar empresa.
+- UX: conserva busqueda por seccion, navegacion interna a tarjetas y agrega grupos plegables con iconos y colapso movil.
+- Alcance: no cambia permisos, endpoints, tablas, rutas de backend ni dependencias.
+
+2026-05-12: Nucleo configurable desde plantilla de tipo de empresa
+- Modulos afectados: `preconfiguracion_tipos_empresa`, `configuracion_guiada`, `estaciones`, `usuarios`, `productos/servicios`, `roles/licencias`.
+- Cambio funcional: el JSON de plantilla incorpora `adaptacion_nucleo` para declarar que usuarios operativos, productos/servicios cobrables y estaciones/recurso viven en el nucleo comun.
+- Backend: al aplicar una plantilla se guarda `preconfiguracion_tipo_empresa_adaptacion_nucleo` en preferencias de empresa y `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`.
+- Configuracion: una estacion puede representar estacion, apartamento, puesto de belleza, bahia, vehiculo/carro, aula, consultorio, oficina o cualquier recurso definido por la plantilla.
+- Frontend super: `web/super/preconfiguracion_tipos_empresa.html` muestra una vista `Nucleo configurable` y envia `adaptacion_nucleo` al guardar.
+- Gobernanza: no se duplican usuarios, clientes, productos, servicios, ventas ni pagos por vertical; solo se cambia la configuracion y nomenclatura del nucleo universal.
+
+2026-05-12: Matriz profesional de 30 plantillas
+- Modulos afectados: `plantillas_integracion`, `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `administrar_empresa`, `roles/licencias`, `reportes`.
+- Cambio funcional: el contrato `/api/*/plantillas_integracion/catalogo` publica exactamente 30 plantillas canonicos: 10 clasicos reales y 20 nuevos como plantillas reales sobre el mismo nucleo comun.
+- Backend: cada item visible publica `professional_ready`, `readiness_score`, `readiness_checks`, `configuration_scope`, `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables`, `financial_reports` y, cuando aplica, `fused_modules`, `support_modules` y `similar_templates`; la prueba de contrato exige preparacion profesional completa y bloquea alias/soportes como plantillas independientes.
+- Frontend: `web/administrar_empresa/plantillas_integracion.html` agrega panel `Perfil activo`, KPIs de contrato, ventas/finanzas, reportes y configuracion, y marca cada vertical como `Profesional` o `Brecha`.
+- Configuracion: el acceso `linkPlantillasIntegracion` se presenta como `Adaptacion por tipo`, manteniendo permiso `seguridad:R` y usando `/api/empresa/permisos_contexto` para identificar el vertical activo de la empresa.
+- Gobernanza: no se crean ventas, clientes, productos, pagos, ingresos, egresos ni reportes paralelos; la matriz audita que cada vertical opere como plantilla configurable del programa universal.
+- Finanzas: todos los plantillas deben enviar ingresos y egresos al nucleo por ventas/pagos, `empresa_finanzas_movimientos`, conciliacion/tesoreria y reportes financieros consolidados.
+- Fusion: `consultorio_odontologico` queda dentro de `odontologia`, `taxi` dentro de `taxi_system`, y `turnos_atencion`/`turnos` quedan como soporte transversal.
+
+2026-05-12: Licencias ocultables para clientes
+- `licencias`: la bandera `activo` del catalogo se usa como visibilidad comercial. `activo=1` muestra la licencia a clientes; `activo=0` la mantiene administrable pero oculta y sin checkout publico.
+- `pagos`: los flujos Wompi, Nequi, Epayco y activacion sin pago bloquean licencias ocultas antes de iniciar o confirmar un checkout nuevo.
+- `super_administrador`: la pantalla de licencias muestra acciones `Mostrar/Ocultar` y filtro `Visibilidad`.
+
+2026-05-12: Indicadores economicos compactos en panel empresarial
+- `administrar_empresa`: el panel inicial muestra los indicadores USD/COP, EUR/COP, criptoactivos e indices en una tabla compacta para escritorio.
+- UX: la tabla agrupa dos indicadores por fila para ocupar menos altura; en movil se conserva el formato de tarjetas compactas.
+- Alcance: reutiliza `/api/public/market_symbol` y servicios publicos existentes, sin cambios de permisos ni backend.
+
+2026-05-12: Enlace Probar Gratis del index
+- `index_publico`: las tarjetas publicas abren la ficha del sistema elegido en `/descripcion_de_los_sistemas.html`, conservando modulo, tipo de empresa, titulo, descripcion, secciones y ancla.
+- `portal_publico`: la ruta legacy `/descripcion_de_los_sistemas.ht` sigue disponible como compatibilidad servida como HTML, no como descarga.
+- `autenticacion`: ambas rutas descriptivas son publicas exactas en `AuthMiddleware`; no exponen paneles ni datos empresariales.
+
+2026-05-12: Apariencia claro/oscuro del Centro de mando
+- `super_administrador`: `web/super/licencias_resumen.html` deja de usar una paleta fija clara y pasa a consumir las variables globales de tema para fondos, tarjetas, texto, bordes, estados, graficas y score.
+- UX: la pagina aplica temprano el tema guardado en `localStorage`/cookie para funcionar bien dentro del iframe del panel super o abierta directamente.
+- Alcance: no cambia endpoints, permisos, roles, tablas ni dependencias.
+
+2026-05-12: Centro de mando super reconstruido
+- `super_administrador`: `web/super/licencias_resumen.html` queda como consola ejecutiva de mando con score operativo, KPIs profesionales, infraestructura VPS, PostgreSQL, alertas, errores, servicios, negocio SaaS y controles de gobierno.
+- Integraciones: consume `/super/api/metrics/current`, `/super/api/metrics/history`, `/super/api/postgres/performance`, `/super/api/alertas_sistema`, `/super/api/errores`, `/super/api/servidores`, `/super/api/licencias`, `/super/api/empresas` y `/super/api/consumos`.
+- Alcance: no crea endpoints, tablas, permisos ni dependencias; reemplaza el frontend anterior completo por una vista operativa responsive.
+
+2026-05-11: Alcance vertical por licencia
+- `licencias`: filtra catalogo por `tipo_id`, valida compatibilidad licencia/empresa antes del checkout y al activar pagos manuales, gratuitos, Wompi o Epayco.
+- `roles/licencias`: agrega `vertical_scope` al contexto efectivo de permisos para ocultar y bloquear plantillas no correspondientes al tipo de empresa activo.
+- `preconfiguracion_tipos_empresa`: la activacion de licencia reaplica plantillas de forma idempotente y sincroniza plantillas clasicos con el nucleo cuando existe funcion historica.
+- `administrar_empresa`: el menu empresarial queda limpio por tipo de empresa; los modulos universales siguen dependiendo de licencia y rol, no del vertical.
+
+2026-05-11: 2FA del login desde configuracion avanzada
+- Modulos afectados: `autenticacion`, `super_administrador`, `configuracion_avanzada`, `seguridad`.
+- Cambio funcional: `login.html` ya no muestra el campo `Codigo 2FA` de forma permanente; lo habilita con `ADMIN_2FA_LOGIN_ENABLED` publicado por `/config.js`.
+- Seguridad: el backend exige OTP solo cuando la configuracion global `security.admin_2fa.enabled` esta activa y la cuenta administrativa tiene TOTP confirmado.
+- Operacion: Configuracion avanzada agrega una tarjeta `2FA login` para activar/desactivar la exigencia global; la pantalla legacy `2FA super` fue retirada del panel y no debe volver a enlazarse.
+- QA: se agregan pruebas puras para fijar que el switch global gobierna la exigencia de OTP.
+
+2026-05-11: Catalogos publicos de plantillas sin sesion
+- Modulos afectados: `plantillas_nuevas`, `plantillas_integracion`, `portal_publico`, `autenticacion`.
+- Cambio funcional: los endpoints `/api/public/plantillas_nuevas/catalogo` y `/api/public/plantillas_integracion/catalogo` quedan disponibles sin cookie de administrador, como corresponde a su contrato publico.
+- Seguridad: se mantiene protegida la administracion; solo se abre el catalogo comercial/operativo de solo lectura.
+- QA: el middleware de autenticacion tiene prueba para ambas rutas publicas.
+
+2026-05-11: Sincronizacion idempotente de pagos en plantillas clinico/fitness
+- Modulos afectados: `odontologia`, `gimnasio`, `carritos`, `ventas`, `pagos`.
+- Gobernanza: no se agregan tablas, permisos, dependencias ni circuitos paralelos; se refuerza la regla de nucleo unico para ventas/pagos.
+
+2026-05-11: Veinte plantillas nuevas como plantillas reales
+- Modulos afectados: `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `licencias`, `index_publico`, `super_administrador`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
+- Cambio funcional: los 20 plantillas nuevas quedan en produccion masiva con ranking 1-20, preconfiguracion, tipos de empresa, licencias recomendadas, permisos, flujo de venta y reportes.
+- Producto: `operador_turistico`, `colegio_academia`, `guarderia_infantil`, `inmobiliaria_comercial`, `seguridad_privada`, `club_deportivo`, `funeraria_exequial`, `parque_recreativo`, `cooperativa_fondo` y `capacitacion_empresarial` tambien quedan listos para venta como plantillas reales.
+- Gobernanza: todos siguen operando como plantillas sobre el nucleo unico; no se crean ventas, clientes, productos ni pagos paralelos.
+
+2026-05-11: Portada publica alineada con modulos y plantillas reales
+- Modulos afectados: `index_publico`, `plantillas_nuevas`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `tickets_ayuda`, `calidad_procesos`, `facturacion`.
+- Cambio funcional: las tarjetas del index y los valores por defecto de `/api/public/pagina_principal` presentan los 20 plantillas nuevas como operativos de produccion masiva cuando el catalogo los marca como reales.
+- Producto: las 20 plantillas nuevas quedan publicables como `Probar gratis`.
+- Gobernanza: las tarjetas refuerzan que ventas, clientes, productos, pagos, facturacion y reportes viven en el nucleo unico, no en plantillas paralelos.
+
+2026-05-11: Fases de integracion profesional de plantillas
+- Modulos afectados: `plantillas_nuevas`, `administrar_empresa`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
+- Cambio funcional: el menu empresarial solo muestra plantillas que estan integrados como plantilla o soporte transversal; los plantillas clasicos con duplicados reales quedan ocultos hasta migrar al nucleo.
+- Catalogo: los 20 plantillas nuevas se declaran como `plantilla_integrada_nucleo` y comparten clientes, productos/servicios, ventas, pagos, facturacion, reportes y seguridad.
+- Frontend: `web/js/plantillas_integracion_catalogo.js` centraliza la decision visible/oculto y `web/js/administrar_empresa.js` la aplica antes de permisos y licencias.
+- Backend: los catalogos de plantillas nuevas exponen estado de integracion y el test de contrato impide publicar elementos sin esa metadata.
+- Gobernanza: no se elimina codigo funcional en esta fase; se oculta lo no integrado y se documenta la matriz para fusionar solo duplicados reales.
+
+2026-05-11: Preconfiguraciones conectadas a matriz extendida de plantillas
+- Modulos afectados: `preconfiguracion_tipos_empresa`, `plantillas_nuevas`, `roles/licencias`, `ventas`, `pagos`, `reportes`.
+- Cambio funcional: cada preconfiguracion normalizada puede incluir `integracion_vertical` con decision, prioridad de produccion masiva, modulos activados, tablas tocadas, permisos, flujo de venta y reportes.
+- Decision comercial: se priorizan los 20 plantillas nuevas para produccion masiva con ranking 1-20 y preconfiguracion conectada a la matriz extendida.
+- Alcance: cada vertical nuevo activa modulos, permisos, flujo de venta y reportes sobre el nucleo unico, sin duplicar clientes, productos, ventas ni pagos.
+- Backend: `/api/empresa/plantillas_nuevas/catalogo`, `/super/api/plantillas_nuevas/catalogo` y `/api/public/plantillas_nuevas/catalogo` exponen `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`.
+- Plan de producto: `documentos/plan_plantillas_produccion_masiva_2026-05-11.md`.
+
+2026-05-11: Gobierno super de plantillas produccion masiva
+- Modulos afectados: `super_administrador`, `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `licencias`.
+- Cambio funcional: se agrega `web/super/plantillas_produccion_masiva.html` para que super administrador vea KPIs, filtros, ranking, decision, permisos, flujo de venta y reportes de los 20 plantillas nuevas.
+- Navegacion: `web/super_administrador.html` enlaza `Plantillas 20` dentro de Licencias y `web/js/super_administrador.js` permite restaurar esa pagina como pagina principal del panel super.
+- Operacion: la vista consume `/super/api/plantillas_nuevas/catalogo`, permite filtrar entre todos, produccion y no listos, buscar por modulo/permisos/reportes y exportar CSV.
+- Acciones: cada fila enlaza a `Tipos de empresa`, `Preconfiguraciones` y `Licencias` con parametros `q`, `vertical` o `modulo`; esas paginas aplican el filtro inicial para aterrizar en el vertical correcto.
+- Readiness: la vista cruza `/super/api/plantillas_nuevas/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licenciasactivo=1` para marcar `Listo venta` solo si el vertical esta en produccion masiva, tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluya el modulo.
+- Aseguramiento: `Asegurar 20` ejecuta `POST /super/api/plantillas_nuevas/catalogoaction=asegurar_20_licencias` y llama `EnsureNuevasPlantillasProduccionMasivaLicencias` para crear/actualizar tipos, preconfiguraciones y cuatro planes recomendados por cada vertical real. `asegurar_v1_licencias` queda como alias compatible.
+- Seguridad: no se agregan permisos ni endpoints nuevos; se reutiliza el alcance autenticado del panel super y el rol `control_super_administrador` conserva su navegacion limitada.
+
+2026-05-11: Sincronizacion segura desde matriz de plantillas
+- Navegacion: el acceso `Matriz de integracion` queda dentro de Administrar empresa > Configuracion > Base empresarial, usando el mismo `linkPlantillasIntegracion` y permiso `seguridad:R`.
+- Seguridad: la pantalla consulta `/api/empresa/permisos_contexto`, exige pagina visible o permiso de creacion del modulo y confirma la accion antes del POST. El endpoint vertical sigue siendo la autoridad final por rol, licencia y `empresa_id`.
+- UX: se agrega KPI `Permitidas` para diferenciar sincronizaciones existentes de sincronizaciones disponibles para el usuario actual.
+
+2026-05-11: Matriz extendida de plantillas plantillas
+- Modulos afectados: `plantillas_integracion`, `administrar_empresa`, `roles/licencias`, `reportes`.
+- Cambio funcional: cada vertical visible declara que plantilla activa, que tablas toca, que permisos requiere, que flujo de venta usa y que reportes produce.
+- Backend: el catalogo agrega `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`, con prueba que impide publicar plantillas visibles sin esa metadata.
+
+2026-05-11: Gimnasio integrado al nucleo
+- Modulos afectados: `gimnasio`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: socios nuevos se enlazan a clientes centrales; planes nuevos se enlazan a servicios vendibles; pagos de gimnasio generan carrito, item de servicio y cierre de venta central.
+- Gobernanza: gimnasio vuelve a estar visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para fitness, acceso y agenda, no para duplicar el circuito comercial.
+
+2026-05-11: Odontologia integrada al nucleo
+- Modulos afectados: `odontologia`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: pacientes nuevos se enlazan a clientes centrales; tratamientos nuevos se enlazan a servicios vendibles; pagos odontologicos generan carrito, item de servicio y cierre de venta central.
+- Estabilidad: el esquema asegura columnas de integracion antes de crear indices PostgreSQL y la pantalla limpia el aviso de carga parcial cuando las consultas se recuperan correctamente.
+- Gobernanza: odontologia queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para datos clinicos y operacion especializada, no para duplicar clientes, servicios, ventas o pagos.
+
+2026-05-11: Parqueadero integrado al nucleo
+- Modulos afectados: `parqueadero`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: al cobrar salida, el ticket genera venta central en carrito, item de servicio y pago central con referencia al codigo del ticket.
+- Gobernanza: parqueadero queda visible como `plantilla_integrada_nucleo`; su tabla propia queda para operacion de parking y no para duplicar ventas o pagos.
+
+2026-05-11: Taxi system integrado al nucleo
+- Modulos afectados: `taxi_system`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: clientes registrados o invitados se enlazan con clientes centrales; viajes completados con tarifa generan carrito, item de servicio y pago central.
+- Gobernanza: taxi system queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para despacho, movilidad, GPS y seguimiento, no para duplicar clientes, ventas o pagos.
+
+2026-05-11: Domicilios integrado al nucleo
+- Modulos afectados: `domicilios`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: pedidos nuevos se enlazan a clientes centrales; productos de menu se sincronizan como servicios vendibles; pedidos entregados generan carrito, items de servicio, tarifa/propina y pago central normalizado.
+- Gobernanza: domicilios queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para marketplace/logistica y no para duplicar clientes, ventas o pagos.
+
+2026-05-11: Apartamentos turisticos integrado al nucleo
+- Modulos afectados: `apartamentos_turisticos`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: apartamentos/unidades se enlazan a servicios vendibles; reservas nuevas se enlazan a clientes centrales; el checkout genera carrito, item de alojamiento, limpieza e impuesto calculado por carrito y pago central normalizado.
+- Gobernanza: apartamentos turisticos queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para operacion de alojamiento, no para duplicar clientes, ventas o pagos.
+
+2026-05-11: Propiedad horizontal integrada al nucleo
+- Modulos afectados: `propiedad_horizontal`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: propietarios/residentes se enlazan a clientes centrales; unidades y cargos se enlazan a servicios vendibles; recaudos generan carrito, item de servicio y pago central normalizado.
+- Gobernanza: propiedad horizontal queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para copropiedad, no para duplicar clientes, servicios, ventas o pagos.
+
+2026-05-11: Alquileres integrado al nucleo
+- Modulos afectados: `alquileres`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: clientes de contratos se enlazan a clientes centrales; activos y tarifas se enlazan a servicios vendibles; contratos con valor generan carrito, item de servicio y pago central cuando quedan sin saldo.
+- Gobernanza: alquileres queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para operacion de renta de activos, no para duplicar clientes, servicios, ventas o pagos.
+
+2026-05-11: Drogueria/farmacia validada al nucleo
+- Modulos afectados: `drogueria_farmacia`, `inventario`, `compras`, `clientes`, `ventas`, `facturacion`, `administrar_empresa`.
+- Cambio funcional: drogueria/farmacia queda visible como plantilla integrada porque usa `empresa_modulos_colombia_*` para expediente sanitario y no crea inventario, producto, venta ni pago paralelo.
+- Frontend: la pagina de drogueria/farmacia declara explicitamente que la gestion sanitaria opera sobre productos, inventario, ventas y facturacion centrales.
+- Gobernanza: lotes, INVIMA, formulas, controlados, dispensacion, devoluciones y farmacovigilancia quedan como especialidad sanitaria; los cobros y existencias siguen en el nucleo.
+
+2026-05-11: AIU construccion integrado al nucleo
+- Modulos afectados: `aiu_construccion`, `clientes`, `servicios`, `carritos`, `ventas`, `facturacion`, `reportes`, `administrar_empresa`.
+- Cambio funcional: contratos AIU sincronizan cliente y servicio central; conceptos de obra crean servicios vendibles y las facturas AIU enlazan carrito/item central sin recalcular IVA ni retenciones en el carrito.
+- Gobernanza: capitulos, AIU, retenciones, anticipo, garantia, avance, riesgo y auditoria tecnica quedan como especialidad de construccion; clientes, servicios, ventas y facturacion quedan en el nucleo.
+
+2026-05-11: Catalogo API de integracion de plantillas clasicos
+- Modulos afectados: `plantillas_integracion`, `administrar_empresa`, `super_administrador`, `roles/licencias`.
+- Backend: `backend/handlers/empresa_plantillas_integracion.go` crea el contrato y `backend/main.go` registra `/api/public/plantillas_integracion/catalogo`, `/api/empresa/plantillas_integracion/catalogo` y `/super/api/plantillas_integracion/catalogo`.
+- Frontend: `web/js/administrar_empresa.js` intenta cargar el contrato de empresa antes de aplicar permisos de menu y conserva `web/js/plantillas_integracion_catalogo.js` como fallback offline.
+- UI: `web/administrar_empresa.html` muestra un indicador compacto de fuente y conteo de plantillas visibles/ocultos para auditoria rapida del panel.
+- QA: `backend/handlers/empresa_plantillas_integracion_test.go` impide catalogar como visible un vertical con duplicados del nucleo.
+
+2026-05-11: Panel super profesional
+- Modulos afectados: `super_administrador`, `licencias`, `administradores`, `roles_permisos`, `seguridad`, `infraestructura`, `postgresql`, `integracion_ia`, `ayuda`.
+- Cambio funcional: el menu principal del super administrador queda reducido a los accesos operativos necesarios para gobierno diario y control de plataforma.
+- Frontend: `web/super_administrador.html` agrega cabecera compacta PCS y elimina del menu principal accesos secundarios como preconfiguraciones, asesor, pagina principal, contrato, frecuencia FE, voz IA, informacion IA portal y formatos de email.
+- Navegacion: `web/js/super_administrador.js` solo restaura desde sesion local paginas incluidas en el panel visible.
+- Seguridad: no se abren permisos nuevos, no se eliminan endpoints ni se cambian roles; las rutas retiradas del menu siguen protegidas por los controles existentes.
+
+2026-05-11: Limpieza PostgreSQL-only
+- Modulos afectados: `db`, `finanzas`, `propinas`, `carritos`, `codigos_descuento`, `operacion_vps`, `documentacion`.
+- Cambio funcional: se retiran ramas residuales de motor legado y las verificaciones de indices pasan a catalogos PostgreSQL.
+- Frontend: helpers de fecha en carrito y codigos de descuento usan nombres neutrales asociados al backend.
+- Operacion: scripts de sincronizacion y actualizacion dejan de contemplar extensiones de motores retirados y se depuran artefactos locales generados por perfiles temporales.
+- Gobernanza: PostgreSQL queda como unico motor permitido; no se agregan dependencias externas, tablas ni cambios en `go.mod`.
+
+2026-05-11: Centro de mando profesional super
+- Modulos afectados: `super_administrador`, `metricas`, `infraestructura`, `postgresql`, `alertas_sistema`, `errores_sistema`.
+- Cambio funcional: `web/super/licencias_resumen.html` agrega una lectura ejecutiva del VPS y del proyecto con estado general, KPIs de capacidad, PostgreSQL, errores, alertas, servicios y consumo IA.
+- Integracion: reutiliza endpoints existentes de metricas, PostgreSQL, alertas, errores, servicios VPS, procesos y consumos; no introduce endpoints nuevos, dependencias externas ni cambios de esquema.
+- Operacion: agrega accesos directos a alertas, administracion PostgreSQL y auditoria de seguridad VPS para cerrar incidentes desde el mismo panel.
+
+2026-05-11: Portada publica y Probar Gratis para 20 nuevas empresas
+- Modulos afectados: `portal_publico`, `plantillas_nuevas`, `licencias`, `registro`.
+- Cambio funcional: las tarjetas publicas de las 20 nuevas empresas muestran parrafos descriptivos largos en lugar de textos resumidos.
+- Catalogo: `web/js/plantillas_nuevas_catalogo.js` incorpora `description` por cada vertical, reutilizable por index, detalle publico, licencias y futuras paginas comerciales.
+- Frontend: `web/index.html` prioriza la descripcion larga y agrega contexto al boton `Probar Gratis` con modulo, tipo de empresa, titulo, descripcion y secciones.
+- Detalle publico: `web/descripcion_de_los_sistemas.ht` muestra fichas mas especificas para cada vertical y conserva ese contexto al enviar al registro de prueba.
+
+2026-05-10: Carritos en modo tactil
+- Modulos afectados: `carritos`, `estaciones`, `venta_directa`, `productos`.
+- Cambio funcional: se agrega `modo_pantalla_tactil` a la configuracion unificada del carrito por empresa/estacion.
+- Frontend: `carrito_de_compras.html` adapta botones, campos, toolbar, lector, cobro, resumen y tarjetas para uso con dedo en tablet, pantalla POS o monitor tactil.
+- Productos: `buscar_producto_botones.html` recibe el modo tactil desde el carrito y agranda grilla, tarjetas de producto, buscador y acciones para agregar productos con pulsaciones amplias.
+- Configuracion: la bandera se administra desde `configuracion_carrito_de_compra_empresa.html` y `configuracion_de_estaciones.html`, respetando herencia global o sobreescritura por estacion.
+- Persistencia: reutiliza `estaciones_config` en preferencias de estacion; no introduce tablas, endpoints ni dependencias externas.
+
+2026-05-10: Alertas automaticas del sistema super
+- Modulos afectados: `super_administrador`, `metricas`, `gmail_smtp`, `infraestructura`.
+- Cambio funcional: se agrega modulo privado `Alertas del sistema` para que el super administrador configure destino, umbrales y enfriamiento de notificaciones automaticas.
+- Backend: nuevo endpoint `/super/api/alertas_sistema` con `GET` de configuracion/estado/historial, `PUT` de configuracion, `POSTaction=test` para prueba SMTP y `POSTaction=evaluate` para evaluacion manual.
+- Worker: `super.alertas_worker` evalua cada minuto disco VPS, trafico, sesiones administrativas activas y conexiones PostgreSQL; usa Gmail SMTP existente y registra historial en base super.
+- Frontend: nueva pantalla `web/super/alertas_sistema.html` con submenu interno de configuracion, estado actual e historial.
+- Integracion: reutiliza la configuracion Gmail de `Configuracion avanzada` y el limite Hostinger de trafico si esta configurado; no introduce dependencias externas.
+- Seguridad: solo `super_administrador` puede abrir la pagina y consumir el API.
+
+2026-05-10: Roles finos, paginas nuevas y ayuda super privada
+- Modulos afectados: `roles/licencias`, `administrar_empresa`, `super_administrador`, `ayuda`, `crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`.
+- Cambio funcional: el sistema de roles distingue funciones que antes colgaban de modulos amplios, permitiendo administrar visibilidad de paginas, acciones R/C/U/D/A y wrappers API con mayor precision.
+- Backend: se amplian `permissionModulesCatalogOrdered`, `permissionPagesCatalogOrdered`, `roleAllowsModuleAction` y wrappers `WithEmpresa*Permissions` para los nuevos modulos.
+- Frontend: `web/js/administrar_empresa.js` queda alineado con el catalogo backend para que los botones del menu y submenus respondan al mismo modulo/accion.
+- Licencias: se conserva fallback de compatibilidad para licencias antiguas basadas en `ventas`, `seguridad`, `finanzas`, `inventario` o `clientes`.
+- Ayuda: `web/super_administrador.html` agrega boton `Ayuda super administrador` hacia `/ayuda/ayuda.html`, protegido exclusivamente para `super_administrador`.
+- Documentacion: se agrega `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
+
+2026-05-06: Modulos empresariales Colombia faltantes
+- Modulos afectados: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `calidad_procesos`, `tickets_ayuda`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega una familia profesional de modulos empresariales para bancos/pagos masivos, gestion documental, KYC/KYB y LAFT, contratos/obligaciones, mesa de ayuda y calidad/procesos.
+- Backend: APIs `/api/empresa/bancos_pagos`, `/api/empresa/gestion_documental`, `/api/empresa/cumplimiento_kyc`, `/api/empresa/contratos_obligaciones` y `/api/empresa/calidad_procesos` sobre handler comun; los tickets de soporte usan el sistema propio `/api/empresa/tickets_ayuda`.
+- Base de datos: tablas compartidas `empresa_modulos_colombia_registros` y `empresa_modulos_colombia_eventos`, aisladas por `empresa_id` y discriminadas por `modulo`.
+- Frontend: pantallas livianas en `web/administrar_empresa/` usando `web/js/modulo_colombia_admin.js` y estilos centrales.
+- Continuacion: se agregan plantillas por modulo, filtro por estado, seguimiento profesional, cambio rapido de estado y bitacora de eventos sin duplicar UI ni tablas.
+- Reportes: cada modulo incluye reporte ejecutivo por estado, tipo, categoria y prioridad, con vencimientos, criticos abiertos, responsables faltantes, valor pendiente y recomendaciones automaticas.
+- Importacion: cada pantalla permite importar CSV con el mismo formato exportado; el backend guarda por lote, valida filas y deja bitacora de importacion.
+- Evidencias: cada registro permite adjuntar soportes por URL/ruta, tipo y descripcion; el backend valida empresa/modulo/registro y registra bitacora automatica.
+- Aprobaciones: cada registro puede solicitar aprobacion por nivel y destinatario; la decision aprueba/rechaza, registra usuario/fecha y actualiza estado cuando corresponde.
+- Tareas: cada registro puede generar compromisos con responsable, prioridad, vencimiento y estado pendiente/en proceso/cumplida/cancelada.
+- Expediente 360: cada registro tiene vista consolidada con eventos, evidencias, aprobaciones, tareas, resumen y recomendacion operativa.
+- Agenda: cada modulo presenta alertas de vencidos, proximos vencimientos, tareas y aprobaciones pendientes con severidad y acceso al expediente.
+- Cierre controlado: el cierre de un registro exige evidencia y bloquea aprobaciones pendientes o tareas abiertas, dejando bitacora.
+- Plan de accion: la agenda puede generar tareas automaticas por alerta, con prioridad segun severidad y control de duplicados abiertos.
+- Responsables: tablero de carga por responsable con registros, tareas, aprobaciones pendientes, vencidos y recomendaciones.
+- SLA: tablero de cumplimiento con semaforo, vencidos, proximos 7 dias, tareas vencidas y buckets de antiguedad.
+- Riesgo operativo: matriz con score 0-100, nivel bajo/medio/alto, factores ponderados y recomendaciones.
+- Exportacion de auditoria: CSV multi-seccion con resumen, registros, agenda, SLA, riesgo, responsables, tareas, aprobaciones, evidencias y bitacora.
+- Busqueda avanzada: filtros de backend por texto, estado, tipo, categoria, prioridad, responsable, vencidos y proximos vencimientos.
+- Acciones masivas: actualizacion controlada de estado, prioridad y responsable sobre registros seleccionados, con bitacora individual por registro.
+- Seguridad: permisos/licencias independientes por modulo, enlaces de menu y wrappers `WithEmpresa*Permissions`.
+- Documentacion: se agrega `documentos/modulos_empresariales_colombia.md`.
+
+2026-05-06: Logistica avanzada / WMS de bodega, picking, packing y despachos
+- Modulos afectados: `logistica_wms`, `inventario`, `compras`, `produccion_mrp`, `importaciones_costeo`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega modulo profesional de bodega para ubicaciones internas, picking, packing, despachos, rutas, avance por item, conteos y bitacora sin duplicar inventario.
+- Backend: nueva API `/api/empresa/logistica_wms` con acciones `dashboard`, `ubicaciones`, `ordenes`, `detalle`, `items`, `despachos`, `eventos`, `ubicacion`, `orden`, `item`, `avance_item`, `despacho` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_wms_ubicaciones`, `empresa_wms_ordenes`, `empresa_wms_items`, `empresa_wms_despachos` y `empresa_wms_eventos`, todas aisladas por `empresa_id`.
+- Seguridad: nuevo modulo de permiso/licencia `logistica_wms`, pagina `linkLogisticaWMS` y wrapper `WithEmpresaWMSPermissions`.
+- Frontend: nueva pantalla `web/administrar_empresa/logistica_wms.html` enlazada desde Inventario y compras.
+- Documentacion: se agrega `documentos/logistica_wms.md`.
+
+2026-05-06: Declaraciones Tributarias y Motor de Impuestos Colombia
+- Modulos afectados: `declaraciones_tributarias`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `centros_costo`, `cierre_fiscal`, `portal_terceros_certificados`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega modulo profesional para preparar, preliquidar y controlar declaraciones de IVA, retencion en la fuente, ReteIVA, ICA/ReteICA, impuesto al consumo, renta y regimen simple por empresa.
+- Backend: nueva API `/api/empresa/declaraciones_tributarias` con acciones `dashboard`, `declaraciones`, `calendario`, `movimientos`, `declaracion`, `preliquidar` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_declaraciones_tributarias`, `empresa_declaraciones_tributarias_movimientos` y `empresa_calendario_tributario`, todas aisladas por `empresa_id`.
+- Frontend: nueva pantalla `web/administrar_empresa/declaraciones_tributarias.html` con dashboard, KPIs, preliquidacion, edicion manual, calendario, movimientos y exportacion CSV.
+- Seguridad: nuevo modulo de permiso/licencia `declaraciones_tributarias`, enlaces `linkDeclaracionesTributarias`/`linkDeclaracionesTributariasMenu` y wrapper `WithEmpresaDeclaracionesTributariasPermissions`.
+- Documentacion: se agrega `documentos/declaraciones_tributarias.md`.
+
+2026-05-06: Portal de Terceros y Certificados Tributarios
+- Modulos afectados: `portal_terceros_certificados`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `nomina_sueldos`, `compras`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega modulo profesional para terceros externos con maestro de terceros, certificados tributarios, enlaces publicos por token, impresion, exportacion CSV y bitacora de descargas.
+- Backend: nueva API administrativa `/api/empresa/portal_terceros_certificados` y API publica `/api/public/certificados_tributarios`.
+- Frontend: nueva pantalla `web/administrar_empresa/portal_terceros_certificados.html` y pagina publica `web/visualizar_certificado_tributario_publico.html`.
+- Documentacion: `documentos/portal_terceros_certificados.md`.
+
+2026-05-06: Activos Fijos e Intangibles NIIF / Fiscal
+- Modulos afectados: `activos_fijos_niif_fiscal`, `contabilidad_colombia_avanzada`, `centros_costo`, `cierre_fiscal`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se formaliza activos fijos como modulo independiente reutilizando el nucleo contable existente, con libro maestro, PPE e intangibles, vida util NIIF y fiscal, deterioro, valor fiscal, diferencia NIIF/fiscal, seguros, mantenimientos, traslados, bajas y depreciacion por periodo.
+- Backend: nueva API `/api/empresa/activos_fijos_niif_fiscal` con acciones `dashboard`, `activos`, `depreciaciones`, `eventos`, `activo`, `depreciacion`, `evento` y `seed_demo`.
+- Frontend: nueva pantalla `web/administrar_empresa/activos_fijos_niif_fiscal.html`, enlace principal `linkActivosFijosNIIF`, enlace del centro financiero `linkActivosFijosNIIFMenu` y licencia `activos_fijos_niif_fiscal`.
+- Documentacion: `documentos/activos_fijos_niif_fiscal.md`.
+
+2026-05-06: Propiedad Horizontal / Administracion de Copropiedades
+- Modulos afectados: `propiedad_horizontal`, `roles/licencias`, `administrar_empresa`, `finanzas`, `facturacion`.
+- Cambio funcional: se agrega modulo para conjuntos residenciales, edificios, condominios y copropiedades con unidades, propietarios, residentes, cuotas, cartera, recaudos, PQR y asambleas.
+- Backend: nueva API `/api/empresa/propiedad_horizontal` con acciones `dashboard`, `config`, `unidades`, `personas`, `cargos`, `recaudos`, `pqrs`, `asambleas`, `unidad`, `persona`, `cargo`, `recaudo`, `pqr`, `asamblea` y `seed_demo`.
+- Seguridad: modulo independiente `propiedad_horizontal`, pagina `linkPropiedadHorizontal`, wrapper `WithEmpresaPropiedadHorizontalPermissions` y activacion por licencia.
+- Frontend: `web/administrar_empresa/propiedad_horizontal.html` queda enlazada desde Administrar empresa.
+- Documentacion: se agrega `documentos/propiedad_horizontal.md`.
+
+2026-05-06: Promocion por codigo de asesor en licencias
+- Modulos afectados: `asesor_comercial`, `licencias`, `checkout`, `wompi`, `epayco`.
+- Cambio funcional: el super administrador puede activar/desactivar una promocion para que el codigo de asesor comercial aplique descuento adicional configurable en compras de licencia.
+- Backend: `checkout_summary`, Wompi, Epayco y activacion sin pago reciben `asesor_id`; validan asesor activo/aceptado y aplican `licencias.asesor_promo.percent` cuando `licencias.asesor_promo.enabled` esta activo.
+- Frontend: `web/super/asesor_comercial.html` agrega check y selector de porcentaje; `web/pagar_licencia.html` recalcula el resumen cuando cambia el codigo de asesor.
+- Documentacion: se agrega `documentos/promocion_asesor_licencias.md`.
+
+2026-05-06: Cierre y bloqueo fiscal avanzado
+- Modulos afectados: `cierre_fiscal`, `contabilidad_colombia`, `finanzas`, `ventas`, `compras`, `inventario`, `facturacion`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega control formal para cerrar, revisar, bloquear y reabrir periodos fiscales/contables con motivo obligatorio, excepciones aprobadas y bitacora de intentos.
+- Backend: nueva API `/api/empresa/cierre_fiscal` con acciones `dashboard`, `politicas`, `periodos`, `excepciones`, `eventos`, `validar`, `politica`, `periodo`, `estado_periodo`, `excepcion` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_cierre_fiscal_politicas`, `empresa_cierre_fiscal_periodos`, `empresa_cierre_fiscal_excepciones` y `empresa_cierre_fiscal_eventos`, todas con `empresa_id`.
+- Integracion: el cierre/reapertura de `contabilidad_colombia` sincroniza el periodo del modulo fiscal; otros modulos pueden usar `ValidarEmpresaCierreFiscalOperacion` para bloqueo por fecha.
+- Seguridad: modulo independiente `cierre_fiscal`, paginas `linkCierreFiscal`/`linkCierreFiscalMenu`, wrapper `WithEmpresaCierreFiscalPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/cierre_fiscal.html` queda enlazada desde Finanzas y cumplimiento y desde el Centro financiero y contable.
+- Documentacion: se agrega `documentos/cierre_fiscal.md`.
+
+2026-05-06: Centros de costo y rentabilidad
+- Modulos afectados: `centros_costo`, `finanzas`, `contabilidad_colombia`, `tesoreria_presupuesto`, `compras_avanzadas`, `soportes_compras_ia`, `aiu_construccion`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se convierte el uso disperso de centros de costo en un modulo formal comparable a software contable colombiano, con maestro por sucursal/area/unidad/proyecto, reglas de imputacion, presupuesto, rentabilidad, reportes comparativos y dashboard.
+- Backend: nueva API `/api/empresa/centros_costo` con acciones `dashboard`, `centros`, `reglas`, `presupuestos`, `movimientos`, `centro`, `regla`, `presupuesto` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_centros_costo`, `empresa_centros_costo_reglas` y `empresa_centros_costo_presupuestos`, todas con `empresa_id`.
+- Integracion: el dashboard lee movimientos con `centro_costo` desde contabilidad Colombia, tesoreria, compras avanzadas, captura OCR/IA de compras y AIU construccion; no duplica finanzas ni asientos.
+- Seguridad: modulo independiente `centros_costo`, paginas `linkCentrosCosto`/`linkCentrosCostoMenu`, wrapper `WithEmpresaCentrosCostoPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/centros_costo.html` queda enlazada desde Finanzas y cumplimiento y desde el Centro financiero y contable.
+- Documentacion: se agrega `documentos/centros_costo.md`.
+
+2026-05-06: QA transversal y profesionalizacion de modulos
+- Modulos afectados: `administrar_empresa`, `cobranza`, `portal_contador`, `soportes_compras_ia`, `roles/licencias`, `configuracion`, `taxi_system`, `domicilios`, `odontologia`, `parqueadero`, `apartamentos_turisticos` y `aiu_construccion`.
+- Cambio funcional: se revisan accesos principales, enlaces, botones declarativos y dashboards con sesion super administradora sobre Motel Calipso (`empresa_id=7`).
+- Portal publico: `web/index.html` actualiza la descripcion comercial de modulos y las tarjetas fallback para incluir Cobranza, Portal contador, Captura IA/OCR de compras y gastos, AIU construccion, Parqueaderos con ticket QR y Apartamentos turisticos.
+- Backend: los dashboards de `cobranza`, `portal_contador` y `soportes_compras_ia` reutilizan consultas internas luego de validar esquema una sola vez por peticion.
+- Seguridad: `administrador_total` queda reconocido en la evaluacion local de permisos del menu con el mismo acceso total que backend ya concede; los enlaces dinamicos de archivos en Captura IA se validan antes de renderizarse.
+- QA: `go test ./... -count=1`, `git diff --check`, auditoria estatica de enlaces/botones/IDs y pruebas HTTP 200 de paginas/API principales.
+- Documentacion: se agrega `documentos/reporte_qa_modulos_2026-05-06.md`.
+
+2026-05-06: CRM y ventas avanzadas
+- Modulos afectados: `clientes`, `crm`, `ventas`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia el CRM existente sin duplicar clientes ni ventas, agregando metas comerciales, forecast, scoring de leads, agenda y conversion de lead a cotizacion.
+- Backend: nueva API `/api/empresa/crm_avanzado` con acciones `dashboard`, `metas`, `scores`, `meta`, `cotizacion_desde_lead` y `seed_demo`.
+- Base de datos: nueva tabla `empresa_crm_metas_comerciales`; se reutilizan `crm_leads`, `crm_interacciones`, `crm_campanas`, `empresa_cotizaciones_venta` y `empresa_pedidos_venta`.
+- Seguridad: se usa la licencia y permiso `crm_unificado`; la pagina `linkCRMComercial` y los endpoints `/api/empresa/crm/*` y `/api/empresa/crm_avanzado` quedan protegidos por `WithEmpresaCRMUnificadoPermissions`.
+- Frontend: desde 2026-05-14 el CRM avanzado no tiene pagina wrapper; vive dentro de `web/administrar_empresa/crm_comercial.html` y el submenu `CRM unificado` abre las vistas `forecast`/`metas` desde `modulo_menu.html?module=crm_unificado`.
+- Documentacion: se agrega `documentos/crm_ventas_avanzadas.md`.
+
+2026-05-12: CRM empresarial profesional
+- Modulos afectados: `crm_unificado`, `ventas`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: el tablero de CRM incorpora salud comercial, valor en riesgo, leads sin contacto, oportunidades estancadas, acciones priorizadas, rendimiento por responsable y canales de adquisicion.
+- Backend: `GET /api/empresa/crm_avanzado` con `action=dashboard` extiende el contrato gerencial sin agregar tablas ni dependencias; todos los calculos siguen filtrados por `empresa_id`.
+- Frontend: `web/administrar_empresa/crm_comercial.html` y `web/js/crm_comercial.js` agregan cockpit ejecutivo, plan de accion y lecturas gerenciales dentro del tablero CRM unificado.
+- Seguridad: los CRUD de leads, interacciones y campanas dejan de depender de `clientes` y pasan a `WithEmpresaCRMUnificadoPermissions`.
+- QA: se amplian pruebas unitarias de salud comercial y acciones priorizadas; la auditoria UX mantiene estado OK.
+
+2026-05-06: Inventario avanzado
+- Modulos afectados: `inventario`, `productos`, `bodegas`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia `Inventario` sin crear un modulo paralelo, agregando lotes, seriales, reservas, vencimientos y valorizacion por producto/bodega.
+- Backend: API `/api/empresa/inventario_avanzado` con acciones productivas `dashboard`, `lotes`, `seriales`, `reservas`, `valorizacion`, `lote`, `serial`, `reserva` y `confirmar_reserva`; la accion de datos demo fue retirada de la superficie productiva.
+- Base de datos: nuevas tablas `empresa_inventario_lotes_avanzados`, `empresa_inventario_seriales_avanzados` y `empresa_inventario_reservas_avanzadas`, todas con `empresa_id`.
+- Integracion: la entrada de lote alimenta `inventario_existencias` e `inventario_movimientos`, para conservar kardex, reportes y reposicion.
+- Seguridad: se reutiliza la licencia y permiso `inventario`; la pagina `linkInventarioAvanzado` queda protegida por `WithEmpresaInventarioPermissions`.
+- Frontend: `web/administrar_empresa/inventario_avanzado.html` queda enlazada desde `web/administrar_empresa/administrar_productos_menu.html` y usa selectores descriptivos de productos, bodegas, lotes, seriales y reservas en lugar de exigir IDs internos.
+- Documentacion: se agrega `documentos/inventario_avanzado.md`.
+
+2026-05-06: Compras avanzadas
+- Modulos afectados: `compras`, `proveedores`, `inventario`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia `Compras` sin duplicar modulo, agregando requisiciones internas, cotizaciones por proveedor, aprobaciones con monto autorizado y recepcion parcial/total.
+- Backend: nueva API `/api/empresa/compras_avanzadas` con acciones `dashboard`, `requisiciones`, `detalle`, `cotizaciones`, `aprobaciones`, `recepciones`, `requisicion`, `cotizacion`, `aprobar`, `recepcion` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_compras_requisiciones`, `empresa_compras_requisicion_items`, `empresa_compras_cotizaciones`, `empresa_compras_aprobaciones`, `empresa_compras_recepciones_avanzadas` y `empresa_compras_recepcion_items_avanzadas`, todas con `empresa_id`.
+- Seguridad: se reutiliza la licencia y permiso `compras`; la pagina `linkComprasAvanzadas` queda protegida por `WithEmpresaComprasPermissions`.
+- Frontend: `web/administrar_empresa/compras_avanzadas.html` queda enlazada desde el submenu `web/administrar_empresa/compras_menu.html`.
+- Requisicion y recepcion: la pantalla usa borradores dinamicos para una cantidad
+  abierta de productos; la recepcion envia varios items pendientes atomica e
+  idempotentemente bajo un mismo documento y bodega, conservando lote por item.
+- Documentacion: se agrega `documentos/compras_avanzadas.md`.
+
+2026-05-06: Importaciones y costeo de nacionalizacion
+- Modulos afectados: `importaciones_costeo`, `compras`, `inventario`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega control de importaciones internacionales con proveedor, pais, incoterm, moneda, TRM, items, costos de nacionalizacion y costo aterrizado por producto.
+- Backend: nueva API `/api/empresa/importaciones_costeo` con acciones `dashboard`, `importaciones`, `detalle`, `importacion`, `item`, `costo`, `distribuir` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_importaciones_costeo`, `empresa_importaciones_costeo_items` y `empresa_importaciones_costeo_costos`, todas con `empresa_id`.
+- Seguridad: modulo independiente `importaciones_costeo`, pagina `linkImportacionesCosteo`, wrapper `WithEmpresaImportacionesCosteoPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/importaciones_costeo.html` permite crear embarques, agregar items, cargar costos y distribuirlos por valor, peso, volumen o cantidad.
+- Documentacion: se agrega `documentos/importaciones_costeo.md`.
+
+2026-05-06: Activos fijos avanzado
+- Modulos afectados: `contabilidad_colombia_avanzada`, `activos_fijos`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia el submodulo existente de activos fijos con depreciacion por periodo, mantenimiento, traslados, bajas, eventos y resumen gerencial por empresa.
+- Backend: `/api/empresa/contabilidad_colombia_avanzada` agrega acciones `activos_resumen`, `activos_depreciaciones`, `activos_eventos`, `generar_depreciacion_activos` y `activo_evento`.
+- Base de datos: se enriquecen `empresa_contabilidad_activos_fijos` y se agregan `empresa_contabilidad_activos_depreciacion` y `empresa_contabilidad_activos_eventos`, todas con `empresa_id`.
+- Seguridad: se mantiene la licencia y wrapper de `contabilidad_colombia_avanzada`; no se crea modulo duplicado.
+- Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` agrega pestaña `Activos avanzado`.
+- Documentacion: se agrega `documentos/activos_fijos_avanzado.md`.
+
+2026-05-06: Portal contador
+- Modulos afectados: `portal_contador`, `contabilidad_colombia`, `finanzas`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega una oficina virtual para contadores y firmas contables con portafolio de clientes, obligaciones DIAN/contables, solicitudes de documentos, comunicaciones, dashboard de vencimientos y exportacion CSV.
+- Backend: nueva API `/api/empresa/portal_contador` con acciones `dashboard`, `clientes`, `obligaciones`, `solicitudes`, `comunicaciones`, `cliente`, `obligacion`, `solicitud`, `comunicacion` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_portal_contador_clientes`, `empresa_portal_contador_obligaciones`, `empresa_portal_contador_solicitudes` y `empresa_portal_contador_comunicaciones`, todas con `empresa_id`.
+- Seguridad: modulo independiente `portal_contador`, paginas `linkPortalContador`/`linkPortalContadorMenu`, wrapper `WithEmpresaPortalContadorPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/portal_contador.html` queda enlazada desde `web/administrar_empresa/finanzas_menu.html`.
+- Documentacion: se agrega `documentos/portal_contador.md`.
+
+2026-05-06: Gestion de cobranza
+- Modulos afectados: `cobranza`, `finanzas`, `cartera`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega `Gestion de cobranza` dentro del Centro financiero y contable para recuperar cartera con dashboard, cuentas priorizadas, campanas, plantillas multicanal, gestiones, promesas de pago, simulacion de envio y exportacion CSV.
+- Backend: nueva API `/api/empresa/cobranza` con acciones `dashboard`, `cuentas`, `plantillas`, `campanas`, `gestiones`, `promesas`, `plantilla`, `campana`, `gestion`, `promesa`, `marcar_promesa`, `simular_envio` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_cobranza_plantillas`, `empresa_cobranza_campanas`, `empresa_cobranza_gestiones` y `empresa_cobranza_promesas`, todas con `empresa_id`; la cartera fuente se reutiliza desde `empresa_cuentas_por_cobrar`.
+- Seguridad: modulo independiente `cobranza`, paginas `linkCobranza`/`linkCobranzaMenu`, wrapper `WithEmpresaCobranzaPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/cobranza.html` queda enlazada desde `web/administrar_empresa/finanzas_menu.html`.
+- Documentacion: se agrega `documentos/cobranza.md`.
+
+2026-05-06: Nomina Colombia avanzada
+- Modulos afectados: `nomina_sueldos`, `finanzas`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se amplia la nomina existente sin crear un modulo duplicado, agregando conceptos legales Colombia, novedades aprobables, resumen PILA y dashboard operativo por empresa.
+- Backend: la API existente `/api/empresa/nomina` incorpora acciones `conceptos_colombia`, `novedades_colombia`, `pila_colombia`, `dashboard_colombia`, `concepto_colombia`, `novedad_colombia`, `generar_pila` y `seed_colombia`.
+- Base de datos: nuevas tablas `empresa_nomina_colombia_conceptos`, `empresa_nomina_colombia_novedades` y `empresa_nomina_colombia_pila_resumen`, todas con `empresa_id`.
+- Seguridad: se reutiliza la cobertura de nomina/finanzas para evitar duplicar roles, rutas o licencias; la activacion sigue pasando por el modulo financiero y los permisos de la pagina `linkNominaSueldos`.
+- Frontend: `web/administrar_empresa/nomina_sueldos.html` agrega seccion Colombia con KPIs, conceptos, novedades y PILA adaptable a las apariencias centralizadas.
+- Documentacion: se agrega `documentos/nomina_colombia_avanzada.md`.
+
+2026-05-20: Refuerzo profesional de `nomina_sueldos`
+- Modulos afectados: `nomina_sueldos`, `asistencia_empleados`, `finanzas`, `contabilidad_colombia`, `roles/licencias`.
+- Cambio funcional: las novedades Colombia aprobadas se aplican a la liquidacion real del periodo, ajustando devengados, deducciones, IBC, salud, pension, fondo de solidaridad y neto a pagar.
+- Backend: `/api/empresa/nomina` agrega `aprobar_novedad_colombia` y `seed_motel_calipso`/`seed_profesional`; el seed crea empleados simulados, asistencia, novedades, liquidaciones, PILA y pagos para validar el ciclo completo.
+- Frontend: `web/administrar_empresa/nomina_sueldos.html` agrega cobertura profesional, boton `Crear nomina demo Motel Calipso` y acciones de aprobacion/rechazo de novedades.
+- Seguridad: se mantiene el mismo wrapper/permisos de nomina y aislamiento por `empresa_id`; no se agregan licencias ni rutas duplicadas.
+
+2026-06-03: Nomina empresarial multi-sede y preparacion DIAN
+- Modulos afectados: `nomina_sueldos`, `facturacion_electronica`, `contabilidad_colombia`.
+- Cambio funcional: las fichas de empleados y liquidaciones guardan sede y centro de costo para operar empresas con varias sedes; el dashboard muestra sedes activas y las tablas/desprendibles conservan la trazabilidad.
+- Backend: `/api/empresa/nomina` agrega consulta `documentos_electronicos_colombia` y preparacion `preparar_nomina_electronica` para construir lote de documento soporte de pago de nomina electronica por empleado, con devengados, deducciones, neto, IBC, sede y estado documental.
+- Demo: `seed_motel_calipso` distribuye empleados entre sede principal, Rodadero y administracion para probar multi-sede.
+- Seguridad: no se crea una ruta nueva ni se omite el wrapper de permisos; todo sigue filtrado por `empresa_id`.
+
+2026-05-06: Tesoreria y presupuesto
+- Modulos afectados: `tesoreria_presupuesto`, `finanzas`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega `Tesoreria y presupuesto` dentro del Centro financiero y contable para manejar cuentas banco/caja, presupuestos, partidas, ejecucion y flujo de caja proyectado por empresa.
+- Backend: nueva API `/api/empresa/tesoreria_presupuesto` con acciones `dashboard`, `config`, `cuentas`, `presupuestos`, `partidas`, `flujo`, `generar_flujo` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_tesoreria_config`, `empresa_tesoreria_cuentas`, `empresa_tesoreria_presupuestos`, `empresa_tesoreria_partidas` y `empresa_tesoreria_flujo_caja`, todas con `empresa_id`.
+- Seguridad: modulo independiente `tesoreria_presupuesto`, pagina `linkTesoreriaPresupuesto`, wrapper `WithEmpresaTesoreriaPresupuestoPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/tesoreria_presupuesto.html` incluye cuentas, presupuesto, partidas, flujo y configuracion con apariencia adaptable.
+- Documentacion: se agrega `documentos/tesoreria_presupuesto.md`.
+
+2026-05-06: Produccion / MRP empresarial
+- Modulos afectados: `produccion_mrp`, `inventario`, `compras`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: se agrega `Produccion / MRP` en Administrar empresa > Inventario y compras para controlar recetas/BOM, componentes, ordenes de produccion, consumos, calidad y requerimientos de materiales por empresa.
+- Backend: nueva API `/api/empresa/produccion_mrp` con acciones `dashboard`, `config`, `recetas`, `componentes`, `ordenes`, `orden_estado`, `consumos`, `calidad`, `mrp_plan`, `generar_mrp` y `seed_demo`.
+- Base de datos: nuevas tablas `empresa_produccion_mrp_config`, `empresa_produccion_recetas`, `empresa_produccion_receta_componentes`, `empresa_produccion_ordenes`, `empresa_produccion_consumos`, `empresa_produccion_calidad` y `empresa_produccion_mrp_plan`, todas con `empresa_id`.
+- Seguridad: modulo independiente `produccion_mrp`, pagina `linkProduccionMRP`, wrapper `WithEmpresaProduccionMRPPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/produccion_mrp.html` incluye dashboard, tabs de recetas, ordenes, consumos/calidad, plan MRP y configuracion con apariencia adaptable.
+- Documentacion: se agrega `documentos/produccion_mrp.md`.
+
+2026-05-05: Reportes colombianos avanzados
+- Modulos afectados: `reportes`, `ventas`, `inventario`, `compras`, `finanzas`, `contabilidad`, `cartera`.
+- Cambio funcional: el catalogo central de `/api/empresa/reportes` incorpora reportes frecuentes en software colombiano como Siigo/Alegra/World Office/Helisa: `ventas_diarias_metodos_pago`, `ventas_rentabilidad_productos`, `inventario_kardex_valorizado`, `compras_proveedores_detalle`, `contable_balance_prueba`, `contable_libro_auxiliar`, `contable_libro_mayor`, `fiscal_impuestos_retenciones`, `fiscal_informacion_exogena_base`, `cartera_edades_cuentas_por_cobrar` y `cartera_edades_cuentas_por_pagar`.
+- Integracion: no se crea un modulo paralelo; todos los datasets salen por el endpoint existente, respetan `empresa_id`, filtros de fecha, permisos de reportes/finanzas, exportacion `JSON/CSV/TXT/XLS/PDF`, plantillas y programacion.
+- Frontend: `web/administrar_empresa/reportes_menu.html` agrega accesos directos a los nuevos informes para que el contador o administrador pueda abrirlos desde el centro de reportes.
+- Alcance contable: los reportes fiscales y de exogena son base operativa exportable para revision del contador antes de presentaciones oficiales.
+- Navegacion: `web/administrar_empresa.html` reorganiza el menu principal en categorias plegables y separa las subpaginas operativas de las de ventas/clientes/caja, conservando ids, rutas, permisos y parametro `empresa_id`.
+
+2026-05-05: Organizacion profesional de modulos y rol contralor super
+- Modulos afectados: `administrar_empresa`, `finanzas`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `ayuda`, `super_administrador`, `roles`.
+- Cambio funcional: el menu principal fusiona las entradas repetidas de finanzas/contabilidad bajo `Centro financiero y contable`; las rutas internas se conservan para compatibilidad, permisos, favoritos y enlaces existentes.
+- Navegacion: `web/administrar_empresa/finanzas_menu.html` concentra Finanzas operativas, Contabilidad Colombia, Suite contable Colombia, corte de caja, creditos/cartera y nomina; el antiguo hub ERP extendido queda retirado del centro financiero para evitar duplicidad transversal.
+- Seguridad: `web/ayuda/ayuda.html` deja de ser ayuda publica y queda protegida para el rol `super_administrador`; las ayudas publicas especificas, como login, se mantienen disponibles.
+- Nuevo rol administrativo: `control_super_administrador` permite supervision limitada del panel super sobre administradores, seguridad, errores, metricas y reportes globales sin abrir configuracion de pagos/licencias ni parametros sensibles.
+- Salvaguarda: el rol contralor no puede eliminar ni desactivar el super administrador principal ni administrar otros contralores super.
+
+2026-05-05: Contabilidad Colombia NIIF/DIAN
+- Modulos afectados: `contabilidad_colombia`, `finanzas`, `facturacion`, `roles/licencias`, `administrar_empresa`
+- Cambio funcional: se agrega el modulo `Contabilidad Colombia` en Administrar empresa > Finanzas y cumplimiento como capa contable/legal independiente de finanzas operativas.
+- Backend: nueva API `/api/empresa/contabilidad_colombia` con dashboard, configuracion, PUC, terceros, impuestos, comprobantes de doble partida, anulacion, cierre y reapertura de periodos.
+- Base de datos: nuevas tablas `empresa_contabilidad_colombia_config`, `empresa_contabilidad_colombia_cuentas`, `empresa_contabilidad_colombia_terceros`, `empresa_contabilidad_colombia_impuestos`, `empresa_contabilidad_colombia_comprobantes`, `empresa_contabilidad_colombia_lineas` y `empresa_contabilidad_colombia_periodos`, todas aisladas por `empresa_id`.
+- Seguridad: modulo de licencia `contabilidad_colombia`, pagina `linkContabilidadColombia`, wrapper `WithEmpresaContabilidadColombiaPermissions` y roles contables con acciones diferenciadas.
+- Frontend: `web/administrar_empresa/contabilidad_colombia.html` incluye dashboard, PUC, terceros, impuestos, comprobantes, cierres y configuracion con apariencia centralizada.
+- Documentacion: se agrega `documentos/contabilidad_colombia.md`.
+
+2026-05-05: Suite Contable Colombia Avanzada
+- Modulos afectados: `contabilidad_colombia_avanzada`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`, `DIAN`.
+- Cambio funcional: se agrega una suite profesional con submodulos de informacion exogena/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP y libros oficiales.
+- Backend: nueva API `/api/empresa/contabilidad_colombia_avanzada` con dashboard, formatos exogena, registros, generacion desde asientos, nomina electronica, documentos soporte, activos, cartera y libros.
+- Base de datos: nuevas tablas `empresa_contabilidad_exogena_formatos`, `empresa_contabilidad_exogena_registros`, `empresa_contabilidad_nomina_electronica`, `empresa_contabilidad_documentos_soporte`, `empresa_contabilidad_activos_fijos` y `empresa_contabilidad_cartera_cxp`, todas aisladas por `empresa_id`.
+- Seguridad: modulo de licencia `contabilidad_colombia_avanzada`, pagina `linkContabilidadColombiaAvanzada`, wrapper `WithEmpresaContabilidadColombiaAvanzadaPermissions` y acciones contables para roles de contabilidad.
+- Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` incluye pestañas profesionales para cada submodulo con formularios, tablas, KPIs y generacion de libros.
+- Documentacion: se agrega `documentos/contabilidad_colombia_avanzada.md`.
+
+2026-05-05: Apartamentos turísticos - alquiler vacacional profesional
+- Modulos afectados: `apartamentos_turisticos`, `administrar_empresa`, `roles/licencias`, `reservas`, `limpieza/mantenimiento`
+- Cambio funcional: se agrega `Apartamentos turísticos` en Administrar empresa > Operación y ventas para gestionar alquiler vacacional por empresa con apartamentos, suites, casas, estudios o cabañas.
+- Backend: nueva API `/api/empresa/apartamentos_turisticos` con dashboard, configuración, unidades, tarifas, reservas, check-in, checkout, cancelación, estados de apartamento y tareas operativas.
+- Base de datos: nuevas tablas `empresa_apartamentos_turisticos_config`, `empresa_apartamentos_turisticos_unidades`, `empresa_apartamentos_turisticos_tarifas`, `empresa_apartamentos_turisticos_reservas` y `empresa_apartamentos_turisticos_tareas`, todas aisladas por `empresa_id`.
+- Seguridad: modulo independiente `apartamentos_turisticos`, pagina `linkApartamentosTuristicos`, wrapper `WithEmpresaApartamentosTuristicosPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/apartamentos_turisticos.html` incluye dashboard, inventario de unidades, tarifas por canal/temporada, reservas, tareas de limpieza/mantenimiento y configuración operacional con apariencia centralizada.
+- Documentación: se agrega `documentos/apartamentos_turisticos.md`.
+
+2026-05-05: Carnets empresariales profesionales
+- Modulos afectados: `carnets`, `usuarios`, `roles/licencias`, `administrar_empresa`, `portal_publico`
+- Cambio funcional: se agrega `Carnets` en Administrar empresa > Personas y activos para emitir carnets modernos de empleados, usuarios internos, contratistas, visitantes, temporales y directivos.
+- Backend: nueva API `/api/empresa/carnets` con dashboard, plantillas, personas fuente, CRUD de carnets, estados, marcado de impresion/exportacion, bitacora y datos demo.
+- Base de datos: nuevas tablas `empresa_carnets_plantillas`, `empresa_carnets` y `empresa_carnets_eventos`, todas con `empresa_id`.
+- Seguridad: modulo independiente `carnets`, pagina `linkCarnets`, wrapper `WithEmpresaCarnetsPermissions` y cobertura en licencias `modulos_habilitados`.
+- Frontend: `web/administrar_empresa/carnets.html` incluye vista previa, plantillas, colores, QR, foto, exportacion PNG/SVG e impresion.
+- Portal: `web/index.html` incorpora descripcion comercial del modulo y tarjeta fallback.
+
+2026-05-05: Portal publico, carta QR y publicacion Motel Calipso
+- Modulos afectados: `portal_publico`, `venta_publica`, `red_social_comercial`, `roles/licencias`, `domicilios`, `taxi_system`, `odontologia`, `turnos_atencion`, `control_electrico`
+- Cambio funcional: `web/index.html` actualiza la descripcion ejecutiva de los modulos del sistema para reflejar el alcance real actual: POS, estaciones, hotel/motel, gimnasio, odontologia, domicilios tipo Rappi, Taxi System tipo Uber, turnos, inventario, finanzas, facturacion, usuarios/permisos/licencias, chat/tareas/IA, reportes, venta publica, carta QR, red social y hoja de vida.
+- Tarjetas comerciales: el arreglo `fallbackCards` del index ahora incorpora descripciones mas completas para Punto de venta, Motel, Restaurante, Control por sensor, Hotel, Gimnasio y Odontologia, y agrega tarjetas para Domicilios, Taxi System y Turnos de atencion.
+- Carta publica: `visualizar_productos_y_precios_publico.html` queda documentada como pagina publica de solo lectura, con acceso por query, ruta `/{empresa_slug}/...` o subdominio, y QR exportable desde Administrar empresa en PNG, SVG, PDF o impresion.
+- Motel Calipso: se publica la configuracion operativa de `motel-calipso` con venta publica, carta publica, paginas `experiencias-calipso`, `carta-productos-precios`, `pos-motel-calipso`, items de ejemplo y publicaciones en red social comercial.
+- Seguridad: se corrige la consideracion publica de la carta en `AuthMiddleware`; la administracion sigue protegida por `venta_publica`, rol, licencia y `linkCartaProductosPublica`.
+- Verificacion: `go test ./utils`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; validacion productiva HTTP 200 de venta publica, carta publica y red social de Motel Calipso.
+
+2026-05-04: Control electrico - Raspberry Pi GPIO por estacion
+- Modulos afectados: `estaciones`, `carritos`, `seguridad`, `raspberry pi`
+- Cambio funcional: se agrega `Control electrico` en Administrar empresa para configurar la IP/puerto/ruta API de una Raspberry Pi, activar el modulo, definir timeout, token opcional y mapear cada estacion contra un pin GPIO.
+- Operacion automatica: cuando una estacion se activa, recupera o reabre, el backend envia `on` al rele configurado; cuando se paga, cierra o desactiva, envia `off`. El envio ocurre en segundo plano para no bloquear la venta si la Raspberry no responde.
+- Control manual: la pantalla permite guardar relés por estacion, seleccionar GPIO, nombre del rele, logica `activo alto`, pulso opcional y probar encendido/apagado manual.
+- Control desde carrito: en el carrito de estación se agrega el botón `Control eléctrico`, con panel manual para encender/apagar salidas de la habitación como luces, jacuzzi, aire, puerta u otros circuitos configurados.
+- Varias salidas por estación: una misma estación puede tener múltiples relés mediante `salida_codigo` y `tipo_carga`, manteniendo una bitácora individual por GPIO.
+- Trazabilidad: cada comando queda registrado en bitacora electrica con estacion, rele, GPIO, resultado, HTTP status, respuesta/error, actor, origen y fecha.
+- Endpoint Raspberry esperado: `POST http://<raspberry_ip>:<puerto>/api/gpio/relay` con JSON de empresa, estacion, relay, `gpio_pin`, `estado` (`on`/`off`), `active_high`, `pulso_ms`, actor y origen.
+
+2026-05-04: Asesor comercial - transferencias y pagos de comisiones
+- Modulos afectados: `asesor comercial`, `licencias`, `pagos`, `super`
+- Cambio funcional: `web/super/asesor_comercial.html` agrega una configuracion completa de transferencias por asesor: metodo de pago, entidad financiera, tipo y numero de cuenta, titular, documento, contacto de pagos, periodicidad, dia de pago, minimo a transferir y requisito de soporte. La edicion de asesores queda en formulario directo y ya no depende solo de prompts para cambiar reglas.
+- Liquidacion: `asesor_comercial_comisiones` conserva estado de pago de comision (`pendiente`, `programada`, `en_transferencia`, `pagada`, `rechazada`), metodo, referencia, fecha programada y soporte. Super puede gestionar la liquidacion de cada comision de licencia con trazabilidad de actor y observaciones.
+- Impacto operativo: no ejecuta transferencias bancarias externas; registra configuracion y evidencia interna para que el equipo financiero liquide comisiones con control profesional.
+
+2026-04-30: Checkout Epayco, secretaria IA, empresas compartidas y documentos dinamicos
+- Modulos afectados: `licencias`, `pagos`, `chat IA`, `administrar empresa`, `documentos`, `empresas compartidas`
+- Checkout Epayco: `backend/handlers/payments_handlers.go` conserva Smart Checkout v2 como ruta principal y agrega fallback clasico firmado por POST a `https://secure.payco.co/checkout.php`. `web/pagar_licencia.html` envia el formulario `checkout_form` y bloquea URLs de checkout invalidas que antes podian mostrar XML `AccessDenied`. El modo del fallback clasico se calcula con las credenciales clasicas (`epayco.customer_id` + `epayco.checkout_key`/`epayco.p_key`) y no con las llaves Smart, evitando que una cuenta real llegue a Epayco marcada como prueba.
+- Chat flotante: `web/js/ai_chat_drawer.js` y `web/estilos.css` rediseñan la secretaria IA 3D como avatar estilo caricatura ejecutiva joven. Cuando el modo activo es secretaria, la voz efectiva se fuerza a `es-CO-female` para servidor de voz y navegador; el robot conserva voz configurable.
+- Configuracion del chat: `web/administrar_empresa/configuracion_chat_flotante.html` documenta la seleccion de avatar como `Voz del avatar` y aclara que secretaria usa voz femenina automaticamente.
+- Actualizacion 2026-05-11: la misma configuracion agrega `Activar emisora online` debajo de avatares IA 3D. La preferencia `chat_flotante.radio_online_enabled` se guarda por `empresa_id` en `empresa_estacion_prefs` cuando existe contexto empresarial y el reproductor `web/js/radio_player.js` la respeta al cargar, activar o apagar la emisora.
+- Empresas compartidas: el editor de empresa lista administradores con acceso compartido y permite eliminar/revocar accesos, visible para quien compartio y para quien recibio, con trazabilidad del actor.
+- Hoja de vida operativa: `web/administrar_empresa/hoja_vida_operativa.html` agrega una ficha universal para seguimiento de motos de taller, pacientes, vehiculos, equipos, activos o mascotas. Permite registrar eventos, servicios, alertas, recurrencias y resumen operativo por empresa.
+- Documentos dinamicos: `backend/handlers/dynamic_documents.go` agrega `/generate` y `/download` para contenido IA/variables/templates y exportes PDF, DOCX, XLSX, HTML, TXT y JSON.
+- Exportacion desde chat IA: `web/js/ai_chat_drawer.js` detecta respuestas exportables y muestra botones PDF, Word/DOCX, Excel/XLSX, TXT y JSON. El endpoint protegido `/api/empresa/chat_documentos/exportar` reutiliza el generador dinamico, registra auditoria con origen `chat_ia`, redacta patrones de secretos y aplica nombres profesionales por empresa, tipo y fecha. El mismo flujo queda disponible en chat cuadrado, robot/secretaria y paginas que usan el chat central, incluyendo reportes, tareas y agenda.
+- Impacto operativo: los pagos ya no redirigen a fallback GET roto; la secretaria habla con voz femenina aunque la voz global del robot sea otra; las empresas compartidas se pueden retirar sin eliminar la empresa; la generacion documental queda protegida por sesion.
+
+2026-04-29: Preconfiguracion de tipos de empresa y checkout de licencias
+- Modulos afectados: `super`, `empresas`, `estaciones`, `productos`, `licencias`, `pagos`
+- Cambio funcional: Super Administrador agrega `Preconfiguracion de tipos de empresa` para guardar plantillas iniciales de estaciones/productos por tipo. Al crear una empresa, la plantilla activa se aplica como datos guia y luego puede conservarse o limpiarse. El checkout de licencias mejora sus tarjetas comerciales y muestra `Codigo de asesor comercial` debajo de `Codigo de descuento`.
+- Impacto operativo: la preconfiguracion es opcional y no bloquea la creacion de empresa si falla; el asesor sigue viajando como `asesor_id` a pagos y activacion sin pago.
+- Actualizacion 2026-05-10: la siembra ahora completa faltantes por tipo activo, los plantillas nuevas usan plantilla inteligente por defecto y el robot ya no inicia automaticamente una configuracion guiada al crear o abrir la empresa.
+
+2026-04-29: Estaciones - tarjetas sin filas vacias
+- Modulos afectados: `estaciones`, `carritos`
+- Cambio funcional: las tarjetas normales de `web/administrar_empresa/estaciones.html` agrupan sus datos internos en filas etiqueta/valor tipo tarjeta Caja. Las filas sin dato quedan ocultas para evitar huecos visuales y mantener la informacion en una sola columna ordenada.
+- Impacto operativo: no cambia endpoints ni configuracion de estaciones; solo mejora la presentacion de estado, cliente, tarifa, duracion, inicio, fin, extra y total dentro de cada tarjeta.
+
+2026-04-29: Voz IA streaming y Super Administrador por categorias
+- Modulos afectados: `chat IA`, `super`, `configuracion avanzada`, `VPS`
+- Cambio funcional: se agrega un servidor abierto FastAPI + Piper TTS para voz natural en VPS, configurable desde `web/super/voz_streaming_ia.html`. El backend registra `/super/api/config/voice_stream`, `/api/voice_stream/status` y `/api/voice_stream/tts`; el chat flotante usa el proxy para reproducir audio cuando `voice_stream.enabled` esta activo.
+- Tolerancia a fallos: la voz por servidor queda desactivada por defecto; si el microservicio no existe, no responde o devuelve error, el chat cae a voz del navegador o continua en texto sin romper el servidor.
+- Organizacion super: `web/super_administrador.html` agrupa accesos por operacion global, empresas/licencias, seguridad/acceso, IA/automatizacion e infraestructura/comunicaciones. `web/super/configuracion_avanzada.html` agrega mapa por categorias y separa infraestructura, pagos, comunicaciones, seguridad, IA, operacion y respaldos.
+
+2026-05-21: Contador publico de visitas por pais en el index
+- Modulos afectados: `portal_publico`, `analitica`, `frontend_ux`, `backend`.
+- Cambio funcional: el `index.html` muestra al final un contador total de visitas, mapa mundial con colores por pais y ranking de paises con barras proporcionales.
+- Backend: nuevo endpoint publico `/api/public/portal_visitas` registra visitas agregadas por pais/fecha en `portal_visitas_paises`, usando pais detectado por proxy/CDN o payload del frontend.
+- Privacidad: no se guardan IP, user-agent, correos ni identificadores personales; solo `pais_codigo`, `fecha`, `visitas` y `actualizado_en`.
+- Frontend: `web/js/portal_visits.js` usa `/api/public/geo`, limita conteos repetidos por navegador durante 30 minutos y renderiza mapa/lista sin dependencias externas.
+
+2026-05-21: Iconos globales en botones del sistema
+- Modulos afectados: `frontend_ux`, `administrar_empresa`, `super_administrador`, `portal_publico`, `carritos`.
+- Cambio funcional: se crea `web/js/button_icons.js` para decorar automaticamente botones estaticos y dinamicos con iconos de color relacionados con su funcion. La cobertura aplica a paginas HTML servidas por el sistema sin editar los 255 HTML uno por uno.
+- Backend: `backend/main.go` agrega `buttonIconsStaticHandler`, que inyecta el script solo en respuestas HTML y deja intactos assets CSS/JS/imagenes, respuestas no 2xx y paginas que ya lo incluyan.
+- UX: si un boton ya trae `img.icon`, SVG, icono nativo, cierre, calculadora o control de juego, el decorador no agrega otro icono.
+- Pruebas: `backend/contextual_help_test.go` cubre inyeccion, no duplicado y no modificacion de assets.
+
+2026-05-21: Iconos de color en botones del carrito
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: el carrito unificado decora automaticamente todos los botones visibles con una insignia/icono de color segun la accion detectada, incluyendo botones estaticos y botones renderizados dinamicamente en tablas, paneles de pago, acciones de estacion, QR, clientes y abonos.
+- Archivos clave: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`.
+- Alcance: no cambia APIs, permisos, tablas, backend ni dependencias externas; es una mejora visual sobre el flujo POS existente.
+
+2026-04-27: Carrito de estación ? panel de cobro (toolbar, tabla fija, totales, montos por método)
+- Módulos afectados: `carritos`, `estaciones`
+- Cambio funcional: en `carrito_de_compras.html` modo estación, la primera fila agrupa Pagar, Descuentos, Cambiar tarifa, Cancelar, checkbox de alerta visual a 10 min y accesos Taxi/Clientes/Abonos/Vehículo; debajo, bloque en dos columnas con lista completa de ítems (scroll) y resumen ampliado (fechas entrada/salida, sumas por líneas de servicio vs producto/receta, minutos extra si aplica `tarifa_por_minutos`); fila de cuatro campos de solo lectura con montos por método alineados al cálculo de cobro (incluye mixto). La rejilla inferior `#carritoGrid` se oculta en estación para evitar duplicar la lista. Auto-refresco periódico más corto con sesión activa en estación.
+- Archivos clave: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`
+
+2026-04-25: Facturación electrónica ? Ecuador y Panamá (perfiles independientes de Colombia)
+- Módulos afectados: `facturación electrónica`, `licencias`, `administrar_empresa`
+- Cambio funcional: el catálogo por país (CO, EC, PA) expone metadatos `vista` para textos legales, etiquetas de formulario y enlace al módulo DIAN/documental **solo para Colombia**. Ecuador (SRI) y Panamá (DGI) tienen bloques de captura estructurada que se fusionan con `campos_pais_json` sin tocar `empresa_dian` ni flujos DIAN. La detección automática considera `empresa_configuracion_avanzada`, `facturacion_electronica_pais`, **licencia activa** (`pais_codigo`), zona horaria e idioma.
+- Archivos clave: `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go`, `web/administrar_empresa/facturacion_electronica.html`
+- Impacto operativo: sin dependencias nuevas; el envío HTTP a proveedor usa moneda por configuración o país si el monto iba sin moneda.
+
+2026-04-25: Chat IA super ? contexto ampliado y solo lectura empresas
+- Modulos afectados: `chat IA`, `super`, `estaciones` (miniaturas CSS)
+- Cambio funcional: `configuracion_logica_del_chat_con_ia` mantiene la clave `ai.chat.super.contexto_amplio` en true; el chat global **siempre** inyecta inventario de metadatos de **todas** las tablas del esquema super (conteos, columnas, roles de admin). `ai.chat.super.empresa_solo_lectura` sigue gobernando fragmentos de lectura de la base empresas. `BuildSuperAIContextoForQuestion` (`SuperAIContextoOpts` con `EmpresaSoloLectura` solamente) arma el prompt. En el chat global, si no aplica solo lectura empresas, el modelo debe **preguntar confirmación** en un turno y solo entonces (tras respuesta explícita del usuario) emitir `PCS_ACTION`. En `estaciones` la vista `estaciones-thumb-mobile` ajusta tipografía con `clamp` y elimina un `font-size` fijo demasiado pequeño en las tarjetas.
+- Archivos clave: `web/super/configuracion_logica_del_chat_con_ia.html`, `backend/handlers/super_chat_ia_logica.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/db/chat_inteligencia_artificial.go`, `web/estilos.css`, `web/super/chat_con_ia_global.html`
+- Impacto operativo: activar flags aumenta el tamaño del prompt; no se ejecuta SQL generado por el modelo.
+
+2026-04-25: Super ? permisos por rol y cobertura de licencia (gobernanza)
+- Modulos afectados: `super`, `seguridad y permisos`, `licencias`
+- Cambio funcional: `web/super/permisos_rol.html` se rediseña como consola empresarial (resumen, módulos en tarjetas con acciones R/C/U/D/A etiquetadas, funciones del panel agrupadas con búsqueda sin perder estado al filtrar). El API `GET /super/api/roles_de_usuario/permisos` añade `acciones_etiqueta`, `modulos_etiqueta` y cada fila de `paginas` incluye `titulo` y `grupo` (catálogo en `backend/handlers/empresa_permisos.go`). `web/super/licencias.html` mejora la sección de módulos habilitados con textos de negocio y enlace a permisos por rol. Estilos `pcs-pr-*` y `lic-coverage-*` en `web/estilos.css`.
+- Modelo recomendado: la **licencia** fija el techo de módulos; el **rol** ajusta acciones y anulaciones por función de menú; no se añade un tercer sistema universal duplicado.
+
+2026-04-24: Super ? pagina principal (portal): tema claro/oscuro en iframe
+- Modulos afectados: `super`, `portal publico` (solo editor super)
+- Cambio funcional: `web/super/pagina_principal.html` aplica el mismo arranque de tema que otras paginas en iframe (`pcs_theme` / `localStorage`). Para evitar gradientes rosados en temas oscuros, el editor deja de usar `mp-card` y pasa a `pp-main-card` con superficie neutra basada en variables. `web/estilos.css` define `body.super-page` con fondo y texto por variables; corrige el titulo `.super-page .page-header h1` en temas claros (sin texto transparente); unifica `.pp-image-preview-wrap` con mezclas por tema.
+- Impacto operativo: sin cambios de API ni permisos; mejora legibilidad al alternar apariencia. Las paginas super que usan `mp-card` (p. ej. formatos de email) se benefician del mismo bloque de tema claro.
+
+2026-04-24: Estaciones ? pedidos con IA (voz/texto) y miniaturas en movil
+- Modulos afectados: `estaciones`, `carritos`, `ventas`, `chat IA`, `administrar_empresa`
+- Cambio funcional: la configuracion JSON `estaciones_config` admite `ia_pedidos_enabled` y `ia_pedidos_placement` junto a Caja, YouTube y Notas. La pantalla de estaciones muestra una tarjeta especial con iframe a `estacion_ia_pedidos.html` donde el usuario dicta o escribe pedidos; el backend `POST /api/empresa/ia_pedidos_estacion/ejecutar` (permisos de ventas, misma cuota/reglas que el chat IA) interpreta el texto con el modelo disponible y agrega productos al carrito de la estacion (`EST-{empresa_id}-{estacion_id}`), activando sesion si hace falta. En vista movil, un boton `Ver miniaturas` alterna una rejilla de tres columnas con tarjetas mas compactas.
+- Archivos clave: `backend/handlers/ia_pedidos_estacion.go`, `backend/db/carritos_compras.go` (`GetCarritoCompraByCodigo`), `backend/handlers/chat_con_inteligencia_artificial_router.go`, `web/administrar_empresa/estacion_ia_pedidos.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `tools/clean_styles_auto.js`, `.vscode/extensions.json`.
+- Impacto operativo: requiere proveedor IA activo, chat empresarial habilitado y productos activos; si el modelo no devuelve JSON valido, no se ejecutan acciones.
+
+2026-04-24: Asesor comercial ? invitaciones, codigos y comisiones por licencias
+- Modulos afectados: `asesor comercial`, `licencias`, `pagos`, `super`, `seleccionar_empresa`
+- Cambio funcional: se elimina la pagina anterior de vendedores y se crea `web/super/asesor_comercial.html` para que super invite administradores registrados como asesores comerciales. Al aceptar por correo, el asesor queda activo con codigo unico, porcentaje de comision y plazo de asociacion por cliente.
+- Integracion de pagos: `web/pagar_licencia.html` conserva un campo de codigo de asesor comercial. Si una empresa paga con ese codigo, se registra comision; las renovaciones posteriores siguen asociadas al asesor hasta `meses_asociacion`.
+- Vista del asesor: `web/mis_clientes.html` aparece en `seleccionar_empresa` solo para asesores aceptados y lista empresas vigentes, valor pagado, fecha, comision y si la comision ya fue pagada.
+- Impacto operativo: super puede marcar comisiones como pagadas desde la misma pagina; el asesor ve ese estado en su portal. No se agregan dependencias externas.
+
+2026-04-24: Chat y tareas ? resumen en tabla y apariencia alineada al tema
+- Modulos afectados: `chat y tareas`, `administrar_empresa`
+- Cambio funcional: `web/administrar_empresa/chat_y_tareas.html` prioriza botones rapidos y muestra metricas en tabla compacta bajo ellos; elimina titulo con nombre de empresa y texto introductorio fijo. Estilos del modulo pasan a depender de variables CSS de tema; lectura inicial de `theme` / cookie `pcs_theme` en la pagina para coherencia al abrirse en iframe.
+- Impacto operativo: la vista se ve coherente en modo claro u oscuro segun la apariencia elegida; el resumen ocupa menos espacio vertical.
+
+2026-04-25: Chat IA ? acciones confirmables con auditoria (chat transaccional)
+- Modulos afectados: `chat IA`, `inventario/productos`, `finanzas`, `super`
+- Cambio funcional: el chat IA puede sugerir acciones operativas (crear producto, actualizar precio, registrar egreso, etc.) como un bloque estructurado `PCS_ACTION` (JSON) que el usuario debe confirmar. Al confirmar, el frontend ejecuta llamadas a los endpoints existentes del sistema con encabezado `X-PCS-Source=chat_ia` y `X-PCS-Chat-Conversation-ID` para trazabilidad.
+- Trazabilidad: la auditoria critica (`empresa_auditoria_eventos`) registra la fuente `chat_ia` y el id de conversacion; los endpoints mantienen los mismos permisos por rol y alcance por `empresa_id`.
+- Impacto operativo: no se agregan dependencias externas; el chat no ejecuta acciones sin confirmacion explicita del usuario. Si falta un dato, el asistente debe preguntarlo antes de proponer `PCS_ACTION`.
+
+2026-04-25: Chat IA (empresa) ? CRUD de base de datos por empresa con confirmación y trazabilidad
+- Modulos afectados: `chat IA`, `seguridad y permisos`, `auditoría empresarial`
+- Cambio funcional: el chat IA empresarial ahora puede proponer (si el usuario tiene rol **administrador**) operaciones de consulta y CRUD sobre tablas con `empresa_id` usando `/api/empresa/db_admin`. Toda operación requiere confirmación del usuario; para `DELETE` se exige confirmación adicional escribiendo ?ELIMINAR?. Todas las operaciones quedan registradas en `empresa_auditoria_eventos` con `modulo=chat_ia_db`.
+- Alcance: solo tablas con `empresa_id` (aislamiento obligatorio). No se ejecuta SQL libre; se valida tabla/columna contra `information_schema`.
+- Impacto operativo: habilita soporte/operación avanzada con trazabilidad; reduce riesgo de inyección al usar valores parametrizados y validación de identificadores.
+
+2026-04-25: Permisos por rol ? opciones para Chat IA (empresa y global) + rol administrador total
+- Modulos afectados: `seguridad y permisos`, `chat IA`, `super`
+- Cambio funcional: el catálogo de páginas/funciones por rol incluye `Asistente IA (chat empresarial)` y `Chat IA global (super)` para administración desde `super/permisos_rol.html`. Se agrega el rol `administrador_total` con acceso completo a todos los módulos y acciones (R/C/U/D/A) para operación administrativa sin restricciones por rol (sujeto a licencia).
+
+2026-04-25: Reportes de inventario ? exportación e impresión (CSV/XLS/JSON/TXT/PDF)
+- Modulos afectados: `reportes`, `inventario`, `administrar_empresa`
+- Cambio funcional: la página `reportes_inventario` deja de ser placeholder y consume el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes`. Permite ver el inventario en tabla, abrirlo como documento PDF, imprimir (vía PDF) y exportar en formatos comunes (CSV/XLS/JSON/TXT/PDF).
+
+2026-04-25: Portal público ? chat IA comercial en `index`
+2026-04-25: Chat IA ? adjuntar documentos/im?genes con GPT-5.5 y l?mite diario por empresa
+- Modulos afectados: `chat IA`, `super`
+- Cambio funcional: los chats (empresa y global super) permiten adjuntar una foto o documento para análisis usando GPT-5.5 (OpenAI Responses). Para empresas se aplica un límite diario configurable desde super (`ai.chat.empresa.max_gpt55_consultas_dia`, default 2). El chat normal puede seguir usando GPT-5.4 mini para texto.
+- Modulos afectados: `portal_publico`
+- Cambio funcional: se agrega un chat IA público al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (módulos, planes/precios, novedades y contratación). No ejecuta acciones del sistema ni muestra información sensible. Incluye limitación de uso de 10 consultas por usuario cada 5 minutos y mensaje de espera/WhatsApp/email al superar el límite. El super administrador puede activar/desactivar este chat desde `Configuración lógica del chat con IA`.
+
+2026-04-25: Pedidos VIP públicos por estación (cliente móvil con código temporal)
+- Modulos afectados: `carritos`, `productos`, `estaciones`, `portal_publico`
+- Cambio funcional: desde el carrito de estación (panel empresa) se puede generar un **código VIP temporal** para el cliente. El cliente entra a `productos_estacion_clientes_publico.html`, digita el código y ve todos los productos activos como botones. Al pedir, el producto se agrega automáticamente al carrito de la estación con una nota opcional. El acceso queda deshabilitado automáticamente cuando el carrito se paga (códigos inactivados en backend).
+- Endpoints: `PUT /api/empresa/carritos_compraaction=generar_codigo_vip&id=...` (protegido) y `GET/POST /api/public/estacion_vip` (público, basado en código).
+- Impacto operativo: no se permiten operaciones destructivas; el acceso público queda acotado por un token aleatorio y caducable.
+
+2026-04-20.3: Soporte remoto deja RustDesk activo por defecto en configuracion super
+- Modulos afectados: `soporte remoto`, `super`
+- Cambio funcional: la configuracion inicial consultada desde `backend/db/soporte_remoto.go` para una empresa sin registro previo ahora nace alineada al flujo simplificado de RustDesk, con `habilitado = true`, `portal_publico_habilitado = true`, `proveedor_preferido = rustdesk_oss` y `modo_operacion = cliente_local`. `web/super/servidores.html` preserva ese estado por defecto en la primera carga para evitar falsos inactivos cuando todavia no existe configuracion persistida.
+- Impacto operativo: el panel super ya no sugiere que RustDesk esta apagado a nivel de configuracion por simple ausencia de registro; la empresa queda lista para completar host y clave sin un paso adicional de activacion.
+
+2026-04-21: Compras y finanzas agregan comprobantes adjuntos por empresa
+- Modulos afectados: `compras`, `finanzas`, `administrar_empresa`
+- Cambio funcional: `backend/handlers/compras.go` y `backend/handlers/finanzas.go` agregan endpoints protegidos para subir fotos, PDFs y documentos de soporte por `empresa_id`, guardándolos en carpetas físicas separadas por empresa y módulo. `backend/db/documentos_transaccionales.go` amplía `empresa_compras_documentos` con `comprobante_url` y `comprobante_nombre_archivo`, mientras `empresa_finanzas_movimientos` reutiliza `comprobante_url` con carga física real. `web/administrar_empresa/compras.html` y `web/administrar_empresa/finanzas.html` incorporan adjunto y enlace `Ver comprobante` dentro del flujo operativo y de los listados.
+- Impacto operativo: la empresa puede adjuntar y luego consultar recibos o soportes de compras, egresos e ingresos sin salir del panel, manteniendo aislamiento por `empresa_id` y sin crear roles o wrappers nuevos fuera de los ya existentes para compras y finanzas.
+
+2026-04-21: Soporte remoto y servidores super simplifican la operación RustDesk
+- Modulos afectados: `soporte remoto`, `super`, `administrar_empresa`, `portal_publico`
+- Cambio funcional: `web/super/servidores.html` deja de ser una tarjeta genérica y pasa a controlar de forma directa el servicio RustDesk del VPS con estado agregado, acciones `start/stop/restart` y prueba operativa del backend. `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` se recortan a una configuración mínima por empresa: host del VPS, clave pública, carpeta de transferencia, observaciones, instrucciones y descargas oficiales de cliente/servidor para Windows, Linux y macOS. `web/soporte_remoto_acceso.html` también se simplifica para exponer solo las descargas y los datos de conexión realmente necesarios al cliente final.
+- Impacto operativo: la empresa conserva una pantalla clara para publicar el acceso remoto de su operación, mientras el encendido y la salud del servicio RustDesk quedan centralizados en super. No se promete estado real del VPS cuando el backend corre en Windows local; la comprobación efectiva se materializa cuando este mismo backend se ejecuta en Linux o directamente en el VPS.
+
+2026-04-20: Backups empresariales agrega exportar/importar configuracion por empresa
+- Modulos afectados: `backups empresariales`, `administrar_empresa`, `configuracion`, `integraciones`
+- Cambio funcional: `backend/db/backups_empresariales.go` incorpora un alcance canonico `configuracion_empresa` para snapshots portables de tablas de configuracion (general, avanzada, operativa, estacion_prefs, impresoras, venta publica, soporte remoto, DIAN y preferencias empresariales relacionadas). `backend/handlers/backups_empresariales.go` agrega `action=exportar_configuracion` y `action=importar_configuracion`, permitiendo exportar un JSON canonico y restaurarlo sobre la empresa destino con remapeo de `empresa_id` y trazabilidad como backup restaurable. `web/administrar_empresa/backups.html` agrega la interfaz visible para descargar e importar la configuracion desde archivo.
+- Impacto operativo: la empresa puede clonar o recuperar su configuracion completa desde el panel sin tocar tablas transaccionales ni depender de artefactos motor legado retirado. Cada importacion queda registrada en el historial de backups y se aplica sobre PostgreSQL con restauracion controlada.
+
+2026-04-20: Estaciones agrega la estacion especial Notas y orden configurable para especiales
+- Modulos afectados: `estaciones`, `carritos`, `administrar_empresa`
+- Cambio funcional: `web/administrar_empresa/configuracion_de_estaciones.html` ahora permite habilitar `Caja`, `YouTube` y la nueva estacion especial `Notas`, indicando para cada una si carga antes o despues de las estaciones normales. `Notas` incorpora texto inicial, minutos por defecto y switches para pitido y parpadeo. `web/administrar_empresa/estaciones.html` renderiza las especiales segun ese orden y agrega una tarjeta operativa `Notas` con textarea, temporizador programable, guardado del texto base y alerta visual/sonora al vencerse.
+- Impacto operativo: la empresa puede usar estaciones especiales auxiliares sin mezclarlas con carritos base numerados. `Caja`, `YouTube` y `Notas` quedan reordenables alrededor del grid principal y `Notas` sirve como recordatorio operativo temporizado dentro del panel de estaciones.
+
+2026-04-20: Estaciones amplía `Notas` con multiples recordatorios persistentes y repeticion automatica
+- Modulos afectados: `estaciones`, `administrar_empresa`
+- Cambio funcional: `web/administrar_empresa/estaciones.html` reemplaza la logica de una sola nota por una lista de notas dentro de la misma estacion especial `Notas`, con seleccion activa, temporizadores independientes, cuenta regresiva restaurable tras recargar y repeticion automatica configurable por minutos hasta detener manualmente la alerta.
+- Cambio de configuracion: `web/administrar_empresa/configuracion_de_estaciones.html` agrega `notas_repeat_minutes` como valor por defecto y `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` preserva ese campo dentro de `estaciones_config`.
+- Impacto operativo: la estacion `Notas` puede gestionar varios recordatorios locales por `empresa_id` sin crear endpoints ni carritos adicionales. La configuracion base sigue compartida por backend, pero el runtime multiple queda aislado en el navegador de la empresa.
+
+2026-04-20: Login administrativo corrige la activacion del ojito de contraseña
+- Modulos afectados: `autenticacion y sesiones`
+- Cambio funcional: `web/js/login.js` mueve la inicializacion de `initPasswordVisibilityToggles()` al flujo principal de carga del script. El boton de visibilidad del campo `adminPassword` en `web/login.html` vuelve a alternar entre texto visible y password sin depender de llamadas indirectas desde `showMsg`.
+- Impacto operativo: el login administrativo recupera el comportamiento esperado de mostrar y ocultar la contraseña escrita, sin cambios en permisos, sesiones ni endpoints.
+
+2026-04-20: Configuracion avanzada agrega WhatsApp del boton flotante del portal publico
+- Modulos afectados: `super`, `portal_publico`, `pagina principal publica`
+- Cambio funcional: `web/super/configuracion_avanzada.html` incorpora una tarjeta dedicada para administrar el número de WhatsApp del botón flotante del `index.html`. El backend persiste el valor en `portal.whatsapp_contact_number`, lo expone desde `/api/public/pagina_principal` y `web/index.html` deja de usar un `wa.me` fijo para construir el enlace público desde configuración.
+- Impacto operativo: super puede cambiar el número comercial del botón flotante sin editar archivos estáticos. El portal público conserva el mismo CTA visual, pero el destino de WhatsApp pasa a ser configurable desde panel.
+
+2026-04-20: Portal publico alinea el header del home con la landing descriptiva
+- Modulos afectados: `portal_publico`, `pagina principal publica`, `autenticacion y sesiones`
+- Cambio funcional: `web/index.html` deja de usar el botón visual propio `portal-header-btn` en la cabecera y reutiliza el mismo lenguaje visual compartido del header de `web/descripcion_de_los_sistemas.ht` mediante `btn dark`. En la misma fila del acceso `Iniciar sesión` se agrega `Crear cuenta`, apuntando al registro público de administradores en `/registrar_nuevo_usuario_administrador.html`, y el responsive móvil del header ajusta ambos botones con ancho y alto consistentes.
+- Impacto operativo: la portada mantiene su condición pública y no cambia permisos ni rutas protegidas; solo hace más visible el alta pública administrativa, corrige la rotulación del acceso a sesión y unifica el estilo comercial entre el home y la landing descriptiva también en móvil.
+
+2026-04-20: Portal publico simplifica la landing descriptiva y elimina los bloques superiores
+- Modulos afectados: `portal_publico`, `pagina principal publica`
+- Cambio funcional: `web/descripcion_de_los_sistemas.ht` deja de renderizar el hero inicial y la tarjeta completa de accesos rapidos. La pagina abre directamente en las tarjetas descriptivas y mantiene el soporte de hash hacia cada seccion. El script sigue tolerando la ausencia del menu rapido sin romper la carga del contenido.
+- Impacto operativo: sin cambios en rutas, permisos o CTA; el ajuste solo reduce el contenido superior para que la descripcion detallada aparezca de inmediato al entrar a la landing.
+
+2026-04-20: Portal publico mejora la landing descriptiva con menu profesional y apariencia sincronizada
+- Modulos afectados: `portal_publico`, `pagina principal publica`
+- Cambio funcional: `web/descripcion_de_los_sistemas.ht` deja la grilla simple de accesos rapidos y la convierte en un menu interno mas ejecutivo, con numeracion, subtitulo por solucion y estado activo segun la seccion enfocada. `web/estilos.css` reemplaza colores fijos oscuros por variables del sistema de apariencia para que la landing responda realmente al modo claro u oscuro que ya maneja `menu.js`.
+- Impacto operativo: la landing publica mantiene rutas, permisos y CTA existentes, pero ahora se percibe coherente con la apariencia global del portal y facilita saltar entre soluciones sin perder contexto visual.
+
+2026-04-20: Inventario avanzado, compras preventivas y tablero financiero quedan validados en PostgreSQL sobre runtime real de Motel Calipso
+- Modulos afectados: `inventario`, `compras`, `finanzas`, `reportes`
+- Cambio funcional: `backend/db/productos.go` deja portables para PostgreSQL las consultas de tendencia, proyeccion de quiebre, plan de reposicion y resumen por proveedor. La salida de inventario con politica PEPS deja de fallar al consumir lotes con wrappers SQL compatibles y cerrar el cursor antes de actualizar existencias/lotes en la misma transaccion. `backend/db/finanzas.go` deja de construir el tablero y su exporte con consultas sensibles a motor legado retirado y pasa a usar lectura compatible para el resumen financiero, contable y operativo.
+- Impacto operativo: en la empresa 7 de Motel Calipso ya responden por API los paneles `tendencia`, `proyeccion_quiebre`, `plan_reposicion`, `plan_reposicion_resumen`, `tablero financiero`, `tablero_export` y el dataset `empresarial_tablero`; ademas se valida el ciclo real de emitir, recepcionar y contabilizar reposicion, y el cierre de caja puede crear, cerrar y aprobar sobre PostgreSQL sin cambiar frontend ni permisos.
+
+2026-04-26: Finanzas, inventario y asistencia reciben base operativa contable profesional
+- Modulos afectados: `finanzas`, `inventario`, `asistencia`, `usuarios`, `permisos`
+- Cambio funcional: la configuracion financiera por empresa amplia categorias/cuentas base para Colombia e incluye destinos contables comunes (`siigo`, `world_office`, `alegra`, `helisa`, `loggro`, `contapyme`). Se agrega `generador_codigos_barras.html` para crear, persistir e imprimir codigos Code 128 personales por empresa sobre `productos.codigo_barras`, reutilizando el lector ya integrado en carritos. La asistencia de empleados ahora puede vincular un registro al usuario interno creado en la empresa para autocompletar nombre, documento y rol/cargo.
+- Impacto operativo: el modulo de productos queda mejor integrado con ventas por lector de barras; asistencia queda alineada con usuarios/roles empresariales; finanzas conserva las mismas rutas protegidas, pero parte de un catalogo contable mas cercano a sistemas usados en Colombia.
+
+2026-04-26: Reportes agrega chat IA compacto con exportacion asistida
+- Modulos afectados: `reportes`, `finanzas`, `chat IA`, `permisos`
+- Cambio funcional: `reportes_menu.html` incluye `Chat IA reportes`. La nueva pantalla permite hacer preguntas sobre datos/reportes con GPT-5.4 mini (10 consultas diarias por empresa) y pedir exportes con GPT-5.5 (2 reportes diarios por empresa). El backend interpreta la solicitud, selecciona dataset/formato y retorna un enlace de exportacion sobre `/api/empresa/reportesaction=export`.
+- Impacto operativo: se reutiliza el catalogo de datasets y el motor de exportacion existente; no se agregan dependencias ni conectores externos nuevos. El acceso queda bajo permisos de lectura de finanzas/reportes.
+
+2026-04-20: Creditos y chat/tareas quedan validados en PostgreSQL sobre runtime real de Motel Calipso
+- Modulos afectados: `creditos`, `chat_y_tareas`, `administrar_empresa`
+- Cambio funcional: `backend/db/creditos.go` reordena el flujo de abono para leer primero las cuotas pendientes y actualizar despues, evitando desconexion del driver PostgreSQL cuando la transaccion mezcla lectura abierta y escrituras sobre la misma tabla. `backend/db/chat_tareas.go` autorrepara `chat_tareas_citas` si la tabla o columnas faltan en PostgreSQL legacy y usa lectura compatible para el listado; `backend/handlers/chat_tareas.go` deja trazabilidad puntual del error real de creacion.
+- Impacto operativo: Motel Calipso vuelve a poder registrar abonos sobre creditos activos, crear citas ligadas a conversaciones empresariales y listarlas por busqueda sin respuestas `400/500` espurias. En esta iteracion no fue necesario tocar frontend porque el problema restante era exclusivamente de persistencia y runtime backend.
+
+2026-04-20: Cartera financiera y resumen de creditos recuperan compatibilidad PostgreSQL
+- Modulos afectados: `creditos`, `finanzas`, `administrar_empresa`
+- Cambio funcional: `backend/db/modulos_faltantes.go` inserta registros genericos con `insertSQLCompat`, corrigiendo el alta de `cuentas_cobrar` y `cuentas_pagar` sobre PostgreSQL. `backend/db/creditos.go` normaliza la consulta de `resumen_cartera` para tolerar vencimientos vacios o legacy sin lanzar error del motor y cierra el cursor de cuotas antes del `commit` en abonos para evitar desconexiones del driver PostgreSQL.
+- Impacto operativo: el flujo de cartera deja de persistir datos con respuesta engañosa `400`, y el panel de creditos vuelve a poder consultar su resumen ejecutivo en la base PostgreSQL de Motel Calipso.
+
+2026-04-20: Red social comercial queda operativa sobre PostgreSQL en flujo empresa/publico
+- Modulos afectados: `administrar_empresa`, `red_social_comercial`, `portal_publico`
+- Cambio funcional: `backend/db/red_social.go` crea `empresa_publicaciones_red_social` con DDL compatible segun dialecto y usa la capa `sql_compat` para listar, actualizar y eliminar publicaciones. Con esto, las publicaciones creadas desde el panel empresa vuelven a aparecer tanto en la vista privada como en el feed publico.
+- Impacto operativo: Motel Calipso ya puede registrar publicaciones comerciales reales en PostgreSQL sin errores `500`, manteniendo el mismo aislamiento por `empresa_id` y sin cambiar permisos ni rutas visibles.
+
+2026-04-20: Apariencia global y acceso a juegos quedan restaurados en autenticacion y portal publico
+- Modulos afectados: `autenticacion`, `portal_publico`, `super`, `administrar_empresa`, `Juegos`
+- Cambio funcional: `web/menu.js` pasa a ser el orquestador real de apariencia para todo el frontend. Aplica los seis temas desde el arranque, replica el tema en iframes mismo-origen, repara el popup de apariencia y vuelve a mostrar `Juegos` en el menú flotante. `backend/handlers/auth_admin_handlers.go` y `backend/handlers/usuarios_empresa.go` ahora retornan `apariencia` en el login exitoso para que `web/js/login.js` y `web/js/login_usuario.js` la persistan antes de redirigir. También se vuelve a publicar `web/Juegos/menu_juegos.html` como entrada estable y `web/Juegos/n64/index.html` como destino funcional mínimo.
+- Impacto operativo: la persona usuaria vuelve a ver cambios reales entre los 3 modos oscuros y los 3 claros, incluso al entrar por login o navegar shells con iframe. No cambian roles ni wrappers; solo se estabiliza la experiencia visual y se evita un enlace roto en el menú global.
+
+2026-04-19: Chat y tareas agrega mensajeria multiusuario buscable y fotos dentro de la empresa
+- Modulos afectados: `administrar_empresa`, `chat_y_tareas`
+- Cambio funcional: `chat_y_tareas.html` ahora muestra una lista filtrable con checks para que la administradora cree conversaciones directas o grupales seleccionando usuarios activos de su misma empresa, y otro selector similar para agregar varios participantes a un chat existente. El formulario de mensajes deja explicito el envio de fotos, audio y documentos. En backend, `chat_tareas` valida que cada participante tipo `usuario` pertenezca realmente a la empresa antes de persistirlo.
+- Impacto operativo: se habilita el flujo pedido de escribir a un usuario o a varios sin salir del modulo, manteniendo el aislamiento real por `empresa_id` y evitando mezclar usuarios de otras empresas por error o payload manipulado.
+
+2026-04-19: Chat y tareas se endurece como home operativo principal del panel empresa
+- Modulos afectados: `administrar_empresa`, `chat_y_tareas`
+- Cambio funcional: `chat_y_tareas.html` agrega un tablero resumen con conversaciones abiertas, tareas activas, urgencias y citas del dia, acciones rapidas para crear conversacion/tarea/reunion y estados vacios mas claros por bloque. En backend, `chat_tareas` valida que `conversacion_id` y `tarea_id` realmente pertenezcan a la empresa antes de crear participantes, mensajes, tareas, citas o notas de voz, y limpia adjuntos del filesystem si falla la persistencia asociada.
+- Impacto operativo: la pagina principal de la empresa pasa a comportarse como un dashboard colaborativo mas estable, reduce errores por referencias invalidas y evita dejar archivos huerfanos cuando falla un guardado parcial.
+
+2026-04-19: Panel empresa prioriza Chat y tareas con calendario compartido visible al entrar
+- Modulos afectados: `administrar_empresa`, `chat_y_tareas`
+- Cambio funcional: al abrir `administrar_empresa.html`, el shell empresarial prioriza `chat_y_tareas.html` como pantalla inicial cuando el rol autenticado conserva visibilidad del modulo. Ademas, `Chat y tareas` pasa al primer lugar del menu lateral y la propia pantalla sube el calendario mensual al inicio con una presentacion mas grande y clara para registrar reuniones.
+- Impacto operativo: la administradora entra directo a la agenda compartida de la empresa y el resto de usuarios autorizados ve el mismo calendario desde su cuenta, reduciendo clicks para registrar y consultar reuniones internas.
+
+2026-04-19: Estaciones y carritos mejoran el mensaje visible cuando falla la apertura del carrito
+- Modulos afectados: `estaciones`, `carritos`
+- Cambio funcional: `carrito_de_compras.html` ya no deja al usuario solo con el texto `Error cargando carritos`. Cuando falla la carga inicial, la vista muestra un estado claro con contexto de la estación, traducción segura del error, botón para reintentar y botón para volver al tablero de estaciones.
+- Impacto operativo: reduce ambigüedad en soporte y operación, porque el usuario entiende si debe reintentar, volver al tablero o revisar sesión/permisos sin ver mensajes técnicos crudos del backend.
+
+2026-04-19: Estaciones y carritos corrigen el listado backend para PostgreSQL
+- Modulos afectados: `estaciones`, `carritos`
+- Cambio funcional: el backend de `carritos_compra` deja de construir el listado principal con una agregacion sensible al motor SQL y mueve el redondeo de totales/metricas al lado Go. Con esto, abrir una estacion vuelve a cargar el carrito unificado aunque la empresa opere sobre PostgreSQL con clientes e items asociados.
+- Impacto operativo: elimina el error visible `Error cargando carritos` causado por el `GET /api/empresa/carritos_compra` y estabiliza tambien el panel de totales por metodo de pago en la misma pantalla.
+
+2026-04-19: Estaciones y carritos reutilizan carritos legado al abrir una estación
+- Modulos afectados: `estaciones`, `carritos`
+- Cambio funcional: `carrito_de_compras.html` ya no falla si la empresa conserva un carrito legado de estación con nombre o `referencia_externa` válidos pero sin el código canónico esperado en la URL. El flujo primero resuelve el carrito existente y solo crea uno nuevo cuando no encuentra coincidencia por código, referencia o nombre.
+- Impacto operativo: evita errores al hacer clic en una estación en instalaciones evolucionadas o con datos previos a la sincronización canónica de `estaciones_config`.
+
+Descripcion compacta de modulos (POS multiempresa)
+Actualizacion: 2026-04-17
+
+Actualizacion 2026-04-24 (red social empresarial y venta publica por paginas):
+- Modulos afectados: `red_social_empresarial`, `venta_publica`, `pagos`, `administrar_empresa`, `portal_publico`.
+- Cambio funcional: la red social pública se presenta como feed empresarial de posts medianos, con nombre de empresa, imagen y contacto. El panel empresa agrega el módulo `venta_publica`, donde la empresa configura su tienda, pasarelas propias Wompi/Epayco, crea páginas por slug bajo su dominio/tienda y publica productos ya existentes del sistema en cada página.
+- Backend: `empresa_venta_publica_paginas` modela páginas por empresa; `empresa_venta_publica_items` soporta `pagina_id`; `/api/empresa/venta_publicaaction=paginas` administra páginas y `/api/public/venta_publicaaction=catalogo&pagina_slug=...` devuelve páginas, página activa e items filtrados.
+- Frontend: `web/venta_publica.html` muestra páginas y productos con botón `Pagar`; `web/pagar_productos_de_venta_publica.html` crea la orden/pago con las credenciales propias de la empresa; `configuracion_integraciones.html` deja de contener configuración antigua de venta pública.
+- Impacto de permisos: administración bajo `WithEmpresaVentasPermissions`; catálogo y checkout se mantienen públicos y sanitizados, sin exponer claves privadas.
+
+Actualizacion 2026-04-24 (super: limitaciones por empresa en configuracion avanzada):
+- `web/super/configuracion_avanzada.html` incorpora una tarjeta para definir límites globales por empresa para (1) minutos de uso RustDesk, (2) número de consultas del chat con IA y (3) máximo de dispositivos del módulo de ubicación GPS por empresa (default 2), persistidos en la base superadministrador mediante `GET/PUT /super/api/config/limitaciones_empresa` (clave GPS: `empresa.limitaciones.gps.max_dispositivos`).
+- `backend/handlers/ubicacion_gps.go` aplica ese tope en el alta de dispositivos (`POST`); si se supera, responde `409 Conflict` sin crear fila.
+
+Actualizacion 2026-04-24 (ubicacion GPS: cupo por empresa):
+- Modulos afectados: `ubicacion_gps`, `super`, `administrar_empresa`
+- Cambio funcional: el cupo efectivo lo define super en configuracion avanzada; la empresa no puede registrar mas dispositivos de los permitidos hasta que elimine registros o super suba el limite.
+- Impacto operativo: instalaciones con muchos dispositivos legacy pueden quedar por encima del tope hasta que se ajuste la configuracion o se depuren filas; nuevas altas quedan bloqueadas al alcanzar el maximo.
+
+Actualizacion 2026-04-24 (super: configuracion logica del chat con IA):
+- `web/super/configuracion_logica_del_chat_con_ia.html` agrega una pagina para administrar restricciones del chat con IA para empresas y para el chat global super, con persistencia en la base superadministrador mediante `GET/PUT /super/api/config/chat_ia_logica`.
+
+Actualizacion 2026-04-25 (chat IA: acceso para crear/editar sin eliminar):
+- Modulos afectados: `super`, `administrar_empresa`, `chat con IA`.
+- Cambio funcional: el chat global y el chat de empresas pueden proponer y ejecutar acciones operativas de **alta/edición** (POST/PUT) pero **no pueden eliminar** registros: cualquier acción `DELETE` queda bloqueada en UI y se instruye al modelo a no sugerirla.
+- Archivos clave: `web/super/chat_con_ia_global.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`.
+
+Actualizacion 2026-04-25 (chat IA: acceso a funciones del sistema / abrir vistas):
+- Modulos afectados: `super`, `administrar_empresa`, `facturacion_electronica`, `chat con IA`.
+- Cambio funcional: el chat IA puede proponer acciones de **lectura** (GET) y **abrir vistas internas** (OPEN) además de POST/PUT. Se mantiene el bloqueo de DELETE.
+- Caso de uso: ?mu?strame la ?ltima factura electrónica? â†’ la IA puede consultar `/api/empresa/facturacion_electronicaaction=documentos...` (GET) y luego abrir `facturas_electronicas.html` con `auto_print=1` para ejecutar la visualización/impresión del documento.
+- Archivos clave: `web/super/chat_con_ia_global.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/administrar_empresa/facturas_electronicas.html`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`.
+
+Actualizacion 2026-04-19 (super: plantillas de email configurables y guardado global de configuracion avanzada):
+- `backend/handlers/super_email_templates.go` crea la fuente de verdad del modulo super para plantillas de correo y expone `/super/api/config/email_templates` con plantillas configurables para confirmación administrativa, confirmación de usuario empresa, activación de licencias, recuperación de contraseña y alerta de reinicio del servidor.
+- `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go` y `backend/handlers/server_runtime_notifications.go` consumen ese render centralizado para que el panel super pueda cambiar correos reales sin tocar código.
+- `web/super/formato_para_emviar_email.html` agrega la subpágina pedida dentro de `super_administrador.html`, organizada en pestañas de confirmación, licencias y formatos recomendados.
+- `web/super/configuracion_avanzada.html` centraliza el guardado de Wompi, Epayco, Gmail e IA mediante un único botón `Guardar cambios` al inicio y otro al final de la vista.
+- Impacto de permisos: no se crean roles nuevos ni se amplían privilegios; la edición de plantillas y el guardado global siguen reservados al mismo frente autenticado de `super_administrador`.
+
+Actualizacion 2026-04-19 (portal publico y selector: CTA seguros y navegacion acorde al alcance):
+- `web/descripcion_de_los_sistemas.ht` conserva la descripcion ampliada de cada solucion, pero el CTA `Probar Gratis` deja de reutilizar destinos privados del panel; cuando la tarjeta de origen apunta a una ruta protegida, el flujo público deriva al registro de administrador para mantener coherencia entre descubrimiento público y acceso autenticado.
+- `web/js/seleccionar_empresa.js` consulta `/me` para distinguir cuentas super principales de delegadas y administradores normales, y ajusta la visibilidad del menú lateral en consecuencia.
+- `web/seleccionar_empresa.html` mantiene `Licencias` como acceso operativo de alcance propio, pero `Administradores` y `Reportes globales` solo quedan visibles para super principales; por defecto permanecen ocultos hasta resolver la sesión.
+- Impacto de permisos: no se crean roles nuevos; se reduce exposición visual de opciones fuera de alcance y se evita que el portal público sugiera rutas que requieren autenticación o privilegios superiores.
+
+Actualizacion 2026-04-19 (super/licencias: endurecimiento de alcance delegado y compatibilidad operativa):
+- `backend/handlers/system_empresas_handlers.go` y `backend/db/chat_inteligencia_artificial.go` dejan de tratar a un administrador delegado como super global solo por su rol; el alcance efectivo sigue anclado al administrador principal que lo creó y a las empresas de ese portafolio.
+- `backend/handlers/super_config_backup_handlers.go` preserva compatibilidad de exportación/restauración para claves sensibles legacy de IA usadas por respaldos históricos, aun cuando el catálogo operativo actual ya no las exponga en la UI.
+- `backend/handlers/payments_handlers.go` separa la publicación pública de métodos de pago de los requisitos internos del checkout: Epayco puede anunciarse con `public_key`, mientras las credenciales privadas siguen siendo exigibles en pasos posteriores del cobro real.
+- `backend/handlers/postgres_performance.go` responde error de acción inválida antes de exigir entorno PostgreSQL para mantener coherencia del panel de diagnóstico.
+- Impacto de permisos: el módulo crítico `administrar_empresa` y el frente super de empresas mantienen aislamiento por `empresa_id` y por cadena principal/delegado; no se amplían privilegios, se cierran fugas de alcance.
+
+Actualizacion 2026-04-18 (carritos/estaciones: carrito unificado configurable por empresa y estacion):
+- `web/administrar_empresa/carrito_de_compras.html` se consolida como unica superficie operativa para carritos generales y carritos de estacion; la vista lee `estaciones_config` desde `/api/empresa/estacion_prefs` y resuelve qué bloques mostrar en cada estacion, incluyendo cliente, impuestos, resumen total del carrito y desglose del cobro.
+- `web/administrar_empresa/configuracion_de_estaciones.html` deja de administrar `venta_simple_habilitada` y pasa a administrar herencia global y checks de visibilidad del carrito por estacion, manteniendo sincronizacion de carritos base por `empresa_id`.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` deja de manejar un switch de carrito compacto y ahora gobierna la configuracion global del carrito unificado para toda la empresa.
+- `web/administrar_empresa/estaciones.html` ya no elige entre `ventas_simple.html` y `carrito_de_compras.html`; siempre abre el carrito unificado por estacion. `web/administrar_empresa/ventas_simple.html` queda como compatibilidad de redireccion.
+- Impacto de permisos: sin cambios en wrappers ni roles; la operacion sigue bajo el mismo alcance autenticado por `empresa_id`.
+
+Actualizacion 2026-04-18 (chat con IA: simplificacion visual en empresa y super) ? **obsoleta** frente a 2026-04-24 (layout Gemini): la interfaz volvio a exponer selector de modelo, uso y sidebar; conservar solo el dato historico de que en esa fecha se redujo la UI antes de la revision mayor.
+
+Actualizacion 2026-04-24 (chat IA: tema y retiro definitivo de sugerencias pill):
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` leen `pcs_theme` y `localStorage` al cargar para aplicar el mismo `data-theme` que el panel; se eliminan las pills de sugerencias bajo el formulario.
+- `web/estilos.css` alinea fondos y burbujas del chat IA con variables de tema; en `chat_y_tareas` se corrigen contrastes en modo claro (calendario, listas, estado).
+- Impacto de permisos: sin cambios en endpoints ni roles.
+
+Actualizacion 2026-04-24 (chat IA: layout tipo Gemini en empresa y super):
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` adoptan layout de aplicacion: sidebar izquierda con conversaciones persistidas en el navegador (`localStorage`) mas lista del historial del servidor; area principal con barra superior (selector de modelo, pastilla de modelo en uso y resumen de cupo diario), mensajes y compositor.
+- Compartir respuesta del asistente vía Web Share API o, en su defecto, copia al portapapeles. Mensaje/banner explicativo cuando el backend responde 429 o codigos de limite o bloqueo (`free_tier_limit_reached`, `ai_empresa_chat_blocked`, etc.). En chat empresarial se retiran el titulo largo contextual y la tarjeta de chips Empresa/Cuenta.
+- `web/estilos.css` agrega bloque `.ai-gemini-app*` y overrides `html.theme-light` para contraste de textos en burbujas y banners.
+- Impacto de permisos: sin cambios en endpoints ni roles; solo UX y persistencia local opcional.
+
+Actualizacion 2026-04-19 (chat IA super/empresa: Gemini-only sin Ollama ni DeepSeek):
+- `backend/handlers/ai_credentials_catalog.go`, `backend/handlers/ai_config_handlers.go` y `backend/handlers/chat_con_inteligencia_artificial_controller.go` dejan un unico proveedor soportado: `google:gemini-2.0-flash`.
+- `web/super/configuracion_avanzada.html` conserva el interruptor global y el interruptor del proveedor, pero ahora ambos aplican solo a Google Gemini y a una unica API key cifrada.
+- `scripts/iniciar_servidor.ps1` elimina el tunel operativo a Ollama y el runtime local deja de depender de `OLLAMA_BASE_URL`.
+- Impacto de permisos: sin cambios en wrappers ni roles; `super_administrador` sigue controlando la disponibilidad del servicio IA y `administrador` de empresa solo puede usar Gemini cuando ese servicio permanezca habilitado.
+
+Actualizacion 2026-04-18 (inventario/productos: compras preventivas y de proveedores pasan a la seccion Compras):
+- `web/administrar_empresa/administrar_productos.html` amplía la vista central a `view=productos|bodegas|categorias|proveedores|compras|precios`, separando las compras preventivas y el ciclo de orden por proveedor de la vista principal de inventario.
+- Desde 2026-05-14 se elimina el wrapper `web/administrar_empresa/productos/compras.html`; el nucleo abre directamente `web/administrar_empresa/administrar_productos.html?view=compras`, preservando `empresa_id` desde el menu empresarial.
+- La seccion `Compras` del submodulo ahora concentra plan de reposicion por proveedor, consolidado de compra y borrador/ciclo de orden; la vista `Productos` conserva inventario, existencias, alertas y analitica operativa.
+- Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste reorganiza frontend dentro del mismo modulo autenticado por `empresa_id`.
+
+Actualizacion 2026-04-18 (inventario/productos: proveedores y precios se separan en subpaginas dedicadas):
+- `web/administrar_empresa/administrar_productos.html` amplía la vista central a `view=productos|bodegas|categorias|proveedores|precios`, de modo que el CRUD de proveedores y el historial de cambios de precio ya no queden mezclados con la vista principal de productos.
+- Desde 2026-05-14 se eliminan los wrappers `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html`; proveedores y precios se abren directo en `administrar_productos.html?view=proveedores|precios`.
+- `web/administrar_empresa/administrar_productos_menu.html` agrega la entrada dedicada `Proveedores`, mientras `Precios` deja de ser un placeholder y ahora muestra el historial real de cambios de precio del modulo.
+- Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste es de navegacion y organizacion frontend dentro del mismo modulo autenticado por `empresa_id`.
+
+Actualizacion 2026-04-18 (chat IA super/empresa: autoreparacion PostgreSQL legacy y timeout mayor para Ambis):
+- `backend/db/chat_inteligencia_artificial.go` endurece el modulo para asegurar `empresa_ai_*` y `super_ai_*` al consultar modelo preferido, uso diario, historial y auditoria, evitando fallos cuando una instalacion PostgreSQL heredada llega con tablas o columnas incompletas.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplía solo el timeout del proveedor `ollama:ambis`, manteniendo el resto de proveedores igual, para tolerar respuestas más lentas de `codellama:7b` cuando el backend local consume Ollama del VPS por túnel.
+- Impacto de permisos: sin cambios en roles, wrappers ni visibilidad; el ajuste corrige resiliencia runtime y persistencia del mismo modulo IA ya existente.
+
+Actualizacion 2026-04-18 (portal publico: retiro del arcade y permanencia exclusiva del emulador N64):
+- `web/Juegos/n64/index.html` se mantiene como unica experiencia publica bajo `/Juegos/*`, con pantalla arriba, controles tactiles abajo y acciones `Guardar/Cargar` orientadas a la memoria persistente del cartucho.
+- `web/Juegos/n64/n64-wrapper.js` monta `n64js` dentro de `iframe.srcdoc` mismo-origen, guarda la ultima ROM legal del usuario en IndexedDB y reenvia los controles tactiles como eventos de teclado compatibles con el core.
+- `web/Juegos/menu_juegos.html` deja de funcionar como lobby de arcade y pasa a ser una entrada informativa con un unico CTA hacia el emulador N64.
+- Impacto de permisos: sin cambios en roles, wrappers ni autenticacion; `/Juegos/*` se conserva publico solo para el emulador N64.
+
+Actualizacion 2026-04-18 (inventario/productos: subpaginas separadas para bodegas y categorias):
+- `web/administrar_empresa/administrar_productos.html` se mantiene como fuente unica del modulo y ahora admite `view=productos`, `view=bodegas` y `view=categorias` para mostrar solo el bloque operativo correspondiente.
+- Desde 2026-05-14 se retiran los wrappers de `web/administrar_empresa/productos/`; productos, bodegas y categorias se consumen desde la vista canonica `web/administrar_empresa/administrar_productos.html?view=productos|bodegas|categorias`.
+- Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste es de organizacion frontend dentro del mismo modulo autenticado por `empresa_id`.
+
+Actualizacion 2026-04-18 (chat IA super/empresa: interruptor global de servicio):
+- La configuracion avanzada super agrega un interruptor global para activar o desactivar la IA desde `web/super/configuracion_avanzada.html`.
+- Cuando el servicio queda desactivado, tanto `/api/empresa/chat_con_inteligencia_artificial/*` como `/super/api/chat_con_ia_global/*` responden estado de servicio no disponible y dejan de generar consultas hacia DeepSeek u Ollama.
+- Impacto de permisos: sin cambios de rol; la operacion sigue restringida a configuracion super para el control global y a los permisos ya existentes de los chats para lectura y uso.
+
+Actualizacion 2026-04-18 (chat IA super/empresa: interruptores por proveedor):
+- `web/super/configuracion_avanzada.html` agrega interruptores separados para `DeepSeek Chat` y `Ambis Local`, además del interruptor global.
+- `backend/handlers/ai_config_handlers.go` persiste `ai.provider.deepseek.enabled` y `ai.provider.ollama.enabled` para decidir qué proveedores quedan visibles en los chats.
+- Cuando un proveedor queda desactivado, desaparece del catálogo disponible de `/api/empresa/chat_con_inteligencia_artificial/*` y `/super/api/chat_con_ia_global/*`, y el sistema hace fallback al primer modelo habilitado.
+- Impacto de permisos: sin cambios de rol; solo `super_administrador` puede apagar o encender proveedores desde configuración avanzada.
+
+Actualizacion 2026-04-18 (chat IA super/empresa: estado visual de servicio desactivado):
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` ahora muestran un mensaje visible cuando la IA global está desactivada y bloquean el formulario localmente.
+- `web/super/configuracion_avanzada.html` hace explícita la acción `Probar IA contra VPS` como validación real del servicio Ollama a través del backend.
+- Impacto de permisos: sin cambios; el ajuste es de experiencia operativa y comunicación de estado.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: integraciones externas y reconciliacion documental):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico de integraciones empresariales y un runbook de reconciliacion documental fiscal/contable.
+- `documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md` fija entradas, salidas, invariantes, alertas y restricciones de `/api/empresa/integraciones/apis` y `/api/empresa/integraciones/bancos`.
+- `documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md` documenta el diagnostico operativo de compras documentales, reintentos y reconciliacion fiscal, y versionado/acceso del repositorio empresarial.
+- Impacto de permisos: sin cambios funcionales en wrappers ni roles; el alcance es documental y operativo transversal.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: repositorio documental y firmas externas):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico y un runbook del repositorio documental empresarial.
+- `documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md` fija rutas, acciones, columnas, invariantes y reglas de acceso de `/api/empresa/documentos/gestion` y `/api/empresa/documentos/firmas`.
+- `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md` documenta el diagnostico operativo de versionado, historial, firmas asociadas y acceso por rol/modulo documental.
+- Impacto de permisos: sin cambios en wrappers ni roles vigentes; la mejora es documental y operativa transversal sobre el comportamiento ya implementado.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: reconciliacion documental y evidencia regulatoria endurecida):
+- Se endurece el paquete `gobernanza tecnica` para reconciliar explícitamente repositorio documental, interoperabilidad fiscal/contable y exportes multiformato.
+- Los contratos de repositorio, interoperabilidad y reportes ahora dejan explícito que un exporte no reemplaza la versión vigente ni la firma documental cuando el flujo exige evidencia reforzada.
+- Los runbooks de reconciliación y versionado ahora obligan a cruzar `documento_codigo`, versión vigente, `hash_archivo`, `hash_firma` y dataset exportado cuando aplique.
+- Impacto de permisos: sin cambios en wrappers ni roles; el ajuste fortalece trazabilidad operativa y disciplina documental.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: checklist QA/soporte para evidencia documental):
+- Se agrega una checklist corta en `documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md` para acelerar triage y UAT en flujos documentales.
+- La descripcion del proyecto y la estructura del codigo ahora remiten explícitamente a esa checklist como entrada rapida antes de escalar a runbooks completos.
+- Impacto de permisos: sin cambios en wrappers ni roles; el ajuste mejora el cierre operativo y la disciplina de soporte.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: interoperabilidad documental e integraciones externas):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico del frente documental-contable/fiscal y un runbook de contingencias para conectores externos.
+- `documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md` fija reglas de compras documentales, facturacion documental, cola de reintentos fiscales, validacion documental y versionado/control de acceso del repositorio empresarial.
+- `documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md` documenta el diagnostico de `health_check`, `sync_manual`, monitoreo, latencia y rotacion segura de credenciales para `integraciones/apis` e `integraciones/bancos`.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: cierre de periodo y conciliacion bancaria):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico y un runbook del frente financiero-contable.
+- `documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md` fija el comportamiento de periodos, evidencia de autorizacion, importacion idempotente de extractos, conciliacion automatica y bloqueo de movimientos en periodos cerrados.
+- `documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md` documenta el diagnostico de cierres fallidos, extractos sin match, tolerancias y resumenes con pendientes o desviaciones.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
+
+Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube con vista maximizable):
+- Se amplía el modulo `operacion por empresa / estaciones` con una estacion especial opcional tipo `YouTube`, activable desde la configuracion global de estaciones.
+- `web/administrar_empresa/configuracion_de_estaciones.html` agrega el toggle `youtube_enabled` dentro de `estaciones_config` y `web/administrar_empresa/estaciones.html` renderiza la tarjeta embebida con boton de ampliacion.
+- `web/administrar_empresa/youtube_station_browser.html` encapsula la vista de reproducción embebida de YouTube para reutilizarla tanto en modo compacto dentro de la tarjeta como en la ventana ampliada de aproximadamente `500 x 500`.
+- Impacto de permisos: sin cambios; la mejora vive dentro de la misma vista autenticada de estaciones y no modifica wrappers ni roles.
+
+Actualizacion 2026-04-19 (estaciones: YouTube deja la búsqueda embebida y usa reproducción válida con fallback externo):
+- Se corrige el submodulo `estaciones` para que la tarjeta especial de YouTube ya no dependa de búsquedas incrustadas que el proveedor externo dejó de soportar.
+- `web/administrar_empresa/configuracion_de_estaciones.html` incorpora un campo explícito para guardar la URL o el ID de un video/playlist, `web/administrar_empresa/youtube_station_browser.html` resuelve solo referencias embebibles válidas y `web/administrar_empresa/estaciones.html` muestra la fuente configurada dentro de la tarjeta.
+- Si la referencia guardada es texto libre y no un video o playlist válido, la estación deja un estado visible dentro del iframe y usa `Abrir YouTube` como fallback externo en lugar de simular una reproducción rota.
+- Impacto de permisos: sin cambios en roles, wrappers ni alcance por `empresa_id`; el ajuste es exclusivamente funcional/visual dentro del modulo autenticado de estaciones.
+
+Actualizacion 2026-04-19 (estaciones: la misma tarjeta YouTube permite guardar la fuente y acepta Shorts):
+- Se refuerza el submodulo `estaciones` para que la operadora pegue y guarde desde la propia tarjeta la URL o el ID del contenido de YouTube, sin depender de entrar a la pantalla de configuración.
+- `web/administrar_empresa/estaciones.html` agrega un editor inline dentro de la tarjeta, guarda la referencia en `estaciones_config` y recarga la vista en el mismo bloque; `web/administrar_empresa/youtube_station_browser.html` ya interpreta también enlaces de `Shorts` como video válido.
+- Impacto de permisos: sin cambios en roles, wrappers ni alcance; la tarjeta usa la misma persistencia autenticada de `empresa_estacion_prefs` ya existente para la empresa activa.
+
+Actualizacion 2026-04-19 (portal publico: explorar oferta adopta tarjetas del home y una landing visual propia):
+- Se ajusta el submodulo `pagina principal publica` para que la landing `descripcion_de_los_sistemas.ht` deje de usar el bloque visual oscuro anterior y pase a una composicion mas comercial y consistente con el index.
+- `web/descripcion_de_los_sistemas.ht` reutiliza la clase `home-offer-card` en cada tarjeta descriptiva y `web/estilos.css` redefine la pagina de ofertas con hero, navegacion rapida y tarjetas ampliadas que conservan el mismo lenguaje visual del home.
+- Impacto de permisos: sin cambios en roles, wrappers ni rutas protegidas; el ajuste es completamente visual dentro del portal publico.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: soporte remoto y contingencia de reportes):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico del módulo de soporte remoto multiempresa y dos runbooks nuevos de contingencia operativa.
+- `documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md` fija entradas, estados, invariantes y límites del flujo empresarial, público y super de soporte remoto.
+- `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md` documenta la recuperación de plantillas, programaciones, ejecuciones, exportaciones tabulares y validaciones de consistencia.
+- `documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md` documenta diagnóstico de heartbeats, PIN de dispositivo, sesión con token, portal público y bloqueos por plan.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: DIAN, alertas de reinicio y reportes multiformato):
+- Se extiende el paquete transversal `gobernanza tecnica` con tres artefactos nuevos orientados a diagnostico y contratos de comportamiento real.
+- `documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md` fija el procedimiento operativo de DIAN para onboarding, checklist, credenciales, firma base, set de pruebas y clasificacion de brechas entre configuracion y transporte oficial. Nota 2026-06-18: PCS ya cuenta con evidencia de produccion aceptada para `1PCS2` y `1PCS3`.
+- `documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md` documenta el uso de `POST /super/api/config/gmailaction=test`, `super_servidor_eventos`, `gmail.restart_alert_to`, `gmail.restart_alert_enabled` y `gmail.smtp_test_mode`.
+- `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md` formaliza el modulo de reportes empresariales y globales super, incluyendo datasets, exportes, plantillas, programacion, ejecuciones y consistencia multiformato.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental, operativa y de gobernanza transversal.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: paquete base de ADRs, contratos y runbooks):
+- Se crea el paquete transversal `gobernanza tecnica` para reducir errores futuros de implementacion y volver trazables las decisiones estructurales del repositorio.
+- `documentos/README.md` ordena la lectura tecnica del repo y `documentos/gobernanza_tecnica/README.md` instala el marco de trabajo con plan, estandares de cambio seguro, ADRs, contratos y runbooks.
+- Se agregan los ADRs base de `empresa_id` como frontera multiempresa y `PostgreSQL en VPS` como runtime productivo canonico, junto con el primer contrato y runbook del checkout publico de licencias.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y de gobernanza tecnica transversal.
+
+Actualizacion 2026-04-18 (seleccionar empresa: tarjetas mas compactas y botones alineados al pie):
+- Se ajusta visualmente el submodulo `administracion global (super) / seleccionar empresa` para reducir el tamano de las tarjetas del listado sin cambiar rutas ni acciones.
+- `web/estilos.css` compacta ancho, alto y espaciados de las tarjetas, y deja la botonera inferior siempre centrada y alineada al pie del bloque, incluso cuando la descripcion ocupa varias lineas.
+- Impacto de permisos: sin cambios; el ajuste es solo visual sobre la misma vista autenticada.
+
+Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
+- Se amplía el submodulo `administracion global (super) / configuracion avanzada` para que el boton `Probar Gmail` ejecute un envio SMTP real usando las credenciales guardadas en PostgreSQL.
+- `backend/handlers/usuarios_empresa.go` añade `POST /super/api/config/gmailaction=test` y `web/super/configuracion_avanzada.html` consume esa accion para mostrar en la misma tarjeta si el correo de prueba fue enviado a `powerfulcontrolsystem@gmail.com`.
+- Impacto de permisos: sin cambios; la capacidad sigue restringida a `super_administrador` dentro del mismo modulo autenticado.
+
+Actualizacion 2026-04-18 (licencias y pasarelas: total cero activa sin pago y solo una vez por empresa):
+- Se endurece el modulo `licencias y pasarelas de pago` para que una licencia de valor cero, o una licencia cuyo descuento deje el total en cero, no intente abrir Epayco/Wompi y se active de forma directa solo una vez por empresa.
+- `backend/handlers/payments_handlers.go` agrega el resumen publico de checkout, recalcula descuento y total antes de abrir pasarela y bloquea la activacion gratis repetida cuando la misma empresa ya consumió esa licencia.
+- `backend/db/licencias_gratis.go` crea la persistencia `licencias_activaciones_gratis` para dejar la marca unica por `(licencia_id, empresa_id)` y mantener trazabilidad de descuentos/cortesia usados en activaciones sin cobro.
+- `web/pagar_licencia.html`, `web/elegir_licencia.html` y `web/estilos.css` muestran el total real, cambian el CTA a `Activar licencia` cuando corresponde y homogeneizan la altura visual de las tarjetas del selector de empresas.
+- Impacto de permisos: sin cambios; el checkout sigue siendo publico, pero la regla comercial de activacion gratis queda ahora validada en backend y no solo en frontend.
+
+Actualizacion 2026-04-18 (licencias y pasarelas: correo Epayco recuperable tras webhook o fallo inicial):
+- Se endurece el modulo `licencias y pasarelas de pago` para que el correo de activacion de Epayco no dependa exclusivamente de la primera activacion efectiva de la licencia.
+- `backend/handlers/payments_handlers.go` deja una marca idempotente en el `raw_payload` del pago cuando la notificacion se completa y, si el webhook aprobó primero o el primer intento de correo falló, el polling posterior puede reenviar una sola vez cuando ya exista destinatario valido.
+- `backend/handlers/payments_handlers.go` también reconoce `customer_email` dentro del bloque `data` de la validacion Epayco, que es donde algunas respuestas aprobadas entregan el correo del comprador.
+- Impacto de permisos: sin cambios; sigue siendo un flujo publico del checkout de licencias bajo `/epayco/*`.
+
+Actualizacion 2026-04-18 (licencias y pasarelas: aislamiento multiempresa en checkout y correo con empresa logica):
+- Se ajusta el modulo `licencias y pasarelas de pago` para evitar que el retorno publico reconcilie una referencia vieja o ajena a la empresa abierta en pantalla.
+- `backend/db/db.go` agrega resolucion de empresa por alcance logico `empresa_id` y endurece los accesos a `pagos_epayco` y `pagos_wompi` con `EnsurePaymentGatewaySchema` + retry para create/get/update/context.
+- `backend/handlers/payments_handlers.go` usa esa resolucion logica en el correo de activacion y compara el pago encontrado contra `licencia_id` y `empresa_id` esperados por la pagina antes de activar o confirmar el estado.
+- `web/pagar_licencia.html` reenvia `licencia_id` y `empresa_id` en cada polling y corrige el alcance del contexto de retorno para no perder la redireccion de cierre exitoso.
+- Impacto de permisos: sin cambios; el checkout sigue publico bajo `/epayco/*` y `/wompi/*`, pero ahora valida mejor el aislamiento por empresa.
+
+Actualizacion 2026-04-18 (estaciones: solo queda el indicador cuadrado del sensor):
+- Se ajusta el modulo `operacion por empresa / estaciones` para simplificar la tarjeta operativa y dejar un unico estado visual de sensor.
+- `web/administrar_empresa/estaciones.html` deja de renderizar el circulo inferior centrado de estado y conserva solo el cuadrito de la esquina superior derecha.
+- `web/estilos.css` elimina los estilos del badge circular inferior ya retirado del render.
+- Impacto de permisos: sin cambios; es un ajuste visual dentro de la misma vista autenticada del modulo de estaciones.
+
+Actualizacion 2026-04-18 (ventas simples por estacion: regreso directo a estaciones):
+- Se ajusta el submodulo `operacion por empresa / ventas simples por estacion` para recuperar navegacion clara cuando la vista se abre desde una estacion.
+- `web/administrar_empresa/ventas_simple.html` agrega el boton `Regresar a estaciones` en la cabecera operativa.
+- `web/js/ventas_simple.js` resuelve la URL de retorno hacia `administrar_empresa/estaciones.html` preservando `empresa_id` y conecta el nuevo boton a esa navegacion.
+- Impacto de permisos: sin cambios; el flujo sigue dentro del mismo modulo autenticado de operacion empresarial.
+
+Actualizacion 2026-04-18 (ventas simples por estacion: variante `carrito_compacto`):
+- Se materializa una variante ligera del mismo flujo operativo de carrito por estacion sin crear rutas backend nuevas ni duplicar la lógica de cobro.
+- `web/administrar_empresa/estaciones.html` abre `ventas_simple.html` con `variant=compacto` cuando la estacion usa venta simple, y `web/js/ventas_simple.js` tambien acepta una configuracion remota opcional desde `/api/empresa/configuracion_avanzada` si el backend ya publica `cart_variant` o aliases equivalentes.
+- `web/administrar_empresa/ventas_simple.html` muestra una barra de acciones rapidas para buscar producto, ver carrito, cobrar, sincronizar, iniciar nueva venta y saltar a correccion, manteniendo el mismo carrito por estacion y el mismo aislamiento por `empresa_id`.
+- Impacto de permisos: sin cambios; la variante reutiliza el mismo modulo autenticado y los mismos endpoints `/api/empresa/carritos_compra` y `/api/empresa/carritos_compra/items`.
+
+Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus refuerza modo movil y ambiente claro):
+- Se ajusta `web/Juegos/brigada_burbujas_3d_plus.html` para cerrar el shooter 3D simulado con controles tactiles directos sobre el escenario, ayuda visual en pantalla y una composicion pastel mas caricaturesca.
+- El render del juego aclara cielo, suelo, minimapa y sprites para que el ambiente se sienta mas de dibujos animados y menos oscuro, conservando la misma historia y progresion por niveles.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus agrega campaña, poderes e IA avanzada):
+- Se amplia `web/Juegos/brigada_burbujas_3d_plus.html` con dos escenarios adicionales, tres transformaciones jugables (`Cometa Neon`, `Guardian Globo`, `Titan Prisma`) y rivales adultas estilizadas de pasarela caricaturesca como nueva variante legal de enemigos.
+- La IA enemiga ahora mezcla persecucion, orbita lateral, retirada tactica, emboscada y proyectiles remotos segun el tipo de rival, reforzando la sensacion de shooter retro moderno en movil.
+- `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` actualizan el resumen y la portada del lobby para reflejar la campaña ampliada.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega arsenal y mapa abierto/cerrado):
+- Se amplía `web/Juegos/brigada_burbujas_3d_plus.html` con un arsenal de tres armas (`Espuma base`, `Prisma triple`, `Meteor pop`), pickups de salud/municion/desbloqueo y un HUD adicional para arma activa y tipo de sector.
+- El shooter ahora alterna sectores cerrados, abiertos e hibridos dentro de la campaña, refuerza la sensacion pseudo-3D con lineas de suelo en perspectiva y añade una IA enemiga que patrulla, busca al jugador tras perder vision, convoca refuerzos desde el jefe final y presiona mejor en arenas abiertas.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus cierra UX real de celular):
+- `web/Juegos/brigada_burbujas_3d_plus.html` agrega una barra tactica dentro del escenario con cambio rapido de arma y pausa para que el combate no dependa del rack externo en pantallas pequenas.
+- En movil se oculta el arsenal grande, se compacta la vista y el flujo de combate queda concentrado en el escenario, HUD y controles inferiores sin obligar a desplazarse por la pagina.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega joystick y pantalla completa):
+- `web/Juegos/brigada_burbujas_3d_plus.html` sustituye el pad de movimiento movil por un joystick tactil real, agrega boton de pantalla completa en el quickbar y mueve arma/sector al HUD interno para uso con una mano.
+- El combate movil queda resuelto dentro del escenario: joystick para desplazamiento libre, gesto sobre canvas para apuntar, quickbar para arma/pausa/fullscreen y boton de disparo concentrado en el lado derecho.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega auto-disparo, vibracion y ajustes tactiles):
+- `web/Juegos/brigada_burbujas_3d_plus.html` incorpora un panel de opciones persistentes para celular con auto-disparo opcional, vibracion, sensibilidad de joystick y sensibilidad de giro.
+- El shooter ahora aplica feedback mas fuerte con screen shake, flash de disparo y vibracion corta al disparar o recibir daño cuando el dispositivo lo soporta.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega HUD Auto y ayuda de mira):
+- `web/Juegos/brigada_burbujas_3d_plus.html` sube el auto-disparo a un boton visible del HUD movil, manteniendo el toggle del panel para que el jugador no tenga que abrir ajustes en pleno combate.
+- El panel tactil gana control fino de impacto y ayuda de mira, y el loop movil aplica una correccion suave de camara hacia enemigos cercanos cuando el usuario apunta desde celular.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus activa preset facil por defecto):
+- `web/Juegos/brigada_burbujas_3d_plus.html` fuerza una migracion unica de ajustes moviles para dejar auto-disparo activado, ayuda de mira mas alta y giro mas controlado incluso si el navegador tenia una configuracion vieja guardada.
+- La experiencia movil arranca lista para jugar: el HUD muestra `Auto ON`, el texto en escenario explica que basta con apuntar y moverse, y el jugador aun puede desactivar el preset desde el mismo panel.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-17 (super seguridad: vista en modo oscuro):
+- Se ajusta `web/super/seguridad.html` para que el modulo de auditoria VPS del panel super use una paleta oscura consistente con el shell administrativo.
+- La vista mantiene la misma operacion y los mismos endpoints, pero oscurece hero, tarjetas, tablas, formularios, badges y banners de estado para mejorar continuidad visual con el resto del panel super.
+- Impacto de permisos: sin cambios; es un ajuste visual del mismo modulo `Seguridad VPS Linux (super)`.
+
+Actualizacion 2026-04-17 (ventas: documento automatico por empresa al pagar carrito):
+- Se amplía el modulo `carritos / ventas / facturacion` para que cada empresa elija si sus ventas generan `factura_electronica` o `comprobante_pago` sin alterar el flujo operativo de cobro.
+- `backend/db/empresa_configuracion_avanzada.go` agrega el campo `modo_documento_venta`; `backend/handlers/carritos_compras.go` crea el documento automaticamente al cerrar la venta y `web/administrar_empresa/configuracion.html` publica el selector dentro del panel empresarial.
+- `web/administrar_empresa/facturas_electronicas.html` amplía el historial documental para incluir comprobantes de pago dentro del mismo modulo de consulta.
+- Impacto de permisos: sin cambios en alcance por rol; sigue siendo configuracion propia de empresa y operacion del mismo modulo autenticado por `empresa_id`.
+
+Actualizacion 2026-04-17 (menus administrativos: ocultar/mostrar solo en movil):
+- Se ajusta la navegacion de `administrar_empresa.html`, `super_administrador.html` y `seleccionar_empresa.html` para agregar un boton final de `Ocultar menú` o `Mostrar menú` visible solo en pantallas moviles.
+- `web/menu.js` coordina el estado colapsado del sidebar compartido y mantiene el menu completo sin cambios en escritorio.
+- `web/estilos.css` conserva el apilado vertical en movil y, cuando el menu se oculta, deja visible solo el boton final para volver a expandirlo.
+- Impacto de permisos: sin cambios; el ajuste es exclusivo de UX y no altera rutas, roles ni acciones disponibles.
+
+Actualizacion 2026-04-18 (submenu de configuracion: boton de ocultar menu en movil):
+- Se ajusta `web/administrar_empresa/configuracion_menu.html` para reutilizar el mismo patron responsive del sidebar plegable ya presente en los shells administrativos principales.
+- La vista carga `web/menu.js`, agrega `admin-sidebar-mobile-collapsible` y publica el boton final `Ocultar menú` / `Mostrar menú` dentro del submenú de configuracion, manteniendo intactos sus mismos accesos internos.
+- Impacto de permisos: sin cambios; es solo un ajuste de UX responsive dentro del modulo autenticado de configuracion empresarial.
+
+Actualizacion 2026-04-18 (submenu de configuracion: permisos e integraciones dejan de ser placeholders):
+- `web/administrar_empresa/configuracion_permisos.html` reemplaza los botones falsos de agregar/guardar por una consulta real al endpoint `/api/empresa/permisos_contextoinclude_matrix=1`, mostrando rol detectado, rol efectivo, modulos y matriz de roles disponible para la empresa autenticada.
+- `web/administrar_empresa/configuracion_integraciones.html` queda como pantalla informativa; la configuracion operativa de Wompi/Epayco, slug, dominio, paginas y productos publicados se administra desde `web/administrar_empresa/venta_publica.html`.
+- Impacto de permisos: sin ampliacion de privilegios; `Permisos` pasa a ser una vista informativa de solo lectura sobre el contexto ya permitido y `Integraciones` reutiliza el mismo alcance autenticado de venta publica que ya existia para la empresa.
+
+Actualizacion 2026-04-18 (submenu de configuracion: bloque general ya persiste en backend):
+- `web/administrar_empresa/configuracion.html` deja de guardar el bloque `Productos y pedidos` en `localStorage` y pasa a consumir `GET/PUT /api/empresa/configuracion_general`.
+- `backend/db/empresa_configuracion_general.go` crea el almacenamiento relacional por `empresa_id` para orden de servicio, descuentos y lector de codigo de barras; `backend/handlers/empresa_configuracion_general.go` expone la API autenticada y su prueba valida carga default y guardado real.
+- Impacto de permisos: sin ampliacion de privilegios; la nueva ruta queda bajo el mismo wrapper `WithEmpresaSeguridadPermissions` del submodulo configuracion empresarial.
+
+Actualizacion 2026-04-18 (submenu de configuracion: enlace Avanzada corrige destino empresarial):
+- `web/administrar_empresa/configuracion_menu.html` deja de apuntar a `/super/configuracion_avanzada.html` desde el panel de empresa y ahora abre la seccion avanzada real dentro de `web/administrar_empresa/configuracion.html`.
+- `web/administrar_empresa/configuracion.html` publica anclas para `Documento de venta e impresion` y `Formato monetario y numerico`, de forma que el acceso `Avanzada` permanezca dentro del alcance de la empresa.
+- Impacto de permisos: reduce riesgo de navegacion a una vista super global desde el submenu empresarial; no cambia roles ni wrappers.
+
+Actualizacion 2026-04-17 (editar empresa: CTA de compra para licencias vencidas):
+- La vista `editar_empresa.html` ahora muestra el boton `Comprar licencia` solo cuando la empresa consultada tiene licencias historicas vencidas y no conserva una licencia activa vigente.
+- `web/js/editar_empresa.js` consulta `/super/api/licenciasscope=mine&con_empresa=1`, filtra por `empresa_id` y habilita el CTA hacia `elegir_licencia.html` reutilizando el `tipo_id` y `tipo_nombre` de la empresa.
+- Impacto de permisos: no cambia el alcance; la vista sigue usando solo lecturas permitidas y el CTA redirige al flujo comercial ya existente de compra de licencias.
+
+Actualizacion 2026-04-17 (editar empresa: edicion dedicada y eliminacion total confirmada):
+- Se amplía el submodulo `administracion global (super) / seleccionar empresa` con la nueva pantalla `editar_empresa.html`, destinada a actualizar el nombre visible y la descripcion operativa de la empresa seleccionada.
+- `backend/db/empresas_delete.go` agrega la purga empresarial completa por `empresa_id` en la base operativa y en la base super, eliminando datos relacionados antes de borrar la fila principal de `empresas`.
+- `backend/handlers/system_empresas_handlers.go` extiende `/super/api/empresas` con `DELETE action=eliminar_total|purge`, validando confirmacion por nombre exacto; `web/js/editar_empresa.js` consume tambien `GET id`, `action=resumen_descarga` y `action=impacto_desactivacion` para mostrar el contexto previo.
+- `web/js/seleccionar_empresa.js` incorpora el boton `Editar` en cada tarjeta para abrir la nueva vista sin alterar la accion principal de entrar a la empresa o a la licencia.
+- Impacto de permisos: el rol `administrador` mantiene el alcance acotado del selector y ahora puede usar `PUT` y `DELETE` sobre `/super/api/empresas` solo dentro de su scope; `POST` y el resto del panel super siguen restringidos.
+
+Actualizacion 2026-04-17 (seleccionar empresa: tarjetas nuevas y edicion movida al menu):
+- Se reajusta `seleccionar_empresa.html` para quitar el boton `Editar` de cada tarjeta y mover el acceso a `editar_empresa.html` al menu lateral del selector, reutilizando la empresa activa del contexto.
+- `web/js/seleccionar_empresa.js` mantiene intacto el orden del texto en cada tarjeta (`nombre`, `descripcion`, `estado de licencia`), pero aplica una presentacion nueva por tipo de negocio con sello superior e icono decorativo sin desplazar el contenido principal.
+- `web/editar_empresa.html` y `web/js/editar_empresa.js` quedan reducidos a una experiencia tipo CRUD parcial: solo editar campos principales o eliminar totalmente la empresa, sin CTA paralelos de descarga o compra de licencia dentro de esa pantalla.
+- Impacto de permisos: sin ampliacion de privilegios; el mismo alcance de `PUT/DELETE` sobre `/super/api/empresas` se mantiene, y el cambio solo reorganiza el punto de acceso dentro del selector.
+
+Actualizacion 2026-04-17 (descarga de empresa: alias sin extension, descarga real y modo oscuro):
+- Se ajusta el submodulo `administracion global (super) / descarga consolidada de empresa` para que la vista responda tanto en `/descargar_informacion_de_la_empresa.html` como en `/descargar_informacion_de_la_empresa`.
+- `web/js/descargar_informacion_de_la_empresa.js` deja de depender de enlaces ciegos y ahora descarga cada formato con `fetch + blob`, mostrando estado, errores y nombre final del archivo sin sacar al usuario de la pagina.
+- `web/estilos.css` migra esta vista a una presentacion oscura operativa con tarjetas, resumen y previews legibles sobre fondo dark.
+- Impacto de permisos: sin cambios de alcance; la pantalla sigue usando las mismas lecturas y exportaciones protegidas de `/super/api/empresas`.
+
+Actualizacion 2026-04-17 (selector de empresas: administradores recuperan operacion minima):
+- Se corrige el cruce entre la politica de roles y `seleccionar_empresa.html` para que el rol `administrador` no-super pueda volver a cargar el selector y crear su primera empresa sin recibir `403`.
+- `backend/utils/utils.go` permite a `administrador` usar `GET/POST` sobre `/super/api/empresas` y mantener `GET` sobre `/super/api/tipos_empresas` y `/super/api/licencias`, dejando el resto del panel super fuera de su alcance.
+- Impacto de permisos: `administrador` recupera el alcance minimo necesario para abrir y operar `seleccionar_empresa.html`; `PUT/DELETE` sobre empresas siguen controlados por scope y los demas endpoints globales continúan restringidos.
+
+Actualizacion 2026-04-17 (registro de contrasena Google: solo guardar centrado):
+- Se ajusta el submodulo `autenticacion y sesiones` para que `registrar_contrasena_usuario_de_google.html` muestre un unico CTA de guardado, eliminando la accion visual `Continuar`.
+- La vista deja el boton `Guardar contrasena` centrado dentro del formulario para reforzar que este paso debe completarse antes de seguir con el acceso por correo y clave.
+- Impacto de permisos: sin cambios; solo se corrige la presentacion del flujo autenticado posterior al login con Google.
+
+Actualizacion 2026-04-17 (checkout Epayco: retorno aprobado activa la licencia y sale a pantalla de exito):
+- Se ajusta el modulo `licencias y pasarelas de pago` para que el retorno web de Epayco priorice los identificadores reales de la pasarela (`x_ref_payco`, `x_transaction_id`, `x_response`) sobre los placeholders iniciales del checkout.
+- `web/epayco/respuesta.html` deja de reenviar un `pending` ambiguo cuando Epayco ya devolvio datos finales y conserva el `invoice` interno solo como respaldo de conciliacion.
+- `web/pagar_licencia.html` usa esos datos reales para reanudar la consulta del estado, y cuando el backend confirma `APPROVED` redirige a `web/epayco/pago_exitoso.html` en vez de dejar al usuario dentro del formulario de pago.
+- Impacto de permisos: sin cambios; el checkout sigue publico bajo `/epayco/*` y la activacion de licencia conserva la misma logica comercial en backend.
+
+Actualizacion 2026-04-17 (seleccionar empresa: fix de render por helper HTML ausente):
+- Se corrige el submodulo `administracion global (super) / seleccionar empresa` para que la carga inicial de tarjetas no falle con `escapeHtml is not defined` al renderizar nombre y observaciones de empresa.
+- `web/js/seleccionar_empresa.js` recupera el helper local de escape HTML usado por las tarjetas del panel y vuelve a permitir que el listado cargue completo antes de abrir formularios, licencias o descargas.
+- Impacto de permisos: sin cambios; solo se corrige un error de frontend en la misma vista protegida del panel super.
+
+Actualizacion 2026-04-17 (pagina principal publica: CTA inferior fijo y texto con mayor contraste):
+- Se ajusta el submodulo `pagina principal publica` para que el boton `Explorar oferta` permanezca siempre centrado y pegado a la parte inferior util de cada tarjeta del home, incluso cuando las descripciones tengan distinta longitud.
+- `web/estilos.css` hace que el cuerpo descriptivo ocupe el espacio flexible de la tarjeta y ahora deja titulo y descripcion en tonos casi blancos con un iluminado exterior negro suave para mejorar lectura sin paneles de fondo adicionales.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni visibilidad; el ajuste es visual dentro del portal publico.
+
+Actualizacion 2026-04-17 (autenticacion administrativa: super restringido al correo reservado):
+- Se corrige el modulo `autenticacion y sesiones` para que el registro administrativo publico y el callback de Google dejen las cuentas nuevas en rol `administrador` por defecto.
+- `backend/handlers/auth_admin_handlers.go` y `backend/utils/utils.go` eliminan la promocion automatica a `super_administrador` para cuentas legacy/autoregistradas y aplican la misma politica al pasar por `AuthMiddleware`.
+- Solo `powerfulcontrolsystem@gmail.com` conserva `super_administrador` dentro del flujo publico de autenticacion administrativa.
+- Impacto de permisos: el alta administrativa publica deja de escalar privilegios al panel super; la administracion global queda reservada al correo canónico del sistema y el resto de cuentas sigue en alcance `administrador` sin acceso a `/super/*`.
+
+Actualizacion 2026-04-17 (venta publica por empresa: Wompi y Epayco por empresa):
+- Se amplía el modulo `venta publica por empresa` para que cada empresa configure y active sus credenciales de Wompi y Epayco sin compartir llaves globales entre empresas.
+- `backend/db/venta_publica.go` incorpora columnas Epayco en `empresa_venta_publica_configuracion`; `backend/handlers/venta_publica.go` reutiliza esa configuracion tanto desde `administrar_empresa/venta_publica.html` como desde la nueva sección de `administrar_empresa/configuracion.html`.
+- `web/venta_publica.html` ahora detecta `payment_methods` activos por empresa, permite elegir la pasarela y abre `Smart Checkout` de Epayco cuando corresponde; los webhooks `/wompi/webhook` y `/epayco/webhook` actualizan tambien `empresa_venta_publica_ordenes`.
+- Impacto de permisos: la administracion de credenciales sigue restringida al contexto autenticado de empresa; la tienda pública solo consume el subconjunto sanitizado de metodos activos y nunca expone secretos.
+
+Actualizacion 2026-04-17 (seleccionar empresa: descarga empresarial en pagina dedicada y multiformato):
+- Se amplía el modulo `administracion global (super) / seleccionar empresa` para que el boton de descarga de cada tarjeta abra una pagina nueva `descargar_informacion_de_la_empresa.html` en lugar del modal legado basado en backups.
+- `backend/handlers/system_empresas_export.go` construye un snapshot consolidado con informacion de la empresa seleccionada, recorriendo tablas relacionadas en la base operativa y en la base super; `/super/api/empresas` expone `action=resumen_descarga` y `action=exportar_informacion` para PDF, XLS, CSV, JSON y TXT.
+- `web/descargar_informacion_de_la_empresa.html`, `web/js/descargar_informacion_de_la_empresa.js` y `web/estilos.css` muestran resumen ejecutivo, tablas detectadas y accesos directos de exportacion profesional.
+- Impacto de permisos: sin cambio de rol; la funcionalidad sigue restringida al alcance del panel super y reutiliza el mismo control de acceso de `/super/api/empresas`.
+
+Actualizacion 2026-04-17 (checkout publico de licencias: tarjetas home y medios Epayco visibles):
+- Se ajusta nuevamente el modulo `licencias y pasarelas de pago` para que `web/pagar_licencia.html` presente el resumen de compra en dos tarjetas con el mismo lenguaje visual del home publico: una tarjeta para la licencia y otra para codigos de descuento / asesor comercial.
+- La misma pantalla mantiene el checkout de Epayco dentro de una tarjeta blanca mas compacta y centrada, elimina el campo visible de correo del cliente y deja solo la confirmacion de terminos antes de abrir la pasarela.
+- Impacto de permisos: sin cambios; el checkout de licencias sigue siendo publico en sus endpoints `/epayco/*`, `/wompi/*` y `/api/public/licencias/payment_methods`, mientras la configuracion de pasarelas y licencias sigue restringida a `super_administrador`.
+
+Actualizacion 2026-04-17 (licencias publicas: orden de menor a mayor valor):
+- Se ajusta `web/elegir_licencia.html` para ordenar las licencias disponibles para pagar desde la opcion mas economica hasta la mas costosa.
+- La pantalla conserva el mismo flujo hacia `pagar_licencia.html`; solo cambia el criterio de presentacion del catalogo.
+- Impacto de permisos: sin cambios; el mismo flujo administrativo autenticado sigue llegando a la vista y al checkout publico de licencias.
+
+Actualizacion 2026-04-17 (seleccionar empresa: descarga compacta con tooltip):
+- Se ajusta `web/js/seleccionar_empresa.js` y `web/estilos.css` para que el boton de descarga en las tarjetas quede blanco, sin texto visible y solo con el icono.
+- El hover del mouse muestra el mensaje `Descargar informacion de la empresa` mediante tooltip nativo del navegador.
+- Impacto de permisos: sin cambios; solo se modifica la presentacion del mismo boton de descarga ya disponible en la tarjeta.
+
+Actualizacion 2026-04-17 (checkout publico de licencias: Epayco activa licencia y cierra pendientes finales):
+- Se refuerza el modulo `licencias y pasarelas de pago` para que la confirmacion de Epayco active realmente la licencia aunque la pasarela devuelva IDs externos distintos al `invoice` interno del sistema.
+- `backend/handlers/payments_handlers.go` unifica el fallback de contexto entre polling y webhook, hace idempotente la activacion para evitar reprocesos y conserva `customer_email` dentro de `pagos_epayco` para enviar el correo de confirmacion una sola vez cuando la licencia queda activa.
+- `web/pagar_licencia.html` deja de relanzar verificacion cuando el retorno ya trae un estado final rechazado o fallido, de modo que el formulario no siga mostrando el pago como pendiente despues de un rechazo.
+- `backend/handlers/payments_handlers_test.go` agrega regresiones de aprobacion con correo, activacion unica y fallback por `invoice` en webhook.
+- Impacto de permisos: sin cambios; `/epayco/transaction_status` y `/epayco/webhook` siguen publicos dentro del checkout comercial, mientras el alta de configuracion y licencias permanece en `super_administrador`.
+
+Actualizacion 2026-04-17 (licencias publicas: tarjetas mas compactas para pagar):
+- Se ajusta nuevamente la vista publica de seleccion de licencias para que `web/elegir_licencia.html` quite los textos operativos de estado/asignacion y compacte verticalmente cada tarjeta.
+- La pantalla conserva el mismo flujo hacia `pagar_licencia.html`, pero deja visible solo la informacion comercial clave: descripcion, valor, duracion y boton de compra.
+- Impacto de permisos: sin cambios; el mismo flujo administrativo autenticado sigue llegando a la vista y al checkout publico de licencias.
+
+Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto):
+- Se ajusta transversalmente la navegacion del frontend para que los enlaces y cambios de pantalla del sistema usen la misma pestaña por defecto, evitando aperturas automáticas en ventana nueva para modulos, portales publicos, ayudas y exportes comunes.
+- En `administrar_clientes`, `asistencia_empleados`, `backups`, `tarifas_por_dia` y `soporte_remoto`, las exportaciones operativas descargan el archivo en segundo plano y mantienen abierta la misma vista del modulo.
+- Se conservan como excepcion operativa los documentos legales (`contrato` y términos de pasarela) y los popups técnicos de impresión o vista previa documental.
+- Impacto de permisos: sin cambios; solo se modifica la forma de navegación del mismo conjunto de rutas ya autorizadas.
+
+Actualizacion 2026-04-17 (licencias super: valor 0 valido en CRUD):
+- Se corrige la vista `web/super/licencias.html` para que el modulo `licencias` no oculte el valor `0` al listar o reabrir una licencia en edicion.
+- El ajuste es visual y de carga del formulario: el backend y la DB ya aceptaban `0`, pero la UI trataba ese valor como vacio al renderizar la tabla y al llenar los inputs.
+- Impacto de permisos: sin cambios; el CRUD de licencias sigue restringido al panel super.
+
+Actualizacion 2026-04-17 (licencias del selector: historial y estado con vencimiento):
+- Se ajusta el modulo `licencias` para que la vista `web/super/licencias.html` opere en dos modos: CRUD completo para el panel super general e historial/estado cuando entra desde `seleccionar_empresa.html` con `scope=mine&con_empresa=1`.
+- `backend/db/db.go` expone `empresa_nombre`, `fecha_inicio` y `fecha_fin` en el listado filtrado; `web/super/licencias.html` usa esos campos para mostrar solo licencias ya pagadas/asignadas, incluyendo vencidas, junto con la fecha en que vencen y el acceso a renovar en `elegir_licencia.html`.
+- `backend/handlers/payments_handlers_test.go` cubre la salida del handler en ese alcance filtrado por creador.
+- Impacto de permisos: sin cambios; el acceso sigue limitado al administrador autenticado sobre sus propias empresas y el CRUD super general conserva sus acciones administrativas fuera del modo historial.
+
+Actualizacion 2026-04-17 (licencias y pasarelas de pago: Epayco migra a Smart Checkout v2):
+- Se refuerza el modulo `licencias y pasarelas de pago` para abandonar el checkout legacy basado en `checkout.php`, que ya devuelve `AccessDenied`, y operar con el flujo oficial Smart Checkout v2 de Epayco.
+- `backend/handlers/payments_handlers.go` ahora crea la sesion desde backend contra Apify y `web/pagar_licencia.html` abre `checkout-v2.js` con `sessionId`, manteniendo `response` y `confirmation` hacia los endpoints publicos ya existentes del sistema.
+- `web/super/configuracion_avanzada.html` alinea la ayuda del panel super con el flujo nuevo: `Public Key` y `Private Key` pasan a ser obligatorias para habilitar Epayco en checkout publico, mientras `Customer ID` queda recomendado para validaciones del webhook.
+- Impacto de permisos: sin cambios; `/epayco/create_transaction`, `/epayco/transaction_status`, `/epayco/webhook` y `/epayco/respuesta.html` siguen siendo rutas publicas del checkout comercial, y la configuracion avanzada permanece restringida a `super_administrador`.
+
+Actualizacion 2026-04-17 (autenticacion administrativa: crear clave por correo con ojo de visibilidad):
+- Se ajusta el modulo `autenticacion y sesiones` en la pantalla `Crear clave para acceso por correo` para que el administrador pueda mostrar u ocultar la contrasena antes de guardarla.
+- `web/registrar_contrasena_usuario_de_google.html`, `web/js/registrar_contrasena_usuario_de_google.js` y `web/estilos.css` agregan el control visual sin cambiar validaciones ni endpoints.
+- Impacto de permisos: sin cambios; se mantiene el mismo flujo autenticado posterior al ingreso con Google.
+
+Actualizacion 2026-04-17 (licencias publicas: tarjetas alineadas al home):
+- Se ajusta la vista publica de seleccion de licencias para que `web/elegir_licencia.html` renderice cada licencia con el mismo lenguaje visual del home del portal.
+- La pagina conserva el mismo flujo funcional hacia `pagar_licencia.html`, pero elimina la variante visual propia `offer-card` y reutiliza `portal-home-grid` junto con `portal-card home-offer-card`.
+- Impacto de permisos: sin cambios; sigue siendo una vista publica condicionada por sesion valida del flujo administrativo que selecciona empresa y tipo.
+
+Actualizacion 2026-04-17 (reportes globales super: eleccion de una o varias empresas):
+- Se ajusta el modulo `reportes globales (super)` para que el administrador elija de forma explicita si quiere analizar una sola empresa o un bloque de varias empresas creadas por el mismo usuario.
+- `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` separan ambos modos: lista multiple para consolidado mixto y selector puntual para una sola empresa con refresco inmediato.
+- `backend/handlers/reportes_globales_test.go` valida que `/super/api/reportes_globales` soporte tambien el filtro singular con `empresa_id`.
+- Impacto de permisos: sin cambios; el modulo sigue siendo de lectura exclusiva para `super_administrador`.
+
+Actualizacion 2026-04-17 (autenticacion administrativa: login en una sola tarjeta visual):
+- Se ajusta el modulo `autenticacion y sesiones` para que `login.html` deje de mostrar el acceso por correo como una caja independiente dentro de la pantalla.
+- `web/login.html` mantiene Google y correo en la misma tarjeta principal, mientras `web/estilos.css` elimina para este flujo el fondo, borde y sombra heredados de `.form` en el bloque por correo y en los formularios alternos de recuperacion/reset.
+- Impacto de permisos: sin cambios; el login administrativo sigue siendo publico y la administracion global permanece restringida a `super_administrador`.
+
+Actualizacion 2026-04-18 (portal publico: Brigada burbujas 3D plus):
+- Se amplía el submodulo `juegos publicos del portal` con un nuevo shooter original en primera persona y 3D simulado, pensado para movil y orientado a partidas cortas por niveles.
+- `web/Juegos/brigada_burbujas_3d_plus.html` introduce recorrido por laberintos, enemigos caricaturescos, recoleccion de nucleos de color, guardado local de record y controles tactiles dedicados para movimiento, giro, paso lateral y disparo.
+- `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` publican la decima tarjeta del lobby sin abrir permisos nuevos ni modificar el runtime compartido del arcade.
+- Impacto de permisos: sin cambios; `Portal publico - Juegos` sigue siendo un modulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-17 (portal publico: arcade movil con runtime comun de poderes y premios):
+- Se refuerza el submodulo `juegos publicos del portal` para que los nueve juegos activos del arcade compartan una misma capa movil de poderes, premios, records, sonido y countdown, sin reescribir la mecanica base de cada titulo.
+- `web/Juegos/arcade_shared.js` centraliza el runtime `createPowerSystem(...)` con biblioteca comun de poderes/premios y `web/Juegos/arcade_window.css` consolida el shell mobile-first vertical para la experiencia tactil.
+- `web/Juegos/patito_volando_plus.html`, `serpiente_pixel_plus.html`, `memoria_estelar_plus.html`, `rebote_bloques_plus.html`, `pacman_plus.html`, `tetris_plus.html`, `carton_fire_plus.html`, `ajedrez_vs_ia_plus.html` y `ajedrez_3d_plus.html` quedan enlazados al mismo runtime con hooks minimos de pausa, score, bonus, nivel, poderes y fin de sesion.
+- `web/Juegos/menu_juegos.html` amplía el lobby para mostrar avance del jugador, mejor juego personal, ranking propio por titulo y una lista movil mas informativa; `web/Juegos/arcade_shared.js` ajusta la economia compartida para que la ganancia de energia/poderes sea menos agresiva en juegos de eventos frecuentes.
+- Impacto de permisos: sin cambios; `Portal publico - Juegos` sigue siendo un modulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-16 (reportes globales super por administrador creador):
+- Se refuerza el modulo `reportes globales (super)` para consolidar, mezclar o separar reportes solo de las empresas creadas por el administrador autenticado.
+- `backend/handlers/reportes_globales.go` reutiliza el catalogo y los datasets del modulo empresarial de reportes; `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` agregan filtros por rango, seleccion multiple y exportacion multiformato.
+- Impacto de permisos: sin cambios para roles empresariales; el acceso sigue siendo exclusivo del panel super y acotado a las empresas del mismo creador.
+
+Actualizacion 2026-04-17 (reportes globales super: graficos y lectura ejecutiva):
+- Se amplía el mismo modulo `reportes globales (super)` con un tablero ejecutivo visual para lectura rápida del portafolio de empresas del administrador.
+- `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js` y `web/estilos.css` agregan tarjetas ejecutivas, narrativa automatica y graficos comparativos de ingresos, balance vs egresos y composicion activa/inactiva.
+- Impacto de permisos: sin cambios; el modulo sigue siendo de lectura exclusiva para `super_administrador`.
+
+Actualizacion 2026-04-18 (gobernanza interna: equipo de agentes coordinado por agente_go):
+- Se formaliza el modulo transversal `gobernanza de agentes internos del repositorio` para repartir trabajo entre arquitectura general, backend/DB, frontend/UX y QA/operacion.
+- `.github/agents/agente_go.agent.md` define a `agente_go` como entrada principal y director del equipo.
+- `.github/agents/agente_backend_db.agent.md`, `.github/agents/agente_frontend_ux.agent.md` y `.github/agents/agente_qa_operacion.agent.md` delimitan responsabilidades tecnicas y protocolo de devolucion hacia `agente_go`.
+- `.github/agents/README.md` concentra la regla operativa de coordinacion y mejora continua.
+- Impacto de permisos: sin cambios en roles de usuarios finales ni visibilidad de pantallas; el alcance es interno al proceso de desarrollo y mantenimiento del repositorio.
+
+Actualizacion 2026-04-18 (gobernanza interna: protocolo de delegacion y plantilla por modulo):
+- Se amplía el mismo modulo transversal `gobernanza de agentes internos del repositorio` con un protocolo formal de delegacion y una plantilla unica de ejecucion por modulo.
+- `.github/agents/protocolo_delegacion.md` define cuando `agente_go` activa backend, frontend, QA o trabajo conjunto segun el tipo de tarea y el modulo afectado.
+- `.github/agents/plantilla_trabajo_por_modulo.md` define el ciclo comun de clasificacion, analisis, implementacion, validacion y cierre.
+- Los agentes especialistas agregan prioridad explicita para `pagos`, `licencias`, `venta_publica`, `facturacion electronica`, `DIAN`, `estaciones`, `carritos`, `autenticacion`, `reportes` y `paneles administrativos`.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el alcance sigue siendo interno a la organizacion tecnica del repositorio.
+
+Actualizacion 2026-04-18 (gobernanza interna: tabla rapida y participacion obligatoria en modulos criticos):
+- Se refuerza el mismo modulo transversal `gobernanza de agentes internos del repositorio` para uso rapido y cierre mas estricto.
+- `.github/agents/protocolo_delegacion.md` agrega una tabla corta por modulo y ejemplos reales de delegacion para `pagos/licencias`, `estaciones/carritos` y `autenticacion/permisos`.
+- `.github/agents/agente_go.agent.md` obliga a `agente_go` a activar a los tres especialistas en modulos criticos como `pagos`, `licencias`, `venta_publica`, `estaciones`, `ventas_simple` y `carritos`, salvo justificacion excepcional.
+- `.github/agents/plantilla_trabajo_por_modulo.md` agrega casos minimos de aplicacion para ejecutar la plantilla con menos ambiguedad.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el alcance sigue siendo interno a la disciplina de trabajo del repositorio.
+
+Actualizacion 2026-04-18 (gobernanza interna: semaforo ejecutivo y evidencia minima por frente):
+- Se amplía el mismo modulo transversal `gobernanza de agentes internos del repositorio` con una capa todavia mas ejecutiva para clasificacion y cierre.
+- `.github/agents/protocolo_delegacion.md` agrega un semaforo `Rojo/Amarillo/Verde` por modulo y un ejemplo completo de delegacion extremo a extremo.
+- `.github/agents/plantilla_trabajo_por_modulo.md` agrega la evidencia minima esperada por cada frente.
+- Los tres agentes especialistas agregan una regla explicita para rechazar cierres si no hay evidencia suficiente.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el alcance sigue siendo interno a la disciplina de trabajo del repositorio.
+
+Actualizacion 2026-04-16 (menu flotante publico: separacion de botones cercanos):
+- Se ajusta el submodulo transversal del `menu flotante publico` para que no se monte sobre botones ubicados en encabezados o barras de acciones cercanas al borde superior derecho.
+- `web/menu.js` expone el estado `has-floating-menu` en la pagina y `web/estilos.css` reserva espacio lateral en encabezados reutilizados por el portal y por vistas administrativas.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste es visual y de usabilidad sobre el mismo menu compartido.
+Actualizacion 2026-04-16 (facturacion electronica: pruebas estables bajo entorno postgres activo):
+- Se refuerza el modulo `facturacion electronica` en su capa de validacion automatizada para que las pruebas de `db` no hereden accidentalmente `DB_DIALECT=postgres` desde el entorno local del backend.
+- `backend/db/finanzas_test.go` fija `DB_DIALECT`, `DB_ENGINE` y `PCS_DB_DIALECT` en `motor_legado_retirado` dentro de `openFinanzasTestDB`, evitando que los helpers de esquema emitan `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` contra motor legado retirado durante la suite de facturacion y documentos transaccionales.
+- Con este ajuste quedan verificadas de nuevo las pruebas del modulo de facturacion electronica y DIAN en `backend/db/*` y `backend/handlers/*`, incluyendo emision documental, reintentos, reconciliacion, firma XML, envio, acuse, contingencia, reconexion y set de pruebas.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste solo estabiliza la suite automatizada del mismo modulo existente.
+
+Actualizacion 2026-04-16 (pagina principal dinamica: campo de cantidad sin falso 5 inicial):
+- Se ajusta nuevamente el submodulo `pagina principal dinamica (super)` para que el campo `Cantidad de tarjetas` no muestre temporalmente el valor HTML inicial `5` antes de cargar la configuracion persistida.
+- `web/super/pagina_principal.html` deshabilita el input mientras carga, muestra estado `Cargando...` y sincroniza la cantidad contra el numero real de tarjetas persistidas cuando estas superan el valor guardado en `cantidad`.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la administracion del modulo sigue siendo exclusiva de `super_administrador` y la landing descriptiva publica sigue atada a la misma configuracion de tarjetas.
+
+Gobernanza obligatoria (agente_go):
+- Si se crea un modulo nuevo o se modifica un modulo existente, este documento debe actualizarse en la misma iteracion de trabajo.
+- En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
+- La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
+Actualizacion 2026-04-16 (portal publico: menu flotante navegable en movil):
+- Se corrige el submodulo transversal de navegacion publica para que los enlaces del menu flotante vuelvan a funcionar en celulares.
+- `web/menu.js` deja de cerrar el panel en `touchstart` sobre cada opcion y mantiene el cierre en `click`, evitando la cancelacion prematura de la navegacion tactil.
+- `web/estilos.css` agrega `touch-action: manipulation` al toggle y a cada item del menu para mejorar la respuesta en dispositivos tactiles.
+- Impacto de permisos: sin cambios en el modelo de roles o visibilidad; se restaura la navegacion de rutas publicas ya existentes.
+
+Actualizacion 2026-04-16 (seleccionar empresa: tarjetas clasicas restauradas):
+- Se ajusta nuevamente el submodulo `seleccionar empresa` para recuperar el formato de tarjeta clasico usado en el panel super dias atras.
+- `web/js/seleccionar_empresa.js` vuelve al render `portal-card warm` centrado, priorizando nombre, observaciones y estado de licencia sin el layout enriquecido por tipo/metadatos.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste es visual dentro del mismo modulo super.
+
+Actualizacion 2026-04-17 (portal publico de usuarios de empresa con contrato vigente; flujo de subdominio reemplazado en 2026-05-13 por login global):
+- Se refuerza el modulo `usuarios de empresa` para operar como portal publico de acceso por invitacion, con login por correo/contrasena, primer password, recuperacion, reset y cambio de contrasena en una sola superficie.
+- `backend/db/usuarios_empresa.go` persiste aceptacion de contrato por usuario (`acepta_contrato`, `contrato_version_aceptada`, `fecha_acepta_contrato`) y `backend/handlers/usuarios_empresa.go` obliga a aceptar la version vigente antes de crear sesion o completar credenciales.
+- `web/login_usuario.html`, `web/js/login_usuario.js` y `web/estilos.css` describen el flujo, muestran el contrato vigente y eliminan cualquier acceso de Google del portal interno.
+- El enlace operativo y los correos de invitacion fueron consolidados despues en el portal global `login_usuario.html`, sin subdominio empresarial obligatorio.
+- Impacto de permisos: sin cambios en el modelo de permisos por rol dentro del panel; el acceso al portal es publico, pero la experiencia final sigue limitada por `permisos_contexto` y visibilidad dinamica de menu en `administrar_empresa`.
+
+Actualizacion 2026-04-16 (estaciones: carrito enlazado por defecto desde backend):
+- Se refuerza el submodulo `estaciones` para que guardar `estaciones_config` por API no dependa de la sincronizacion frontend de `configuracion_de_estaciones.html`.
+- `backend/db/empresa_estacion_prefs.go` crea o corrige automaticamente un carrito base por estacion (`EST-empresa-estacion` / `ESTACION_<id>`) y lo deja en estado `inactivo/cerrado` hasta que la operacion lo active.
+- `backend/handlers/empresa_estacion_prefs.go` ejecuta esa sincronizacion tras el guardado de preferencias y las pruebas `backend/db/empresa_estacion_prefs_test.go` y `backend/handlers/empresa_estacion_prefs_test.go` validan creacion, renombre sin duplicados y aislamiento por `empresa_id`.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora asegura consistencia operativa dentro de `estaciones`, `ventas simple` y `carritos` sin ampliar privilegios.
+
+Actualizacion 2026-04-17 (soporte remoto: limites por plan y mesa tecnica central):
+- Se amplía el modulo `soporte remoto` para que cada empresa pueda operar con topes de `max_dispositivos`, `max_conexiones_mes` y `max_minutos_mes`, todos trazados dentro del mismo flujo operativo de sesiones.
+- `backend/db/soporte_remoto.go` calcula consumo mensual, registra intentos bloqueados por plan y actualiza minutos consumidos al finalizar o expirar sesiones.
+- `backend/handlers/soporte_remoto.go` devuelve `uso` junto a configuracion/listados y `backend/handlers/super_soporte_remoto.go` agrega la mesa tecnica multiempresa en `/super/api/soporte_remoto`.
+- `web/super/soporte_remoto.html` incorpora el panel super para seleccionar empresa, abrir soporte, revisar cupos/consumo y operar un visor central sin romper el aislamiento por `empresa_id`.
+- Impacto de permisos: el panel empresa mantiene `linkSoporteRemoto` bajo modulo `seguridad` con accion `A`; el panel super queda reservado a `super_administrador` mediante `/super/api/soporte_remoto` y su vista dedicada.
+
+Actualizacion 2026-04-20 (soporte remoto: portal publico RustDesk y configuracion central desde super):
+- Se amplía el modulo `soporte remoto` para que la misma sesión pública pueda funcionar como portal de acceso tipo RustDesk, mostrando descargas del cliente y del servidor junto con host, clave pública, ID del dispositivo, contraseña y carpeta de transferencia cuando la sesión lo permita.
+- `backend/db/soporte_remoto.go` amplía la configuración empresarial con `servidor_windows_url`, `servidor_linux_url` e `instrucciones_publicas`, preservando la operación por `empresa_id` sin romper el esquema existente.
+- `backend/handlers/soporte_remoto.go` devuelve `portal_publico_url` al crear sesiones y expone el bundle público completo en `/api/public/soporte_remotoaction=resolver_acceso_publico`.
+- `backend/handlers/super_soporte_remoto.go` añade `action=config` para que `super_administrador` pueda editar la configuración pública de cada empresa desde la mesa técnica central.
+- `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html` y `web/soporte_remoto_acceso.html` alinean la experiencia del módulo con descargas de cliente/servidor RustDesk, visor web opcional y enlace público reutilizable por sesión.
+- Impacto de permisos: sin cambios en roles empresariales; `linkSoporteRemoto` sigue bajo `seguridad/A` y la configuración central continúa siendo exclusiva de `super_administrador` en `/super/api/soporte_remoto`.
+
+Actualizacion 2026-04-20.2 (soporte remoto: limite diario RustDesk por empresa):
+- Se agrega un tope operativo `max_minutos_dia_rustdesk` por empresa para controlar desde super el tiempo diario de conexión al servidor RustDesk, expresado en minutos.
+- `backend/db/soporte_remoto.go` calcula `minutos_consumidos_dia_rustdesk`, `minutos_disponibles_dia_rustdesk` y aplica el rechazo cuando una nueva sesión activa o una aprobación supera el tope del día.
+- `backend/handlers/soporte_remoto.go` y `backend/handlers/super_soporte_remoto.go` devuelven `412 Precondition Failed` con el resumen de uso cuando el límite diario se agota.
+- `web/super/soporte_remoto.html` incorpora el campo editable del límite diario RustDesk y lo muestra junto al consumo diario del día.
+
+Actualizacion 2026-04-16 (portal publico: contacto reubicado bajo las tarjetas del home):
+- Se ajusta el submodulo `pagina principal publica` para mover `Informacion de contacto` fuera de la cabecera y dejarlo centrado debajo de todas las tarjetas dinamicas del home.
+- `web/index.html` mantiene el acceso superior de login y `web/estilos.css` reutiliza el lenguaje visual del CTA comercial para el nuevo bloque de contacto inferior.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni visibilidad; el ajuste es visual dentro del portal publico.
+
+Actualizacion 2026-04-16 (deploy VPS: limpieza de procesos backend huerfanos):
+- Se refuerza el submodulo operativo `deploy VPS` para que `sync_to_vps.ps1` no dependa solo de liberar el puerto, sino que tambien detenga procesos previos del mismo binario remoto antes de arrancar la unidad systemd nueva.
+- El mismo ajuste corrige la generacion de la unidad para evitar warnings repetitivos de `systemd` por `StartLimitIntervalSec` en la seccion incorrecta.
+- Impacto de permisos: sin cambios en roles ni vistas del panel; el cambio es operativo de despliegue y disponibilidad del backend.
+
+Actualizacion 2026-04-16 (checkout publico de licencias: alias `sambox` para Epayco):
+- Se refuerza el modulo `licencias y pasarelas de pago` para tolerar `epayco.mode=sambox` como equivalente de `sandbox` dentro del checkout publico de licencias.
+- `backend/handlers/payments_handlers.go` normaliza el alias y `backend/handlers/payments_handlers_test.go` valida que el checkout conserve `test=true` aun cuando la configuracion manual use esa variante.
+- Impacto de permisos: sin cambios en roles ni rutas; el ajuste mantiene el mismo alcance publico del checkout de licencias.
+
+Actualizacion 2026-04-16 (portal publico: arcade activo con ocho juegos compactos):
+- Se rehace el submodulo `juegos publicos del portal` para operar con un set activo de ocho titulos compactos, unificados por `web/Juegos/arcade_window.css` y publicados desde un lobby que abre popup fijo `700x700` en escritorio.
+- `web/Juegos/menu_juegos.html` elimina `Pollitos al cataplum` del flujo activo y enlaza `patito_volando_plus.html`, `serpiente_pixel_plus.html`, `memoria_estelar_plus.html`, `rebote_bloques_plus.html`, `pacman_plus.html`, `tetris_plus.html`, `carton_fire_plus.html` y `ajedrez_vs_ia_plus.html`.
+- Todas las vistas nuevas reutilizan `web/Juegos/arcade_shared.js` para records locales, nombre de jugador y sonido global, y añaden pausa real; cuando hay IA u oponentes, la pausa tambien congela sus temporizadores o movimientos.
+- Impacto de permisos: sin cambios en CRUD/A ni visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-17 (portal publico: Ajedrez 3D plus):
+- Se amplía el submodulo `juegos publicos del portal` con `Ajedrez 3D plus`, una variante separada del ajedrez existente que conserva el perfil arcade compartido y agrega un tablero en perspectiva 3D simulada.
+- `web/Juegos/ajedrez_3d_plus.html` introduce cinco niveles de dificultad (`Rookie`, `Club`, `Pro`, `Elite`, `Maestro`) variando profundidad y comportamiento de la IA, junto con cronometro, countdown y ayudas tacticas para la sesion.
+- `web/Juegos/menu_juegos.html` y `web/img/juegos/ajedrez_3d.svg` publican la nueva tarjeta del lobby sin alterar permisos del resto del arcade.
+- Impacto de permisos: sin cambios en CRUD/A ni visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-16 (portal publico: botones compactos en cabecera del home):
+- Se ajusta el submodulo del portal publico para que los accesos superiores de registro/contacto ocupen menos altura, mantengan el mismo ancho visual y queden centrados en movil.
+- El cambio se concentra en `web/estilos.css`; no altera rutas, permisos ni logica del portal.
+
+Actualizacion 2026-04-16 (licencias super: correccion de persistencia del valor):
+- Se refuerza el modulo `licencias` del panel super para instalaciones con esquema legado donde faltaba la columna `valor` u otras columnas operativas.
+- `backend/db/db.go` regulariza el esquema y reintenta create/get/update; `web/super/licencias.html` ahora informa errores HTTP reales al guardar.
+- Impacto de permisos: sin cambios en roles ni endpoints expuestos; el ajuste corrige persistencia y visibilidad de error dentro del mismo CRUD super.
+
+Actualizacion 2026-04-16 (seleccionar empresa: tarjetas compactas con interior adaptable):
+- Se refuerza el submodulo `seleccionar empresa` para que las tarjetas compactas no recorten el texto cuando nombre, observaciones, NIT o estados son mas largos de lo habitual.
+- `web/js/seleccionar_empresa.js` usa la estructura `empresa-card` y `web/estilos.css` ajusta el layout interno a `flex`/`grid` con envoltura automatica y margenes pequenos.
+- Impacto de permisos: sin cambios en roles ni rutas; el ajuste es visual y de legibilidad dentro del panel super.
+
+Actualizacion 2026-04-16 (pagina principal dinamica: editor respeta cantidad persistida):
+- Se corrige el submodulo `pagina principal dinamica (super)` para que al recargar configuraciones guardadas no reutilice el valor inicial `5` del input HTML como limite del editor.
+- `web/super/pagina_principal.html` ahora renderiza primero desde `state.config.cantidad`, por lo que configuraciones de 7 tarjetas vuelven a mostrarse completas en el panel.
+- Impacto de permisos: sin cambios en roles ni rutas; el ajuste es de sincronizacion frontend del mismo modulo super existente.
+
+Actualizacion 2026-04-16 (infraestructura publica: wildcard HTTPS y prueba de venta digital):
+- Se documenta el soporte de wildcard HTTPS manual para `powerfulcontrolsystem.com` y `*.powerfulcontrolsystem.com` con validacion DNS-01 en Hostinger.
+- La pagina publica global `venta_digital.html` queda expuesta tambien mediante el subdominio dedicado `venta-digital.powerfulcontrolsystem.com` como prueba operativa del wildcard.
+- La raiz generica de subdominios empresariales no cambia: permanece orientada al flujo `venta_publica.html` por empresa.
+- Impacto de permisos: sin cambios en roles ni rutas protegidas; el ajuste es de infraestructura publica y accesibilidad HTTPS.
+
+Actualizacion 2026-04-16 (autenticacion administrativa: registro con pais y ciudad):
+- Se refuerza el modulo `autenticacion y sesiones` para capturar un perfil administrativo mas completo desde el alta inicial.
+- `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` ahora solicitan `pais` y `ciudad`, con sugerencia automatica de pais y posibilidad de correccion manual.
+- `backend/handlers/auth_admin_handlers.go` valida esos campos y `backend/db/db.go` los persiste en la tabla `administradores`.
+- El estado pendiente por confirmacion de correo se mantiene como requisito antes de iniciar sesion y seguir hacia `seleccionar_empresa.html`.
+- Impacto de permisos: sin cambios en roles ni rutas protegidas; el ajuste amplía datos de registro del mismo flujo administrativo existente.
+
+Actualizacion 2026-04-16 (autenticacion administrativa: esquema `administradores` estable en PostgreSQL; motor legado retirado retirado del runtime):
+- Se refuerza el modulo `autenticacion y sesiones` para que las columnas de seguridad del administrador no dependan de un bootstrap exclusivo ni de un motor legado.
+- `backend/db/db.go` centraliza `EnsureAdministradoresAuthSchema` y permite regularizar en PostgreSQL las columnas de contrato, confirmacion y password usando `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
+- `backend/main.go` deja de mantener un bloque inline basado en `PRAGMA` y reutiliza la misma funcion de base de datos al arrancar el backend.
+- `backend/db/administradores_auth_schema_test.go` cubre la autocorreccion del esquema y el caso real de `SetAdministradorPassword` sobre una tabla incompleta.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni wrappers; el ajuste corrige compatibilidad de infraestructura del mismo flujo administrativo existente.
+
+Actualizacion 2026-04-16 (super: seguridad VPS Linux con panel, exportes y programacion):
+- Se crea el modulo `seguridad VPS Linux (super)` para auditar el VPS Ubuntu desde el propio sistema, sin introducir nuevas tablas y manteniendo la persistencia de reportes en filesystem.
+- `backend/vpssecurity/` concentra configuracion, orquestacion de Lynis/Nmap/Trivy, chequeos propios, comparacion historica y exportes `JSON`, `TXT`, `HTML`, `CSV`, `PDF` y `XLS`.
+- `backend/handlers/security_vps_handlers.go` y `backend/main.go` exponen y registran `/super/api/security/vps/config`, `/run`, `/status`, `/history`, `/report` y `/compare` solo para `super_administrador`.
+- `web/super/seguridad.html` y `web/js/super_seguridad.js` integran configuracion, lanzamiento de escaneos, resumen, hallazgos, historial/comparacion y conservan el monitoreo rapido de puertos/procesos.
+- `backend/tools/vps_security_scan/main.go` y los scripts `scripts/install_vps_security_tools.sh`, `scripts/run_vps_security_scan.sh` e `install_vps_security_cron.sh` cubren instalacion, ejecucion manual y cron en Ubuntu.
+- Impacto de permisos: se agrega un modulo super exclusivo para configuracion, ejecucion y lectura/exportacion de reportes de seguridad VPS; no modifica permisos empresariales ni tablas por `empresa_id`.
+
+Actualizacion 2026-04-16 (portal publico: boton de contacto al extremo derecho del home):
+- Se ajusta el submodulo `pagina principal publica` para que el acceso `Informacion de contacto` quede al extremo derecho de la misma fila superior del home.
+- `web/index.html` marca el header del portal con una variante visual propia y `web/estilos.css` empuja ese enlace a la derecha sin alterar rutas ni la pagina de contacto.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni visibilidad funcional; el ajuste es exclusivamente visual dentro del portal publico.
+
+Actualizacion 2026-04-16 (autenticacion unificada: sin recordar usuario/cuenta):
+- Se refuerza el modulo `autenticacion y sesiones` para eliminar la persistencia local de identidad (`recordar cuenta` en admin y `recordar usuario` en login empresa), que generaba diferencias entre hosts y navegadores.
+- `backend/handlers/auth_admin_handlers.go` deja de reenviar `login_hint` al proveedor OAuth; el inicio Google ahora es determinista desde `/auth/google/login` sin depender de `localStorage`.
+- `web/login.html`, `web/js/login.js`, `web/login_usuario.html` y `web/js/login_usuario.js` eliminan checkbox y lógica `remember*`, manteniendo solo autenticación directa por sesión/cookies.
+- `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran sincronizaciones/limpiezas de `remember*` y operan únicamente con estado de sesión visible.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni wrappers; el ajuste es de estabilidad transversal del login entre local (`localhost:8080`) y VPS (`powerfulcontrolsystem.com`, `www.powerfulcontrolsystem.com`).
+
+Actualizacion 2026-04-19 (autenticacion administrativa: recordar usuario por correo bajo demanda):
+- Se ajusta el modulo `autenticacion y sesiones` para permitir que `login.html` recuerde solo el correo administrativo cuando el usuario marca la casilla `Recordar usuario`.
+- `web/login.html` vuelve a exponer el checkbox y `web/js/login.js` persiste el correo en `localStorage` bajo una clave dedicada, sin tocar la sesion real, el flujo Google ni el login de usuarios de empresa.
+- Impacto de permisos: sin cambios en roles, CRUD/A, wrappers ni alcance; el ajuste es exclusivamente de conveniencia en la UX del acceso administrativo por correo.
+
+Actualizacion 2026-04-20 (apariencia global: contraste unificado en los seis temas):
+- Se refuerzan los modulos `portal publico`, `autenticacion y sesiones`, `seleccion de empresa`, `estaciones`, `super` y vistas operativas embebidas para que los seis modos de apariencia (`dark`, `dark-violet`, `dark-emerald`, `light`, `light-rose`, `light-gold`) mantengan contraste legible de textos, tarjetas, tablas, estados vacíos y paneles auxiliares.
+- `web/estilos.css` deja de depender de varios colores fijos pensados para un solo fondo y migra bloques compartidos a variables semánticas de tema para paneles, tarjetas empresariales, estaciones especiales (`YouTube`, `Notas`), módulos de soporte remoto y estados de mensajes.
+- `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html`, `web/administrar_empresa/publicar_red_social.html`, `web/red_social_comercial.html` y `web/pantalla_publica.html` alinean sus estilos embebidos con la apariencia activa para no quedar visualmente desconectados del resto del sistema.
+- Impacto de permisos: sin cambios en roles, CRUD/A, wrappers ni alcance funcional; el ajuste es visual y de legibilidad transversal en frontend.
+
+Actualizacion 2026-04-16 (checkout de licencias: respuesta fija de Epayco):
+- El modulo `licencias y pasarelas de pago` incorpora una pagina publica estable en `/epayco/respuesta.html` para pegarla directamente en el panel de Epayco como URL de respuesta.
+- `backend/handlers/payments_handlers.go` genera esa ruta como `response` del checkout y conserva `/epayco/webhook` como `confirmation`, de modo que el flujo externo y el flujo interno del sistema apunten a los mismos endpoints canonicos.
+- `web/epayco/respuesta.html` no procesa el pago por si sola: normaliza parametros y reenvia al resumen de licencia para que el backend confirme el estado real antes de activar la licencia.
+- Impacto de permisos: sin cambios de rol; la respuesta y confirmacion de Epayco permanecen publicas como parte del checkout externo.
+
+Actualizacion 2026-04-16 (checkout de licencias: Epayco redirige la misma pestaña):
+- Se refuerza el submodulo `checkout publico de licencias` para que el pago con Epayco no dependa de popups ni de polling antes de que el usuario llegue a la pasarela.
+- `web/pagar_licencia.html` conserva la referencia pendiente y redirige la misma pestaña a `checkout.epayco.co`, usando `/epayco/respuesta.html` para volver al resumen del pago y retomar la verificacion real.
+- Impacto de permisos: sin cambios en roles ni CRUD/A; el ajuste solo endurece el flujo publico de cobro con Epayco.
+
+Actualizacion 2026-04-16 (super: administracion PostgreSQL con tamano por empresa):
+- Se refuerza el submodulo `administracion de base de datos PostgreSQL (super)` para estimar cuanto espacio consume cada empresa dentro de la base compartida `pcs_empresas`.
+- `backend/handlers/postgres_performance.go` agrega la accion `empresas_storage` sobre la API existente para sumar por `empresa_id` el tamano de filas en todas las tablas operativas que contienen esa columna.
+- `web/super/administrar_base_de_datos.html` incorpora una tarjeta con el boton `Cargar Empresas` y una tabla de resultados ordenada de mayor a menor por MB estimados, mostrando tambien filas, tablas con datos y la tabla mas pesada por empresa.
+- Impacto de permisos: sin cambios en roles ni CRUD/A; la lectura sigue siendo exclusiva de `super_administrador` dentro del modulo `Administracion DB PostgreSQL (super)`.
+
+Actualizacion 2026-04-16 (checkout publico y seleccion de empresa: ajustes visuales solicitados):
+- El submodulo `checkout publico de licencias` muestra de forma mas clara la pasarela predeterminada: si solo una esta activa, queda seleccionada automaticamente y con rotulo explicito de metodo unico disponible.
+- `web/pagar_licencia.html` integra el logo de Epayco dentro del selector y del panel de pago para que la decision visual coincida con la pasarela realmente activa en configuracion avanzada.
+- El submodulo `seleccion de empresa` vuelve al estilo compacto anterior en `web/js/seleccionar_empresa.js`, centrado en nombre, observaciones y estado de licencia, manteniendo el boton de descarga cuando la empresa aun no tiene licencia.
+- Impacto de permisos: sin cambios de rol; solo hay ajustes visuales y de presentacion en vistas ya existentes.
+
+Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
+- Se refuerza el modulo `autenticacion y sesiones` para separar el alta administrativa del formulario principal de login y dejar el acceso por correo como una superficie exclusivamente de autenticacion.
+- `web/login.html` conserva Google y correo/clave para acceso, elimina el campo de registro incrustado y agrega vistas visibles para solicitar y restablecer contraseña sin usar `prompt()` del navegador.
+- La vista de restablecimiento administrativo ya no exige que el usuario escriba un token recibido por correo: el enlace de recuperación abre directamente el formulario de nueva contraseña y el código de seguridad se consume internamente desde la URL.
+- `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva página pública de registro administrativo con `email`, `nombre completo`, `telefono`, contraseña y confirmación de contraseña.
+- `backend/handlers/auth_admin_handlers.go` exige datos mínimos del registro, evita reescribir cuentas ya confirmadas y corrige el enlace de recuperación para que vuelva a la propia `login.html` en modo `reset`.
+- `backend/utils/utils.go` deja públicas la nueva página de registro y `/auth/confirmar_admin`, alineando middleware, correo de confirmación y experiencia de usuario.
+- Impacto de permisos: no hay cambios en CRUD/A ni visibilidad por rol; el login, el registro administrativo y la confirmación/recuperación siguen siendo públicos, mientras la administración global continúa reservada a `super_administrador`.
+
+Actualizacion 2026-04-16 (autenticacion administrativa: Google exige registrar clave local cuando aún no existe):
+- Se refuerza el modulo `autenticacion y sesiones` para que una cuenta administrativa autenticada con Google no quede sin vía posterior de acceso por correo y contraseña.
+- `backend/handlers/auth_admin_handlers.go` y `backend/handlers/accept_handlers.go` redirigen al formulario `web/registrar_contrasena_usuario_de_google.html` cuando la cuenta ya tiene sesión válida pero todavía no ha definido contraseña local.
+- `backend/handlers/account_handlers.go` agrega el endpoint autenticado `/api/account/set_google_password` para registrar esa primera clave sin pedir contraseña actual, y `web/js/registrar_contrasena_usuario_de_google.js` completa el flujo en cliente.
+- Impacto de permisos: sin cambios en roles ni CRUD/A; la página nueva es una pantalla operativa del mismo flujo autenticado administrativo y no amplía privilegios.
+
+Actualizacion 2026-04-16 (portal publico: arcade movil reforzado y countdown en Patito volando):
+- Se refuerza el submodulo `juegos publicos del portal` para que los cinco juegos del arcade se adapten mejor a celular sin perder sonido compartido ni persistencia de jugador.
+- `web/Juegos/patito_volando.html` agrega una cuenta regresiva de 5 segundos antes de iniciar el vuelo y reutiliza nuevos efectos `countdownTick`/`countdownGo` desde `web/Juegos/arcade_shared.js`.
+- `web/Juegos/pollitos_cataplum.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` reorganizan acciones, overlays y shell visual para pantallas pequenas; `serpiente_pixel.html` suma feedback sonoro al giro activo.
+- Impacto de permisos: no hay cambios en CRUD/A ni visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-16 (frontend compartido: ajustes base para celular y menu flotante):
+- Se refuerza el submodulo `portal publico y shell compartido` para mejorar adaptacion en pantallas pequenas sin cambiar rutas ni permisos.
+- `web/menu.js` cierra el panel del menu flotante al seleccionar una opcion, evitando que el overlay permanezca visible mientras cambia la pagina en movil.
+- `web/estilos.css` reubica el CTA flotante de WhatsApp de `index.html` a la esquina inferior derecha en movil, compacta su presencia visual y mejora la adaptacion compartida de tablas, panel del menu flotante y navegacion administrativa.
+- `web/login.html` corrige la carga de la hoja `web/estilos.css`, recuperando el comportamiento responsive esperado en la pantalla de acceso administrativo.
+- Impacto de permisos: no hay cambios en roles ni CRUD/A; el ajuste es visual y de interaccion del frontend compartido.
+
+Actualizacion 2026-04-16 (portal publico: botones superiores alineados al CTA de ofertas):
+- Se ajusta el submodulo `pagina principal publica` para que los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` usen la misma apariencia del boton `Explorar oferta` dentro de las tarjetas del home.
+- `web/estilos.css` reutiliza el estilo pill blanco del CTA comercial de tarjetas en la barra superior del portal sin alterar enlaces, textos ni el CTA flotante de WhatsApp.
+- Impacto de permisos: no hay cambios en roles ni CRUD/A; el ajuste es visual dentro del portal publico.
+
+Actualizacion 2026-04-16 (checkout de licencias: Epayco sandbox estable en PostgreSQL):
+- Se refuerza el submodulo `checkout publico de licencias` para que el runtime PostgreSQL no dependa de tablas creadas manualmente al registrar y consultar pagos de Epayco/Wompi.
+- `backend/db/db.go` incorpora `EnsurePaymentGatewaySchema(...)` para asegurar `pagos_epayco` y `pagos_wompi` en la base super cuando el backend arranca sobre PostgreSQL.
+- `backend/handlers/payments_handlers.go` conserva `PENDING` cuando la validacion de Epayco responde el error generico de referencia aun no materializada y el contexto local ya estaba pendiente, evitando falsos `ERROR` al volver del checkout.
+- `backend/handlers/payments_handlers_test.go` agrega cobertura del fallback `PENDING` y protege el polling de licencias frente a respuestas transitorias de la API de validacion.
+- Impacto de permisos: no hay cambios en roles ni CRUD/A; la configuracion de pasarelas sigue siendo exclusiva de `super_administrador` y el checkout publico mantiene alcance de solo consumo.
+
+Actualizacion 2026-04-16 (portal publico: arcade con perfil compartido y cinco juegos):
+- Se refuerza el submodulo `juegos publicos del portal` para operar como un arcade unificado con perfil de jugador, records persistentes y audio reutilizable entre titulos.
+- `web/Juegos/arcade_shared.js` centraliza nombre de jugador, top 5 local por juego y control global de sonido para todos los minijuegos del portal.
+- `web/Juegos/menu_juegos.html` se rediseña como lobby cuadrado con portadas SVG, resumen de records y boton de acceso por tarjeta.
+- `web/Juegos/patito_volando.html` y `web/Juegos/pollitos_cataplum.html` ahora muestran jugador actual, record persistente y botones de sonido/cambio de jugador.
+- Se agregan `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` como tres juegos nuevos con mecanicas distintas y soporte tactil/escritorio.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-15 (alertas de reinicio del servidor: activacion configurable):
+- Se refuerza el submodulo `configuracion avanzada (super)` para que la alerta de inicio/reinicio del backend no dependa solo del correo destino guardado.
+- `backend/handlers/usuarios_empresa.go` expone `restart_alert_enabled` dentro de `GET/PUT /super/api/config/gmail`, conservando el correo destino por separado.
+- `backend/handlers/server_runtime_notifications.go` sigue registrando cada arranque en la bitacora `super_servidor_eventos` y en `backend/logs/server_reinicio.log`, pero solo intenta enviar el correo si la alerta esta habilitada.
+- `web/super/configuracion_avanzada.html` agrega un switch `Off/On` para activar o desactivar la notificacion automatica sin borrar el destinatario configurado.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; el control sigue siendo exclusivo de `super_administrador`.
+
+Actualizacion 2026-04-15 (portal publico: segundo juego `Pollitos al cataplum`):
+- Se amplia el submodulo `juegos publicos del portal` para soportar mas de una tarjeta jugable dentro de `web/Juegos/menu_juegos.html`.
+- `web/Juegos/menu_juegos.html` ahora abre cada juego con popup y dimensiones propias segun su `slug`, evitando reutilizar una sola ventana fija.
+- `web/Juegos/pollitos_cataplum.html` incorpora un juego de resortera con niveles cortos, objetivos destructibles y control arrastrar/soltar compatible con mouse y tactil.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; sigue siendo un submodulo publico y recreativo.
+
+Actualizacion 2026-04-15 (checkout de licencias: fallback canonico para Epayco desde localhost):
+- Se refuerza el submodulo `checkout publico de licencias` para que Epayco y Wompi no fallen cuando la solicitud nace en `localhost` sin `gmail.confirm_base_url` publica.
+- `backend/handlers/payments_handlers.go` ignora bases loopback configuradas y resuelve callbacks publicos usando dominio configurado, headers publicos validos, host publicado o el dominio canonico del sistema como ultimo recurso.
+- Impacto de permisos: no hay cambios en roles ni CRUD/A; el ajuste es operativo dentro del checkout publico de licencias.
+
+Actualizacion 2026-04-15 (selector de empresas: iconografia por tipo y tarjetas mas profesionales):
+- Se refuerza el submodulo `seleccion de empresa (super)` para que cada tarjeta de `web/seleccionar_empresa.html` identifique mejor el negocio antes de entrar al panel o elegir licencia.
+- `web/js/seleccionar_empresa.js` ahora interpreta `tipo_nombre` y asigna icono, tono visual, texto contextual y etiqueta sectorial a cada empresa con reglas por categoria operativa.
+- `web/estilos.css` reemplaza la tarjeta oscura generica por una superficie mas colorida y profesional, con encabezado visual, chips de estado, metadata resumida y CTA mas claro.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; la mejora es visual y mantiene el mismo alcance del modulo para `super_administrador`.
+
+Actualizacion 2026-04-15 (pagina_principal super: cantidad integrada al guardado):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que la cantidad de tarjetas ya no dependa de un boton intermedio `Aplicar cantidad`.
+- `web/super/pagina_principal.html` actualiza el editor apenas cambia el campo de cantidad y reutiliza un unico guardado para cantidad, tarjetas y estilos visuales.
+- `backend/handlers/pagina_principal_handlers_test.go` agrega cobertura para persistencia de configuraciones ampliadas, asegurando que una cantidad mayor de tarjetas siga disponible al recargar.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; la administracion sigue siendo exclusiva de `super_administrador`.
+
+Actualizacion 2026-04-15 (portal publico: juegos ligeros y Patito volando):
+- Se crea el submodulo `juegos publicos del portal`, accesible desde el menu flotante compartido mediante la pagina `web/Juegos/menu_juegos.html`.
+- Cada juego publicado debe mostrarse como una tarjeta independiente dentro del menu de juegos; la primera tarjeta operativa corresponde a `Patito volando`.
+- `web/Juegos/patito_volando.html` implementa un juego de control unico: al presionar, el patito sube; al soltar, baja, con soporte para barra espaciadora en PC y toque/presion de pantalla en movil.
+- `backend/utils/utils.go` deja publico `/Juegos/*` y `backend/handlers/auth_users_carritos_test.go` cubre el acceso sin sesion a las nuevas paginas.
+- Impacto de permisos: no se agregan CRUD/A ni vistas administrativas; es un submodulo publico y de solo lectura/uso recreativo, visible para cualquier visitante y tambien para todos los roles autenticados.
+
+Actualizacion 2026-04-15 (contrato versionado y editor super):
+- Se refuerza el modulo `autenticacion y sesiones` para que la aceptacion del contrato administrativo dependa de la version vigente publicada por super y no solo de un booleano historico.
+- Se crea el submodulo `contrato administrativo (super)` con editor en `web/super/contrato.html`, persistencia en la base super, historial por version y resumen de cambio obligatorio en cada nueva publicacion.
+- `backend/db/contrato_super.go` concentra el esquema y los helpers de versionado/aceptacion; `backend/handlers/super_contrato_handlers.go` expone la API protegida `/super/api/contrato` y la API publica `/api/public/contrato`.
+- `web/contrato.html` consume la version publicada desde base de datos y `web/accept.html` muestra la metadata del contrato actual dentro del paso obligatorio previo al panel super.
+- Impacto de permisos: la administracion del contrato es exclusiva de `super_administrador`; la lectura publica del contrato y su consulta durante el login se mantienen sin sesion para soportar la aceptacion previa al acceso administrativo.
+
+Actualizacion 2026-04-15 (monitor centralizado de errores y recovery global):
+- Se crea el submodulo `errores del sistema (super)` para monitorear fallos de cualquier empresa o modulo desde una vista unica en `web/super/errores.html`.
+- `backend/utils/system_errors.go` centraliza severidades (`INFO`, `WARNING`, `ERROR`, `CRITICAL`), registro en archivo/DB, recuperacion de panicos y envoltura segura de procesos internos.
+- `backend/db/super_errores_sistema.go` agrega la persistencia global de errores en la base super y `backend/handlers/super_error_handlers.go` expone el endpoint protegido `/super/api/errores` con filtros por empresa, fecha, tipo y busqueda.
+- `backend/utils/utils.go` deja de exponer cuerpos tecnicos en respuestas `5xx` al cliente final; conserva el detalle completo solo para logs internos y panel super.
+- Impacto de permisos: el monitoreo de errores es exclusivo de `super_administrador`; no cambia CRUD/A de modulos empresariales, pero mejora la estabilidad transversal del backend al recuperar panicos y proteger workers principales.
+
+Actualizacion 2026-04-15 (checkout de licencias: Epayco visible con Public Key y rutas publicas reales):
+- Se refuerza el submodulo `checkout de licencias` para que Epayco quede disponible cuando el panel super tiene `epayco.enabled` activo y una `public_key` valida, sin bloquear el checkout actual por ausencia de `private_key`.
+- `backend/utils/utils.go` corrige la capa de seguridad para que `/api/public/licencias/payment_methods`, `/wompi/*` y `/epayco/*` se comporten como rutas publicas reales y no dependan de sesion administrativa para consultar disponibilidad o reanudar pagos.
+- `web/pagar_licencia.html` deja de mostrar el mensaje ambiguo de "pasarelas desactivadas" y ahora explica si Epayco esta desactivado o si falta la `Public Key`; `web/super/configuracion_avanzada.html` aclara que la `Private Key` es opcional para el checkout actual.
+- `backend/handlers/payments_handlers_test.go`, `backend/handlers/system_empresas_handlers_test.go` y `backend/utils/utils_test.go` verifican el nuevo criterio de disponibilidad y la apertura publica de las rutas del flujo.
+- No hay cambios en roles, CRUD/A ni visibilidad por rol del panel: la configuracion de pasarelas sigue siendo exclusiva de `super_administrador`, pero el consumo del checkout vuelve a ser publico y consistente con la documentacion.
+
+Actualizacion 2026-04-15 (login admin sin hint visible y Gmail SMTP editable en directo):
+- Se ajusta el modulo `autenticacion y sesiones` para que el login administrativo mantenga `Recordar cuenta` sin exponer en pantalla el bloque `Se recordará ... / Olvidar`.
+- Se refuerza el submodulo `configuracion avanzada (super)` para que la seccion `Correo Gmail ? Confirmación de usuarios` permita editar directamente correo remitente, host, puerto, URL base y alertas cuando la configuración ya existe, sin depender de un modo de solo lectura.
+- `web/login.html` y `web/super/configuracion_avanzada.html` concentran el cambio de interfaz; la API `GET/PUT /super/api/config/gmail` permanece igual.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: el login administrativo sigue publico y la configuracion Gmail sigue siendo exclusiva de `super_administrador`.
+
+Actualizacion 2026-04-15 (portal publico: tamanos configurables en home y landing desde pagina_principal):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que el mismo editor controle no solo contenido, sino tambien la escala visual del portal publico.
+- `backend/handlers/pagina_principal_handlers.go` agrega ajustes globales de tamano para tarjetas y texto en `index.html` y `/descripcion_de_los_sistemas.ht`, manteniendo un contrato unico en `/api/public/pagina_principal`.
+- `web/super/pagina_principal.html` incorpora selectores de tamano para home y landing; `web/index.html`, `web/descripcion_de_los_sistemas.ht` y `web/estilos.css` aplican esos valores como ajustes visuales responsive.
+- `backend/handlers/pagina_principal_handlers_test.go` valida la normalizacion y publicacion de esos estilos.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la administracion sigue siendo exclusiva de `super_administrador` y el portal continua como superficie publica de solo lectura.
+
+Actualizacion 2026-04-15 (portal publico: CTA superior de WhatsApp y botones tipo mini-tarjeta):
+- Se refuerza el submodulo `pagina principal dinamica (super)` en su capa publica para que `index.html` exponga una jerarquia comercial mas clara en el primer pliegue.
+- `web/estilos.css` mueve el CTA flotante de WhatsApp a la esquina superior derecha del home y redefine los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` con un estilo compacto inspirado en las tarjetas comerciales del portal.
+- `web/index.html` conserva las mismas rutas publicas y el mismo flujo funcional; el ajuste es exclusivamente visual y responsive.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la administracion de `pagina_principal` sigue siendo exclusiva de `super_administrador` y el portal continua como superficie publica de solo lectura.
+
+Actualizacion 2026-04-15 (portal publico: landing descriptiva configurable desde pagina_principal):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que la configuracion de tarjetas no gobierne solo `index.html`, sino tambien el contenido extendido de `/descripcion_de_los_sistemas.ht`.
+- `backend/handlers/pagina_principal_handlers.go` amplía el contrato de cada tarjeta con etiqueta, titular ampliado, dos parrafos y capacidades clave, manteniendo la misma API publica `/api/public/pagina_principal` para home y landing.
+- `web/super/pagina_principal.html` incorpora esos campos en el editor super y `web/descripcion_de_los_sistemas.ht` deja de usar una libreria estatica por nombre de sistema.
+- `backend/handlers/pagina_principal_handlers_test.go` valida que los campos ampliados se normalicen y se publiquen correctamente.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la administracion sigue reservada a `super_administrador` y la landing continua como pagina publica de solo lectura.
+
+Actualizacion 2026-04-15 (checkout de licencias: retorno recuperable post-pasarela):
+- Se refuerza el submodulo `pasarelas de licencias` para que el retorno de Epayco y Wompi no dependa de un mensaje estatico en la URL; el checkout vuelve con contexto suficiente (`provider`, `reference`, `licencia_id`, `empresa_id`) y la pantalla reanuda la verificacion real del cobro.
+- `backend/handlers/payments_handlers.go` centraliza la URL de retorno para ambas pasarelas y permite a Wompi consultar el estado por `reference` cuando el navegador no trae `transaction_id`.
+- `web/pagar_licencia.html` guarda el pago pendiente, recupera la sesion de cobro despues del redirect y muestra feedback consistente de aprobado, rechazado o pendiente mientras reintenta polling.
+- `backend/handlers/payments_handlers_test.go` agrega cobertura para lookup Wompi por referencia y para los parametros de retorno del checkout Epayco.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la configuracion sigue siendo exclusiva de `super_administrador` y el checkout publico mantiene alcance de solo consumo.
+
+Actualizacion 2026-04-15 (checkout de licencias: fix Epayco para clave pública real y callbacks públicos):
+- Se refuerza el submodulo `pasarelas de licencias` para que Epayco use el contrato correcto de credenciales en super: `public_key`, `private_key` cifrada y `customer_id` opcional, manteniendo lectura compatible de configuraciones legacy mientras se normaliza la instalación.
+- `backend/handlers/payments_handlers.go` deja de construir `response`, `confirmation` y `redirect_url` desde `localhost`; ahora exige una base pública válida (`gmail.confirm_base_url` o dominio publicado) para Epayco y Wompi en el checkout de licencias.
+- `web/super/configuracion_avanzada.html` diferencia visualmente `Public Key` de `Customer ID`, evitando volver a guardar una llave pública en el campo histórico equivocado.
+- Se agregan pruebas focalizadas en `backend/handlers/payments_handlers_test.go` para validar dominio canónico de pagos y generación correcta de checkout Epayco.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la configuración sigue siendo exclusiva de `super_administrador` y el checkout público mantiene alcance de solo consumo.
+
+Actualizacion 2026-04-15 (login Google con host canónico y estaciones con carga visible):
+- Se refuerza el modulo `autenticacion y sesiones` para canonicalizar el acceso público al dominio raíz: `backend/utils/utils.go` redirige `www.powerfulcontrolsystem.com` hacia `powerfulcontrolsystem.com` antes de entrar a `AuthMiddleware` y al flujo `/auth/google/*`, estabilizando `redirect_uri`, cookies y sesión administrativa.
+- `backend/main.go` encadena ese middleware de host canónico en la pila HTTP y los defaults de `backend/.env.example` y `scripts/sync_to_vps.ps1` quedan alineados al callback `https://powerfulcontrolsystem.com/auth/google/callback`.
+- Se refuerza el submodulo `estaciones` para mostrar `Cargando estaciones...` mientras la vista `web/administrar_empresa/estaciones.html` obtiene configuración, carritos y sensores, además de exponer un mensaje claro cuando falla la carga.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol; el ajuste corrige estabilidad operativa del acceso y mejora UX en una vista empresarial existente.
+
+Actualizacion 2026-04-15 (portal publico: contacto visible y pagina de informacion):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que el portal publico muestre un acceso directo a `Informacion_de_contacto.html` y un CTA flotante `Contactenos` enlazado a WhatsApp.
+- El encabezado de `web/index.html` presenta juntos los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` para concentrar el ingreso comercial en una sola zona visible.
+- Se agrega la pagina publica `web/Informacion_de_contacto.html` con descripcion general del sistema y centralizacion de los canales `powerfulcontrolsystem@hmail.com` y `3043306506`.
+- `backend/utils/utils.go` mantiene esa pagina junto con `index.html` en el conjunto de rutas publicas exactas del middleware, evitando exigir sesion administrativa en el portal comercial.
+- `web/estilos.css` incorpora el tratamiento visual del boton flotante de WhatsApp y del nuevo layout de contacto sin introducir cambios en permisos por rol.
+- No hay cambios en wrappers, CRUD/A ni privilegios: la administracion de tarjetas y del portal sigue reservada a `super_administrador` y la nueva pagina es solo de lectura publica.
+
+Actualizacion 2026-04-15 (portal publico: landing descriptiva unica por tarjetas):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que el portal use una sola landing descriptiva (`/descripcion_de_los_sistemas.ht`) con todas las soluciones publicadas.
+- `web/index.html` ahora dirige `Explorar oferta` a una ancla interna de esa landing segun la tarjeta elegida, manteniendo una experiencia mas consistente y sin dispersar el catalogo publico en multiples paginas.
+- `web/descripcion_de_los_sistemas.ht` toma las tarjetas de `/api/public/pagina_principal`, genera descripciones ampliadas por solucion y muestra un boton `Probar Gratis` por seccion usando el enlace configurado en super.
+- `backend/utils/utils.go` libera explicitamente la landing descriptiva en `AuthMiddleware` para que el recorrido comercial del home no dependa de sesion.
+- `web/super/pagina_principal.html` deja explicito que el campo `enlace` controla el destino de `Probar Gratis`; no hay cambios en permisos por rol y la administracion sigue reservada a `super_administrador`.
+
+Actualizacion 2026-04-15 (checkout de licencias: disponibilidad gobernada de Epayco/Wompi):
+- Se refuerza el submodulo `pasarelas de licencias` para que `web/pagar_licencia.html` renderice unicamente Epayco y Wompi segun disponibilidad real del backend, con orden fijo Epayco primero y Wompi debajo.
+- Si solo una pasarela queda disponible, `web/pagar_licencia.html` omite el selector de forma de pago y muestra directamente el panel activo para reducir friccion en el checkout.
+- El backend expone `GET /api/public/licencias/payment_methods` para publicar el estado ordenado de las pasarelas y endurece Wompi para rechazar terminos/creacion de transaccion cuando este desactivado o incompletamente configurado.
+- El checkout Epayco vuelve a incluir `p_key` cuando la configuracion avanzada dispone de `private_key`, evitando respuestas remotas `AccessDenied` en cuentas que todavia operan con el contrato legacy de `checkout.php`.
+- `web/super/configuracion_avanzada.html` permite activar o desactivar Epayco y Wompi desde sus toggles sin obligar a reingresar credenciales completas en cada cambio de estado.
+- No hay cambios en permisos por rol; la gestion sigue centralizada en `super_administrador` y la nueva ruta publica es solo de lectura para el checkout de licencias.
+
+Actualizacion 2026-04-15 (responsive transversal de portal y paneles administrativos):
+- Se refuerza el frontend compartido en `web/estilos.css` para adaptar mejor el portal publico, el panel super y el panel de empresa entre escritorio, tablet y movil.
+- `web/index.html` divide el titulo principal en dos segmentos flexibles para permitir salto natural en pantallas estrechas sin perder jerarquia visual.
+- Los layouts administrativos colapsan con mejor comportamiento en movil: titulo del sidebar multilínea, navegación horizontal desplazable y `iframe` con altura útil minima.
+- Formularios, tablas y CTA priorizan apilado vertical y scroll horizontal controlado en anchos reducidos.
+- No hay cambios funcionales de rutas, datos ni permisos por rol; el ajuste es visual y de usabilidad.
+
+Actualizacion 2026-04-15 (hardening login Google y recordar cuenta):
+- Se refuerza el modulo `autenticacion y sesiones` para aceptar `login_hint` solo cuando es un correo valido y para limpiar correos recordados corruptos antes de invocar `/auth/google/login`.
+- `web/js/login.js`, `web/menu.js`, `web/js/super_administrador.js` y `web/js/seleccionar_empresa.js` ya no persisten `rememberedEmail` arbitrario; solo se conserva el valor cuando coincide con una forma plausible de email.
+- No hay cambios de rutas, wrappers ni permisos por rol; el ajuste es de integridad de sesion/UX en navegador.
+
+Actualizacion 2026-04-14 (autenticacion Google VPS/local y recordar cuenta):
+- Se corrige el flujo de autenticacion administrativa para operar con callback OAuth dinamico segun host de la solicitud, forzando HTTPS en dominio publico y manteniendo `localhost` en entorno local.
+- Se ajusta el middleware global para exponer como publicos `GET /js/login.js` y `GET /api/public/pagina_principal`, eliminando bloqueos `401` que interrumpian el login y la carga del portal.
+- Se completa la UX de `recordar cuenta` en `login.html` (hint de cuenta recordada + accion olvidar) y se refuerza persistencia de `rememberedEmail` desde perfil autenticado.
+- Se agrega una señal visible de sesion (`browser_session_active`) emitida por backend junto a `session_token` para que `login.html` y `menu.js` detecten sesion activa sin intentar leer la cookie `HttpOnly` real.
+- Se mantiene la seguridad por sesion para rutas protegidas y se conserva aislamiento por `empresa_id` en modulos empresariales.
+
+Actualizacion 2026-04-14 (portal publico index - encabezado principal):
+- Se actualiza el titulo principal del portal a `Sistema de Facturación Electrónica` y se agrega subtitulo operativo `Toma el control de tu negocio con Powerful Control System`.
+- El cambio es visual/UX en home publico y no altera wrappers de seguridad ni permisos por rol.
+
+Actualizacion 2026-04-14 (pagina principal dinamica en super):
+- Se agrega el submodulo `pagina_principal` para configurar las tarjetas visibles del portal (`/index.html`) desde super administrador.
+- El backend incorpora `GET/PUT /super/api/pagina_principal` para leer/guardar cantidad de tarjetas y su contenido (imagen, titulo, descripcion, enlace), con persistencia en `configuraciones` de la base super.
+- Se habilita `GET /api/public/pagina_principal` para que el portal renderice tarjetas dinamicas y mantenga fallback local en caso de indisponibilidad temporal.
+- No hay cambios en wrappers de `/api/empresa/*`; el alcance de permisos permanece exclusivo para `super_administrador` en configuracion global.
+
+Actualizacion 2026-04-14 (checkout de licencias con Epayco):
+- Se completa la pasarela Epayco para licencias con endpoint de creacion de checkout (`POST /epayco/create_transaction`) y consulta de estado (`GET /epayco/transaction_status`).
+- Se agrega confirmacion server-to-server (`POST/GET /epayco/webhook`) para actualizar estado de pago y activar licencia aun cuando el cliente cierre la pagina.
+- `web/pagar_licencia.html` abre automaticamente el checkout de Epayco en una nueva pestaña y mantiene polling de estado para cierre del flujo.
+- No hay cambios en wrappers `/api/empresa/*`; el alcance permanece en contexto global de super para configuracion y flujo de licencias.
+
+Actualizacion 2026-04-14 (chat y tareas: agente de citas con calendario grande):
+- Se amplía el modulo `chat_y_tareas` con agenda de citas colaborativa por empresa, calendario mensual de gran formato y formulario de programacion de reuniones.
+- El backend incorpora `/api/empresa/chat_tareas/citas` (GET/POST/PUT/DELETE) bajo politica de ventas para gestionar citas con estado operativo (`programada/completada/cancelada`), activacion/inactivacion y recordatorio previo.
+- Las citas quedan compartidas por `empresa_id`: cuando un administrador agenda una reunion, todos los usuarios de esa empresa visualizan la cita en el calendario del modulo.
+- El frontend agrega recordatorios previos visibles en pantalla segun `notificar_minutos_antes` y sincronizacion periodica del calendario.
+
+Actualizacion 2026-04-14 (venta publica por subdominio empresarial):
+- Se amplía el modulo de venta publica para resolver `empresa_slug` automaticamente desde subdominio (`{slug}.powerfulcontrolsystem.com`) ademas de query/path.
+- La ruta raiz del subdominio empresarial abre directamente `venta_publica.html` para experiencia de tienda publica sin parametros manuales.
+- En `administrar_empresa/venta_publica.html` se agrega enlace operativo sugerido por subdominio para publicacion automatizada por empresa.
+- No hay cambios de permisos por rol; se mantiene alcance publico en `/api/public/venta_publica` y aislamiento por `empresa_id` en el backend.
+
+Actualizacion 2026-05-21 (avisos globales de conexion):
+- El contexto comun `web/js/empresa_submenu_context.js` escucha los eventos del navegador `offline` y `online`.
+- Al perder internet muestra un aviso flotante persistente. Los modulos sin modo offline piden esperar a que vuelva la conexion; el carrito/caja con facturacion offline activa indica que puede seguir vendiendo, imprimir provisionalmente y sincronizar al volver internet.
+- `web/administrar_empresa.html` carga el mismo monitor para cubrir el shell principal y los modulos internos.
+- `web/administrar_empresa/carrito_de_compras.html` publica al contenedor si la operacion offline esta habilitada para que el mensaje global respete el contexto del cajero.
+- `backend/handlers/auditoria_empresa.go` agrega `action=conexion` sobre `/api/empresa/auditoria/eventos` para registrar `internet_perdido` e `internet_restaurado` en `empresa_auditoria_eventos`.
+- El frontend conserva eventos en cola local cuando no hay red y los envia al restaurarse la conexion; `auditoria.html` permite filtrar el modulo `Conectividad`.
+- No agrega tablas ni dependencias; complementa la facturacion offline del carrito y mantiene aislamiento por `empresa_id`.
+
+Actualizacion 2026-04-14 (super: administracion de base de datos PostgreSQL):
+- Se agrega el submodulo de administracion profesional de base de datos en `web/super/administrar_base_de_datos.html`.
+- El backend incorpora el endpoint protegido `/super/api/postgres/performance` para exponer salud del cluster, metricas por base, consultas activas prolongadas y recomendaciones automaticas.
+- El alcance de permisos se mantiene exclusivo para `super_administrador`; no hay cambios en CRUD/A de modulos empresariales ni en aislamiento por `empresa_id`.
+
+Actualizacion 2026-04-14 (impresoras operativas por empresa):
+- Se agrega el modulo de impresoras del sistema con gestion completa en `administrar_empresa/configuracion_impresora.html`.
+- El backend incorpora `/api/empresa/impresoras` para CRUD, predeterminada, activacion/inactivacion, asignacion por funcionalidad, por producto especifico y reglas masivas por categoria o todos los productos.
+- Se incorpora `/api/empresa/impresoras/resolver` para determinar impresora objetivo en flujos operativos de impresion.
+- La resolucion opera con prioridad `receta -> producto -> categoria de producto -> todos los productos -> funcionalidad -> predeterminada` y mantiene aislamiento estricto por `empresa_id`.
+
+Actualizacion 2026-04-14 (migracion motor legado retirado -> PostgreSQL en VPS):
+- Se completa el bloque core de conmutacion runtime para operar con PostgreSQL en VPS mediante `DB_DIALECT=postgres` y DSN separados para `pcs_superadministrador` y `pcs_empresas`.
+- Se amplian validaciones de compatibilidad SQL en backend para mantener transicion controlada con motor legado retirado legado solo para migracion/contingencia.
+- El alcance de permisos por rol no cambia; se mantiene matriz vigente y aislamiento obligatorio por `empresa_id`.
+
+Actualizacion 2026-04-14 (fase 4: estabilizacion contable en PostgreSQL):
+- Se endurece el modulo de finanzas/contabilidad para procesamiento de eventos y asientos (`asientos_worker`) usando operaciones SQL portables entre motor legado retirado y PostgreSQL.
+- Se restablece operacion de salida controlada en VPS con `DB_DIALECT=postgres` y DSN activos, validando arranque y salud del backend en entorno productivo.
+- No hay cambios funcionales de permisos por rol ni de aislamiento por `empresa_id`; se mantiene matriz vigente.
+
+Actualizacion 2026-04-13 (acceso empresa y estaciones):
+- Se refuerza el modulo de acceso de usuario empresa con opcion de recordar correo por empresa y recuperacion robusta de `empresa_id`.
+- Se ajusta el modulo de seleccion de empresa para persistir contexto empresarial y abrir administracion con parametros `id` + `empresa_id`.
+- Se estabiliza configuracion de estaciones para generar y mostrar multiples estaciones (incluyendo 10 o mas) con sincronizacion de carritos tolerante a conflictos idempotentes de cierre/inactivacion.
+
+Actualizacion 2026-04-13 (estaciones, sensores y facturacion visual por estacion):
+- Se centraliza la configuracion de colores de estado de carrito en `configuracion_de_estaciones`, retirando duplicidad en `configuracion.html`.
+- El modulo de estaciones mejora compatibilidad con configuraciones legacy de `estaciones_config` y mantiene comportamiento estable para 10+ estaciones.
+- El modulo sensor de puertas valida rango de estacion antes de registrar dispositivos y la vista de estaciones usa el estado mas reciente por `last_seen`.
+- Se valida aislamiento por `empresa_id` en preferencias de estaciones con prueba automatizada en backend (`empresa_estacion_prefs_test.go`).
+
+Actualizacion 2026-04-18 (gobernanza tecnica sobre estaciones y venta simple):
+- Se formaliza el contrato tecnico del flujo en `documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md`.
+- Se formaliza el runbook operativo de incidentes en `documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md`.
+- Ambos artefactos fijan como reglas explicitas la sincronizacion backend del carrito base por estacion, el aislamiento por `empresa_id`, la lectura del sensor por `last_seen` y la trazabilidad de metricas/documento de venta en `pagar_estacion`.
+
+Actualizacion 2026-04-13 (persistencia backend de estaciones):
+- Se corrige la capa DB de `empresa_estacion_prefs` para normalizar `estado` vacio como `activo`, evitando que la configuracion de estaciones desaparezca al recargar cuando el frontend guarda sin enviar `estado`.
+- Se agrega prueba de no regresion en DB y se ajusta prueba de handler para reflejar el payload real del frontend.
+
+Actualizacion 2026-04-18 (gobernanza tecnica de autenticacion y arranque PostgreSQL):
+- Se formaliza el contrato tecnico de autenticacion en `documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md`.
+- Se formaliza el runbook de arranque local PostgreSQL en `documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md`.
+- Ambos artefactos fijan reglas explicitas sobre rol administrado, contrato vigente, contraseña local de cuentas Google, alcance por `empresa_id`, bloqueo por intentos fallidos y reescritura del DSN hacia `DB_VPS_LOCAL_PORT` cuando hay tunel activo.
+
+Actualizacion 2026-04-18 (gobernanza tecnica de venta publica empresarial):
+- Se formaliza el contrato tecnico del modulo en `documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md`.
+- El artefacto fija invariantes sobre `empresa_slug`, exposicion publica sanitizada, referencias seguras de credenciales, ordenes `VP|empresa_id|codigo_orden`, consulta de estado y conciliacion por Wompi/Epayco.
+
+Actualizacion 2026-04-18 (gobernanza tecnica de permisos empresariales):
+- Se formaliza el contrato tecnico de la capa de permisos y wrappers en `documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md`.
+- El artefacto fija reglas sobre extraccion de `empresa_id`, politica base por rol/modulo/accion, overrides dinamicos, rol efectivo por licencia, visibilidad de paginas, auditoria de wrappers y evidencia de aprobacion para cambios criticos en seguridad.
+
+Actualizacion 2026-04-18 (gobernanza tecnica de facturacion y documentos transaccionales):
+- Se formaliza el contrato tecnico del ciclo documental en `documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md`.
+- El artefacto fija la maquina de estados de emision, anulacion y nota credito, la persistencia comun en `empresa_facturacion_documentos`, el comportamiento de `modo_documento_venta`, la cola de reintentos y reconciliacion fiscal, y la separacion entre configuracion DIAN, transporte oficial y evidencia fiscal aceptada. Nota 2026-06-18: PCS ya tiene facturas reales aceptadas en DIAN produccion.
+
+Actualizacion 2026-04-12 (autenticacion administrativa: contrato y verificacion humana):
+- Se unifica el flujo de login de administradores en `login.html -> OAuth Google -> /accept.html -> /accept/complete`.
+- La aceptación de contrato queda trazable y persistente por administrador (`acepta_contrato`) y solo se exige una vez por cuenta.
+- La validación humana se realiza con reCAPTCHA real verificado en backend antes de crear sesión.
+- Se elimina la dependencia funcional del modal legacy en `login.html`/`menu.js` para evitar rutas de autenticación duplicadas.
+
+Actualizacion 2026-04-08 (chat IA empresarial):
+- Se retira la configuracion visual de Google Gemini en super administrador y se estandariza la credencial IA a DeepSeek (`deepseek:deepseek-chat`).
+- El chat IA de empresa se alinea al proveedor configurado en super, manteniendo alcance por `empresa_id` y trazabilidad por cuenta Google autenticada.
+
+Actualizacion 2026-04-18 (chat IA empresarial: DeepSeek + Ambis Local):
+- El modulo `chat_con_inteligencia_artificial` de empresa expone un selector real para alternar entre `deepseek:deepseek-chat` y `ollama:ambis`.
+- `Ambis Local` opera sobre Ollama en el VPS usando `codellama:7b` por `127.0.0.1:11434`, sin exposicion publica directa del servicio.
+- La preferencia de modelo se conserva por `empresa_id` y por cuenta Google autenticada, manteniendo el mismo control de alcance y trazabilidad del modulo.
+- La configuracion avanzada de super mantiene la credencial cifrada de DeepSeek y muestra `Ambis Local` como servicio interno disponible sin API key.
+
+Actualizacion 2026-04-18 (chat IA global super):
+- El submodulo `administracion global (super) / chat con IA global` agrega una pagina dedicada en el panel super para consultar el estado consolidado de toda la base de datos operativa.
+- El backend registra historial, uso diario y modelo preferido por administrador en tablas `super_ai_*` separadas del chat por empresa.
+- El acceso queda restringido a sesiones validas de `super_administrador`, manteniendo aislamiento entre el alcance empresarial y el alcance global.
+
+Actualizacion 2026-04-08 (chat y tareas colaborativo usuario-admin con adjuntos documentales):
+- El modulo de chat/tareas deriva el actor desde sesion autenticada para distinguir `usuario` y `admin` por `empresa_id`.
+- Se evita suplantacion de autor en mensajes/adjuntos y se auto-registra al emisor como participante activo de la conversacion.
+- Al crear conversacion desde usuario, se agrega automaticamente al administrador propietario de la empresa como participante `admin`.
+- Adjuntos de chat amplian soporte a documentos de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`) ademas de fotos/audio y formatos tabulares.
+
+Actualizacion 2026-04-08 (configuracion monetaria y numerica empresarial):
+- En `administrar_empresa/configuracion.html` se agrega configuracion por `empresa_id` para `moneda_codigo`, `sistema_numerico`, uso de decimales y precision decimal.
+- La configuracion se persiste en `empresa_configuracion_avanzada` y la moneda configurada se usa como valor por defecto al crear carritos cuando la solicitud no envía moneda.
+
+Actualizacion 2026-04-08 (administracion global: alertas de inicio/reinicio de servidor):
+- En super administrador se agrega configuracion avanzada `gmail.restart_alert_to` para definir el correo destino de alertas operativas.
+- El backend registra cada inicio/reinicio en bitacora operativa (`super_servidor_eventos` + log local runtime) y notifica por correo cuando aplica.
+- La deteccion de reinicio inesperado se basa en estado runtime previo y evidencia reciente de `server.err`, manteniendo trazabilidad administrativa central.
+
+Criterio de esta guia:
+- Resumen corto por modulo (objetivo + alcance operativo principal).
+- Enfoque multiempresa con aislamiento por empresa_id.
+
+1) Autenticacion y sesiones
+- Login admin/empresa, sesiones, bloqueo temporal y recuperacion de password.
+- Login administrativo con selección obligatoria de cuenta Google (`select_account`) para evitar mezcla de identidades en navegador.
+- Aceptación de contrato y verificación humana como prerrequisito de primera sesión administrativa.
+- La UI cliente usa una cookie auxiliar visible de presencia de sesion para avatar y enlace de logout, mientras el token real permanece en `session_token` con `HttpOnly`.
+- El inicio OAuth administrativo se realiza sin `login_hint` ni estado local de cuenta recordada para mantener comportamiento uniforme entre hosts.
+
+2) Administracion global (super)
+- Empresas, licencias, administradores, configuraciones globales (Wompi/Epayco/SMTP/IA) y chat IA global consolidado.
+
+3) Usuarios de empresa
+- Alta/edicion, confirmacion de correo, password inicial y cambio de password.
+
+4) Asistencia de empleados
+- Registro de entrada/salida, novedades, cierres de periodo y reportes de asistencia.
+
+5) Nomina de sueldos
+- Parametros legales, liquidaciones por periodo y conciliacion con asistencia.
+
+6) Registro de vehiculos
+- Ingreso/salida por placa, control de permanencia y trazabilidad operativa.
+
+7) Reservas por estacion
+- Disponibilidad, creacion, confirmacion/cancelacion y control anti-overbooking.
+
+8) Tarifas por minutos
+- Reglas por estacion y dia, simulacion y calculo de cobro por bloques.
+
+9) Tarifas por dia
+- Reglas diarias por estacion/servicio con horarios check-in/check-out.
+
+10) Clientes
+- CRUD, deduplicacion, perfil comercial e historial por cliente.
+
+11) Inventario
+- Productos, bodegas, existencias, movimientos, alertas y conteo ciclico.
+- El traslado entre bodegas se opera desde `Inventario y compras > Bodegas`, valida producto, origen y destino por `empresa_id`, descuenta la bodega origen, suma la bodega destino y deja movimiento de kardex tipo `traslado`.
+
+12) Recetas de productos
+- Recetas versionadas, costo teorico/real y venta de recetas con descuento de ingredientes.
+
+13) Codigos de descuento
+- Reglas promocionales por canal/segmento/horario y trazabilidad de redenciones.
+
+14) Propinas
+- Configuracion fiscal, movimientos, ajustes manuales y conciliacion en cierre de caja.
+- Los movimientos quedan enlazados al usuario creado en `users` por `usuario_origen_id` y `usuario_asignado_id`, conservando la etiqueta historica para reportes y auditoria.
+
+15) Comisiones por servicio
+- Reglas por rol/servicio, topes, ajustes y vinculacion a nomina.
+- Las comisiones automaticas y manuales quedan asociadas al usuario creado en `users` por `usuario_origen_id` y `usuario_lavador_id`, para liquidacion, filtros y reportes por empleado real.
+
+16) Compras
+- Documentos de compra con flujo de aprobacion, recepcion y contabilizacion.
+
+17) Facturacion electronica
+- Configuracion por pais, emision/anulacion/nota credito y cola de reintentos.
+
+18) Facturacion electronica DIAN Colombia
+- Configuracion DIAN, firma XML, envio/acuse y contingencia/reconexion.
+- Incluye envio automatizado del set de habilitacion (`action=enviar_set_pruebas`) con distribucion configurable de facturas/notas y resumen por estado (`aceptado`, `rechazado`, `contingencia`, `pendiente`).
+- Soporta modelo SaaS multiempresa con software compartido (`Software ID/PIN`) y credenciales por empresa (`NIT`, `certificado_clave_ref`, `token_emisor_ref`). La numeracion DIAN guarda ademas `llave_tecnica` del rango autorizado, separada del token de emisor.
+- Agrega soporte de onboarding por empresa con `action=guia_onboarding`, validacion de secretos con `action=validar_credenciales` y carga de firma PEM con `action=subir_firma`.
+- Amplia la fase base de preparacion tecnica con `action=generar_xml_ubl_base`, `action=firmar_xml_xades_base` y `action=diagnostico_oficial` para estructurar UBL 2.1 base, firma XMLDSig/XAdES base y reporte de brechas frente al contrato oficial DIAN antes de implementar el transporte SOAP/WSDL definitivo.
+
+19) Gestion comercial extendida
+- Cotizaciones, pedidos, devoluciones y embudo de conversion comercial.
+
+20) Contabilidad operativa extendida (CxC/CxP)
+- Plan de cuentas, cartera por cobrar/pagar y conciliacion con pagos reales.
+
+21) Inventario extendido (lotes/series)
+- Trazabilidad por lote/serie, bloqueo por vencimiento y devolucion a proveedor.
+
+22) RRHH extendido (vacaciones/licencias)
+- Solicitudes, aprobacion multinivel, saldo/acumulado y enlace con nomina.
+
+23) CRM, Produccion y Logistica
+- Leads/campanas, ordenes de produccion, envios y seguimiento por hitos/SLA.
+
+24) Documental e integraciones
+- Versionado documental, control de acceso, rotacion de credenciales y monitoreo.
+
+25) Panel ERP extendido
+- Hub por dominios con formularios guiados, validaciones dinamicas y acciones rapidas.
+
+26) Carritos de compra e items
+- Operacion de carrito, pago validado, concurrencia de stock y recuperacion de sesiones.
+
+2026-05-12: Documentos y backups locales por dispositivo
+- Modulos afectados: `documentos_onlyoffice`, `backups`, `administrar_empresa`, `seguridad`.
+- Cambio funcional: OnlyOffice agrega modo predeterminado `Guardar en este dispositivo` para crear documentos Word/Excel/PowerPoint como descarga local sin guardarlos ni listarlos en el VPS. El modo `Editar colaborativo en servidor` queda disponible solo cuando se requiere Document Server.
+- Backups: el modulo empresarial agrega export local directa (`exportar_local` y `exportar_configuracion_local`) para descargar respaldos en el equipo/celular sin crear archivo en disco del VPS ni registro de historial. La configuracion de backups automaticos locales se guarda en el navegador por empresa y ejecuta descargas mientras la pagina esta abierta con sesion activa.
+- Seguridad: se reutilizan permisos existentes de `documentos_onlyoffice` y `backups`; no se agregan rutas publicas, dependencias ni motores de base de datos.
+
+2026-05-12: Plantillas 20 en super administrador
+- Modulos afectados: `super_administrador`, `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `licencias`.
+- Cambio funcional: la vista `Plantillas 20` ahora presenta semaforo ejecutivo, tarjetas de foco, conteo de brechas, metadata completa, listos para venta y licencias base.
+- Operacion: se agregan filtros para ver plantillas sin licencia base o sin preconfiguracion activa, manteniendo el cruce con catalogo, preconfiguraciones y licencias.
+- Alcance: no se agregan endpoints, permisos, tablas ni dependencias; se reutiliza `/super/api/plantillas_nuevas/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licencias`.
+
+2026-05-12: Identidad visual empresarial
+- Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `seguridad y permisos`.
+- Cambio funcional: Configuracion empresarial expone una seccion visible para cargar o pegar el logo de la empresa; el panel principal lo muestra encima del titulo de empresa sin modificar la tarjeta de clima.
+- Configuracion vigente: `empresa_configuracion_avanzada.logo_url` guarda el logo corporativo; `logo_factura_url` guarda el logo especifico de factura. `mostrar_logo_empresa`, `mostrar_logo_factura` y `mostrar_logo_sistema` controlan cada visibilidad; `mostrar_logo` queda como compatibilidad de visibilidad general.
+- Seguridad: la carga usa `/api/empresa/configuracion_avanzada/logo` bajo `WithEmpresaSeguridadPermissions` y conserva aislamiento por `empresa_id`.
+
+27) Ventas simples por estacion
+- Cobro rapido por estacion con conexion obligatoria al servidor y metricas de atencion/rendimiento.
+
+28) Finanzas y contabilidad
+- Movimientos, periodos, cierres de caja, asientos, plan de cuentas operativo, cartera CxC/CxP, abonos/pagos trazables y conciliacion bancaria por extractos importados.
+- Actualizacion 2026-04-26: `web/administrar_empresa/finanzas.html` consolida plan de cuentas, CxC/CxP y conciliacion bancaria con extractos dentro del flujo diario; `/api/empresa/reportes` expone datasets contables para plan de cuentas, cartera y conciliacion bancaria.
+
+29) Auditoria empresarial
+- Eventos trazables por modulo/usuario, busqueda avanzada y exportacion forense.
+
+30) Seguridad y permisos
+- Permisos por rol/modulo/accion, deny-by-default y evidencia de aprobacion.
+
+31) Reportes programados y consistencia
+- Programacion automatica, versionado de plantillas y validacion multiformato.
+
+32) Graficos y estadisticas
+- Series, rankings, comparativos por periodo y filtros avanzados con cache.
+
+33) Configuracion operativa de cobro
+- Politicas por rol/canal/turno, simulador y rollback por historial.
+
+34) Creditos y cartera
+- Creditos, cuotas, abonos, workflow, limites por cliente y alertas de morosidad.
+
+35) Backups empresariales
+- Snapshots por empresa, restauracion trazable, depuracion de informacion por fecha de corte (con backup previo opcional) y exportacion de evidencia.
+
+36) Venta publica y pagos Wompi por empresa
+- Tienda online por empresa con slug publico, catalogo, imagenes y pago Nequi por Wompi.
+
+43) Mensajes privados desde portal público (red social / venta pública)
+- Visitantes pueden enviar mensajes privados a una empresa desde `red_social_comercial` y desde `venta_publica` (catálogo/checkout).
+- Los mensajes se registran como una conversación en `Chat y tareas` de la empresa para que el equipo continúe la conversación internamente.
+
+37) Descripcion de modulos (este documento)
+- Catalogo compacto de alcance funcional para consulta rapida tecnica/operativa.
+
+38) Impresoras operativas por empresa
+- Gestiona multiples impresoras, predeterminada, asignacion por funcionalidad/producto y resolucion de destino de impresion por contexto.
+
+40) Pagina principal dinamica (super)
+- Gestiona tarjetas del home publico (cantidad, imagen de `web/img`, titulo, descripcion y enlace) con persistencia central en base super y render dinamico en `index.html`; `Explorar oferta` abre una landing descriptiva unica por ancla y el enlace configurado se usa en el boton `Probar Gratis` de cada seccion.
+
+41) Agente de citas y calendario (chat y tareas)
+- Agenda reuniones/citas por empresa, muestra calendario grande compartido por todos los usuarios de la empresa y emite recordatorios previos configurables.
+
+42) Checkout de licencias (Wompi + Epayco)
+- `web/pagar_licencia.html` permite seleccionar pasarela para pago de licencia y mantiene trazabilidad por transaccion/referencia.
+- Wompi opera por API (`create_transaction_nequi`, `transaction_status`, `webhook`) con activacion automatica de licencia al aprobar.
+- Epayco opera con checkout hospedado, confirmacion por `webhook` y consulta por referencia para activar licencia y registrar estado en `pagos_epayco`.
+- 2026-06-01: el checkout publica Epayco y Wompi por defecto cuando cada proveedor tiene credenciales completas; los toggles `*.enabled` se conservan como apagado explicito. La tarjeta visual de pago centra y agranda las marcas bancarias Davivienda/Bancolombia.
+2026-04-29: IA contextual por auditoria en tiempo real
+- Modulos afectados: `chat IA`, `auditoria empresarial`, `seguridad y permisos`
+- Cambio funcional: la auditoria empresarial registra tambien acciones de lectura de los wrappers protegidos y pasa a alimentar el contexto de los chats IA con actividad reciente por empresa y a nivel global super. El contexto incluye resumen por modulo/accion, usuarios activos, errores HTTP, endpoints y ultimas operaciones, sin inyectar metadata sensible.
+- Impacto operativo: la IA puede responder con mayor conciencia de lo que los usuarios estan haciendo en el sistema, pero no ejecuta acciones por observar auditoria. Si la auditoria no esta disponible o la IA esta desactivada, el servidor no se rompe y el contexto se degrada de forma controlada.
+2026-04-29: Auditoria IA profunda y consultas DB seguras.
+- Modulos afectados: `auditoria empresarial`, `chat IA`, `super`, `seguridad y permisos`.
+- Cambio funcional: la auditoria empresarial pasa a alimentar a GPT-5.4 mini/modelo activo con una capa de contexto profundo: resumen en tiempo real, busqueda de eventos por intencion de pregunta y consultas DB seguras ya ejecutadas por el backend. Ademas, el chat empresarial recibe por defecto lectura total controlada de tablas con `empresa_id` (SELECT parametrizado, columnas sensibles omitidas), configurable desde super.
+- Trazabilidad: se crea `empresa_auditoria_ia_consultas` para registrar alcance, modelo, usuario, hash/resumen de pregunta, filtros usados, resultados compactos, eventos consultados y tamano de contexto.
+- Impacto operativo: si auditoria o IA fallan/deshabilitan, los endpoints continuan respondiendo con contexto degradado; la escritura de auditoria sigue siendo no bloqueante.
+2026-04-29: Administrar Empresa ? navegacion empresarial por categorias
+- Modulos afectados: `administrar_empresa`, `configuracion`, `seguridad y permisos`
+- Cambio funcional: el shell de `web/administrar_empresa.html` se organiza por grupos de trabajo: colaboracion, operacion/ventas, inventario/compras, finanzas/cumplimiento, personas/activos, analisis/control, documentos/nube/soporte y administracion. `configuracion_menu.html` separa los accesos por base empresarial, ventas/cobro, estaciones/tarifas, fiscal/automatizacion y avanzado. La pagina `configuracion.html` agrega un mapa ejecutivo de secciones sin cambiar IDs de controles ni endpoints de guardado.
+- Impacto operativo: se conserva compatibilidad con los iframes, `empresa_id`, permisos por rol y rutas existentes; el JS tambien oculta grupos vacios cuando todos sus enlaces quedan ocultos por permisos.
+2026-04-29: Pagina principal ? tarjetas tipo banner
+- Modulos afectados: `super`, `portal_publico`, `pagina_principal`
+- Cambio funcional: `web/super/pagina_principal.html` agrega por tarjeta el campo `tipo_tarjeta` con dos opciones: `info_foto` para la tarjeta actual de informacion mas foto, y `banner` para mostrar solo la imagen principal a todo el tamano de la tarjeta en `web/index.html`. El mismo editor puede subir imagenes nuevas a `web/img` mediante `/super/api/pagina_principalaction=upload_image`.
+- Impacto operativo: las configuraciones antiguas quedan en `info_foto` por defecto. El modo banner recomienda imagen 4:3 (640x480, 800x600 o 1000x750 segun tamano) y no requiere titulo, descripcion, enlace ni contenido ampliado para el index.
+
+## Estado actualizado de modulos 2026-05-03
+
+Referencia compacta: `documentos/reporte_estado_modulos_2026-05-03.md`.
+
+Cambios documentados: estaciones operativas con tarjetas adaptables al texto, carrito reparado desde estacion, pago con retorno automatico a estaciones, panel empresarial con `USD / COP` primero, configuracion de estaciones ampliada y despliegue VPS validado. Los modulos principales se clasifican como operativos, implementados o integrados segun su madurez real. Los modulos que usan hardware o servicios externos quedan sujetos a validacion en sitio y credenciales productivas.
+Parqueadero y tickets QR
+- Modulo empresarial por empresa_id para registrar ingreso de vehiculos, emitir ticket, generar QR de salida, calcular cobros automaticamente por tiempo/fracciones/tolerancia y cerrar la salida con recibo imprimible.
+
+Captura inteligente de compras y gastos
+- Modulo por empresa para radicar fotos, PDF o XML de compras/gastos, extraer datos con OCR/IA usando `openai:gpt-5.5`, detectar duplicados, exigir revision humana por confianza, aprobar/rechazar y convertir soportes aprobados en cuentas por pagar.
+
+2026-05-13: Alertas de vencimiento de licencias
+- Modulos afectados: `super_administrador`, `licencias`, `comunicaciones`.
+- Super administrador configura dias de aviso, activacion y maximo por ejecucion desde `web/super/configuracion_avanzada.html`.
+- El worker `licencias.vencimiento_alertas_worker` evalua licencias base y adicionales proximas a vencer, resuelve la empresa en la base operativa y envia/captura correo al administrador principal de la empresa mediante SMTP/plantillas existentes.
+- La tabla `licencia_vencimiento_notificaciones` evita avisos duplicados por licencia, empresa, correo, fecha de vencimiento y umbral configurado.
+
+2026-05-13: Correos masivos globales
+- Modulos afectados: `super_administrador`, `comunicaciones`, `seguridad y permisos`.
+- El super administrador dispone de `web/super/correos_masivos.html` para enviar comunicados globales por categoria a administradores, usuarios de empresa o ambos grupos.
+- `/super/api/correos_masivos` previsualiza destinatarios con correos enmascarados, deduplica emails repetidos entre roles y exige confirmacion explicita antes de enviar.
+- El envio usa la configuracion SMTP existente (`gmail.smtp_*`) y respeta el modo pruebas de correo, dejando trazabilidad en `super_correos_masivos` y `super_correos_masivos_destinatarios`.
+
+2026-05-13: Conexion obligatoria para operacion y facturacion
+- Modulos afectados: `ventas simples por estacion`, `carritos`, `facturacion electronica`, `ayuda`.
+- Se retira la opcion de operar o facturar sin conexion. El sistema requiere conexion activa con el backend para ventas, cobros, facturas, documentos y reintentos fiscales.
+- En facturacion electronica Colombia, la pantalla ya no muestra controles de modo offline/contingencia DIAN; si DIAN/proveedor no responde, el backend bloquea la emision y registra el fallo para reintentar cuando vuelva la conexion.
+
+2026-07-05: Cajas simultaneas por empresa, no por licencia
+- Modulos afectados: `licencias`, `finanzas`, `corte de caja`, `carritos`, `ventas por estacion`.
+- Las licencias dejan de definir cupo de cajas. Solo limitan documentos/ventas emitidas; una venta, factura electronica u otro documento electronico cuenta como un uso documental.
+- El backend valida solo la configuracion empresarial de caja al abrir o reabrir cajas, y cada pago de carrito debe asociarse a una caja abierta para mantener cierres, arqueos y movimientos de efectivo separados.
+
+2026-05-13: Actualizacion general de documentacion y ayuda
+- Modulos afectados: `documentacion`, `ayuda`, `super_administrador`, `administrar_empresa`, `licencias`, `soporte`, `operacion`.
+- Se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa consolidado de reglas vigentes, rutas canonicas, operacion conectada, licencias/cajas, soporte, comunicaciones, portal publico, VPS y validacion recomendada.
+- `web/ayuda/ayuda.html` incorpora secciones de acceso global de usuarios, operacion conectada obligatoria, cajas simultaneas por configuracion empresarial, soporte por tickets, correos masivos, mantenimiento programado, documentos locales y backups.
+
+2026-05-19: Administrar empresa responsive en movil
+- Modulos afectados: `administrar_empresa`, `PWA/cache`, `frontend_ux`.
+- El shell empresarial ahora fuerza actualizacion de CSS/JS/manifest con cache network-first, limpia caches PWA obsoletas y evita que celulares instalados conserven una version visual vieja.
+- En celular, el menu empresarial, submenus, botones e iframe se acomodan en columna, sin scroll horizontal, y el iframe se ajusta al alto real de la subpagina cargada.
+- La pagina inicial del panel empresarial deja de cortar textos principales en movil: titulo, ciudad del clima, resumen de clima, favoritos y pie pueden envolver lineas.
+- No cambia endpoints, permisos, tablas ni dependencias externas.
+
+2026-05-19: Clientes desde carrito y cliente obligatorio
+- Modulos afectados: `carritos`, `clientes`, `ventas_simple`, `configuracion_empresarial`.
+- El boton `Clientes` del carrito abre un panel interno para registrar un cliente nuevo o asignar uno existente al carrito activo, sin abandonar venta directa ni estaciones.
+- La configuracion del carrito incorpora `Exigir cliente registrado para pagar`; cuando esta activa, el sistema bloquea el pago hasta que el carrito tenga `cliente_id`.
+- El backend valida la misma regla en `pagar_estacion`, manteniendo aislamiento por `empresa_id` y reutilizando el modulo central de clientes.
+- No se agregan tablas ni dependencias externas; la regla se guarda en `estaciones_config.carrito_ui_global`.
+
+2026-05-20: Datáfonos POS multiempresa
+- Modulos afectados: `carritos`, `ventas_simple`, `corte de caja`, `pagos`, `seguridad y permisos`.
+- Se agrega `/api/empresa/datafonos` protegido con permisos de ventas para configurar terminales de Redeban, CredibanCo, Bold y BBVA por empresa, iniciar pagos, consultar confirmaciones y registrar transacciones.
+# Centro IA empresarial - 2026-06-07
+
+- Modulo: `centro_ia_empresarial`.
+- Navegacion: `Administrar empresa > Canales digitales y colaboracion > Centro IA empresarial` y acceso rapido desde `Centro financiero y contable > IA empresarial`.
+- Backend: `/api/empresa/ia_empresarial` en `backend/handlers/empresa_ia_empresarial.go`, protegido por `WithEmpresaReportesPermissions`.
+- Datos: no crea tablas; lee snapshot real por `empresa_id` de empresa, ventas cerradas, finanzas, clientes, productos, servicios e inventario; registra consumo IA diario en la infraestructura existente.
+- Funciones IA: diagnostico ERP, borrador de factura/cotizacion, cobranza y pagos, inventario inteligente, conciliacion bancaria, compras/gastos y cumplimiento DIAN.
+- Seguridad: no emite documentos, no registra pagos, no crea o modifica terceros, no actualiza inventario y no activa procesos DIAN. Las salidas son borradores/recomendaciones con datos faltantes.
+- Permisos: pagina `linkCentroIAEmpresarial`, modulo `reportes:R`; visible para roles con lectura gerencial y para `contador`/`empresario` sin conceder escritura.
+- UX: los botones de funciones IA usan icono GPT y badge `IA` mediante `web/js/ai_button_icons.js`.
+
+- El cliente Go usa HTTP/JSON configurable por endpoint contractual del proveedor, con autenticacion por referencia segura `env:*`; no se guardan claves reales en base de datos ni se imprimen en logs.
+- La respuesta del proveedor se normaliza a estados POS (`pendiente`, `aprobado`, `rechazado`, `error`) y se valida contra monto y referencia antes de aplicar el pago al carrito/caja.
+- Si el pago queda aprobado y se solicita `aplicar_al_pos`, el backend usa el cierre de caja abierto del usuario autenticado y marca el carrito con el metodo POS configurado para el datáfono.
+2026-05-25: Creditos diarios para ventas financiadas de motos
+- Modulo: `creditos`, `cartera`, `finanzas`.
+- Backend: `backend/db/creditos.go` agrega periodicidad de cuota, valor pactado y omision opcional de domingos; la generacion de cuotas permite contratos diarios largos y calcula cuotas vencidas/dias que debe desde el calendario de pagos. `backend/main.go` asegura `EnsureEmpresaCreditosSchema` en el arranque para migrar columnas de creditos en PostgreSQL.
+- API/UI: `backend/handlers/creditos.go` y `web/administrar_empresa/creditos.html` aceptan `periodicidad_cuota`, `valor_cuota_pactada` y `omitir_domingos`; la tabla de cartera muestra periodicidad, cuota pactada y dias/cuotas que debe.
+- QA: `backend/db/creditos_postgres_test.go` cubre contratos diarios de dos años y salto de domingos; se valido `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y sintaxis JS del modulo.
+2026-05-27: Vista previa de informacion de modulos
+- Modulos afectados: `super_administrador`, `informacion_de_modulos`, `frontend_ux`.
+- Cambio funcional: las vinetas de la vista previa dejan de usar color fijo y se adaptan a la apariencia activa.
+- Frontend: `web/super/informacion_de_modulos.html` usa `li::before` con variables de tema para contenido predeterminado y editado.
+- Alcance: sin cambios de backend, tablas, endpoints ni permisos.
+
+2026-05-27: Apariencias del menu flotante
+- Modulos afectados: `menu_flotante`, `apariencias`, `frontend_ux`.
+- Cambio funcional: se agrega el tema oscuro `Corporativo Oscuro` y se corrige `Blanco Corporativo` en celular.
+- Frontend: `web/menu.js` expone el nuevo boton en el selector; `web/estilos.css` define variables y reglas responsive; paginas embebidas reconocen el nuevo valor de tema.
+- Alcance: sin cambios de backend, tablas, endpoints ni permisos.
+
+2026-05-27: Reportes globales profesionales
+- Modulos afectados: `seleccionar_empresa`, `super_administrador`, `reportes_globales`, `frontend_ux`.
+- Cambio funcional: `web/super/reportes_globales.html` queda enfocado en fecha desde/hasta, selector de reporte disponible, formato y acciones directas Ver, Exportar, Imprimir y Enviar por email.
+- Analitica: la seleccion multiple de empresas se mantiene en tarjeta propia y el resultado muestra KPIs consolidados, graficos por empresa, lectura ejecutiva, resumen por empresa y detalle del dataset elegido.
+- Backend: no cambia el contrato ni permisos; se reutiliza `/super/api/reportes_globales` con formatos PDF, XLS, CSV, TXT y JSON.
+
+2026-05-27: Reportes globales con alcance del selector
+- Modulos afectados: `seleccionar_empresa`, `super_administrador`, `reportes_globales`, `seguridad_multiempresa`.
+- Cambio funcional: `/super/api/reportes_globales` ahora arma su catalogo de empresas con la misma regla que `/super/api/empresas`, es decir, solo empresas propias, delegadas o compartidas visibles para el administrador autenticado.
+- Seguridad: se elimina la excepcion que permitia devolver todas las empresas por rol super dentro de reportes globales; cualquier `empresa_id` fuera del alcance sigue rechazado antes de construir tablero, dataset, exportacion o email.
+- QA: prueba unitaria `TestSuperReportesGlobales*` para validar que el modulo no liste empresas ajenas y que conserve empresas delegadas del selector.
+
+2026-05-28: Descarga de informacion de empresa
+- Modulos afectados: `seleccionar_empresa`, `descarga_informacion_empresa`, `seguridad_multiempresa`.
+- Cambio funcional: desde el selector, el boton de descarga abre una pagina con resumen de tablas y exportacion JSON, PDF, XLS, CSV y TXT para la empresa visible.
+- Backend: el snapshot compara identificadores por texto para evitar fallos por diferencias de tipo en `empresa_id` y continua con advertencias si una tabla puntual no puede consultarse.
+- UX: la pagina de descarga mantiene mensajes claros de carga, error y exito, y el contraste queda legible en apariencia clara u oscura.
+
+2026-05-28: Instalacion PWA desde login
+- Modulos afectados: `autenticacion`, `portal_publico`, `PWA`.
+- Cambio funcional: `/manifest.webmanifest` y `/sw.js` quedan publicos para que el boton `Instalar app` de `login.html` pueda activar el flujo nativo del navegador.
+- UX: `index.html` y `login.html` comparten el mismo icono PWA en favicon, apple touch icon y encabezado publico.
+
+2026-05-28: Rediseño de descarga de informacion de empresa
+- Modulos afectados: `seleccionar_empresa`, `descarga_informacion_empresa`, `frontend_ux`.
+- Cambio funcional: la pagina de descarga deja de mostrar tarjetas tecnicas, conteos y tablas; ahora muestra solo el nombre de la empresa, un selector de formato y el boton `Descargar`.
+- UX: el formato predeterminado es Excel empresarial y la misma vista funciona en escritorio y celular.
+
+2026-05-28: Apariencias oscuras profesionales
+- Modulos afectados: `menu_flotante`, `apariencias`, `frontend_ux`.
+- Cambio funcional: el selector de apariencias incorpora `Negro Absoluto` y `Obsidiana Profesional`.
+- UX: `Negro Absoluto` usa fondo negro puro y superficies casi negras; `Obsidiana Profesional` mantiene una base super oscura con acentos azul acero para jerarquia empresarial.
+
+2026-05-28: Descarga de informacion integrada al selector
+- Modulos afectados: `seleccionar_empresa`, `descarga_informacion_empresa`, `frontend_ux`.
+- Cambio funcional: el boton de descarga de cada empresa ya no saca al usuario del selector; abre `descargar_informacion_de_la_empresa.html` dentro del panel derecho junto al menu.
+- UX: la pagina de descarga usa variables de apariencia del sistema y agrega el boton `Regresar a seleccionar empresas`, que vuelve al listado cuando esta embebida.
+- Backup: el selector de formato incluye `Backup completo (.json)` para descargar una copia integral exportable de la informacion de la empresa visible.
+
+2026-05-29: Email corporativo Mailu
+- Modulos afectados: `super_administrador`, `administrar_empresa`, `empresas`, `comunicaciones`, `VPS/Docker`.
+- Cambio funcional: el super administrador puede activar o desactivar el modulo de email corporativo, definir dominio, webmail, modo manual o `mailu_direct`, cuota y credenciales cifradas.
+- Empresas: al registrar una empresa se genera automaticamente un correo unico basado en su nombre; si ya existe, se agrega un sufijo numerico. El fallo de provision no bloquea la creacion de la empresa.
+- UX: en administrar empresa aparece debajo de Favoritos una tarjeta para abrir el webmail cuando el modulo esta activo y la empresa tiene email generado.
+- Operacion: el perfil `mail` de `deploy/docker-compose.platform.yml` levanta Mailu/Roundcube; los secretos viven en `deploy/.env.platform`, se registran al arrancar el backend y se cifran en base con `CONFIG_ENC_KEY`.
+- Seguridad: el navegador no recibe la clave del buzon; el panel empresarial abre el webmail configurado cuando el buzon esta provisionado.
+
+2026-05-29: Facturacion offline desde carrito
+- Modulos afectados: `carritos`, `venta_directa`, `facturacion_offline`.
+- Cambio funcional: al recuperar internet, el carrito muestra un aviso flotante visible indicando reconexion y sincronizacion de ventas offline, ademas del mensaje interno del panel de pago.
+- UX: el aviso offline permanece fijo mientras no hay conexion y el aviso online queda visible unos segundos aun si el carrito cambia a estado inactivo despues del pago.
+- QA: se comprobo visualmente en Motel Calipso con venta directa, corte de red simulado, venta provisional en cola local y sincronizacion posterior.
+
+2026-05-30: Menu super Portal publico e index
+- Modulos afectados: `super_administrador`, `portal_publico`, `pagina_principal`, `informacion_de_modulos`.
+- Cambio funcional: el panel super agrupa en un solo menu las herramientas de edicion del index y del portal publico: tarjetas de sistemas, modulos y caracteristicas, descripcion de sistemas e informacion para IA, y WhatsApp del portal.
+- UX: `Gobierno` queda enfocado en centro de mando y selector de empresas; la mensajeria queda separada del index para evitar duplicidad conceptual.
+- Permisos: sin cambios en endpoints ni tablas; la edicion sigue reservada a `super_administrador` y las paginas publicas se abren solo como vista de lectura.
+
+2026-05-30: Menu super Mensajeria y alertas
+- Modulos afectados: `super_administrador`, `alertas_sistema`, `licencias`, `correos_masivos`, `email_corporativo`.
+- Cambio funcional: la navegacion super concentra en `Mensajeria y alertas` todo lo relacionado con correos, avisos y mensajes automaticos: alertas del sistema, vencimientos de licencia, formatos de email, mensajes masivos, mantenimiento, SMTP y buzon corporativo.
+- Licencias: los textos enviados durante compra/pago de licencia quedan visibles desde `Formatos de email`, junto a confirmaciones de cuenta y plantillas recomendadas.
+- Permisos: sin cambios en wrappers, tablas ni endpoints; solo cambia la ubicacion del menu y se permite restaurar la pagina de formatos dentro del panel super.
+
+2026-05-30: Menu super sin paginas huerfanas
+- Modulos afectados: `super_administrador`, `licencias`, `reportes_globales`, `auditoria`, `IA`, `plataforma`, `configuracion`.
+- Cambio funcional: `Asesores de ventas` queda visible como primer boton de `Comercial y licencias`, y se agregan botones para todas las paginas super que existian sin enlace directo.
+- Navegacion: se enlazan reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA streaming, servidores, soporte remoto y configuracion avanzada.
+- QA: el cruce automatico confirma 52 paginas HTML bajo `web/super`, 52 enlaces del menu y ningun enlace sin permiso de restauracion en `coreSuperPages`.
+
+2026-05-31: Noticias del portal
+- Modulos afectados: `portal_publico`, `super_administrador`, `menu_flotante`, `facturacion_electronica`.
+- Cambio funcional: se agrega una pagina publica `/noticias.html` con apariencia tipo red social: portada, foto de perfil, descripcion y feed de publicaciones.
+- Super administrador: `web/super/noticias.html` permite editar perfil, portada, publicaciones, fuentes, etiquetas y estado publicado/destacado.
+- Contenido inicial: se publica informacion DIAN relacionada con facturacion electronica y controles de facturacion, con enlace a fuente oficial.
+- Persistencia: se reutiliza `pcs_superadministrador.configuraciones`; no se agregan tablas nuevas.
+2026-06-01: Documentacion, APIs y preconfiguracion de Energia solar
+- Modulos afectados: `energia_solar`, `preconfiguracion_tipos_empresa`, `roles_de_usuario`, `licencias`, `ayuda`, `api`.
+- Cambio funcional: `tipo_empresa_preconfiguraciones.config_json` incorpora `modulos.energia_solar` como bloque opcional apagado por defecto, con proveedores Victron, SMA, SolarEdge y gateway local, baterias comunes y alertas base.
+- Roles/licencias: `tecnico_solar` conserva solo `energia_solar:R`; las licencias nuevas deben habilitar `energia_solar` como modulo independiente y el fallback desde `control_electrico`/`seguridad` queda como compatibilidad de licencias antiguas.
+- Documentacion: se actualizan ayuda general, ayuda de APIs, mapa de modulos, flujos, matriz de roles, estructura BD y documento del modulo solar.
+# Modulo Camaras y DVR - 2026-06-04
+
+- Modulo: `camaras`.
+- Navegacion: `Administrar empresa > Analisis y control > Camaras`.
+- Backend: nuevo endpoint `/api/empresa/camaras` con wrapper
+  `WithEmpresaCamarasPermissions`.
+- Persistencia: tabla empresarial `empresa_camaras`, siempre filtrada por
+  `empresa_id`, con baja logica.
+- Frontend: `web/administrar_empresa/camaras.html` y `web/js/camaras.js`.
+- Estaciones: `configuracion_de_estaciones.html` agrega check para mostrar
+  camaras antes/despues y permite marcar una estacion como `tipo_estacion=camara`
+  con `camara_id`; `estaciones.html` renderiza visores de camara.
+- Tecnologias: RTSP, ONVIF, HLS, WebRTC, MJPEG e iframe; RTSP/ONVIF requieren
+  gateway para visor en navegador.
+- Licencias/permisos: clave independiente `camaras`, pagina `linkCamaras`,
+  fallback a `control_electrico` o `seguridad` para compatibilidad.
+- Seguridad: URLs web bloquean esquemas `javascript:`/`data:` y el backend exige
+  `empresa_id` en consulta, actualizacion y baja.
+2026-06-09: Gobierno IA super administrador profesional
+- Modulos afectados: Super administrador, IA global, configuracion avanzada.
+- Frontend: `web/super/configuracion/ia_global.html` deja de ser una pagina minima y queda como centro de gobierno con resumen de seguridad, enlaces a limites/contexto/voz y panel operativo real.
+- Frontend: `web/super/configuracion_avanzada.html` remodela `aiConfigCard` para mostrar servicio global, proveedor OpenAI, credencial cifrada, modelos conectados, consumo, prueba backend y politica de seguridad.
+- Seguridad: sin cambios de endpoints ni tablas; se conserva `/super/api/config/ai`, cifrado obligatorio de credenciales, auditoria UI y ausencia de SQL libre/secretos para la IA.
+- UX: se retiran textos de robot/secretaria de la configuracion de contexto y se mantiene el contrato de recuadro normal con boton flotante circular.
+2026-06-09 - Modulo Nomina: tutorial operativo
+- El modulo de nomina incorpora la pagina interna `web/administrar_empresa/nomina_tutorial.html` para que el administrador tenga una guia empresarial antes de liquidar y antes de preparar nomina electronica DIAN.
+- La guia cubre parametros legales, configuracion de nomina, empleados, novedades/asistencia, calculo del periodo, pagos, PILA, checklist DIAN, errores frecuentes y enlaces oficiales.
+- La pagina se abre desde el boton `Tutorial` de `web/administrar_empresa/nomina_sueldos.html`, mantiene `empresa_id` y no modifica endpoints ni datos.
+
+2026-06-09 - Licencias: pasarelas por pais de empresa
+- Modulos afectados: `licencias`, `pagos`, `super_administrador`, `configuracion_avanzada`.
+- Cambio funcional: el checkout publico de licencias resuelve el pais desde `empresa_configuracion_avanzada`, perfil de facturacion electronica o licencia activa antes de usar navegador/parametros.
+- Colombia queda con ePayco y Wompi como pasarelas disponibles por defecto cuando sus credenciales globales esten configuradas; otros paises no heredan esas pasarelas salvo habilitacion explicita en super administrador.
+- Seguridad: `/epayco/create_transaction` y `/wompi/create_checkout` validan nuevamente el pais por `empresa_id` antes de crear el cobro, evitando que un cliente fuerce una pasarela no permitida desde el frontend.
+
+2026-06-09 - Facturacion electronica: selector de pais solo en menu
+- Modulos afectados: `facturacion_electronica`, `facturacion_pais`.
+- Cambio funcional: se retira de la pagina principal la tarjeta visible `Selector fiscal`; el selector interno queda oculto solo para mantener estado y compatibilidad con la carga por pais.
+- UX: el menu lateral `facturacion_electronica_menu.html` conserva la deteccion automatica del pais de la empresa, muestra la fuente de deteccion y mantiene el selector para cambiar manualmente entre paises.
+
+2026-06-11 - Buzon: selector de usuarios visible y seguro
+- Modulos afectados: `administrar_empresa`, `buzon`, `tareas_buzon`, `chat_empresarial`.
+- Cambio funcional: el panel carga destinatarios con formato `Nombre | Rol | email`, incluyendo usuarios activos, administrador propietario, administradores compartidos y usuario actual.
+- Backend: `/api/empresa/buzon?action=usuarios` devuelve un directorio deduplicado por `empresa_id`; el envio de mensajes o adjuntos a administradores valida alcance real antes de crear el mensaje.
+- Seguridad: no se exponen secretos ni contrasenas; el endpoint conserva `WithEmpresaSelfServicePermissions` y no permite correos admin arbitrarios fuera de la empresa.
+
+2026-06-09 - Facturacion electronica: retirada de asistente DIAN con capturas
+- Modulos afectados: `facturacion_electronica`, `DIAN Colombia`.
+- Cambio funcional: se elimina de `web/administrar_empresa/facturacion_electronica.html` la tarjeta `Asistente DIAN con capturas`, incluyendo carga de imagen, analisis OCR/IA y aplicacion de campos detectados.
+- UX: la configuracion DIAN queda centrada en los formularios manuales, carga de firma, documentos electronicos, tutorial y centro de habilitacion DIAN.
+
+2026-06-09 - Venta directa: carrito 0 y pantalla completa en cliente
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Cambio funcional: `web/administrar_empresa/carrito_de_compras.html` fuerza la tarjeta de cliente en modo venta directa para que el carrito 0 abra con el mismo panel operativo que una estacion y conserve la seleccion del carrito existente.
+- UX: el boton de pantalla completa queda dentro de la tarjeta `Cliente del carrito`, como icono compacto, sin cambiar endpoints ni persistencia.
+- Seguridad: sin tablas nuevas ni permisos nuevos; se mantiene `empresa_id` y los endpoints existentes de carritos.
+
+2026-06-10 - Asesor comercial: comisiones por etapas anuales
+- Modulos afectados: `asesor_comercial`, `licencias`, `pagos`, `super_administrador`.
+- Cambio funcional: cada asesor puede tener porcentaje propio para el primer ano, porcentaje anual desde el segundo ano y meses de renovacion configurables. Las comisiones de pagos de licencia se calculan como `primer_anio`, `renovacion_anual` o fuera de plazo antes de registrarse.
+- Frontend: `web/super/asesor_comercial.html` reemplaza el campo unico de comision/plazo por campos de primer ano, segundo ano y meses recurrentes; `web/mis_clientes.html` muestra la regla vigente al asesor.
+- Persistencia: `asesores_comerciales` agrega `porcentaje_primer_anio`, `porcentaje_renovacion_anual` y `meses_renovacion`, conservando `porcentaje_comision` como compatibilidad.
+
+2026-06-10 - Carrito: bascula electronica opcional
+- Modulos afectados: `carritos`, `configuracion_carrito`, `estaciones`.
+- Cambio funcional: la bascula electronica queda apagada por defecto con el flag empresarial `habilitar_bascula_electronica` dentro de `estaciones_config.carrito_ui_global`.
+- Frontend: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega una tarjeta independiente con check; `web/administrar_empresa/carrito_de_compras.html` separa la bascula en una tarjeta propia y solo permite conectar/aplicar peso si el check esta activo.
+- Compatibilidad: `web/administrar_empresa/configuracion_de_estaciones.html` conserva el valor al guardar configuraciones por estacion para no borrar el check global.
+2026-06-10 - Chat IA operativo por rol
+- Modulos afectados: `chat_con_inteligencia_artificial`, `ventas`, `inventario`, `nomina_sueldos`, `tarifas_motel`, `tarifas_por_dia`, `tarifas_por_minutos`, `radio online`.
+- El chat empresarial queda usable por roles operativos bajo permisos de ventas, sin mostrar paginas administrativas adicionales.
+- La IA puede proponer acciones confirmables para pedidos por estacion/mesa/habitacion, radio online, productos, nomina y tarifas; cada endpoint conserva su wrapper y validacion de `empresa_id`.
+- Se agrega `/api/empresa/ia_radio/activar` para que cajero pueda encender/apagar la emisora sin tocar otras preferencias del chat flotante.
+- Seguridad: no se permite `DELETE`, SQL libre ni endpoints genericos desde el chat; si faltan datos o permisos, la IA debe pedir informacion o abrir la pagina correspondiente.
+2026-06-10 - Carrito: medios de pago Colombia y pagos combinados
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: agrega la seccion `Medios de pago habilitados` con checks por empresa para efectivo, tarjeta credito, tarjeta debito, transferencia Bre-B, Nequi y otra transferencia.
+- `web/administrar_empresa/carrito_de_compras.html`: actualiza abonos, selector de metodo, pago mixto y la tarjeta `Detalle del pago` para manejar los seis medios y combinarlos hasta igualar el total.
+- `backend/db/carritos_compras.go`: normaliza `transferencia_bre_b`, `transferencia_nequi` y `transferencia_otro`, conservando el alias legacy `otro -> transferencia_bancaria`.
+- `backend/handlers/carritos_compras.go`: exige referencia para tarjetas/transferencias, valida pagos mixtos con los nuevos metodos y bloquea en backend medios deshabilitados por empresa o rol.
+- Bre-B queda como medio separado y preparado para conciliacion automatica futura mediante webhook/API bancaria; sin esa integracion, el cajero registra la referencia confirmada.
+2026-06-10: Venta a credito desde carrito.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `creditos`, `cartera`, `clientes`.
+- Cambio funcional: el carrito agrega el medio `Credito cliente`, habilitable por empresa desde Configuracion carrito, para vender contra cupo aprobado del cliente.
+- Backend: `pagar_estacion` valida cliente y cupo activo por `empresa_id`, permite credito total o mixto y crea `empresa_creditos` enlazado por `venta_origen_id`/`documento_origen` sin sumar efectivo a caja.
+- Frontend: el panel de cliente muestra cupo/usado/disponible, el formulario rapido puede abrir cupo inicial y la impresion del recibo/factura visual informa monto, codigo y vencimiento de la cartera.
+- Seguridad: no se crean tablas paralelas; se reutilizan `clientes`, `empresa_creditos` y `empresa_creditos_clientes_limites` con aislamiento por empresa.
+- QA: `go test ./db ./handlers -run "Credito|Carrito|MetodoPago|PreconfigCarrito" -count=1` OK desde `backend`; validacion Node de scripts embebidos OK.
+
+2026-06-11 - Buzon, tareas y chat empresarial
+- Modulos afectados: `administrar_empresa`, `inventario/bodegas`, `super_configuracion`.
+- Cambio funcional: el panel de empresa incluye una tarjeta de buzon personal para mensajes, tareas y adjuntos; debajo se integra chat general de usuarios de la empresa. La campana del shell muestra no leidos y permite navegar al recurso relacionado.
+- Tareas: al enviar un mensaje se puede elegir `Asignar tarea`; el destinatario la ve en su buzon, la finaliza con descripcion y evidencia adjunta.
+- Inventario: los traslados de bodega notifican al responsable o a usuarios de inventario/administracion mediante el buzon.
+- Almacenamiento: super administrador configura cuota por empresa, alerta, bloqueo de cargas y limpieza de adjuntos antiguos. Los archivos se guardan en la carpeta empresarial.
+- Seguridad: endpoints con `WithEmpresaSelfServicePermissions`, filtro por `empresa_id`, destinatario real para adjuntos/cierre y rutas de archivo limitadas a `/uploads/empresas/`.
+
+2026-06-11 - Rol Responsable de bodega
+- Modulos afectados: `usuarios_empresa`, `inventario`, `bodegas`, `permisos_contexto`.
+- Cambio funcional: `responsable_bodega` queda como rol base universal para asignar usuarios responsables de una bodega concreta.
+- Alcance: `inventario:R/C/U/A` y `compras:R`, sin eliminacion de inventario, ventas, caja ni configuracion.
+- Integracion: el menu empresarial muestra solo paginas de inventario/bodega y las notificaciones de traslado de bodega incluyen este rol.
+
+2026-06-11 - Inventario: importacion/exportacion de productos
+- Modulos afectados: `inventario`, `productos`, `bodegas`, `categorias_productos`.
+- Cambio funcional: la seccion Productos incorpora una tarjeta superior para exportar el catalogo filtrado a CSV/Excel, JSON o HTML imprimible en carta/POS y para importar listas desde CSV.
+- Backend: `/api/empresa/productos` agrega acciones `exportar`, `plantilla_importacion` e `importar`, todas bajo el wrapper de permisos de inventario existente.
+- Importacion: valida nombre, campos obligatorios configurados, duplicados por SKU/codigo de barras/nombre, bodega para stock inicial y categorias por empresa.
+- Seguridad: no crea tablas nuevas, no usa SQLite, no introduce dependencias externas y conserva aislamiento por `empresa_id`.
+
+2026-08-26 - Servicios: nombre unico y seguro para concurrencia
+- Modulos afectados: `productos`, `servicios`, `inventario`, `administrar_empresa`.
+- El catalogo central admite varios servicios sin codigo, pero no permite repetir
+  el mismo nombre normalizado dentro de una empresa; otra empresa puede usarlo
+  de forma independiente.
+- La regla vive en PostgreSQL mediante migracion versionada y se presenta como
+  HTTP 409 seguro en altas o ediciones concurrentes.
+
+2026-08-26 - Categorias y proveedores: nombres normalizados por empresa
+- Modulos afectados: `productos`, `categorias_productos`, `proveedores`,
+  `inventario`, `administrar_empresa`.
+- PostgreSQL impide que mayusculas o espacios exteriores eludan la unicidad del
+  nombre dentro de un tenant; el mismo nombre continua permitido en otra
+  empresa.
+- La migracion inspecciona primero ambos catalogos y falla sin aplicar indices
+  parciales si una instalacion historica contiene colisiones que requieren
+  reconciliacion explicita.
+- Las altas y ediciones exponen el conflicto como HTTP 409 seguro, sin SQL ni
+  nombres internos de restricciones.
+
+2026-06-11 - Finanzas: Pagos Bre-B QR
+- Modulos afectados: `finanzas`, `carritos`, `caja`, `bancos_pagos`.
+- Cambio funcional: el centro financiero incorpora una pagina profesional `Pagos Bre-B QR` con configuracion de QR por empresa, cuentas receptoras por caja, payload oficial/plantilla, alertas operativas, registro manual de pagos recibidos y tabla de ventas/abonos Bre-B.
+- Backend: `/api/empresa/finanzas/breb_qr` usa `WithEmpresaFinanzasPermissions`, filtra siempre por `empresa_id`, lee `carritos_compras` y `carrito_compra_abonos`, y registra pagos manuales como movimientos bancarios en `empresa_finanzas_bancos_movimientos`.
+- Operacion: Bre-B puede operar con QR estatico o dinamico; para varias cajas simultaneas PCS exige referencias distintas por caja/carrito y no marca confirmacion automatica sin webhook/API bancaria real.
+- Seguridad: no se guardan secretos bancarios, no se simula confirmacion, no se crean motores externos y la configuracion se mezcla con `estaciones_config.carrito_ui_global` para no duplicar la verdad del carrito.
+2026-06-11 - Configuracion operativa de cobro: permisos de ingresos/egresos por rol
+- Modulo: Configuracion de impresora y caja / Finanzas operativas.
+- Alcance: el administrador puede activar por rol si un cajero registra ingresos
+  y/o egresos manuales. Los cobros normales del carrito no dependen de estos
+  checks.
+- Backend: `/api/empresa/finanzas/movimientos` valida el rol efectivo y consulta
+  `empresa_configuracion_operativa_roles` antes de crear, editar o anular un
+  movimiento manual de tipo `ingreso` o `egreso`.
+- Seguridad: la excepcion del middleware es estrecha para el rol `cajero` y el
+  endpoint exacto de movimientos; no abre importacion bancaria, conciliacion,
+  Bre-B, periodos ni configuracion financiera.
+2026-06-12 - Motor contable automatico
+- El modulo contable automatico procesa `empresa_eventos_contables` por `empresa_id` y genera `empresa_asientos_contables` con partida doble, idempotencia y bloqueo por descuadre.
+- Cobertura de reglas: ventas/facturas/notas, pagos y abonos, compras/documento soporte, CxC/CxP, anticipos, inventario/costo de venta, nomina causada/pagada, nomina electronica y activos fijos/depreciacion/deterioro.
+- Los eventos precontables que no tengan base monetaria suficiente quedan fallidos con error saneado hasta que el modulo origen emita un evento contable real o complete el payload.
+2026-07-08: Bandejas de ventas/facturacion y menu flotante
+- Modulos afectados: `ventas`, `facturacion_electronica`, `administrar_empresa`, `super_administrador`, `menu_flotante`, `configuracion`, `portal_publico`.
+- Cambio funcional: el menu de Administrar empresa retira el acceso `Buscar ventas y facturas` y deja `Facturas electronicas` como bandeja documental unica para consultar ventas y facturas electronicas.
+- Cambio funcional: `Facturas electronicas` retira cabeceras comerciales, filtra por ventas/facturas electronicas, muestra resumen de conteo y monto para ventas, facturas, ventas anuladas y facturas anuladas, y mantiene un unico boton `Exportar` con submenu de formatos.
+- Cambio funcional: la misma bandeja muestra `Venta sola` o `Factura electronica` en la columna Tipo, agrega columna/filtro de cajero, recuerda por empresa la ultima vista de impresion elegida y prefiltra automaticamente por el cajero de la sesion cuando el rol efectivo es `cajero`.
+- Cambio funcional: cada fila de venta o factura muestra boton de anulacion. Las facturas electronicas se anulan mediante nota credito; las ventas simples se marcan como anuladas con trazabilidad contable interna sin tocar DIAN.
+- Cambio funcional: `Buscar ventas y facturas` queda como flujo legado no enlazado; la bandeja documental muestra tipo documental como Venta o Factura electronica, elimina la columna `Relacion FE`, mantiene un unico desplegable de compartir por fila y solo ofrece `Hacer factura electronica` cuando la venta no tiene FE asociada.
+- Seguridad: las anulaciones de facturacion electronica se clasifican como accion `D`; el permiso base queda reservado a `admin_empresa` y la UI oculta anular cuando el contexto efectivo no lo permite.
+- UX: el menu flotante elimina compartir por correo, juegos, emulador y submenu Utilidades; Calculadora queda visible como accion principal, mientras Juegos queda en Super administrador y el emulador dentro de Juegos.
+- Configuracion: el tamano de letra de factura carta/POS se configura por empresa en `Documento de venta e impresion`.
+- Portal: el index actualiza la descripcion de Domicilios y entregas para mencionar la integracion Rappi configurable por empresa.
+
+## Rappi por empresa
+
+Modulo de canal digital para que cada empresa conecte sus tiendas Rappi al POS.
+La pantalla vive en `web/administrar_empresa/rappi.html`, protegida por
+`venta_publica:C`, y el backend usa `/api/empresa/rappi`. Permite guardar
+configuracion por empresa, probar credenciales, consultar tiendas, recibir
+ordenes nuevas/SENT, tomar/rechazar/marcar listas y registrar webhooks firmados.
+No crea ventas internas automaticamente hasta que la empresa configure mapeo real
+de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
+2026-07-09: RustDesk por empresa y servicio Docker.
+- Modulos afectados: `soporte_remoto`, `rustdesk`, `super_administrador`, `infraestructura`.
+- Cada empresa conserva una fila aislada en `empresa_soporte_remoto_configuracion` con proveedor `rustdesk_oss`, cliente local, clave publica y servidor propios; el bootstrap no sobrescribe configuraciones existentes.
+- El panel super controla `pcs-rustdesk-hbbs` y `pcs-rustdesk-hbbr` desde Docker y deja SSH como alternativa de compatibilidad para instalaciones heredadas.
+- Seguridad: la pagina super exige sesion `super_administrador`, registra auditoria y la clave distribuida a clientes es la clave publica del servidor, no una clave privada ni credencial SSH.
+2026-07-09: Credito, cartera, cobranza y Nomina.
+- `Creditos` conserva limites, cuotas, abonos, estados de cuenta, mora, refinanciacion y workflows; suma paz y salvo PDF solo para creditos totalmente pagados.
+- `Cobranza` permite configurar por empresa recordatorios automaticos con email y WhatsApp, dias previos, frecuencia, hora y plantilla. El opt-in es obligatorio y cada intento queda en historial para evitar duplicados.
+- `Nomina` usa el agente internet como comparador normativo: muestra actual vs propuesto, fuente y vigencia, y aplica exclusivamente el campo confirmado.
+- `web/administrar_empresa/creditos_tutorial.html` explica cliente/cupo, creacion, abonos, mora, aprobaciones, cierre y paz y salvo; queda al final del submenu.
+- Compras, Ingresos y Egresos mantienen captura IA con revision humana y chat de diagnostico del archivo.
+
+2026-07-10: Super administrador - Ciberseguridad
+- El panel muestra una lectura compacta de ciberseguridad usando el ultimo escaneo VPS disponible y los indicadores reales del monitor de errores. El resultado no ejecuta escaneos ni altera configuracion: dirige al super administrador a `Seguridad VPS` para analizar y gestionar hallazgos.
+
+2026-07-10: Ubicacion GPS
+- Los recorridos se aceptan unicamente para dispositivos activos de la misma empresa. Se rechazan coordenadas y telemetria fuera de limites operativos para proteger la calidad de rutas, mapas e indicadores.
+
+2026-07-10: Seguridad VPS
+- El analizador reconoce el modo Ubuntu valido `640 root:shadow` como una configuracion segura para `/etc/shadow`. El panel conserva hallazgos reales y evita elevar alertas por la lectura requerida del grupo `shadow`.
+
+2026-07-10: Registro publico de administrador
+- El formulario de alta preselecciona el pais con la mejor senal disponible (proxy de geolocalizacion o navegador) y presenta ciudades dependientes para paises de Latinoamerica. La ciudad libre se habilita unicamente al elegir `Otra ciudad o municipio`.
+
+2026-07-10: Estaciones para operacion mixta
+- Una empresa puede identificar estaciones como motel, hotel, restaurante, lavadero u operacion general y asignarles descripcion y responsable.
+- Las tarifas por minutos permiten reglas distintas por dia de semana; las tarifas diarias permiten rangos de personas y horarios de check-in/check-out.
+- Propinas por usuario o universales y comisiones por servicio permanecen auditadas por empresa. La propina no forma parte del total documental ni de la venta contable y se muestra separada en la impresion.
+- En hotel, cada regla puede tener nombre y ocupacion minima/maxima; el simulador recibe la cantidad de personas y muestra el valor aplicable antes de operar la estacion.
+- En motel, activar cobro por fraccion no modifica el bloque ni el valor escritos por el administrador.
+
+2026-07-11: Fiscalidad de comisiones y cancelacion temporizada de estaciones.
+- La comision del lavador se causa como costo laboral fiscal enlazado a la venta y queda disponible para liquidacion de nomina; no aumenta el total cobrado al cliente.
+- La propina puede coexistir con la comision para el mismo trabajador, pero permanece separada del total fiscal del documento.
+- Configuracion de estaciones expone `Tiempo para cancelar el servicio`: al activar el check se define un limite en minutos y, una vez vencido, la estacion solo puede cerrarse mediante pago.
+- El carrito permite cambiar manualmente entre tarifa por minutos (motel) y tarifa por dia (hotel), conservando la seleccion por carrito y empresa.
+
+2026-07-10: Compras y captura IA
+- El boton de Compras se presenta como `Carga automática de factura de compra`; la extraccion no crea una compra de forma silenciosa: deja proveedor, referencia, monto, moneda y periodo precargados para que el usuario revise y confirme el guardado.
+
+2026-07-11: Preproduccion PCS, roles operativos y cobro de carrito.
+- Carrito: `Pagar y cerrar carrito` conserva el listener delegado y agrega un listener directo con el bloqueo `paymentClickLock`; el doble clic no puede iniciar dos pagos.
+- Roles: Administrar usuarios muestra un catalogo operativo reducido para nuevas asignaciones (administrador, supervisor, cajero, vendedor, recepcion, portero, camarera/aseo, inventario, compras, talento humano, contador, propietario, auditor y operaciones). Los roles de verticales ajenas ya asignados permanecen validos y los perfiles como lavador, camarera o portero se gestionan como roles personalizados por empresa.
+- Seguridad publica: la pagina Privacidad y datos comunica cifrado en transito, secretos/configuraciones sensibles cifrados, aislamiento por empresa y control de acceso por sesion/rol sin afirmar un cifrado inexistente de toda la base de datos.
+- Super administrador: Configuracion avanzada vuelve a construir la lista de secciones observadas antes de activar `IntersectionObserver`, evitando el error `nodes is not defined`.
+- QA: ver `documentos/validacion_preproduccion_pcs.md`; Epayco/Wompi, Bre-B e impresion fisica solo se consideran aprobados en produccion despues de evidencia del proveedor, banco o hardware real.
+
+2026-07-11: Operacion de despliegue `rs`.
+- `scripts/rs.ps1` selecciona el ejecutable hijo correcto para PowerShell Core o Windows PowerShell y conserva su fallback. Esto evita que una ruta inexistente a `powershell.exe` detenga preflight, repositorio y sincronizacion antes de contactar la VPS.
+
+2026-07-13: Nextcloud empresarial restaurado.
+- El grupo `Documentos, nube y soporte` vuelve a incluir Nextcloud. Cada empresa
+  ve solo su cuenta tecnica, cuota, estado y enlace WebDAV; el backend deriva
+  la empresa desde el contexto protegido y audita aprovisionamiento y reinicios
+  de credencial sin guardar ni listar contrasenas de usuarios.
+2026-07-13 - IA empresarial asistida
+- El asistente empresarial inicia con `hotel.configure_room_station`, bajo
+  permisos de reservas hoteleras, y mantiene confirmacion humana, auditoria e
+  idempotencia. No habilita operaciones fiscales, eliminaciones, pagos ni SQL
+  libre.
+2026-07-13: Nextcloud empresarial reactivado
+- Super administrador controla la activacion global, credencial OCS y cuota; la activacion asigna espacios a todas las empresas existentes y nuevas.
+- La pagina empresarial usa el permiso `gestion_documental:R` y conserva aislamiento por `empresa_id`.
+- La eliminacion total limpia primero la cuenta remota y archivos Nextcloud antes del cascade local; VPS2 permanece independiente.
+- El borrado integral cubre Mailu, OnlyOffice, uploads, privados, backups y temporales empresariales.
+
+2026-07-13: Correo corporativo por API interna Mailu
+- Modulo: `Email corporativo Mailu`.
+- Cambio funcional: el modo automatico `mailu_api` crea, actualiza y elimina
+  buzones por la API interna de Mailu. Los buzones existentes se reintentan al
+  arrancar sin exponer claves.
+- Seguridad: el backend no recibe Docker socket ni ejecuta Docker. El token se
+  genera y conserva en el entorno privado del VPS; el proxy rechaza la API desde
+  Internet.
+
+2026-07-13: Panel empresarial, Nextcloud y descargas privadas
+- Configuracion guiada: `no_mostrar_mas` se guarda por empresa y el panel lo persiste con CSRF same-origin.
+- Nextcloud: resuelve `empresa_id` desde contexto validado, aplica cuota global y solo entrega accesos tras activacion y aprovisionamiento.
+- Descargas: documentos empresariales no se exponen por una ruta estatica generica; solo instaladores RustDesk aprobados quedan publicos.
+
+2026-07-13: Orquestador IA empresarial de catalogo
+- El chat mantiene respuestas informativas, pero las mutaciones se preparan y
+  confirman por `/api/empresa/ai/enterprise`, con herramientas tipadas y
+  servidoras. Se implementan consulta de catalogo y propuesta de creacion de
+  producto; hotel conserva su propuesta de configuracion de habitacion.
+- Cada herramienta vuelve a validar empresa, rol, permiso, vencimiento, hash e
+  idempotencia en backend. Los flags por herramienta permanecen apagados hasta
+  una habilitacion controlada y no existen SQL, shell o endpoints arbitrarios.
+## Chat con inteligencia artificial - modelos y adjuntos (2026-07-13)
+
+El chat empresarial permite al usuario autenticado elegir entre los modelos
+habilitados por Super Administrador. Modelo, modo y agente se guardan por usuario; el
+historial, la autorizacion, el contexto y el consumo siguen aislados por
+empresa. El selector muestra uso/restante de la empresa activa y el chat admite
+imagenes, PDF, TXT, CSV, DOCX y XLSX con limite de 8 MB. Super Administrador
+gobierna modelos habilitados y separa el modelo de operaciones del usado para
+adjuntos y analisis avanzado.
+
+- Seguridad de adjuntos: el chat acepta exclusivamente imagenes con firma
+  reconocida, PDF, TXT, CSV, DOCX y XLSX verificables por contenido. No confia
+  en MIME de navegador, rechaza HTML/SVG/ejecutables/ZIP genericos y no expone
+  respuestas internas del proveedor de IA.
+- Operacion empresarial: las solicitudes naturales de crear producto o
+  configurar una habitacion abren una propuesta tipada y confirmable. La
+  ejecucion sigue siendo de servidor, por `empresa_id` validado, permisos,
+  idempotencia, duplicados y auditoria; no se ejecuta ningun bloque producido
+  por el modelo.
+- Super Administrador: se agregan GPT-5.6 Terra y GPT-5.6 Sol junto con Luna;
+  cada modelo expone sus esfuerzos compatibles y puede tener un esfuerzo
+  independiente. El backend valida modelo y esfuerzo antes de persistirlos.
+2026-07-13: IA empresarial propia y API movil v1.
+- Modulos afectados: `ia_empresarial`, `configuracion`, `api_movil`,
+  `autenticacion`, `productos`, `clientes`.
+- La empresa puede habilitar una clave OpenAI propia desde Configuracion > Chat
+  IA > OpenAI propio. La clave se cifra por empresa, no se devuelve por API y
+  evita solamente las cuotas comerciales de PCS para solicitudes OpenAI; se
+  mantienen permisos, aislamiento, auditoria y limites del proveedor.
+- `/api/v1/` inicia el contrato movil aditivo: identidad, sesion de dispositivo,
+  productos y clientes con JSON uniforme, `request_id`, paginacion, filtros y
+  seleccion cerrada de campos. Las rutas web heredadas no se eliminan aun.
+
+2026-07-13: Plan 101 - arquitectura y API movil
+- `api_movil` conserva una fachada versionada sin duplicar reglas de negocio de
+  ventas, inventario, caja y facturacion. Carritos, items y sincronizacion
+  offline movil son mutaciones idempotentes por empresa.
+- `plan_101_arquitectura_modular.md` define limites modulares, criterios de
+  extraccion y gates de escalabilidad/preproduccion.
+2026-07-13: Checkout de licencias por cantidad de períodos
+- Modulos afectados: `licencias`, `pagos`, `checkout_publico`, `super_administrador`.
+- Funcion: el cliente puede pagar entre 1 y el máximo global configurable (5 por defecto) de meses, años u otros períodos de una misma licencia comercial. El resumen recalcula total, descuentos y duración total antes de abrir la pasarela.
+- Seguridad y consistencia: Wompi/Epayco persisten la cantidad en el contexto interno del pago y el webhook activa exactamente los períodos cobrados de forma idempotente; no se acepta cantidad de bundles, adicionales, pruebas o licencias gratuitas.
+
+2026-07-13: Licencias: compra y comprobantes por empresa
+- La pantalla `Licencia del sistema` añade una tarjeta que reutiliza el checkout comercial existente para renovar la licencia base, agregar licencias adicionales o comprar varios períodos según el límite global.
+- El historial muestra únicamente compras Wompi/Epayco filtradas por la empresa activa y ofrece PDF de comprobante. La factura electrónica solo aparece cuando el documento fiscal de la compra fue emitido por Powerful Control System y su relación con la empresa compradora queda verificada.
+- Las descargas no exponen payloads de pasarela, se envían con `Cache-Control: no-store` y `X-Content-Type-Options: nosniff`, y dejan auditoría empresarial.
+
+2026-07-14: Plataforma de procesos y preparacion movil
+- Modulos afectados: `plataforma`, `migraciones`, `procesos_asincronos`,
+  `api_movil`, `infraestructura`.
+- Se separan los roles API, migracion y worker sin modificar los contratos web
+  existentes. La cola durable y outbox quedan preparadas para migrar envios e
+  integraciones sin crear duplicados; cada trabajo empresarial conserva
+  `empresa_id` y no acepta secretos en payload.
+Actualizacion 2026-07-21 (Nextcloud empresarial):
+- Super administrador puede crear cuentas personales de Nextcloud con cuota individual mediante OCS, separadas de la cuota predeterminada de cada empresa.
+- La pagina empresarial aprovisiona automaticamente la cuenta tecnica por `empresa_id` al abrirse cuando la configuracion global esta lista; la autenticacion de archivos permanece en Nextcloud y no se guardan contrasenas en PCS.
+
+Actualizacion 2026-07-21 (gobierno de empresas):
+- El rol `super_administrador` conserva autoridad global para eliminar una empresa creada por otro administrador, bajo la confirmacion reforzada y la limpieza externa integral ya existente.
+Actualizacion 2026-07-24 (Plan 106, cartera de proveedores):
+- Finanzas > Cartera CxP ofrece `Cargar factura o recibo con IA`. El archivo se
+  radica por empresa, la IA propone proveedor, documento, fechas y total, y la
+  persona usuaria puede editar el borrador de CxP antes de guardarlo. La carga
+  no crea un pago, no contabiliza automaticamente y conserva revisión humana.
+- La conversión aprobada de un soporte IA a CxP valida que el proveedor activo
+  pertenezca a la misma empresa; registra soporte, CxP, evento y outbox en una
+  sola transacción. Las pruebas visuales, PostgreSQL y staging siguen abiertas.
+- El alta manual de CxP exige seleccionar un proveedor activo de
+  `empresa_proveedores`; el backend reemplaza el nombre enviado por el nombre
+  operativo canónico. El selector se alimenta por `empresa_id` y no reutiliza
+  el catálogo genérico de proveedores de otra tabla.
+2026-07-21: Respaldo VPS profesional programable desde Super Administrador
+- Módulos afectados: `super_administrador`, `operacion_vps`, `postgresql`, `worker`.
+- Cambio funcional: `Super Administrador > Plataforma > Docker VPS` permite seleccionar copia completa o solo PostgreSQL, y ejecutar una copia diaria a una hora definida; mantiene el intervalo como compatibilidad.
+- Seguridad: la configuración global conserva solo la ruta de rclone, nunca credenciales de nube; el paquete sigue excluyendo `.env.platform` y secretos por defecto.
+- Operación: el worker durable verifica cada minuto la programación y evita duplicar la ejecución dentro del mismo día local.
+
+Actualización 2026-07-25 (Reportes contables profesionales P107):
+- El módulo `reportes` incorpora auxiliares de resultados, situación financiera
+  y patrimonio por rubro/cuenta, siempre construidos desde asientos canónicos
+  de la empresa activa.
+- Estos auxiliares exponen su estado contable y no se declaran como estados
+  NIIF completos: comparativos, notas, políticas y firmas siguen siendo
+  requisitos separados de P107-009.
+
+Actualización 2026-07-25 (Fixtures contables P107):
+- El módulo de validación contable dispone de un contrato de fixtures
+  determinista para staging. El manifiesto no crea datos; enumera escenarios,
+  evidencia, idempotencia y reverso antes de delegar la ejecución a un flujo
+  autorizado.
+
+Actualización 2026-07-25 (Plantillas de reportes IA P107):
+- El módulo `reportes` guarda configuraciones IA como versiones de plantilla
+  aisladas por empresa. Antes de persistir, la especificación se revalida
+  contra el catálogo semántico y conserva la misma fuente autorizada.
+
+Actualización 2026-07-25 (Disponibilidad P107 de reportes):
+- El centro de reportes valida la disponibilidad de programación, plantillas
+  y ejecuciones con una consulta de marcador de una sola columna. Esto permite
+  que catálogo, vista previa y exportación continúen hacia el dataset elegido
+  sin relajar permisos ni el filtro de empresa.
+
+Actualización 2026-07-30 (Recuperación operacional de outbox CxP):
+- El panel PostgreSQL del super administrador incorpora una vista previa de
+  eventos `dead` del tema `cuentas_por_pagar.pago_registrado`.
+- La reactivación exige una empresa válida, selección de IDs concretos, razón
+  operativa y confirmación exacta. El backend vuelve a validar empresa, tema,
+  estado y cada ID bajo bloqueo transaccional.
+- La operación no repite el pago: pone en `pending` únicamente su evento
+  asíncrono para que el manejador contable idempotente lo procese. Cada
+  reactivación queda en auditoría de recuperación y auditoría empresarial.
+2026-07-28 - Email corporativo Mailu / P108-015
+
+- El panel super presenta por separado el logo oficial embebido y el avatar
+  BIMI de dominio.
+- Todas sus mutaciones agregan el token sincronizador CSRF requerido por el
+  middleware. El alcance continúa reservado al super administrador.
+- Gmail requiere VMC o CMC para sustituir de forma garantizada la inicial del
+  remitente; el BIMI autoafirmado no cierra esa compuerta.
+
+2026-07-28 - Plataforma de release y navegación super móvil / P108
+
+- El release candidato incluye API, migrador, worker y frontend como imágenes
+  inmutables construidas y escaneadas una sola vez.
+- Staging puede promover esas mismas referencias por digest sin reconstruir.
+- En páginas super, las acciones auxiliares móviles permanecen dentro del flujo
+  del documento para no cubrir formularios, tablas ni botones operativos.
+
+2026-07-28 - Carrito / configuración operativa por rol
+
+- La lectura PostgreSQL de reglas de cobro por rol incluye los permisos de
+  movimientos manuales que el mismo `Scan` y la respuesta ya esperaban.
+- La consulta continúa aislada por `empresa_id`; no cambia configuraciones ni
+  defaults empresariales.
+
+2026-07-31 - Reportes IA / plantillas accesibles
+
+- El centro de reportes permite guardar la especificación IA revisada mediante
+  un diálogo accesible y responsive, sin depender de ventanas `prompt`.
+- Código y nombre pueden editarse antes de confirmar; cancelar no persiste. La
+  API vuelve a validar la entrada y crea la versión solo en la empresa derivada
+  del contexto autenticado.
+- No cambian permisos, licencia, tablas ni dependencias. La plantilla conserva
+  la revalidación del `ReportSpec` contra el catálogo semántico autorizado.
+2026-08-01
+- Captura IA de compras/CxP: el listado sin filtro incluye soportes `radicado`,
+  `extraido`, `en_revision`, `aprobado`, `rechazado`, `contabilizado` y
+  `duplicado` activos. Los filtros explícitos conservan validación por estado.
+
+2026-08-08 - Captura IA de compras/CxP / cuota de adjuntos
+
+- La radicación con archivo aplica la cuota global corporativa a la suma de
+  adjuntos públicos y soportes privados de la misma empresa; el backend obtiene
+  empresa, límites y rutas y no los acepta desde el navegador.
+- Ante exceso responde HTTP 507 con texto público saneado antes de escribir el
+  archivo o crear el soporte. El control conserva el wrapper de permisos y el
+  aislamiento por `empresa_id`.
+- La prueba restaurada del candidato evidencia el rechazo y cero persistencia;
+  dos réplicas en paralelo validan que no hay sobregiro. Siguen pendientes los
+  controles operativos de retención, recuperación, antivirus y A/B no global.
+
+2026-08-08 - Facturación electrónica Colombia / compuerta DIAN
+
+- El Centro de habilitación muestra por empresa el ambiente, la preparación,
+  TestSetId, rango e historial de acuses antes de exponer emisión o anulación.
+- En PCS staging el diagnóstico devuelve operaciones objetivo sin configuración
+  fiscal empresarial; el flujo debe permanecer bloqueado hasta contar con firma
+  accesible, rango/resolución y TestSetId o producción habilitada, sin reutilizar
+  secretos de otra empresa o ambiente.
+2026-08-09: Domotica Raspberry Pi por tunel HTTPS saliente
+- Modulo: `Domotica`; clave tecnica conservada: `control_electrico`.
+- La empresa registra varias Raspberry Pi y varios aparatos por estacion, con
+  descripcion, foto, potencia, GPIO BCM, polaridad, agenda e historial.
+- La pagina abierta desde la Raspberry descarga un instalador de un solo uso;
+  systemd mantiene el agente conectado al VPS sin puertos entrantes.
+- Las entradas GPIO tienen pull/debounce y disparan reglas aisladas por
+  `empresa_id`, Raspberry y pin hacia un aparato objetivo de la misma empresa.
+- Super administrador incorpora transferencia diaria/acumulada por dispositivo.
+- Seguridad: tokens solo como SHA-256, empresa derivada del dispositivo y
+  regeneracion del instalador revoca el token anterior.
+
+2026-08-12: Domotica como destino operativo de estaciones
+- Configuracion carrito incorpora el check empresarial `Abrir equipos
+  electronicos al entrar a una estacion o a Venta directa`.
+- Desactivado, conserva el carrito y la facturacion como destino predeterminado.
+  Activado, cada estacion/habitacion abre su pagina de equipos y Venta directa
+  abre la consola consolidada de Domotica.
+- La preferencia se persiste en
+  `empresa_estacion_prefs.estaciones_config.carrito_ui_global`, se aplica por
+  `empresa_id` y reutiliza las rutas y permisos existentes de `control_electrico`.
+2026-08-13: Domotica y Energia Solar - gobierno operativo
+- Navegación empresarial independiente con configuración, equipos, panel solar y tutorial.
+- Alerta empresarial de Raspberry desconectada con gracia, correo y buzón/campanita.
+- Cuota mensual del túnel por empresa, advertencia y bloqueo administrados exclusivamente por Super Administrador.
+- Entradas GPIO con salida normal, temporizada o condicionada a la agenda del aparato, siempre aisladas por empresa/Raspberry y dentro de la cola de encendidos.
+
+2026-08-21: Proteccion movil para controles de Domotica
+- La vista operativa `carrito_control_electrico.html` bloquea temporalmente el acceso flotante de IA en el shell empresarial. Al cambiar a otra pagina, el acceso IA se restaura. Esto evita que su capa modal intercepte los toques de Encender/Apagar de equipos en celular.
+
+2026-08-21: Acceso Domotica por tarjeta de estacion
+- `control_electrico.html` permite habilitar por empresa el acceso visual de Domotica en las tarjetas de estaciones mediante `control_electrico?action=station_card_ui`. La preferencia vive en `estaciones_config.station_card_ui.mostrar_boton_domotica`.
+- `estaciones.html` muestra el boton cuadrado con rayo en el extremo inferior derecho de cada estacion habilitada; su destino conserva `empresa_id` y `estacion_id` hacia `carrito_control_electrico.html`.
+- `carrito_control_electrico.html` informa de forma accionable cuando un equipo no puede encenderse, apagarse o temporizarse porque su Raspberry no tiene túnel conectado reciente.
+
+2026-08-23: Auditoria integral de Domotica por empresa
+- Cada alta, cambio o desactivacion de configuracion, Raspberry, equipo, foto, regla, escena, lectura, señal de sensor, prueba GPIO, operacion de Raspberry, temporizador, programacion y comando de relay se conserva en `empresa_control_electrico_eventos` con `empresa_id`, actor, origen, estación, equipo y Raspberry cuando aplican.
+- Cada evento de esa bitacora genera tambien un espejo seguro en `empresa_auditoria_eventos` bajo el modulo tecnico `control_electrico`; no replica IP, respuesta del dispositivo, token ni otros secretos. La vista `Auditoria` ya permite filtrar `Domotica` y conserva el aislamiento por empresa.
+
+2026-08-23: Reporte filtrable de seguimiento Domotica
+- `Administrar empresa > Domotica y Energia Solar > Reportes` incorpora el bloque **Seguimiento de eventos** para filtrar la bitácora por estación, equipo, Raspberry Pi, tipo de evento, resultado y rango de fecha/hora.
+- La consulta usa `GET /api/empresa/control_electrico?action=eventos` y siempre resuelve el `empresa_id` desde el contexto autorizado; el backend valida los IDs de equipo, Raspberry y estación dentro de la misma empresa antes de consultar.
+
+2026-08-13: Domotica 1.4 / recuperación, escenas y conexión solar local
+- Los comandos GPIO durables usan instantes con zona horaria, ACK visible y
+  recuperación por arranque real; el estado lógico no se declara aplicado hasta
+  que la Raspberry lo confirma.
+- Controladores ofrece descarga saliente y una alternativa SSH administrada. El
+  perfil visible contiene IP, puerto, usuario y huella; las claves permanecen
+  cifradas en servidor y solo se resuelven dentro del tenant autorizado.
+- Automatizaciones incorpora escenas con varios aparatos y estado objetivo. La
+  activación usa la cola empresarial existente.
+- Energía solar recibe telemetría VE.Direct autenticada desde la Raspberry y
+  presenta disponibilidad, batería, panel, producción y estado del cargador. El
+  SOC queda explícitamente no disponible cuando el hardware no lo mide.
+
+2026-08-13: Plataforma interna - normalización y guardas HTTP
+- `internal/platform/valueutil` concentra utilidades puras reutilizadas por DB, handlers, worker y herramientas sin dependencias externas ni estado empresarial.
+- `internal/platform/httpguard` unifica el contrato GET/HEAD de health checks de API y worker.
+- `internal/platform/runtimeconfig` pasa a ser la fuente canónica para variables de entorno, flags desactivados y reescritura de DSN PostgreSQL por túnel.
+
+2026-08-25: Autenticación administrativa - guard de reCAPTCHA
+- Login, registro y recuperación conservan el mismo endpoint y contrato público,
+  pero una configuración incompleta ya no puede activarse desde Super
+  administración.
+- El backend comprueba que la clave pública y la clave privada sean utilizables
+  y persiste la configuración compuesta atómicamente; la interfaz distingue una
+  clave cifrada almacenada de una clave realmente descifrable.
+
+2026-09-05: Pagos de licencias y auditoria global
+- Epayco valida firma, orden local, referencia, monto, COP y ambiente antes de aceptar un aprobado; el retorno del navegador por si solo no activa licencias.
+- Wompi valida coherencia de ambiente entre llaves publica e integridad y conserva firma dinamica de eventos.
+- El estado aprobado no puede degradarse por callbacks tardios y los efectos de activacion/correo/factura conservan sus reservas idempotentes.
+- Super Administrador incorpora una vista global de solo lectura para transacciones, intentos de checkout y efectos posteriores, sin material sensible.
+- La prueba pagada de un dia queda en COP 5000; se conserva el codigo historico del plan para no romper referencias existentes.
+2026-09-05 - Vida personal: reportes y recordatorios
+- `Vida` mantiene gastos, precios y suscripciones estrictamente personales por `empresa_id + usuario_id`.
+- Incluye reportes filtrables por periodo, categoría, comercio y medio de pago; no usa datos de contabilidad, compras, inventario, caja ni CxP.
+- Las preferencias por usuario habilitan email a la cuenta autenticada y/o WhatsApp a un número privado; los envíos se deduplican por suscripción, fecha de renovación y canal, y requieren los adaptadores globales autorizados.

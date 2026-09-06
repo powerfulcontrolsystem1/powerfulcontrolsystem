@@ -1,3 +1,7 @@
+> Estado documental: histórico. Evidencia de una empresa/fecha de julio; no reutilizar datos personales, tarifas ni folios como fixture.
+> Fuentes actuales: [estado_actual.md](estado_actual.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Validacion preproduccion - Powerful Control System
 
 Fecha: 2026-07-11. Alcance: empresa interna Powerful Control System (empresa 12).

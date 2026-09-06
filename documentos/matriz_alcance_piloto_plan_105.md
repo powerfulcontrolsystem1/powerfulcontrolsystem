@@ -1,3 +1,7 @@
+> Estado documental: histórico. Propuesta de piloto no aprobada. Su archivo no concede aprobación ni activa módulos.
+> Fuentes actuales: [estado_actual.md](estado_actual.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Matriz de alcance de piloto - Plan 105
 
 Estado: **borrador tecnico pendiente de aprobacion del usuario**.

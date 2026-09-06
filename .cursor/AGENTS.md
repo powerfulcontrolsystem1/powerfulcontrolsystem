@@ -1,48 +1,21 @@
-# Agentes (Cursor) — Coordinador por defecto: `pcs-agente-go`
+# Contexto de trabajo para Cursor
 
-Este repositorio ya tiene un sistema de agentes para GitHub Copilot en:
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
 
-- `copilot-instructions.md`
-- `.github/agents/`
+## Alcance revisado y límites
 
-Esta carpeta `.cursor/` agrega una **capa nativa para Cursor** sin reemplazar ni borrar lo anterior.
+- Se unifica autoridad y orden de lectura sin requerir extensión de IDE ni procesos adicionales.
 
-## Coordinador principal
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
 
-- **Principal por defecto**: `pcs-agente-go`
-- Objetivo: clasificar módulo/impacto, activar especialistas cuando aplique y consolidar un cierre único con trazabilidad.
+Leer primero [AGENTS.md](../AGENTS.md), [contexto general](../documentos/contexto_general_del_sistema.md) y [contexto Codex](../documentos/contexto_codex.md).
 
-## Especialistas disponibles
+Los perfiles de `skills/` describen frentes de revisión. Usar backend, frontend y QA como checklist interno; delegar solo si el usuario pide agentes. Los perfiles no reemplazan contratos del módulo, permisos, reglas de dependencias ni pruebas de aceptación.
 
-- `pcs-agente-backend-db`: backend Go + PostgreSQL (handlers, seguridad, permisos, DB, rendimiento).
-- `pcs-agente-frontend-ux`: HTML/CSS/JS y UX (formularios, mensajes, responsive, consistencia visual).
-- `pcs-agente-qa-operacion`: pruebas, runtime, túneles, arranque, deploy, verificación end-to-end.
-- `pcs-protocolo-por-modulo`: aplica la matriz/plantilla de trabajo por módulo del repo.
+Protocolo compartido: [coordinación](../.github/agents/protocolo_delegacion.md).
 
-## Protocolo operativo (fuentes canónicas)
+## Fuentes y aceptación de la revisión
 
-- Matriz de delegación: `.github/agents/protocolo_delegacion.md`
-- Plantilla por módulo: `.github/agents/plantilla_trabajo_por_modulo.md`
+[AGENTS.md](../AGENTS.md).
 
-## Regla rápida para activar frentes
-
-- **Módulos “rojo”** (`pagos`, `licencias`, `venta_publica`, `estaciones`, `ventas_simple`, `carritos`):
-  - backend + frontend + QA obligatorios.
-- **Autenticación y permisos**:
-  - backend + frontend obligatorios; QA obligatorio si cambia sesión/OAuth/reset/correo/runtime.
-- **Cambios solo visuales o textos**:
-  - puede iniciar solo frontend, pero si toca contratos o datos, escalar a backend/QA.
-
-## Cierre mínimo esperado
-
-Antes de declarar cerrado:
-
-- causa técnica y archivos/rutas/tablas afectadas
-- validación ejecutada (o huecos/riesgos explicitados)
-- actualización de documentación/trazabilidad cuando aplique (`documentos/*`)
-
-## Skills y reglas (Cursor)
-
-- Skills: `.cursor/skills/*/SKILL.md`
-- (Opcional) Rules: `.cursor/rules/*.mdc` para aplicar gobernanza persistentemente.
-
+Requisitos aplicables: PCS-REQ-016 ([matriz transversal](../documentos/requisitos/especificacion_y_trazabilidad.md)).

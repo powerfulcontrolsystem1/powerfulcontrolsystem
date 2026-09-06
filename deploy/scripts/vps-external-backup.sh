@@ -6,11 +6,12 @@ BACKUP_ROOT="$PROJECT_DIR/backups/vps-snapshots"
 TARGET="${EXTERNAL_BACKUP_TARGET:-none}"
 RCLONE_REMOTE="${RCLONE_REMOTE:-}"
 S3_URI="${S3_URI:-}"
-KEEP_LOCAL_DAYS="${KEEP_LOCAL_DAYS:-14}"
+KEEP_LOCAL_DAYS="${KEEP_LOCAL_DAYS:-2}"
+BACKUP_SCOPE="${BACKUP_SCOPE:-vps}"
 
 cd "$PROJECT_DIR"
 
-bash deploy/scripts/vps-backup-operacion.sh
+BACKUP_SCOPE="$BACKUP_SCOPE" bash deploy/scripts/vps-backup-operacion.sh
 
 latest="$(find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | awk 'NR==1 {print $2}')"
 if [ -z "${latest:-}" ] || [ ! -d "$latest" ]; then
@@ -28,7 +29,9 @@ case "$TARGET" in
       exit 1
     fi
     command -v rclone >/dev/null 2>&1 || { echo "[ERROR] rclone no esta instalado." >&2; exit 1; }
-    rclone copy "$latest" "$RCLONE_REMOTE/$(basename "$latest")" --fast-list --transfers 4 --checkers 8
+    destination="$RCLONE_REMOTE/$(basename "$latest")"
+    rclone copy "$latest" "$destination" --fast-list --transfers 4 --checkers 8 --checksum
+    rclone check "$latest" "$destination" --one-way --checksum
     echo "[OK] Backup externo enviado con rclone a $RCLONE_REMOTE/$(basename "$latest")"
     ;;
   s3)
@@ -37,7 +40,9 @@ case "$TARGET" in
       exit 1
     fi
     command -v aws >/dev/null 2>&1 || { echo "[ERROR] aws cli no esta instalado." >&2; exit 1; }
-    aws s3 sync "$latest" "$S3_URI/$(basename "$latest")" --only-show-errors
+    destination="$S3_URI/$(basename "$latest")"
+    aws s3 sync "$latest" "$destination" --only-show-errors --checksum-algorithm SHA256
+    aws s3 sync "$latest" "$destination" --only-show-errors --checksum-mode ENABLED
     echo "[OK] Backup externo enviado a $S3_URI/$(basename "$latest")"
     ;;
   *)

@@ -1,3 +1,7 @@
+> Estado documental: histórico. Borrador ERP de abril pendiente de revisión en su origen. Sus IDs y propuestas se conservan para trazabilidad; la nueva matriz no afirma haber implementado todos esos requisitos.
+> Fuentes actuales: [incorporacion.md](../desarrollo/incorporacion.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Guia de implementacion ERP multiempresa
 
 Fecha: 2026-04-14

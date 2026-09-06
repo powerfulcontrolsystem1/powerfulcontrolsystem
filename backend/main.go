@@ -66,6 +66,7 @@ type prometheusOperationalMetrics struct {
 	businessOutbox   prometheusQueueMetrics
 	superOutbox      prometheusQueueMetrics
 	asyncJobs        prometheusQueueMetrics
+	queueLanes       []dbpkg.QueueCapacitySnapshot
 	supportPurge     prometheusSupportPurgeMetrics
 	supportAV        handlers.SupportAntivirusMetrics
 	supportExtract   handlers.SupportExtractionMetrics
@@ -173,6 +174,11 @@ func collectPrometheusOperationalMetrics(ctx context.Context, businessDB, superD
 			result.workerQueryOK = 1
 		}
 	}
+	if result.businessDBReady == 1 && result.superDBReady == 1 {
+		if configs, err := dbpkg.GetQueueCapacityConfigs(superDB); err == nil {
+			result.queueLanes = dbpkg.GetQueueCapacitySnapshots(ctx, businessDB, superDB, configs)
+		}
+	}
 	return result
 }
 
@@ -232,6 +238,27 @@ func renderPrometheusMetrics(values prometheusOperationalMetrics) string {
 	builder.WriteString("# HELP pcs_async_jobs_expired_leases_total Durable jobs with expired leases.\n")
 	builder.WriteString("# TYPE pcs_async_jobs_expired_leases_total gauge\n")
 	writePrometheusQueueMetrics(&builder, "pcs_async_jobs", "super_jobs", values.asyncJobs)
+	builder.WriteString("# HELP pcs_queue_lane_pending Operational work waiting in an independent lane.\n")
+	builder.WriteString("# TYPE pcs_queue_lane_pending gauge\n")
+	builder.WriteString("# HELP pcs_queue_lane_processing Operational work currently claimed in an independent lane.\n")
+	builder.WriteString("# TYPE pcs_queue_lane_processing gauge\n")
+	builder.WriteString("# HELP pcs_queue_lane_failed Operational work in a failed or terminal state.\n")
+	builder.WriteString("# TYPE pcs_queue_lane_failed gauge\n")
+	builder.WriteString("# HELP pcs_queue_lane_oldest_seconds Age of the oldest waiting work.\n")
+	builder.WriteString("# TYPE pcs_queue_lane_oldest_seconds gauge\n")
+	builder.WriteString("# HELP pcs_queue_lane_saturation_percent Highest configured pressure ratio for the lane.\n")
+	builder.WriteString("# TYPE pcs_queue_lane_saturation_percent gauge\n")
+	builder.WriteString("# HELP pcs_queue_lane_requests_current_minute Current tenant-scoped admission attempts for the lane.\n")
+	builder.WriteString("# TYPE pcs_queue_lane_requests_current_minute gauge\n")
+	for _, lane := range values.queueLanes {
+		fmt.Fprintf(&builder, "pcs_queue_lane_pending{lane=%q} %d\n", lane.Lane, lane.Pending)
+		fmt.Fprintf(&builder, "pcs_queue_lane_processing{lane=%q} %d\n", lane.Lane, lane.Processing)
+		fmt.Fprintf(&builder, "pcs_queue_lane_failed{lane=%q} %d\n", lane.Lane, lane.Failed)
+		fmt.Fprintf(&builder, "pcs_queue_lane_oldest_seconds{lane=%q} %.3f\n", lane.Lane, lane.OldestSeconds)
+		fmt.Fprintf(&builder, "pcs_queue_lane_saturation_percent{lane=%q} %.3f\n", lane.Lane, lane.SaturationPercent)
+		fmt.Fprintf(&builder, "pcs_queue_lane_requests_current_minute{lane=%q} %d\n", lane.Lane, lane.RequestsCurrentMinute)
+		fmt.Fprintf(&builder, "pcs_observability_query_success{source=%q} %.0f\n", "queue_lane_"+lane.Lane, boolPrometheus(lane.QueryOK))
+	}
 	builder.WriteString("# HELP pcs_support_purge_pending_total Purchase-support purge sagas awaiting completion.\n")
 	builder.WriteString("# TYPE pcs_support_purge_pending_total gauge\n")
 	fmt.Fprintf(&builder, "pcs_support_purge_pending_total %d\n", values.supportPurge.pending)
@@ -704,8 +731,8 @@ func validateProductionSecurityConfig() error {
 			return fmt.Errorf("PCS_API_REPLICAS debe ser un entero positivo")
 		}
 		storageMode := strings.ToLower(strings.TrimSpace(os.Getenv("PCS_PRIVATE_STORAGE_MODE")))
-		if replicas > 1 && storageMode != "shared" && storageMode != "object" {
-			return fmt.Errorf("PCS_PRIVATE_STORAGE_MODE debe ser shared u object cuando PCS_API_REPLICAS es mayor que 1")
+		if replicas > 1 && storageMode != "shared" {
+			return fmt.Errorf("PCS_PRIVATE_STORAGE_MODE debe ser shared cuando PCS_API_REPLICAS es mayor que 1; object aun no tiene adaptador operativo")
 		}
 	}
 	return nil
@@ -1708,7 +1735,7 @@ func main() {
 	http.HandleFunc("/api/empresa/licencias/comprobantes", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaLicenciasComprobantesHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/email_corporativo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEmailCorporativoHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/api/empresa/db_admin", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaDBAdminHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPrinterQueueIdempotentMutation(dbEmpresas, handlers.EmpresaImpresorasHandler(dbEmpresas))))
+	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPrinterQueueIdempotentMutation(dbEmpresas, handlers.EmpresaImpresorasHandlerWithCapacity(dbEmpresas, dbSuper))))
 	http.HandleFunc("/api/empresa/impresoras/agente", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasAgenteHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras/resolver", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasResolverHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/estacion_prefs", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEstacionPrefsHandler(dbEmpresas)))
@@ -1825,6 +1852,7 @@ func main() {
 	http.HandleFunc("/super/api/licencias/codigos_descuento", handlers.WithSuperAuditoria(dbSuper, "licencias_codigos_descuento", handlers.SuperLicenciasCodigosDescuentoHandler(dbSuper)))
 	http.HandleFunc("/super/api/empresa_licencias_adicionales", handlers.EmpresaLicenciasAdicionalesHandler(dbSuper))
 	http.HandleFunc("/super/api/licencias/vencimiento_alertas", handlers.WithSuperAuditoria(dbSuper, "super_config_alertas_licencia", handlers.SuperLicenciaVencimientoAlertasHandler(dbSuper, dbEmpresas)))
+	http.HandleFunc("/super/api/pagos/auditoria", handlers.WithSuperAuditoria(dbSuper, "super_pagos_auditoria", handlers.SuperPaymentAuditHandler(dbSuper)))
 	// Endpoint super: lista de administradores autorizados (Frecuencia FE/FP)
 	http.HandleFunc("/super/api/administradores_frecuencia_fe", handlers.SuperAdministradoresFrecuenciaFEHandler(dbSuper))
 	// Endpoint publico para exponer metodos de pago activos del checkout de licencias
@@ -1889,6 +1917,7 @@ func main() {
 	http.HandleFunc("/super/api/panel_control/reset", handlers.WithSuperAuditoria(dbSuper, "super_panel_control_reset", handlers.SuperPanelControlResetHandler(dbSuper)))
 	http.HandleFunc("/super/api/agentes_mantenimiento", handlers.WithSuperAuditoria(dbSuper, "super_agentes_mantenimiento", handlers.SuperMantenimientoAgentesHandler(dbSuper)))
 	http.HandleFunc("/super/api/alertas_sistema", handlers.WithSuperAuditoria(dbSuper, "super_alertas_sistema", handlers.SuperAlertasSistemaHandler(dbSuper)))
+	http.HandleFunc("/super/api/capacidad_colas", handlers.WithSuperAuditoria(dbSuper, "super_capacidad_colas", handlers.SuperQueueCapacityHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/config/portal_chat_ia_info", handlers.WithSuperAuditoria(dbSuper, "super_config_chat_flotante", handlers.SuperPortalChatIAInfoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/contexto_ia_logica_negocio", handlers.WithSuperAuditoria(dbSuper, "super_config_contexto_ia", handlers.SuperContextoIALogicaNegocioHandler(dbSuper)))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)

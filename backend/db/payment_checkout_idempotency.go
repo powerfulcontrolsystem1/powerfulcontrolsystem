@@ -164,12 +164,6 @@ func ClaimPaymentPostEffect(dbConn *sql.DB, provider, transactionID, reference, 
 	if effect == "" {
 		return nil, false, fmt.Errorf("efecto de pago obligatorio")
 	}
-	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
-		return nil, false, err
-	}
-	if err := EnsurePaymentCheckoutIdempotencySchema(dbConn); err != nil {
-		return nil, false, err
-	}
 	table, _ := licenciaPaymentTable(provider)
 	recordID, found, err := getLicenciaPaymentRowID(dbConn, table, transactionID, reference)
 	if err != nil {
@@ -233,9 +227,6 @@ func ClaimPaymentCheckoutIdempotency(dbConn *sql.DB, provider string, empresaID 
 	}
 	if empresaID <= 0 || strings.TrimSpace(key) == "" || strings.TrimSpace(requestFingerprint) == "" || strings.TrimSpace(reference) == "" {
 		return nil, false, fmt.Errorf("datos de idempotencia de checkout invalidos")
-	}
-	if err := EnsurePaymentCheckoutIdempotencySchema(dbConn); err != nil {
-		return nil, false, err
 	}
 	claim := &PaymentCheckoutIdempotency{
 		Provider:    provider,

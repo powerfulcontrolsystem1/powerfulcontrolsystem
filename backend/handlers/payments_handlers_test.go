@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/md5"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -545,8 +546,8 @@ func TestStrongEpaycoApprovedReturnEvidenceRequiresGatewayAndInvoice(t *testing.
 		"x_cod_response":   "1",
 		"x_response":       "Aceptada",
 	}
-	if !hasStrongEpaycoApprovedReturnEvidence(payload, false) {
-		t.Fatal("expected approved Epayco return with transaction, x_ref_payco and invoice to be strong evidence")
+	if hasStrongEpaycoApprovedReturnEvidence(payload, false) {
+		t.Fatal("unsigned browser return must never be strong approval evidence")
 	}
 
 	delete(payload, "x_ref_payco")
@@ -585,6 +586,9 @@ func TestEpaycoCheckoutCredentialReadinessSeparatesSmartAndClassicKeys(t *testin
 	if !epaycoCheckoutJSReady("491d6a0b6e992cf924edd8d3d088aff1") {
 		t.Fatal("current checkout.js fallback must be available with public key")
 	}
+	if epaycoCheckoutJSReady("clave-publica-sin-formato") {
+		t.Fatal("checkout.js fallback must reject malformed public keys")
+	}
 	if epaycoClassicCheckoutReady("9695", "clave-corta#") {
 		t.Fatal("short password-like values must not enable classic checkout")
 	}
@@ -603,14 +607,62 @@ func TestPaymentCredentialValueForReadinessIgnoresBrokenEncryptedValue(t *testin
 }
 
 func TestWompiWebCheckoutReadyRequiresUsablePublicAndIntegrityKeys(t *testing.T) {
-	if !wompiWebCheckoutReady("pub_test_123", "integrity-secret") {
+	if !wompiWebCheckoutReady("pub_test_123", "test_integrity_123") {
 		t.Fatal("expected Wompi web checkout to be ready with public and integrity keys")
 	}
 	if wompiWebCheckoutReady("pub_test_123", "") {
 		t.Fatal("expected Wompi web checkout to require an integrity key")
 	}
-	if wompiWebCheckoutReady("encrypted-value-without-prefix", "integrity-secret") {
+	if wompiWebCheckoutReady("encrypted-value-without-prefix", "test_integrity_123") {
 		t.Fatal("expected Wompi web checkout to require a real public key prefix")
+	}
+	if wompiWebCheckoutReady("pub_test_123", "prod_integrity_123") {
+		t.Fatal("expected Wompi web checkout to reject mixed environments")
+	}
+}
+
+func TestValidateEpaycoPaymentEvidenceBindsOrderAmountCurrencyAndEnvironment(t *testing.T) {
+	rec := &dbpkg.EpaycoPaymentRecord{
+		Reference:     sql.NullString{String: "EPAYCO-LIC-56-EMP-78-ABC", Valid: true},
+		TransactionID: sql.NullString{String: "EPAYCO-LIC-56-EMP-78-ABC", Valid: true},
+		RawPayload:    sql.NullString{String: `{"amount":5000,"currency":"COP"}`, Valid: true},
+	}
+	evidence := epaycoPaymentEvidence{
+		TransactionID: "TX-123", InvoiceRef: "EPAYCO-LIC-56-EMP-78-ABC", Status: "APPROVED",
+		Currency: "COP", Amount: 5000, Environment: "sandbox",
+	}
+	if err := validateEpaycoPaymentEvidence(rec, evidence, "sandbox", true); err != nil {
+		t.Fatalf("expected matching Epayco evidence: %v", err)
+	}
+	evidence.Amount = 4999
+	if err := validateEpaycoPaymentEvidence(rec, evidence, "sandbox", true); err == nil {
+		t.Fatal("expected amount mismatch to be rejected")
+	}
+	evidence.Amount = 5000
+	evidence.Currency = "USD"
+	if err := validateEpaycoPaymentEvidence(rec, evidence, "sandbox", true); err == nil {
+		t.Fatal("expected non-COP payment to be rejected")
+	}
+	evidence.Currency = "COP"
+	evidence.Environment = "production"
+	if err := validateEpaycoPaymentEvidence(rec, evidence, "sandbox", true); err == nil {
+		t.Fatal("expected environment mismatch to be rejected")
+	}
+}
+
+func TestEpaycoAuditPayloadOmitsSensitiveCustomerAndSignatureFields(t *testing.T) {
+	raw := epaycoAuditPayload(map[string]interface{}{
+		"x_transaction_id": "TX-123", "x_ref_payco": "987", "x_id_invoice": "INV-1",
+		"x_amount": "5000", "x_currency_code": "COP", "x_cod_response": "1",
+		"x_signature": "secret-signature", "x_customer_email": "buyer@example.com", "x_customer_document": "123456",
+	})
+	for _, forbidden := range []string{"secret-signature", "buyer@example.com", "123456", "customer_email", "customer_document"} {
+		if strings.Contains(raw, forbidden) {
+			t.Fatalf("sanitized audit payload leaked %q: %s", forbidden, raw)
+		}
+	}
+	if !strings.Contains(raw, `"amount":5000`) || !strings.Contains(raw, `"currency":"COP"`) {
+		t.Fatalf("sanitized audit payload omitted payment evidence: %s", raw)
 	}
 }
 

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -337,6 +338,10 @@ func UpsertEmpresaProduccionMRPConfig(dbConn *sql.DB, cfg EmpresaProduccionMRPCo
 }
 
 func UpsertEmpresaProduccionReceta(dbConn *sql.DB, item EmpresaProduccionReceta) (int64, error) {
+	return UpsertEmpresaProduccionRecetaContext(context.Background(), dbConn, item)
+}
+
+func UpsertEmpresaProduccionRecetaContext(ctx context.Context, dbConn *sql.DB, item EmpresaProduccionReceta) (int64, error) {
 	if err := EnsureEmpresaProduccionMRPSchema(dbConn); err != nil {
 		return 0, err
 	}
@@ -347,37 +352,59 @@ func UpsertEmpresaProduccionReceta(dbConn *sql.DB, item EmpresaProduccionReceta)
 	if item.Codigo == "" || item.Nombre == "" {
 		return 0, errors.New("codigo y nombre de receta son obligatorios")
 	}
-	if item.ID <= 0 {
-		existingID, err := getEmpresaProduccionRecetaIDByCodigo(dbConn, item.EmpresaID, item.Codigo)
-		if err != nil {
+	if item.ProductoTerminadoID > 0 {
+		if err := validateProduccionProductoTenant(ctx, dbConn, item.EmpresaID, item.ProductoTerminadoID); err != nil {
 			return 0, err
-		}
-		if existingID > 0 {
-			item.ID = existingID
 		}
 	}
-	if item.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_produccion_recetas SET codigo=?, nombre=?, producto_terminado_id=?, producto_terminado_nombre=?, version=?, unidad=?, cantidad_base=?, costo_estandar=?, merma_porcentaje=?, tiempo_estimado_min=?, estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`,
-			item.Codigo, item.Nombre, item.ProductoTerminadoID, item.ProductoTerminadoNombre, item.Version, item.Unidad, item.CantidadBase, item.CostoEstandar, item.MermaPorcentaje, item.TiempoEstimadoMin, item.Estado, item.EmpresaID, item.ID)
-		if err != nil {
-			return 0, err
-		}
-		if item.Componentes != nil {
-			if err := ReplaceEmpresaProduccionComponentes(dbConn, item.EmpresaID, item.ID, item.Componentes); err != nil {
+	for _, component := range item.Componentes {
+		if component.ProductoID > 0 {
+			if err := validateProduccionProductoTenant(ctx, dbConn, item.EmpresaID, component.ProductoID); err != nil {
 				return 0, err
 			}
 		}
+	}
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	if item.ID <= 0 {
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT pg_advisory_xact_lock(?)`, item.EmpresaID).Scan(new(interface{})); err != nil {
+			return 0, err
+		}
+		err := queryRowTxSQLCompatContext(ctx, tx, `SELECT id FROM empresa_produccion_recetas WHERE empresa_id=? AND codigo=? FOR UPDATE`, item.EmpresaID, item.Codigo).Scan(&item.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return 0, err
+		}
+	}
+	if item.ID > 0 {
+		if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_produccion_recetas SET codigo=?, nombre=?, producto_terminado_id=?, producto_terminado_nombre=?, version=?, unidad=?, cantidad_base=?, costo_estandar=?, merma_porcentaje=?, tiempo_estimado_min=?, estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`,
+			item.Codigo, item.Nombre, item.ProductoTerminadoID, item.ProductoTerminadoNombre, item.Version, item.Unidad, item.CantidadBase, item.CostoEstandar, item.MermaPorcentaje, item.TiempoEstimadoMin, item.Estado, item.EmpresaID, item.ID); err != nil {
+			return 0, err
+		}
+		if item.Componentes != nil {
+			if err := replaceEmpresaProduccionComponentesTx(ctx, tx, item.EmpresaID, item.ID, item.Componentes); err != nil {
+				return 0, err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return 0, err
+		}
 		return item.ID, nil
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_produccion_recetas (empresa_id,codigo,nombre,producto_terminado_id,producto_terminado_nombre,version,unidad,cantidad_base,costo_estandar,merma_porcentaje,tiempo_estimado_min,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	id, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_produccion_recetas (empresa_id,codigo,nombre,producto_terminado_id,producto_terminado_nombre,version,unidad,cantidad_base,costo_estandar,merma_porcentaje,tiempo_estimado_min,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.Codigo, item.Nombre, item.ProductoTerminadoID, item.ProductoTerminadoNombre, item.Version, item.Unidad, item.CantidadBase, item.CostoEstandar, item.MermaPorcentaje, item.TiempoEstimadoMin, item.Estado, item.UsuarioCreador)
 	if err != nil {
 		return 0, err
 	}
 	if item.Componentes != nil {
-		if err := ReplaceEmpresaProduccionComponentes(dbConn, item.EmpresaID, id, item.Componentes); err != nil {
+		if err := replaceEmpresaProduccionComponentesTx(ctx, tx, item.EmpresaID, id, item.Componentes); err != nil {
 			return 0, err
 		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
 	}
 	return id, nil
 }
@@ -403,7 +430,31 @@ func ReplaceEmpresaProduccionComponentes(dbConn *sql.DB, empresaID, recetaID int
 	if empresaID <= 0 || recetaID <= 0 {
 		return errors.New("empresa_id y receta_id son obligatorios")
 	}
-	if _, err := ExecCompat(dbConn, `DELETE FROM empresa_produccion_receta_componentes WHERE empresa_id=? AND receta_id=?`, empresaID, recetaID); err != nil {
+	ctx := context.Background()
+	var exists int
+	if err := QueryRowCompatContext(ctx, dbConn, `SELECT 1 FROM empresa_produccion_recetas WHERE empresa_id=? AND id=?`, empresaID, recetaID).Scan(&exists); err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if row.ProductoID > 0 {
+			if err := validateProduccionProductoTenant(ctx, dbConn, empresaID, row.ProductoID); err != nil {
+				return err
+			}
+		}
+	}
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := replaceEmpresaProduccionComponentesTx(ctx, tx, empresaID, recetaID, rows); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func replaceEmpresaProduccionComponentesTx(ctx context.Context, tx *sql.Tx, empresaID, recetaID int64, rows []EmpresaProduccionComponente) error {
+	if _, err := execTxSQLCompatContext(ctx, tx, `DELETE FROM empresa_produccion_receta_componentes WHERE empresa_id=? AND receta_id=?`, empresaID, recetaID); err != nil {
 		return err
 	}
 	for i, row := range rows {
@@ -414,11 +465,20 @@ func ReplaceEmpresaProduccionComponentes(dbConn *sql.DB, empresaID, recetaID int
 		if row.Orden <= 0 {
 			row.Orden = i + 1
 		}
-		_, err := ExecCompat(dbConn, `INSERT INTO empresa_produccion_receta_componentes (empresa_id,receta_id,producto_id,producto_nombre,unidad,cantidad,costo_unitario,merma_porcentaje,obligatoria,etapa,orden) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-			empresaID, recetaID, row.ProductoID, row.ProductoNombre, row.Unidad, row.Cantidad, row.CostoUnitario, row.MermaPorcentaje, boolIntProduccion(row.Obligatoria), row.Etapa, row.Orden)
-		if err != nil {
+		if _, err := execTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_produccion_receta_componentes (empresa_id,receta_id,producto_id,producto_nombre,unidad,cantidad,costo_unitario,merma_porcentaje,obligatoria,etapa,orden) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, empresaID, recetaID, row.ProductoID, row.ProductoNombre, row.Unidad, row.Cantidad, row.CostoUnitario, row.MermaPorcentaje, boolIntProduccion(row.Obligatoria), row.Etapa, row.Orden); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func validateProduccionProductoTenant(ctx context.Context, dbConn *sql.DB, empresaID, productID int64) error {
+	var exists int
+	if err := QueryRowCompatContext(ctx, dbConn, `SELECT 1 FROM productos WHERE empresa_id=? AND id=?`, empresaID, productID).Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("el producto no pertenece a la empresa activa")
+		}
+		return err
 	}
 	return nil
 }
@@ -447,8 +507,39 @@ func ListEmpresaProduccionRecetas(dbConn *sql.DB, empresaID int64, estado string
 		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.Codigo, &x.Nombre, &x.ProductoTerminadoID, &x.ProductoTerminadoNombre, &x.Version, &x.Unidad, &x.CantidadBase, &x.CostoEstandar, &x.MermaPorcentaje, &x.TiempoEstimadoMin, &x.Estado, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
 			return nil, err
 		}
-		x.Componentes, _ = ListEmpresaProduccionComponentes(dbConn, empresaID, x.ID)
 		out = append(out, x)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	componentsByRecipe, err := listEmpresaProduccionComponentesByReceta(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		out[i].Componentes = componentsByRecipe[out[i].ID]
+	}
+	return out, nil
+}
+
+func listEmpresaProduccionComponentesByReceta(dbConn *sql.DB, empresaID int64) (map[int64][]EmpresaProduccionComponente, error) {
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,receta_id,COALESCE(producto_id,0),COALESCE(producto_nombre,''),COALESCE(unidad,'und'),COALESCE(cantidad,0),COALESCE(costo_unitario,0),COALESCE(merma_porcentaje,0),COALESCE(obligatoria,1),COALESCE(etapa,'preparacion'),COALESCE(orden,0) FROM empresa_produccion_receta_componentes WHERE empresa_id=? ORDER BY receta_id,orden,id`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make(map[int64][]EmpresaProduccionComponente)
+	for rows.Next() {
+		var x EmpresaProduccionComponente
+		var required int
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.RecetaID, &x.ProductoID, &x.ProductoNombre, &x.Unidad, &x.Cantidad, &x.CostoUnitario, &x.MermaPorcentaje, &required, &x.Etapa, &x.Orden); err != nil {
+			return nil, err
+		}
+		x.Obligatoria = required > 0
+		out[x.RecetaID] = append(out[x.RecetaID], x)
 	}
 	return out, rows.Err()
 }
@@ -473,6 +564,10 @@ func ListEmpresaProduccionComponentes(dbConn *sql.DB, empresaID, recetaID int64)
 }
 
 func CreateEmpresaProduccionOrden(dbConn *sql.DB, item EmpresaProduccionOrden) (EmpresaProduccionOrden, error) {
+	return CreateEmpresaProduccionOrdenContext(context.Background(), dbConn, item)
+}
+
+func CreateEmpresaProduccionOrdenContext(ctx context.Context, dbConn *sql.DB, item EmpresaProduccionOrden) (EmpresaProduccionOrden, error) {
 	if err := EnsureEmpresaProduccionMRPSchema(dbConn); err != nil {
 		return EmpresaProduccionOrden{}, err
 	}
@@ -480,31 +575,46 @@ func CreateEmpresaProduccionOrden(dbConn *sql.DB, item EmpresaProduccionOrden) (
 	if item.EmpresaID <= 0 || item.RecetaID <= 0 {
 		return EmpresaProduccionOrden{}, errors.New("empresa_id y receta_id son obligatorios")
 	}
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return EmpresaProduccionOrden{}, err
+	}
+	defer tx.Rollback()
 	if item.Codigo == "" {
-		code, err := nextProduccionOrdenCode(dbConn, item.EmpresaID)
-		if err != nil {
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT pg_advisory_xact_lock(?)`, item.EmpresaID).Scan(new(interface{})); err != nil {
 			return EmpresaProduccionOrden{}, err
 		}
-		item.Codigo = code
-	}
-	if item.ProductoTerminadoNombre == "" || item.CostoEstimado <= 0 {
-		rec, err := getEmpresaProduccionRecetaByID(dbConn, item.EmpresaID, item.RecetaID)
-		if err == nil {
-			if item.ProductoTerminadoNombre == "" {
-				item.ProductoTerminadoNombre = rec.ProductoTerminadoNombre
-			}
-			item.ProductoTerminadoID = rec.ProductoTerminadoID
-			if item.CostoEstimado <= 0 {
-				item.CostoEstimado = roundMoneyProduccion(rec.CostoEstandar * item.CantidadPlanificada / rec.CantidadBase)
-			}
+		var next int64
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(MAX(CASE WHEN codigo ~ '^OP-[0-9]+$' THEN SUBSTRING(codigo FROM 4)::BIGINT ELSE 0 END),0)+1 FROM empresa_produccion_ordenes WHERE empresa_id=?`, item.EmpresaID).Scan(&next); err != nil {
+			return EmpresaProduccionOrden{}, err
 		}
+		item.Codigo = fmt.Sprintf("OP-%06d", next)
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_produccion_ordenes (empresa_id,codigo,receta_id,producto_terminado_id,producto_terminado_nombre,cantidad_planificada,cantidad_producida,estado,prioridad,fecha_programada,costo_estimado,costo_real,responsable,observaciones,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	var productoID int64
+	var productoNombre string
+	var costoEstandar, cantidadBase float64
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(producto_terminado_id,0),COALESCE(producto_terminado_nombre,''),COALESCE(costo_estandar,0),COALESCE(cantidad_base,1) FROM empresa_produccion_recetas WHERE empresa_id=? AND id=? FOR SHARE`, item.EmpresaID, item.RecetaID).Scan(&productoID, &productoNombre, &costoEstandar, &cantidadBase); err != nil {
+		return EmpresaProduccionOrden{}, err
+	}
+	if item.ProductoTerminadoNombre == "" {
+		item.ProductoTerminadoNombre = productoNombre
+	}
+	item.ProductoTerminadoID = productoID
+	if item.CostoEstimado <= 0 {
+		if cantidadBase <= 0 {
+			cantidadBase = 1
+		}
+		item.CostoEstimado = roundMoneyProduccion(costoEstandar * item.CantidadPlanificada / cantidadBase)
+	}
+	id, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_produccion_ordenes (empresa_id,codigo,receta_id,producto_terminado_id,producto_terminado_nombre,cantidad_planificada,cantidad_producida,estado,prioridad,fecha_programada,costo_estimado,costo_real,responsable,observaciones,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.Codigo, item.RecetaID, item.ProductoTerminadoID, item.ProductoTerminadoNombre, item.CantidadPlanificada, item.CantidadProducida, item.Estado, item.Prioridad, item.FechaProgramada, item.CostoEstimado, item.CostoReal, item.Responsable, item.Observaciones, item.UsuarioCreador)
 	if err != nil {
 		return EmpresaProduccionOrden{}, err
 	}
-	if err := materializeProduccionConsumosFromReceta(dbConn, item.EmpresaID, id, item.RecetaID, item.CantidadPlanificada, item.UsuarioCreador); err != nil {
+	if err := materializeProduccionConsumosFromRecetaTx(ctx, tx, item.EmpresaID, id, item.RecetaID, item.CantidadPlanificada, item.UsuarioCreador); err != nil {
+		return EmpresaProduccionOrden{}, err
+	}
+	if err := tx.Commit(); err != nil {
 		return EmpresaProduccionOrden{}, err
 	}
 	return GetEmpresaProduccionOrdenByID(dbConn, item.EmpresaID, id)
@@ -559,16 +669,28 @@ func ListEmpresaProduccionOrdenes(dbConn *sql.DB, empresaID int64, estado string
 }
 
 func CambiarEstadoEmpresaProduccionOrden(dbConn *sql.DB, empresaID, ordenID int64, estado, usuario string) (EmpresaProduccionOrden, error) {
+	return CambiarEstadoEmpresaProduccionOrdenContext(context.Background(), dbConn, empresaID, ordenID, estado, usuario)
+}
+
+func CambiarEstadoEmpresaProduccionOrdenContext(ctx context.Context, dbConn *sql.DB, empresaID, ordenID int64, estado, usuario string) (EmpresaProduccionOrden, error) {
 	estado = normalizeProduccionEstadoOrden(estado)
 	if ordenID <= 0 || estado == "" {
 		return EmpresaProduccionOrden{}, errors.New("orden_id y estado son obligatorios")
 	}
-	current, err := GetEmpresaProduccionOrdenByID(dbConn, empresaID, ordenID)
+	cfg, err := GetEmpresaProduccionMRPConfig(dbConn, empresaID)
 	if err != nil {
 		return EmpresaProduccionOrden{}, err
 	}
-	cfg, _ := GetEmpresaProduccionMRPConfig(dbConn, empresaID)
-	if err := validateProduccionOrdenTransition(current.Estado, estado, cfg); err != nil {
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return EmpresaProduccionOrden{}, err
+	}
+	defer tx.Rollback()
+	var currentState string
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado,'borrador') FROM empresa_produccion_ordenes WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, ordenID).Scan(&currentState); err != nil {
+		return EmpresaProduccionOrden{}, err
+	}
+	if err := validateProduccionOrdenTransition(currentState, estado, cfg); err != nil {
 		return EmpresaProduccionOrden{}, err
 	}
 	extra := ""
@@ -582,14 +704,21 @@ func CambiarEstadoEmpresaProduccionOrden(dbConn *sql.DB, empresaID, ordenID int6
 		extra = ", fecha_inicio=COALESCE(fecha_inicio,CAST(CURRENT_TIMESTAMP AS TEXT))"
 	}
 	args = append(args, ordenID, empresaID)
-	_, err = ExecCompat(dbConn, `UPDATE empresa_produccion_ordenes SET estado=?`+extra+`, fecha_actualizacion=CURRENT_TIMESTAMP WHERE id=? AND empresa_id=?`, args...)
+	_, err = execTxSQLCompatContext(ctx, tx, `UPDATE empresa_produccion_ordenes SET estado=?`+extra+`, fecha_actualizacion=CURRENT_TIMESTAMP WHERE id=? AND empresa_id=?`, args...)
 	if err != nil {
+		return EmpresaProduccionOrden{}, err
+	}
+	if err := tx.Commit(); err != nil {
 		return EmpresaProduccionOrden{}, err
 	}
 	return GetEmpresaProduccionOrdenByID(dbConn, empresaID, ordenID)
 }
 
 func RegistrarEmpresaProduccionConsumo(dbConn *sql.DB, item EmpresaProduccionConsumo) (int64, error) {
+	return RegistrarEmpresaProduccionConsumoContext(context.Background(), dbConn, item)
+}
+
+func RegistrarEmpresaProduccionConsumoContext(ctx context.Context, dbConn *sql.DB, item EmpresaProduccionConsumo) (int64, error) {
 	if err := EnsureEmpresaProduccionMRPSchema(dbConn); err != nil {
 		return 0, err
 	}
@@ -597,13 +726,32 @@ func RegistrarEmpresaProduccionConsumo(dbConn *sql.DB, item EmpresaProduccionCon
 	if item.EmpresaID <= 0 || item.OrdenID <= 0 || item.ProductoNombre == "" {
 		return 0, errors.New("orden y producto son obligatorios")
 	}
+	if item.ProductoID > 0 {
+		if err := validateProduccionProductoTenant(ctx, dbConn, item.EmpresaID, item.ProductoID); err != nil {
+			return 0, err
+		}
+	}
 	item.CostoTotal = roundMoneyProduccion(item.CantidadConsumida * item.CostoUnitario)
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_produccion_consumos (empresa_id,orden_id,producto_id,producto_nombre,cantidad_planificada,cantidad_consumida,costo_unitario,costo_total,lote_codigo,merma,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	var exists int
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT 1 FROM empresa_produccion_ordenes WHERE empresa_id=? AND id=? FOR UPDATE`, item.EmpresaID, item.OrdenID).Scan(&exists); err != nil {
+		return 0, err
+	}
+	id, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_produccion_consumos (empresa_id,orden_id,producto_id,producto_nombre,cantidad_planificada,cantidad_consumida,costo_unitario,costo_total,lote_codigo,merma,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.OrdenID, item.ProductoID, item.ProductoNombre, item.CantidadPlanificada, item.CantidadConsumida, item.CostoUnitario, item.CostoTotal, item.LoteCodigo, item.Merma, item.UsuarioCreador)
 	if err != nil {
 		return 0, err
 	}
-	_, _ = ExecCompat(dbConn, `UPDATE empresa_produccion_ordenes SET costo_real=(SELECT COALESCE(SUM(costo_total),0) FROM empresa_produccion_consumos WHERE empresa_id=? AND orden_id=?), fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, item.EmpresaID, item.OrdenID, item.EmpresaID, item.OrdenID)
+	if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_produccion_ordenes SET costo_real=(SELECT COALESCE(SUM(costo_total),0) FROM empresa_produccion_consumos WHERE empresa_id=? AND orden_id=?), fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, item.EmpresaID, item.OrdenID, item.EmpresaID, item.OrdenID); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
 	return id, nil
 }
 
@@ -634,6 +782,10 @@ func ListEmpresaProduccionConsumos(dbConn *sql.DB, empresaID, ordenID int64, lim
 }
 
 func RegistrarEmpresaProduccionCalidad(dbConn *sql.DB, item EmpresaProduccionCalidad) (int64, error) {
+	return RegistrarEmpresaProduccionCalidadContext(context.Background(), dbConn, item)
+}
+
+func RegistrarEmpresaProduccionCalidadContext(ctx context.Context, dbConn *sql.DB, item EmpresaProduccionCalidad) (int64, error) {
 	if err := EnsureEmpresaProduccionMRPSchema(dbConn); err != nil {
 		return 0, err
 	}
@@ -641,13 +793,27 @@ func RegistrarEmpresaProduccionCalidad(dbConn *sql.DB, item EmpresaProduccionCal
 	if item.EmpresaID <= 0 || item.OrdenID <= 0 {
 		return 0, errors.New("orden_id es obligatorio")
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_produccion_calidad (empresa_id,orden_id,resultado,checklist_json,cantidad_aprobada,cantidad_rechazada,responsable,observaciones) VALUES (?,?,?,?,?,?,?,?)`,
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	var exists int
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT 1 FROM empresa_produccion_ordenes WHERE empresa_id=? AND id=? FOR UPDATE`, item.EmpresaID, item.OrdenID).Scan(&exists); err != nil {
+		return 0, err
+	}
+	id, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_produccion_calidad (empresa_id,orden_id,resultado,checklist_json,cantidad_aprobada,cantidad_rechazada,responsable,observaciones) VALUES (?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.OrdenID, item.Resultado, item.ChecklistJSON, item.CantidadAprobada, item.CantidadRechazada, item.Responsable, item.Observaciones)
 	if err != nil {
 		return 0, err
 	}
 	if item.Resultado == "aprobado" {
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_produccion_ordenes SET cantidad_producida=?, estado='cerrada', fecha_cierre=CAST(CURRENT_TIMESTAMP AS TEXT), fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, item.CantidadAprobada, item.EmpresaID, item.OrdenID)
+		if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_produccion_ordenes SET cantidad_producida=?, estado='cerrada', fecha_cierre=CAST(CURRENT_TIMESTAMP AS TEXT), fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, item.CantidadAprobada, item.EmpresaID, item.OrdenID); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
 	}
 	return id, nil
 }
@@ -706,9 +872,21 @@ func GenerarEmpresaProduccionMRPPlan(dbConn *sql.DB, empresaID int64, periodo, u
 	if err != nil {
 		return nil, err
 	}
-	_, _ = ExecCompat(dbConn, `UPDATE empresa_produccion_mrp_plan SET estado='reemplazado' WHERE empresa_id=? AND periodo=? AND estado='borrador'`, empresaID, periodo)
+	ctx := context.Background()
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_produccion_mrp_plan SET estado='reemplazado' WHERE empresa_id=? AND periodo=? AND estado='borrador'`, empresaID, periodo); err != nil {
+		return nil, err
+	}
 	for _, rec := range recetas {
-		demanda := produccionMRPDemandForReceta(dbConn, empresaID, rec.ID)
+		var demanda float64
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(SUM(CASE WHEN cantidad_planificada > COALESCE(cantidad_producida,0) THEN cantidad_planificada - COALESCE(cantidad_producida,0) ELSE 0 END),0) FROM empresa_produccion_ordenes WHERE empresa_id=? AND receta_id=? AND estado IN ('borrador','programada','en_proceso','calidad')`, empresaID, rec.ID).Scan(&demanda); err != nil {
+			return nil, err
+		}
+		demanda = roundQtyProduccion(math.Max(0, demanda))
 		if demanda <= 0 {
 			continue
 		}
@@ -718,28 +896,27 @@ func GenerarEmpresaProduccionMRPPlan(dbConn *sql.DB, empresaID int64, periodo, u
 		}
 		stockSeguridad := roundQtyProduccion(demanda * 0.15)
 		sugerida := math.Max(0, demanda+stockSeguridad)
-		_, err := ExecCompat(dbConn, `INSERT INTO empresa_produccion_mrp_plan (empresa_id,producto_id,producto_nombre,periodo,demanda_estimada,stock_actual,stock_seguridad,requerido_bruto,disponible_proyectado,cantidad_sugerida_compra,cantidad_sugerida_producir,origen,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		_, err := execTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_produccion_mrp_plan (empresa_id,producto_id,producto_nombre,periodo,demanda_estimada,stock_actual,stock_seguridad,requerido_bruto,disponible_proyectado,cantidad_sugerida_compra,cantidad_sugerida_producir,origen,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 			empresaID, rec.ProductoTerminadoID, rec.ProductoTerminadoNombre, periodo, demanda, 0, stockSeguridad, demanda, -sugerida, 0, sugerida, "ordenes_abiertas", "borrador", usuario)
 		if err != nil {
 			return nil, err
 		}
-		componentes, compErr := ListEmpresaProduccionComponentes(dbConn, empresaID, rec.ID)
-		if compErr != nil {
-			return nil, compErr
-		}
-		for _, comp := range componentes {
+		for _, comp := range rec.Componentes {
 			if comp.ProductoNombre == "" || comp.Cantidad <= 0 {
 				continue
 			}
 			requerido := roundQtyProduccion((comp.Cantidad * demanda / base) * (1 + comp.MermaPorcentaje/100))
 			stockComponente := roundQtyProduccion(requerido * 0.10)
 			compra := math.Max(0, requerido+stockComponente)
-			_, err := ExecCompat(dbConn, `INSERT INTO empresa_produccion_mrp_plan (empresa_id,producto_id,producto_nombre,periodo,demanda_estimada,stock_actual,stock_seguridad,requerido_bruto,disponible_proyectado,cantidad_sugerida_compra,cantidad_sugerida_producir,origen,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			_, err := execTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_produccion_mrp_plan (empresa_id,producto_id,producto_nombre,periodo,demanda_estimada,stock_actual,stock_seguridad,requerido_bruto,disponible_proyectado,cantidad_sugerida_compra,cantidad_sugerida_producir,origen,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 				empresaID, comp.ProductoID, comp.ProductoNombre, periodo, demanda, 0, stockComponente, requerido, -compra, compra, 0, "componentes:"+rec.Codigo, "borrador", usuario)
 			if err != nil {
 				return nil, err
 			}
 		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 	return ListEmpresaProduccionMRPPlan(dbConn, empresaID, periodo, 300)
 }
@@ -1054,6 +1231,49 @@ func materializeProduccionConsumosFromReceta(dbConn *sql.DB, empresaID, ordenID,
 		cantidad := roundQtyProduccion((c.Cantidad * cantidadOrden / base) * (1 + c.MermaPorcentaje/100))
 		_, err := RegistrarEmpresaProduccionConsumo(dbConn, EmpresaProduccionConsumo{EmpresaID: empresaID, OrdenID: ordenID, ProductoID: c.ProductoID, ProductoNombre: c.ProductoNombre, CantidadPlanificada: cantidad, CantidadConsumida: 0, CostoUnitario: c.CostoUnitario, Merma: roundQtyProduccion(cantidad - (c.Cantidad * cantidadOrden / base)), UsuarioCreador: user})
 		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func materializeProduccionConsumosFromRecetaTx(ctx context.Context, tx *sql.Tx, empresaID, ordenID, recetaID int64, cantidadOrden float64, user string) error {
+	var base float64
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(cantidad_base,1) FROM empresa_produccion_recetas WHERE empresa_id=? AND id=?`, empresaID, recetaID).Scan(&base); err != nil {
+		return err
+	}
+	if base <= 0 {
+		base = 1
+	}
+	rows, err := queryTxSQLCompatContext(ctx, tx, `SELECT COALESCE(producto_id,0),COALESCE(producto_nombre,''),COALESCE(cantidad,0),COALESCE(costo_unitario,0),COALESCE(merma_porcentaje,0) FROM empresa_produccion_receta_componentes WHERE empresa_id=? AND receta_id=? ORDER BY orden,id`, empresaID, recetaID)
+	if err != nil {
+		return err
+	}
+	type component struct {
+		productID                int64
+		name                     string
+		quantity, cost, wastePct float64
+	}
+	components := make([]component, 0)
+	for rows.Next() {
+		var c component
+		if err := rows.Scan(&c.productID, &c.name, &c.quantity, &c.cost, &c.wastePct); err != nil {
+			rows.Close()
+			return err
+		}
+		components = append(components, c)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, c := range components {
+		quantity := roundQtyProduccion((c.quantity * cantidadOrden / base) * (1 + c.wastePct/100))
+		waste := roundQtyProduccion(quantity - (c.quantity * cantidadOrden / base))
+		if _, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_produccion_consumos (empresa_id,orden_id,producto_id,producto_nombre,cantidad_planificada,cantidad_consumida,costo_unitario,costo_total,lote_codigo,merma,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, empresaID, ordenID, c.productID, c.name, quantity, 0, c.cost, 0, "", waste, user); err != nil {
 			return err
 		}
 	}

@@ -1,7 +1,14 @@
 # Runbook: reportes programados y exportaciones contables
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Consistencia de formatos no demuestra exactitud de datos maestros ni aceptación contable. Ejecutar programación puede persistir y enviar según configuración.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Sintomas cubiertos
 
@@ -73,3 +80,8 @@ Aplica al modulo empresarial de reportes sobre plantillas, programaciones, ejecu
 ## Runbooks relacionados
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md`
+## Fuentes y aceptación de la revisión
+
+[contrato_reportes_contables_financieros_y_exportacion_multiformato.md](../contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md), [reportes_programacion.go](../../../backend/handlers/reportes_programacion.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

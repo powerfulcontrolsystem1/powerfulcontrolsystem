@@ -228,6 +228,8 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			}},
 			{Version: "20260831-003-vida-price-history-ai-v1", Description: "personal price history barcode captures and AI invoice line items", Body: empresaVidaPriceHistorySchemaFingerprint, Apply: applyEmpresaVidaPriceHistorySchemaTx},
 			{Version: "20260901-001-retire-vertical-modules-v1", Description: "remove retired vertical module tables and references", Body: empresaVerticalModulesDecommissionFingerprint, Apply: applyEmpresaVerticalModulesDecommissionTx},
+			{Version: "20260905-001-vida-reports-reminders-v1", Description: "filtered personal reports and opt-in email WhatsApp subscription reminders", Body: empresaVidaReportsNotificationsSchemaFingerprint, Apply: applyEmpresaVidaReportsNotificationsSchemaTx},
+			{Version: "20260906-001-queue-capacity-business-v1", Description: "fair tenant queue service state and operational queue indexes", Body: queueCapacityBusinessSchemaFingerprint, Apply: applyQueueCapacityBusinessSchemaTx},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
@@ -307,6 +309,18 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Description: "durable payment checkout and post-effect idempotency",
 				Body:        paymentIdempotencySchemaFingerprint,
 				Apply:       applyPaymentIdempotencySchemaTx,
+			},
+			{
+				Version:     "20260905-002-empresa-rate-limit-v1",
+				Description: "shared tenant API rate limit across application replicas",
+				Body:        empresaRateLimitSchemaFingerprint,
+				Apply:       applyEmpresaRateLimitSchemaTx,
+			},
+			{
+				Version:     "20260906-001-queue-capacity-super-v1",
+				Description: "configurable independent queue lanes and saturation thresholds",
+				Body:        queueCapacitySuperSchemaFingerprint,
+				Apply:       applyQueueCapacitySuperSchemaTx,
 			},
 		}, nil
 	default:

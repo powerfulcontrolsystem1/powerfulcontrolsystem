@@ -111,7 +111,7 @@ func EmpresaWMSHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				payload.EmpresaID = empresaID
 				payload.UsuarioCreador = usuario
-				id, err := dbpkg.UpsertEmpresaWMSOrden(dbEmp, payload)
+				id, err := dbpkg.UpsertEmpresaWMSOrdenContext(r.Context(), dbEmp, payload)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -125,7 +125,10 @@ func EmpresaWMSHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				payload.EmpresaID = empresaID
-				id, err := dbpkg.CreateEmpresaWMSItem(dbEmp, payload, usuario)
+				payload.CantidadPickeada = 0
+				payload.CantidadEmpacada = 0
+				payload.Estado = "pendiente"
+				id, err := dbpkg.CreateEmpresaWMSItemContext(r.Context(), dbEmp, payload, usuario)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -146,7 +149,7 @@ func EmpresaWMSHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if payload.ID <= 0 {
 					payload.ID = int64Query(r, "id")
 				}
-				if err := dbpkg.ActualizarEmpresaWMSItemAvance(dbEmp, empresaID, payload.ID, payload.CantidadPickeada, payload.CantidadEmpacada, payload.Estado, usuario); err != nil {
+				if err := dbpkg.ActualizarEmpresaWMSItemAvanceContext(r.Context(), dbEmp, empresaID, payload.ID, payload.CantidadPickeada, payload.CantidadEmpacada, payload.Estado, usuario); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
@@ -160,7 +163,7 @@ func EmpresaWMSHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				payload.EmpresaID = empresaID
 				payload.UsuarioCreador = usuario
-				id, err := dbpkg.UpsertEmpresaWMSDespacho(dbEmp, payload)
+				id, err := dbpkg.UpsertEmpresaWMSDespachoContext(r.Context(), dbEmp, payload)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return

@@ -1,7 +1,16 @@
 # Carta publica de productos y precios
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La carta es una proyección pública de catálogo y reutiliza venta pública; no inicia pedidos o pagos. La administración requiere permiso de la página y acceso al inventario aplicables.
+- La publicación de Calipso y sus semillas en mayo son antecedentes fechados. No indican configuración actual ni autorizan volver a sembrar esa empresa.
+- El QR contiene la URL configurada; debe verificarse destino/tenant y legibilidad de impresión, no inferirlos del botón de exportación.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-05
-Estado: vigente
 
 ## Actualizacion 2026-05-05
 
@@ -68,7 +77,7 @@ La configuracion y los productos publicados usan las tablas existentes del modul
 
 El menu `linkCartaProductosPublica` queda registrado dentro del modulo independiente `venta_publica`, porque la publicacion externa comparte el contrato administrativo de venta publica. La pantalla envia `perm_page=linkCartaProductosPublica` en sus llamadas administrativas para que la anulacion por pagina del rol aplique a la carta y no a toda la venta publica. Tambien consulta inventario para listar productos activos, asi que el rol debe conservar lectura/consulta de inventario cuando administre productos de la carta.
 
-## Publicacion operativa Motel Calipso
+## Antecedente de publicación del 2026-05-05 (no procedimiento vigente)
 
 Datos semilla aplicados en empresa `7`:
 
@@ -77,7 +86,7 @@ Datos semilla aplicados en empresa `7`:
 - Items publicados de ejemplo: decoracion de habitacion, noche romantica, combo bebidas y snacks, kit de aseo premium, desayuno en habitacion y POS Motel Calipso.
 - Publicaciones de red social: `POS y carta publica de Motel Calipso` y `Experiencias Calipso disponibles en linea`.
 
-La operacion se sembro de forma idempotente con `backend/tmp_tools/seed_motel_calipso_publicacion`, para poder repetir la publicacion sin duplicar registros.
+El antecedente menciona la herramienta temporal `backend/tmp_tools/seed_motel_calipso_publicacion`. No se usa como procedimiento vigente ni se infiere que siga disponible.
 
 ## Pruebas
 
@@ -113,3 +122,9 @@ for (const file of ['web/administrar_empresa/carta_productos_publica.html','web/
 }
 '@ | & 'C:\Users\ivanm\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' -
 ```
+
+## Fuentes y aceptación de la revisión
+
+[venta_publica.go](../backend/handlers/venta_publica.go), [carta_productos_publica.html](../web/administrar_empresa/carta_productos_publica.html), [visualizar_productos_y_precios_publico.html](../web/visualizar_productos_y_precios_publico.html), [main.go](../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

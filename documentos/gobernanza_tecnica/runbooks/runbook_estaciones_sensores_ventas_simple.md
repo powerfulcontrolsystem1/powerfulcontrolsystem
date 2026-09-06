@@ -1,7 +1,15 @@
 # Runbook: estaciones, sensores y carrito unificado por estacion
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- reset_items inicia una nueva sesión: no usar para ocultar un cobro incierto. Consultar la operación original y su trazabilidad primero.
+- Para Raspberry por túnel revisar el contrato de domótica, no enviar heartbeat legado indiscriminadamente.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Sintomas cubiertos
 
@@ -56,7 +64,7 @@ Aplica al flujo `configuracion_de_estaciones -> estaciones -> carrito_de_compras
 5. si `pagar_estacion` falla, revisar primero metodo de pago, referencia minima y restricciones de configuracion operativa del rol.
 6. si el sensor no se refleja, validar que el dispositivo este ligado a la misma estacion, que `last_state` sea un estado activo reconocido y que `last_seen` no este desactualizado.
 7. si hay actividad fisica pero no cambia `last_seen`, revisar el heartbeat en `/api/public/sensor_puertas?action=heartbeat` y el estado del dispositivo en `empresa_sensor_puertas_devices`.
-8. si no se generaron metricas o documento, verificar que el cierre haya llegado a `pagar_estacion`, que el carrito haya quedado en `venta_pagada` y que no existan errores de autorreparacion PostgreSQL o configuracion avanzada legacy en logs.
+8. si no se generaron metricas o documento, verificar que el cierre haya llegado a `pagar_estacion`, que el carrito haya quedado en `venta_pagada` y que no existan errores de esquema PostgreSQL que deba resolver el migrador o configuracion avanzada legacy en logs.
 9. si la correccion post-cobro no aparece, revisar `anular_cierre_parcial`, la auditoria y la tabla `empresa_ventas_estacion_metricas` para el mismo `carrito_id`.
 
 ## Validacion posterior
@@ -76,3 +84,8 @@ Aplica al flujo `configuracion_de_estaciones -> estaciones -> carrito_de_compras
 
 - `ADR-0001-frontera-multiempresa-empresa-id.md`
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+## Fuentes y aceptación de la revisión
+
+[contrato_estaciones_sensores_ventas_simple.md](../contratos/contrato_estaciones_sensores_ventas_simple.md), [domotica_raspberry_tunnel.md](../../domotica_raspberry_tunnel.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

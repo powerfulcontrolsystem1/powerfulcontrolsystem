@@ -1,7 +1,14 @@
 # Runbook: cierre de periodo y conciliacion bancaria
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- No ampliar tolerancias para ocultar diferencias. Reapertura/ajuste requieren evidencia aprobada y no sustituyen la conciliación bancaria real.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Sintomas cubiertos
 
@@ -69,3 +76,8 @@ Aplica al modulo financiero empresarial para periodos contables, movimientos int
 ## Runbooks relacionados
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md`
+## Fuentes y aceptación de la revisión
+
+[contrato_conciliacion_bancaria_y_cierre_periodo_contable.md](../contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md), [finanzas.go](../../../backend/db/finanzas.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

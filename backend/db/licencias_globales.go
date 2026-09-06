@@ -43,7 +43,7 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 			Codigo:                 LicenciaCodigoTrial1DiaGlobal,
 			Nombre:                 "1 dia de prueba",
 			Descripcion:            "Licencia de prueba de 1 dia para validar pagos, activacion y operacion real antes de contratar un plan mensual o anual.",
-			Valor:                  1000,
+			Valor:                  5000,
 			DuracionDias:           1,
 			MaxDocumentosMensuales: 250,
 			MaxCajasSimultaneas:    0,

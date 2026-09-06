@@ -1,7 +1,16 @@
 # Contrato tecnico: interoperabilidad documental contable y fiscal externa
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El estado operativo emitida y un registro de repositorio no acreditan aceptación DIAN; aplicar el contrato fiscal por familia.
+- Las rutas genéricas de nota crédito/débito no conceden emisión: la anulación total tiene una acción especializada desde factura aceptada.
+- Validar referencias de compras no prueba recepción física ni asiento conciliado. Un hash suministrado no demuestra integridad del archivo sin recalcularlo.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -235,3 +244,8 @@ Mensajes observables relevantes:
 
 - `ADR-0001-frontera-multiempresa-empresa-id.md`
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+## Fuentes y aceptación de la revisión
+
+[compras.go](../../../backend/handlers/compras.go), [facturacion_electronica.go](../../../backend/handlers/facturacion_electronica.go), [documentos_transaccionales.go](../../../backend/db/documentos_transaccionales.go), [contrato_facturacion_electronica_y_documentos_transaccionales.md](contrato_facturacion_electronica_y_documentos_transaccionales.md), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

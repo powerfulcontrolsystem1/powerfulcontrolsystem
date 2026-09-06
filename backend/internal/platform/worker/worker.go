@@ -30,6 +30,7 @@ type Runner struct {
 	WorkerID    string
 	Poll        time.Duration
 	Batch       int
+	Concurrency int
 	Lease       time.Duration
 	Handlers    map[string]HandlerSpec
 	BeforeBatch func(context.Context) error
@@ -48,6 +49,9 @@ func (r *Runner) Run(ctx context.Context) error {
 	}
 	if r.Batch < 1 || r.Batch > 100 {
 		r.Batch = 20
+	}
+	if r.Concurrency < 1 || r.Concurrency > 32 {
+		r.Concurrency = 4
 	}
 	if r.Lease < 30*time.Second || r.Lease > 30*time.Minute {
 		r.Lease = 5 * time.Minute
@@ -91,11 +95,31 @@ func (r *Runner) runBatch(ctx context.Context) error {
 	if err != nil || len(jobs) == 0 {
 		return err
 	}
-	for _, job := range jobs {
-		if err := r.runJob(ctx, job); err != nil {
-			log.Printf("async worker job retry scheduled: kind=%s version=%d job_id=%d err=%v", job.Kind, job.Version, job.ID, err)
-		}
+	workerCount := r.Concurrency
+	if workerCount < 1 {
+		workerCount = 1
 	}
+	if workerCount > len(jobs) {
+		workerCount = len(jobs)
+	}
+	jobCh := make(chan dbpkg.AsyncJob)
+	var workers sync.WaitGroup
+	workers.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			defer workers.Done()
+			for job := range jobCh {
+				if err := r.runJob(ctx, job); err != nil {
+					log.Printf("async worker job retry scheduled: kind=%s version=%d job_id=%d err=%v", job.Kind, job.Version, job.ID, err)
+				}
+			}
+		}()
+	}
+	for _, job := range jobs {
+		jobCh <- job
+	}
+	close(jobCh)
+	workers.Wait()
 	return nil
 }
 

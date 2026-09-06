@@ -1,7 +1,16 @@
 # Centros de costo y rentabilidad
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El handler expone dashboard, centros, reglas, presupuestos y movimientos; las escrituras de maestro/reglas/presupuesto admiten POST/PUT.
+- Un maestro de reglas de imputación no acredita que todas las operaciones origen las apliquen. La rentabilidad depende de los movimientos y centro_costo realmente cargados.
+- Los roles efectivos se consultan en empresa_permisos.go y sus overrides; los ejemplos de la matriz no garantizan acceso de una cuenta concreta.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
-Estado: implementado
 
 ## Objetivo
 
@@ -69,3 +78,9 @@ La matriz base lo trata como modulo financiero/contable:
 
 - `go test ./... -count=1` ejecutado en `backend/`.
 - Pruebas unitarias nuevas para normalizacion y agregacion de dashboard en `backend/db/centros_costo_test.go`.
+
+## Fuentes y aceptación de la revisión
+
+[centros_costo.go](../backend/handlers/centros_costo.go), [centros_costo.go](../backend/db/centros_costo.go), [centros_costo_test.go](../backend/db/centros_costo_test.go), [centros_costo.html](../web/administrar_empresa/centros_costo.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

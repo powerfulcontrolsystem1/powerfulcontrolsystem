@@ -4542,20 +4542,40 @@ func processFacturacionRetryQueueContextWithScope(ctx context.Context, dbEmp, db
 // empresas que tengan reintentos fiscales vencidos. El bloqueo por empresa
 // evita duplicar transmisiones con una operacion manual concurrente.
 func RunFacturacionElectronicaRetriesScheduled(ctx context.Context, dbEmp, dbSuper *sql.DB, tenantLimit, documentLimit int) error {
+	return RunFacturacionElectronicaRetriesScheduledShard(ctx, dbEmp, dbSuper, tenantLimit, documentLimit, 0, 1)
+}
+
+// RunFacturacionElectronicaRetriesScheduledShard processes one disjoint tenant
+// shard. A failure in one company is recorded but does not block the remaining
+// companies selected for the same cycle.
+func RunFacturacionElectronicaRetriesScheduledShard(ctx context.Context, dbEmp, dbSuper *sql.DB, tenantLimit, documentLimit, shardIndex, shardCount int) error {
 	if dbEmp == nil {
 		return fmt.Errorf("base de datos de empresa no disponible")
 	}
-	empresaIDs, err := dbpkg.ListFacturacionElectronicaRetryEmpresaIDsDueContext(ctx, dbEmp, tenantLimit)
+	empresaIDs, err := dbpkg.ListFacturacionElectronicaRetryEmpresaIDsDueShardContext(ctx, dbEmp, tenantLimit, shardIndex, shardCount)
 	if err != nil {
 		return err
 	}
+	var firstErr error
+	failures := 0
 	for _, empresaID := range empresaIDs {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if _, err := processFacturacionRetryQueueContext(ctx, dbEmp, dbSuper, empresaID, documentLimit, "sistema.pcs-worker"); err != nil {
-			return fmt.Errorf("empresa_id %d: %w", empresaID, err)
+		_, processErr := processFacturacionRetryQueueContext(ctx, dbEmp, dbSuper, empresaID, documentLimit, "sistema.pcs-worker")
+		if markErr := dbpkg.MarkQueueTenantServedContext(ctx, dbEmp, "facturacion_electronica", empresaID); markErr != nil {
+			log.Printf("[facturacion_queue] no se pudo rotar empresa_id=%d shard=%d/%d error_type=%T", empresaID, shardIndex, shardCount, markErr)
 		}
+		if processErr != nil {
+			failures++
+			if firstErr == nil {
+				firstErr = fmt.Errorf("empresa_id %d: %w", empresaID, processErr)
+			}
+			log.Printf("[facturacion_queue] empresa fallida empresa_id=%d shard=%d/%d error_type=%T", empresaID, shardIndex, shardCount, processErr)
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("cola fiscal shard %d/%d termino con %d empresa(s) fallidas; primera: %w", shardIndex, shardCount, failures, firstErr)
 	}
 	return nil
 }

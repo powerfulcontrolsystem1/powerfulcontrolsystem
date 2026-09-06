@@ -1,12 +1,20 @@
 # ADR 106 - fuente canonica de cuentas por pagar de proveedores
 
-Estado: aceptada para implementacion P0; `NO-GO` para produccion hasta cerrar
+Estado: Vigente. Responsable: Ingeniería backend y datos. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La fuente canónica de nuevas CxP ya es Finanzas; la tabla contable antigua queda para lectura y conciliación.
+- La decisión persiste aunque Plan 106 sea histórico; los pendientes de conciliación y aceptación siguen sin quedar acreditados por esta revisión.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 la conciliacion, staging y pruebas indicadas en el Plan 106.
 
 ## Decision
 
 `empresa_cuentas_por_pagar` y la ruta
-`/api/empresa/finanzas/cuentas_pagar` son la fuente canonica futura de CxP por
+`/api/empresa/finanzas/cuentas_pagar` son la fuente canónica de nuevas CxP por
 empresa. Los nuevos abonos se registran mediante `empresa_cxp_pagos`, que
 guarda la asignacion explicita, el movimiento financiero y un evento outbox en
 una transaccion, con idempotencia por hash de clave y aislamiento por
@@ -60,3 +68,9 @@ transaccion comun.
    prueba visual de los flujos y validacion real controlada segun Plan 106.
 5. Permisos separados de proponer, aprobar, pagar, conciliar, ajustar y
    reversar; ningun pago bancario real queda habilitado por este ADR.
+
+## Fuentes y aceptación de la revisión
+
+[contabilidad_colombia_avanzada.go](../../backend/db/contabilidad_colombia_avanzada.go), [finanzas.go](../../backend/handlers/finanzas.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../requisitos/especificacion_y_trazabilidad.md)).

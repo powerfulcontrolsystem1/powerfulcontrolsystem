@@ -11,7 +11,10 @@ const (
 	defaultEmpresaImpresoraFormato      = "pos"
 	defaultEmpresaImpresoraTipoConexion = "red"
 	DefaultEmpresaPOS80PrinterCode      = "POS_80MM"
+	empresaPrinterQueueCapacityLockNS   = int64(0x5052494e) // PRIN
 )
+
+var ErrEmpresaPrinterQueueCapacity = errors.New("printer queue capacity reached")
 
 var DefaultEmpresaPOS80Funcionalidades = []string{"general", "corte_caja", "turno_reporte", "cajon_monedero"}
 
@@ -1169,6 +1172,13 @@ func ListEmpresaImpresoraCola(dbConn *sql.DB, empresaID int64, estado string, li
 
 // CrearEmpresaImpresoraTrabajo encola un documento para que lo procese el agente local.
 func CrearEmpresaImpresoraTrabajo(dbConn *sql.DB, payload EmpresaImpresoraTrabajo) (int64, error) {
+	return CrearEmpresaImpresoraTrabajoConCapacidad(dbConn, payload, 0)
+}
+
+// CrearEmpresaImpresoraTrabajoConCapacidad serializes the active-count check
+// per tenant. Reaching the cap rejects only that company's new print work and
+// cannot consume another tenant's queue.
+func CrearEmpresaImpresoraTrabajoConCapacidad(dbConn *sql.DB, payload EmpresaImpresoraTrabajo, maxPendingPerTenant int64) (int64, error) {
 	if payload.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id requerido")
 	}
@@ -1208,7 +1218,7 @@ func CrearEmpresaImpresoraTrabajo(dbConn *sql.DB, payload EmpresaImpresoraTrabaj
 		}
 	}
 
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_impresoras_cola (
+	query := `INSERT INTO empresa_impresoras_cola (
 		empresa_id,
 		estacion_id,
 		agente_id,
@@ -1233,7 +1243,8 @@ func CrearEmpresaImpresoraTrabajo(dbConn *sql.DB, payload EmpresaImpresoraTrabaj
 		usuario_creador
 	) VALUES (
 		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', 0, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?
-	)`,
+	)`
+	args := []interface{}{
 		payload.EmpresaID,
 		payload.EstacionID,
 		payload.AgenteID,
@@ -1252,7 +1263,35 @@ func CrearEmpresaImpresoraTrabajo(dbConn *sql.DB, payload EmpresaImpresoraTrabaj
 		payload.MaxIntentos,
 		payload.MetadataJSON,
 		payload.UsuarioCreador,
-	)
+	}
+	if maxPendingPerTenant <= 0 {
+		return insertSQLCompat(dbConn, query, args...)
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	lockID := (empresaPrinterQueueCapacityLockNS << 32) | (payload.EmpresaID & 0xffffffff)
+	if _, err := execTxSQLCompat(tx, `SELECT pg_advisory_xact_lock(?)`, lockID); err != nil {
+		return 0, err
+	}
+	var active int64
+	if err := queryRowTxSQLCompat(tx, `SELECT COUNT(*) FROM empresa_impresoras_cola
+		WHERE empresa_id=? AND COALESCE(estado,'pendiente') IN ('pendiente','tomado')`, payload.EmpresaID).Scan(&active); err != nil {
+		return 0, err
+	}
+	if active >= maxPendingPerTenant {
+		return 0, fmt.Errorf("%w: empresa_id=%d active=%d limit=%d", ErrEmpresaPrinterQueueCapacity, payload.EmpresaID, active, maxPendingPerTenant)
+	}
+	id, err := insertTxSQLCompat(tx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 // TomarEmpresaImpresoraTrabajos reclama trabajos pendientes para un agente local.

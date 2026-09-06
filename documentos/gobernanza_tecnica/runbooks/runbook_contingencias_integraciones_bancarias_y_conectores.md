@@ -1,7 +1,15 @@
 # Runbook: contingencias de integraciones bancarias y conectores externos
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- sync_manual es una sonda con actualización de metadatos; no importa ni concilia movimientos financieros.
+- GET health_check puede tener efectos externos y persistir estado; revisar autorización antes del probe. La validez sintáctica de vault no acredita resolutor.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Sintomas cubiertos
 
@@ -89,3 +97,8 @@ Acciones cubiertas:
 ## Runbooks relacionados
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md`
+## Fuentes y aceptación de la revisión
+
+[contrato_integraciones_bancarias_y_conectores_externos.md](../contratos/contrato_integraciones_bancarias_y_conectores_externos.md), [modulos_faltantes.go](../../../backend/handlers/modulos_faltantes.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

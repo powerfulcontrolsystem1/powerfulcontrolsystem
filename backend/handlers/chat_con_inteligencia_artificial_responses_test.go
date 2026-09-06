@@ -52,6 +52,26 @@ func TestOpenAIResponsesSendsPseudonymousSafetyIdentifier(t *testing.T) {
 	}
 }
 
+func TestOpenAIResponsesRejectsMissingOrRawSafetyIdentifier(t *testing.T) {
+	called := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		http.Error(w, "unexpected provider call", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	controller := &EmpresaAIChatController{client: server.Client()}
+	model := empresaAIModelDef{Provider: "openai", UpstreamModel: "gpt-test", Endpoint: server.URL + "/v1/responses", apiKeyOverride: "test-only"}
+	for _, unsafeIdentifier := range []string{"", "user@example.com", "pcs-not-hex"} {
+		if _, _, _, err := controller.callOpenAIResponsesWithSystemPrompt(model, "hola", nil, "sistema", nil, nil, nil, unsafeIdentifier); err == nil {
+			t.Fatalf("unsafe safety identifier %q was accepted", unsafeIdentifier)
+		}
+	}
+	if called {
+		t.Fatal("provider was called with an unsafe safety identifier")
+	}
+}
+
 func TestParseOpenAIResponsesFunctionCallsRejectsMalformedArguments(t *testing.T) {
 	valid := []byte(`{"output":[{"type":"function_call","call_id":"call_1","name":"catalog.create_product","arguments":"{}"}]}`)
 	calls, err := parseOpenAIResponsesFunctionCalls(valid)
@@ -130,7 +150,7 @@ func TestOpenAIResponsesContextDeadlineStopsProviderRequest(t *testing.T) {
 	defer cancel()
 	done := make(chan error, 1)
 	go func() {
-		_, _, _, err := controller.callOpenAIResponsesWithSystemPromptContext(ctx, model, "extraer", nil, "sistema", nil, nil, nil)
+		_, _, _, err := controller.callOpenAIResponsesWithSystemPromptContext(ctx, model, "extraer", nil, "sistema", nil, nil, nil, empresaAISafetyIdentifier("test-user"))
 		done <- err
 	}()
 	select {
@@ -170,7 +190,7 @@ func TestOpenAIChatCompletionsContextCancellationStopsProviderRequest(t *testing
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		_, _, _, err := controller.generateResponseWithSystemPromptContext(ctx, model, "consulta", nil, "sistema")
+		_, _, _, err := controller.generateResponseWithSystemPromptContext(ctx, model, "consulta", nil, "sistema", empresaAISafetyIdentifier("test-user"))
 		done <- err
 	}()
 	select {
@@ -211,7 +231,7 @@ func TestGeminiContextCancellationStopsProviderRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		_, _, _, err := controller.generateResponseWithSystemPromptContext(ctx, model, "consulta", nil, "sistema")
+		_, _, _, err := controller.generateResponseWithSystemPromptContext(ctx, model, "consulta", nil, "sistema", empresaAISafetyIdentifier("test-user"))
 		done <- err
 	}()
 	select {

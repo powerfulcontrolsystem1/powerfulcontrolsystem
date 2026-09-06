@@ -1,7 +1,15 @@
 # Runbook: arranque backend PostgreSQL por tunel local
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El túnel solo cambia transporte; una base remota real sigue siendo real. Pruebas de integración requieren una base PostgreSQL aislada.
+- Comparar nombres/puertos/flags sin imprimir DSN, llaves ni valores privados.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Sintomas cubiertos
 
@@ -27,7 +35,7 @@ Aplica al arranque local del backend cuando la base canonica productiva es Postg
 1. confirmar que el proyecto este operando con `DB_DIALECT=postgres`.
 2. verificar que `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN` existan y apunten inicialmente a `127.0.0.1` o `localhost` si dependen del tunel.
 3. confirmar si `DB_VPS_TUNNEL_ENABLED=1` y si `DB_VPS_LOCAL_PORT` contiene el puerto real esperado.
-4. validar que existan `DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER` y `DB_VPS_SSH_PORT=49222` cuando el tunel se abre desde `scripts/iniciar_servidor.ps1`.
+4. validar que existan `DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER` y `DB_VPS_SSH_PORT con el puerto autorizado` cuando el tunel se abre desde `scripts/iniciar_servidor.ps1`.
 5. comprobar si ya existe un listener local en el puerto del tunel antes de culpar al backend.
 
 ## Causas probables
@@ -45,7 +53,7 @@ Aplica al arranque local del backend cuando la base canonica productiva es Postg
 3. confirmar que `resolveRuntimePostgresDSN` del backend reescribe solo DSN cuyo host sea `127.0.0.1` o `localhost`; si el DSN apunta a otro host, no habra reescritura.
 4. validar que el proceso del backend haya heredado las mismas variables del entorno que usó el script para abrir el tunel.
 5. si el helper de verificacion temporal conecta pero `go run .` falla, comparar el puerto reescrito por el helper con el puerto que realmente ve el backend en su entorno de proceso.
-6. si el problema es SSH, corregir primero `DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER`, `DB_VPS_SSH_PORT=49222`, llave privada o puerto remoto antes de reintentar el arranque.
+6. si el problema es SSH, corregir primero `DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER`, `DB_VPS_SSH_PORT con el puerto autorizado`, llave privada o puerto remoto antes de reintentar el arranque.
 7. una vez restablecido el tunel, volver a iniciar el backend y confirmar que las dos bases `pcs_empresas` y `pcs_superadministrador` abren sin error.
 
 ## Validacion posterior
@@ -62,3 +70,9 @@ Aplica al arranque local del backend cuando la base canonica productiva es Postg
 ## ADRs relacionados
 
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+
+## Fuentes y aceptación de la revisión
+
+[main.go](../../../backend/main.go), [iniciar_servidor.ps1](../../../scripts/iniciar_servidor.ps1).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

@@ -1,44 +1,17 @@
 # Runbook: DIAN set de pruebas y diagnostico oficial
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El set de habilitación es un envío real al ambiente autorizado, no un dry-run. Se exige el objetivo exacto del portal y fuente comercial genuina fuera del set.
+- La nómina no reutiliza el PDF/correo de factura ni su habilitación. Los diagnósticos locales no acreditan acuse oficial.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
-Actualizacion 2026-06-06: `pruebas_dian` y `enviar_set_pruebas` ya no aceptan
-simulacion. El cierre operativo del set requiere envio real al ambiente de
-habilitacion, `ZipKey` y acuse final consultado con `GetStatusZip`.
-
-Actualizacion 2026-06-06: el transporte SOAP oficial DIAN usa WS-Security con
-referencia directa al `BinarySecurityToken`, firma RSA-SHA256, digest SHA-256,
-canonicalizacion exclusiva y timestamp de 60 segundos con precision en
-milisegundos.
-
-Actualizacion 2026-06-18: PCS quedo validado en DIAN produccion. El portal DIAN
-mostro `1PCS2` y `1PCS3` como `Aprobado con notificacion`; `1PCS3` tambien fue
-aceptada por SOAP/WCF `SendBillSync`. El siguiente consecutivo operativo quedo
-en `1PCS4` en esa fecha.
-
-Actualizacion 2026-08-21: la auditoria autenticada de Powerful Control System
-confirmo ambiente produccion, estado DIAN aceptado, rango `1PCS 1-100000` y
-siguiente consecutivo visible `1PCS11`. Tambien comprobo que el despliegue
-publicado aun declaraba siete familias como operativas. El candidato corrige el
-contrato: solo factura, nota credito y nota debito pueden usar el adaptador UBL
-de venta; las demas familias se bloquean antes de cualquier efecto fiscal.
-
-Actualizacion 2026-08-25: la auditoria posterior corrigio ese alcance. La
-factura de venta dispone de adaptador comercial y la nota credito dispone solo
-de la ruta especializada de anulacion total derivada de una factura aceptada.
-Factura libre, nota credito parcial/libre, nota debito, soporte, nomina,
-equivalentes y RADIAN permanecen bloqueados. En PCS se validaron credenciales,
-diagnostico `pre_envio_validable`, `GetNumberingRange` y la factura real `1PCS8`
-con acuse aceptado, CUFE oficial y un unico intento. El candidato adicional
-exige fuente antes de numerar, serializa la anulacion, espera CUDE/acuse
-coincidentes, cierra GET desconocidos y reserva permiso `A` para acciones
-fiscales con efectos.
-
-Actualizacion 2026-08-26: para cierres que solo deben reparar acuses ya
-aceptados se usa `reconciliar_aceptados_local&aplicar=1`. Este modo omite colas
-pendientes/fallidas/enviadas sin acuse antes del despachador y debe comprobarse
-con instantaneas previas y posteriores de intentos y fechas de envio.
+La matriz por familia del [contrato fiscal](../contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md) define el alcance actual. Los folios y acuses fechados anteriores son evidencia histórica; no reutilizar numeración de un ejemplo.
 
 ## Sintomas cubiertos
 
@@ -109,7 +82,7 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 9. Si la empresa usa software `compartido`, confirmar que las referencias compartidas existan y que la empresa aun provea sus propios secretos exigidos por el flujo real.
 10. Si DIAN devuelve `Regla 90`, consultar primero el portal, CUFE/TrackId o historial de acuse original. No marcar el documento como aceptado solo por esa regla.
 11. Si el portal muestra `Aprobado con notificacion`, registrar el documento como aprobado y conservar la notificacion como observacion; `RUT01` no bloqueo `1PCS3`.
-12. Si una prueba directa consumio un folio fuera del flujo documental, adelantar los contadores al siguiente folio antes de permitir nuevas ventas.
+12. Si un folio se consumió fuera del flujo documental, detener nuevas emisiones de ese rango y abrir reconciliación autorizada desde evidencia oficial; no editar contadores a ciegas.
 
 ## Validacion posterior
 
@@ -138,9 +111,7 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 4. Cualquier incidencia debe clasificarse explicitamente en una de estas dos categorias:
    - error de configuracion o datos de la empresa
    - brecha de implementacion del transporte oficial
-5. Nota crédito/débito, documento soporte, nómina, equivalentes, contingencia y
-   RADIAN permanecen sin emisión comercial hasta implementar y probar sus
-   fuentes, anexos técnicos y servicios específicos.
+5. Factura, anulación total, soporte ordinario y nómina ordinaria tienen rutas específicas. Crédito parcial, débito, ajustes, equivalentes y RADIAN permanecen bloqueados; no enviar una familia por el adaptador de otra.
 
 ## Contrato relacionado
 
@@ -150,3 +121,9 @@ Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/d
 
 - `ADR-0001-frontera-multiempresa-empresa-id.md`
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+
+## Fuentes y aceptación de la revisión
+
+[contrato_facturacion_electronica_y_documentos_transaccionales.md](../contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md), [modulos_faltantes.go](../../../backend/handlers/modulos_faltantes.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

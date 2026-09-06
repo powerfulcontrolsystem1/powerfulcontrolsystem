@@ -1,0 +1,1903 @@
+{
+  "schema_version": 1,
+  "review_period": "2026-09-05/2026-09-06",
+  "scope": "Disposición de 138 referencias pendientes al inicio; revisión documental local y clasificación de antecedentes. No certifica ejecución funcional ni producción.",
+  "baseline_count": 138,
+  "dispositions": {
+    "revisado_con_limites": 108,
+    "contrato_maquina_con_guia": 1,
+    "historico_con_sucesor": 28,
+    "evidencia_fechada": 1
+  },
+  "documents": [
+    {
+      "path": ".cursor/AGENTS.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se unifica autoridad y orden de lectura sin requerir extensión de IDE ni procesos adicionales."
+      ],
+      "sources": [
+        "AGENTS.md"
+      ],
+      "sha256_lf": "cdd62526f91d3f714fca0ca9bfa052a2ed646520e2ff20b08f88e402f97b5320"
+    },
+    {
+      "path": ".cursor/README.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se unifica autoridad y orden de lectura sin requerir extensión de IDE ni procesos adicionales."
+      ],
+      "sources": [
+        "AGENTS.md"
+      ],
+      "sha256_lf": "660a5971329ca7392a75c5c454bc4207b07ebca8d9b348a7e75f3b86972cf9ed"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-backend-db/SKILL.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.",
+        "Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/contexto_general_del_sistema.md",
+        "documentos/contexto_codex.md"
+      ],
+      "sha256_lf": "ab0613306d4ad78dc94569e816c42e920d699e84a25bf840ac348d36ffc849c5"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-frontend-ux/SKILL.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.",
+        "Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/contexto_general_del_sistema.md",
+        "documentos/contexto_codex.md"
+      ],
+      "sha256_lf": "2cd173fdf4876a67f296039207abd3aa2ecfa03ff5d71f200cda3222b4e1f256"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-go/SKILL.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.",
+        "Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/contexto_general_del_sistema.md",
+        "documentos/contexto_codex.md"
+      ],
+      "sha256_lf": "41653fbe7bdc266fe13e83dcdabe17dc5c89b4470736c8c30a22c94b177a0859"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-qa-operacion/SKILL.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.",
+        "Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/contexto_general_del_sistema.md",
+        "documentos/contexto_codex.md"
+      ],
+      "sha256_lf": "9f73d55db38e442b0625d9bea6efba1f9cc54ebbcca8e75899f0c46147ac03c1"
+    },
+    {
+      "path": ".cursor/skills/pcs-protocolo-por-modulo/SKILL.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.",
+        "Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/contexto_general_del_sistema.md",
+        "documentos/contexto_codex.md"
+      ],
+      "sha256_lf": "37c9d530126878191af46591060f33591c622f3e7875eb61e9cbdba5945d6e9c"
+    },
+    {
+      "path": ".github/SECRETOS_REQUERIDOS.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Los nombres son un inventario de configuración, nunca valores. E2E requiere cuenta y empresa aisladas autorizadas, no una empresa comercial por defecto.",
+        "Los secretos de producción enumerados para futuro despliegue no prueban que un workflow los consuma. Verificar el YAML y entorno protegido antes de configurarlos."
+      ],
+      "sources": [
+        ".github/workflows/professional-ci.yml",
+        ".github/workflows/e2e-visual.yml"
+      ],
+      "sha256_lf": "d56b09da9363b67d3d5bec1c9b9aee4ceea2c8e0e28df93251a50c070510f710"
+    },
+    {
+      "path": ".github/agents/README.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se elimina la delegación automática contradictoria y se mantiene una única autoridad en AGENTS.md."
+      ],
+      "sources": [
+        "AGENTS.md"
+      ],
+      "sha256_lf": "98b094140845768e795a4927115999cc5ef68bee5c5a44bcd73e94d690421644"
+    },
+    {
+      "path": ".github/agents/agente_backend_db.agent.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.",
+        "Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/contexto_general_del_sistema.md",
+        "documentos/contexto_codex.md"
+      ],
+      "sha256_lf": "4a212b4d7fbcdedaa8fe294231a84ac53db83679844ea951d108ebeb80d830b3"
+    },
+    {
+      "path": ".github/agents/agente_frontend_ux.agent.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.",
+        "Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/contexto_general_del_sistema.md",
+        "documentos/contexto_codex.md"
+      ],
+      "sha256_lf": "7d3b5931fdbbaa1d4c15a107e11feece47b14dcc5cd8f7842b7caaa6d5030c2f"
+    },
+    {
+      "path": ".github/agents/agente_go.agent.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se elimina la delegación automática contradictoria y se mantiene una única autoridad en AGENTS.md."
+      ],
+      "sources": [
+        "AGENTS.md"
+      ],
+      "sha256_lf": "3c30533e1476546856756e7402912a79932d0a16c2a34d6872bbab805d98bbe6"
+    },
+    {
+      "path": ".github/agents/agente_qa_operacion.agent.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.",
+        "Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/contexto_general_del_sistema.md",
+        "documentos/contexto_codex.md"
+      ],
+      "sha256_lf": "91299c8b1fc2ae6c62a1a7ac345bc5684c0fd0377bd4b3074096f3f830ec9409"
+    },
+    {
+      "path": ".github/agents/plantilla_trabajo_por_modulo.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se elimina la delegación automática contradictoria y se mantiene una única autoridad en AGENTS.md."
+      ],
+      "sources": [
+        "AGENTS.md"
+      ],
+      "sha256_lf": "bac5435a6ff46fd03a303b9fd75055f644505563efcefa9e0b922daf8e0d5344"
+    },
+    {
+      "path": ".github/agents/protocolo_delegacion.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se elimina la delegación automática contradictoria y se mantiene una única autoridad en AGENTS.md."
+      ],
+      "sources": [
+        "AGENTS.md"
+      ],
+      "sha256_lf": "73442fcb0bfab9ec8cb77cd4579472e583f6f0ae9308cd02e3787c3c27af227a"
+    },
+    {
+      "path": "deploy/README-compose-platform.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se consolida la documentación de despliegue en documentos/ y se elimina la receta de migración antigua duplicada."
+      ],
+      "sources": [
+        "documentos/docker_vps_operacion.md"
+      ],
+      "sha256_lf": "67d7524e20c1c189b6953622a23901f306dc32824670fa85ea04e1274daaac0c"
+    },
+    {
+      "path": "documentos/activos_fijos_avanzado.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La vista avanzada y el módulo NIIF/fiscal reutilizan las tablas de activos, depreciaciones y eventos; no son dos libros independientes.",
+        "La generación mensual y los eventos requieren verificar duplicados por activo/período, precisión monetaria y pertenencia empresarial antes de aceptar operación real."
+      ],
+      "sources": [
+        "backend/handlers/contabilidad_colombia_avanzada.go",
+        "backend/db/contabilidad_colombia_avanzada.go",
+        "backend/db/contabilidad_colombia_avanzada_test.go",
+        "web/administrar_empresa/contabilidad_colombia_avanzada.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "cc0a2a75ff2b6cd231c9d4641af93b5afdbcbda325e905277284570f4481681f"
+    },
+    {
+      "path": "documentos/activos_fijos_niif_fiscal.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El handler contempla GET de activos/libro, depreciaciones y eventos; las escrituras admiten POST y PUT.",
+        "Los valores NIIF/fiscales son registros y cálculos del módulo; la guía no certifica la corrección tributaria de una empresa ni sus políticas de depreciación."
+      ],
+      "sources": [
+        "backend/handlers/activos_fijos_niif_fiscal.go",
+        "web/administrar_empresa/activos_fijos_niif_fiscal.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "e3335c82c31516164e86ad43703ccb981deeed59f8f280337c84741581bc0e20"
+    },
+    {
+      "path": "documentos/aiu_construccion.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La acción generar_factura registra una factura AIU, enlaza la venta central y solicita un documento local con estado emitida; ese estado no demuestra transmisión, CUFE ni acuse DIAN.",
+        "Existe una brecha entre la descripción histórica de factura electrónica AIU y la aceptación fiscal exigida. Mantener ese flujo fuera de cualquier promesa fiscal hasta probar fuente, transporte y acuse específicos.",
+        "Los modelos y porcentajes de cálculo son configuraciones técnicas del código; su aplicabilidad contractual/tributaria requiere validación de la empresa."
+      ],
+      "sources": [
+        "backend/handlers/aiu_construccion.go",
+        "backend/db/aiu_construccion.go",
+        "backend/db/aiu_construccion_test.go",
+        "web/administrar_empresa/aiu_construccion.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "083057e3d10ef50f6afd40754795eb56d6266390d994e12f41a61106a0420ae6"
+    },
+    {
+      "path": "documentos/alquileres.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La ruta empresarial usa el wrapper Alquileres y conserva contratos, activos, tarifas, mantenimientos y ubicaciones por empresa.",
+        "El enlace del contrato al carrito representa integración local. Saldo cero o carrito marcado pagado no demuestra confirmación de una pasarela; verificar origen del pago y duplicación al reintentar.",
+        "Las ubicaciones GPS almacenadas no prueban seguimiento continuo ni funcionamiento de un dispositivo físico."
+      ],
+      "sources": [
+        "backend/handlers/alquileres.go",
+        "backend/db/alquileres.go",
+        "backend/db/alquileres_test.go",
+        "web/administrar_empresa/alquileres.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "170e632093753a855c5520e1aad7af8c534370bcdc70f99989a0ef77d3c1e990"
+    },
+    {
+      "path": "documentos/api/ayuda_apis.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La API móvil ya incluye fachadas POS/offline/fiscal/notificaciones; consultar la matriz móvil para el alcance completo.",
+        "modelo_preferido conserva compatibilidad del endpoint, pero el servidor impone el modelo global. Un catálogo de protocolos de cámaras/solar no significa adaptador operativo para cada uno."
+      ],
+      "sources": [
+        "backend/main.go",
+        "backend/handlers/mobile_api_v1.go",
+        "backend/handlers/empresa_ia_empresarial.go",
+        "documentos/api/mobile_api_v1.md"
+      ],
+      "sha256_lf": "71a0c56b53a98af5ccfa83c44f3ecf885a30c6e1c4bfe98b493f696d46c86d21"
+    },
+    {
+      "path": "documentos/api/mobile_api_v1.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Disponible significa implementado en la fachada local; no acredita app nativa distribuida ni aceptación de todas las operaciones en producción.",
+        "El YAML conserva varios cuerpos/respuestas resumidos: completar schemas por operación antes de generar un cliente estricto. Inventarios de rutas no sustituyen contratos."
+      ],
+      "sources": [
+        "backend/handlers/mobile_api_v1.go",
+        "backend/handlers/mobile_api_v1_test.go",
+        "backend/db/mobile_api_idempotency.go",
+        "documentos/api/openapi.mobile.v1.yaml"
+      ],
+      "sha256_lf": "4331803afb412b794d7c37c7b14b5ab328d4a26fc52486d34ef8644e4d2e9bbc"
+    },
+    {
+      "path": "documentos/api/openapi.mobile.v1.yaml",
+      "decision": "contrato_maquina_con_guia",
+      "findings": [
+        "Contrato manual v1 preservado; completar schemas donde aún solo hay descripción de respuesta/cuerpo antes de generación estricta de clientes."
+      ],
+      "sources": [
+        "documentos/api/mobile_api_v1.md",
+        "backend/handlers/mobile_api_v1.go"
+      ],
+      "sha256_lf": "d56fd8db23f3ca8e9693d350daf4215e84ad2fc298c7d7a2ecbf84d2053679f0"
+    },
+    {
+      "path": "documentos/arquitectura/adr_106_cxp_fuente_canonica.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La fuente canónica de nuevas CxP ya es Finanzas; la tabla contable antigua queda para lectura y conciliación.",
+        "La decisión persiste aunque Plan 106 sea histórico; los pendientes de conciliación y aceptación siguen sin quedar acreditados por esta revisión."
+      ],
+      "sources": [
+        "backend/db/contabilidad_colombia_avanzada.go",
+        "backend/handlers/finanzas.go"
+      ],
+      "sha256_lf": "5d208009bc2b98538421bea12e1ec5fce1781d6bcc816fa31e05caf3e1680c86"
+    },
+    {
+      "path": "documentos/arquitectura/clasificacion_arbol_plan_105.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Clasificación de un árbol de julio; no describe el árbol actual."
+      ],
+      "sources": [
+        "documentos/desarrollo/incorporacion.md"
+      ],
+      "sha256_lf": "f98cf2d845416c7126e8b40a74dcf61143b4bae4aebf95fa6f3f8fac4246afb9"
+    },
+    {
+      "path": "documentos/arquitectura/matriz_pruebas_tenant_ab_plan_105.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Matriz de aceptación y conteos de julio; conservar casos A/B sin interpretar sus cifras como cobertura actual."
+      ],
+      "sources": [
+        "documentos/calidad/estrategia_verificacion.md"
+      ],
+      "sha256_lf": "a2c0fbcf26ffcadd019e56d88aca95e468151c76ddef13cdd3c960f7fa9b2956"
+    },
+    {
+      "path": "documentos/arquitectura/modularizacion_archivos_gigantes_plan_105.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Medición y propuesta de modularización de julio; repetir medición al planificar una extracción."
+      ],
+      "sources": [
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "a55d5859203efc8efbbc3ff64ebaaec368960ce9e990d21456c93de1172dce37"
+    },
+    {
+      "path": "documentos/arquitectura/normalizacion_documental_plan_105.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Diagnóstico de codificación de julio sustituido como gobierno por el catálogo documental actual."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/marco_documental.md"
+      ],
+      "sha256_lf": "72e52fde01482472af94aa9e58466f2f9575d6e74bc83628c2b1850760f407d6"
+    },
+    {
+      "path": "documentos/arquitectura_modulos_universales.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se conserva el principio de núcleo reutilizable y se retira el catálogo obsoleto de veinte plantillas.",
+        "Las reglas de integración son requisitos de arquitectura a comprobar en cada flujo, no una garantía universal de interoperabilidad."
+      ],
+      "sources": [
+        "backend/db/modulos_plantillas_nuevas.go",
+        "backend/handlers/empresa_plantillas_integracion.go",
+        "documentos/matriz_integracion_plantillas.md"
+      ],
+      "sha256_lf": "ebc958be72e0abd040b9ea896842449cbf15552c4179c4c1c1133b8f54e2d9e4"
+    },
+    {
+      "path": "documentos/carnets_empresariales.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La administración y sus tablas se identifican en código y registro HTTP. La presencia del wrapper no sustituye pruebas negativas con usuario, carnet y plantilla de otro tenant.",
+        "QR, nivel de acceso y estado del carnet son datos de aplicación; no acreditan autorización efectiva de un controlador de acceso físico.",
+        "Documento, salud/contacto de emergencia y fotos requieren minimización, acceso y retención definidos por la organización."
+      ],
+      "sources": [
+        "web/administrar_empresa/carnets.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "17287dd6d8483aed793d9411f9fa9ad12aab5f42939bf0580db648ac4515b4ba"
+    },
+    {
+      "path": "documentos/carta_publica_productos.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La carta es una proyección pública de catálogo y reutiliza venta pública; no inicia pedidos o pagos. La administración requiere permiso de la página y acceso al inventario aplicables.",
+        "La publicación de Calipso y sus semillas en mayo son antecedentes fechados. No indican configuración actual ni autorizan volver a sembrar esa empresa.",
+        "El QR contiene la URL configurada; debe verificarse destino/tenant y legibilidad de impresión, no inferirlos del botón de exportación."
+      ],
+      "sources": [
+        "backend/handlers/venta_publica.go",
+        "web/administrar_empresa/carta_productos_publica.html",
+        "web/visualizar_productos_y_precios_publico.html",
+        "backend/main.go"
+      ],
+      "sha256_lf": "b43e1eab241775dcb0909a1927b47217c8c1d1c449b76c342e4bbafe55593f9b"
+    },
+    {
+      "path": "documentos/centros_costo.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El handler expone dashboard, centros, reglas, presupuestos y movimientos; las escrituras de maestro/reglas/presupuesto admiten POST/PUT.",
+        "Un maestro de reglas de imputación no acredita que todas las operaciones origen las apliquen. La rentabilidad depende de los movimientos y centro_costo realmente cargados.",
+        "Los roles efectivos se consultan en empresa_permisos.go y sus overrides; los ejemplos de la matriz no garantizan acceso de una cuenta concreta."
+      ],
+      "sources": [
+        "backend/handlers/centros_costo.go",
+        "backend/db/centros_costo.go",
+        "backend/db/centros_costo_test.go",
+        "web/administrar_empresa/centros_costo.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "0ab0b1d3743d6b884f78a29aa61e8ba707867c6c505c160d04b35603fbdb0857"
+    },
+    {
+      "path": "documentos/checklist_seguridad_endpoint_multiempresa.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Checklist de aceptación por ruta: presencia de wrapper no demuestra pertenencia de IDs secundarios, atomicidad, integridad de archivo ni permisos de efectos diferidos.",
+        "Usar pruebas negativas A/B y datos aislados; no ejecutar un borrado, importación o backup real por el solo hecho de revisar la lista."
+      ],
+      "sources": [
+        "backend/handlers/empresa_permisos.go",
+        "backend/main_empresa_routes_security_test.go",
+        "AGENTS.md"
+      ],
+      "sha256_lf": "0b41de091f08a71e278e0f17340a4c3b97d1ac307ef0cb7d208551f21e48e4f3"
+    },
+    {
+      "path": "documentos/cierre_fiscal.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Existe administración de períodos/políticas/excepciones y un validador explícito. La búsqueda de ValidarEmpresaCierreFiscalOperacion encuentra su uso en el handler de consulta, no una integración general en cada escritura de ventas/compras/caja.",
+        "La sincronización de períodos contables no equivale a bloqueo transversal. Cada operación debe invocar y probar la regla antes de afirmar que el período impide modificaciones.",
+        "El simulador es diagnóstico; no autoriza ni ejecuta una operación contable o fiscal."
+      ],
+      "sources": [
+        "backend/handlers/cierre_fiscal.go",
+        "backend/db/cierre_fiscal.go",
+        "backend/db/cierre_fiscal_test.go",
+        "web/administrar_empresa/cierre_fiscal.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "d885c0e748961d9159049e315a9c4f0815110bdf53edb72a3b956eaf82cda9e7"
+    },
+    {
+      "path": "documentos/cierre_reparaciones_produccion_seguridad_2026-09-05.md",
+      "decision": "evidencia_fechada",
+      "findings": [
+        "Se conserva evidencia de otro trabajo sin reescribir sus resultados; NO-GO productivo y comprobaciones locales son alcances distintos."
+      ],
+      "sources": [
+        "documentos/estado_actual.md"
+      ],
+      "sha256_lf": "c6c4af98bb4880dcfb0453b8d9a4206024f968f653e656486c6d430d2e5855ed"
+    },
+    {
+      "path": "documentos/cobranza.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Además de simular_envio, el handler vigente permite configurar y ejecutar recordatorios por email/WhatsApp. Los envíos pueden tener efectos externos y se deduplican con registros de envío.",
+        "dry_run cuenta candidatos sin enviar; el contador Enviadas de esa simulación no es entrega al destinatario. Una respuesta sent del adaptador tampoco demuestra lectura del mensaje.",
+        "La cartera canónica sigue en empresa_cuentas_por_cobrar; gestiones y promesas no reemplazan un abono financiero."
+      ],
+      "sources": [
+        "backend/handlers/cobranza.go",
+        "backend/db/cobranza.go",
+        "backend/db/cobranza_test.go",
+        "web/administrar_empresa/cobranza.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "88bb0c9d2616d0a395d0158d771fc8868d42a3c9a970c3d83a79f10f6ae2c573"
+    },
+    {
+      "path": "documentos/comandos_codex.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se retiraron recetas con datos personales/folios reales y se enlazan contratos vigentes.",
+        "Los comandos son interfaces de herramientas, no aprobación de sus efectos. Inventariar target SSH, nombres Compose y dependencias antes de ejecución; Skip no equivale a PASS."
+      ],
+      "sources": [
+        "scripts/rs.ps1",
+        "scripts/sync_to_vps.ps1",
+        "scripts/profesional_preflight.ps1",
+        "tools/docs_catalog.mjs"
+      ],
+      "sha256_lf": "f634de66c1df64008f6917c4385c0ee6c338a1bd877afea6635dd0910beee9b4"
+    },
+    {
+      "path": "documentos/compras_avanzadas.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La ruta incorpora EmpresaPurchasesIdempotentMutation además del wrapper de Compras. El handler vigente contiene requisición, cotización, aprobación y recepción; no publica seed_demo.",
+        "La recepción descrita requiere validación SQL/concurrente del documento completo y de cada ID secundario; los controles locales no equivalen a aceptación sobre una base productiva."
+      ],
+      "sources": [
+        "backend/handlers/compras_avanzadas.go",
+        "backend/db/compras_avanzadas.go",
+        "backend/db/compras_avanzadas_test.go",
+        "web/administrar_empresa/compras_avanzadas.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "d0d8cb9f5b219e13275520bb7d0cfe12340e49b58e7364ae4022d13bed3cba30"
+    },
+    {
+      "path": "documentos/contabilidad_colombia.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El núcleo contempla PUC, terceros, comprobantes, partidas y cierre. Sus libros deben interpretarse desde comprobantes contabilizados, no como certificación de reportes oficiales.",
+        "El worker ya contiene el evento commerce.sale-paid; la integración contable no debe describirse globalmente como inexistente. Su cobertura y conciliación se verifican por operación.",
+        "Factura, nómina y documento soporte tienen adaptadores distintos; no dependen de habilitar un proveedor genérico futuro."
+      ],
+      "sources": [
+        "backend/handlers/contabilidad_colombia.go",
+        "backend/db/contabilidad_colombia.go",
+        "backend/db/contabilidad_colombia_test.go",
+        "web/administrar_empresa/contabilidad_colombia.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go",
+        "backend/cmd/pcs-worker/business_registry.go"
+      ],
+      "sha256_lf": "2f19969418d3a4545facd1de61af8d73ede308200c5a9bec04d3f62ee023eeaa"
+    },
+    {
+      "path": "documentos/contabilidad_colombia_avanzada.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La escritura manual nomina_electronica devuelve 409 nomina_manual_no_permitida. Los datos fiscales se derivan del flujo mensual dedicado, no de campos editables CUNE/estado.",
+        "Las nuevas CxP y abonos a CxP histórica están bloqueados en esta superficie; usar la cuenta canónica de Finanzas y conciliar el legado.",
+        "El documento soporte cuenta con preflight y adaptador dedicado; no se acredita aceptación externa con la presencia del código."
+      ],
+      "sources": [
+        "backend/handlers/contabilidad_colombia_avanzada.go",
+        "backend/db/contabilidad_colombia_avanzada.go",
+        "backend/db/contabilidad_colombia_avanzada_test.go",
+        "web/administrar_empresa/contabilidad_colombia_avanzada.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go",
+        "backend/handlers/dian_documento_soporte.go",
+        "backend/handlers/dian_nomina_electronica.go"
+      ],
+      "sha256_lf": "5791982750495c833bb4272752acb6ea7e58789c727eabc54e039ff871055da3"
+    },
+    {
+      "path": "documentos/crm_ventas_avanzadas.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La superficie crm_avanzado reutiliza CRM unificado y consultas comerciales; scoring/forecast son indicadores calculados, no ventas ni recaudo confirmados.",
+        "Las referencias secundarias y campos controlados por servidor tuvieron correcciones locales posteriores al QA de mayo. La aceptación A/B sigue siendo necesaria."
+      ],
+      "sources": [
+        "backend/handlers/crm_ventas_avanzadas.go",
+        "backend/db/crm_ventas_avanzadas.go",
+        "backend/db/crm_ventas_avanzadas_test.go",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go",
+        "documentos/cierre_reparaciones_produccion_seguridad_2026-09-05.md"
+      ],
+      "sha256_lf": "55a094188501bbfacf027dd9a19f5ce21d34416476cdaeca1881b42ecf5505fc"
+    },
+    {
+      "path": "documentos/declaraciones_tributarias.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El módulo registra y preliquida información parametrizable. Cambiar una declaración a pagada/revisada localmente no demuestra presentación, pago ni aceptación de la autoridad.",
+        "Los calendarios y tasas requieren fuente y vigencia por empresa/jurisdicción; esta revisión describe el código, no recalcula obligaciones legales.",
+        "Las URLs normativas del documento son referencias de consulta; no constituyen validación actual de calendario o tasas."
+      ],
+      "sources": [
+        "backend/handlers/declaraciones_tributarias.go",
+        "backend/db/declaraciones_tributarias.go",
+        "backend/db/declaraciones_tributarias_test.go",
+        "web/administrar_empresa/declaraciones_tributarias.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "63023f40f262ecd18ee562d7f2843dcf13868a2923a65a4bcd199d68db59056d"
+    },
+    {
+      "path": "documentos/deploy_nginx_reverse_proxy_vps.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se separan instrucciones actuales y migraciones históricas; cada intervención remota requiere entorno identificado y evidencia propia."
+      ],
+      "sources": [
+        "deploy/nginx/pcs.conf",
+        "deploy/docker-compose.platform.yml"
+      ],
+      "sha256_lf": "42acfa2831c0de0ad171679c4c968c93f5af380c97ac92944681abb92cac3b78"
+    },
+    {
+      "path": "documentos/descripcion_de_archivos",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Registro mantenido de trazabilidad; sus entradas cronológicas se conservan sin certificar afirmaciones funcionales históricas."
+      ],
+      "sources": [
+        "documentos/catalogo_documental.md",
+        "documentos/diagramas/estructura_del_codigo.md"
+      ],
+      "sha256_lf": "8fd9a7ada25a03a42172808db64fcfc066d0b343df21b751c6f7fc87682e4103"
+    },
+    {
+      "path": "documentos/descripcion_de_modulos",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.",
+        "El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "backend/main.go",
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "d186071df9a08698582c994b74043db5b167228b3dd83a6bd3617e5c1b6cbea0"
+    },
+    {
+      "path": "documentos/descripcion_del_proyecto",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.",
+        "El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "backend/main.go",
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "67182330356c3a069d5d452085c475bbb19c6769c1fc10ed79b5ff9f3e2c168c"
+    },
+    {
+      "path": "documentos/diagramas/diagrama_entidad_relacion.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Vistas conceptuales ilustrativas: relaciones lógicas no garantizan FK físicas, cardinalidad del esquema desplegado ni eficacia del flujo.",
+        "Los visores existentes y manifiestos mantienen sus rutas; la arquitectura actual y el catálogo de migraciones prevalecen sobre estados/tecnologías de dibujos históricos."
+      ],
+      "sources": [
+        "documentos/arquitectura/descripcion_arquitectura.md",
+        "backend/db/platform_migrations.go",
+        "web/js/super_diagramas_data.js"
+      ],
+      "sha256_lf": "0ce138cddebaf49f037ece9639bfbc26c6005bb30619eb80a2999cadec5d57cd"
+    },
+    {
+      "path": "documentos/diagramas/diagramas_sistema_pcs.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Vistas conceptuales ilustrativas: relaciones lógicas no garantizan FK físicas, cardinalidad del esquema desplegado ni eficacia del flujo.",
+        "Los visores existentes y manifiestos mantienen sus rutas; la arquitectura actual y el catálogo de migraciones prevalecen sobre estados/tecnologías de dibujos históricos."
+      ],
+      "sources": [
+        "documentos/arquitectura/descripcion_arquitectura.md",
+        "backend/db/platform_migrations.go",
+        "web/js/super_diagramas_data.js"
+      ],
+      "sha256_lf": "cbc450d9563a0a2d5ad3c06e64989eab7f52d12bcb8cccc17ca29d7f5d9a8ca2"
+    },
+    {
+      "path": "documentos/diagramas/estructura_del_codigo.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.",
+        "El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "backend/main.go",
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "c17739c22d5249df40142c2ba17a1883c012a5d0645013b273bd12af6b3322f1"
+    },
+    {
+      "path": "documentos/docker_vps_operacion.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se separan instrucciones actuales y migraciones históricas; cada intervención remota requiere entorno identificado y evidencia propia."
+      ],
+      "sources": [
+        "deploy/docker-compose.platform.yml",
+        "deploy/docker-compose.release.yml",
+        "backend/handlers/super_vps_snapshots.go",
+        "deploy/scripts/vps-backup-operacion.sh"
+      ],
+      "sha256_lf": "65c36ba4c18aefc270971edeb1180cbbeb0deb57493b29867fd42b473789edc3"
+    },
+    {
+      "path": "documentos/domicilios_profesional.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Existen superficies diferenciadas de cliente, restaurante, domiciliario y administración. Los tokens/PIN son autenticación del actor, no permiso de administración empresarial.",
+        "El enlace de un pedido entregado con venta/pago central es un estado local; aceptación comercial debe verificar confirmación de pago, reintentos y propiedad del pedido.",
+        "Se retiran instrucciones que publicaban credenciales demo y sugerían sembrar datos productivos. La ubicación GPS requiere consentimiento y evidencia real de navegador/dispositivo."
+      ],
+      "sources": [
+        "backend/handlers/domicilios.go",
+        "backend/db/domicilios.go",
+        "web/administrar_empresa/domicilios.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "f94b7d73c34481b9bfc9e114442c22f7f32f063556f903e218665d43e96f9916"
+    },
+    {
+      "path": "documentos/domotica_raspberry_tunnel.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Identidad del dispositivo autenticada por túnel: la empresa no se toma de un mensaje libre del hardware.",
+        "El instalador versionado es la fuente de capacidades del agente; las pruebas GPIO/relé, reinicio y telemetría requieren hardware identificado y autorización operativa."
+      ],
+      "sources": [
+        "backend/handlers/control_electrico.go",
+        "backend/handlers/templates/instalar_domotica_raspberry.sh.tmpl",
+        "backend/db/control_electrico.go"
+      ],
+      "sha256_lf": "71eb0ffe08f94171a9e002b059c65d5721d1a83534c55346e40036596a370147"
+    },
+    {
+      "path": "documentos/email_corporativo_mailu.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Los diagnósticos DNS/correo y requisitos de marca fechados en julio/agosto son evidencia histórica; no se ha consultado DNS ni enviado correo en esta revisión.",
+        "SSO temporal y API interna deben validarse en el stack efectivo. Las menciones a Plan 108 no constituyen un bloqueo global vigente ni una instrucción de compra."
+      ],
+      "sources": [
+        "deploy/docker-compose.platform.yml",
+        "backend/main.go"
+      ],
+      "sha256_lf": "e31dd4318e07dd3f71e0585b1f81d8432e877c06c363bbea32f437ec980d87d0"
+    },
+    {
+      "path": "documentos/endurecimiento_seguridad_2026_07_11.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Reporte de rama de julio; el informe y cierre de reparaciones de septiembre distinguen el estado local más reciente."
+      ],
+      "sources": [
+        "documentos/cierre_reparaciones_produccion_seguridad_2026-09-05.md"
+      ],
+      "sha256_lf": "f3a31effffef5269a685da77aade3ca2ed6c5cf36df8890133477efdae3008b3"
+    },
+    {
+      "path": "documentos/energia_solar.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El catálogo de marcas/protocolos registra opciones; no demuestra un adaptador interoperable para cada fabricante, batería o BMS.",
+        "Telemetría recibida y reglas de alerta no acreditan exactitud eléctrica ni actuación física; probar_alerta puede enviar correo real."
+      ],
+      "sources": [
+        "backend/handlers/energia_solar.go",
+        "backend/db/energia_solar.go",
+        "web/administrar_empresa/energia_solar.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go",
+        "backend/handlers/control_electrico_solar_telemetry_test.go"
+      ],
+      "sha256_lf": "d669733da128650c532aeadf9a2c65024e607eaa4cb762972c5d69eefa8557a3"
+    },
+    {
+      "path": "documentos/erp_multiempresa/01_alcance_erp_multiempresa.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Borrador ERP de abril pendiente de revisión en su origen. Sus IDs y propuestas se conservan para trazabilidad; la nueva matriz no afirma haber implementado todos esos requisitos."
+      ],
+      "sources": [
+        "documentos/requisitos/especificacion_y_trazabilidad.md"
+      ],
+      "sha256_lf": "df3fc0d37a9d520c92b72fe16ca14719d0b04dfa73b2a0807e73ce2f2539bd24"
+    },
+    {
+      "path": "documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Borrador ERP de abril pendiente de revisión en su origen. Sus IDs y propuestas se conservan para trazabilidad; la nueva matriz no afirma haber implementado todos esos requisitos."
+      ],
+      "sources": [
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "09a05a7ce033613254883f41459676baeaa5d3da596484dabf45541806913ce1"
+    },
+    {
+      "path": "documentos/erp_multiempresa/03_especificaciones_funcionales_erp_multiempresa.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Borrador ERP de abril pendiente de revisión en su origen. Sus IDs y propuestas se conservan para trazabilidad; la nueva matriz no afirma haber implementado todos esos requisitos."
+      ],
+      "sources": [
+        "documentos/requisitos/especificacion_y_trazabilidad.md"
+      ],
+      "sha256_lf": "26f98e6776fce1cadc0c69c250b635fcde3fc99b90b5ee7472d0d604ae431742"
+    },
+    {
+      "path": "documentos/erp_multiempresa/04_guia_implementacion_erp_multiempresa.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Borrador ERP de abril pendiente de revisión en su origen. Sus IDs y propuestas se conservan para trazabilidad; la nueva matriz no afirma haber implementado todos esos requisitos."
+      ],
+      "sources": [
+        "documentos/desarrollo/incorporacion.md"
+      ],
+      "sha256_lf": "0c35ab14f037ca591d27c88b25b06f84f949fa78b46ec9d1e9dc429710f5de99"
+    },
+    {
+      "path": "documentos/erp_multiempresa/README.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se retira la presentación de un borrador antiguo como alcance oficial; se preservan IDs y documentos para reconciliación de requisitos."
+      ],
+      "sources": [
+        "documentos/requisitos/especificacion_y_trazabilidad.md"
+      ],
+      "sha256_lf": "e989fe4d9991d6242357f38469ea48c759ee5e660239ab86d58bb2e1fb1be56c"
+    },
+    {
+      "path": "documentos/estructura_bd.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.",
+        "El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "backend/main.go",
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "6b940f77f5538d1a2f4acfbe01bad1be71dde7593502e67438f8d722ebaa4f8b"
+    },
+    {
+      "path": "documentos/flujos_operativos.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.",
+        "El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "backend/main.go",
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "e917d9752351ff2cc948f7e97a052b06539e2772b1867ec3380cf44640234f39"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se ratifica la decisión aceptada de aislamiento por empresa; Vida añade usuario. El contexto público identifica alcance, no concede permisos."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "backend/handlers/tenant_context.go"
+      ],
+      "sha256_lf": "fb38080d321ead120b3b15f52c13d39dd5ac379aa861d204e42ec6b024ec64b9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se elimina la excepción antigua que permitía pruebas con otro motor, incompatible con AGENTS.md.",
+        "El túnel a VPS no convierte una base real en entorno de pruebas: usar PostgreSQL aislado para integración."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/arquitectura/gobierno_datos.md"
+      ],
+      "sha256_lf": "f01b214732108d6a12392200dc40070b95c5fa1a39338920c2dbc640eac619d9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El acceso super exige TOTP confirmado según la política del servidor; identificar un correo reservado no basta para conceder una sesión privilegiada.",
+        "La recuperación debe evitar enumeración. Los códigos descritos se interpretan por action, sin generalizar 404 a la solicitud pública de recuperación."
+      ],
+      "sources": [
+        "backend/handlers/auth_admin_handlers.go",
+        "backend/handlers/usuarios_empresa.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "3df43cbef60788436be7d99565fe80cec392f2d1bbbfdde818ac15a130c566cd"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Define un procedimiento organizativo y sus indicadores; las integraciones esperadas no se presentan como automatizaciones implementadas.",
+        "Guardias, personas responsables y tiempos comprometidos requieren aprobación organizativa; los SLO del repositorio son objetivos."
+      ],
+      "sources": [
+        "documentos/operacion/incidentes_y_continuidad.md",
+        "documentos/gobernanza_tecnica/slo_sla_operativo.md",
+        "backend/main.go"
+      ],
+      "sha256_lf": "6a98209064912991c40522c2e19ccdf4431d65e3c9d26a4fe7e2371dd783aa47"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se corrigió el fallback real classic_js después de comprobar el handler y el consumidor HTML; se retiró la instrucción obsoleta de POST a checkout.php."
+      ],
+      "sources": [
+        "backend/handlers/payments_handlers.go",
+        "web/pagar_licencia.html"
+      ],
+      "sha256_lf": "3caa36bed54704b0104d76d23293e205856ae9f2c1c85cb114ddb04231999e06"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Finanzas valida periodos cerrados en las mutaciones citadas; este control es distinto del módulo cierre_fiscal y no demuestra cobertura automática de todos los módulos.",
+        "Una coincidencia de extracto y movimiento es conciliación local; no ejecuta transferencia ni sustituye comprobación bancaria."
+      ],
+      "sources": [
+        "backend/handlers/finanzas.go",
+        "backend/db/finanzas.go",
+        "backend/db/finanzas_conciliacion_bancaria.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "c4fb9bab76e00796125db9ac6406802470592ea7592c69bd1a3187fb59aaa41d"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_documentos_dinamicos_ia_exportacion.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Una exportación cuyo document_type sea factura es contenido documental; no crea una factura fiscal aceptada.",
+        "dynamic_documents.go conserva un modelo específico y exportadores propios; no asumir que todos los consumidores adoptaron la política global del chat.",
+        "Las descargas requieren comprobar identidad y alcance además de un ID no predecible. Los formatos reales y fallback se aceptan leyendo el archivo generado."
+      ],
+      "sources": [
+        "backend/handlers/dynamic_documents.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "7d1c8b51a073480c89e30743e9f8cf29fc577c6c8af611b8abc651d0f106b53b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La venta pagada y su documento comercial no acreditan aceptación DIAN ni entrega física impresa.",
+        "El heartbeat legado y la entrada por túnel son superficies diferentes; la identidad de dispositivo debe verificarse en su contrato. Una luz verde es estado reportado, no prueba física de puerta."
+      ],
+      "sources": [
+        "backend/handlers/sensor_puertas.go",
+        "documentos/domotica_raspberry_tunnel.md",
+        "backend/main.go"
+      ],
+      "sha256_lf": "943e929a30fccdeaeca7f321801b7730b422789ba928d54e41b9429815b8c0b1"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se sustituyó la cronología contradictoria por una matriz de capacidades por familia; se conserva la evidencia histórica fuera del contrato operativo.",
+        "Estado local, XML/XSD, TrackId y conectividad no son aceptación oficial. Ninguna prueba documental autoriza emisión, numeración o cambios en datos reales."
+      ],
+      "sources": [
+        "backend/handlers/facturacion_electronica.go",
+        "backend/handlers/dian_nomina_electronica.go",
+        "backend/handlers/modulos_faltantes.go",
+        "documentos/auditoria_facturacion_seguridad_20260905.md"
+      ],
+      "sha256_lf": "293b5c8e18cf4d50642e6f978ae6aa14a369fdef9b95518c491611e4bbea3f9f"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "health_check/sync_manual prueban el endpoint y actualizan metadatos. Cambiar ultima_conciliacion no demuestra importación de extractos, conciliación financiera ni integración bancaria completa.",
+        "Algunos GET de probe/monitoreo generan tráfico externo y pueden persistir; no deben tratarse como consultas sin efectos. El contrato debe migrar esas mutaciones a métodos explícitos en un cambio funcional separado.",
+        "Aceptar una referencia con prefijo vault no demuestra que exista un resolutor Vault desplegado."
+      ],
+      "sources": [
+        "backend/handlers/modulos_faltantes.go",
+        "backend/db/modulos_faltantes.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "96d5341fff3455b3efab7dbf747cc2d529c6b8c5a3245ce39d3928d31f1b1280"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El estado operativo emitida y un registro de repositorio no acreditan aceptación DIAN; aplicar el contrato fiscal por familia.",
+        "Las rutas genéricas de nota crédito/débito no conceden emisión: la anulación total tiene una acción especializada desde factura aceptada.",
+        "Validar referencias de compras no prueba recepción física ni asiento conciliado. Un hash suministrado no demuestra integridad del archivo sin recalcularlo."
+      ],
+      "sources": [
+        "backend/handlers/compras.go",
+        "backend/handlers/facturacion_electronica.go",
+        "backend/db/documentos_transaccionales.go",
+        "documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md",
+        "backend/main.go"
+      ],
+      "sha256_lf": "215aa3a369f37d39130d0768ec5b13036bf82c9bff732ce7109f99e7bc8b1899"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_matriz_pagos_reales.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Matriz de aceptación a ejecutar sobre un candidato identificado. Un cobro/reembolso de producción requiere autorización específica de importe, cuenta y conciliación; no se ejecuta por leer este documento.",
+        "Credenciales se resuelven por configuración privada autorizada; no se limita su custodia a una única forma de variable de entorno."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md",
+        "backend/main.go"
+      ],
+      "sha256_lf": "ac901415d2f9654f61c3a67e8cad2d82e2fc6ad6abcc69f0a977304abd1b1083"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El listado de ocho wrappers y siete módulos es el núcleo original, no el catálogo completo actual; backend/main.go y empresa_permisos.go contienen las ampliaciones.",
+        "La aprobación trazable se exige en roles_de_usuario y permisos_empresa; usuarios se rige por permisos, tenant y auditoría sin pedir el código adicional.",
+        "La auditoría genérica posterior al handler no garantiza atomicidad con el negocio. El reporte local de reparaciones es evidencia separada."
+      ],
+      "sources": [
+        "backend/handlers/empresa_permisos.go",
+        "backend/main_empresa_routes_security_test.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "6b73041df6ecd12517a898e885897631b8d36a751d1c74dbcd4a20656f3e9d29"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El catálogo real se consulta por action=catalogo; la lista de este documento describe familias y no una enumeración inmutable de cada versión.",
+        "xls es TSV compatible y PDF puede truncar; no confundirlos con un libro XLSX o un detalle completo. Programación persistida no demuestra envío ni ejecución del worker."
+      ],
+      "sources": [
+        "backend/handlers/reportes.go",
+        "backend/handlers/reportes_globales.go",
+        "backend/handlers/reportes_programacion.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "dafea3eab47639ab02858a90006289499ee2db264de6b114ac873ee3f0dbf115"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El repositorio registra metadatos/versiones y firmas externas declaradas; no valida criptográficamente una firma por guardar hash_firma.",
+        "La posibilidad de warning al historizar la versión anterior no garantiza una única versión vigente; requiere revisión operativa ante ese resultado.",
+        "Los campos de actor no deben aceptarse como autoridad desde el cliente. El evaluador interno sin rol no sustituye el wrapper; include_denegados requiere revisar minimización de metadatos sensibles."
+      ],
+      "sources": [
+        "backend/handlers/modulos_faltantes.go",
+        "backend/db/modulos_faltantes.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "1f9f12a0adb0995b080c84b5e79a09dd5d76f1b4e67254b76bdd94e7f4c545e8"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Registrar proveedor/stream y aprobar sesión no implementa el transporte remoto de ese proveedor; su disponibilidad se valida en el equipo.",
+        "Heartbeat requiere autenticación del dispositivo. Tokens, PIN y URL privados deben excluirse de capturas, registros y exportaciones; permitir una sesión no autoriza cualquier operación remota."
+      ],
+      "sources": [
+        "backend/handlers/soporte_remoto.go",
+        "backend/handlers/super_soporte_remoto.go",
+        "backend/db/soporte_remoto.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "ec52372453bbfbb095c146c47999cb1a6dcdf4505305e4f7e21dacdd8ce23fe4"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El checkout empresarial aquí descrito no hereda automáticamente el Web Checkout del flujo de licencias; comprobar el adaptador de esta ruta.",
+        "Orden aprobada no acredita despacho, movimiento de inventario ni factura oficial sin la cadena de eventos y fuente correspondientes."
+      ],
+      "sources": [
+        "backend/handlers/venta_publica.go",
+        "backend/db/venta_publica.go",
+        "backend/main.go"
+      ],
+      "sha256_lf": "84d43419d9657d64317221435fa31feefd48c39978a5d9eaaca42d3d3b37ae19"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/estandares_de_cambio_seguro.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "AGENTS.md establece la lectura inicial y PostgreSQL único. Compatibilidad legacy no permite DDL en handlers ni reintroducir otro motor.",
+        "La validación se acredita con herramientas y pruebas reproducibles; disponer de editor gráfico no es requisito para el cambio."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "documentos/calidad/estrategia_verificacion.md"
+      ],
+      "sha256_lf": "d7f1fa39582656b7818ff2fd9a58ca5edba6e31a3e2e68140baf4e3fb5ee283a"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Hoja de ruta de abril; marco, contratos y runbooks actuales gobiernan cambios nuevos."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/marco_documental.md"
+      ],
+      "sha256_lf": "497fe4771ca7f46fef921977754aa6a9672b6ecddb1ee5b31cf96ed8bc5e2e0d"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Verde significa consistencia documental de este caso; una firma declarada, un hash o un exporte no certifican validez criptográfica ni cumplimiento normativo."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md",
+        "documentos/calidad/estrategia_verificacion.md"
+      ],
+      "sha256_lf": "6e38ee01eff3da402d5846ab406ab2d809f645d03693f0d608a881a011157706"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/plan_revision_integral_modulos.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Plan y resultados de abril con una secuencia histórica; la aceptación del candidato se gobierna por requisitos y estrategia de verificación actuales."
+      ],
+      "sources": [
+        "documentos/calidad/estrategia_verificacion.md",
+        "documentos/estado_actual.md"
+      ],
+      "sha256_lf": "10239189aee0097974aca5592028ba16c560bb8cce005b9cd4054d8843de84ad"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "action=test puede enviar correo real: confirmar destinatario y modo autorizado. La aceptación SMTP no prueba llegada a bandeja.",
+        "El motivo de reinicio es inferido desde estado previo; correlacionar con proceso/host antes de declarar caída."
+      ],
+      "sources": [
+        "backend/handlers/server_runtime_notifications.go",
+        "backend/handlers/usuarios_empresa.go"
+      ],
+      "sha256_lf": "1ec376e1a18c40fe00fdc35284ab80481172802bd650abfbf22caef5314d7b14"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El túnel solo cambia transporte; una base remota real sigue siendo real. Pruebas de integración requieren una base PostgreSQL aislada.",
+        "Comparar nombres/puertos/flags sin imprimir DSN, llaves ni valores privados."
+      ],
+      "sources": [
+        "backend/main.go",
+        "scripts/iniciar_servidor.ps1"
+      ],
+      "sha256_lf": "9cd07f2eb7929f67bd39f490f62657df5539db277020df07169d94dc30f67832"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El diagnóstico sigue la operación original y el fallback comprobado, con separación entre estado de pago, licencia y correo."
+      ],
+      "sources": [
+        "backend/handlers/payments_handlers.go",
+        "documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md"
+      ],
+      "sha256_lf": "1135d6e7fd0b2adcf58ca215a60ca08eb832432cdd43878eb81ea6719ef15f5c"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "No ampliar tolerancias para ocultar diferencias. Reapertura/ajuste requieren evidencia aprobada y no sustituyen la conciliación bancaria real."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md",
+        "backend/db/finanzas.go"
+      ],
+      "sha256_lf": "061b8ffd4deaf5b61d0494c86a1c700a5773c4be44fd9ef3ee4985a7dce3eaed"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "sync_manual es una sonda con actualización de metadatos; no importa ni concilia movimientos financieros.",
+        "GET health_check puede tener efectos externos y persistir estado; revisar autorización antes del probe. La validez sintáctica de vault no acredita resolutor."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md",
+        "backend/handlers/modulos_faltantes.go"
+      ],
+      "sha256_lf": "99cafe11714dc3d27e99067a8d461346e3b362a09bae89da688497c37f15fa0e"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_depuracion_soportes_ia_y_cuarentena.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La vigencia del procedimiento no certifica la implementación en staging. Conserva los pendientes A/B, caída, dos réplicas y restore.",
+        "Depurar es irreversible para el archivo: exige alcance autorizado, permiso D, motivo y código exacto."
+      ],
+      "sources": [
+        "backend/handlers/soportes_compras_ia.go",
+        "documentos/soportes_compras_ia.md"
+      ],
+      "sha256_lf": "9bf86bdc75c24fb450ad8a9e1c54f21ec24039a07a08ec17085823e0074832ad"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El set de habilitación es un envío real al ambiente autorizado, no un dry-run. Se exige el objetivo exacto del portal y fuente comercial genuina fuera del set.",
+        "La nómina no reutiliza el PDF/correo de factura ni su habilitación. Los diagnósticos locales no acreditan acuse oficial."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md",
+        "backend/handlers/modulos_faltantes.go"
+      ],
+      "sha256_lf": "8fe93c4966ed1a85c16eeb56608698a4fbe9c72d5d4f70bce83f0a1281dab7ff"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "reset_items inicia una nueva sesión: no usar para ocultar un cobro incierto. Consultar la operación original y su trazabilidad primero.",
+        "Para Raspberry por túnel revisar el contrato de domótica, no enviar heartbeat legado indiscriminadamente."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md",
+        "documentos/domotica_raspberry_tunnel.md"
+      ],
+      "sha256_lf": "170657975cc9a9e5d3a51dd7676a438ed07a6f216af41f593a4614e7ed1ee45b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_hardening_vps.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La regla efectiva usa el puerto SSH del inventario autorizado. Abrir 22 no es una reparación por defecto; verificar consola y mantener acceso alternativo durante cambios."
+      ],
+      "sources": [
+        "deploy/scripts/vps-hardening-audit.sh",
+        "documentos/manual_vps_seguridad.md"
+      ],
+      "sha256_lf": "606b29af27795c311ccb7a00fbe0b4d0564f7714e55968475c7b09487798dc17"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Es un mapa de controles y scripts existentes; no acredita madurez, carga, SLO ni despliegue por enumerarlos.",
+        "SkipE2E y STAGING_ANONYMIZE=0 no sirven para acreditar release: las omisiones y el tratamiento de datos requieren resolución antes de aceptación."
+      ],
+      "sources": [
+        "scripts/release_gate.ps1",
+        ".github/workflows/professional-ci.yml",
+        "documentos/estado_actual.md"
+      ],
+      "sha256_lf": "5f1a45ceceff84b7abc72d27c6338a88bbbf5de0609bebd99121d972009d7df2"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "reconciliar_estados puede procesar envíos. Para reflejar únicamente acuses ya aceptados existe reconciliar_aceptados_local; no intercambiar ambos flujos.",
+        "Enviado/no_aplica no son aceptación fiscal. Un rechazo final no se reenvía automáticamente y un TrackId pendiente conserva XML original."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md",
+        "backend/handlers/facturacion_electronica.go"
+      ],
+      "sha256_lf": "f8bae12c5c8d18f6949448b17ad6677f11214dbc3704e2879d76534d4a222286"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_recuperacion_desastre_docker_vps.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Existen dos formatos: vps-backup-operacion.sh produce postgres_all.sql.gz; el paquete del panel produce postgres/pg_dumpall.sql mediante pg_dump de ambas bases. Elegir el procedimiento según el manifiesto del backup, no por nombres parecidos.",
+        "Inventariar contenedores por servicio/proyecto: los nombres fijos son ejemplos históricos y las réplicas pueden usar nombres Compose. El paquete sin dump no acredita recuperación de BD.",
+        "Restaurar en aislamiento y migrar al esquema del candidato antes de abrir API/worker. El cambio DNS y la retirada del host anterior requieren validación funcional y autoridad de operación."
+      ],
+      "sources": [
+        "deploy/scripts/vps-backup-operacion.sh",
+        "backend/handlers/super_vps_snapshots.go",
+        "scripts/vps_restore_validation.ps1",
+        "documentos/operacion/incidentes_y_continuidad.md"
+      ],
+      "sha256_lf": "b5f7e02a1bbd9cbc089254ba33787c27bdab243c2bae5acec74ab40261e56fd9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Consistencia de formatos no demuestra exactitud de datos maestros ni aceptación contable. Ejecutar programación puede persistir y enviar según configuración."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md",
+        "backend/handlers/reportes_programacion.go"
+      ],
+      "sha256_lf": "9c2441fe94111662dc0d78dbceab7d8fb3c4d0247cdec42936a48e5e524cdd2a"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La sesión activa solo habilita el alcance acordado con el operador; no autoriza compras, archivos ni cambios arbitrarios en el equipo."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md",
+        "backend/handlers/soporte_remoto.go"
+      ],
+      "sha256_lf": "ae00bae4a4d2d4f062c0a59f4430e15877c334a3aa37f7f896c94fa3557a4d50"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_staging_ci_e2e.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "ConfigOnly valida configuración; Build y scripts VPS sí arrancan/modifican entornos. Identificar candidato y base aislada antes de ejecutarlos.",
+        "CI documental incluye tests de docs_catalog y --check. CI verde y smoke no demuestran aceptación general del negocio."
+      ],
+      "sources": [
+        "scripts/staging_up.ps1",
+        ".github/workflows/professional-ci.yml",
+        "deploy/scripts/vps-staging-candidate-up.sh"
+      ],
+      "sha256_lf": "89045632a5939f0633cc26be3f429b6faf842ce7f9a2c68fa71545832e042b8b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_tls_staging_y_servicios_plan_105.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Registro del incidente TLS de julio y su recuperación; hostnames, certificados, nombres de contenedor y estado E2E deben inventariarse nuevamente."
+      ],
+      "sources": [
+        "documentos/operacion/incidentes_y_continuidad.md",
+        "documentos/manual_vps_seguridad.md"
+      ],
+      "sha256_lf": "ea0a2308dc4a84c89821420ad1da6c85e31e06e6c1c1d31835cd74097fe55803"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El rol efectivo proviene del servidor; un header aportado por el cliente no acredita autorización.",
+        "Las consultas son plantillas parametrizadas PostgreSQL; ejecutarlas con parámetros y lectura autorizada. Reparaciones manuales requieren copia, alcance exacto y trazabilidad, no un UPDATE general."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md",
+        "backend/handlers/modulos_faltantes.go"
+      ],
+      "sha256_lf": "451852c1c3837103ddafb24c4b159c8974192c398edbdda11143288e45d09e34"
+    },
+    {
+      "path": "documentos/ia_orquestador_empresarial.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se reconciliaron modelo global, identidad permanente y flags separados de hotel/catálogo; ninguna respuesta del modelo concede autoridad.",
+        "El registro de fuentes y memoria con consentimiento no implementa RAG; las categorías y la minimización de fase 2 permanecen aplicables."
+      ],
+      "sources": [
+        "backend/ai/enterprise.go",
+        "backend/db/ai_enterprise.go",
+        "backend/handlers/ai_enterprise_orchestrator.go",
+        "backend/handlers/super_chat_ia_logica.go",
+        "backend/handlers/chat_con_inteligencia_artificial_controller.go"
+      ],
+      "sha256_lf": "41c2b205ff37d0a226caf86c4b952d1d6a00bb7c3ba3208a4ef796ae0a424334"
+    },
+    {
+      "path": "documentos/ia_orquestador_empresarial_fase_2.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Diseño de fase anterior: la exclusividad de escritura hotelera fue sustituida por el catálogo cerrado actual; sus controles de minimización se integran en el contrato principal."
+      ],
+      "sources": [
+        "documentos/ia_orquestador_empresarial.md"
+      ],
+      "sha256_lf": "ce5543165842ac4b9cfc34ce1da07e24b2b15523e02e2f08c8d147404eeebb82"
+    },
+    {
+      "path": "documentos/importaciones_costeo.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se mantienen importación, items, costos y distribución; el costo aterrizado es cálculo interno según TRM y entradas registradas.",
+        "Registrar arancel, IVA o incoterm no acredita nacionalización ni validación aduanera. Verificar sumas distribuidas, redondeo y pertenencia del producto antes de aceptación."
+      ],
+      "sources": [
+        "backend/handlers/importaciones_costeo.go",
+        "backend/db/importaciones_costeo.go",
+        "backend/db/importaciones_costeo_test.go",
+        "web/administrar_empresa/importaciones_costeo.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "4b80563d39ab21a4b9e4dfadfa7dc2380200ff53245c1f214bda2232d2dd8277"
+    },
+    {
+      "path": "documentos/logistica_wms.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El código local incorpora transacciones y locks para órdenes, items, avances y despachos según el cierre de seguridad del 2026-09-05.",
+        "WMS sigue siendo una capa operativa: el avance picking/packing no demuestra movimiento de existencias ni entrega física. La integración de inventario requiere un contrato y prueba específicos."
+      ],
+      "sources": [
+        "backend/handlers/logistica_wms.go",
+        "backend/db/logistica_wms.go",
+        "backend/db/logistica_wms_test.go",
+        "web/administrar_empresa/logistica_wms.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go",
+        "documentos/cierre_reparaciones_produccion_seguridad_2026-09-05.md"
+      ],
+      "sha256_lf": "2f59045b0dbd695dbc58ccff3f94fc951d053e7201fa414c7f49836f55972f9c"
+    },
+    {
+      "path": "documentos/manual_de_instalacion.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se separan instrucciones actuales y migraciones históricas; cada intervención remota requiere entorno identificado y evidencia propia."
+      ],
+      "sources": [
+        "scripts/staging_up.ps1",
+        "backend/go.mod"
+      ],
+      "sha256_lf": "047708511548e28cc34eace9cf55969d296bd37ace1d152b754368b60e37b14c"
+    },
+    {
+      "path": "documentos/manual_vps_seguridad.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Un escaneo container no acredita hardening host. Instalar herramientas, programar cron o escanear red requiere el alcance operativo correspondiente.",
+        "Un scanner no disponible deja cobertura incompleta; ni puntuación ni health reemplazan revisión de candidato."
+      ],
+      "sources": [
+        "backend/tools/vps_security_scan/main.go",
+        "scripts/run_vps_security_scan.sh",
+        "scripts/install_vps_security_tools.sh"
+      ],
+      "sha256_lf": "fd2825e312b530a1a1d112cc07e223a1923f2cf72c900a42eb310a74c46aa930"
+    },
+    {
+      "path": "documentos/mapa_modulos.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.",
+        "El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "backend/main.go",
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "d3a17c125805d928858c0c86eecea0e9236f8b6431e930d483e95c81d2b814e3"
+    },
+    {
+      "path": "documentos/matriz_alcance_piloto_plan_105.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Propuesta de piloto no aprobada. Su archivo no concede aprobación ni activa módulos."
+      ],
+      "sources": [
+        "documentos/estado_actual.md"
+      ],
+      "sha256_lf": "dba971b55621d145bfc422d736bc547a08c18fe71aedcfb6b56921c521116ac7"
+    },
+    {
+      "path": "documentos/matriz_integracion_plantillas.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La matriz describe trece plantillas del catálogo; las integraciones centrales son requisitos verificables por flujo, no pruebas de aceptación del sector."
+      ],
+      "sources": [
+        "backend/handlers/empresa_plantillas_integracion.go",
+        "backend/handlers/empresa_plantillas_integracion_test.go",
+        "backend/db/modulos_plantillas_nuevas.go"
+      ],
+      "sha256_lf": "d927877a27289982b0070da67d0e910d7ade967eafe0235379b97664e5ada884"
+    },
+    {
+      "path": "documentos/matriz_roles_permisos_pos_multiempresa.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.",
+        "El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "backend/main.go",
+        "documentos/arquitectura/descripcion_arquitectura.md"
+      ],
+      "sha256_lf": "b628486b7059cb04551b7e20ad6caa4619eb42c3a14698d43678be35d8680f39"
+    },
+    {
+      "path": "documentos/modulos_empresariales_colombia.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Bancos/pagos, KYC, gestión documental, contratos y calidad comparten registros y metadata. Guardar un estado no ejecuta un pago bancario, consulta una lista LAFT ni valida una firma externa.",
+        "Las fases fechadas son antecedentes de implementación. La eficacia regulatoria, la entrega externa y la aceptación por sector necesitan casos específicos. seed_demo solo corresponde a un entorno aislado autorizado."
+      ],
+      "sources": [
+        "backend/db/modulos_empresariales_colombia.go",
+        "backend/handlers/modulos_empresariales_colombia.go",
+        "web/js/modulo_colombia_admin.js"
+      ],
+      "sha256_lf": "f199cd15fd78bfedad412ee20785656d9c1a262e9c99369080785b5751a2de50"
+    },
+    {
+      "path": "documentos/nextcloud_empresarial.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La ruta /api/empresa/nextcloud continúa registrada. La existencia de nextcloud_decommission.go no demuestra que el módulo esté retirado en runtime.",
+        "PCS solo admite PostgreSQL; el motor mencionado en el diagnóstico antiguo es un antecedente externo, no una recomendación para nuevos entornos.",
+        "Los nombres de volúmenes son históricos: inventariar los efectivos y obtener backup consistente de BD/archivos; copiar un volumen activo no prueba restauración."
+      ],
+      "sources": [
+        "backend/main.go",
+        "backend/handlers/nextcloud.go",
+        "backend/db/nextcloud.go",
+        "backend/db/nextcloud_decommission.go",
+        "scripts/provision_nextcloud_service_account.sh"
+      ],
+      "sha256_lf": "315d9e79d002d8a85056b0c49fd3a90cd288ea510f9a86c4cdf6fd490de51a56"
+    },
+    {
+      "path": "documentos/nomina_colombia_avanzada.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Se conserva el alcance de nómina electrónica desde fuente mensual pagada y numeración específica. Un CUNE calculado o documento local no acredita aceptación oficial.",
+        "Ajustes, habilitación automatizada y distribución dedicada permanecen fuera del alcance declarado; no crear fuentes laborales ficticias para probar."
+      ],
+      "sources": [
+        "backend/handlers/dian_nomina_electronica.go",
+        "backend/db/dian_nomina_electronica.go",
+        "backend/db/dian_nomina_electronica_migration.go",
+        "backend/handlers/nomina_sueldos.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "f5dd71a0e3046186aa10477ce6b2a0f7dfaed522108270d7f248165ed198b666"
+    },
+    {
+      "path": "documentos/observability_runbook.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Revisar solo servicios realmente desplegados; Redis/Nextcloud son perfiles o stacks separados, no dependencias universales.",
+        "Alertas locales configuradas no prueban receptor de guardia ni entrega; ensayar la cadena de notificación con autorización."
+      ],
+      "sources": [
+        "deploy/monitoring/prometheus.yml",
+        "documentos/operacion/incidentes_y_continuidad.md"
+      ],
+      "sha256_lf": "2dc8e7fb9f7b6b2d548e7cd27edafd6d666f4e7e9620f39efd3434f6c45a94d6"
+    },
+    {
+      "path": "documentos/parqueadero_tickets_qr.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La API pública de QR es de consulta. El cierre/cobro pertenece al endpoint empresarial y sus permisos.",
+        "El cálculo de tarifa y el registro local de pago no acreditan confirmación de pasarela ni apertura física de una barrera. Probar reintento de salida y consistencia del enlace al carrito."
+      ],
+      "sources": [
+        "backend/handlers/parqueadero.go",
+        "backend/db/parqueadero.go",
+        "web/administrar_empresa/parqueadero.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "7f0610824acace3e6d4a280439d71205a9fcc965c3406db1fbb7f55c05147bf5"
+    },
+    {
+      "path": "documentos/plan_20_modulos_plantillas_2026-05-10.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Plan de veinte plantillas anterior a la reducción del catálogo; consultar la matriz actual de trece."
+      ],
+      "sources": [
+        "documentos/matriz_integracion_plantillas.md"
+      ],
+      "sha256_lf": "2929269f01c4770688ff013e9292c795ee10ec6c09a2d1aa1a215b305067614b"
+    },
+    {
+      "path": "documentos/plan_ia.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Planificación de julio con ampliaciones fechadas; pendientes de UAT no se cierran por esta clasificación."
+      ],
+      "sources": [
+        "documentos/ia_orquestador_empresarial.md"
+      ],
+      "sha256_lf": "5de48f3976b6c69c16c0bb7bbcc141c64ef17d65898f673d342cf1561115fea8"
+    },
+    {
+      "path": "documentos/plan_login_autenticacion_produccion_2026-08-21.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Línea base y plan de autenticación. Los pendientes siguen como evidencia/aceptación del módulo; no es una instrucción global de ejecución."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md"
+      ],
+      "sha256_lf": "5b210673038231b0bc817d02335d2567cd089555ff0c71fcd88652d8a03e6ae2"
+    },
+    {
+      "path": "documentos/plan_modulos_faltantes_colombia_2026-05-06.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Plan de incorporación del motor compartido; CRUD y metadata no certifican procesos completos del sector."
+      ],
+      "sources": [
+        "documentos/modulos_empresariales_colombia.md"
+      ],
+      "sha256_lf": "e20a797ca18048af8a6d3287571c36a599b824538b35b24aded0bfbcd7fa3df0"
+    },
+    {
+      "path": "documentos/plan_plantillas_produccion_masiva_2026-05-11.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Plan de veinte plantillas anterior al catálogo actual; sus afirmaciones de producción masiva no son evidencia vigente."
+      ],
+      "sources": [
+        "documentos/matriz_integracion_plantillas.md"
+      ],
+      "sha256_lf": "50a8cbdb20e4990aa707dcec72d485f562cfa82e0ac3b7664a684e8f69f0cc00"
+    },
+    {
+      "path": "documentos/plan_productos_servicios_inventario_produccion_2026-08-21.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Plan y evidencia de inventario con alcance fechado; preservar las pruebas pendientes sin inferir certificación ni autoridad de despliegue."
+      ],
+      "sources": [
+        "documentos/calidad/estrategia_verificacion.md"
+      ],
+      "sha256_lf": "f5d19aaf667160480858beb5bdd49417f75460488155e30905511dfab2c7c0ae"
+    },
+    {
+      "path": "documentos/plan_profesional_12_puntos.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Hoja de ruta de mayo; controles y comandos actuales se mantienen en sus runbooks."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md"
+      ],
+      "sha256_lf": "aeb03ead46c6ae001304a6476e4a1780fe84333f5f0345adb02e13e17e5c672e"
+    },
+    {
+      "path": "documentos/plan_profesionalizacion_plataforma.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Plan inicial de mayo; no usar opciones de escape como aprobación del release."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/runbooks/runbook_release_profesional.md"
+      ],
+      "sha256_lf": "1d11161cc0c951dfaf708bbb3ce2539a3b27ab95ddff8e8a8a4c0ba6bb218a57"
+    },
+    {
+      "path": "documentos/plan_qa_e2e_motel_calipso_2026-05-06.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Plan y prueba de una empresa en mayo; no autoriza repetir ventas/borrados en esa empresa."
+      ],
+      "sources": [
+        "documentos/calidad/estrategia_verificacion.md"
+      ],
+      "sha256_lf": "f6df3c697fe655a7007f5b4cd0a73d925d2b8b3ed5dcc2a51f84ae31b312ede3"
+    },
+    {
+      "path": "documentos/plan_siigo_profesional_2026-06-12.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Plan comparativo de evolución, no certificación de equivalencia con otra suite."
+      ],
+      "sources": [
+        "documentos/requisitos/especificacion_y_trazabilidad.md"
+      ],
+      "sha256_lf": "4f071e5273416fc8519f5a94558559461682bbf6dde719fb2e7e76301fa6ad90"
+    },
+    {
+      "path": "documentos/portal_contador.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El portafolio vive dentro del tenant del despacho contable. cliente_empresa_id es una referencia y no concede acceso automático a la información de esa otra empresa.",
+        "Obligaciones y comunicaciones registradas son seguimiento local; no demuestran radicación DIAN ni entrega de un mensaje externo."
+      ],
+      "sources": [
+        "backend/handlers/portal_contador.go",
+        "backend/db/portal_contador.go",
+        "backend/db/portal_contador_test.go",
+        "web/administrar_empresa/portal_contador.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "bb2cd9e5f22310ca60cc1b8774b063382bfcb2c84039c8752f6dd52193c80452"
+    },
+    {
+      "path": "documentos/portal_terceros_certificados.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La consulta pública usa token y estado permitido; el token concede acceso al documento y debe tratarse como dato restringido, sin copiar URLs completas a logs/tickets.",
+        "Un certificado emitido localmente no acredita validez legal, firma verificable ni conciliación de todas las retenciones. La aceptación exige origen de valores, integridad y revocación cuando aplique."
+      ],
+      "sources": [
+        "backend/handlers/portal_terceros_certificados.go",
+        "backend/db/portal_terceros_certificados.go",
+        "web/administrar_empresa/portal_terceros_certificados.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "6782001445e46708e817276423db119c583a2e2e044e40a26c2eaa4f4b27bf91"
+    },
+    {
+      "path": "documentos/preparacion_produccion_y_app_movil.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Fundación de julio sustituida por arquitectura, API móvil y gates actuales; plan_final_para_produccion es histórico."
+      ],
+      "sources": [
+        "documentos/api/mobile_api_v1.md"
+      ],
+      "sha256_lf": "03227d9080a511d1e98f98b11948f81463422dfd2b9a5bdf0cec96e97c9bca1f"
+    },
+    {
+      "path": "documentos/produccion_hardening_20260715.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Registro de controles locales de julio; no prueba configuración del VPS actual."
+      ],
+      "sources": [
+        "documentos/estado_actual.md"
+      ],
+      "sha256_lf": "dca49f218c19293fcbf10a4993759e019eef574bfc531977a2bd039cd4d66deb"
+    },
+    {
+      "path": "documentos/produccion_mrp.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "La reparación local incorpora transacciones, locks y validación de IDs; falta evidencia concurrente PostgreSQL del candidato.",
+        "El generador MRP usa demanda estimada y stock_actual=0 en las filas generadas; no es una disponibilidad real de inventario. Las sugerencias deben conciliarse con existencias antes de compra/fabricación.",
+        "La opción de consumir inventario no demuestra que ese descuento esté integrado: consumos registrados y movimiento Kardex son responsabilidades diferentes."
+      ],
+      "sources": [
+        "backend/handlers/produccion_mrp.go",
+        "backend/db/produccion_mrp.go",
+        "backend/db/produccion_mrp_test.go",
+        "web/administrar_empresa/produccion_mrp.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go",
+        "documentos/cierre_reparaciones_produccion_seguridad_2026-09-05.md"
+      ],
+      "sha256_lf": "153b74c5a2ec5fce6dcf44357e96de63d6fd2f637ce5fdf9eb0075055ca6c689"
+    },
+    {
+      "path": "documentos/promocion_asesor_licencias.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El descuento de asesor es parte del cálculo de checkout; importe y moneda deben validarse con los valores esperados del servidor antes de activar una licencia.",
+        "La guía de promoción no sustituye el contrato checkout ni autoriza una activación gratuita, comisión o cobro reales."
+      ],
+      "sources": [
+        "backend/handlers/payments_handlers.go",
+        "backend/db/licencias_globales.go",
+        "web/super/asesor_comercial.html",
+        "documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md"
+      ],
+      "sha256_lf": "838e11673c2f962bf13345a373de9594e7ec6039c968687647c0be66fbe0634a"
+    },
+    {
+      "path": "documentos/rollback_production_2026_07_13.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Borrador de rollback sustituido por el runbook de release y continuidad actuales."
+      ],
+      "sources": [
+        "documentos/gobernanza_tecnica/runbooks/runbook_release_profesional.md"
+      ],
+      "sha256_lf": "187d69cabc13fdb51fca8baa8df47d79d3bcaaf8d168a7635d216f564aaef2de"
+    },
+    {
+      "path": "documentos/soportes_compras_ia.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "El extractor todavía busca EmpresaSoporteComprasIAModeloDefault (GPT-5.5) dentro del catálogo empresarial. Si el modelo global publicado es otro, puede devolver modelo no disponible: es una incompatibilidad pendiente de código, no un selector libre documentado.",
+        "La revisión humana y la contabilización son pasos separados de la extracción; el JSON no acredita corrección tributaria.",
+        "Papelera, cuarentena y purga tienen permisos y confirmación propios. Los comandos de borrado no son pruebas de lectura."
+      ],
+      "sources": [
+        "backend/handlers/soportes_compras_ia.go",
+        "backend/db/soportes_compras_ia.go",
+        "backend/db/soportes_compras_ia_test.go",
+        "web/administrar_empresa/soportes_compras_ia.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go",
+        "backend/handlers/super_chat_ia_logica.go"
+      ],
+      "sha256_lf": "173e4fff572207c126eee6cf9bd06f128d7d0d7b555977f33ddb727bbc065c31"
+    },
+    {
+      "path": "documentos/tesoreria_presupuesto.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Tesorería conserva cuentas, presupuestos, partidas y proyección de flujo; no equivale a saldo bancario confirmado ni orden de pago ejecutada.",
+        "Las relaciones cuenta/presupuesto y mutaciones recibieron endurecimiento local; validar concurrencia y aislamiento PostgreSQL antes de aceptar el módulo."
+      ],
+      "sources": [
+        "backend/handlers/tesoreria_presupuesto.go",
+        "backend/db/tesoreria_presupuesto.go",
+        "backend/db/tesoreria_presupuesto_test.go",
+        "web/administrar_empresa/tesoreria_presupuesto.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go",
+        "documentos/cierre_reparaciones_produccion_seguridad_2026-09-05.md"
+      ],
+      "sha256_lf": "fd712956dd673388c84e83f33cfd3ac815106b37d4559339681e942ce22dc800"
+    },
+    {
+      "path": "documentos/validacion_preproduccion_pcs.md",
+      "decision": "historico_con_sucesor",
+      "findings": [
+        "Evidencia de una empresa/fecha de julio; no reutilizar datos personales, tarifas ni folios como fixture."
+      ],
+      "sources": [
+        "documentos/estado_actual.md"
+      ],
+      "sha256_lf": "c53a01c19dcd91aca595d7ab34db9957ba486998c4a4627a6b917da87069281b"
+    },
+    {
+      "path": "documentos/vida.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Datos privados por empresa y usuario, sin integración comercial automática.",
+        "La migración inicial crea gastos/suscripciones; la de precios añade empresa_vida_precios. Recordatorios y entregas requieren evidencia separada de la programación local."
+      ],
+      "sources": [
+        "backend/handlers/vida.go",
+        "backend/db/vida.go",
+        "backend/db/vida_test.go",
+        "web/administrar_empresa/vida.html",
+        "backend/main.go",
+        "backend/handlers/empresa_permisos.go"
+      ],
+      "sha256_lf": "c0c80af29cb73a31dd5449f8dcfee9f90caf2004abaf1e123223d35749e722b9"
+    },
+    {
+      "path": "documentos/vps2_operacion.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Dirección, usuario, fingerprint y estado son inventario histórico de ese equipo; revalidar por canal confiable antes de conexión.",
+        "SkipDeploy todavía permite otros efectos según flags: sincronización, modo gráfico, contenedores y publicación de snapshot se revisan separadamente. El snapshot no es lectura en vivo."
+      ],
+      "sources": [
+        "scripts/sync_to_vps2.ps1",
+        "scripts/pcs_deployment.local.ps1.example"
+      ],
+      "sha256_lf": "6290861425b41f6db3dd07831353800db7d662ac28addb2ad34d716e61234a92"
+    },
+    {
+      "path": "services/voice_stream_server/README.md",
+      "decision": "revisado_con_limites",
+      "findings": [
+        "Servicio opcional Python/Piper existente, separado del backend Go. El campo voice aceptado no selecciona otro modelo: se usa VOICE_STREAM_TTS_MODEL.",
+        "Sin VOICE_STREAM_AUTH_TOKEN, verify_auth permite acceso. Exponerlo requiere configurar autenticación y red privada.",
+        "127.0.0.1 solo comunica procesos del mismo espacio de red; desde un contenedor se necesita el destino resoluble correspondiente. El instalador descarga/instala componentes y no es una comprobación de solo lectura."
+      ],
+      "sources": [
+        "services/voice_stream_server/app.py"
+      ],
+      "sha256_lf": "caeb44b699bfcdb375ada30b8a4ef9930462c67d738192248f7f82c4f519ee20"
+    }
+  ]
+}

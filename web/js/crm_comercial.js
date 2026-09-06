@@ -892,7 +892,6 @@
       const id = Number($("leadId").value || 0);
       const payload = {
         id: id,
-        estado_lead: normalize($("leadEstado").value) || "nuevo",
         nombre: normalize($("leadNombre").value),
         empresa_origen: normalize($("leadEmpresaOrigen").value),
         email: normalize($("leadEmail").value),
@@ -927,7 +926,6 @@
         id: id,
         lead_id: Number($("interaccionLeadId").value || 0),
         cliente_id: Number($("interaccionClienteId").value || 0),
-        estado_interaccion: normalize($("interaccionEstado").value) || "abierta",
         tipo_interaccion: normalize($("interaccionTipo").value) || "seguimiento",
         fecha_interaccion: normalize($("interaccionFecha").value).replace("T", " "),
         usuario_responsable: normalize($("interaccionResponsable").value),
@@ -957,7 +955,6 @@
       const payload = {
         id: id,
         codigo: normalize($("cotizacionCodigo").value),
-        estado_documento: normalize($("cotizacionEstado").value) || "borrador",
         cliente_nombre: normalize($("cotizacionClienteNombre").value),
         cliente_id: Number($("cotizacionClienteId").value || 0),
         fecha_documento: normalize($("cotizacionFecha").value) || todayInput(),
@@ -992,7 +989,6 @@
       const id = Number($("campanaId").value || 0);
       const payload = {
         id: id,
-        estado_campana: normalize($("campanaEstado").value) || "planificada",
         nombre: normalize($("campanaNombre").value),
         canal: normalize($("campanaCanal").value) || "email",
         objetivo: normalize($("campanaObjetivo").value),

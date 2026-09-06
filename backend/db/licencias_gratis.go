@@ -123,10 +123,6 @@ func HasLicenciaAdvisorCodeUsedByEmpresa(dbConn *sql.DB, empresaID int64) (bool,
 	if empresaID <= 0 {
 		return false, nil
 	}
-	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
-		return false, err
-	}
-
 	for _, tableName := range []string{"pagos_epayco", "pagos_wompi"} {
 		rows, err := querySQLCompat(dbConn, "SELECT COALESCE(status, '') FROM "+tableName+" WHERE empresa_id = ? AND trim(COALESCE(asesor_id, '')) <> ''", empresaID)
 		if err != nil {
@@ -192,10 +188,6 @@ func hasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbConn *sql.DB, empresaID
 	if empresaID <= 0 || code == "" {
 		return false, nil
 	}
-	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
-		return false, err
-	}
-
 	excludeTable := ""
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "epayco":

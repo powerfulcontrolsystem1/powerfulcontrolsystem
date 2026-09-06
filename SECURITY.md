@@ -1,5 +1,7 @@
 # Politica de seguridad
 
+Estado: Vigente. Responsable: Seguridad. Revisión documental: 2026-09-05.
+
 ## Versiones soportadas
 
 La rama `main` y la ultima version publicada son las unicas lineas con

@@ -274,22 +274,44 @@ func inferEmpresaIDFromRequest(r *http.Request) int64 {
 }
 
 func requestClientIP(r *http.Request) string {
-	if RequestFromTrustedProxy(r) && strings.TrimSpace(r.Header.Get("X-Forwarded-For")) != "" {
-		v := strings.TrimSpace(r.Header.Get("X-Forwarded-For"))
-		parts := strings.Split(v, ",")
-		if len(parts) > 0 {
-			return strings.TrimSpace(parts[0])
+	return ClientIP(r)
+}
+
+// ClientIP walks the proxy chain from the socket toward the first untrusted hop.
+// A client-controlled prefix must never select an audit or rate-limit identity.
+func ClientIP(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	peer := strings.TrimSpace(r.RemoteAddr)
+	if host, _, err := net.SplitHostPort(peer); err == nil {
+		peer = host
+	}
+	ip := net.ParseIP(peer)
+	if ip == nil {
+		return ""
+	}
+	if !trustedProxyIP(ip) {
+		return ip.String()
+	}
+	forwarded := strings.Join(r.Header.Values("X-Forwarded-For"), ",")
+	if forwarded != "" {
+		parts := strings.Split(forwarded, ",")
+		for i := len(parts) - 1; i >= 0; i-- {
+			hop := net.ParseIP(strings.TrimSpace(parts[i]))
+			if hop == nil {
+				// An invalid hop breaks the verifiable chain. Use the socket.
+				return ip.String()
+			}
+			if !trustedProxyIP(hop) || i == 0 {
+				return hop.String()
+			}
 		}
 	}
-	if RequestFromTrustedProxy(r) && strings.TrimSpace(r.Header.Get("X-Real-IP")) != "" {
-		v := strings.TrimSpace(r.Header.Get("X-Real-IP"))
-		return v
+	if realIP := net.ParseIP(strings.TrimSpace(r.Header.Get("X-Real-IP"))); realIP != nil {
+		return realIP.String()
 	}
-	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
-	if err == nil && host != "" {
-		return host
-	}
-	return strings.TrimSpace(r.RemoteAddr)
+	return ip.String()
 }
 
 // RequestFromTrustedProxy only accepts forwarding headers from explicit CIDRs.
@@ -303,6 +325,10 @@ func RequestFromTrustedProxy(r *http.Request) bool {
 		host = strings.TrimSpace(r.RemoteAddr)
 	}
 	ip := net.ParseIP(host)
+	return trustedProxyIP(ip)
+}
+
+func trustedProxyIP(ip net.IP) bool {
 	if ip == nil {
 		return false
 	}

@@ -1,3 +1,7 @@
+> Estado documental: histórico. Reporte de rama de julio; el informe y cierre de reparaciones de septiembre distinguen el estado local más reciente.
+> Fuentes actuales: [cierre_reparaciones_produccion_seguridad_2026-09-05.md](cierre_reparaciones_produccion_seguridad_2026-09-05.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Endurecimiento de seguridad 2026-07-11
 
 Estado: validación final en `security/full-hardening-clean-20260712`; no desplegado.

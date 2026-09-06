@@ -31,28 +31,26 @@ func registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp *sql.DB, r *http.Request,
 	if statusCode <= 0 {
 		statusCode = http.StatusOK
 	}
-	go func() {
-		_, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, dbpkg.EmpresaAuditoriaEvento{
-			EmpresaID:      empresaID,
-			Modulo:         modulo,
-			Accion:         accion,
-			Recurso:        recurso,
-			RecursoID:      recursoID,
-			MetodoHTTP:     r.Method,
-			Endpoint:       r.URL.Path,
-			Resultado:      resolveAuditoriaResultado(statusCode),
-			CodigoHTTP:     int64(statusCode),
-			RequestID:      resolveAuditoriaRequestID(r),
-			IPOrigen:       resolveAuditoriaIP(r),
-			UserAgent:      r.UserAgent(),
-			MetadataJSON:   string(metadataJSON),
-			RetencionDias:  0,
-			UsuarioCreador: adminEmailFromRequest(r),
-			Estado:         "activo",
-			Observaciones:  sanitizeAuditMetadataText(observaciones, 500),
-		})
-		if err != nil {
-			log.Printf("[auditoria] modulo_especifico empresa_id=%d modulo=%s accion=%s error: %v", empresaID, modulo, accion, err)
-		}
-	}()
+	_, err = dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, dbpkg.EmpresaAuditoriaEvento{
+		EmpresaID:      empresaID,
+		Modulo:         modulo,
+		Accion:         accion,
+		Recurso:        recurso,
+		RecursoID:      recursoID,
+		MetodoHTTP:     r.Method,
+		Endpoint:       r.URL.Path,
+		Resultado:      resolveAuditoriaResultado(statusCode),
+		CodigoHTTP:     int64(statusCode),
+		RequestID:      resolveAuditoriaRequestID(r),
+		IPOrigen:       resolveAuditoriaIP(r),
+		UserAgent:      r.UserAgent(),
+		MetadataJSON:   string(metadataJSON),
+		RetencionDias:  0,
+		UsuarioCreador: adminEmailFromRequest(r),
+		Estado:         "activo",
+		Observaciones:  sanitizeAuditMetadataText(observaciones, 500),
+	})
+	if err != nil {
+		log.Printf("[auditoria] modulo_especifico empresa_id=%d modulo=%s accion=%s error: %v", empresaID, modulo, accion, err)
+	}
 }

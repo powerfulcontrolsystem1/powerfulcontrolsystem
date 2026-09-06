@@ -235,11 +235,9 @@ func registrarSuperAuditoriaNoBloqueante(dbSuper *sql.DB, r *http.Request, modul
 		UsuarioCreador: firstNonBlank(adminEmail, "anonimo"),
 		Observaciones:  "auditoria automatica de operacion global",
 	}
-	go func() {
-		if _, err := dbpkg.CreateSuperAuditoriaEvento(dbSuper, audit); err != nil {
-			log.Printf("[auditoria_super] no se pudo registrar evento modulo=%s accion=%s status=%d error=%v", audit.Modulo, audit.Accion, statusCode, err)
-		}
-	}()
+	if _, err := dbpkg.CreateSuperAuditoriaEvento(dbSuper, audit); err != nil {
+		log.Printf("[auditoria_super] no se pudo registrar evento modulo=%s accion=%s status=%d error=%v", audit.Modulo, audit.Accion, statusCode, err)
+	}
 }
 
 func buildSuperAuditoriaFilterFromRequest(r *http.Request) (dbpkg.SuperAuditoriaEventoFilter, error) {

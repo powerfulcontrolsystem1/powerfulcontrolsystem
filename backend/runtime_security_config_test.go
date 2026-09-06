@@ -29,6 +29,10 @@ func TestValidateProductionSecurityConfigRejectsLocalStorageWithMultipleReplicas
 	if err := validateProductionSecurityConfig(); err != nil {
 		t.Fatalf("shared private storage rejected: %v", err)
 	}
+	t.Setenv("PCS_PRIVATE_STORAGE_MODE", "object")
+	if err := validateProductionSecurityConfig(); err == nil {
+		t.Fatal("object storage declarativo fue aceptado sin adaptador operativo")
+	}
 }
 
 func TestValidateProductionSecurityConfigAcceptsCompleteConfig(t *testing.T) {

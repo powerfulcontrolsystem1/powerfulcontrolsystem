@@ -3444,6 +3444,11 @@ func ListCarritoStationMetricSummary(dbConn *sql.DB, empresaID, estacionID int64
 
 // CreateCarritoCompraItem crea un item y recalcula totales del carrito.
 func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, error) {
+	return createCarritoCompraItemGuarded(dbConn, payload, nil)
+}
+
+// The optional guard runs inside the same transaction before stock and totals.
+func createCarritoCompraItemGuarded(dbConn *sql.DB, payload CarritoCompraItem, guard func(*sql.Tx) error) (int64, error) {
 	payload.TipoItem = defaultTipoItem(payload.TipoItem)
 	payload.UnidadMedida = defaultUnidadCarrito(payload.UnidadMedida)
 	if err := validateCarritoCompraItemCantidad(payload.Cantidad, payload.UnidadMedida); err != nil {
@@ -3458,6 +3463,11 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 
 	id := int64(0)
 	err := withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		if guard != nil {
+			if err := guard(tx); err != nil {
+				return err
+			}
+		}
 		if err := validateCarritoEnEmpresaTx(tx, payload.EmpresaID, payload.CarritoID); err != nil {
 			return err
 		}
@@ -3527,7 +3537,7 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 				payload.Cantidad,
 				payload.BodegaID,
 				true,
-				true,
+				guard == nil,
 				referencia,
 				payload.UsuarioCreador,
 				"reserva por adicion al carrito",

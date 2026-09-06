@@ -1,7 +1,14 @@
 # Runbook: soporte remoto, sesiones y dispositivos
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La sesión activa solo habilita el alcance acordado con el operador; no autoriza compras, archivos ni cambios arbitrarios en el equipo.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Sintomas cubiertos
 
@@ -71,3 +78,8 @@ Aplica al módulo empresarial de soporte remoto, al agente público de heartbeat
 ## Runbooks relacionados
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md`
+## Fuentes y aceptación de la revisión
+
+[contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md](../contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md), [soporte_remoto.go](../../../backend/handlers/soporte_remoto.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

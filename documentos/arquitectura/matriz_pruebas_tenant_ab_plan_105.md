@@ -1,3 +1,7 @@
+> Estado documental: histórico. Matriz de aceptación y conteos de julio; conservar casos A/B sin interpretar sus cifras como cobertura actual.
+> Fuentes actuales: [estrategia_verificacion.md](../calidad/estrategia_verificacion.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Matriz de pruebas tenant A/B - Plan 105
 
 Fecha de corte: 2026-07-21. Esta matriz separa controles existentes de la

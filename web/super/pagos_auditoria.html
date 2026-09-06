@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Auditoría de pagos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/super/pagos_auditoria.css?v=20260905">
+</head>
+<body>
+  <main class="payment-audit">
+    <h1>Auditoría de pagos</h1>
+    <p class="intro">Seguimiento seguro de transacciones e intentos de ePayco y Wompi. La vista no contiene datos bancarios ni credenciales.</p>
+
+    <form id="paymentAuditFilters" class="audit-filters">
+      <label>Proveedor
+        <select id="auditProvider" name="provider">
+          <option value="">Todos</option>
+          <option value="epayco">ePayco</option>
+          <option value="wompi">Wompi</option>
+        </select>
+      </label>
+      <label>Estado
+        <input id="auditStatus" name="status" maxlength="40" placeholder="APPROVED, procesando…">
+      </label>
+      <label>Empresa
+        <input id="auditEmpresa" name="empresa_id" type="number" min="1" step="1" placeholder="ID">
+      </label>
+      <label>Referencia o ID
+        <input id="auditSearch" name="q" maxlength="100" autocomplete="off" placeholder="Referencia, transacción…">
+      </label>
+      <label>Filas
+        <select id="auditLimit" name="limit">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+        </select>
+      </label>
+      <button class="btn primary" type="submit">Consultar</button>
+    </form>
+
+    <div id="auditMessage" role="status" aria-live="polite"></div>
+    <section class="audit-summary" aria-label="Resumen">
+      <div class="audit-kpi">Transacciones<strong id="auditTransactionsCount">0</strong></div>
+      <div class="audit-kpi">Aprobadas<strong id="auditApprovedCount">0</strong></div>
+      <div class="audit-kpi">Intentos checkout<strong id="auditCheckoutCount">0</strong></div>
+      <div class="audit-kpi">Efectos pendientes/fallidos<strong id="auditEffectsAlertCount">0</strong></div>
+    </section>
+
+    <section class="audit-section">
+      <h2>Transacciones registradas</h2>
+      <div class="audit-table-wrap"><table class="audit-table">
+        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Empresa</th><th>Licencia</th><th>Referencia</th><th>Transacción</th><th>Estado</th><th>Activación</th><th>Intentos</th></tr></thead>
+        <tbody id="auditTransactionsBody"></tbody>
+      </table></div>
+    </section>
+
+    <section class="audit-section">
+      <h2>Intentos idempotentes de checkout</h2>
+      <div class="audit-table-wrap"><table class="audit-table">
+        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Empresa</th><th>Referencia</th><th>Estado</th><th>HTTP</th></tr></thead>
+        <tbody id="auditCheckoutBody"></tbody>
+      </table></div>
+    </section>
+
+    <section class="audit-section">
+      <h2>Efectos posteriores al pago</h2>
+      <div class="audit-table-wrap"><table class="audit-table">
+        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Empresa</th><th>Licencia</th><th>Efecto</th><th>Estado</th><th>Intentos</th></tr></thead>
+        <tbody id="auditEffectsBody"></tbody>
+      </table></div>
+    </section>
+
+    <div class="audit-pager">
+      <button id="auditPrevious" class="btn secondary" type="button">Anterior</button>
+      <button id="auditNext" class="btn secondary" type="button">Siguiente</button>
+    </div>
+  </main>
+  <script src="/js/super_pagos_auditoria.js?v=20260905"></script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

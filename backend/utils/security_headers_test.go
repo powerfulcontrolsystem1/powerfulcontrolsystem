@@ -21,6 +21,31 @@ func TestForwardedHeadersIgnoredOutsideTrustedProxy(t *testing.T) {
 	}
 }
 
+func TestClientIPTrustBoundary(t *testing.T) {
+	t.Setenv("PCS_TRUSTED_PROXY_CIDRS", "127.0.0.1/32,10.20.0.0/24")
+	for _, tc := range []struct{ name, peer, forwarded, real, want string }{
+		{"direct spoof", "198.51.100.24:1234", "203.0.113.9", "203.0.113.8", "198.51.100.24"},
+		{"forged prefix", "127.0.0.1:80", "203.0.113.9, 198.51.100.24", "", "198.51.100.24"},
+		{"two proxies", "10.20.0.2:80", "203.0.113.9, 198.51.100.24, 127.0.0.1", "", "198.51.100.24"},
+		{"invalid chain", "127.0.0.1:80", "203.0.113.9, invalid", "203.0.113.8", "127.0.0.1"},
+		{"empty hop", "127.0.0.1:80", "203.0.113.9,", "", "127.0.0.1"},
+		{"ipv6", "127.0.0.1:80", "2001:db8::5", "", "2001:db8::5"},
+		{"real ip only", "127.0.0.1:80", "", "198.51.100.24", "198.51.100.24"},
+		{"invalid real ip", "127.0.0.1:80", "", "invalid", "127.0.0.1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "https://service.test/", nil)
+			r.RemoteAddr = tc.peer
+			r.Header.Set("X-Forwarded-For", tc.forwarded)
+			r.Header.Set("X-Real-IP", tc.real)
+			if got := ClientIP(r); got != tc.want {
+				t.Fatalf("ClientIP = %q, want %q", got, tc.want)
+			}
+		})
+	}
+	if ClientIP(nil) != "" { t.Fatal("nil request must have no IP") }
+}
+
 func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 	t.Setenv("ONLYOFFICE_DOCUMENT_SERVER_URL", "https://onlyoffice.example.test")
 	t.Setenv("NEXTCLOUD_BASE_URL", "https://nextcloud.example.test")

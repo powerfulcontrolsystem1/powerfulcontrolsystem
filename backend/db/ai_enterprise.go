@@ -328,9 +328,12 @@ func CreateOrRefreshEmpresaAIConversation(dbConn *sql.DB, in EmpresaAIConversati
 		in.Modo = "assisted"
 	}
 	expires := time.Now().UTC().Add(ttl)
-	_, err := execSQLCompat(dbConn, `INSERT INTO empresa_ai_conversaciones (conversation_id,empresa_id,usuario_id,modo,estado,intencion,entidades_json,campos_faltantes_json,plan_actual_json,propuesta_pendiente,fecha_expiracion,fecha_actualizacion) VALUES (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT (conversation_id) DO UPDATE SET modo=EXCLUDED.modo, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_ai_conversaciones.empresa_id=EXCLUDED.empresa_id AND empresa_ai_conversaciones.usuario_id=EXCLUDED.usuario_id AND empresa_ai_conversaciones.fecha_expiracion>CURRENT_TIMESTAMP`, strings.TrimSpace(in.ConversationID), in.EmpresaID, strings.TrimSpace(in.UsuarioID), in.Modo, "active", strings.TrimSpace(in.Intencion), defaultAIJSON(in.EntidadesJSON, "{}"), defaultAIJSON(in.CamposFaltantesJSON, "[]"), defaultAIJSON(in.PlanActualJSON, "{}"), strings.TrimSpace(in.PropuestaPendiente), expires)
+	result, err := execSQLCompat(dbConn, `INSERT INTO empresa_ai_conversaciones (conversation_id,empresa_id,usuario_id,modo,estado,intencion,entidades_json,campos_faltantes_json,plan_actual_json,propuesta_pendiente,fecha_expiracion,fecha_actualizacion) VALUES (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT (conversation_id) DO UPDATE SET modo=EXCLUDED.modo, fecha_actualizacion=CURRENT_TIMESTAMP, fecha_expiracion=EXCLUDED.fecha_expiracion WHERE empresa_ai_conversaciones.empresa_id=EXCLUDED.empresa_id AND empresa_ai_conversaciones.usuario_id=EXCLUDED.usuario_id`, strings.TrimSpace(in.ConversationID), in.EmpresaID, strings.TrimSpace(in.UsuarioID), in.Modo, "active", strings.TrimSpace(in.Intencion), defaultAIJSON(in.EntidadesJSON, "{}"), defaultAIJSON(in.CamposFaltantesJSON, "[]"), defaultAIJSON(in.PlanActualJSON, "{}"), strings.TrimSpace(in.PropuestaPendiente), expires)
 	if err != nil {
 		return nil, err
+	}
+	if count, err := result.RowsAffected(); err != nil || count != 1 {
+		return nil, fmt.Errorf("conversación fuera del alcance del usuario")
 	}
 	in.FechaExpiracion = expires.Format(time.RFC3339)
 	return &in, nil

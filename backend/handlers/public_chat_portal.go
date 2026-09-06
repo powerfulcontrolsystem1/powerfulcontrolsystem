@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 )
 
 type publicPortalChatLimiter struct {
@@ -30,20 +30,7 @@ type publicPortalChatUsage struct {
 var portalChatLimiter = &publicPortalChatLimiter{records: map[string]*publicPortalChatUsage{}}
 
 func portalChatClientIP(r *http.Request) string {
-	if v := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); v != "" {
-		parts := strings.Split(v, ",")
-		if len(parts) > 0 {
-			return strings.TrimSpace(parts[0])
-		}
-	}
-	if v := strings.TrimSpace(r.Header.Get("X-Real-IP")); v != "" {
-		return v
-	}
-	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
-	if err == nil && host != "" {
-		return host
-	}
-	return strings.TrimSpace(r.RemoteAddr)
+	return utils.ClientIP(r)
 }
 
 func portalChatGetOrSetClientID(w http.ResponseWriter, r *http.Request) string {
@@ -57,10 +44,7 @@ func portalChatGetOrSetClientID(w http.ResponseWriter, r *http.Request) string {
 	_, _ = rand.Read(b[:])
 	id := hex.EncodeToString(b[:])
 
-	secure := r.TLS != nil
-	if !secure && strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") {
-		secure = true
-	}
+	secure := SessionCookieSecure(r)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "pcs_public_chat_id",
 		Value:    id,
@@ -776,7 +760,7 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		h := sanitizeHistorial(body.Historial, 6)
-		answer, _, _, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, p, h, systemPrompt)
+		answer, _, _, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, p, h, systemPrompt, empresaAISafetyIdentifier("portal:"+key))
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]interface{}{
 				"ok":                  false,

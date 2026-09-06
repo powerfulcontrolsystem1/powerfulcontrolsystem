@@ -56,3 +56,27 @@ func TestEmpresaVidaSubscriptionProjection(t *testing.T) {
 		}
 	}
 }
+
+func TestEmpresaVidaReportsAndReminderSchemaStayPersonalAndIdempotent(t *testing.T) {
+	joined := strings.ToLower(strings.Join(empresaVidaReportsNotificationsSchemaStatements(), "\n"))
+	for _, required := range []string{"empresa_vida_notificacion_configuracion", "empresa_vida_notificaciones", "empresa_id", "usuario_id", "suscripcion_id", "email_activa", "whatsapp_activa", "unique (empresa_id, usuario_id, suscripcion_id, proxima_renovacion, canal)"} {
+		if !strings.Contains(joined, required) {
+			t.Fatalf("Vida reports/reminders schema is missing %q", required)
+		}
+	}
+	if strings.Contains(joined, "inventario") || strings.Contains(joined, "contabilidad") {
+		t.Fatal("Vida reminders must remain independent from business modules")
+	}
+}
+
+func TestNormalizeVidaReportDatesBoundsPeriod(t *testing.T) {
+	if _, _, err := normalizeVidaReportDates("2026-09-05", "2026-09-04"); err == nil {
+		t.Fatal("reversed report range was accepted")
+	}
+	if _, _, err := normalizeVidaReportDates("2025-01-01", "2026-09-05"); err == nil {
+		t.Fatal("unbounded report range was accepted")
+	}
+	if from, to, err := normalizeVidaReportDates("2026-08-01", "2026-09-05"); err != nil || from != "2026-08-01" || to != "2026-09-05" {
+		t.Fatalf("valid report range failed: %q %q %v", from, to, err)
+	}
+}

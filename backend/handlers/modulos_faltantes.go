@@ -79,9 +79,16 @@ type empresaModuloGenericConfig struct {
 	AllowedColumns   []string
 	RequiredOnCreate []string
 	ValidatePayload  func(*sql.DB, int64, map[string]interface{}, bool) error
+	TenantReferences []empresaModuloTenantReference
+	ServerControlled []string
 	CodeColumn       string
 	CodePrefix       string
 	DefaultValues    map[string]interface{}
+}
+
+type empresaModuloTenantReference struct {
+	Field string
+	Table string
 }
 
 type empresaModuloStateMachineConfig struct {
@@ -195,6 +202,8 @@ var (
 			"usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"cliente_nombre", "documento_codigo"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "cliente_id", Table: "clientes"}},
+		ServerControlled: []string{"dias_mora", "valor_pagado", "saldo", "referencia_pagos_json", "fecha_ultimo_pago", "conciliado_en", "conciliado_por"},
 		CodeColumn:       "codigo",
 		CodePrefix:       "CXC",
 		DefaultValues: map[string]interface{}{
@@ -219,6 +228,8 @@ var (
 		// registered supplier selected by ID.
 		RequiredOnCreate: []string{"proveedor_id", "documento_codigo"},
 		ValidatePayload:  validateEmpresaCxPProveedorPayload,
+		TenantReferences: []empresaModuloTenantReference{{Field: "proveedor_id", Table: "proveedores"}},
+		ServerControlled: []string{"dias_mora", "valor_pagado", "saldo", "referencia_pagos_json", "fecha_ultimo_pago", "conciliado_en", "conciliado_por"},
 		CodeColumn:       "codigo",
 		CodePrefix:       "CXP",
 		DefaultValues: map[string]interface{}{
@@ -238,6 +249,8 @@ var (
 			"usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"producto_id", "codigo_lote_serie"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "producto_id", Table: "productos"}, {Field: "bodega_id", Table: "bodegas"}},
+		ServerControlled: []string{"cantidad_disponible", "reservado_cantidad", "vendido_cantidad", "ultima_operacion_tipo", "ultima_operacion_ref", "ultima_operacion_en"},
 		DefaultValues: map[string]interface{}{
 			"tipo_control":       "lote",
 			"estado_lote":        "activo",
@@ -256,7 +269,10 @@ var (
 			"impacto_contable_movimiento_id", "impacto_contable_evento_id", "fecha_contabilizacion", "contabilizado_por", "total_reintegrado",
 			"usuario_creador", "estado", "observaciones",
 		},
-		RequiredOnCreate: []string{"proveedor_nombre", "motivo"},
+		RequiredOnCreate: []string{"proveedor_id", "motivo"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "proveedor_id", Table: "proveedores"}},
+		ServerControlled: []string{"impacto_contable_movimiento_id", "impacto_contable_evento_id", "fecha_contabilizacion", "contabilizado_por", "total_reintegrado"},
+		ValidatePayload:  validateEmpresaCxPProveedorPayload,
 		CodeColumn:       "codigo",
 		CodePrefix:       "DPROV",
 		DefaultValues: map[string]interface{}{
@@ -276,6 +292,8 @@ var (
 			"nomina_periodo_hasta", "nomina_vinculada_en", "nomina_vinculada_por", "usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"empleado_nombre", "tipo_novedad", "fecha_inicio", "fecha_fin"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "empleado_nomina_id", Table: "empresa_nomina_empleados"}, {Field: "nomina_liquidacion_id", Table: "empresa_nomina_liquidaciones"}},
+		ServerControlled: []string{"aprobado_por", "nivel_aprobacion_actual", "aprobadores_json", "historial_aprobaciones_json", "fecha_aprobacion_final", "saldo_dias_antes", "saldo_dias_despues", "saldo_snapshot_json", "nomina_liquidacion_id", "nomina_periodo_desde", "nomina_periodo_hasta", "nomina_vinculada_en", "nomina_vinculada_por"},
 		CodeColumn:       "codigo",
 		CodePrefix:       "RRHH",
 		DefaultValues: map[string]interface{}{
@@ -310,6 +328,7 @@ var (
 			"usuario_responsable", "proxima_accion", "estado_interaccion", "usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"tipo_interaccion", "resumen"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "lead_id", Table: "crm_leads"}, {Field: "cliente_id", Table: "clientes"}},
 		CodeColumn:       "codigo",
 		CodePrefix:       "INT",
 		DefaultValues: map[string]interface{}{
@@ -340,6 +359,8 @@ var (
 			"costo_estimado_total", "estado_bom", "usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"codigo", "producto_nombre"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "producto_id", Table: "productos"}},
+		ServerControlled: []string{"costo_estimado_total"},
 		DefaultValues: map[string]interface{}{
 			"version":    "1.0",
 			"estado_bom": "activo",
@@ -354,6 +375,8 @@ var (
 			"costo_unitario", "costo_total", "merma_porcentaje", "usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"bom_id", "insumo_nombre", "cantidad"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "bom_id", Table: "produccion_bom"}, {Field: "insumo_producto_id", Table: "productos"}},
+		ServerControlled: []string{"costo_total"},
 	}
 
 	cfgProduccionOrdenes = empresaModuloGenericConfig{
@@ -365,6 +388,8 @@ var (
 			"responsable", "notas", "usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"producto_nombre", "cantidad_programada"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "bom_id", Table: "produccion_bom"}, {Field: "producto_id", Table: "productos"}},
+		ServerControlled: []string{"cantidad_producida", "fecha_inicio", "fecha_fin", "costo_real"},
 		CodeColumn:       "codigo",
 		CodePrefix:       "OP",
 		DefaultValues: map[string]interface{}{
@@ -411,6 +436,8 @@ var (
 			"latitud", "longitud", "observaciones_seguimiento", "usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"cliente_nombre", "direccion_entrega"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "cliente_id", Table: "clientes"}, {Field: "ruta_id", Table: "logistica_rutas"}, {Field: "transportista_id", Table: "logistica_transportistas"}},
+		ServerControlled: []string{"fecha_salida", "fecha_entrega", "latitud", "longitud", "observaciones_seguimiento"},
 		CodeColumn:       "codigo",
 		CodePrefix:       "ENV",
 		DefaultValues: map[string]interface{}{
@@ -444,6 +471,8 @@ var (
 			"usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"documento_gestion_id", "tipo_firma", "firmante_nombre"},
+		TenantReferences: []empresaModuloTenantReference{{Field: "documento_gestion_id", Table: "empresa_documentos_gestion"}},
+		ServerControlled: []string{"certificado_serial", "algoritmo_firma", "hash_firma", "fecha_firma", "validez_hasta"},
 		CodeColumn:       "codigo",
 		CodePrefix:       "FIR",
 		DefaultValues: map[string]interface{}{
@@ -5855,6 +5884,63 @@ func validateEmpresaCxPProveedorPayload(dbEmp *sql.DB, empresaID int64, payload 
 	return nil
 }
 
+func sanitizeEmpresaGenericPayload(payload map[string]interface{}, cfg empresaModuloGenericConfig, isCreate bool) {
+	protected := map[string]struct{}{
+		"empresa_id": {}, "id": {}, "usuario_creador": {},
+	}
+	for _, column := range cfg.AllowedColumns {
+		if column == "estado" || strings.HasPrefix(column, "estado_") {
+			protected[column] = struct{}{}
+		}
+	}
+	for _, column := range cfg.ServerControlled {
+		protected[column] = struct{}{}
+	}
+	for column := range protected {
+		delete(payload, column)
+	}
+	if isCreate && hasAllowedColumn(cfg.AllowedColumns, "estado") {
+		payload["estado"] = "activo"
+	}
+}
+
+func validateEmpresaTenantReferences(ctx context.Context, dbEmp *sql.DB, empresaID int64, payload map[string]interface{}, refs []empresaModuloTenantReference) error {
+	if len(refs) == 0 {
+		return nil
+	}
+	if dbEmp == nil || empresaID <= 0 {
+		return fmt.Errorf("no se pudieron validar las referencias de la empresa")
+	}
+	allowedTables := map[string]struct{}{
+		"bodegas": {}, "clientes": {}, "crm_leads": {}, "empresa_documentos_gestion": {},
+		"empresa_nomina_empleados": {}, "empresa_nomina_liquidaciones": {}, "logistica_rutas": {},
+		"logistica_transportistas": {}, "produccion_bom": {}, "productos": {}, "proveedores": {},
+	}
+	for _, ref := range refs {
+		value, present := payload[ref.Field]
+		if !present || isEmptyGenericValue(value) {
+			continue
+		}
+		id := anyToInt64(value)
+		if id <= 0 {
+			return fmt.Errorf("%s invalido", ref.Field)
+		}
+		if _, ok := allowedTables[ref.Table]; !ok {
+			return fmt.Errorf("referencia empresarial no permitida")
+		}
+		var exists int
+		query := fmt.Sprintf("SELECT 1 FROM %s WHERE empresa_id=? AND id=?", ref.Table)
+		if err := dbpkg.QueryRowCompatContext(ctx, dbEmp, query, empresaID, id).Scan(&exists); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("%s no pertenece a la empresa activa", ref.Field)
+			}
+			return fmt.Errorf("no se pudo validar %s", ref.Field)
+		}
+		payload[ref.Field] = id
+	}
+	return nil
+}
+
 func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -5871,7 +5957,7 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 					http.Error(w, "id required", http.StatusBadRequest)
 					return
 				}
-				item, err := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+				item, err := dbpkg.GetEmpresaGenericRowByIDContext(r.Context(), dbEmp, cfg.Table, empresaID, id)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "registro no encontrado", http.StatusNotFound)
@@ -5899,7 +5985,7 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				http.Error(w, "offset invalido", http.StatusBadRequest)
 				return
 			}
-			items, err := dbpkg.ListEmpresaGenericRows(dbEmp, cfg.Table, empresaID, dbpkg.EmpresaGenericListFilter{
+			items, err := dbpkg.ListEmpresaGenericRowsContext(r.Context(), dbEmp, cfg.Table, empresaID, dbpkg.EmpresaGenericListFilter{
 				IncludeInactive: parseBoolQuery(r, "include_inactive"),
 				Q:               strings.TrimSpace(r.URL.Query().Get("q")),
 				Limit:           limit,
@@ -5924,18 +6010,18 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			sanitizeEmpresaGenericPayload(payload, cfg, true)
 			applyGenericDefaultValues(payload, cfg.DefaultValues)
 			ensureGenericCode(payload, cfg.CodeColumn, cfg.CodePrefix)
 			if hasAllowedColumn(cfg.AllowedColumns, "usuario_creador") {
-				if isEmptyGenericValue(payload["usuario_creador"]) {
-					payload["usuario_creador"] = adminEmailFromRequest(r)
-				}
-			}
-			if hasAllowedColumn(cfg.AllowedColumns, "estado") && isEmptyGenericValue(payload["estado"]) {
-				payload["estado"] = "activo"
+				payload["usuario_creador"] = adminEmailFromRequest(r)
 			}
 
 			if err := validateGenericRequiredCreate(payload, cfg.RequiredOnCreate); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if err := validateEmpresaTenantReferences(r.Context(), dbEmp, empresaID, payload, cfg.TenantReferences); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -5946,7 +6032,7 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				}
 			}
 
-			id, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfg.Table, empresaID, payload, cfg.AllowedColumns)
+			id, err := dbpkg.CreateEmpresaGenericRowContext(r.Context(), dbEmp, cfg.Table, empresaID, payload, cfg.AllowedColumns)
 			if err != nil {
 				if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
 					http.Error(w, "el periodo contable del registro esta cerrado", http.StatusConflict)
@@ -5955,7 +6041,7 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				http.Error(w, "No se pudo crear registro", http.StatusBadRequest)
 				return
 			}
-			item, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+			item, _ := dbpkg.GetEmpresaGenericRowByIDContext(r.Context(), dbEmp, cfg.Table, empresaID, id)
 			writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id, "item": item})
 			return
 
@@ -5976,7 +6062,7 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				if action == "desactivar" {
 					estado = "inactivo"
 				}
-				if err := dbpkg.SetEmpresaGenericRowEstado(dbEmp, cfg.Table, empresaID, id, estado); err != nil {
+				if err := dbpkg.SetEmpresaGenericRowEstadoContext(r.Context(), dbEmp, cfg.Table, empresaID, id, estado); err != nil {
 					if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
 						http.Error(w, "el periodo contable del registro esta cerrado", http.StatusConflict)
 						return
@@ -6003,13 +6089,18 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				http.Error(w, "id required", http.StatusBadRequest)
 				return
 			}
+			sanitizeEmpresaGenericPayload(payload, cfg, false)
+			if err := validateEmpresaTenantReferences(r.Context(), dbEmp, empresaID, payload, cfg.TenantReferences); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			if cfg.ValidatePayload != nil {
 				if err := cfg.ValidatePayload(dbEmp, empresaID, payload, false); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
 			}
-			if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfg.Table, empresaID, id, payload, cfg.AllowedColumns); err != nil {
+			if err := dbpkg.UpdateEmpresaGenericRowContext(r.Context(), dbEmp, cfg.Table, empresaID, id, payload, cfg.AllowedColumns); err != nil {
 				if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
 					http.Error(w, "el periodo contable del registro esta cerrado", http.StatusConflict)
 					return
@@ -6017,7 +6108,7 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				http.Error(w, "No se pudo actualizar registro", http.StatusBadRequest)
 				return
 			}
-			item, _ := dbpkg.GetEmpresaGenericRowByID(dbEmp, cfg.Table, empresaID, id)
+			item, _ := dbpkg.GetEmpresaGenericRowByIDContext(r.Context(), dbEmp, cfg.Table, empresaID, id)
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "item": item})
 			return
 
@@ -6032,7 +6123,7 @@ func empresaModuloGenericCRUDHandler(dbEmp *sql.DB, cfg empresaModuloGenericConf
 				http.Error(w, "id required", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.DeleteEmpresaGenericRow(dbEmp, cfg.Table, empresaID, id); err != nil {
+			if err := dbpkg.DeleteEmpresaGenericRowContext(r.Context(), dbEmp, cfg.Table, empresaID, id); err != nil {
 				if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
 					http.Error(w, "el periodo contable del registro esta cerrado", http.StatusConflict)
 					return
@@ -13606,7 +13697,7 @@ func importDIANRUTPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[string]int
 	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
 	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
 	pregunta := "Extrae los datos fiscales visibles del Registro Unico Tributario DIAN adjunto. Responde solo JSON valido."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, dianRUTIASystemPrompt(), att, nil, nil)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, dianRUTIASystemPrompt(), att, nil, nil, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
 	if err != nil {
 		return nil, http.StatusBadGateway, err
 	}
@@ -13842,7 +13933,7 @@ func importDIANNumeracionPDFIA(dbEmp, dbSuper *sql.DB, r *http.Request) (map[str
 	att := &aiAttachment{Filename: upload.FileName, MimeType: "application/pdf", Bytes: upload.Bytes}
 	systemPrompt := dianNumeracion1876IASystemPrompt()
 	pregunta := "Extrae los campos del Formulario 1876 de autorizacion de numeracion DIAN adjunto. Responde solo JSON valido."
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(r.Context(), model, pregunta, nil, systemPrompt, att, nil, nil, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
 	if err != nil {
 		return nil, http.StatusBadGateway, err
 	}

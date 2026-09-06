@@ -87,6 +87,8 @@ services:
       DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
       PCS_RUNTIME_DB_USER: ${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}
       PCS_RUNTIME_DB_PASSWORD: ${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}
+      PCS_BACKUP_DB_USER: ${PCS_BACKUP_DB_USER:?Defina PCS_BACKUP_DB_USER}
+      PCS_BACKUP_DB_PASSWORD: ${PCS_BACKUP_DB_PASSWORD:?Defina PCS_BACKUP_DB_PASSWORD}
       CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
       CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
       CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
@@ -138,8 +140,9 @@ services:
       dockerfile: deploy/docker/backend.Dockerfile
       target: api
     image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
-    container_name: pcs-backend
     restart: unless-stopped
+    deploy:
+      replicas: ${PCS_API_REPLICAS:-1}
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -280,8 +283,9 @@ services:
       dockerfile: deploy/docker/backend.Dockerfile
       target: worker
     image: ${PCS_WORKER_IMAGE:-pcs-worker:local}
-    container_name: pcs-worker
     restart: unless-stopped
+    deploy:
+      replicas: ${PCS_WORKER_REPLICAS:-1}
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -326,14 +330,13 @@ services:
       ASIENTOS_WORKER_INTERVAL_MINUTES: ${ASIENTOS_WORKER_INTERVAL_MINUTES:-15}
       ASIENTOS_WORKER_BATCH_SIZE: ${ASIENTOS_WORKER_BATCH_SIZE:-100}
       ASIENTOS_WORKER_MAX_RETRIES: ${ASIENTOS_WORKER_MAX_RETRIES:-5}
-      PCS_WORKER_ID: ${PCS_WORKER_ID:-pcs-worker-main}
       PCS_WORKER_HEALTH_ADDR: ${PCS_WORKER_HEALTH_ADDR:-127.0.0.1:8082}
       PCS_PRIVATE_STORAGE_DIR: /app/private_storage
       PCS_PROJECT_EXPORT_ROOT: /app/project_export
       PGHOST: postgres
       PGPORT: "5432"
-      PGUSER: ${POSTGRES_USER:-pcs}
-      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGUSER: ${PCS_BACKUP_DB_USER:?Defina PCS_BACKUP_DB_USER}
+      PGPASSWORD: ${PCS_BACKUP_DB_PASSWORD:?Defina PCS_BACKUP_DB_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/ready >/dev/null || exit 1"]
       interval: 15s

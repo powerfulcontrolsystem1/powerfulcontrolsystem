@@ -94,9 +94,9 @@ func EmpresaReportesIAChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 }
 
 func handleEmpresaReportesIATexto(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, pregunta string, historial []empresaAIChatMensaje, desde, hasta string) {
-	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.4-mini"]
+	model, ok := availableEmpresaAIModelMap(dbSuper)[firstAvailableEmpresaAIModelID(dbSuper)]
 	if !ok {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "GPT-5.4 mini no esta disponible."})
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "El modelo global no está disponible."})
 		return
 	}
 	fechaUso := time.Now().Format("2006-01-02")
@@ -122,7 +122,7 @@ func handleEmpresaReportesIATexto(w http.ResponseWriter, r *http.Request, dbEmp,
 	}
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
 	system := "Eres un analista de reportes del sistema POS multiempresa. Responde en espanol, breve y con datos del contexto. No inventes cifras fuera del contexto. Si el usuario pide generar/exportar un archivo, indica que use el modo Reporte IA.\n\n" + contexto
-	resp, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 6), system)
+	resp, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 6), system, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
 	if err != nil {
 		http.Error(w, publicAIProviderError(err), http.StatusBadGateway)
 		return
@@ -144,9 +144,9 @@ func handleEmpresaReportesIATexto(w http.ResponseWriter, r *http.Request, dbEmp,
 }
 
 func handleEmpresaReportesIAReporte(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, pregunta string, historial []empresaAIChatMensaje, dataset, format, desde, hasta string) {
-	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.4-mini"]
+	model, ok := availableEmpresaAIModelMap(dbSuper)[firstAvailableEmpresaAIModelID(dbSuper)]
 	if !ok {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "GPT-5.4 mini no esta disponible."})
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "El modelo global no está disponible."})
 		return
 	}
 	fechaUso := time.Now().Format("2006-01-02")
@@ -168,7 +168,7 @@ func handleEmpresaReportesIAReporte(w http.ResponseWriter, r *http.Request, dbEm
 	contexto := buildReportesIAReportContext(dataset, format)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 60 * time.Second}}
 	system := "Eres un asistente de reportes. Debes elegir el dataset y formato mas apropiado para exportar. Responde SOLO JSON valido con keys: dataset, format, title, message. No uses markdown. Si el usuario ya envio dataset/format validos, respetalos.\n\n" + contexto
-	raw, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 4), system)
+	raw, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 4), system, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
 	if err != nil {
 		http.Error(w, "No se pudo interpretar la respuesta de IA. Intenta de nuevo.", http.StatusBadGateway)
 		return
@@ -216,9 +216,9 @@ func handleEmpresaReportesIAReporte(w http.ResponseWriter, r *http.Request, dbEm
 // declarativo. La IA solo propone un ReportSpec; el servidor lo valida y lo
 // ejecuta sobre datasets canonicos aislados por empresa.
 func handleEmpresaReportesIANuevo(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, pregunta string, historial []empresaAIChatMensaje, desde, hasta string) {
-	model, ok := availableEmpresaAIModelMap(dbSuper)["openai:gpt-5.4-mini"]
+	model, ok := availableEmpresaAIModelMap(dbSuper)[firstAvailableEmpresaAIModelID(dbSuper)]
 	if !ok {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "GPT-5.4 mini no esta disponible."})
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"ok": false, "code": "ai_model_missing", "error": "El modelo global no está disponible."})
 		return
 	}
 	fechaUso := time.Now().Format("2006-01-02")
@@ -239,7 +239,7 @@ func handleEmpresaReportesIANuevo(w http.ResponseWriter, r *http.Request, dbEmp,
 	builder := newReportesAIBuilder(r.Context(), dbEmp, empresaID, desde, hasta)
 	ctrl := &EmpresaAIChatController{dbEmp: dbEmp, dbSuper: dbSuper, client: &http.Client{Timeout: 60 * time.Second}}
 	system := "Eres un asistente contable de PCS. Genera un reporte nuevo SOLO como JSON valido con keys title, message, report_spec. report_spec debe incluir source_dataset, columns opcional, filters opcional, group_by opcional, metrics opcional, formulas opcional, order_by opcional y limit. No escribas SQL, no propongas otra empresa, no inventes campos y usa solo el catalogo semantico entregado. Si falta informacion, devuelve report_spec vacio y explica que aclaracion necesitas.\n\n" + buildReportesIANuevoContext()
-	raw, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 4), system)
+	raw, pt, ct, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, pregunta, sanitizeHistorial(historial, 4), system, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
 	if err != nil {
 		http.Error(w, "No se pudo interpretar la respuesta de IA. Intenta de nuevo.", http.StatusBadGateway)
 		return

@@ -138,7 +138,7 @@ func EmpresaProduccionMRPHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				payload.EmpresaID, payload.UsuarioCreador = empresaID, adminEmail
-				id, err := dbpkg.UpsertEmpresaProduccionReceta(dbEmp, payload)
+				id, err := dbpkg.UpsertEmpresaProduccionRecetaContext(r.Context(), dbEmp, payload)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -167,7 +167,10 @@ func EmpresaProduccionMRPHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				payload.EmpresaID, payload.UsuarioCreador = empresaID, adminEmail
-				row, err := dbpkg.CreateEmpresaProduccionOrden(dbEmp, payload)
+				payload.Estado = "borrador"
+				payload.CantidadProducida = 0
+				payload.CostoReal = 0
+				row, err := dbpkg.CreateEmpresaProduccionOrdenContext(r.Context(), dbEmp, payload)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -183,7 +186,7 @@ func EmpresaProduccionMRPHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "JSON invalido", http.StatusBadRequest)
 					return
 				}
-				row, err := dbpkg.CambiarEstadoEmpresaProduccionOrden(dbEmp, empresaID, payload.OrdenID, payload.Estado, adminEmail)
+				row, err := dbpkg.CambiarEstadoEmpresaProduccionOrdenContext(r.Context(), dbEmp, empresaID, payload.OrdenID, payload.Estado, adminEmail)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -197,7 +200,7 @@ func EmpresaProduccionMRPHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				payload.EmpresaID, payload.UsuarioCreador = empresaID, adminEmail
-				id, err := dbpkg.RegistrarEmpresaProduccionConsumo(dbEmp, payload)
+				id, err := dbpkg.RegistrarEmpresaProduccionConsumoContext(r.Context(), dbEmp, payload)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -211,7 +214,7 @@ func EmpresaProduccionMRPHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				payload.EmpresaID = empresaID
-				id, err := dbpkg.RegistrarEmpresaProduccionCalidad(dbEmp, payload)
+				id, err := dbpkg.RegistrarEmpresaProduccionCalidadContext(r.Context(), dbEmp, payload)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
@@ -263,7 +266,7 @@ func EmpresaProduccionMRPHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				payload.EmpresaID = empresaID
-				id, err := dbpkg.UpsertEmpresaProduccionReceta(dbEmp, payload)
+				id, err := dbpkg.UpsertEmpresaProduccionRecetaContext(r.Context(), dbEmp, payload)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return

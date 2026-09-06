@@ -1,7 +1,15 @@
 # Runbook: alertas de reinicio y monitoreo Gmail SMTP
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- action=test puede enviar correo real: confirmar destinatario y modo autorizado. La aceptación SMTP no prueba llegada a bandeja.
+- El motivo de reinicio es inferido desde estado previo; correlacionar con proceso/host antes de declarar caída.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Sintomas cubiertos
 
@@ -73,3 +81,8 @@ Aplica al flujo de configuracion SMTP Gmail del panel super y al registro operat
 ## Runbooks relacionados
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md`
+## Fuentes y aceptación de la revisión
+
+[server_runtime_notifications.go](../../../backend/handlers/server_runtime_notifications.go), [usuarios_empresa.go](../../../backend/handlers/usuarios_empresa.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

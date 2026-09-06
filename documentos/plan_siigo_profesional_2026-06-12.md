@@ -1,3 +1,7 @@
+> Estado documental: histórico. Plan comparativo de evolución, no certificación de equivalencia con otra suite.
+> Fuentes actuales: [especificacion_y_trazabilidad.md](requisitos/especificacion_y_trazabilidad.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan profesional PCS tipo Siigo - 2026-06-12
 
 ## Lectura documental aplicada

@@ -1,5 +1,14 @@
 # Modulo energia solar
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El catálogo de marcas/protocolos registra opciones; no demuestra un adaptador interoperable para cada fabricante, batería o BMS.
+- Telemetría recibida y reglas de alerta no acreditan exactitud eléctrica ni actuación física; probar_alerta puede enviar correo real.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-06-01
 
 ## Objetivo
@@ -8,7 +17,7 @@ Permitir que cada empresa registre, monitoree y audite su propio sistema de
 energia solar, paneles, inversores, controladoras, baterias y BMS sin mezclar
 datos entre empresas.
 
-## Proveedores base investigados
+## Referencias del catálogo base
 
 - Victron Energy: VRM Portal, VictronConnect, Venus OS, Cerbo GX, SmartSolar
   MPPT y MultiPlus-II.
@@ -20,7 +29,7 @@ datos entre empresas.
 Tambien se deja un proveedor `gateway_local` para instalaciones con Modbus,
 CAN-bus, RS485, MQTT o API local.
 
-## Baterias soportadas en catalogo base
+## Baterías registrables en el catálogo base
 
 - Tesla Powerwall.
 - BYD Battery-Box Premium.
@@ -95,3 +104,9 @@ pertenencia del `sistema_id` a la empresa.
 - `web/administrar_empresa/energia_solar.html`
 - `web/js/energia_solar.js`
 - `web/img/solar-energy.svg`
+
+## Fuentes y aceptación de la revisión
+
+[energia_solar.go](../backend/handlers/energia_solar.go), [energia_solar.go](../backend/db/energia_solar.go), [energia_solar.html](../web/administrar_empresa/energia_solar.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go), [control_electrico_solar_telemetry_test.go](../backend/handlers/control_electrico_solar_telemetry_test.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

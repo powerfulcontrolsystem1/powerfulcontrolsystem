@@ -165,7 +165,20 @@ if [ "$attempts" -lt 6 ]; then
   attempts=6
 fi
 for attempt in $(seq 1 "$attempts"); do
-  backend_status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' pcs-backend 2>/dev/null || true)"
+  backend_ids="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q backend 2>/dev/null || true)"
+  backend_status="healthy"
+  if [ -z "$backend_ids" ]; then
+    backend_status="missing"
+  else
+    while IFS= read -r backend_id; do
+      [ -n "$backend_id" ] || continue
+      replica_status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$backend_id" 2>/dev/null || true)"
+      if [ "$replica_status" != "healthy" ]; then
+        backend_status="$replica_status"
+        break
+      fi
+    done <<< "$backend_ids"
+  fi
   frontend_status="$(docker inspect -f '{{.State.Status}}' pcs-frontend 2>/dev/null || true)"
   if [ "$backend_status" = "healthy" ] && [ "$frontend_status" = "running" ] && curl -fsS "http://127.0.0.1:$http_port/" >/dev/null 2>&1; then
     ready=1
@@ -178,7 +191,7 @@ done
 if [ "$ready" != "1" ]; then
   echo "[sidecar] ERROR: el frontend Docker no respondio a tiempo en http://127.0.0.1:$http_port" >&2
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps >&2 || true
-  docker logs --tail 80 pcs-backend >&2 || true
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail 80 backend >&2 || true
   docker logs --tail 80 pcs-frontend >&2 || true
   exit 1
 fi

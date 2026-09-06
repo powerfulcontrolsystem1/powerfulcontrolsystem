@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Powerful Control System API
   version: "generated"
-  description: Inventario automatico de rutas registradas en backend/main.go. Completar contratos detallados por modulo en documentos/gobernanza_tecnica/contratos.
+  description: Inventario automatico de rutas registradas en backend/main.go. Los metodos sin override son candidatos de descubrimiento y no constituyen contrato; completar y consultar contratos detallados por modulo en documentos/gobernanza_tecnica/contratos.
 servers:
   - url: https://powerfulcontrolsystem.com
   - url: https://staging.powerfulcontrolsystem.com
@@ -3121,6 +3121,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/capacidad_colas":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/capacidad_colas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/capacidad_colas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/chat_con_ia_global/consultar":
     get:
       tags: [super-administrador]
@@ -3775,6 +3788,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/pagina_principal
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/pagos/auditoria":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/pagos/auditoria
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/pagos/auditoria
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

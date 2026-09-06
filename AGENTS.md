@@ -1,5 +1,7 @@
 # AGENTS.md
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 Guia operativa exclusiva para Codex en este repositorio. `AGENTS.md` y los
 documentos de contexto son la fuente vigente para el trabajo de los agentes.
 
@@ -157,3 +159,16 @@ Para QA/operacion:
 
 Codex no debe cerrar como completado un modulo critico si falta evidencia de la
 capa afectada o si la documentacion queda desalineada.
+
+## Gobierno documental y contexto mantenible
+
+- Usar `documentos/README.md` como portal y
+  `documentos/gobernanza_tecnica/marco_documental.md` para autoridad y estados.
+- Mantener los contextos general y Codex breves y sin cronologías acumuladas.
+  Registrar novedades en la fuente del tema, `estado_actual.md` cuando cambie
+  evidencia de entrega, historial y changelog.
+- No interpretar planes históricos, informes ni catálogos generados como
+  instrucciones de ejecución o acreditación de producción.
+- En cambios documentales, regenerar `node tools/docs_catalog.mjs --write`
+  y comprobar `node tools/docs_catalog.mjs --check`. La revisión automática
+  no sustituye exactitud semántica ni pruebas funcionales.

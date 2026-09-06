@@ -1,7 +1,16 @@
 # Contrato tecnico: integraciones bancarias y conectores externos
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- health_check/sync_manual prueban el endpoint y actualizan metadatos. Cambiar ultima_conciliacion no demuestra importación de extractos, conciliación financiera ni integración bancaria completa.
+- Algunos GET de probe/monitoreo generan tráfico externo y pueden persistir; no deben tratarse como consultas sin efectos. El contrato debe migrar esas mutaciones a métodos explícitos en un cambio funcional separado.
+- Aceptar una referencia con prefijo vault no demuestra que exista un resolutor Vault desplegado.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -219,3 +228,8 @@ Mensajes observables relevantes:
 
 - `ADR-0001-frontera-multiempresa-empresa-id.md`
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+## Fuentes y aceptación de la revisión
+
+[modulos_faltantes.go](../../../backend/handlers/modulos_faltantes.go), [modulos_faltantes.go](../../../backend/db/modulos_faltantes.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

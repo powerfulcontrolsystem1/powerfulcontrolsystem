@@ -1,5 +1,14 @@
 # Domotica Raspberry Pi por tunel HTTPS saliente
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Identidad del dispositivo autenticada por túnel: la empresa no se toma de un mensaje libre del hardware.
+- El instalador versionado es la fuente de capacidades del agente; las pruebas GPIO/relé, reinicio y telemetría requieren hardware identificado y autorización operativa.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Actualizacion: 2026-08-11
 
 ## Objetivo
@@ -160,7 +169,7 @@ todos los relés a la vez.
 
 ## Victron VE.Direct
 
-El agente 1.4 autodetecta adaptadores VE.Direct entre rutas estables
+El agente incluye autodetección; la versión instalada debe cotejarse con el instalador. Autodetecta adaptadores VE.Direct entre rutas estables
 `/dev/serial/by-id` y puertos `ttyUSB`/`ttyACM`. Configura 19200 baudios, 8 bits,
 sin paridad, un stop bit y sin control de flujo. Solo acepta un bloque con PID,
 voltaje de batería, voltaje de panel y checksum módulo 256 válido.
@@ -179,3 +188,9 @@ métrica desde un BMV, SmartShunt o BMS compatible.
 - La empresa puede activar `disconnect_alert_enabled`, registrar correo y definir `disconnect_grace_minutes`. El worker espera ese período y publica una alerta de buzón/campanita y correo una sola vez por valor de `last_seen`.
 - La identidad `RPI-` contiene 128 bits aleatorios, tiene índice único global y el secreto plano solo aparece en el instalador de un uso. El agente no envía ni elige `empresa_id`; PostgreSQL lo deriva del `device_uid` y token autenticados.
 - Para la primera instalación no es necesaria una IP local: se crea el controlador, se genera el instalador desde la página abierta en la Raspberry y el agente inicia el túnel HTTPS saliente.
+
+## Fuentes y aceptación de la revisión
+
+[control_electrico.go](../backend/handlers/control_electrico.go), [instalar_domotica_raspberry.sh.tmpl](../backend/handlers/templates/instalar_domotica_raspberry.sh.tmpl), [control_electrico.go](../backend/db/control_electrico.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

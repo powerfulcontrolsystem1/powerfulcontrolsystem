@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -288,6 +289,10 @@ func UpsertEmpresaWMSUbicacion(dbConn *sql.DB, x EmpresaWMSUbicacion) (int64, er
 }
 
 func UpsertEmpresaWMSOrden(dbConn *sql.DB, x EmpresaWMSOrden) (int64, error) {
+	return UpsertEmpresaWMSOrdenContext(context.Background(), dbConn, x)
+}
+
+func UpsertEmpresaWMSOrdenContext(ctx context.Context, dbConn *sql.DB, x EmpresaWMSOrden) (int64, error) {
 	if err := EnsureEmpresaWMSSchema(dbConn); err != nil {
 		return 0, err
 	}
@@ -298,30 +303,60 @@ func UpsertEmpresaWMSOrden(dbConn *sql.DB, x EmpresaWMSOrden) (int64, error) {
 	if x.ID <= 0 && (x.Estado == "lista_despacho" || x.Estado == "despachada" || x.Estado == "cerrada") {
 		return 0, errors.New("una orden WMS nueva no puede iniciar como lista, despachada o cerrada sin items")
 	}
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
 	if x.ID > 0 {
 		old := ""
-		_ = QueryRowCompat(dbConn, `SELECT COALESCE(estado,'') FROM empresa_wms_ordenes WHERE empresa_id=? AND id=?`, x.EmpresaID, x.ID).Scan(&old)
-		if err := validateWMSOrdenTransitionForTotals(dbConn, x.EmpresaID, x.ID, old, x.Estado); err != nil {
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado,'') FROM empresa_wms_ordenes WHERE empresa_id=? AND id=? FOR UPDATE`, x.EmpresaID, x.ID).Scan(&old); err != nil {
 			return 0, err
 		}
-		_, err := ExecCompat(dbConn, `UPDATE empresa_wms_ordenes SET codigo=?,tipo=?,origen_documento=?,tercero=?,cliente=?,fecha_compromiso=?,prioridad=?,responsable=?,estado=?,observaciones=?,usuario_creador=?,fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`,
-			x.Codigo, x.Tipo, x.OrigenDocumento, x.Tercero, x.Cliente, x.FechaCompromiso, x.Prioridad, x.Responsable, x.Estado, x.Observaciones, x.UsuarioCreador, x.EmpresaID, x.ID)
-		if err == nil && old != x.Estado {
-			_ = registrarWMSEvento(dbConn, x.EmpresaID, "orden", x.ID, "cambio_estado", old, x.Estado, "Cambio manual de estado", x.UsuarioCreador)
+		if old != x.Estado {
+			totals, err := getWMSOrdenTotalsTx(ctx, tx, x.EmpresaID, x.ID)
+			if err != nil {
+				return 0, err
+			}
+			if err := validateWMSOrdenTransitionWithTotals(old, x.Estado, totals); err != nil {
+				return 0, err
+			}
 		}
-		return x.ID, err
+		if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_wms_ordenes SET codigo=?,tipo=?,origen_documento=?,tercero=?,cliente=?,fecha_compromiso=?,prioridad=?,responsable=?,estado=?,observaciones=?,usuario_creador=?,fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`,
+			x.Codigo, x.Tipo, x.OrigenDocumento, x.Tercero, x.Cliente, x.FechaCompromiso, x.Prioridad, x.Responsable, x.Estado, x.Observaciones, x.UsuarioCreador, x.EmpresaID, x.ID); err != nil {
+			return 0, err
+		}
+		if old != x.Estado {
+			if err := registrarWMSEventoTx(ctx, tx, x.EmpresaID, "orden", x.ID, "cambio_estado", old, x.Estado, "Cambio manual de estado", x.UsuarioCreador); err != nil {
+				return 0, err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return 0, err
+		}
+		return x.ID, nil
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_wms_ordenes (empresa_id,codigo,tipo,origen_documento,tercero,cliente,fecha_compromiso,prioridad,responsable,estado,observaciones,usuario_creador)
+	id, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_wms_ordenes (empresa_id,codigo,tipo,origen_documento,tercero,cliente,fecha_compromiso,prioridad,responsable,estado,observaciones,usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT (empresa_id,codigo) DO UPDATE SET tipo=EXCLUDED.tipo,origen_documento=EXCLUDED.origen_documento,tercero=EXCLUDED.tercero,cliente=EXCLUDED.cliente,fecha_compromiso=EXCLUDED.fecha_compromiso,prioridad=EXCLUDED.prioridad,responsable=EXCLUDED.responsable,estado=EXCLUDED.estado,observaciones=EXCLUDED.observaciones,usuario_creador=EXCLUDED.usuario_creador,fecha_actualizacion=CURRENT_TIMESTAMP`,
 		x.EmpresaID, x.Codigo, x.Tipo, x.OrigenDocumento, x.Tercero, x.Cliente, x.FechaCompromiso, x.Prioridad, x.Responsable, x.Estado, x.Observaciones, x.UsuarioCreador)
-	if err == nil {
-		_ = registrarWMSEvento(dbConn, x.EmpresaID, "orden", id, "orden_guardada", "", x.Estado, x.Codigo, x.UsuarioCreador)
+	if err != nil {
+		return 0, err
 	}
-	return id, err
+	if err := registrarWMSEventoTx(ctx, tx, x.EmpresaID, "orden", id, "orden_guardada", "", x.Estado, x.Codigo, x.UsuarioCreador); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func CreateEmpresaWMSItem(dbConn *sql.DB, x EmpresaWMSItem, usuario string) (int64, error) {
+	return CreateEmpresaWMSItemContext(context.Background(), dbConn, x, usuario)
+}
+
+func CreateEmpresaWMSItemContext(ctx context.Context, dbConn *sql.DB, x EmpresaWMSItem, usuario string) (int64, error) {
 	if err := EnsureEmpresaWMSSchema(dbConn); err != nil {
 		return 0, err
 	}
@@ -329,23 +364,63 @@ func CreateEmpresaWMSItem(dbConn *sql.DB, x EmpresaWMSItem, usuario string) (int
 	if x.EmpresaID <= 0 || x.OrdenID <= 0 || x.ProductoNombre == "" || x.CantidadSolicitada <= 0 {
 		return 0, errors.New("orden, producto y cantidad son requeridos")
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_wms_items (empresa_id,orden_id,producto_id,producto_nombre,sku,ubicacion_origen,ubicacion_destino,lote,serial,cantidad_solicitada,cantidad_pickeada,cantidad_empacada,estado,observaciones)
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	var exists int
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT 1 FROM empresa_wms_ordenes WHERE empresa_id=? AND id=? FOR UPDATE`, x.EmpresaID, x.OrdenID).Scan(&exists); err != nil {
+		return 0, err
+	}
+	if x.ProductoID > 0 {
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT 1 FROM productos WHERE empresa_id=? AND id=?`, x.EmpresaID, x.ProductoID).Scan(&exists); err != nil {
+			return 0, errors.New("el producto no pertenece a la empresa activa")
+		}
+	}
+	for _, locationCode := range []string{x.UbicacionOrigen, x.UbicacionDestino} {
+		if locationCode == "" {
+			continue
+		}
+		if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT 1 FROM empresa_wms_ubicaciones WHERE empresa_id=? AND codigo=?`, x.EmpresaID, locationCode).Scan(&exists); err != nil {
+			return 0, errors.New("la ubicacion WMS no pertenece a la empresa activa")
+		}
+	}
+	id, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_wms_items (empresa_id,orden_id,producto_id,producto_nombre,sku,ubicacion_origen,ubicacion_destino,lote,serial,cantidad_solicitada,cantidad_pickeada,cantidad_empacada,estado,observaciones)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		x.EmpresaID, x.OrdenID, x.ProductoID, x.ProductoNombre, x.SKU, x.UbicacionOrigen, x.UbicacionDestino, x.Lote, x.Serial, x.CantidadSolicitada, x.CantidadPickeada, x.CantidadEmpacada, x.Estado, x.Observaciones)
-	if err == nil {
-		_ = registrarWMSEvento(dbConn, x.EmpresaID, "item", id, "item_agregado", "", x.Estado, x.ProductoNombre, usuario)
-		_ = recomputeWMSOrdenEstadoFromItems(dbConn, x.EmpresaID, x.OrdenID, usuario)
+	if err != nil {
+		return 0, err
 	}
-	return id, err
+	if err := registrarWMSEventoTx(ctx, tx, x.EmpresaID, "item", id, "item_agregado", "", x.Estado, x.ProductoNombre, usuario); err != nil {
+		return 0, err
+	}
+	if err := recomputeWMSOrdenEstadoFromItemsTx(ctx, tx, x.EmpresaID, x.OrdenID, usuario); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func ActualizarEmpresaWMSItemAvance(dbConn *sql.DB, empresaID, itemID int64, pickeada, empacada float64, estado, usuario string) error {
+	return ActualizarEmpresaWMSItemAvanceContext(context.Background(), dbConn, empresaID, itemID, pickeada, empacada, estado, usuario)
+}
+
+func ActualizarEmpresaWMSItemAvanceContext(ctx context.Context, dbConn *sql.DB, empresaID, itemID int64, pickeada, empacada float64, estado, usuario string) error {
 	if err := EnsureEmpresaWMSSchema(dbConn); err != nil {
 		return err
 	}
 	var old string
 	var solicitada float64
-	if err := QueryRowCompat(dbConn, `SELECT COALESCE(estado,'pendiente'),COALESCE(cantidad_solicitada,0) FROM empresa_wms_items WHERE empresa_id=? AND id=?`, empresaID, itemID).Scan(&old, &solicitada); err != nil {
+	var ordenID int64
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado,'pendiente'),COALESCE(cantidad_solicitada,0),COALESCE(orden_id,0) FROM empresa_wms_items WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, itemID).Scan(&old, &solicitada, &ordenID); err != nil {
 		return err
 	}
 	if pickeada < 0 {
@@ -366,18 +441,23 @@ func ActualizarEmpresaWMSItemAvance(dbConn *sql.DB, empresaID, itemID int64, pic
 	if estado == "pendiente" {
 		estado = inferWMSItemEstado(solicitada, pickeada, empacada)
 	}
-	_, err := ExecCompat(dbConn, `UPDATE empresa_wms_items SET cantidad_pickeada=?,cantidad_empacada=?,estado=? WHERE empresa_id=? AND id=?`, pickeada, empacada, estado, empresaID, itemID)
-	if err == nil {
-		_ = registrarWMSEvento(dbConn, empresaID, "item", itemID, "avance_item", old, estado, fmt.Sprintf("pick %.2f pack %.2f", pickeada, empacada), usuario)
-		var ordenID int64
-		if qerr := QueryRowCompat(dbConn, `SELECT COALESCE(orden_id,0) FROM empresa_wms_items WHERE empresa_id=? AND id=?`, empresaID, itemID).Scan(&ordenID); qerr == nil && ordenID > 0 {
-			_ = recomputeWMSOrdenEstadoFromItems(dbConn, empresaID, ordenID, usuario)
-		}
+	if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_wms_items SET cantidad_pickeada=?,cantidad_empacada=?,estado=? WHERE empresa_id=? AND id=?`, pickeada, empacada, estado, empresaID, itemID); err != nil {
+		return err
 	}
-	return err
+	if err := registrarWMSEventoTx(ctx, tx, empresaID, "item", itemID, "avance_item", old, estado, fmt.Sprintf("pick %.2f pack %.2f", pickeada, empacada), usuario); err != nil {
+		return err
+	}
+	if err := recomputeWMSOrdenEstadoFromItemsTx(ctx, tx, empresaID, ordenID, usuario); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func UpsertEmpresaWMSDespacho(dbConn *sql.DB, x EmpresaWMSDespacho) (int64, error) {
+	return UpsertEmpresaWMSDespachoContext(context.Background(), dbConn, x)
+}
+
+func UpsertEmpresaWMSDespachoContext(ctx context.Context, dbConn *sql.DB, x EmpresaWMSDespacho) (int64, error) {
 	if err := EnsureEmpresaWMSSchema(dbConn); err != nil {
 		return 0, err
 	}
@@ -385,20 +465,41 @@ func UpsertEmpresaWMSDespacho(dbConn *sql.DB, x EmpresaWMSDespacho) (int64, erro
 	if x.EmpresaID <= 0 || x.OrdenID <= 0 || x.Codigo == "" {
 		return 0, errors.New("orden y codigo de despacho son requeridos")
 	}
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	var currentOrderState string
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado,'borrador') FROM empresa_wms_ordenes WHERE empresa_id=? AND id=? FOR UPDATE`, x.EmpresaID, x.OrdenID).Scan(&currentOrderState); err != nil {
+		return 0, err
+	}
 	if x.Estado == "en_ruta" || x.Estado == "entregado" {
-		if err := validateWMSOrdenReadyForDispatch(dbConn, x.EmpresaID, x.OrdenID); err != nil {
+		totals, err := getWMSOrdenTotalsTx(ctx, tx, x.EmpresaID, x.OrdenID)
+		if err != nil {
 			return 0, err
 		}
+		if totals.Items <= 0 || totals.Total <= 0 || totals.Empacada < totals.Total {
+			return 0, errors.New("la orden WMS requiere todos los items empacados antes del despacho")
+		}
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_wms_despachos (empresa_id,orden_id,codigo,transportadora,guia,conductor,vehiculo,ruta,estado,fecha_salida,fecha_entrega,costo_flete,observaciones,usuario_creador)
+	id, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_wms_despachos (empresa_id,orden_id,codigo,transportadora,guia,conductor,vehiculo,ruta,estado,fecha_salida,fecha_entrega,costo_flete,observaciones,usuario_creador)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT (empresa_id,codigo) DO UPDATE SET orden_id=EXCLUDED.orden_id,transportadora=EXCLUDED.transportadora,guia=EXCLUDED.guia,conductor=EXCLUDED.conductor,vehiculo=EXCLUDED.vehiculo,ruta=EXCLUDED.ruta,estado=EXCLUDED.estado,fecha_salida=EXCLUDED.fecha_salida,fecha_entrega=EXCLUDED.fecha_entrega,costo_flete=EXCLUDED.costo_flete,observaciones=EXCLUDED.observaciones,usuario_creador=EXCLUDED.usuario_creador`,
 		x.EmpresaID, x.OrdenID, x.Codigo, x.Transportadora, x.Guia, x.Conductor, x.Vehiculo, x.Ruta, x.Estado, x.FechaSalida, x.FechaEntrega, x.CostoFlete, x.Observaciones, x.UsuarioCreador)
-	if err == nil {
-		_ = registrarWMSEvento(dbConn, x.EmpresaID, "despacho", id, "despacho_guardado", "", x.Estado, x.Codigo, x.UsuarioCreador)
-		_ = updateWMSOrdenEstadoFromDespacho(dbConn, x.EmpresaID, x.OrdenID, x.Estado, x.UsuarioCreador)
+	if err != nil {
+		return 0, err
 	}
-	return id, err
+	if err := registrarWMSEventoTx(ctx, tx, x.EmpresaID, "despacho", id, "despacho_guardado", "", x.Estado, x.Codigo, x.UsuarioCreador); err != nil {
+		return 0, err
+	}
+	if err := updateWMSOrdenEstadoFromDespachoTx(ctx, tx, x.EmpresaID, x.OrdenID, currentOrderState, x.Estado, x.UsuarioCreador); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func ListEmpresaWMSUbicaciones(dbConn *sql.DB, empresaID int64, estado string, limit int) ([]EmpresaWMSUbicacion, error) {
@@ -771,15 +872,24 @@ func validateWMSOrdenReadyForDispatch(dbConn *sql.DB, empresaID, ordenID int64) 
 }
 
 func validateWMSOrdenTransitionForTotals(dbConn *sql.DB, empresaID, ordenID int64, current, next string) error {
+	if err := validateWMSOrdenTransitionWithTotals(current, next, wmsOrdenTotals{}); err != nil && (normalizeWMSOrdenEstado(current) == "cerrada" || normalizeWMSOrdenEstado(current) == "cancelada") {
+		return err
+	}
+	if ordenID <= 0 {
+		return nil
+	}
+	return validateWMSOrdenTransitionWithTotals(current, next, getWMSOrdenTotals(dbConn, empresaID, ordenID))
+}
+
+func validateWMSOrdenTransitionWithTotals(current, next string, totals wmsOrdenTotals) error {
 	current = normalizeWMSOrdenEstado(current)
 	next = normalizeWMSOrdenEstado(next)
-	if current == next || ordenID <= 0 {
+	if current == next {
 		return nil
 	}
 	if current == "cerrada" || current == "cancelada" {
 		return fmt.Errorf("la orden WMS ya esta %s y no permite cambios de estado", current)
 	}
-	totals := getWMSOrdenTotals(dbConn, empresaID, ordenID)
 	switch next {
 	case "en_packing":
 		if totals.Items > 0 && totals.Pickeada < totals.Total {
@@ -862,4 +972,86 @@ func updateWMSOrdenEstadoFromDespacho(dbConn *sql.DB, empresaID, ordenID int64, 
 func registrarWMSEvento(dbConn *sql.DB, empresaID int64, refTipo string, refID int64, evento, old, nuevo, detalle, usuario string) error {
 	_, err := insertSQLCompat(dbConn, `INSERT INTO empresa_wms_eventos (empresa_id,referencia_tipo,referencia_id,evento,estado_anterior,estado_nuevo,detalle,usuario) VALUES (?,?,?,?,?,?,?,?)`, empresaID, refTipo, refID, evento, old, nuevo, detalle, usuario)
 	return err
+}
+
+func registrarWMSEventoTx(ctx context.Context, tx *sql.Tx, empresaID int64, refTipo string, refID int64, evento, old, nuevo, detalle, usuario string) error {
+	_, err := insertTxSQLCompatContext(ctx, tx, `INSERT INTO empresa_wms_eventos (empresa_id,referencia_tipo,referencia_id,evento,estado_anterior,estado_nuevo,detalle,usuario) VALUES (?,?,?,?,?,?,?,?)`, empresaID, refTipo, refID, evento, old, nuevo, detalle, usuario)
+	return err
+}
+
+func getWMSOrdenTotalsTx(ctx context.Context, tx *sql.Tx, empresaID, ordenID int64) (wmsOrdenTotals, error) {
+	var out wmsOrdenTotals
+	err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COUNT(1),COALESCE(SUM(cantidad_solicitada),0),COALESCE(SUM(cantidad_pickeada),0),COALESCE(SUM(cantidad_empacada),0),COALESCE(SUM(CASE WHEN estado='cancelado' THEN 1 ELSE 0 END),0) FROM empresa_wms_items WHERE empresa_id=? AND orden_id=?`, empresaID, ordenID).Scan(&out.Items, &out.Total, &out.Pickeada, &out.Empacada, &out.Cancelada)
+	return out, err
+}
+
+func recomputeWMSOrdenEstadoFromItemsTx(ctx context.Context, tx *sql.Tx, empresaID, ordenID int64, usuario string) error {
+	if ordenID <= 0 {
+		return nil
+	}
+	var current string
+	if err := queryRowTxSQLCompatContext(ctx, tx, `SELECT COALESCE(estado,'borrador') FROM empresa_wms_ordenes WHERE empresa_id=? AND id=? FOR UPDATE`, empresaID, ordenID).Scan(&current); err != nil {
+		return err
+	}
+	current = normalizeWMSOrdenEstado(current)
+	if current == "cerrada" || current == "cancelada" || current == "despachada" {
+		return nil
+	}
+	totals, err := getWMSOrdenTotalsTx(ctx, tx, empresaID, ordenID)
+	if err != nil {
+		return err
+	}
+	next := current
+	switch {
+	case totals.Items <= 0:
+	case totals.Empacada >= totals.Total:
+		next = "lista_despacho"
+	case totals.Pickeada >= totals.Total:
+		next = "en_packing"
+	case totals.Pickeada > 0:
+		next = "en_picking"
+	case current == "borrador":
+		next = "liberada"
+	}
+	if next == current || next == "" {
+		return nil
+	}
+	if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_wms_ordenes SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, next, empresaID, ordenID); err != nil {
+		return err
+	}
+	return registrarWMSEventoTx(ctx, tx, empresaID, "orden", ordenID, "estado_auto_wms", current, next, "Avance calculado por items WMS", usuario)
+}
+
+func updateWMSOrdenEstadoFromDespachoTx(ctx context.Context, tx *sql.Tx, empresaID, ordenID int64, current, despachoEstado, usuario string) error {
+	next := ""
+	switch normalizeWMSDespachoEstado(despachoEstado) {
+	case "en_ruta":
+		next = "despachada"
+	case "entregado":
+		next = "cerrada"
+	case "devuelto":
+		next = "en_packing"
+	default:
+		return nil
+	}
+	current = normalizeWMSOrdenEstado(current)
+	if current == next || current == "cancelada" {
+		return nil
+	}
+	if current == "cerrada" {
+		return errors.New("la orden WMS ya esta cerrada")
+	}
+	if next == "despachada" || next == "cerrada" {
+		totals, err := getWMSOrdenTotalsTx(ctx, tx, empresaID, ordenID)
+		if err != nil {
+			return err
+		}
+		if totals.Items <= 0 || totals.Empacada < totals.Total {
+			return errors.New("para despachar o cerrar debe completar el packing")
+		}
+	}
+	if _, err := execTxSQLCompatContext(ctx, tx, `UPDATE empresa_wms_ordenes SET estado=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, next, empresaID, ordenID); err != nil {
+		return err
+	}
+	return registrarWMSEventoTx(ctx, tx, empresaID, "orden", ordenID, "estado_por_despacho", current, next, "Estado actualizado desde despacho", usuario)
 }

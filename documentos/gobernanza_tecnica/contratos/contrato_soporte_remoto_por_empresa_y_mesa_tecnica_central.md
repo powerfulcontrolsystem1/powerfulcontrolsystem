@@ -1,7 +1,15 @@
 # Contrato tecnico: soporte remoto por empresa y mesa tecnica central
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Registrar proveedor/stream y aprobar sesión no implementa el transporte remoto de ese proveedor; su disponibilidad se valida en el equipo.
+- Heartbeat requiere autenticación del dispositivo. Tokens, PIN y URL privados deben excluirse de capturas, registros y exportaciones; permitir una sesión no autoriza cualquier operación remota.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -221,3 +229,8 @@ Mensajes observables relevantes:
 
 - `ADR-0001-frontera-multiempresa-empresa-id.md`
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+## Fuentes y aceptación de la revisión
+
+[soporte_remoto.go](../../../backend/handlers/soporte_remoto.go), [super_soporte_remoto.go](../../../backend/handlers/super_soporte_remoto.go), [soporte_remoto.go](../../../backend/db/soporte_remoto.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

@@ -1,7 +1,15 @@
 # Runbook: versionado documental y firmas externas
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El rol efectivo proviene del servidor; un header aportado por el cliente no acredita autorización.
+- Las consultas son plantillas parametrizadas PostgreSQL; ejecutarlas con parámetros y lectura autorizada. Reparaciones manuales requieren copia, alcance exacto y trazabilidad, no un UPDATE general.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## 1. Sintoma
 
@@ -28,7 +36,7 @@ No cubre recuperacion de binarios fisicos, revocacion criptografica real de cert
 
 - request exacta usada por frontend, QA o soporte
 - `empresa_id`, `id`, `documento_codigo`, `documento_gestion_id`
-- rol enviado en header administrativo
+- rol efectivo validado en servidor
 - filas actuales en `empresa_documentos_gestion`
 - filas actuales en `empresa_documentos_firmas`
 - salida de la prueba `TestEmpresaDocumentosGestionHandlerVersionadoYControlAcceso`
@@ -45,10 +53,10 @@ No cubre recuperacion de binarios fisicos, revocacion criptografica real de cert
 Ejemplos de verificacion manual:
 
 ```text
-GET /api/empresa/documentos/gestion?action=acceso&empresa_id=522&id=17&permiso=U
-GET /api/empresa/documentos/gestion?action=repositorio&empresa_id=522&permiso=U&include_denegados=1
-GET /api/empresa/documentos/gestion?action=versiones&empresa_id=522&id=17&permiso=R&include_denegados=1
-GET /api/empresa/documentos/firmas?action=acceso&empresa_id=522&id=9&permiso=R
+GET /api/empresa/documentos/gestion?action=acceso&empresa_id={empresa_id_autorizada}&id=17&permiso=U
+GET /api/empresa/documentos/gestion?action=repositorio&empresa_id={empresa_id_autorizada}&permiso=U&include_denegados=1
+GET /api/empresa/documentos/gestion?action=versiones&empresa_id={empresa_id_autorizada}&id=17&permiso=R&include_denegados=1
+GET /api/empresa/documentos/firmas?action=acceso&empresa_id={empresa_id_autorizada}&id=9&permiso=R
 ```
 
 ## 5. Diagnostico por escenario
@@ -130,7 +138,7 @@ SELECT id, empresa_id, codigo, modulo, entidad, entidad_id, documento_codigo,
 FROM empresa_documentos_gestion
 WHERE empresa_id = $1
   AND UPPER(COALESCE(documento_codigo, '')) = UPPER($2)
-ORDER BY CAST(COALESCE(NULLIF(version, ''), '0') AS INTEGER) DESC, id DESC;
+ORDER BY CAST(COALESCE(NULLIF(version::text, ''), '0') AS INTEGER) DESC, id DESC;
 ```
 
 Firmas por documento:
@@ -142,7 +150,7 @@ SELECT id, empresa_id, codigo, documento_gestion_id, tipo_firma, firmante_nombre
 FROM empresa_documentos_firmas
 WHERE empresa_id = $1
   AND documento_gestion_id = $2
-ORDER BY datetime(COALESCE(NULLIF(fecha_firma, ''), fecha_creacion)) DESC, id DESC;
+ORDER BY COALESCE(NULLIF(fecha_firma::text, ''), fecha_creacion::text) DESC, id DESC;
 ```
 
 ## 7. Acciones de recuperacion
@@ -208,3 +216,8 @@ go test ./handlers -run '^TestEmpresaDocumentosGestionHandlerVersionadoYControlA
 - `documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md`
 - `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md`
 - `documentos/gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md`
+## Fuentes y aceptación de la revisión
+
+[contrato_repositorio_documental_y_firmas_externas.md](../contratos/contrato_repositorio_documental_y_firmas_externas.md), [modulos_faltantes.go](../../../backend/handlers/modulos_faltantes.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

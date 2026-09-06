@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -1336,6 +1337,10 @@ func ensureCarteraPeriodoEditable(dbConn *sql.DB, empresaID int64, periodo strin
 
 // ListEmpresaGenericRows lista registros de una tabla generica por empresa.
 func ListEmpresaGenericRows(dbConn *sql.DB, table string, empresaID int64, filter EmpresaGenericListFilter) ([]map[string]interface{}, error) {
+	return ListEmpresaGenericRowsContext(context.Background(), dbConn, table, empresaID, filter)
+}
+
+func ListEmpresaGenericRowsContext(ctx context.Context, dbConn *sql.DB, table string, empresaID int64, filter EmpresaGenericListFilter) ([]map[string]interface{}, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1371,7 +1376,7 @@ func ListEmpresaGenericRows(dbConn *sql.DB, table string, empresaID int64, filte
 	query += " ORDER BY id DESC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompatContext(ctx, dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1382,6 +1387,10 @@ func ListEmpresaGenericRows(dbConn *sql.DB, table string, empresaID int64, filte
 
 // GetEmpresaGenericRowByID obtiene un registro de tabla generica por empresa e id.
 func GetEmpresaGenericRowByID(dbConn *sql.DB, table string, empresaID, id int64) (map[string]interface{}, error) {
+	return GetEmpresaGenericRowByIDContext(context.Background(), dbConn, table, empresaID, id)
+}
+
+func GetEmpresaGenericRowByIDContext(ctx context.Context, dbConn *sql.DB, table string, empresaID, id int64) (map[string]interface{}, error) {
 	if dbConn == nil {
 		return nil, errors.New("db connection is nil")
 	}
@@ -1393,7 +1402,7 @@ func GetEmpresaGenericRowByID(dbConn *sql.DB, table string, empresaID, id int64)
 	}
 
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
-	rows, err := dbConn.Query("SELECT * FROM "+table+" WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, id)
+	rows, err := querySQLCompatContext(ctx, dbConn, "SELECT * FROM "+table+" WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1412,6 +1421,10 @@ func GetEmpresaGenericRowByID(dbConn *sql.DB, table string, empresaID, id int64)
 
 // CreateEmpresaGenericRow inserta un registro en una tabla generica por empresa.
 func CreateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID int64, payload map[string]interface{}, allowedColumns []string) (int64, error) {
+	return CreateEmpresaGenericRowContext(context.Background(), dbConn, table, empresaID, payload, allowedColumns)
+}
+
+func CreateEmpresaGenericRowContext(ctx context.Context, dbConn *sql.DB, table string, empresaID int64, payload map[string]interface{}, allowedColumns []string) (int64, error) {
 	if dbConn == nil {
 		return 0, errors.New("db connection is nil")
 	}
@@ -1448,11 +1461,15 @@ func CreateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID int64, payl
 	}
 
 	query := "INSERT INTO " + table + " (" + strings.Join(columns, ", ") + ") VALUES (" + strings.Join(placeholders, ", ") + ")"
-	return insertSQLCompat(dbConn, query, values...)
+	return insertSQLCompatContext(ctx, dbConn, query, values...)
 }
 
 // UpdateEmpresaGenericRow actualiza columnas permitidas de un registro por empresa e id.
 func UpdateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID, id int64, payload map[string]interface{}, allowedColumns []string) error {
+	return UpdateEmpresaGenericRowContext(context.Background(), dbConn, table, empresaID, id, payload, allowedColumns)
+}
+
+func UpdateEmpresaGenericRowContext(ctx context.Context, dbConn *sql.DB, table string, empresaID, id int64, payload map[string]interface{}, allowedColumns []string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -1464,7 +1481,7 @@ func UpdateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID, id int64, 
 	}
 
 	if isEmpresaCarteraTable(table) {
-		current, err := GetEmpresaGenericRowByID(dbConn, table, empresaID, id)
+		current, err := GetEmpresaGenericRowByIDContext(ctx, dbConn, table, empresaID, id)
 		if err != nil {
 			return err
 		}
@@ -1504,12 +1521,16 @@ func UpdateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID, id int64, 
 	query := "UPDATE " + table + " SET " + strings.Join(setParts, ", ") + " WHERE empresa_id = ? AND id = ?"
 	args = append(args, empresaID, id)
 
-	_, err := dbConn.Exec(query, args...)
+	_, err := execSQLCompatContext(ctx, dbConn, query, args...)
 	return err
 }
 
 // SetEmpresaGenericRowEstado ajusta el estado activo/inactivo de un registro.
 func SetEmpresaGenericRowEstado(dbConn *sql.DB, table string, empresaID, id int64, estado string) error {
+	return SetEmpresaGenericRowEstadoContext(context.Background(), dbConn, table, empresaID, id, estado)
+}
+
+func SetEmpresaGenericRowEstadoContext(ctx context.Context, dbConn *sql.DB, table string, empresaID, id int64, estado string) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")
 	}
@@ -1535,11 +1556,15 @@ func SetEmpresaGenericRowEstado(dbConn *sql.DB, table string, empresaID, id int6
 	}
 
 	// #nosec G202 -- SQL structure is assembled only from server-side allowlists; all external values remain bound parameters.
-	_, err := dbConn.Exec("UPDATE "+table+" SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?", estado, empresaID, id)
+	_, err := execSQLCompatContext(ctx, dbConn, "UPDATE "+table+" SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE empresa_id = ? AND id = ?", estado, empresaID, id)
 	return err
 }
 
 // DeleteEmpresaGenericRow aplica eliminacion logica por empresa e id.
 func DeleteEmpresaGenericRow(dbConn *sql.DB, table string, empresaID, id int64) error {
 	return SetEmpresaGenericRowEstado(dbConn, table, empresaID, id, "inactivo")
+}
+
+func DeleteEmpresaGenericRowContext(ctx context.Context, dbConn *sql.DB, table string, empresaID, id int64) error {
+	return SetEmpresaGenericRowEstadoContext(ctx, dbConn, table, empresaID, id, "inactivo")
 }

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 EMPRESA_ID="${EMPRESA_ID:-}"
-BACKEND_CONTAINER="${BACKEND_CONTAINER:-pcs-backend}"
+BACKEND_CONTAINER="${BACKEND_CONTAINER:-$(docker ps --filter label=com.docker.compose.project=powerful-control-system --filter label=com.docker.compose.service=backend --format '{{.ID}}' | head -n 1)}"
 
 if ! printf '%s' "$EMPRESA_ID" | grep -Eq '^[1-9][0-9]*$'; then
   echo "[dian-private] ERROR: EMPRESA_ID debe ser un entero positivo." >&2

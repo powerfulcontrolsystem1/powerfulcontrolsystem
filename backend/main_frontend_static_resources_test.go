@@ -226,6 +226,25 @@ func TestAuthenticationPagesUseSafeGatewayResponseHelper(t *testing.T) {
 	}
 }
 
+func TestAuthenticationPagesKeepStaticMarkupCompatibleWithStrictCSP(t *testing.T) {
+	for _, page := range []string{"login.html", "login_usuario.html"} {
+		raw, err := os.ReadFile(filepath.Join("..", "web", page))
+		if err != nil {
+			t.Fatal(err)
+		}
+		content := string(raw)
+		if strings.Contains(content, "<script>") {
+			t.Fatalf("%s conserva JavaScript inline", page)
+		}
+		if strings.Contains(content, ` style="`) {
+			t.Fatalf("%s conserva estilos inline", page)
+		}
+		if !strings.Contains(content, "/js/login_bootstrap.js") {
+			t.Fatalf("%s no carga el bootstrap externo del login", page)
+		}
+	}
+}
+
 func TestStagingEdgeKeepsOnlyTransportHeaders(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "scripts", "vps-configure-staging-nginx.sh"))
 	if err != nil {

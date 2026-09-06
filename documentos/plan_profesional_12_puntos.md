@@ -1,3 +1,7 @@
+> Estado documental: histórico. Hoja de ruta de mayo; controles y comandos actuales se mantienen en sus runbooks.
+> Fuentes actuales: [runbook_madurez_empresarial_12_pasos.md](gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan profesional de 12 puntos
 
 Fecha: 2026-05-11

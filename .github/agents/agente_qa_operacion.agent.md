@@ -1,3 +1,19 @@
+# agente_qa_operacion.agent
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.
+- Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
+> Alcance vigente de coordinación: según [AGENTS](../../AGENTS.md),
+> los frentes se aplican como checklist interno. Toda instrucción de delegar o
+> activar especialistas en este documento solo aplica cuando el usuario pide
+> explícitamente agentes/subagentes. No obliga a crearlos por el tipo de tarea.
+
 ## agente qa operacion
 
 Rol:
@@ -44,3 +60,9 @@ Regla de rechazo de cierre sin evidencia:
 - `agente_qa_operacion` no debe devolver un trabajo como validado si no ejecutó pruebas, comandos o verificaciones observables.
 - Si solo existe compilacion pero no evidencia funcional donde el caso requiera runtime, debe marcarlo como validacion insuficiente.
 - Si queda un hueco de validacion importante y no se documenta, el trabajo no se considera cerrable.
+
+## Fuentes y aceptación de la revisión
+
+[AGENTS.md](../../AGENTS.md), [contexto_general_del_sistema.md](../../documentos/contexto_general_del_sistema.md), [contexto_codex.md](../../documentos/contexto_codex.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../documentos/requisitos/especificacion_y_trazabilidad.md)).

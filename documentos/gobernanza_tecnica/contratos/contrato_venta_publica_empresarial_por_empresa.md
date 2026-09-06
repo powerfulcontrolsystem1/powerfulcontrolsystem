@@ -1,7 +1,15 @@
 # Contrato tecnico: venta publica empresarial por empresa
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El checkout empresarial aquí descrito no hereda automáticamente el Web Checkout del flujo de licencias; comprobar el adaptador de esta ruta.
+- Orden aprobada no acredita despacho, movimiento de inventario ni factura oficial sin la cadena de eventos y fuente correspondientes.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -184,3 +192,8 @@ Este contrato cubre la configuracion administrativa de la tienda publica por `em
 ## Runbooks relacionados
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md`
+## Fuentes y aceptación de la revisión
+
+[venta_publica.go](../../../backend/handlers/venta_publica.go), [venta_publica.go](../../../backend/db/venta_publica.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

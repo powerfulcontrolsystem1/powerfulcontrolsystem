@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -941,14 +942,6 @@ func WithEmpresaAIEnterprisePermissions(dbEmp, dbSuper *sql.DB, next http.Handle
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		rateLimit := empresaRateLimitMaxForRequest(dbSuper, r)
-		rateScope := "ai_enterprise:" + empresaRateLimitScopeForRequest(r)
-		allowed, remaining, retryAfter, _ := checkEmpresaRateLimitAt(time.Now(), empresaID, rateScope, rateLimit)
-		applyEmpresaRateLimitHeaders(w, rateLimit, remaining, retryAfter)
-		if !allowed {
-			http.Error(w, "limite de consumo por empresa excedido; intenta de nuevo en unos segundos", http.StatusTooManyRequests)
-			return
-		}
 		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
 		if adminEmail == "" || adminEmail == "sistema" {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
@@ -957,6 +950,18 @@ func WithEmpresaAIEnterprisePermissions(dbEmp, dbSuper *sql.DB, next http.Handle
 		snapshot, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, adminEmail, empresaID)
 		if err != nil || !snapshot.CanAccess {
 			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
+			return
+		}
+		rateLimit := empresaRateLimitMaxForRequest(dbSuper, r)
+		rateScope := "ai_enterprise:" + empresaRateLimitScopeForRequest(r)
+		allowed, remaining, retryAfter, _, rateErr := consumeEmpresaRateLimit(r.Context(), dbSuper, time.Now(), empresaID, rateScope, rateLimit)
+		if rateErr != nil {
+			http.Error(w, "No se pudo validar el limite de consumo", http.StatusServiceUnavailable)
+			return
+		}
+		applyEmpresaRateLimitHeaders(w, rateLimit, remaining, retryAfter)
+		if !allowed {
+			http.Error(w, "limite de consumo por empresa excedido; intenta de nuevo en unos segundos", http.StatusTooManyRequests)
 			return
 		}
 		r = requestWithTenantContext(r, TenantContext{
@@ -1302,23 +1307,49 @@ func WithEmpresaSelfServicePermissions(dbEmp, dbSuper *sql.DB, next http.Handler
 
 func empresaRateLimitScopeForRequest(r *http.Request) string {
 	path := ""
+	method := ""
+	action := ""
 	if r != nil && r.URL != nil {
 		path = strings.TrimSpace(r.URL.Path)
+		action = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	}
+	if r != nil {
+		method = strings.ToUpper(strings.TrimSpace(r.Method))
 	}
 	if strings.HasPrefix(path, "/api/empresa/db_admin") {
 		return "db_admin"
+	}
+	if method == http.MethodPost && (path == "/api/empresa/carritos_compra/items" || path == "/api/empresa/productos") {
+		return "queue.product_add"
+	}
+	if (method == http.MethodPost || method == http.MethodPut) && path == "/api/empresa/impresoras" &&
+		(action == "cola_trabajo" || action == "crear_trabajo" || action == "trabajo") {
+		return "queue.printing"
+	}
+	if (method == http.MethodPost || method == http.MethodPut) && path == "/api/empresa/facturacion_electronica" {
+		switch action {
+		case "emitir", "reenviar_dian", "reintentar_dian", "enviar_dian", "procesar_reintentos", "emitir_nomina_electronica":
+			return "queue.fiscal"
+		}
 	}
 	return "api"
 }
 
 func empresaRateLimitMaxForRequest(dbSuper *sql.DB, r *http.Request) int64 {
+	scope := empresaRateLimitScopeForRequest(r)
 	if dbSuper == nil {
-		if empresaRateLimitScopeForRequest(r) == "db_admin" {
+		if scope == "db_admin" {
 			return defaultEmpresaDBQueriesPerMinute
+		}
+		if lane := dbpkg.QueueLaneForRateScope(scope); lane != "" {
+			return defaultQueueRateLimitForLane(lane)
 		}
 		return defaultEmpresaAPIRequestsPerMinute
 	}
-	switch empresaRateLimitScopeForRequest(r) {
+	if lane := dbpkg.QueueLaneForRateScope(scope); lane != "" {
+		return queueCapacityRateLimit(dbSuper, lane)
+	}
+	switch scope {
 	case "db_admin":
 		value, _, _, err := getLimitacionInt64(dbSuper, superEmpresaLimitDBQueriesPerMinuteKey, defaultEmpresaDBQueriesPerMinute)
 		if err != nil {
@@ -1352,6 +1383,14 @@ func checkEmpresaRateLimitAt(now time.Time, empresaID int64, scope string, maxPe
 
 	empresaRateLimitMu.Lock()
 	defer empresaRateLimitMu.Unlock()
+	if len(empresaRateLimitBuckets) > 1024 {
+		cutoff := windowStart.Add(-time.Minute)
+		for bucketKey, existing := range empresaRateLimitBuckets {
+			if existing.WindowStart.Before(cutoff) {
+				delete(empresaRateLimitBuckets, bucketKey)
+			}
+		}
+	}
 
 	bucket := empresaRateLimitBuckets[key]
 	if bucket.WindowStart.IsZero() || !bucket.WindowStart.Equal(windowStart) {
@@ -1373,6 +1412,14 @@ func checkEmpresaRateLimitAt(now time.Time, empresaID int64, scope string, maxPe
 		remaining = 0
 	}
 	return true, remaining, 0, bucket.Count
+}
+
+func consumeEmpresaRateLimit(ctx context.Context, dbSuper *sql.DB, now time.Time, empresaID int64, scope string, limit int64) (bool, int64, int64, int64, error) {
+	if dbSuper != nil {
+		return dbpkg.ConsumeEmpresaRateLimit(ctx, dbSuper, empresaID, scope, limit, now)
+	}
+	allowed, remaining, retryAfter, current := checkEmpresaRateLimitAt(now, empresaID, scope, limit)
+	return allowed, remaining, retryAfter, current, nil
 }
 
 func applyEmpresaRateLimitHeaders(w http.ResponseWriter, limit, remaining, retryAfterSeconds int64) {
@@ -1409,21 +1456,6 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			action = normalizePermissionAction(resolveAction(r), action)
 		}
 
-		rateLimit := empresaRateLimitMaxForRequest(dbSuper, r)
-		rateScope := empresaRateLimitScopeForRequest(r)
-		allowedByRate, remaining, retryAfter, current := checkEmpresaRateLimitAt(time.Now(), empresaID, rateScope, rateLimit)
-		applyEmpresaRateLimitHeaders(w, rateLimit, remaining, retryAfter)
-		if !allowedByRate {
-			path := ""
-			if r.URL != nil {
-				path = strings.TrimSpace(r.URL.Path)
-			}
-			log.Printf("[rate_limit] empresa_id=%d scope=%s limite=%d actual=%d path=%s", empresaID, rateScope, rateLimit, current, path)
-			http.Error(w, "limite de consumo por empresa excedido; intenta de nuevo en unos segundos", http.StatusTooManyRequests)
-			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusTooManyRequests, 0)
-			return
-		}
-
 		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
 		if adminEmail == "" || adminEmail == "sistema" {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
@@ -1449,6 +1481,26 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		if !snapshot.CanAccess {
 			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
+			return
+		}
+
+		rateLimit := empresaRateLimitMaxForRequest(dbSuper, r)
+		rateScope := empresaRateLimitScopeForRequest(r)
+		allowedByRate, remaining, retryAfter, current, rateErr := consumeEmpresaRateLimit(r.Context(), dbSuper, time.Now(), empresaID, rateScope, rateLimit)
+		if rateErr != nil {
+			log.Printf("[rate_limit] no se pudo consumir cuota empresa_id=%d scope=%s: %v", empresaID, rateScope, rateErr)
+			http.Error(w, "No se pudo validar el limite de consumo", http.StatusServiceUnavailable)
+			return
+		}
+		applyEmpresaRateLimitHeaders(w, rateLimit, remaining, retryAfter)
+		if !allowedByRate {
+			path := ""
+			if r.URL != nil {
+				path = strings.TrimSpace(r.URL.Path)
+			}
+			log.Printf("[rate_limit] empresa_id=%d scope=%s limite=%d actual=%d path=%s", empresaID, rateScope, rateLimit, current, path)
+			http.Error(w, "limite de consumo por empresa excedido; intenta de nuevo en unos segundos", http.StatusTooManyRequests)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusTooManyRequests, 0)
 			return
 		}
 

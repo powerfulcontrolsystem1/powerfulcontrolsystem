@@ -467,7 +467,7 @@
 
       <section class="docker-card" id="vpsSnapshotCard">
         <h2>Snapshot completo VPS</h2>
-        <p>Genera una copia operativa restaurable con proyecto portable, dump de PostgreSQL, volumenes Docker, manifiesto y, opcionalmente, imagenes de contenedores. La subida a Google Drive, Mega, OneDrive o S3 se realiza mediante un remoto de <span class="docker-code">rclone</span> configurado previamente en la VPS.</p>
+        <p>Genera copias restaurables de las bases PostgreSQL, del sistema PCS o del VPS. La salida puede descargarse fuera del servidor o enviarse mediante un remoto cifrado de <span class="docker-code">rclone</span> a Google Drive, OneDrive, Mega, Dropbox, Box, pCloud, Backblaze B2, S3 y otros proveedores compatibles.</p>
 
         <div class="docker-grid" aria-label="Estado snapshot VPS" style="margin-top:12px">
           <article class="docker-card docker-kpi">
@@ -516,6 +516,10 @@
               <option value="google_drive">Google Drive</option>
               <option value="mega">Mega</option>
               <option value="onedrive">OneDrive</option>
+              <option value="dropbox">Dropbox</option>
+              <option value="box">Box</option>
+              <option value="pcloud">pCloud</option>
+              <option value="backblaze_b2">Backblaze B2</option>
               <option value="s3">S3 compatible</option>
             </select>
           </div>
@@ -527,8 +531,9 @@
           <div class="docker-field">
             <label for="snapshotScope">Tipo de copia</label>
             <select id="snapshotScope" class="docker-select">
-              <option value="full">Completa: proyecto, bases y volúmenes</option>
               <option value="database_only">Solo bases PostgreSQL</option>
+              <option value="system_only">Sistema PCS: proyecto y archivos</option>
+              <option value="full">VPS: proyecto, bases y volúmenes</option>
             </select>
           </div>
           <label class="docker-check"><input id="snapshotIncludePostgres" type="checkbox"> Incluir bases PostgreSQL</label>
@@ -544,7 +549,7 @@
         <div id="snapshotMsg" class="docker-msg"></div>
 
         <div class="docker-alert" style="margin-top:12px">
-          <strong>Nota de seguridad:</strong> por defecto no se incluye <span class="docker-code">deploy/.env.platform</span>. Si algun dia necesitas respaldar secretos, hazlo manualmente en un medio privado; no lo subas a nubes compartidas sin cifrado externo.
+          <strong>Nota de seguridad:</strong> por defecto no se incluye <span class="docker-code">deploy/.env.platform</span>. Las copias con datos empresariales deben usar un remoto <span class="docker-code">rclone crypt</span>; las credenciales OAuth se configuran fuera de PCS y nunca se guardan en esta pantalla.
         </div>
 
         <div class="docker-table-wrap">
@@ -648,6 +653,7 @@
       function snapshotPayloadFromForm() {
         var scope = ($("snapshotScope") && $("snapshotScope").value) || "full";
         var databaseOnly = scope === "database_only";
+        var systemOnly = scope === "system_only";
         return {
           enabled: !!($("snapshotEnabled") && $("snapshotEnabled").checked),
           auto_enabled: !!($("snapshotAutoEnabled") && $("snapshotAutoEnabled").checked),
@@ -660,7 +666,7 @@
           rclone_remote_path: (($("snapshotRcloneRemotePath") && $("snapshotRcloneRemotePath").value) || "").trim(),
           delete_old_cloud: !!($("snapshotDeleteOldCloud") && $("snapshotDeleteOldCloud").checked),
           include_project: !databaseOnly,
-          include_postgres: databaseOnly || !!($("snapshotIncludePostgres") && $("snapshotIncludePostgres").checked),
+          include_postgres: databaseOnly || (!systemOnly && !!($("snapshotIncludePostgres") && $("snapshotIncludePostgres").checked)),
           include_volumes: !databaseOnly && !!($("snapshotIncludeVolumes") && $("snapshotIncludeVolumes").checked),
           include_docker_images: !!($("snapshotIncludeImages") && $("snapshotIncludeImages").checked)
         };
@@ -684,7 +690,11 @@
         if ($("snapshotIncludePostgres")) $("snapshotIncludePostgres").checked = config.include_postgres !== false;
         if ($("snapshotIncludeVolumes")) $("snapshotIncludeVolumes").checked = config.include_volumes !== false;
         if ($("snapshotIncludeImages")) $("snapshotIncludeImages").checked = !!config.include_docker_images;
-        if ($("snapshotScope")) $("snapshotScope").value = config.include_postgres && !config.include_project && !config.include_volumes ? "database_only" : "full";
+        if ($("snapshotScope")) {
+          $("snapshotScope").value = config.include_postgres && !config.include_project && !config.include_volumes
+            ? "database_only"
+            : (!config.include_postgres && config.include_project ? "system_only" : "full");
+        }
       }
       function renderSnapshotHistory(items) {
         var body = $("snapshotHistoryBody");
@@ -813,7 +823,8 @@
       var snapshotScope = $("snapshotScope");
       if (snapshotScope) snapshotScope.addEventListener("change", function () {
         var databaseOnly = snapshotScope.value === "database_only";
-        if ($("snapshotIncludePostgres")) $("snapshotIncludePostgres").checked = true;
+        var systemOnly = snapshotScope.value === "system_only";
+        if ($("snapshotIncludePostgres")) $("snapshotIncludePostgres").checked = databaseOnly || !systemOnly;
         if ($("snapshotIncludeVolumes")) $("snapshotIncludeVolumes").checked = !databaseOnly;
       });
       loadStatus();

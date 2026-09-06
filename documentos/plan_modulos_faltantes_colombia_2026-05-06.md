@@ -1,3 +1,7 @@
+> Estado documental: histórico. Plan de incorporación del motor compartido; CRUD y metadata no certifican procesos completos del sector.
+> Fuentes actuales: [modulos_empresariales_colombia.md](modulos_empresariales_colombia.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan de modulos importantes faltantes
 
 Fecha: 2026-05-06

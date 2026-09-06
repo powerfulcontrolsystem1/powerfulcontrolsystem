@@ -416,7 +416,7 @@ func assessDIANNewsWithAI(dbSuper *sql.DB, actor string, candidates []dianNewsCa
 	payload, _ := json.Marshal(candidates)
 	prompt := "Analiza estas noticias/enlaces oficiales de la DIAN para Powerful Control System. Devuelve SOLO JSON con un arreglo llamado items. Marca relevant=true solo si afecta facturacion electronica Colombia, impuestos, documentos electronicos, resoluciones, calendario tributario, seguridad o integraciones que requieran revisar el sistema. Campos por item: title,url,relevant,summary,impact,relevance,published_at.\n\n" + string(payload)
 	ctrl := &EmpresaAIChatController{dbSuper: dbSuper, client: &http.Client{Timeout: 45 * time.Second}}
-	resp, promptTokens, completionTokens, err := ctrl.generateResponseWithSystemPrompt(model, prompt, nil, "Eres auditor tecnico tributario Colombia. Responde JSON estricto, sin markdown.")
+	resp, promptTokens, completionTokens, err := ctrl.generateResponseWithSystemPrompt(model, prompt, nil, "Eres auditor tecnico tributario Colombia. Responde JSON estricto, sin markdown.", empresaAISafetyIdentifier(actor))
 	if err != nil {
 		return out
 	}

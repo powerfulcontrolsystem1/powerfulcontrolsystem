@@ -1,5 +1,15 @@
 # AIU construccion y contratos de obra
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La acción generar_factura registra una factura AIU, enlaza la venta central y solicita un documento local con estado emitida; ese estado no demuestra transmisión, CUFE ni acuse DIAN.
+- Existe una brecha entre la descripción histórica de factura electrónica AIU y la aceptación fiscal exigida. Mantener ese flujo fuera de cualquier promesa fiscal hasta probar fuente, transporte y acuse específicos.
+- Los modelos y porcentajes de cálculo son configuraciones técnicas del código; su aplicabilidad contractual/tributaria requiere validación de la empresa.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Actualizacion: 2026-05-06
 
 El modulo AIU construccion agrega una capa empresarial para arquitectos, constructoras, contratistas de obra civil, remodelaciones y pequenas empresas que facturan contratos con Administracion, Imprevistos y Utilidad.
@@ -9,7 +19,7 @@ El modulo AIU construccion agrega una capa empresarial para arquitectos, constru
 - Contratos de obra por `empresa_id` con cliente, responsable, centro de costo, modalidad contractual, tipo de obra, riesgo, fechas, avance, estado y observaciones.
 - Capitulos y conceptos de obra con cantidad, unidad, valor unitario y costo directo acumulado.
 - Calculo automatico de Administracion, Imprevistos y Utilidad.
-- Dos modelos compatibles con la referencia de Siigo:
+- Dos modalidades de cálculo implementadas en PCS:
   - `base_aiu_no_sumada`: la base AIU se informa/controla, pero no se suma completa al total de la factura.
   - `base_aiu_sumada`: Administracion + Imprevistos + Utilidad se suman al total.
 - Base de impuestos configurable: solo utilidad, AIU total o costo directo + AIU.
@@ -17,7 +27,7 @@ El modulo AIU construccion agrega una capa empresarial para arquitectos, constru
 - Flujo de estados controlado: borrador, cotizado, aprobado, en ejecucion, suspendido, facturado, cerrado y anulado, con validacion de transiciones y trazabilidad de aprobacion.
 - Tablero profesional con totales, facturado, neto a cobrar, pendiente por facturar, alertas de avance alto sin facturar y contratos por estado.
 - Filtros por estado/busqueda, facturas recientes y exportacion CSV desde la vista.
-- Generacion de factura electronica AIU en `empresa_facturacion_documentos`, reutilizando el modulo de facturacion electronica, auditoria y permisos.
+- Registro de factura AIU y documento local en `empresa_facturacion_documentos`; su aceptación fiscal no está acreditada por esta acción.
 - Integracion con el nucleo: cliente de obra en `clientes`, contrato/conceptos en `servicios` y factura AIU enlazada a `carritos_compras`/`carrito_compra_items` para reportes comerciales sin duplicar IVA ni retenciones.
 - Control independiente por licencia/rol mediante `aiu_construccion`.
 
@@ -39,7 +49,7 @@ El modulo AIU construccion agrega una capa empresarial para arquitectos, constru
 - `POST action=calcular`: calcula un payload sin guardar.
 - `POST action=contrato`: crea o actualiza contrato.
 - `POST action=item`: agrega concepto/capitulo al contrato.
-- `POST action=generar_factura`: registra factura AIU y documento electronico.
+- `POST action=generar_factura`: registra factura AIU y documento local; no acredita emisión fiscal aceptada.
 - `POST action=estado`: cambia estado con validacion de flujo y aprobacion.
 - `POST action=seed_demo`: crea un ejemplo operativo.
 
@@ -48,3 +58,9 @@ El modulo AIU construccion agrega una capa empresarial para arquitectos, constru
 - `go test ./db -run AIU -count=1`
 - `go test ./handlers -run "TestNormalizeFacturacionDocumentoElectronicoTipo|TestResolveFacturacionTransitionForDocumentosElectronicosNuevos" -count=1`
 - `go test ./...`
+
+## Fuentes y aceptación de la revisión
+
+[aiu_construccion.go](../backend/handlers/aiu_construccion.go), [aiu_construccion.go](../backend/db/aiu_construccion.go), [aiu_construccion_test.go](../backend/db/aiu_construccion_test.go), [aiu_construccion.html](../web/administrar_empresa/aiu_construccion.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001 a PCS-REQ-007, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

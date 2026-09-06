@@ -41,7 +41,7 @@ const lines = [
   "info:",
   "  title: Powerful Control System API",
   "  version: \"generated\"",
-  "  description: Inventario automatico de rutas registradas en backend/main.go. Completar contratos detallados por modulo en documentos/gobernanza_tecnica/contratos.",
+  "  description: Inventario automatico de rutas registradas en backend/main.go. Los metodos sin override son candidatos de descubrimiento y no constituyen contrato; completar y consultar contratos detallados por modulo en documentos/gobernanza_tecnica/contratos.",
   "servers:",
   "  - url: https://powerfulcontrolsystem.com",
   "  - url: https://staging.powerfulcontrolsystem.com",

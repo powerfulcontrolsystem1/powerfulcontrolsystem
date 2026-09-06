@@ -20,6 +20,7 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 )
 
 //go:embed templates/instalar_domotica_raspberry.sh.tmpl
@@ -572,17 +573,7 @@ func recordAndWriteDomoticaTunnel(w http.ResponseWriter, r *http.Request, dbEmp 
 }
 
 func domoticaTunnelRemoteIP(r *http.Request) string {
-	if r == nil {
-		return ""
-	}
-	if forwarded := firstForwardedValue(r.Header.Get("X-Forwarded-For")); forwarded != "" {
-		return truncateHTTPText(forwarded, 120)
-	}
-	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
-	if err == nil {
-		return host
-	}
-	return truncateHTTPText(strings.TrimSpace(r.RemoteAddr), 120)
+	return utils.ClientIP(r)
 }
 
 func marshalDomoticaTunnelJSON(payload interface{}) []byte {

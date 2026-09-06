@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
@@ -457,29 +458,24 @@ func superVPSSnapshotAddProject(tw *tar.Writer, root string) error {
 
 func superVPSSnapshotCreatePostgresDump(tempDir string) (string, string) {
 	out := filepath.Join(tempDir, "pg_dumpall.sql")
-	if commandAvailable("docker") {
+	if commandAvailable("pg_dump") {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, "docker", "exec", "pcs-postgres", "sh", "-lc", `pg_dumpall -U "$POSTGRES_USER"`)
-		data, err := cmd.Output()
-		if err == nil && len(data) > 0 {
-			if writeErr := os.WriteFile(out, data, 0o600); writeErr == nil {
-				return out, ""
+		var combined bytes.Buffer
+		for _, databaseName := range []string{"pcs_superadministrador", "pcs_empresas"} {
+			cmd := exec.CommandContext(ctx, "pg_dump", "--create", "--clean", "--if-exists", "--no-owner", "--no-privileges", "--dbname="+databaseName)
+			data, err := cmd.Output()
+			if err != nil || len(data) == 0 {
+				return "", "No se genero respaldo PostgreSQL con el rol de solo lectura"
 			}
+			combined.Write(data)
+			combined.WriteString("\n")
+		}
+		if writeErr := os.WriteFile(out, combined.Bytes(), 0o600); writeErr == nil {
+			return out, ""
 		}
 	}
-	if commandAvailable("pg_dumpall") {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		defer cancel()
-		cmd := exec.CommandContext(ctx, "pg_dumpall")
-		data, err := cmd.Output()
-		if err == nil && len(data) > 0 {
-			if writeErr := os.WriteFile(out, data, 0o600); writeErr == nil {
-				return out, ""
-			}
-		}
-	}
-	return "", "No se genero pg_dumpall: docker pcs-postgres o pg_dumpall no disponible/accesible"
+	return "", "No se genero respaldo PostgreSQL: pg_dump no esta disponible o el rol de backup no tiene acceso"
 }
 
 func superVPSSnapshotAddDockerVolumes(tw *tar.Writer, tempDir string) (int, []string) {
@@ -795,7 +791,7 @@ func safeSuperVPSSnapshotPath(path string) (string, bool) {
 
 func normalizeSuperVPSSnapshotCloudProvider(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "rclone", "google_drive", "gdrive", "mega", "onedrive", "s3":
+	case "rclone", "google_drive", "gdrive", "mega", "onedrive", "dropbox", "box", "pcloud", "backblaze_b2", "s3":
 		return strings.ToLower(strings.TrimSpace(raw))
 	default:
 		return "rclone"

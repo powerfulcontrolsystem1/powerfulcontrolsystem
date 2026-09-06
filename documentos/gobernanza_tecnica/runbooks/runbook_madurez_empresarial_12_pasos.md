@@ -1,8 +1,17 @@
 # Runbook de madurez empresarial - 12 pasos
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Es un mapa de controles y scripts existentes; no acredita madurez, carga, SLO ni despliegue por enumerarlos.
+- SkipE2E y STAGING_ANONYMIZE=0 no sirven para acreditar release: las omisiones y el tratamiento de datos requieren resolución antes de aceptación.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-11
 
-Este runbook deja implementados los controles que elevan la plataforma a operacion empresarial. Cada punto tiene script, auditoria o workflow asociado.
+Este runbook relaciona controles con scripts, auditorías y workflows. Su instalación y eficacia deben acreditarse por entorno.
 
 ## 1. Staging con datos anonimizados
 
@@ -42,7 +51,7 @@ Este runbook deja implementados los controles que elevan la plataforma a operaci
 
 - Auditor base: `tools/security_audit.mjs`.
 - Refuerzo operativo: recaptcha, cookies seguras, sesiones revocables, rate limit y rutas publicas controladas.
-- Siguiente capa activable: 2FA para cuentas super antes de exponer paneles criticos.
+- El código exige TOTP confirmado para acceso super; verificar enrolamiento real y recuperación antes de exponer paneles críticos.
 
 ## 7. Observabilidad de negocio
 
@@ -92,3 +101,9 @@ bash deploy/scripts/vps-refresh-staging-from-production.sh
 bash deploy/scripts/vps-monitoring-up.sh
 bash deploy/scripts/vps-external-backup.sh
 ```
+
+## Fuentes y aceptación de la revisión
+
+[release_gate.ps1](../../../scripts/release_gate.ps1), [professional-ci.yml](../../../.github/workflows/professional-ci.yml), [estado_actual.md](../../estado_actual.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

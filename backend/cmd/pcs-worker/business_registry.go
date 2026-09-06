@@ -26,6 +26,7 @@ const (
 	jobFacturacionRetries   = "integrations.facturacion-electronica-retries"
 	jobLegalParameters      = "compliance.legal-parameters"
 	jobCollections          = "notifications.collections"
+	jobVidaReminders        = "notifications.vida-reminders"
 	jobAccounting           = "accounting.pending-events"
 	jobElectricalSchedule   = "integrations.electrical-schedule"
 	jobDomoticaConnectivity = "notifications.domotica-connectivity"
@@ -40,7 +41,11 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 	add := func(kind string, timeout time.Duration, maxAttempts int, fn func(context.Context) error) {
 		registry[kind] = platformworker.HandlerSpec{Kind: kind, Version: 1, Timeout: timeout, MaxAttempts: maxAttempts, Enabled: true, Handle: func(ctx context.Context, _ dbpkg.AsyncJob) error { return fn(ctx) }}
 	}
-	add(jobSuperAlerts, 2*time.Minute, 5, func(context.Context) error { handlers.EvaluateSuperAlertasSistema(dbSuper, false); return nil })
+	add(jobSuperAlerts, 2*time.Minute, 5, func(context.Context) error {
+		handlers.EvaluateSuperAlertasSistema(dbSuper, false)
+		handlers.EvaluateQueueCapacity(dbEmp, dbSuper, false)
+		return nil
+	})
 	add(jobAuditRetention, 10*time.Minute, 5, func(context.Context) error { _, err := dbpkg.PurgeExpiredEmpresaAuditoriaEventos(dbEmp); return err })
 	add(jobLicenseState, 10*time.Minute, 8, func(context.Context) error { _, err := dbpkg.SyncEmpresasEstadoPorLicencia(dbEmp, dbSuper); return err })
 	add(jobLicenseAlerts, 20*time.Minute, 8, func(context.Context) error { return handlers.RunLicenciaVencimientoScheduled(dbSuper, dbEmp) })
@@ -49,11 +54,21 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 	add(jobFacturacionRetries, 20*time.Minute, 10, func(ctx context.Context) error {
 		return handlers.RunFacturacionElectronicaRetriesScheduled(ctx, dbEmp, dbSuper, envInt("FACTURACION_RETRY_TENANT_BATCH_SIZE", 100), envInt("FACTURACION_RETRY_DOCUMENT_BATCH_SIZE", 100))
 	})
+	for shardIndex := 0; shardIndex < facturacionRetryShardCount(); shardIndex++ {
+		index := shardIndex
+		kind := facturacionRetryShardKind(index)
+		add(kind, 20*time.Minute, 10, func(ctx context.Context) error {
+			return handlers.RunFacturacionElectronicaRetriesScheduledShard(ctx, dbEmp, dbSuper,
+				envInt("FACTURACION_RETRY_TENANT_BATCH_SIZE", 100), envInt("FACTURACION_RETRY_DOCUMENT_BATCH_SIZE", 100),
+				index, facturacionRetryShardCount())
+		})
+	}
 	add(jobLegalParameters, 30*time.Minute, 5, func(context.Context) error {
 		_, err := dbpkg.CheckAndApplyEmpresaParametrosLegalesAuto(dbEmp, "sistema.pcs-worker")
 		return err
 	})
 	add(jobCollections, 25*time.Minute, 8, func(context.Context) error { return handlers.RunEmpresaCobranzaRecordatoriosScheduled(dbEmp, dbSuper) })
+	add(jobVidaReminders, 2*time.Minute, 8, func(context.Context) error { return handlers.RunEmpresaVidaRecordatoriosScheduled(dbEmp, dbSuper) })
 	add(jobAccounting, 25*time.Minute, 10, func(context.Context) error {
 		result, err := dbpkg.RunEmpresaAsientosContablesWorkerCycle(dbEmp, "pcs-worker", envInt("ASIENTOS_WORKER_BATCH_SIZE", 100), envInt("ASIENTOS_WORKER_MAX_RETRIES", 5))
 		if err == nil && result.Fallidos > 0 {
@@ -86,21 +101,41 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 }
 
 func businessSchedules() []platformworker.ScheduleSpec {
-	return []platformworker.ScheduleSpec{
+	schedules := []platformworker.ScheduleSpec{
 		{Kind: jobSuperAlerts, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 80},
 		{Kind: jobAuditRetention, Version: 1, Interval: 12 * time.Hour, MaxAttempts: 5, Priority: 150},
 		{Kind: jobLicenseState, Version: 1, Interval: time.Hour, MaxAttempts: 8, Priority: 60},
 		{Kind: jobLicenseAlerts, Version: 1, Interval: 12 * time.Hour, MaxAttempts: 8, Priority: 70},
 		{Kind: jobVPSSnapshot, Version: 1, Interval: time.Minute, MaxAttempts: 3, Priority: 200},
 		{Kind: jobDIANNewsAgent, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 120},
-		{Kind: jobFacturacionRetries, Version: 1, Interval: time.Duration(envInt("FACTURACION_RETRY_INTERVAL_SECONDS", 60)) * time.Second, MaxAttempts: 10, Priority: 35},
 		{Kind: jobLegalParameters, Version: 1, Interval: 24 * time.Hour, MaxAttempts: 5, Priority: 140},
 		{Kind: jobCollections, Version: 1, Interval: time.Hour, MaxAttempts: 8, Priority: 90},
+		{Kind: jobVidaReminders, Version: 1, Interval: 15 * time.Minute, MaxAttempts: 8, Priority: 92},
 		{Kind: jobAccounting, Version: 1, Interval: time.Duration(envInt("ASIENTOS_WORKER_INTERVAL_MINUTES", 15)) * time.Minute, MaxAttempts: 10, Priority: 50},
 		{Kind: jobElectricalSchedule, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 40},
 		{Kind: jobDomoticaConnectivity, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 45},
 		{Kind: jobSystemMetrics, Version: 1, Interval: time.Duration(metrics.DefaultIntervalSeconds()) * time.Second, MaxAttempts: 5, Priority: 160},
 	}
+	for shardIndex := 0; shardIndex < facturacionRetryShardCount(); shardIndex++ {
+		schedules = append(schedules, platformworker.ScheduleSpec{
+			Kind: facturacionRetryShardKind(shardIndex), Version: 1,
+			Interval:    time.Duration(envInt("FACTURACION_RETRY_INTERVAL_SECONDS", 60)) * time.Second,
+			MaxAttempts: 10, Priority: 35,
+		})
+	}
+	return schedules
+}
+
+func facturacionRetryShardCount() int {
+	count := envInt("FACTURACION_RETRY_SHARDS", 8)
+	if count > 32 {
+		return 32
+	}
+	return count
+}
+
+func facturacionRetryShardKind(index int) string {
+	return fmt.Sprintf("%s.shard-%02d", jobFacturacionRetries, index)
 }
 
 func envInt(key string, fallback int) int {

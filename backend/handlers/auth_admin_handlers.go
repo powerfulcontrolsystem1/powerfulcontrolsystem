@@ -502,7 +502,17 @@ func authenticateAdminCredentials(w http.ResponseWriter, dbSuper *sql.DB, payloa
 		writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
 		return nil, false, false
 	}
-	if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
+	globalTOTPEnabled, policyErr := adminTOTPLoginPolicy(dbSuper)
+	if policyErr != nil {
+		log.Println("AdminLoginHandler load 2FA policy error:", policyErr)
+		writeAdminAuthError(w, http.StatusServiceUnavailable, "No se pudo validar la politica de acceso 2FA.")
+		return nil, false, false
+	}
+	if adminTOTPConfigurationRequired(admin) {
+		writeAdminAuthJSON(w, http.StatusForbidden, map[string]interface{}{"ok": false, "two_factor_setup_required": true, "message": "Esta cuenta global debe configurar 2FA antes de iniciar sesion."})
+		return nil, false, false
+	}
+	if adminTOTPLoginRequiredForAdmin(admin, globalTOTPEnabled) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
 		if registerFailure() {
 			return nil, false, false
 		}

@@ -1,6 +1,15 @@
 # API movil v1
 
-Actualizacion: 2026-07-13.
+Estado: Vigente. Responsable: Ingeniería de API. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Disponible significa implementado en la fachada local; no acredita app nativa distribuida ni aceptación de todas las operaciones en producción.
+- El YAML conserva varios cuerpos/respuestas resumidos: completar schemas por operación antes de generar un cliente estricto. Inventarios de rutas no sustituyen contratos.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
+Actualizacion: 2026-09-05.
 
 ## Alcance inicial estable
 
@@ -59,7 +68,7 @@ Contrato OpenAPI: `documentos/api/openapi.mobile.v1.yaml`.
 
 ## Auditoria global de APIs
 
-Se inventariaron 361 rutas registradas desde `backend/main.go` y los routers
+Se inventariaron 374 rutas registradas desde `backend/main.go` y los routers
 internos mediante `tools/auditar_api_movil.mjs`; el resultado versionado vive en
 `documentos/api/inventario_api_movil.md`. Las familias cubiertas incluyen
 autenticacion, empresas/roles, ventas/carritos/caja, productos e
@@ -85,6 +94,12 @@ Hallazgos y criterio de migracion:
    marque como consumo de UI historica. La retirada requiere telemetria de uso,
    version v1 equivalente y una ventana de deprecacion.
 
+El OpenAPI generado general registra 325 rutas desde `backend/main.go` y
+`/ready`; es un indice de descubrimiento y puede inferir metodos de forma
+conservadora. Para una aplicacion movil, solo
+`documentos/api/openapi.mobile.v1.yaml` define rutas, metodos, autenticacion y
+cabeceras soportadas.
+
 ## Estado de migracion y siguientes lotes
 
 Ventas POS, carrito, cobro, facturacion desde venta, sincronizacion offline y
@@ -98,3 +113,9 @@ catalogo con cursor. No se debe exponer una tabla completa ni un endpoint
 generico SQL a la aplicacion movil. Las rutas `/api/empresa/*` se mantienen
 como **legacy web interno** hasta tener telemetria de uso, equivalente v1 y
 ventana de deprecacion.
+
+## Fuentes y aceptación de la revisión
+
+[mobile_api_v1.go](../../backend/handlers/mobile_api_v1.go), [mobile_api_v1_test.go](../../backend/handlers/mobile_api_v1_test.go), [mobile_api_idempotency.go](../../backend/db/mobile_api_idempotency.go), [openapi.mobile.v1.yaml](openapi.mobile.v1.yaml).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../requisitos/especificacion_y_trazabilidad.md)).

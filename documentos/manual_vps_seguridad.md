@@ -1,5 +1,14 @@
 # Manual operativo del modulo de seguridad VPS
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Un escaneo container no acredita hardening host. Instalar herramientas, programar cron o escanear red requiere el alcance operativo correspondiente.
+- Un scanner no disponible deja cobertura incompleta; ni puntuación ni health reemplazan revisión de candidato.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha de actualizacion: 2026-04-16
 
 ## Objetivo
@@ -169,3 +178,9 @@ REPORT_XLS=/opt/powerfulcontrolsystem/backend/logs/vps_security/runs/vps-2026041
 - Para produccion, el VPS debe aceptar `powerfulcontrolsystem.com` y `www.powerfulcontrolsystem.com` en Nginx o reverse proxy, aunque el backend ya redirige `www` al dominio raiz como host canonico.
 - El modulo no crea tablas nuevas: guarda configuracion y reportes en filesystem del backend.
 - Si alguna herramienta no existe en el VPS, el reporte registra ese faltante como hallazgo en lugar de abortar todo el escaneo.
+
+## Fuentes y aceptación de la revisión
+
+[main.go](../backend/tools/vps_security_scan/main.go), [run_vps_security_scan.sh](../scripts/run_vps_security_scan.sh), [install_vps_security_tools.sh](../scripts/install_vps_security_tools.sh).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

@@ -5,7 +5,7 @@ set -euo pipefail
 
 EMPRESA_ID="${EMPRESA_ID:-12}"
 PROD_POSTGRES_CONTAINER="${PROD_POSTGRES_CONTAINER:-pcs-postgres}"
-PROD_BACKEND_CONTAINER="${PROD_BACKEND_CONTAINER:-pcs-backend}"
+PROD_BACKEND_CONTAINER="${PROD_BACKEND_CONTAINER:-$(docker ps --filter label=com.docker.compose.project=powerful-control-system --filter label=com.docker.compose.service=backend --format '{{.ID}}' | head -n 1)}"
 STAGING_POSTGRES_CONTAINER="${STAGING_POSTGRES_CONTAINER:-pcs-staging-postgres}"
 STAGING_BACKEND_CONTAINER="${STAGING_BACKEND_CONTAINER:-pcs-staging-backend}"
 PROD_DB_USER="${PROD_DB_USER:-pcs}"
