@@ -22,6 +22,31 @@ Si el usuario pide explicitamente trabajo con agentes/subagentes, Codex puede
 delegar frentes concretos. Si no lo pide, Codex debe aplicar esta estructura como
 checklist interno y entregar una sola salida integrada.
 
+## Trabajo concurrente con agentes
+
+- `D:\powerfulcontrolsystem` es el checkout de integración y release: solo el
+  coordinador lo usa y debe permanecer en `main` limpio. No se edita en paralelo
+  ni se usa como área temporal de un subagente.
+- Cada tarea paralela usa un worktree exclusivo bajo
+  `D:\powerfulcontrolsystem.worktrees\`, creado desde `origin/main` con una rama
+  `codex/<fecha>-<tarea>-<id>`. Usar
+  `scripts\agent_worktree.ps1 -Action Create -Task <tarea>`; el helper bloquea el
+  worktree para evitar su retiro accidental.
+- Antes de editar, el coordinador asigna rutas o globs exclusivos. Son hotspots
+  reservados al integrador: `AGENTS.md`, `CONTRIBUTING.md`, `.github/`,
+  `backend/main.go`, `backend/db/platform_migrations.go`, `backend/go.mod`,
+  `backend/go.sum`, `web/estilos.css`, changelogs, historiales y catálogos
+  generados.
+- Subagentes no ejecutan `rs.ps1`, `actualizar_repositorio.ps1`, despliegues,
+  pushes de integración ni borrados de ramas/worktrees. Esos efectos corresponden
+  al coordinador desde un árbol limpio. `actualizar_repositorio.ps1` puede incluir
+  todo el árbol mediante staging automático y por eso nunca se ejecuta desde un
+  checkout compartido o sucio.
+- La entrega de cada agente incluye worktree, rama, SHA base/final, rutas
+  tocadas, pruebas, estado limpio, efectos externos y riesgos. El coordinador
+  integra y retira solo worktrees limpios cuyo HEAD coincida con una PR fusionada
+  o ya sea ancestro de `origin/main`.
+
 ## Reglas obligatorias del repositorio
 
 - Usar Go puro y la libreria estandar siempre que aplique.

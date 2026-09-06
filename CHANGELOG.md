@@ -5010,3 +5010,12 @@
 
 - `actualizar_repositorio.ps1` respeta `.gitignore` durante `git add -A` y valida despues el indice para impedir artefactos operativos versionados.
 - Se elimina el uso de pathspec negativos sobre carpetas ignoradas, que hacia fallar Git aunque no hubiera cambios publicables.
+
+## 2026-09-06 - Higiene Git y trabajo paralelo
+
+- GitHub borra automáticamente las ramas después de fusionar una PR; las ramas
+  ya integradas se podan solo con evidencia de la PR exacta.
+- Los agentes trabajan en worktrees aislados y bloqueados; el checkout de
+  integración/release se reserva a `main` limpio.
+- Se incorpora `scripts/agent_worktree.ps1` para crear y retirar worktrees con
+  comprobaciones de limpieza e integración.

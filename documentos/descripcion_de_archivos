@@ -13425,3 +13425,8 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
   módulo `inventario` como operativa de severidad media y retención de 730 días.
 - `backend/db/auditoria_postgres_test.go`: regresión de política de severidad y
   retención para inventario, lotes, reservas, ajustes y Kardex.
+
+2026-09-06 - Coordinación Git para agentes concurrentes
+- `scripts/agent_worktree.ps1`: crea, lista, bloquea, desbloquea y retira
+  worktrees aislados de agentes; el retiro exige limpieza y evidencia de
+  integración por ancestro o head exacto de una PR fusionada.
