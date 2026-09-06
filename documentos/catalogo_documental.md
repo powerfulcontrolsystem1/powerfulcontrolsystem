@@ -7,14 +7,14 @@ No editar manualmente. Generar con `node tools/docs_catalog.mjs --write`; valida
 Política y significado de estados: [marco documental](gobernanza_tecnica/marco_documental.md).
 Inventario y hallazgos detallados: [JSON](catalogo_documental.json). La clasificación no acredita revisión semántica ni producción.
 
-Documentos: 511. Hallazgos locales: 4; bloqueantes: 0.
+Documentos: 507. Hallazgos locales: 4; bloqueantes: 0.
 
 | Estado | Cantidad |
 | --- | --- |
 | contrato_maquina | 1 |
 | control_documental | 2 |
 | evidencia | 279 |
-| generado | 24 |
+| generado | 20 |
 | historico | 62 |
 | referencia_externa | 1 |
 | referencia_por_validar | 2 |
@@ -531,10 +531,6 @@ Documentos: 511. Hallazgos locales: 4; bloqueantes: 0.
 | [documentos/vida.md](<vida.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/vps2_operacion.md](<vps2_operacion.md>) | vigente | QA/operación | 2026-09-05 |
 | [services/voice_stream_server/README.md](<../services/voice_stream_server/README.md>) | vigente | Ingeniería y operación | 2026-09-05 |
-| [tmp-csp-inline-final/inventario_csp_inline.md](<../tmp-csp-inline-final/inventario_csp_inline.md>) | generado | Coordinación técnica | Pendiente / no aplica |
-| [tmp-csp-inline-fixed/inventario_csp_inline.md](<../tmp-csp-inline-fixed/inventario_csp_inline.md>) | generado | Coordinación técnica | Pendiente / no aplica |
-| [tmp-csp-inline-merged/inventario_csp_inline.md](<../tmp-csp-inline-merged/inventario_csp_inline.md>) | generado | Coordinación técnica | Pendiente / no aplica |
-| [tmp-csp-inline/inventario_csp_inline.md](<../tmp-csp-inline/inventario_csp_inline.md>) | generado | Coordinación técnica | Pendiente / no aplica |
 
 ## Hallazgos heredados
 

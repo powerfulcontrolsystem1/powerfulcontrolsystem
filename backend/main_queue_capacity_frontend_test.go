@@ -49,9 +49,9 @@ func TestSuperQueueCapacitySurfaceAndMetricsAreRegistered(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	script := string(scriptRaw)
+	surface := page + "\n" + string(scriptRaw)
 	for _, lane := range []string{"printing", "product_add", "fiscal"} {
-		if !strings.Contains(script, lane) {
+		if !strings.Contains(surface, lane) {
 			t.Fatalf("la UI no contempla el carril %s", lane)
 		}
 	}

@@ -2,11 +2,11 @@
   "schema_version": 1,
   "policy": "documentos/gobernanza_tecnica/politica_catalogo.json",
   "scope": "Documentos de texto versionados o nuevos no ignorados por Git; metadatos técnicos bajo documentos. Excluye datos privados ignorados y binarios. Sin auditoría semántica ni validación de URLs externas.",
-  "total": 511,
+  "total": 507,
   "counts": {
     "vigente": 140,
     "historico": 62,
-    "generado": 24,
+    "generado": 20,
     "contrato_maquina": 1,
     "referencia_por_validar": 2,
     "evidencia": 279,
@@ -47,10 +47,6 @@
     [
       "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/test_runs/qa_e2e_buttons_2026-08-26T13-05-10/reporte.md",
       "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/test_runs/qa_e2e_buttons_2026-08-26T13-34-30/reporte.md"
-    ],
-    [
-      "tmp-csp-inline-final/inventario_csp_inline.md",
-      "tmp-csp-inline-merged/inventario_csp_inline.md"
     ]
   ],
   "documents": [
@@ -4616,42 +4612,6 @@
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
       "sha256_lf": "caeb44b699bfcdb375ada30b8a4ef9930462c67d738192248f7f82c4f519ee20"
-    },
-    {
-      "path": "tmp-csp-inline-final/inventario_csp_inline.md",
-      "title": "Inventario CSP inline",
-      "state": "generado",
-      "owner": "Coordinación técnica",
-      "reviewed": null,
-      "review_due": null,
-      "sha256_lf": "949a6cfddf5cbe7342560cb28f0c25bce201eb43ce2fede2d3962aa95f41dff4"
-    },
-    {
-      "path": "tmp-csp-inline-fixed/inventario_csp_inline.md",
-      "title": "Inventario CSP inline",
-      "state": "generado",
-      "owner": "Coordinación técnica",
-      "reviewed": null,
-      "review_due": null,
-      "sha256_lf": "169c0e2039c3a123b701cca99831d31e40119e209a93e716b38c512fbe2ac8b2"
-    },
-    {
-      "path": "tmp-csp-inline-merged/inventario_csp_inline.md",
-      "title": "Inventario CSP inline",
-      "state": "generado",
-      "owner": "Coordinación técnica",
-      "reviewed": null,
-      "review_due": null,
-      "sha256_lf": "949a6cfddf5cbe7342560cb28f0c25bce201eb43ce2fede2d3962aa95f41dff4"
-    },
-    {
-      "path": "tmp-csp-inline/inventario_csp_inline.md",
-      "title": "Inventario CSP inline",
-      "state": "generado",
-      "owner": "Coordinación técnica",
-      "reviewed": null,
-      "review_due": null,
-      "sha256_lf": "2772109a8c715329a2da6102550dca683573f7867ae9a3a22aa2162f70d83b88"
     }
   ]
 }
