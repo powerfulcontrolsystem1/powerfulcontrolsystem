@@ -1,3 +1,13 @@
+## [2026-09-06] Worker: idempotencia estable de tareas programadas
+
+- [Operación] Las tareas periódicas conservan un payload determinista dentro
+  de su mismo intervalo, igual que su llave idempotente.
+- [Confiabilidad] Reintentos del scheduler ya no producen conflictos de cola
+  ni degradan la disponibilidad del worker por cambiar únicamente el instante
+  de ejecución dentro del mismo bucket.
+- [QA] Una prueba de regresión exige igualdad dentro del intervalo y diferencia
+  entre intervalos sucesivos.
+
 ## [2026-09-05] Perfiles de país configurables sin emisión implícita
 
 - [Multiempresa] La configuración de facturación admite un país nuevo por

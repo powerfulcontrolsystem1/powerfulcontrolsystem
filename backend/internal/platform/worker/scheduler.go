@@ -43,11 +43,15 @@ func (s *Scheduler) EnqueueDue(ctx context.Context) error {
 			return err
 		}
 		bucket := now.UnixNano() / spec.Interval.Nanoseconds()
-		payload, _ := json.Marshal(map[string]string{"scheduled_at": now.Format(time.RFC3339)})
+		// The idempotency key represents the interval bucket, therefore the
+		// payload must represent that same bucket rather than this invocation's
+		// wall-clock instant. Otherwise a second scheduler pass in the same
+		// bucket collides with its own key but has different payload content.
+		payload := scheduledPayloadForBucket(now, spec.Interval)
 		_, _, err := dbpkg.EnqueueAsyncJobIdempotent(s.DB, dbpkg.AsyncJob{
 			Kind:           spec.Kind,
 			Version:        spec.Version,
-			PayloadJSON:    string(payload),
+			PayloadJSON:    payload,
 			MaxAttempts:    spec.MaxAttempts,
 			Priority:       spec.Priority,
 			IdempotencyKey: fmt.Sprintf("schedule:%s:%d", spec.Kind, bucket),
@@ -57,6 +61,14 @@ func (s *Scheduler) EnqueueDue(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func scheduledPayloadForBucket(now time.Time, interval time.Duration) string {
+	bucketStart := now.UTC().Truncate(interval)
+	payload, _ := json.Marshal(map[string]string{
+		"scheduled_at": bucketStart.Format(time.RFC3339),
+	})
+	return string(payload)
 }
 
 // ValidateScheduleSpec accepts a bounded sub-minute interval for lightweight,

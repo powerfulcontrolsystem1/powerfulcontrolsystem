@@ -43821,3 +43821,19 @@ Archivos modificados:
   sin adaptador fiscal oficial.
 - QA: regresiones de normalización, campos bloqueados y contrato visual; no se
   creó configuración ni documento fiscal en producción durante esta tarea.
+
+2026-09-06: Corrección de disponibilidad del worker de tareas asíncronas.
+
+- Causa: una tarea programada reutilizaba correctamente su llave de
+  idempotencia por intervalo, pero serializaba el instante exacto de cada
+  ejecución. Un segundo ciclo en el mismo intervalo llegaba con la misma llave
+  y payload distinto, por lo que la cola fallaba cerrada con conflicto y
+  `/ready` devolvía 503.
+- Corrección: el payload ahora registra el inicio del bucket temporal, por lo
+  que llave y payload representan la misma unidad lógica de trabajo.
+- Alcance: sin cambios en PostgreSQL, datos empresariales, permisos, facturas
+  ni reenvíos fiscales. La cola conserva su unicidad y no se modifican jobs
+  existentes.
+- Pruebas: `go test ./internal/platform/worker -count=1` y `go vet
+  ./internal/platform/worker`; regresión para dos instantes del mismo minuto y
+  otro del minuto siguiente.
