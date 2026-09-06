@@ -2933,9 +2933,24 @@ func TotalCarritoCompraAbonos(dbConn *sql.DB, empresaID, carritoID int64) (float
 	return round2(total), nil
 }
 
-// PayCarritoStationSession marca un carrito como pagado/inactivo y guarda una
-// instantanea inmutable de la venta dentro de la misma transaccion.
+// PayCarritoStationSession preserves the legacy call contract. Callers that do
+// not select a fiscal document explicitly receive a payment receipt.
 func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado, montoEfectivo float64, codigoDescuentoID int64, cierreCajaID int64, cajaCodigo, cajaTurno string, cajaSucursalID int64, usuarioCreador string) error {
+	return payCarritoStationSession(dbConn, empresaID, carritoID, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo, descuentoValor, devolucionTotal, totalPagado, montoEfectivo, codigoDescuentoID, cierreCajaID, cajaCodigo, cajaTurno, cajaSucursalID, usuarioCreador, "comprobante_pago", nil)
+}
+
+// PayCarritoStationSessionWithDocumentIntent closes the cart and freezes its
+// document decision atomically. Automatic frequency counters are serialized per
+// company, so simultaneous cash registers cannot choose the same frequency slot.
+func PayCarritoStationSessionWithDocumentIntent(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado, montoEfectivo float64, codigoDescuentoID int64, cierreCajaID int64, cajaCodigo, cajaTurno string, cajaSucursalID int64, usuarioCreador, requestedDocumentMode string) (*CarritoPaidDocumentIntent, error) {
+	var intent *CarritoPaidDocumentIntent
+	err := payCarritoStationSession(dbConn, empresaID, carritoID, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo, descuentoValor, devolucionTotal, totalPagado, montoEfectivo, codigoDescuentoID, cierreCajaID, cajaCodigo, cajaTurno, cajaSucursalID, usuarioCreador, requestedDocumentMode, &intent)
+	return intent, err
+}
+
+// payCarritoStationSession marks a cart as paid/inactive and stores the
+// immutable sale snapshot and recovery event in the same transaction.
+func payCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado, montoEfectivo float64, codigoDescuentoID int64, cierreCajaID int64, cajaCodigo, cajaTurno string, cajaSucursalID int64, usuarioCreador, requestedDocumentMode string, intentOut **CarritoPaidDocumentIntent) error {
 	metodoPago = NormalizeMetodoPagoCarrito(metodoPago)
 	if metodoPago == "" {
 		return fmt.Errorf("metodo_pago invalido")
@@ -3014,6 +3029,10 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 	if affected == 0 {
 		return ErrCarritoYaPagado
 	}
+	documentIntent, err := resolveCarritoPaidDocumentIntentTx(tx, empresaID, requestedDocumentMode)
+	if err != nil {
+		return err
+	}
 
 	if codigoDescuentoID > 0 {
 		if err := markCodigoDescuentoUsoTx(tx, empresaID, codigoDescuentoID, carritoID, descuentoValor, usuarioCreador, strings.TrimSpace(referenciaPago)); err != nil {
@@ -3059,6 +3078,7 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 		"cierre_caja_id":   cierreCajaID,
 		"caja_codigo":      cajaCodigo,
 		"usuario":          usuarioCreador,
+		"document_intent":  documentIntent,
 	})
 	if err != nil {
 		return err
@@ -3074,7 +3094,13 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 		return fmt.Errorf("registrar outbox de venta: %w", err)
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if intentOut != nil {
+		*intentOut = documentIntent
+	}
+	return nil
 }
 
 type carritoSaleItemSnapshot struct {

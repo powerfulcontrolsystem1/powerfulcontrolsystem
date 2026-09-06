@@ -228,6 +228,8 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			}},
 			{Version: "20260831-003-vida-price-history-ai-v1", Description: "personal price history barcode captures and AI invoice line items", Body: empresaVidaPriceHistorySchemaFingerprint, Apply: applyEmpresaVidaPriceHistorySchemaTx},
 			{Version: "20260901-001-retire-vertical-modules-v1", Description: "remove retired vertical module tables and references", Body: empresaVerticalModulesDecommissionFingerprint, Apply: applyEmpresaVerticalModulesDecommissionTx},
+			{Version: "20260906-001-facturacion-reservas-v1", Description: "durable tenant invoice number reservations for concurrent cash registers and crash recovery", Body: empresaFacturacionNumeracionReservasFingerprint, Apply: applyEmpresaFacturacionNumeracionReservasTx},
+			{Version: "20260906-002-facturacion-contingencias-v1", Description: "tenant fiscal outage incidents, paper authorization and 48-hour transmission ledger", Body: empresaFacturacionContingenciasFingerprint, Apply: applyEmpresaFacturacionContingenciasTx},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

@@ -73,7 +73,12 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 	})
 	registry[jobCommerceSalePaid] = platformworker.HandlerSpec{
 		Kind: jobCommerceSalePaid, Version: 1, Timeout: 5 * time.Minute, MaxAttempts: 10, Enabled: true,
-		Handle: ventasService.RecoverPaidSaleAccounting,
+		Handle: func(ctx context.Context, job dbpkg.AsyncJob) error {
+			if err := ventasService.RecoverPaidSaleAccounting(ctx, job); err != nil {
+				return err
+			}
+			return handlers.RecoverPaidSaleDocuments(ctx, dbEmp, dbSuper, job)
+		},
 	}
 	registry[jobCxPPayment] = platformworker.HandlerSpec{
 		Kind: jobCxPPayment, Version: 1, Timeout: 2 * time.Minute, MaxAttempts: 10, Enabled: true,

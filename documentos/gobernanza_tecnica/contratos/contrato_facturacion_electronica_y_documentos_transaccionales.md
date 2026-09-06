@@ -1,5 +1,36 @@
 # Contrato tecnico: facturacion electronica y documentos transaccionales
 
+## Numeracion multicaja y offline (candidato 2026-09-06)
+
+La reserva de factura CO persiste por empresa/documento en la misma transaccion
+que incrementa el contador. Repetir la operacion conserva numero y fecha;
+cambiar importe, moneda o ambiente falla. No se renumeran documentos historicos.
+Un formulario viejo no reduce el contador de la misma serie fiscal.
+
+Offline exige empresa, operador original autenticado, caja y sync_key estable.
+El navegador requiere Web Locks y almacenamiento legible/disponible; solo
+imprime el comprobante provisional despues de guardar. El servidor limita
+lotes y reclama cada key una vez por empresa. Sincronizar una venta no valida
+la factura ni implementa contingencia legal DIAN.
+
+El pago persiste en `commerce.sale-paid` la decision documental resuelta bajo el
+mismo `FOR UPDATE` que avanza la frecuencia por empresa. El worker reconstruye
+el documento faltante idempotentemente, despues de recuperar contabilidad, sin
+repetir el cobro ni volver a decidir por configuracion mutable.
+
+La contingencia Colombia es un dominio separado por empresa: historial de
+autorizaciones de papel, incidente, documento y plazo. Las relaciones usan
+claves compuestas con `empresa_id`, cada incidente congela la autorizacion que
+le corresponde y una renovacion no borra ni mezcla la serie anterior. Solo se
+marca estado `contingencia` ante
+falla de conectividad si existe un incidente DIAN activo. Para falla del
+facturador, registrar papel exige venta pagada, comprobante/fuente inmutables,
+rango vigente y numero siguiente exacto. El documento electronico tipo 03 no se
+delega al generador tipo 01: sigue bloqueado hasta implementar CUDE,
+`AdditionalDocumentReference`, validacion XSD y transporte/acuses especificos.
+
+Evidencia y limites: `documentos/auditoria_facturacion_multicaja_offline_20260906.md`.
+
 ## Frontera fiscal por pais y empresa (2026-09-05)
 
 La configuracion heredada exige igualdad con el pais de

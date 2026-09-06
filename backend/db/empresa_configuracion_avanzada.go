@@ -1243,7 +1243,13 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		resolucion_fecha_hasta = excluded.resolucion_fecha_hasta,
 		consecutivo_desde = excluded.consecutivo_desde,
 		consecutivo_hasta = excluded.consecutivo_hasta,
-		proximo_consecutivo = excluded.proximo_consecutivo,
+		proximo_consecutivo = CASE
+			WHEN UPPER(TRIM(empresa_configuracion_avanzada.pais_codigo)) = UPPER(TRIM(excluded.pais_codigo))
+				AND LOWER(TRIM(empresa_configuracion_avanzada.ambiente_fe)) = LOWER(TRIM(excluded.ambiente_fe))
+				AND UPPER(REPLACE(TRIM(empresa_configuracion_avanzada.prefijo_factura), ' ', '')) = UPPER(REPLACE(TRIM(excluded.prefijo_factura), ' ', ''))
+			THEN GREATEST(empresa_configuracion_avanzada.proximo_consecutivo, excluded.proximo_consecutivo)
+			ELSE excluded.proximo_consecutivo
+		END,
 		formato_impresion = excluded.formato_impresion,
 		imprimir_venta = excluded.imprimir_venta,
 		imprimir_factura_electronica = excluded.imprimir_factura_electronica,

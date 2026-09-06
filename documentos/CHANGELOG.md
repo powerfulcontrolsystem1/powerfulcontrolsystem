@@ -1,3 +1,22 @@
+## [2026-09-06] Facturación multicaja, recuperación y contingencia (candidato)
+
+- Reserva durable por empresa/documento y contador monotónico ante formularios
+  antiguos; conflicto fiscal revierte la transacción sin renumerar históricos.
+- Cola offline protege fallos de almacenamiento, operadores y escrituras entre
+  pestañas; backend exige llave idempotente e identidad antes de reclamar ventas.
+- Comprobante provisional no acredita DIAN. Aviso de contadores divergentes y
+  fechas civiles del centro DIAN sin desplazamiento de un día.
+- El pago congela en su transacción la decisión factura/comprobante y la guarda
+  en outbox; el worker reconstruye documentos ausentes sin repetir el cobro ni
+  recalcular la frecuencia mutable.
+- Base de contingencia Colombia separada por empresa: autorización de papel,
+  incidente verificable, ledger, fecha límite operativa de 48 horas y cierre
+  bloqueado con pendientes. El XML tipo 03 continúa bloqueado hasta implementar
+  y validar su contrato DIAN específico.
+- PostgreSQL aislado: 32 reservas, 32 cajas/frecuencia y 32 claims simultáneos;
+  regresiones frontend y Go verdes. Ver auditoría 20260906; candidato aún no
+  desplegado.
+
 ## [2026-09-06] Worker: idempotencia estable de tareas programadas
 
 - [Operación] Las tareas periódicas conservan un payload determinista dentro

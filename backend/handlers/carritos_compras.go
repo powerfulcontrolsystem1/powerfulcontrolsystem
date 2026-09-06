@@ -1315,7 +1315,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 
 				totalPagadoCarrito := roundMoneyCarritoForMoneda(totalPagado+abonosAplicados, carrito.Moneda)
-				if err := dbpkg.PayCarritoStationSession(
+				documentIntent, errPago := dbpkg.PayCarritoStationSessionWithDocumentIntent(
 					dbEmp,
 					empresaID,
 					id,
@@ -1333,9 +1333,11 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					cierreCaja.Turno,
 					cierreCaja.SucursalID,
 					usuarioOperacion,
-				); err != nil {
-					log.Printf("[carritos] pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, err)
-					if errors.Is(err, dbpkg.ErrCarritoYaPagado) {
+					modoDocumentoVenta,
+				)
+				if errPago != nil {
+					log.Printf("[carritos] pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, errPago)
+					if errors.Is(errPago, dbpkg.ErrCarritoYaPagado) {
 						carritoActual, errActual := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
 						if errActual == nil && isCarritoVentaPagada(carritoActual) {
 							writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -1348,15 +1350,15 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 							})
 							return
 						}
-						http.Error(w, err.Error(), http.StatusConflict)
+						http.Error(w, errPago.Error(), http.StatusConflict)
 						return
 					}
-					lower := strings.ToLower(strings.TrimSpace(err.Error()))
+					lower := strings.ToLower(strings.TrimSpace(errPago.Error()))
 					if strings.Contains(lower, "metodo_pago") ||
 						strings.Contains(lower, "codigo de descuento") ||
 						strings.Contains(lower, "sin usos") ||
 						strings.Contains(lower, "vencido") {
-						http.Error(w, err.Error(), http.StatusBadRequest)
+						http.Error(w, errPago.Error(), http.StatusBadRequest)
 						return
 					}
 					http.Error(w, "No se pudo cerrar el carrito por pago", http.StatusInternalServerError)
@@ -1550,7 +1552,11 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagadoContext(r.Context(), dbEmp, dbSuper, carritoPagado, montoDocumento, usuarioOperacion, modoDocumentoVenta)
+				modoDocumentoResuelto := "comprobante_pago"
+				if documentIntent != nil && strings.TrimSpace(documentIntent.ResolvedMode) != "" {
+					modoDocumentoResuelto = documentIntent.ResolvedMode
+				}
+				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagadoContext(r.Context(), dbEmp, dbSuper, carritoPagado, montoDocumento, usuarioOperacion, modoDocumentoResuelto)
 				if errDocumentoVenta != nil {
 					log.Printf("[carritos] documento_venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errDocumentoVenta)
 				}
@@ -1630,10 +1636,11 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"caja_sucursal_id": cierreCaja.SucursalID,
 						"efectivo_sumado":  montoEfectivoCaja,
 					},
-					"credito_venta":        creditoVenta,
-					"documento_venta":      documentoVenta,
-					"factura_electronica":  carritoFacturaElectronicaResponse(documentoVenta),
-					"modo_documento_venta": modoDocumentoVenta,
+					"credito_venta":         creditoVenta,
+					"documento_venta":       documentoVenta,
+					"documentos_pendientes": errDocumentoVenta != nil,
+					"factura_electronica":   carritoFacturaElectronicaResponse(documentoVenta),
+					"modo_documento_venta":  modoDocumentoResuelto,
 				})
 				return
 			}
@@ -3742,7 +3749,7 @@ func registrarDocumentoVentaDesdeCarritoPagadoContext(ctx context.Context, dbEmp
 	}
 
 	modoDocumentoVenta = normalizeCarritoPaymentDocumentMode(modoDocumentoVenta)
-	emitirFacturaEnEstaVenta := carritoAutoFacturaElectronicaActiva(cfg)
+	emitirFacturaEnEstaVenta := false
 	frecuenciaAplicada := false
 	frecuenciaCadaNNo := int64(0)
 	frecuenciaContadorAnterior := int64(0)
@@ -3755,33 +3762,22 @@ func registrarDocumentoVentaDesdeCarritoPagadoContext(ctx context.Context, dbEmp
 		emitirFacturaEnEstaVenta = false
 	}
 
-	if modoDocumentoVenta == "" && emitirFacturaEnEstaVenta && cfg.FacturacionFrecuenciaAutomaticaActiva && cfg.FacturacionFrecuenciaCadaNNo > 0 {
-		frecuenciaAplicada = true
-		frecuenciaCadaNNo = cfg.FacturacionFrecuenciaCadaNNo
-		ciclo := frecuenciaCadaNNo + 1
-		frecuenciaContadorAnterior = cfg.FacturacionFrecuenciaContador % ciclo
-		emitirFacturaEnEstaVenta = frecuenciaContadorAnterior == 0
-		frecuenciaContadorNuevo = (frecuenciaContadorAnterior + 1) % ciclo
-		cfg.FacturacionFrecuenciaContador = frecuenciaContadorNuevo
-		cfg.UsuarioCreador = strings.TrimSpace(usuario)
-		if _, upErr := dbpkg.UpsertEmpresaConfiguracionAvanzada(dbEmp, *cfg); upErr != nil {
-			log.Printf("[carritos] frecuencia_fe upsert empresa_id=%d carrito_id=%d error: %v", carrito.EmpresaID, carrito.ID, upErr)
-		}
-	}
-
 	documentoCodigo := buildVentaDocumentoCodigo(carrito, "comprobante_pago")
+	lockTipo := "comprobante_pago"
+	lockCodigo := documentoCodigo
 	if emitirFacturaEnEstaVenta {
-		facturaCodigo := buildVentaDocumentoCodigoFromBase(documentoCodigo, "factura_electronica")
-		lockedContext, releaseDocumentLock, documentLocked, lockErr := acquireFacturacionDocumentAdvisoryLock(ctx, dbEmp, carrito.EmpresaID, "factura_electronica", facturaCodigo)
-		if lockErr != nil {
-			return nil, fmt.Errorf("reservar factura electronica de venta: %w", lockErr)
-		}
-		if !documentLocked {
-			return nil, fmt.Errorf("la factura electronica de la venta ya esta siendo procesada")
-		}
-		defer releaseDocumentLock()
-		ctx = lockedContext
+		lockTipo = "factura_electronica"
+		lockCodigo = buildVentaDocumentoCodigoFromBase(documentoCodigo, "factura_electronica")
 	}
+	lockedContext, releaseDocumentLock, documentLocked, lockErr := acquireFacturacionDocumentAdvisoryLock(ctx, dbEmp, carrito.EmpresaID, lockTipo, lockCodigo)
+	if lockErr != nil {
+		return nil, fmt.Errorf("reservar documento de venta: %w", lockErr)
+	}
+	if !documentLocked {
+		return nil, fmt.Errorf("el documento de la venta ya esta siendo procesado")
+	}
+	defer releaseDocumentLock()
+	ctx = lockedContext
 	periodoContable := time.Now().Format("2006-01")
 	fechaDocumento := strings.TrimSpace(carrito.PagadoEn)
 	if fechaDocumento == "" {
@@ -3789,6 +3785,13 @@ func registrarDocumentoVentaDesdeCarritoPagadoContext(ctx context.Context, dbEmp
 	}
 	if montoTotal <= 0 {
 		montoTotal = carrito.Total
+	}
+
+	documentoYaExistia := false
+	if existing, existingErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, carrito.EmpresaID, "comprobante_pago", documentoCodigo); existingErr == nil && existing != nil {
+		documentoYaExistia = true
+	} else if existingErr != nil && !errors.Is(existingErr, sql.ErrNoRows) {
+		return nil, existingErr
 	}
 
 	docPayload := dbpkg.EmpresaDocumentoFacturacion{
@@ -3843,7 +3846,7 @@ func registrarDocumentoVentaDesdeCarritoPagadoContext(ctx context.Context, dbEmp
 		Observaciones:   "envio automatico desde pago de carrito",
 	}
 	var envioCorreoVenta interface{} = map[string]interface{}{"intentado": false}
-	if cfg.EnviarEmailVenta {
+	if cfg.EnviarEmailVenta && !documentoYaExistia {
 		envioCorreoVenta = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payloadCorreo, *docPersistido)
 	}
 
@@ -3859,6 +3862,7 @@ func registrarDocumentoVentaDesdeCarritoPagadoContext(ctx context.Context, dbEmp
 		)
 		if facturaErr != nil {
 			log.Printf("[carritos] factura_electronica_automatica empresa_id=%d carrito_id=%d error: %v", carrito.EmpresaID, carrito.ID, facturaErr)
+			return nil, fmt.Errorf("la venta fue pagada, pero su factura electronica requiere recuperacion: %w", facturaErr)
 		} else if facturaOut != nil {
 			facturaElectronica = facturaOut
 		}
@@ -3874,6 +3878,7 @@ func registrarDocumentoVentaDesdeCarritoPagadoContext(ctx context.Context, dbEmp
 
 	return map[string]interface{}{
 		"ok":                true,
+		"ya_existia":        documentoYaExistia,
 		"modo":              "comprobante_pago",
 		"requiere_dian":     false,
 		"documento_id":      docPersistido.ID,
@@ -4006,7 +4011,10 @@ func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCo
 	if modoDocumentoVenta == "comprobante_pago" {
 		return nil, nil
 	}
-	requiereFacturaElectronica := modoDocumentoVenta == "factura_electronica" || carritoShouldEmitFacturaElectronica(cfg)
+	// Automatic frequency is advanced later under the payment transaction lock.
+	// Validate every automatic-invoice sale up front so another simultaneous
+	// cash register cannot turn a previously unchecked payment into an invoice.
+	requiereFacturaElectronica := modoDocumentoVenta == "factura_electronica" || carritoAutoFacturaElectronicaActiva(cfg)
 	if !requiereFacturaElectronica {
 		return nil, nil
 	}
@@ -4152,7 +4160,7 @@ func carritoPaymentRequiresFacturaElectronica(dbEmp *sql.DB, carrito *dbpkg.Carr
 	if err != nil {
 		return false, err
 	}
-	return carritoShouldEmitFacturaElectronica(cfg), nil
+	return carritoAutoFacturaElectronicaActiva(cfg), nil
 }
 
 func missingFacturacionElectronicaPaymentFields(cfg *dbpkg.EmpresaConfiguracionAvanzada, feCfg *dbpkg.FacturacionElectronicaPaisConfig) []string {

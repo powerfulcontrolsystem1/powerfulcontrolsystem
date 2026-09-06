@@ -1,3 +1,21 @@
+2026-09-06: Numeracion multicaja, recuperacion y contingencia (candidato aislado).
+- Se reproducen y corrigen retroceso de contador por formulario viejo y nueva
+  reserva tras caida entre numeracion/documento. Migracion aditiva
+  20260906-001-facturacion-reservas-v1, solo pcs-migrate; sin renumerar historia.
+- Cola local falla cerrada ante almacenamiento ilegible/lleno y usa Web Locks
+  por empresa; sincronizacion conserva ventas agregadas mientras espera HTTP.
+- Lote offline limitado e identidad/key verificadas antes de efectos; respuesta
+  distingue documentos pendientes y no acredita aceptacion DIAN.
+- La decision documental se congela en la transaccion de pago/outbox y el worker
+  recupera documentos ausentes sin repetir cobro, frecuencia ni correo.
+- Migracion aditiva `20260906-002-facturacion-contingencias-v1`: autorizacion de
+  papel, incidentes, ledger, plazo y cierre por empresa. Tipo 03 sigue bloqueado.
+- En produccion empresa 12 se concilio exclusivamente el contador avanzado 9 a
+  12 bajo precondiciones exactas y auditoria; el contador DIAN ya era 12. No se
+  cambio documento, fecha de envio, intento, XML ni acuse, y no hubo transmision.
+- Informe: documentos/auditoria_facturacion_multicaja_offline_20260906.md.
+  Sin dependencias nuevas ni cambios en permisos. Inventario Ensure regenerado.
+
 2026-09-05: Seguridad y separacion fiscal de paises (candidato).
 - Evita heredar NIT/resolucion/ambiente de un pais distinto y rechaza codigos
   desconocidos. La numeracion CO no se reserva para otros paises.

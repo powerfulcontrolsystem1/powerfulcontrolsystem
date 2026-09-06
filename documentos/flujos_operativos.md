@@ -1199,6 +1199,27 @@ afecte dinero, documentos, licencias o seguridad.
 
 ## Modo offline
 
+Refuerzo candidato 2026-09-06: cola con bloqueo Web Locks por empresa,
+persistencia obligatoria antes del comprobante provisional y mezcla contra
+estado actual al terminar cada sincronizacion para no borrar capturas de otra
+pestana. Errores de cuota/JSON no se silencian. No borrar datos del navegador
+para resolver pendientes. Backend exige sync_key original y operador/caja;
+maximo 100 ventas y 2 MiB por lote. No es facturacion de contingencia legal
+DIAN ni certifica aceptacion fiscal. Ver auditoria multicaja/offline 20260906.
+
+Al cerrar un pago, la decision comprobante/factura y el avance de frecuencia se
+resuelven bajo el mismo bloqueo transaccional por empresa y quedan congelados en
+`commerce.sale-paid`. El worker recupera primero contabilidad y despues el
+documento exacto. Un reintento no cobra otra vez, no recalcula frecuencia y no
+reenvia correo si el comprobante ya existe.
+
+La contingencia fiscal Colombia exige un incidente real y evidencia. Para falla
+del facturador se requiere antes una autorizacion vigente de papel/talonario; la
+expedicion registrada debe coincidir con una venta pagada y su fuente fiscal
+inmutable. Al recuperar servicio se fija control operativo de 48 horas y no se
+puede cerrar con pendientes. Mientras no exista generador/validador DIAN tipo 03,
+la transcripcion permanece bloqueada y debe resolverse fuera de este candidato.
+
 1. La empresa activa modo offline y marca de documento offline si corresponde.
 2. Cada cajero debe haber iniciado sesion y tener una caja abierta/cargada antes
    de perder internet. La venta offline queda ligada a `empresa_id`, usuario,

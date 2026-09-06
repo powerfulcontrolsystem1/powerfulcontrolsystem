@@ -1,3 +1,26 @@
+## Actualizacion 2026-09-06 - Reserva durable y captura offline
+
+Venta con fuente inmutable -> bloquear configuracion de la empresa ->
+reutilizar reserva o insertar reserva + avanzar contador en una transaccion ->
+persistir documento -> firmar/transmitir -> acuse DIAN.
+Caer entre reserva y documento no autoriza generar otro consecutivo.
+
+Captura offline -> verificar empresa/operador/caja -> Web Lock de empresa ->
+guardar cola local -> comprobante provisional -> POST con sync_key original ->
+validacion de identidad en backend -> claim PostgreSQL unico por empresa ->
+aplicar venta. La confirmacion de sincronizacion no acredita aceptacion DIAN.
+Al finalizar HTTP se mezcla con la cola actual, preservando capturas concurrentes.
+
+Pago confirmado -> bloquear configuracion documental de empresa -> congelar
+factura/comprobante + avanzar frecuencia -> outbox `commerce.sale-paid` ->
+worker recupera contabilidad -> worker recupera documento idempotente. El
+comprobante/fuente existente impide duplicar artefacto o correo.
+
+Incidente real CO -> autorizacion papel separada -> ledger por empresa ->
+recuperacion fija limite operativo 48 h -> aceptar todos los documentos ->
+cerrar. La rama tipo 03 queda fail-closed hasta tener generador, CUDE, referencia
+al papel, XSD y acuse propios.
+
 ## Actualizacion 2026-09-05 - Frontera fiscal antes del transporte
 
 Configuracion empresa+pais -> fuente/documento del mismo tenant y pais ->
