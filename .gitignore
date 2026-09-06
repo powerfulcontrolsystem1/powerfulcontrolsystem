@@ -27,6 +27,7 @@ documentos/referencias/dian/2026-06-08/
 scripts/actualizar_repositorio.repo_url
 scripts/pcs_deployment.local.ps1
 tmp/
+tmp-*/
 tmp/*.txt
 tmp/*.js
 tmp/*-profile/
