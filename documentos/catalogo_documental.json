@@ -2,22 +2,55 @@
   "schema_version": 1,
   "policy": "documentos/gobernanza_tecnica/politica_catalogo.json",
   "scope": "Documentos de texto versionados o nuevos no ignorados por Git; metadatos técnicos bajo documentos. Excluye datos privados ignorados y binarios. Sin auditoría semántica ni validación de URLs externas.",
-  "total": 508,
+  "total": 511,
   "counts": {
     "vigente": 140,
     "historico": 62,
-    "generado": 22,
+    "generado": 24,
     "contrato_maquina": 1,
     "referencia_por_validar": 2,
-    "evidencia": 278,
+    "evidencia": 279,
     "control_documental": 2,
     "referencia_externa": 1
   },
-  "issues": [],
+  "issues": [
+    {
+      "path": "documentos/historial_de_cambios",
+      "line": 9473,
+      "type": "destino_ausente",
+      "target": "web/login.html",
+      "blocking": false
+    },
+    {
+      "path": "documentos/historial_de_cambios",
+      "line": 9486,
+      "type": "destino_ausente",
+      "target": "web/configuracion_de_la_cuenta.html",
+      "blocking": false
+    },
+    {
+      "path": "documentos/historial_de_cambios",
+      "line": 9496,
+      "type": "destino_ausente",
+      "target": "web/seleccionar_empresa.html",
+      "blocking": false
+    },
+    {
+      "path": "documentos/historial_de_cambios",
+      "line": 9503,
+      "type": "destino_ausente",
+      "target": "web/super/configuracion_avanzada.html",
+      "blocking": false
+    }
+  ],
   "duplicates": [
     [
       "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/test_runs/qa_e2e_buttons_2026-08-26T13-05-10/reporte.md",
       "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/test_runs/qa_e2e_buttons_2026-08-26T13-34-30/reporte.md"
+    ],
+    [
+      "tmp-csp-inline-final/inventario_csp_inline.md",
+      "tmp-csp-inline-merged/inventario_csp_inline.md"
     ]
   ],
   "documents": [
@@ -172,7 +205,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "f39c4edb88670333a825d0d375117c2ca041ab319a808edc01d3546e68757deb"
+      "sha256_lf": "d1bbf278083e818e08e1456720f8a57f1baeb9a5ecd3effc19f415910e126585"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -226,7 +259,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "911bd2f5ac93a2d07b05e482c96ff66cb23d0094288be41ef451533d05d930e7"
+      "sha256_lf": "da085fbf4bf21e2e3bba6a244c3fc2d6ca0866530f38a571235a20216d1d1492"
     },
     {
       "path": "documentos/README.md",
@@ -325,7 +358,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "1c2b42f50e38b09b982a229087316fbe10b711984e167292b2b94aaad6120ba4"
+      "sha256_lf": "afe6f026ae366f6c77fdafbc504cbd5841fea3a743f0fd91bc5bede3648824d8"
     },
     {
       "path": "documentos/api/openapi.mobile.v1.yaml",
@@ -388,7 +421,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "fe65eec19f2e2f48278bb1be1d7f81d5a906b7c456cab5e6a507caa5dcc37373"
+      "sha256_lf": "90721ddeb2db220d19db02475c1a41c326bfbf5fe1c19f0357d07fc3afa90ac5"
     },
     {
       "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
@@ -478,7 +511,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "080f50817d341db31ff94e43e02196bf2f15430701df228de8a7ff4557511c27"
+      "sha256_lf": "c419ecf3e76c63f072cbc12b63be7e99aa3e137bac0d59724d1839b3a52467df"
     },
     {
       "path": "documentos/arquitectura/modularizacion_archivos_gigantes_plan_105.md",
@@ -506,6 +539,15 @@
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
       "sha256_lf": "ebc958be72e0abd040b9ea896842449cbf15552c4179c4c1c1133b8f54e2d9e4"
+    },
+    {
+      "path": "documentos/auditoria_facturacion_multicaja_offline_20260906.md",
+      "title": "Auditoría de facturación: multicaja, numeración y offline",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d2548edd3698e0c86d5ce656aed81fb7afde2c968528e95040366007cf3592e6"
     },
     {
       "path": "documentos/auditoria_facturacion_seguridad_20260905.md",
@@ -775,7 +817,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "15cb088686f0d66f8e6f70a84a43900bb4826dd825b91445a0288469466a48fa"
+      "sha256_lf": "3404f007a6038093a7aed3c9c6379a41bbbe647e43dfc721606ddb40bf70e83d"
     },
     {
       "path": "documentos/descripcion_de_modulos",
@@ -842,12 +884,12 @@
     },
     {
       "path": "documentos/diagramas/estructura_del_codigo.md",
-      "title": "Estructura del codigo",
+      "title": "Estructura del código",
       "state": "vigente",
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "03b510fd291f1916c1e25ac57dfa706385f7247da2623574e6fa62f4df331af2"
+      "sha256_lf": "ee59f9664cbb67cd1d2467d7765f0102a85a5753ce1e01e4116a2215e4e2a3c2"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -973,7 +1015,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "ba0c80e33984ed393c179b628603be68dedfb48cfaac966930bbffe13e31c828"
+      "sha256_lf": "feda3a6797150e8d8e6c8588228aaf5382c4e38590200284528cb4c7cdc6177d"
     },
     {
       "path": "documentos/evidencia_login_produccion_2026-08-21.md",
@@ -3223,7 +3265,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "b7d9a993fca43ba8e3efbf6a18ceaf9ac3e3b9e78807ebf629327ce3fb29a1b6"
+      "sha256_lf": "8d61ac5171b6c7bb14ef29418267f83447f9921a469c7baa031b266e0f88243b"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -3331,7 +3373,7 @@
       "owner": "Ingeniería fiscal y QA",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "7df0ae6d30d48d4df0582848d794807f5976222469762c1f4fd79b10c0c24229"
+      "sha256_lf": "83551f2f178740de032d56a639af18f90b4053e4bc5fc2cd664e69b386f1e313"
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md",
@@ -3691,7 +3733,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "aaed15ebf01df56b2bc46a0b587846c3f46fef93bb746a5a5df109588f84fcc8"
+      "sha256_lf": "16782123132f4bb454c4fda4745175443afe392a1f74227d149e8b8a36482bf5"
     },
     {
       "path": "documentos/historico/2026-09-05/README.md",
@@ -4582,7 +4624,25 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
+      "sha256_lf": "949a6cfddf5cbe7342560cb28f0c25bce201eb43ce2fede2d3962aa95f41dff4"
+    },
+    {
+      "path": "tmp-csp-inline-fixed/inventario_csp_inline.md",
+      "title": "Inventario CSP inline",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
       "sha256_lf": "169c0e2039c3a123b701cca99831d31e40119e209a93e716b38c512fbe2ac8b2"
+    },
+    {
+      "path": "tmp-csp-inline-merged/inventario_csp_inline.md",
+      "title": "Inventario CSP inline",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "949a6cfddf5cbe7342560cb28f0c25bce201eb43ce2fede2d3962aa95f41dff4"
     },
     {
       "path": "tmp-csp-inline/inventario_csp_inline.md",

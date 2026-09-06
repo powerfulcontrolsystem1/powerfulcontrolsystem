@@ -1,5 +1,7 @@
 # Contrato tecnico: facturacion electronica y documentos transaccionales
 
+Estado: Vigente. Responsable: Ingeniería fiscal y QA. Revisión documental: 2026-09-05.
+
 ## Numeracion multicaja y offline (candidato 2026-09-06)
 
 La reserva de factura CO persiste por empresa/documento en la misma transaccion

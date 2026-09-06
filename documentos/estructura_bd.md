@@ -1,5 +1,7 @@
 # Estructura del Base de Datos
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 ## Reserva fiscal multicaja 2026-09-06 (candidato)
 
 `20260906-001-facturacion-reservas-v1`, aplicada exclusivamente por pcs-migrate,

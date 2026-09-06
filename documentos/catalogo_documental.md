@@ -7,14 +7,14 @@ No editar manualmente. Generar con `node tools/docs_catalog.mjs --write`; valida
 Política y significado de estados: [marco documental](gobernanza_tecnica/marco_documental.md).
 Inventario y hallazgos detallados: [JSON](catalogo_documental.json). La clasificación no acredita revisión semántica ni producción.
 
-Documentos: 508. Hallazgos locales: 0; bloqueantes: 0.
+Documentos: 511. Hallazgos locales: 4; bloqueantes: 0.
 
 | Estado | Cantidad |
 | --- | --- |
 | contrato_maquina | 1 |
 | control_documental | 2 |
-| evidencia | 278 |
-| generado | 22 |
+| evidencia | 279 |
+| generado | 24 |
 | historico | 62 |
 | referencia_externa | 1 |
 | referencia_por_validar | 2 |
@@ -78,6 +78,7 @@ Documentos: 508. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/arquitectura/modularizacion_archivos_gigantes_plan_105.md](<arquitectura/modularizacion_archivos_gigantes_plan_105.md>) | historico | Ingeniería backend y datos | Pendiente / no aplica |
 | [documentos/arquitectura/normalizacion_documental_plan_105.md](<arquitectura/normalizacion_documental_plan_105.md>) | historico | Ingeniería backend y datos | Pendiente / no aplica |
 | [documentos/arquitectura_modulos_universales.md](<arquitectura_modulos_universales.md>) | vigente | Coordinación técnica | 2026-09-05 |
+| [documentos/auditoria_facturacion_multicaja_offline_20260906.md](<auditoria_facturacion_multicaja_offline_20260906.md>) | evidencia | Coordinación técnica | Pendiente / no aplica |
 | [documentos/auditoria_facturacion_seguridad_20260905.md](<auditoria_facturacion_seguridad_20260905.md>) | evidencia | Coordinación técnica | Pendiente / no aplica |
 | [documentos/auditoria_idempotencia_punta_a_punta_2026-08-26.md](<auditoria_idempotencia_punta_a_punta_2026-08-26.md>) | evidencia | Coordinación técnica | Pendiente / no aplica |
 | [documentos/auditoria_pagos_colombia_datafonos_breb_nequi_bascula_2026-08-25.md](<auditoria_pagos_colombia_datafonos_breb_nequi_bascula_2026-08-25.md>) | evidencia | Coordinación técnica | Pendiente / no aplica |
@@ -531,6 +532,8 @@ Documentos: 508. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/vps2_operacion.md](<vps2_operacion.md>) | vigente | QA/operación | 2026-09-05 |
 | [services/voice_stream_server/README.md](<../services/voice_stream_server/README.md>) | vigente | Ingeniería y operación | 2026-09-05 |
 | [tmp-csp-inline-final/inventario_csp_inline.md](<../tmp-csp-inline-final/inventario_csp_inline.md>) | generado | Coordinación técnica | Pendiente / no aplica |
+| [tmp-csp-inline-fixed/inventario_csp_inline.md](<../tmp-csp-inline-fixed/inventario_csp_inline.md>) | generado | Coordinación técnica | Pendiente / no aplica |
+| [tmp-csp-inline-merged/inventario_csp_inline.md](<../tmp-csp-inline-merged/inventario_csp_inline.md>) | generado | Coordinación técnica | Pendiente / no aplica |
 | [tmp-csp-inline/inventario_csp_inline.md](<../tmp-csp-inline/inventario_csp_inline.md>) | generado | Coordinación técnica | Pendiente / no aplica |
 
 ## Hallazgos heredados

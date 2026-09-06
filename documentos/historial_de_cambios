@@ -1,3 +1,13 @@
+2026-09-06: Reparación de compuertas del PR 231.
+- Se completa el entorno de ejemplo de staging con marcadores no secretos del
+  rol PostgreSQL de respaldo requerido por Docker Compose.
+- Los cierres tempranos de filas SQL ahora verifican su error y el dump de
+  PostgreSQL usa argumentos literales de las dos bases autorizadas.
+- La vista Super de capacidad de colas extrae estilos y código a recursos
+  externos; el inventario CSP no admite regresiones ni excepciones.
+- Al integrar facturación multicaja, las migraciones de colas y reporte offline
+  se renumeran de forma aditiva a `20260906-003` y `20260906-004`.
+
 2026-09-06: Numeracion multicaja, recuperacion y contingencia (candidato aislado).
 - Se reproducen y corrigen retroceso de contador por formulario viejo y nueva
   reserva tras caida entre numeracion/documento. Migracion aditiva

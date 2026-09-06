@@ -1,3 +1,7 @@
+# Estructura del código
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 ## Actualizacion 2026-09-06 - Reserva durable y captura offline
 
 Venta con fuente inmutable -> bloquear configuracion de la empresa ->
