@@ -1,5 +1,16 @@
 # Plantilla de trabajo por modulo
 
+## Datos de aislamiento cuando intervienen agentes
+
+- Worktree: `D:\powerfulcontrolsystem.worktrees\...`
+- Rama: `codex/<fecha>-<tarea>-<id>`
+- SHA base: `<origin/main>`
+- Rutas/globs exclusivos asignados: `<lista>`
+- Hotspots reservados al integrador requeridos: `<ninguno o lista>`
+
+El worktree se crea con `scripts\agent_worktree.ps1`; no editar el checkout de
+integración ni ejecutar `rs.ps1` o `actualizar_repositorio.ps1`.
+
 Esta plantilla define el ciclo minimo que debe seguir el equipo cuando `agente_go` coordina un cambio por modulo.
 
 ## Fase 1. Clasificacion

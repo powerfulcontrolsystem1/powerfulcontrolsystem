@@ -43855,3 +43855,16 @@ Archivos modificados:
 - Pruebas: `go test ./internal/platform/worker -count=1` y `go vet
   ./internal/platform/worker`; regresión para dos instantes del mismo minuto y
   otro del minuto siguiente.
+
+2026-09-06 - Higiene de ramas y coordinación de agentes.
+- GitHub elimina automáticamente la rama de una PR tras fusionarla. Se retiraron
+  referencias remotas cuyo head coincidía exactamente con una PR fusionada y
+  worktrees locales limpios ya integrados; se preservaron ramas con trabajo no
+  acreditado, worktrees sucios y HEAD detached para revisión explícita.
+- Se establece un worktree exclusivo por agente, con rutas asignadas, bloqueo y
+  entrega verificable. El checkout de integración queda reservado a `main`
+  limpio y los scripts de integración/despliegue no se ejecutan desde árboles
+  compartidos.
+- Se retiraron del árbol vigente archivos de notas y scripts temporales que
+  contenían datos sensibles o no tenían consumidor. Su eliminación del historial
+  y la rotación de credenciales requieren una operación de seguridad separada.
