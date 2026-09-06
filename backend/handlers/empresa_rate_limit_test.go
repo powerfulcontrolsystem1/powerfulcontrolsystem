@@ -81,7 +81,8 @@ func TestEmpresaRateLimitScopeForRequest(t *testing.T) {
 		{name: "alta directa de producto", method: http.MethodPost, path: "/api/empresa/productos", want: "queue.product_add"},
 		{name: "producto en carrito", method: http.MethodPost, path: "/api/empresa/carritos_compra/items", want: "queue.product_add"},
 		{name: "trabajo de impresion", method: http.MethodPut, path: "/api/empresa/impresoras", action: "cola_trabajo", want: "queue.printing"},
-		{name: "emision fiscal", method: http.MethodPost, path: "/api/empresa/facturacion_electronica", action: "emitir", want: "queue.fiscal"},
+		{name: "factura desde venta", method: http.MethodPost, path: "/api/empresa/facturacion_electronica", action: "facturar_desde_venta", want: "queue.fiscal"},
+		{name: "emision fiscal especializada", method: http.MethodPost, path: "/api/empresa/facturacion_electronica", action: "emitir_documento_soporte", want: "queue.fiscal"},
 		{name: "lectura de productos", method: http.MethodGet, path: "/api/empresa/productos", want: "api"},
 	}
 	for _, tc := range cases {

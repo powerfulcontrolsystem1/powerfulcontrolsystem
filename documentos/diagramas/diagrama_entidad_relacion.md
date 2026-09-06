@@ -12,7 +12,7 @@ Esta revisión contrasta documentación con las fuentes locales citadas; no ejec
 Actualizacion: 2026-05-13
 
 Este DER resume el nucleo relacional vigente del proyecto.
-No reemplaza el detalle fisico de [estructura_bd.md](/D:/powerfulcontrolsystem/documentos/estructura_bd.md), pero si fija una vista canonica y visual de las relaciones principales entre `pcs_empresas` y `pcs_superadministrador`.
+No reemplaza el detalle fisico de [estructura_bd.md](../estructura_bd.md), pero si fija una vista canonica y visual de las relaciones principales entre `pcs_empresas` y `pcs_superadministrador`.
 
 ## Alcance
 

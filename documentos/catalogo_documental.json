@@ -2,18 +2,47 @@
   "schema_version": 1,
   "policy": "documentos/gobernanza_tecnica/politica_catalogo.json",
   "scope": "Documentos de texto versionados o nuevos no ignorados por Git; metadatos técnicos bajo documentos. Excluye datos privados ignorados y binarios. Sin auditoría semántica ni validación de URLs externas.",
-  "total": 503,
+  "total": 504,
   "counts": {
     "vigente": 140,
     "historico": 62,
     "generado": 20,
     "contrato_maquina": 1,
+    "referencia_por_validar": 2,
     "evidencia": 276,
-    "referencia_por_validar": 1,
     "control_documental": 2,
     "referencia_externa": 1
   },
-  "issues": [],
+  "issues": [
+    {
+      "path": "documentos/historial_de_cambios",
+      "line": 9460,
+      "type": "destino_ausente",
+      "target": "web/login.html",
+      "blocking": false
+    },
+    {
+      "path": "documentos/historial_de_cambios",
+      "line": 9473,
+      "type": "destino_ausente",
+      "target": "web/configuracion_de_la_cuenta.html",
+      "blocking": false
+    },
+    {
+      "path": "documentos/historial_de_cambios",
+      "line": 9483,
+      "type": "destino_ausente",
+      "target": "web/seleccionar_empresa.html",
+      "blocking": false
+    },
+    {
+      "path": "documentos/historial_de_cambios",
+      "line": 9490,
+      "type": "destino_ausente",
+      "target": "web/super/configuracion_avanzada.html",
+      "blocking": false
+    }
+  ],
   "duplicates": [
     [
       "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/test_runs/qa_e2e_buttons_2026-08-26T13-05-10/reporte.md",
@@ -172,7 +201,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "173a7c19ffc7f16502403495c5561a42704c8d7dc7255283a5fb39bb0b63bcb3"
+      "sha256_lf": "0fa6e650bd3691d1b0d60e9c5904562bfeeea6850cc98c164f96cb6417b6e386"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -226,7 +255,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "1662f4665a03488e2a37a190f2202c721473d79b184fc33823cb1ef187b66a68"
+      "sha256_lf": "6cca0bff57af9d5b574014bbeac421d2adcb6af702e56fc463781dadd1887ff1"
     },
     {
       "path": "documentos/README.md",
@@ -262,7 +291,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "913548e882e40f1bbc38bbfec50c27e425fe0a27e30cfdd0bb7d8b64c68dd31e"
+      "sha256_lf": "d0dae157af87434a136daf8af51e5868fcc3cb908cf4ce1c40d0ca8b5f08dff6"
     },
     {
       "path": "documentos/aiu_construccion.md",
@@ -325,7 +354,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "e249ece7794b3e3466798bd863d9c03d053f78c43922d7789fe9cb977e3dbcb6"
+      "sha256_lf": "1c2b42f50e38b09b982a229087316fbe10b711984e167292b2b94aaad6120ba4"
     },
     {
       "path": "documentos/api/openapi.mobile.v1.yaml",
@@ -346,6 +375,15 @@
       "sha256_lf": "5d208009bc2b98538421bea12e1ec5fce1781d6bcc816fa31e05caf3e1680c86"
     },
     {
+      "path": "documentos/arquitectura/capacidad_colas_multiempresa.md",
+      "title": "Capacidad de colas multiempresa",
+      "state": "referencia_por_validar",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "049efd2c8b70d004ffde64654aaab8c7f992607d003bb9925ad1586207535f0c"
+    },
+    {
       "path": "documentos/arquitectura/clasificacion_arbol_plan_105.md",
       "title": "Clasificacion del arbol de trabajo - P105-001",
       "state": "historico",
@@ -361,7 +399,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "6e67b0c21bd66f6d7d09dfd7eb1dd55d55ca87d790c1398927471c784351ef84"
+      "sha256_lf": "d6eb7a9c8ec759b301c083ab7f38a9c9f2916b39bb56b6fcac9c50205a074b0c"
     },
     {
       "path": "documentos/arquitectura/gobierno_datos.md",
@@ -379,7 +417,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "65c709401d723c59011000b015eb66d33e9460aa481e10ed45bd9f3bb0294a80"
+      "sha256_lf": "1d4e46d8d5c688ba53df0624669e11033aa7e93b6e6eb3108669b26a5630495f"
     },
     {
       "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
@@ -424,7 +462,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "7a7695d9f45896fbc706ea678e46f0e3602a75116819a367740689d384d21e87"
+      "sha256_lf": "5b1313b6370f63ffb3f620c3e7bc4d62e5d62814a53a9f4163fb2f0b118bca19"
     },
     {
       "path": "documentos/arquitectura/inventario_storage_plan_105.md",
@@ -469,7 +507,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "37b2a7d8fd862b0a0241933aba62e57b45dcd2f2c6c01676e6747658fe3d5860"
+      "sha256_lf": "080f50817d341db31ff94e43e02196bf2f15430701df228de8a7ff4557511c27"
     },
     {
       "path": "documentos/arquitectura/modularizacion_archivos_gigantes_plan_105.md",
@@ -505,7 +543,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "01212f7c41145484cda057c8f9fc288e124e4ffbe046c1894cbbb16d6e6b90fa"
+      "sha256_lf": "7d692ba75f6ead60620aff3e6981710ba6935d6a09ce6e09ac6342aa992aa754"
     },
     {
       "path": "documentos/auditoria_idempotencia_punta_a_punta_2026-08-26.md",
@@ -703,7 +741,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "c5e77495fca9a7c74cf312877c048b4cca4f1c8a2ea67992ea316307d0041958"
+      "sha256_lf": "d4bbefdaba879a35e072717f773b14daca33e7f59407d87c6db3106e23553cce"
     },
     {
       "path": "documentos/crm_ventas_avanzadas.md",
@@ -761,12 +799,12 @@
     },
     {
       "path": "documentos/descripcion_de_archivos",
-      "title": "Registro de archivos del proyecto",
+      "title": "Descripción de archivos",
       "state": "vigente",
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "d33568894fbd16bd7eb6731a06bf052d06e8b15c15e6d892c662c5b477e09135"
+      "sha256_lf": "1c6edd7e091964aec1c3640f22d47e421cd76dad8be4efdd2d242bbbcdb3df4e"
     },
     {
       "path": "documentos/descripcion_de_modulos",
@@ -775,7 +813,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "e29155ae6bdaa51fdd135094088b67a21ee0826fc84a7bbe43035a5d942bfc3a"
+      "sha256_lf": "d33ade473db732ea66113539a186b1a7d9e275684bc9819378eab8d582308c09"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -793,7 +831,7 @@
       "owner": "Ingeniería de arquitectura",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "0ce138cddebaf49f037ece9639bfbc26c6005bb30619eb80a2999cadec5d57cd"
+      "sha256_lf": "e0f4026d645e96ae6a7887183fa6452ee8f7622749c6543d68c922b2e64091bd"
     },
     {
       "path": "documentos/diagramas/diagramas_sistema_pcs.md",
@@ -833,12 +871,12 @@
     },
     {
       "path": "documentos/diagramas/estructura_del_codigo.md",
-      "title": "Estructura del código y recorrido de cambios",
+      "title": "Estructura del codigo",
       "state": "vigente",
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "a9ff8d17f3b3e466ef0ba14383a11b8ace8235848aad1e02d9cd208f3375cdba"
+      "sha256_lf": "03b510fd291f1916c1e25ac57dfa706385f7247da2623574e6fa62f4df331af2"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -959,12 +997,12 @@
     },
     {
       "path": "documentos/estructura_bd.md",
-      "title": "Estructura y gobierno de PostgreSQL",
+      "title": "Estructura del Base de Datos",
       "state": "vigente",
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "4d92dfcb271f104ef951d9ec17f5b76edd8b922ede1bb0fb20e14df8b7c2b36b"
+      "sha256_lf": "ba0c80e33984ed393c179b628603be68dedfb48cfaac966930bbffe13e31c828"
     },
     {
       "path": "documentos/evidencia_login_produccion_2026-08-21.md",
@@ -3209,12 +3247,12 @@
     },
     {
       "path": "documentos/flujos_operativos.md",
-      "title": "Flujos operativos y puntos de aceptación",
+      "title": "Flujos operativos",
       "state": "vigente",
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "e917d9752351ff2cc948f7e97a052b06539e2772b1867ec3380cf44640234f39"
+      "sha256_lf": "b7d9a993fca43ba8e3efbf6a18ceaf9ac3e3b9e78807ebf629327ce3fb29a1b6"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -3322,7 +3360,7 @@
       "owner": "Ingeniería fiscal y QA",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "293b5c8e18cf4d50642e6f978ae6aa14a369fdef9b95518c491611e4bbea3f9f"
+      "sha256_lf": "7df0ae6d30d48d4df0582848d794807f5976222469762c1f4fd79b10c0c24229"
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md",
@@ -3682,7 +3720,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "df21918aad076d497c81c605992f8a2f52de45373e56d39f6a59458288090fd7"
+      "sha256_lf": "4012c388455dcca79e4b673b1f237d26b2208b4dda5c8cea15c0baa05af39514"
     },
     {
       "path": "documentos/historico/2026-09-05/README.md",
@@ -3956,12 +3994,12 @@
     },
     {
       "path": "documentos/mapa_modulos.md",
-      "title": "Mapa de módulos y fuentes",
+      "title": "Mapa de modulos",
       "state": "vigente",
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "d3a17c125805d928858c0c86eecea0e9236f8b6431e930d483e95c81d2b814e3"
+      "sha256_lf": "62cc4ac6b742bc22b3817482750fcafc173f4ea87da78a6dfc7d70c8d3c61c92"
     },
     {
       "path": "documentos/matriz_alcance_piloto_plan_105.md",
@@ -4033,7 +4071,7 @@
       "owner": "QA/operación",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "2dc8e7fb9f7b6b2d548e7cd27edafd6d666f4e7e9620f39efd3434f6c45a94d6"
+      "sha256_lf": "944e212edbf5f4de634c5dcaef204fd3d2f5e6af9fed0baf73eb8dbf2cd6319b"
     },
     {
       "path": "documentos/operacion/incidentes_y_continuidad.md",

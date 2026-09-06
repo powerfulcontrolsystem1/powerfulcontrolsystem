@@ -35,6 +35,8 @@ limit_req_status 429;
 limit_conn pcs_connections 100;
 limit_conn_status 429;
 proxy_hide_header Strict-Transport-Security;
+proxy_hide_header X-Content-Type-Options;
+proxy_hide_header Referrer-Policy;
 add_header Strict-Transport-Security $pcs_hsts always;
 add_header Content-Security-Policy "base-uri 'self'; object-src 'none'; frame-ancestors 'self'" always;
 add_header X-Content-Type-Options nosniff always;
@@ -43,6 +45,10 @@ add_header Referrer-Policy strict-origin-when-cross-origin always;
 
 
 def site_policy(content, main=False):
+    if "server_name mail.powerfulcontrolsystem.com;" in content:
+        # Preserve provider CSP (including future nonces); frame-ancestors is
+        # added as a separate policy, not as a replacement for script controls.
+        content = re.sub(r"^\s*proxy_hide_header Content-Security-Policy;\n", "", content, flags=re.MULTILINE)
     content = re.sub(r"(proxy_set_header\s+X-Forwarded-For\s+)[^;]+;",
                      r"\g<1>$remote_addr;", content)
     # Reset forwarded host even if the caller supplied one.

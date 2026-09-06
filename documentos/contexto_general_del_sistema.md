@@ -1,5 +1,7 @@
 # Contexto general del sistema
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 ## Auditoria fiscal 2026-09-05: cierre global pendiente
 
 La auditoria de seguridad/paises detecto herencia fiscal entre jurisdicciones,

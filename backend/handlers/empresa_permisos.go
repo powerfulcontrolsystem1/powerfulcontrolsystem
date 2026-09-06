@@ -1328,7 +1328,10 @@ func empresaRateLimitScopeForRequest(r *http.Request) string {
 	}
 	if (method == http.MethodPost || method == http.MethodPut) && path == "/api/empresa/facturacion_electronica" {
 		switch action {
-		case "emitir", "reenviar_dian", "reintentar_dian", "enviar_dian", "procesar_reintentos", "emitir_nomina_electronica":
+		case "emitir", "facturar_desde_venta", "reenviar_dian", "reintentar_dian", "enviar_dian", "procesar_reintentos":
+			return "queue.fiscal"
+		}
+		if strings.HasPrefix(action, "emitir_") {
 			return "queue.fiscal"
 		}
 	}

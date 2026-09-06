@@ -20,7 +20,14 @@ const checks = [
   { name: "docker_runtime_checked", ok: /docker compose|docker ps/i.test(script + doc) }
 ];
 
-const report = { generated_at: new Date().toISOString(), status: checks.every((check) => check.ok) ? "ok" : "warning", checks };
+const report = {
+  generated_at: new Date().toISOString(),
+  scope: "local_documentation_contract",
+  runtime_verified: false,
+  status: checks.every((check) => check.ok) ? "ok" : "warning",
+  limitation: "Comprueba referencias locales; no ejecuta SSH, firewall, TLS ni controles del VPS.",
+  checks
+};
 fs.mkdirSync(outDir, { recursive: true });
 const stamp = report.generated_at.replace(/[-:]/g, "").replace(/\..+$/, "").replace("T", "_");
 fs.writeFileSync(path.join(outDir, `vps_hardening_${stamp}.json`), JSON.stringify(report, null, 2), "utf8");

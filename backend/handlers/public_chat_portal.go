@@ -18,8 +18,9 @@ import (
 )
 
 type publicPortalChatLimiter struct {
-	mu      sync.Mutex
-	records map[string]*publicPortalChatUsage
+	mu          sync.Mutex
+	records     map[string]*publicPortalChatUsage
+	nextCleanup time.Time
 }
 
 type publicPortalChatUsage struct {
@@ -28,6 +29,16 @@ type publicPortalChatUsage struct {
 }
 
 var portalChatLimiter = &publicPortalChatLimiter{records: map[string]*publicPortalChatUsage{}}
+
+const publicPortalChatMaxBuckets = 16384
+
+func (l *publicPortalChatLimiter) allowClient(scope, clientID, ip string) (bool, int, int) {
+	// A caller can replace its cookie or store slug. Neither resets the IP budget.
+	if ok, _, retry := l.allow("public-ai-ip:"+ip, 30, 5*time.Minute); !ok {
+		return false, 0, retry
+	}
+	return l.allow(scope+":"+clientID+":"+ip, 10, 5*time.Minute)
+}
 
 func portalChatClientIP(r *http.Request) string {
 	return utils.ClientIP(r)
@@ -65,7 +76,19 @@ func (l *publicPortalChatLimiter) allow(key string, max int, window time.Duratio
 	if l.records == nil {
 		l.records = map[string]*publicPortalChatUsage{}
 	}
+	if !now.Before(l.nextCleanup) {
+		for key, bucket := range l.records {
+			if !now.Before(bucket.ResetAt) {
+				delete(l.records, key)
+			}
+		}
+		l.nextCleanup = now.Add(time.Minute)
+	}
 	u := l.records[key]
+	if u == nil && len(l.records) >= publicPortalChatMaxBuckets {
+		// Keep existing budgets when saturated rather than evicting active limits.
+		return false, 0, 60
+	}
 	if u == nil || now.After(u.ResetAt) {
 		u = &publicPortalChatUsage{ResetAt: now.Add(window), Used: 0}
 		l.records[key] = u
@@ -616,8 +639,7 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		clientID := portalChatGetOrSetClientID(w, r)
 		ip := portalChatClientIP(r)
-		key := rateScope + ":" + clientID + ":" + ip
-		ok, remaining, retry := portalChatLimiter.allow(key, 10, 5*time.Minute)
+		ok, remaining, retry := portalChatLimiter.allowClient(rateScope, clientID, ip)
 		if !ok {
 			w.Header().Set("Retry-After", strconv.Itoa(retry))
 			writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
@@ -760,7 +782,7 @@ func PublicPortalCompanyChatHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		h := sanitizeHistorial(body.Historial, 6)
-		answer, _, _, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, p, h, systemPrompt, empresaAISafetyIdentifier("portal:"+key))
+		answer, _, _, err := ctrl.generateResponseWithSystemPromptContext(r.Context(), model, p, h, systemPrompt, empresaAISafetyIdentifier("portal:"+rateScope+":"+clientID+":"+ip))
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]interface{}{
 				"ok":                  false,
@@ -839,8 +861,7 @@ func PublicPortalCompanyChatStreamHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 
 		clientID := portalChatGetOrSetClientID(w, r)
 		ip := portalChatClientIP(r)
-		key := rateScope + ":" + clientID + ":" + ip
-		ok, _, retry := portalChatLimiter.allow(key, 10, 5*time.Minute)
+		ok, _, retry := portalChatLimiter.allowClient(rateScope, clientID, ip)
 		if !ok {
 			w.Header().Set("Retry-After", strconv.Itoa(retry))
 			writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{

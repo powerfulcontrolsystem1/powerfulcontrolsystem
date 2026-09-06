@@ -1,3 +1,13 @@
+## [2026-09-06] Capacidad de colas multiempresa
+
+- [Aislamiento] Impresion, altas de producto y emision fiscal reciben controles
+  por empresa; la presion de un tenant no consume el presupuesto de otro.
+- [Escalabilidad] Worker concurrente y facturacion en shards con rotacion justa.
+- [Operacion] Nuevo panel Super, configuracion persistente, metricas agregadas y
+  alerta de saturacion con el canal y cooldown existentes.
+- [Evidencia] Candidato local. Falta prueba controlada de 1000 empresas en el
+  VPS objetivo, despliegue, proveedor fiscal e impresora fisica.
+
 ## [2026-09-06] Worker: idempotencia estable de tareas programadas
 
 - [Operación] Las tareas periódicas conservan un payload determinista dentro

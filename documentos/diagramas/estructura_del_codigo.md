@@ -1,3 +1,5 @@
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 ## Actualizacion 2026-09-05 - Frontera fiscal antes del transporte
 
 Configuracion empresa+pais -> fuente/documento del mismo tenant y pais ->

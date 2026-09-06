@@ -1,5 +1,14 @@
 # Mapa de modulos
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+Actualizacion 2026-09-06 - Capacidad de colas multiempresa: Super administrador
+incorpora `Plataforma > Capacidad de colas` y `/super/api/capacidad_colas` para
+medir/configurar impresion, altas de producto y emision fiscal. Impresion limita
+pendientes por empresa; productos conserva escritura sincronica con admision por
+tenant; facturacion usa shards y rotacion justa. Contrato y compuerta de carga:
+`documentos/arquitectura/capacidad_colas_multiempresa.md`.
+
 Actualizacion 2026-09-05: `facturacion_electronica` refuerza la frontera por
 pais/empresa y bloquea conectores productivos no implementados. Las pantallas
 EC/PA explican que solo configuran datos. La reserva CO no se comparte con

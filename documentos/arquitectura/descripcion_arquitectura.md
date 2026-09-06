@@ -1,6 +1,13 @@
 # Descripción de arquitectura de PCS
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-06.
+Revisión documental: 2026-09-05.
+
+Actualizacion 2026-09-06: los carriles operativos de impresion, altas de
+producto y emision fiscal tienen admision/medicion independiente por empresa.
+`pcs-worker` admite concurrencia acotada y la cola fiscal se divide en shards
+con rotacion justa. Super administrador configura umbrales y alertas segun
+[capacidad de colas multiempresa](capacidad_colas_multiempresa.md).
 
 ## Entidad, alcance y fuentes
 

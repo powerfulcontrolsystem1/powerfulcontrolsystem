@@ -1,3 +1,17 @@
+# Descripción de módulos
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+2026-09-06: Capacidad de colas multiempresa.
+- Modulos afectados: `impresoras`, `productos`, `carritos_compra`,
+  `facturacion_electronica`, `super_administrador`, `pcs-worker`,
+  `observabilidad` y `seguridad_multiempresa`.
+- Las rutas mutantes tienen presupuestos independientes por `empresa_id`; la
+  impresion limita su backlog de forma atomica y la facturacion rota tenants en
+  shards sin relajar leases, permisos, idempotencia ni acuse oficial.
+- Super administrador mide/configura umbrales y notifica saturacion. El maximo
+  de 1000 empresas permanece pendiente de prueba controlada en el VPS objetivo.
+
 2026-09-05: Alta segura de perfiles de país para facturación electrónica.
 - Una empresa puede agregar un país con código de dos letras, nombre y moneda
   opcional desde `facturacion_electronica.html`; cada perfil usa la llave

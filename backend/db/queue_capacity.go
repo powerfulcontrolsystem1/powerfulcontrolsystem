@@ -247,10 +247,14 @@ func SaveQueueCapacityConfigs(ctx context.Context, dbConn *sql.DB, configs []Que
 		if label == "" {
 			label = defaultQueueCapacityConfig(cfg.Lane).Label
 		}
-		if _, err := tx.ExecContext(ctx, `UPDATE super_queue_capacity_config SET label=$2,
-			alerts_enabled=$3, rate_limit_per_minute=$4, pending_alert_threshold=$5,
-			oldest_alert_seconds=$6, max_pending_per_tenant=$7,
-			updated_at=CURRENT_TIMESTAMP, updated_by=$8 WHERE lane=$1`, cfg.Lane, label,
+		if _, err := tx.ExecContext(ctx, `INSERT INTO super_queue_capacity_config
+			(lane,label,alerts_enabled,rate_limit_per_minute,pending_alert_threshold,oldest_alert_seconds,max_pending_per_tenant,updated_at,updated_by)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,CURRENT_TIMESTAMP,$8)
+			ON CONFLICT (lane) DO UPDATE SET label=EXCLUDED.label,
+			alerts_enabled=EXCLUDED.alerts_enabled, rate_limit_per_minute=EXCLUDED.rate_limit_per_minute,
+			pending_alert_threshold=EXCLUDED.pending_alert_threshold, oldest_alert_seconds=EXCLUDED.oldest_alert_seconds,
+			max_pending_per_tenant=EXCLUDED.max_pending_per_tenant,
+			updated_at=CURRENT_TIMESTAMP, updated_by=EXCLUDED.updated_by`, cfg.Lane, label,
 			cfg.AlertsEnabled, cfg.RateLimitPerMinute, cfg.PendingAlertThreshold,
 			cfg.OldestAlertSeconds, cfg.MaxPendingPerTenant, updatedBy); err != nil {
 			return err
@@ -303,7 +307,7 @@ func collectPrintingQueueSnapshot(ctx context.Context, dbConn *sql.DB, cfg Queue
 	)
 	SELECT COUNT(*) FILTER (WHERE estado='pendiente'), COUNT(*) FILTER (WHERE estado='tomado'),
 		COUNT(*) FILTER (WHERE estado='error'), COUNT(DISTINCT empresa_id) FILTER (WHERE estado IN ('pendiente','tomado')),
-		COALESCE(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP-MIN(created_at) FILTER (WHERE estado='pendiente'))),0),
+		COALESCE(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP-MIN(created_at) FILTER (WHERE estado IN ('pendiente','tomado')))),0),
 		COALESCE((SELECT empresa_id FROM top_tenant),0), COALESCE((SELECT active_count FROM top_tenant),0)
 	FROM base`).Scan(&s.Pending, &s.Processing, &s.Failed, &s.ActiveTenants, &s.OldestSeconds, &s.BusiestTenantID, &s.BusiestTenantPending)
 	if err != nil {

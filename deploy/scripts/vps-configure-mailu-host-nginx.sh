@@ -178,7 +178,7 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Host \$host;
         proxy_read_timeout 60s;
@@ -199,7 +199,7 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Auth-Email "";
@@ -208,7 +208,6 @@ server {
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
         proxy_hide_header X-Frame-Options;
-        proxy_hide_header Content-Security-Policy;
         add_header Content-Security-Policy "frame-ancestors 'self' https://powerfulcontrolsystem.com" always;
         proxy_pass http://127.0.0.1:$webmail_port;
     }
@@ -217,7 +216,7 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Auth-Email "";
@@ -226,7 +225,6 @@ server {
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
         proxy_hide_header X-Frame-Options;
-        proxy_hide_header Content-Security-Policy;
         add_header Content-Security-Policy "frame-ancestors 'self' https://powerfulcontrolsystem.com" always;
         proxy_pass http://127.0.0.1:$http_port;
     }

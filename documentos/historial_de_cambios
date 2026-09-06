@@ -1,3 +1,18 @@
+2026-09-06: Capacidad de colas multiempresa (candidato local).
+- Se separan los presupuestos operativos de impresion, altas de producto y
+  emision fiscal por empresa; una empresa que excede su admision no bloquea a
+  las demas.
+- Impresion limita trabajos activos por tenant dentro de una seccion critica
+  PostgreSQL. Facturacion programa ocho shards configurables y rota por ultima
+  empresa atendida; un fallo empresarial no corta el resto del lote.
+- `pcs-worker` procesa trabajos durables con concurrencia acotada configurable.
+- Super administrador incorpora `Capacidad de colas`, umbrales editables,
+  evaluacion manual, correo con cooldown, metricas agregadas y alerta
+  `PCSCarrilOperativoSaturado`.
+- QA local valida contratos y compilacion enfocada. La certificacion de 1000
+  empresas, PostgreSQL/VPS, impresion fisica, despliegue y emision real quedan
+  como compuertas separadas.
+
 2026-09-05: Seguridad y separacion fiscal de paises (candidato).
 - Evita heredar NIT/resolucion/ambiente de un pais distinto y rechaza codigos
   desconocidos. La numeracion CO no se reserva para otros paises.

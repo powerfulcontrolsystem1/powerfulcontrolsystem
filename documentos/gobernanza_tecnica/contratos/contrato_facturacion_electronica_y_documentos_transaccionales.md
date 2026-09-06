@@ -1,5 +1,7 @@
 # Contrato tecnico: facturacion electronica y documentos transaccionales
 
+Estado: Vigente. Responsable: Ingeniería fiscal y QA. Revisión documental: 2026-09-05.
+
 ## Frontera fiscal por pais y empresa (2026-09-05)
 
 La configuracion heredada exige igualdad con el pais de
@@ -412,6 +414,10 @@ Catalogados sin emision DIAN disponible:
     continuar el documento que ya fue autorizado y sellado.
 42. El correo/PDF de factura nunca se reutiliza para nomina; hasta existir una
     representacion y entrega dedicadas, esa accion responde bloqueada.
+43. El worker divide empresas con reintentos en shards deterministas y, dentro
+    de cada shard, prioriza las que llevan mas tiempo sin servicio. Un error de
+    una empresa se registra y no impide intentar las demas del lote; leases,
+    bloqueo documental, XML firmado y acuse oficial conservan su autoridad.
 
 ## Salidas y estados funcionales
 

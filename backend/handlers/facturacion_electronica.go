@@ -4563,7 +4563,7 @@ func RunFacturacionElectronicaRetriesScheduledShard(ctx context.Context, dbEmp, 
 			return ctx.Err()
 		}
 		_, processErr := processFacturacionRetryQueueContext(ctx, dbEmp, dbSuper, empresaID, documentLimit, "sistema.pcs-worker")
-		if markErr := dbpkg.MarkQueueTenantServedContext(ctx, dbEmp, "facturacion_electronica", empresaID); markErr != nil {
+		if markErr := dbpkg.MarkQueueTenantServedContext(ctx, dbEmp, dbpkg.QueueLaneFiscal, empresaID); markErr != nil {
 			log.Printf("[facturacion_queue] no se pudo rotar empresa_id=%d shard=%d/%d error_type=%T", empresaID, shardIndex, shardCount, markErr)
 		}
 		if processErr != nil {

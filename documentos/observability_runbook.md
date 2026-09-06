@@ -18,6 +18,12 @@ Esta revisión contrasta documentación con las fuentes locales citadas; no ejec
    cuando aplique y conservar auditoria minimizada.
 5. Escalar si se pierde aislamiento empresarial, se detecta acceso a archivos
    privados, fallan backups o se supera un limite operacional.
+   Ante `PCSCarrilOperativoSaturado`, abrir `Super administrador > Capacidad de
+   colas`, identificar el carril y comparar pendientes, antiguedad, empresa con
+   mayor presion, CPU, memoria y conexiones. No elevar replicas, concurrencia ni
+   pools simultaneamente: aislar primero el tenant ruidoso, confirmar drenaje y
+   ajustar un parametro por vez conforme a
+   `arquitectura/capacidad_colas_multiempresa.md`.
 6. Ante `PCSSoporteIAPurgaVencida`, abrir primero el diagnostico de cuarentena
    empresarial y aplicar
    `gobernanza_tecnica/runbooks/runbook_depuracion_soportes_ia_y_cuarentena.md`.

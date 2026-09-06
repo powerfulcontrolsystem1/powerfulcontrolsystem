@@ -43,7 +43,9 @@ func TestClientIPTrustBoundary(t *testing.T) {
 			}
 		})
 	}
-	if ClientIP(nil) != "" { t.Fatal("nil request must have no IP") }
+	if ClientIP(nil) != "" {
+		t.Fatal("nil request must have no IP")
+	}
 }
 
 func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {

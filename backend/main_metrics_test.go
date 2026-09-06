@@ -118,8 +118,13 @@ func TestRenderPrometheusMetricsUsesOnlyBoundedAggregateLabels(t *testing.T) {
 			t.Fatalf("metrics body does not contain %q: %q", want, body)
 		}
 	}
-	if strings.Contains(strings.ToLower(body), "tenant") {
-		t.Fatalf("unexpected metrics body: %q", body)
+	for _, line := range strings.Split(body, "\n") {
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.Contains(strings.ToLower(line), "tenant") || strings.Contains(strings.ToLower(line), "empresa_id") {
+			t.Fatalf("tenant identifier in metrics sample: %q", line)
+		}
 	}
 }
 

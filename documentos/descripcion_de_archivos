@@ -1,3 +1,15 @@
+# Descripción de archivos
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+2026-09-06 - Capacidad de colas multiempresa
+- `documentos/arquitectura/capacidad_colas_multiempresa.md`: contrato de aislamiento, configuracion, metricas, alertas, paralelismo y compuerta de carga para 1000 empresas.
+- `backend/db/queue_capacity.go`, `backend/handlers/super_queue_capacity.go` y `web/super/capacidad_colas.html`: configuracion persistente, diagnostico agregado y nueva opcion protegida del Super administrador.
+- `backend/db/empresa_impresoras.go`: admission por empresa con maximo configurable y bloqueo asesor transaccional para la cola de impresion.
+- `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go` y `backend/cmd/pcs-worker/business_registry.go`: shards fiscales disjuntos, rotacion justa y continuidad cuando falla una empresa.
+- `backend/internal/platform/worker/worker.go`: concurrencia acotada y configurable para trabajos durables.
+- `tools/qa_queue_capacity_ui.cjs`: render sintetico desktop/movil del panel, con tres carriles, estados y control de desborde horizontal; no autentica ni toca datos reales.
+
 2026-09-05
 - `backend/db/facturacion_country_boundary_test.go`: regresiones de herencia
   fiscal, paises desconocidos, reserva extranjera y checklist no habilitante.
@@ -4887,7 +4899,7 @@ Actualizacion 2026-04-16: Restaurado estilo de tarjetas en `seleccionar_empresa`
 	- web/estilos.css
 	- web/seleccionar_empresa.html
  - Descripcion: Se restaurÃƒÆ’Ã‚Â³ el estilo anterior (`warm`) de las tarjetas de selecciÃƒÆ’Ã‚Â³n de empresa y se aplicaron overrides en `web/estilos.css` para aumentar dimensiones (min-width, iconos, paddings y tipografÃƒÆ’Ã‚Â­as) en un 20%. La lÃƒÆ’Ã‚Â³gica de generaciÃƒÆ’Ã‚Â³n de tarjetas en `web/js/seleccionar_empresa.js` permanece sin cambios funcionales.
- - Verificacion: Abrir [web/seleccionar_empresa.html](web/seleccionar_empresa.html) y comprobar que las tarjetas usan apariencia cÃƒÆ’Ã‚Â¡lida/redondeada y se muestran un 20% mÃƒÆ’Ã‚Â¡s grandes; verificar legibilidad en mÃƒÆ’Ã‚Â³vil y escritorio.
+ - Verificacion: Abrir `web/seleccionar_empresa.html` y comprobar que las tarjetas usan apariencia cÃƒÆ’Ã‚Â¡lida/redondeada y se muestran un 20% mÃƒÆ’Ã‚Â¡s grandes; verificar legibilidad en mÃƒÆ’Ã‚Â³vil y escritorio.
 
 Actualizacion 2026-04-16: arcade publico con countdown en Patito y refuerzo movil de los cinco juegos
  - Archivos modificados:
@@ -4911,7 +4923,7 @@ Actualizacion 2026-04-16: botones de prueba en configuraciÃƒÆ’Ã‚Â³n av
  - Archivos modificados:
 	- web/super/configuracion_avanzada.html
  - Descripcion: Se agregan botones "Probar..." en cada tarjeta de la pagina de ConfiguraciÃƒÆ’Ã‚Â³n avanzada (Venta digital, Epayco, Nequi/Wompi, Gmail SMTP, Inteligencia Artificial y Respaldo). Cada boton realiza comprobaciones no destructivas (GET) a los endpoints de configuracion correspondientes y muestra el resultado en la UI.
- - Verificacion: Abrir [web/super/configuracion_avanzada.html](web/super/configuracion_avanzada.html) y pulsar los botones de prueba para ver mensajes de estado en cada tarjeta.
+ - Verificacion: Abrir `web/super/configuracion_avanzada.html` y pulsar los botones de prueba para ver mensajes de estado en cada tarjeta.
 
 Actualizacion 2026-04-16: frontend compartido reforzado para celular y menu flotante
  - Archivos modificados:

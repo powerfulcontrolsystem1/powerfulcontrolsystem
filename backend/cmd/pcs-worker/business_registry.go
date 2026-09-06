@@ -54,13 +54,14 @@ func businessRegistry(dbEmp, dbSuper *sql.DB) map[string]platformworker.HandlerS
 	add(jobFacturacionRetries, 20*time.Minute, 10, func(ctx context.Context) error {
 		return handlers.RunFacturacionElectronicaRetriesScheduled(ctx, dbEmp, dbSuper, envInt("FACTURACION_RETRY_TENANT_BATCH_SIZE", 100), envInt("FACTURACION_RETRY_DOCUMENT_BATCH_SIZE", 100))
 	})
-	for shardIndex := 0; shardIndex < facturacionRetryShardCount(); shardIndex++ {
+	fiscalShardCount := facturacionRetryShardCount()
+	for shardIndex := 0; shardIndex < fiscalShardCount; shardIndex++ {
 		index := shardIndex
 		kind := facturacionRetryShardKind(index)
 		add(kind, 20*time.Minute, 10, func(ctx context.Context) error {
 			return handlers.RunFacturacionElectronicaRetriesScheduledShard(ctx, dbEmp, dbSuper,
 				envInt("FACTURACION_RETRY_TENANT_BATCH_SIZE", 100), envInt("FACTURACION_RETRY_DOCUMENT_BATCH_SIZE", 100),
-				index, facturacionRetryShardCount())
+				index, fiscalShardCount)
 		})
 	}
 	add(jobLegalParameters, 30*time.Minute, 5, func(context.Context) error {
@@ -116,7 +117,8 @@ func businessSchedules() []platformworker.ScheduleSpec {
 		{Kind: jobDomoticaConnectivity, Version: 1, Interval: time.Minute, MaxAttempts: 5, Priority: 45},
 		{Kind: jobSystemMetrics, Version: 1, Interval: time.Duration(metrics.DefaultIntervalSeconds()) * time.Second, MaxAttempts: 5, Priority: 160},
 	}
-	for shardIndex := 0; shardIndex < facturacionRetryShardCount(); shardIndex++ {
+	fiscalShardCount := facturacionRetryShardCount()
+	for shardIndex := 0; shardIndex < fiscalShardCount; shardIndex++ {
 		schedules = append(schedules, platformworker.ScheduleSpec{
 			Kind: facturacionRetryShardKind(shardIndex), Version: 1,
 			Interval:    time.Duration(envInt("FACTURACION_RETRY_INTERVAL_SECONDS", 60)) * time.Second,

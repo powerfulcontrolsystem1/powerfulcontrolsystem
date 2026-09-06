@@ -7,7 +7,7 @@ No editar manualmente. Generar con `node tools/docs_catalog.mjs --write`; valida
 Política y significado de estados: [marco documental](gobernanza_tecnica/marco_documental.md).
 Inventario y hallazgos detallados: [JSON](catalogo_documental.json). La clasificación no acredita revisión semántica ni producción.
 
-Documentos: 503. Hallazgos locales: 0; bloqueantes: 0.
+Documentos: 504. Hallazgos locales: 4; bloqueantes: 0.
 
 | Estado | Cantidad |
 | --- | --- |
@@ -17,7 +17,7 @@ Documentos: 503. Hallazgos locales: 0; bloqueantes: 0.
 | generado | 20 |
 | historico | 62 |
 | referencia_externa | 1 |
-| referencia_por_validar | 1 |
+| referencia_por_validar | 2 |
 | vigente | 140 |
 
 ## Índice completo
@@ -60,6 +60,7 @@ Documentos: 503. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/api/openapi.generated.yaml](<api/openapi.generated.yaml>) | generado | Ingeniería backend y datos | Pendiente / no aplica |
 | [documentos/api/openapi.mobile.v1.yaml](<api/openapi.mobile.v1.yaml>) | contrato_maquina | Ingeniería backend y datos | Pendiente / no aplica |
 | [documentos/arquitectura/adr_106_cxp_fuente_canonica.md](<arquitectura/adr_106_cxp_fuente_canonica.md>) | vigente | Ingeniería backend y datos | 2026-09-05 |
+| [documentos/arquitectura/capacidad_colas_multiempresa.md](<arquitectura/capacidad_colas_multiempresa.md>) | referencia_por_validar | Ingeniería backend y datos | Pendiente / no aplica |
 | [documentos/arquitectura/clasificacion_arbol_plan_105.md](<arquitectura/clasificacion_arbol_plan_105.md>) | historico | Ingeniería backend y datos | Pendiente / no aplica |
 | [documentos/arquitectura/descripcion_arquitectura.md](<arquitectura/descripcion_arquitectura.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/arquitectura/gobierno_datos.md](<arquitectura/gobierno_datos.md>) | vigente | Coordinación técnica | 2026-09-05 |
