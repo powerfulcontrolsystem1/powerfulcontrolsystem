@@ -91,7 +91,14 @@ func TestFacturacionRetryDueQueryDoesNotRepeatExhaustedDocuments(t *testing.T) {
 		t.Fatal(err)
 	}
 	source := string(raw)
-	for _, required := range []string{"COALESCE(intentos, 0) < COALESCE(max_intentos, 5)", "CAST(proximo_intento AS TIMESTAMPTZ)", "ListFacturacionElectronicaRetryEmpresaIDsDueContext"} {
+	for _, required := range []string{
+		"COALESCE(fr.intentos, 0) < COALESCE(fr.max_intentos, 5)",
+		"CAST(fr.proximo_intento AS TIMESTAMPTZ)",
+		"ListFacturacionElectronicaRetryEmpresaIDsDueShardContext",
+		"MOD(fr.empresa_id, $2) = $3",
+		"pcs_queue_tenant_state",
+		"qs.last_served_at ASC NULLS FIRST",
+	} {
 		if !strings.Contains(source, required) {
 			t.Fatalf("durable fiscal retry query missing %q", required)
 		}

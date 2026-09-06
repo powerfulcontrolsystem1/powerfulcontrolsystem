@@ -1,7 +1,16 @@
 # Contrato tecnico: repositorio documental y firmas externas
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El repositorio registra metadatos/versiones y firmas externas declaradas; no valida criptográficamente una firma por guardar hash_firma.
+- La posibilidad de warning al historizar la versión anterior no garantiza una única versión vigente; requiere revisión operativa ante ese resultado.
+- Los campos de actor no deben aceptarse como autoridad desde el cliente. El evaluador interno sin rol no sustituye el wrapper; include_denegados requiere revisar minimización de metadatos sensibles.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## 1. Alcance del flujo
 
@@ -83,9 +92,10 @@ Puede sobrescribir o completar:
 - `url_archivo`
 - `hash_archivo`
 - `tamano_bytes`
-- `usuario_creador`
 - `estado`
 - `observaciones`
+
+El actor se deriva de la identidad autenticada, no del payload.
 
 Si un campo no llega, el backend hereda el valor del documento base.
 
@@ -321,3 +331,8 @@ Evidencia minima endurecida para documentos con valor regulatorio u operativo se
 - `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md`
 - `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md`
 - `documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md`
+## Fuentes y aceptación de la revisión
+
+[modulos_faltantes.go](../../../backend/handlers/modulos_faltantes.go), [modulos_faltantes.go](../../../backend/db/modulos_faltantes.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

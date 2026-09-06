@@ -17,7 +17,8 @@
         <p>Tus gastos cotidianos, facturas y suscripciones, separados de las cuentas de la empresa y de los demás usuarios.</p>
       </div>
       <div class="vida-hero-actions">
-        <button class="btn secondary" type="button" id="vidaNotificationBtn">Activar alarmas</button>
+        <button class="btn secondary" type="button" id="vidaNotificationBtn">Alarmas del navegador</button>
+        <button class="btn secondary" type="button" id="vidaReminderConfigOpen">Email y WhatsApp</button>
         <button class="btn secondary vida-ai-button" type="button" id="vidaAIOpen">IA: leer y registrar factura</button>
         <button class="btn primary" type="button" data-open-expense>+ Registrar gasto</button>
       </div>
@@ -26,6 +27,7 @@
     <nav class="vida-tabs" aria-label="Secciones de Vida">
       <button type="button" class="is-active" data-tab="resumen">Resumen</button>
       <button type="button" data-tab="gastos">Gastos</button>
+      <button type="button" data-tab="reportes">Reportes</button>
       <button type="button" data-tab="precios">Historial de precios</button>
       <button type="button" data-tab="suscripciones">Suscripciones</button>
     </nav>
@@ -82,6 +84,25 @@
           </div>
         </div>
         <div id="vidaExpenses" class="vida-list"></div>
+      </article>
+    </section>
+
+    <section class="vida-tab" data-panel="reportes" hidden>
+      <article class="vida-card">
+        <div class="vida-card-head vida-wrap">
+          <div><h2>Reporte de gastos</h2><p>Analiza únicamente tus gastos personales con los filtros que elijas.</p></div>
+          <div class="vida-inline-actions">
+            <label class="vida-filter">Desde <input id="vidaReportFrom" type="date"></label>
+            <label class="vida-filter">Hasta <input id="vidaReportTo" type="date"></label>
+            <label class="vida-filter">Categoría <select id="vidaReportCategory"><option value="">Todas</option><option value="supermercado">Supermercado</option><option value="alimentacion">Alimentación</option><option value="transporte">Transporte</option><option value="salud">Salud</option><option value="hogar">Hogar</option><option value="educacion">Educación</option><option value="familia">Familia</option><option value="entretenimiento">Entretenimiento</option><option value="servicios">Servicios</option><option value="ropa">Ropa</option><option value="mascotas">Mascotas</option><option value="otros">Otros</option></select></label>
+            <label class="vida-filter">Comercio <input id="vidaReportMerchant" maxlength="160" placeholder="Ej. supermercado"></label>
+            <label class="vida-filter">Pago <select id="vidaReportPayment"><option value="">Todos</option><option value="efectivo">Efectivo</option><option value="debito">Débito</option><option value="credito">Crédito</option><option value="transferencia">Transferencia</option><option value="billetera">Billetera</option><option value="otro">Otro</option></select></label>
+            <button class="btn primary" type="button" id="vidaReportFilterBtn">Actualizar reporte</button>
+          </div>
+        </div>
+        <div class="vida-kpis vida-report-kpis"><article><span>Total filtrado</span><strong id="vidaReportTotal">$ 0</strong></article><article><span>Registros</span><strong id="vidaReportCount">0</strong></article><article><span>Promedio por gasto</span><strong id="vidaReportAverage">$ 0</strong></article></div>
+        <div class="vida-grid-main vida-report-grid"><div><h3>Por categoría</h3><div id="vidaReportCategories" class="vida-report-list"></div></div><div><h3>Por método de pago</h3><div id="vidaReportPayments" class="vida-report-list"></div></div></div>
+        <div class="vida-grid-main vida-report-grid"><div><h3>Por comercio</h3><div id="vidaReportMerchants" class="vida-report-list"></div></div><div><h3>Gasto por día</h3><div id="vidaReportDays" class="vida-report-list"></div></div></div>
       </article>
     </section>
 
@@ -184,6 +205,20 @@
         <label class="vida-field-full">Notas<textarea id="vidaSubscriptionNotes" maxlength="500" rows="2"></textarea></label>
       </div>
       <footer><button type="button" class="btn secondary" data-close-dialog>Cancelar</button><button type="submit" class="btn primary" id="vidaSubscriptionSave">Guardar suscripción</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="vidaReminderDialog" class="vida-dialog">
+    <form id="vidaReminderForm" method="dialog">
+      <header><div><span class="vida-kicker">Avisos personales</span><h2>Recordatorios por email y WhatsApp</h2></div><button type="button" class="vida-dialog-close" data-close-dialog aria-label="Cerrar">×</button></header>
+      <p class="vida-dialog-copy">Los avisos se envían solo por las suscripciones de tu cuenta y empresa actual. El correo se entrega a tu cuenta de inicio de sesión.</p>
+      <div class="vida-form-grid">
+        <label class="vida-check"><input id="vidaReminderEmail" type="checkbox"><span>Recibir recordatorios por email</span></label>
+        <label class="vida-check"><input id="vidaReminderWhatsApp" type="checkbox"><span>Recibir recordatorios por WhatsApp</span></label>
+        <label>Mi número de WhatsApp<input id="vidaReminderPhone" inputmode="tel" maxlength="20" placeholder="Ej. +57 300 123 4567"><small id="vidaReminderPhoneHelp">Se guarda de forma privada y solo se usa para estos avisos.</small></label>
+        <label>Hora local de aviso<input id="vidaReminderHour" type="time" value="09:00" required><small>El sistema revisa las suscripciones durante esta hora.</small></label>
+      </div>
+      <footer><button type="button" class="btn secondary" data-close-dialog>Cancelar</button><button type="submit" class="btn primary" id="vidaReminderSave">Guardar avisos</button></footer>
     </form>
   </dialog>
 

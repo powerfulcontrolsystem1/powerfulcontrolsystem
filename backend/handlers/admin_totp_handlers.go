@@ -94,18 +94,31 @@ func adminTOTPProvisioningURI(email, secret string) string {
 }
 
 func isAdminTOTPLoginEnabled(dbSuper *sql.DB) bool {
+	enabled, err := adminTOTPLoginPolicy(dbSuper)
+	return err != nil || enabled
+}
+
+func adminTOTPLoginPolicy(dbSuper *sql.DB) (bool, error) {
 	if dbSuper == nil {
-		return false
+		return false, fmt.Errorf("base administrativa no disponible")
 	}
 	value, err := getDecryptedConfigValue(dbSuper, superAdmin2FAEnabledConfigKey)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return parseTruthyConfigValue(value, false)
+	return parseTruthyConfigValue(value, false), nil
 }
 
 func adminTOTPLoginRequiredForAdmin(admin *dbpkg.Admin, globalEnabled bool) bool {
-	return globalEnabled && admin != nil && admin.TOTPEnabled == 1 && strings.TrimSpace(admin.TOTPSecret) != ""
+	if admin == nil || admin.TOTPEnabled != 1 || strings.TrimSpace(admin.TOTPSecret) == "" {
+		return false
+	}
+	return globalEnabled || utils.IsSuperPanelRole(admin.Role)
+
+}
+
+func adminTOTPConfigurationRequired(admin *dbpkg.Admin) bool {
+	return admin != nil && utils.IsSuperPanelRole(admin.Role) && (admin.TOTPEnabled != 1 || strings.TrimSpace(admin.TOTPSecret) == "")
 }
 
 func adminTOTPSecretForVerification(admin *dbpkg.Admin) (string, error) {
@@ -325,6 +338,10 @@ func AdminTwoFactorHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "enabled": true, "recovery_codes": codes})
 		case "disable":
+			if utils.IsSuperPanelRole(admin.Role) {
+				writeAdminAuthError(w, http.StatusForbidden, "El acceso 2FA es obligatorio para cuentas del panel global.")
+				return
+			}
 			if !adminPasswordReauthenticated(admin, payload.CurrentPassword) {
 				writeAdminAuthError(w, http.StatusUnauthorized, "Debes confirmar tu contraseña actual para desactivar 2FA.")
 				return

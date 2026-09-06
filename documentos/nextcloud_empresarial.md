@@ -1,5 +1,15 @@
 # Nextcloud empresarial
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La ruta /api/empresa/nextcloud continúa registrada. La existencia de nextcloud_decommission.go no demuestra que el módulo esté retirado en runtime.
+- PCS solo admite PostgreSQL; el motor mencionado en el diagnóstico antiguo es un antecedente externo, no una recomendación para nuevos entornos.
+- Los nombres de volúmenes son históricos: inventariar los efectivos y obtener backup consistente de BD/archivos; copiar un volumen activo no prueba restauración.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 ## Actualizacion 2026-07-24 - iframe restringido y version heredada
 
 El shell PCS debe declarar de forma explicita
@@ -16,7 +26,7 @@ El script valida que el sitio corresponde al dominio y al upstream
 aplicarlo se debe tener backup verificable y despues comprobar visualmente el
 contenido real dentro del iframe, las cabeceras, WebDAV y OCS.
 
-La instancia observada sigue en Nextcloud 29 con MariaDB, mientras que un
+La observación histórica del 2026-07-24 registró Nextcloud 29 con MariaDB, mientras que un
 compose heredado no versionado difiere. Nextcloud 29 no es soporte vigente:
 queda NO-GO para produccion general hasta reconciliar el compose real, probar
 restauracion y actualizar de a una version mayor en staging. Esta restriccion
@@ -103,11 +113,11 @@ un parametro manipulable como fuente de autoridad.
    privado. No copiar secretos a este repositorio.
 3. No sustituir volumenes, ni cambiar motor de datos, ni actualizar version mayor
    durante una reparacion. Primero se prueba la restauracion en staging.
-5. Ejecutar `bash scripts/provision_nextcloud_service_account.sh /root/powerfulcontrolsystem`
+4. Ejecutar `bash scripts/provision_nextcloud_service_account.sh <checkout-validado>`
    para crear o rotar la cuenta OCS exclusiva `pcs_ocs_service`. El script no
    imprime la contrasena; la registra como variable root-readable y el backend
    la cifra al arrancar.
-6. Probar la conexion OCS y verificar el aprovisionamiento de dos empresas de
+5. Probar la conexion OCS y verificar el aprovisionamiento de dos empresas de
    ensayo.
 
 El backend toma `NEXTCLOUD_ENABLED`, `NEXTCLOUD_BASE_URL`,
@@ -138,10 +148,16 @@ contenedores, volumenes ni datos sin evidencia de backup y restauracion.
 
 - `go test ./handlers -run Nextcloud -count=1`;
 - auditoria de permisos y `go test ./...`;
-- `docker compose --env-file deploy/nextcloud/.env -f deploy/nextcloud/docker-compose.yml config --quiet`;
+- validar con `docker compose config --quiet` usando el archivo y entorno privados del stack inventariado; `deploy/nextcloud/docker-compose.yml` no existe en este repositorio;
 - healthchecks verdes de DB, Redis, Nextcloud y cron;
 - prueba OCS desde Super administrador;
 - aprovisionamiento, apertura, restablecimiento y rechazo cruzado entre dos
   empresas de staging;
 - eliminacion de una empresa con cuenta Nextcloud, verificando que su usuario y
   archivos remotos desaparezcan sin afectar otra empresa.
+
+## Fuentes y aceptación de la revisión
+
+[main.go](../backend/main.go), [nextcloud.go](../backend/handlers/nextcloud.go), [nextcloud.go](../backend/db/nextcloud.go), [nextcloud_decommission.go](../backend/db/nextcloud_decommission.go), [provision_nextcloud_service_account.sh](../scripts/provision_nextcloud_service_account.sh).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

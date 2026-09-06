@@ -341,6 +341,9 @@ func UpsertEmpresaTesoreriaPartida(dbConn *sql.DB, item EmpresaTesoreriaPartida)
 	if item.EmpresaID <= 0 || item.PresupuestoID <= 0 || item.Concepto == "" {
 		return 0, errors.New("presupuesto y concepto son obligatorios")
 	}
+	if err := validateTesoreriaTenantReference(dbConn, "empresa_tesoreria_presupuestos", item.EmpresaID, item.PresupuestoID); err != nil {
+		return 0, fmt.Errorf("presupuesto fuera del alcance de la empresa: %w", err)
+	}
 	if item.ID > 0 {
 		_, err := ExecCompat(dbConn, `UPDATE empresa_tesoreria_partidas SET categoria=?,tipo=?,concepto=?,valor_presupuestado=?,valor_ejecutado=?,periodicidad=?,centro_costo=?,estado=?,fecha_actualizacion=CAST(CURRENT_TIMESTAMP AS TEXT) WHERE empresa_id=? AND id=?`,
 			item.Categoria, item.Tipo, item.Concepto, item.ValorPresupuestado, item.ValorEjecutado, item.Periodicidad, item.CentroCosto, item.Estado, item.EmpresaID, item.ID)
@@ -384,8 +387,26 @@ func CreateEmpresaTesoreriaFlujo(dbConn *sql.DB, item EmpresaTesoreriaFlujo) (in
 	if item.EmpresaID <= 0 || item.Concepto == "" || item.FechaFlujo == "" {
 		return 0, errors.New("fecha y concepto son obligatorios")
 	}
+	if item.CuentaID > 0 {
+		if err := validateTesoreriaTenantReference(dbConn, "empresa_tesoreria_cuentas", item.EmpresaID, item.CuentaID); err != nil {
+			return 0, fmt.Errorf("cuenta fuera del alcance de la empresa: %w", err)
+		}
+	}
+	if item.PresupuestoID > 0 {
+		if err := validateTesoreriaTenantReference(dbConn, "empresa_tesoreria_presupuestos", item.EmpresaID, item.PresupuestoID); err != nil {
+			return 0, fmt.Errorf("presupuesto fuera del alcance de la empresa: %w", err)
+		}
+	}
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_tesoreria_flujo_caja (empresa_id,cuenta_id,presupuesto_id,fecha_flujo,periodo,tipo,categoria,concepto,valor,valor_ejecutado,origen_modulo,referencia,estado,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		item.EmpresaID, item.CuentaID, item.PresupuestoID, item.FechaFlujo, item.Periodo, item.Tipo, item.Categoria, item.Concepto, item.Valor, item.ValorEjecutado, item.OrigenModulo, item.Referencia, item.Estado, item.UsuarioCreador)
+}
+
+func validateTesoreriaTenantReference(dbConn *sql.DB, table string, empresaID, id int64) error {
+	if table != "empresa_tesoreria_cuentas" && table != "empresa_tesoreria_presupuestos" {
+		return errors.New("tabla de referencia no permitida")
+	}
+	var exists int
+	return QueryRowCompat(dbConn, fmt.Sprintf("SELECT 1 FROM %s WHERE empresa_id=? AND id=?", table), empresaID, id).Scan(&exists)
 }
 
 func ListEmpresaTesoreriaFlujo(dbConn *sql.DB, empresaID int64, periodo string, limit int) ([]EmpresaTesoreriaFlujo, error) {

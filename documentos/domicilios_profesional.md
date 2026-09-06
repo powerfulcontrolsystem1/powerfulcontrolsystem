@@ -1,7 +1,16 @@
 # Modulo profesional de domicilios
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Existen superficies diferenciadas de cliente, restaurante, domiciliario y administración. Los tokens/PIN son autenticación del actor, no permiso de administración empresarial.
+- El enlace de un pedido entregado con venta/pago central es un estado local; aceptación comercial debe verificar confirmación de pago, reintentos y propiedad del pedido.
+- Se retiran instrucciones que publicaban credenciales demo y sugerían sembrar datos productivos. La ubicación GPS requiere consentimiento y evidencia real de navegador/dispositivo.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-11
-Estado: vigente, documentado tambien en el portal publico `web/index.html`
 
 El modulo de domicilios agrega una operacion tipo marketplace local: central administrativa, restaurantes aliados, domiciliarios moviles, cliente publico, asignacion por cercania, tracking GPS por navegador y codigo de entrega.
 
@@ -40,13 +49,9 @@ El index comercial describe este modulo como `Domicilios tipo Rappi` dentro de l
 - Los pedidos entregados crean `carritos_compras` con canal `domicilios`, referencia externa del pedido y metodo de pago normalizado.
 - Cada linea del pedido queda vinculada a `carrito_compra_items` mediante `carrito_item_id`; tarifa de domicilio y propina se agregan como servicios centrales.
 
-## Datos demo
+## Datos de prueba
 
-Desde la central se puede usar `Cargar demo productiva`.
-
-- Restaurante demo: `REST-DEMO`, PIN `1234`
-- Domiciliario demo 1: documento `1001`, PIN `1234`
-- Domiciliario demo 2: documento `1002`, PIN `1234`
+Las acciones demo son mutaciones de datos y solo se usan en un entorno aislado y autorizado. No publicar credenciales de acceso ni utilizar semillas como operación comercial real.
 
 ## Endpoints principales
 
@@ -71,3 +76,9 @@ Acciones publicas: `catalog`, `order`, `tracking`, `courier_login`, `courier_pre
 - Exigir que domiciliarios entren desde celular y acepten permisos de ubicacion.
 - Mantener activo el codigo de entrega para reducir entregas incorrectas.
 - Usar HTTPS en produccion para que la geolocalizacion del navegador funcione de forma confiable.
+
+## Fuentes y aceptación de la revisión
+
+[domicilios.go](../backend/handlers/domicilios.go), [domicilios.go](../backend/db/domicilios.go), [domicilios.html](../web/administrar_empresa/domicilios.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001 a PCS-REQ-005, PCS-REQ-009, PCS-REQ-013, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

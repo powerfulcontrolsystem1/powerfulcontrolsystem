@@ -1,3 +1,7 @@
+> Estado documental: histórico de planificación. No es una hoja de ruta global
+> vigente ni una orden de ejecución. Consultar [estado actual](estado_actual.md)
+> y el contrato del módulo; se conserva el contenido como trazabilidad.
+
 # Plan 107 - certificacion profesional del contador y reportes IA
 
 Estado: **P0 local parcial implementado; NO-GO contable y de datos reales**.

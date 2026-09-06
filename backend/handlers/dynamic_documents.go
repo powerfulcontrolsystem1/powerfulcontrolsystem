@@ -174,7 +174,7 @@ func DynamicDocumentGenerateHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		var promptTokens, completionTokens int64
 		if content == "" {
 			var err error
-			content, modelID, promptTokens, completionTokens, err = generateDynamicDocumentAIContent(r.Context(), dbEmp, dbSuper, payload)
+			content, modelID, promptTokens, completionTokens, err = generateDynamicDocumentAIContent(r.Context(), dbEmp, dbSuper, payload, empresaAISafetyIdentifier(adminEmailFromRequest(r)))
 			if err != nil {
 				writeJSON(w, http.StatusBadGateway, map[string]interface{}{
 					"ok":    false,
@@ -494,7 +494,7 @@ func DynamicDocumentEmailShareHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-func generateDynamicDocumentAIContent(ctx context.Context, dbEmp, dbSuper *sql.DB, payload DynamicDocumentRequest) (string, string, int64, int64, error) {
+func generateDynamicDocumentAIContent(ctx context.Context, dbEmp, dbSuper *sql.DB, payload DynamicDocumentRequest, safetyIdentifier string) (string, string, int64, int64, error) {
 	if !isSuperAIEnabled(dbSuper) {
 		return "", "", 0, 0, fmt.Errorf("la IA esta desactivada desde super administrador")
 	}
@@ -522,7 +522,7 @@ func generateDynamicDocumentAIContent(ctx context.Context, dbEmp, dbSuper *sql.D
 	var err error
 	go func() {
 		defer close(done)
-		content, pt, ct, err = ctrl.generateResponseWithSystemPromptContext(ctx, model, prompt, nil, system)
+		content, pt, ct, err = ctrl.generateResponseWithSystemPromptContext(ctx, model, prompt, nil, system, safetyIdentifier)
 	}()
 	select {
 	case <-ctx.Done():

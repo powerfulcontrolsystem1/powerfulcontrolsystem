@@ -21,6 +21,9 @@ const (
 	ToolHotelInspectRoomStation   = "hotel.inspect_room_station"
 	ToolCatalogSearchProducts     = "catalog.search_products"
 	ToolCatalogCreateProduct      = "catalog.create_product"
+	ToolSalesInspectStation       = "sales.inspect_station"
+	ToolSalesAddStationProduct    = "sales.add_station_product"
+	ToolReportsGenerate           = "reports.generate"
 )
 
 // ExecutionContext is server-derived and must never be populated from model output.
@@ -79,6 +82,9 @@ type ToolDefinition struct {
 
 func Registry() map[string]ToolDefinition {
 	return map[string]ToolDefinition{
+		ToolSalesInspectStation:    {Name: ToolSalesInspectStation, Description: "Busca cuentas abiertas de habitaciones, mesas o estaciones y productos de venta.", RiskLevel: "read", RequiredPermissions: []string{"ventas:R"}, TenantScope: "current_company", Confirmation: "none", Module: "ventas", TimeoutSeconds: 10},
+		ToolSalesAddStationProduct: {Name: ToolSalesAddStationProduct, Description: "Propone agregar un producto a una cuenta abierta; requiere confirmación.", RiskLevel: "medium", RequiredPermissions: []string{"ventas:R", "ventas:C"}, TenantScope: "current_company", Confirmation: "required", Idempotency: "required", Module: "ventas", TimeoutSeconds: 20, Rollback: "transactional_before_commit"},
+		ToolReportsGenerate:        {Name: ToolReportsGenerate, Description: "Genera un reporte empresarial con datos reales, periodo y enlaces de descarga.", RiskLevel: "read", RequiredPermissions: []string{"reportes:R"}, TenantScope: "current_company", Confirmation: "none", Module: "reportes", TimeoutSeconds: 20},
 		ToolHotelInspectRoomStation: {
 			Name:        ToolHotelInspectRoomStation,
 			Description: "Consulta la configuracion y tarifas actuales de una estacion hotelera.",
@@ -134,6 +140,15 @@ func ToolAllowed(def ToolDefinition, granted []string) bool {
 func ResponsesToolDefinitions(ctx ExecutionContext) []map[string]interface{} {
 	registry := Registry()
 	tools := make([]map[string]interface{}, 0, 2)
+	add := func(name string, properties map[string]interface{}, required []string) {
+		def := registry[name]
+		if ToolAllowed(def, ctx.Permissions) {
+			tools = append(tools, map[string]interface{}{"type": "function", "name": name, "description": def.Description, "strict": true, "parameters": map[string]interface{}{"type": "object", "additionalProperties": false, "properties": properties, "required": required}})
+		}
+	}
+	add(ToolSalesInspectStation, map[string]interface{}{"q": map[string]interface{}{"type": "string", "maxLength": 160}}, []string{"q"})
+	add(ToolSalesAddStationProduct, map[string]interface{}{"estacion_id": map[string]interface{}{"type": "integer", "minimum": 1}, "producto_id": map[string]interface{}{"type": "integer", "minimum": 1}, "cantidad": map[string]interface{}{"type": "integer", "minimum": 1, "maximum": 99}}, []string{"estacion_id", "producto_id", "cantidad"})
+	add(ToolReportsGenerate, map[string]interface{}{"dataset": map[string]interface{}{"type": "string", "enum": []string{"ventas", "productos", "inventario", "compras", "resultados", "caja"}}, "desde": map[string]interface{}{"type": "string", "description": "Fecha YYYY-MM-DD"}, "hasta": map[string]interface{}{"type": "string", "description": "Fecha YYYY-MM-DD"}}, []string{"dataset", "desde", "hasta"})
 	if def, ok := registry[ToolCatalogSearchProducts]; ok && ToolAllowed(def, ctx.Permissions) {
 		tools = append(tools, map[string]interface{}{"type": "function", "name": ToolCatalogSearchProducts, "description": def.Description, "strict": true, "parameters": map[string]interface{}{"type": "object", "additionalProperties": false, "properties": map[string]interface{}{"q": map[string]interface{}{"type": "string", "maxLength": 160}}, "required": []string{"q"}}})
 	}

@@ -1,5 +1,14 @@
 # Arquitectura de modulos universales
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Se conserva el principio de núcleo reutilizable y se retira el catálogo obsoleto de veinte plantillas.
+- Las reglas de integración son requisitos de arquitectura a comprobar en cada flujo, no una garantía universal de interoperabilidad.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 ## Regla principal
 
 Todo modulo del sistema debe nacer como un nucleo universal reutilizable. Los tipos de empresa no deben duplicar logica; solo activan permisos, licencias, plantillas, nombres visibles, datos iniciales y configuraciones recomendadas.
@@ -27,31 +36,15 @@ Todo modulo del sistema debe nacer como un nucleo universal reutilizable. Los ti
 - CRM universal cubre clientes, embudos, seguimiento, cartera comercial y comunicaciones.
 - Personas y activos cubre usuarios, empleados, carnets, asistencia, vehiculos, equipos e historial operativo.
 
-## Plantillas empresariales 2026-05-10
+## Catálogo y especialización
 
-Se agregaron 20 plantillas nuevas sobre el motor comun de `empresa_modulos_colombia_*`: viajes, turismo, eventos, salon/spa, veterinaria, clinica, laboratorio, colegio, guarderia, lavanderia, taller, transporte TMS, servicios tecnicos, inmobiliaria, seguridad privada, club deportivo, funeraria, parque recreativo, cooperativa y capacitacion empresarial.
-
-Cada vertical usa una plantilla propia de tipos, categorias, estados, acciones sugeridas y metadata, pero comparte dashboard, agenda, SLA, riesgo, evidencias, aprobaciones, tareas, importacion/exportacion y auditoria. La activacion se controla por licencia y por la matriz de roles/paginas del super administrador.
-
-En `Administrar empresa > Soluciones por negocio`, cada modulo por tipo de negocio aparece como boton propio, no como un unico agrupador. El submenu visual de cada negocio no duplica pantallas por industria: interpreta cada seccion como una intencion operativa comun (`dashboard`, `registros`, `seguimiento`, `responsables`, `aprobacion`, `evidencia` o `control`) y abre la zona correspondiente del motor universal. La ruta de trabajo viaja en la plantilla backend como `secciones_flujo`; el catalogo visual conserva iconos y textos de portada, pero la pantalla operativa ya no muestra una ruta numerada superior para no duplicar el submenu de botones.
-
-La configuracion visible del vertical se obtiene de la plantilla backend: tipos, categorias, estados, acciones sugeridas, etiquetas y metadata. La UI permite descargar una plantilla CSV de carga desde el mismo motor comun, evitando formularios especiales por cada industria.
-
-Antes de operar o importar datos, el modulo muestra un diagnostico de preparacion exportable. La validacion principal se sirve desde el backend con `action=diagnostico` sobre la misma ruta `/api/empresa/<modulo>`, revisando contexto de empresa, modulo soportado, base de datos, completitud de plantilla, metadata JSON y existencia de registros. La UI mantiene un fallback local para que la pantalla no se rompa si una version antigua del backend aun no expone el endpoint.
-
-El bootstrap `EnsureNuevasPlantillasTipoEmpresaYLicencias` registra los tipos de empresa, sus licencias comerciales y la preconfiguracion inicial para que una empresa nueva pueda nacer con tipo, roles guia, productos/servicios demo, tareas y modulos recomendados.
-
-El lanzador de plantillas puede consultar `/api/empresa/plantillas_nuevas/catalogo`, el super administrador puede consultar `/super/api/plantillas_nuevas/catalogo` y la portada publica puede consultar `/api/public/plantillas_nuevas/catalogo` para obtener el contrato backend completo de los 20 plantillas. La respuesta incluye page key, modulo, titulo, resumen, secciones de flujo y plantilla; el archivo visual local queda como respaldo para iconos y experiencia de portada.
-
-Las tarjetas publicas y la pagina de descripcion usan anclas estables por modulo (`vertical-<modulo>`) para que el enlace comercial no dependa del orden de las tarjetas configuradas. Si el administrador cambia las tarjetas de portada, el catalogo publico sigue agregando los 20 plantillas y mantiene una ficha descriptiva coherente por negocio.
-
-El flujo de licencias propaga el mismo contrato comercial: las licencias plantillas guardan `modulos_habilitados`, el checkout publico expone `modulos_habilitados` y `max_documentos_mensuales`, y las pantallas de elegir/pagar licencia usan esos datos para mostrar industria, icono, tipo de empresa y cupo documental sin duplicar reglas por cada vertical.
-
-El selector de empresas reutiliza el catalogo visual de plantillas para evitar reglas aisladas por pantalla: al listar empresas, la tarjeta toma icono, tono y texto operativo del vertical; al crear empresa, el formulario muestra una vista previa con las secciones del negocio antes de guardar y aplicar la preconfiguracion inicial.
-
-Las pantallas de super administrador para tipos y preconfiguraciones tambien leen el mismo catalogo visual. Esto permite auditar los 20 plantillas con conteos, etiquetas e indicadores de flujo sin mantener una lista paralela en cada vista administrativa.
-
-La ayuda administrativa y el contexto de IA forman parte de la arquitectura. Cuando se agregan plantillas, la ayuda privada del super administrador debe explicar catalogo, activacion, licencias, permisos y operacion; el contexto canonico de IA debe nombrar el motor comun, endpoints de catalogo, cupos documentales y regla de no crear modulos duplicados si basta con plantilla o preconfiguracion.
+El catálogo actual contiene trece plantillas: cuatro clásicas y nueve nuevas.
+La [matriz de integración](matriz_integracion_plantillas.md) mantiene sus nombres,
+estado y retiradas; no reutilizar la lista histórica de veinte como catálogo
+comercial. Tipos, estados y metadatos viven en el motor común y sus plantillas.
+El diagnóstico de plantilla no demuestra que cada proceso sectorial, integración
+o requisito regulatorio esté implementado. Los registros demo son solo para
+un entorno aislado autorizado, nunca fuentes de venta, nómina o emisión fiscal.
 
 ## Bloques canonicos del sistema
 
@@ -84,3 +77,9 @@ La capa interna puede conservar claves historicas para no romper rutas, permisos
 - Los permisos usan grupos comunes y acciones comunes.
 - La interfaz explica el contexto del negocio sin duplicar pantallas.
 - Los reportes pueden filtrar por empresa, tipo de activo, tipo de documento o subtipo operativo.
+
+## Fuentes y aceptación de la revisión
+
+[modulos_plantillas_nuevas.go](../backend/db/modulos_plantillas_nuevas.go), [empresa_plantillas_integracion.go](../backend/handlers/empresa_plantillas_integracion.go), [matriz_integracion_plantillas.md](matriz_integracion_plantillas.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

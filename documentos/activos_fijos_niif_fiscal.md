@@ -1,5 +1,14 @@
 # Activos Fijos e Intangibles NIIF / Fiscal
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El handler contempla GET de activos/libro, depreciaciones y eventos; las escrituras admiten POST y PUT.
+- Los valores NIIF/fiscales son registros y cálculos del módulo; la guía no certifica la corrección tributaria de una empresa ni sus políticas de depreciación.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
 
 ## Objetivo
@@ -34,10 +43,10 @@ El modulo `activos_fijos_niif_fiscal` formaliza la gestion empresarial de propie
 - `GET action=activos`: libro maestro.
 - `GET action=depreciaciones`: depreciaciones por periodo.
 - `GET action=eventos`: bitacora por activo o general.
-- `POST action=activo`: registra activo o intangible.
-- `POST action=depreciacion`: genera depreciacion del periodo.
-- `POST action=evento`: registra traslado, mantenimiento, ajuste, baja, venta o retiro.
-- `POST action=seed_demo`: crea activos de ejemplo y genera depreciacion del periodo.
+- `POST/PUT action=activo`: registra activo o intangible.
+- `POST/PUT action=depreciacion`: genera depreciacion del periodo.
+- `POST/PUT action=evento`: registra traslado, mantenimiento, ajuste, baja, venta o retiro.
+- `POST/PUT action=seed_demo`: crea activos de ejemplo y genera depreciacion del periodo.
 
 ## Frontend
 
@@ -57,3 +66,9 @@ El modulo `activos_fijos_niif_fiscal` formaliza la gestion empresarial de propie
 
 - `cd backend; go test ./... -count=1`
 - `git diff --check`
+
+## Fuentes y aceptación de la revisión
+
+[activos_fijos_niif_fiscal.go](../backend/handlers/activos_fijos_niif_fiscal.go), [activos_fijos_niif_fiscal.html](../web/administrar_empresa/activos_fijos_niif_fiscal.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

@@ -1,5 +1,15 @@
 # Servidor de voz natural para IA
 
+Estado: Vigente. Responsable: Ingeniería y operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Servicio opcional Python/Piper existente, separado del backend Go. El campo voice aceptado no selecciona otro modelo: se usa VOICE_STREAM_TTS_MODEL.
+- Sin VOICE_STREAM_AUTH_TOKEN, verify_auth permite acceso. Exponerlo requiere configurar autenticación y red privada.
+- 127.0.0.1 solo comunica procesos del mismo espacio de red; desde un contenedor se necesita el destino resoluble correspondiente. El instalador descarga/instala componentes y no es una comprobación de solo lectura.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Este servicio es un microservidor abierto para convertir texto de la IA en audio. Usa FastAPI y Piper TTS, ambos componentes de codigo abierto. El backend principal no depende de este proceso: si esta apagado, desactivado o falla, el chat conserva el modo de texto y la voz del navegador como respaldo.
 
 ## Variables principales
@@ -39,3 +49,9 @@ Reglas operativas:
 - si el servicio esta apagado, desactivado o demora demasiado, el chat conserva texto y puede usar la voz del navegador como respaldo.
 - no guardar tokens ni credenciales en este README; el token real va en entorno seguro y se registra cifrado desde Super Administrador > Voz IA streaming.
 - para agregar voces naturales nuevas, descargar el modelo `.onnx` y `.onnx.json`, registrar su ruta en el servicio o variables de entorno y probar `/health` + `/api/voice/tts` antes de activar en produccion.
+
+## Fuentes y aceptación de la revisión
+
+[app.py](app.py).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../documentos/requisitos/especificacion_y_trazabilidad.md)).

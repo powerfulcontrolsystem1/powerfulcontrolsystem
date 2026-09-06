@@ -1,10 +1,19 @@
 # Secretos requeridos en GitHub Actions
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Los nombres son un inventario de configuración, nunca valores. E2E requiere cuenta y empresa aisladas autorizadas, no una empresa comercial por defecto.
+- Los secretos de producción enumerados para futuro despliegue no prueban que un workflow los consuma. Verificar el YAML y entorno protegido antes de configurarlos.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Configurar en `Settings > Secrets and variables > Actions`.
 
 ## E2E visual
 
-- `PCS_QA_EMAIL`: usuario de pruebas, recomendado Motel Calipso.
+- `PCS_QA_EMAIL`: usuario de pruebas de un entorno aislado y autorizado.
 - `PCS_QA_PASSWORD`: clave del usuario de pruebas.
 
 ## Futuro deploy automatico
@@ -36,3 +45,9 @@ En la VPS, cambiar `deploy/monitoring/.env.monitoring` despues de ejecutar `bash
 - `GRAFANA_ADMIN_PASSWORD`
 - `PROMETHEUS_BIND`, `PROMETHEUS_PORT`
 - `GRAFANA_BIND`, `GRAFANA_PORT`
+
+## Fuentes y aceptación de la revisión
+
+[professional-ci.yml](workflows/professional-ci.yml), [e2e-visual.yml](workflows/e2e-visual.yml).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../documentos/requisitos/especificacion_y_trazabilidad.md)).

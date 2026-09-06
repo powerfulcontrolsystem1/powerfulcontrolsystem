@@ -1,3 +1,7 @@
+> Estado documental: histórico. Diagnóstico de codificación de julio sustituido como gobierno por el catálogo documental actual.
+> Fuentes actuales: [marco_documental.md](../gobernanza_tecnica/marco_documental.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Normalizacion documental por lotes - P105-019
 
 Fecha de linea base: 2026-07-22.

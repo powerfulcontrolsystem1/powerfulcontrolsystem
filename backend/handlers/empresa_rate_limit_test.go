@@ -70,6 +70,29 @@ func TestEmpresaRateLimitScopeForRequest(t *testing.T) {
 	if got := empresaRateLimitScopeForRequest(req); got != "api" {
 		t.Fatalf("scope api inesperado: %s", got)
 	}
+
+	cases := []struct {
+		name   string
+		method string
+		path   string
+		action string
+		want   string
+	}{
+		{name: "alta directa de producto", method: http.MethodPost, path: "/api/empresa/productos", want: "queue.product_add"},
+		{name: "producto en carrito", method: http.MethodPost, path: "/api/empresa/carritos_compra/items", want: "queue.product_add"},
+		{name: "trabajo de impresion", method: http.MethodPut, path: "/api/empresa/impresoras", action: "cola_trabajo", want: "queue.printing"},
+		{name: "factura desde venta", method: http.MethodPost, path: "/api/empresa/facturacion_electronica", action: "facturar_desde_venta", want: "queue.fiscal"},
+		{name: "emision fiscal especializada", method: http.MethodPost, path: "/api/empresa/facturacion_electronica", action: "emitir_documento_soporte", want: "queue.fiscal"},
+		{name: "lectura de productos", method: http.MethodGet, path: "/api/empresa/productos", want: "api"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := &http.Request{Method: tc.method, URL: &url.URL{Path: tc.path, RawQuery: "action=" + tc.action}}
+			if got := empresaRateLimitScopeForRequest(req); got != tc.want {
+				t.Fatalf("scope inesperado: got %s want %s", got, tc.want)
+			}
+		})
+	}
 }
 
 func TestEmpresaRateLimitMaxForRequestUsesDefaultsWithoutDB(t *testing.T) {
@@ -80,5 +103,9 @@ func TestEmpresaRateLimitMaxForRequestUsesDefaultsWithoutDB(t *testing.T) {
 	req.URL.Path = "/api/empresa/productos"
 	if got := empresaRateLimitMaxForRequest(nil, req); got != defaultEmpresaAPIRequestsPerMinute {
 		t.Fatalf("default api inesperado: got %d want %d", got, defaultEmpresaAPIRequestsPerMinute)
+	}
+	req.Method = http.MethodPost
+	if got := empresaRateLimitMaxForRequest(nil, req); got != 240 {
+		t.Fatalf("default de alta de productos inesperado: got %d want 240", got)
 	}
 }

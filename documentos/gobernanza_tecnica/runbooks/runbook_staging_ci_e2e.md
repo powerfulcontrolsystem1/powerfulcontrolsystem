@@ -1,5 +1,14 @@
 # Runbook staging, CI y E2E visual
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- ConfigOnly valida configuración; Build y scripts VPS sí arrancan/modifican entornos. Identificar candidato y base aislada antes de ejecutarlos.
+- CI documental incluye tests de docs_catalog y --check. CI verde y smoke no demuestran aceptación general del negocio.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 ## Staging local
 
 ```powershell
@@ -61,3 +70,9 @@ Inputs recomendados:
 - `base_url`: `https://staging.powerfulcontrolsystem.com`.
 - `empresa_id`: empresa de pruebas.
 - `max_pages`: `0` para barrido completo.
+
+## Fuentes y aceptación de la revisión
+
+[staging_up.ps1](../../../scripts/staging_up.ps1), [professional-ci.yml](../../../.github/workflows/professional-ci.yml), [vps-staging-candidate-up.sh](../../../deploy/scripts/vps-staging-candidate-up.sh).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

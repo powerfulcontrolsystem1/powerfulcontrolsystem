@@ -364,7 +364,7 @@ function Publish-VPS2SnapshotToMainVPS {
   $baseArgs += @("-P", [string]$mainPort, "-i", $mainIdentity)
   & $pscp @($baseArgs + @($tmp, "${target}:/tmp/pcs_vps2_status.json"))
   if ($LASTEXITCODE -ne 0) { throw "No se pudo subir snapshot VPS2 al VPS principal." }
-  $remoteCmd = "mkdir -p /root/powerfulcontrolsystem/backup && cp /tmp/pcs_vps2_status.json /root/powerfulcontrolsystem/backup/vps2_status.json && if docker ps --format '{{.Names}}' | grep -qx pcs-backend; then docker cp /tmp/pcs_vps2_status.json pcs-backend:/app/backup/vps2_status.json; fi && rm -f /tmp/pcs_vps2_status.json"
+  $remoteCmd = "mkdir -p /root/powerfulcontrolsystem/backup && cp /tmp/pcs_vps2_status.json /root/powerfulcontrolsystem/backup/vps2_status.json && backend_id=`$(docker ps --filter label=com.docker.compose.project=powerful-control-system --filter label=com.docker.compose.service=backend --format '{{.ID}}' | head -n 1); if [ -n `"`$backend_id`" ]; then docker cp /tmp/pcs_vps2_status.json `"`$backend_id`":/app/backup/vps2_status.json; fi && rm -f /tmp/pcs_vps2_status.json"
   & $plink @($baseArgs + @($target, $remoteCmd))
   if ($LASTEXITCODE -ne 0) { throw "No se pudo instalar snapshot VPS2 en el VPS principal." }
   Write-Step "Snapshot VPS2 publicado en el VPS principal."

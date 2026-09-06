@@ -1,5 +1,7 @@
 # Flujos operativos
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 ## Configuracion fiscal internacional (2026-09-05)
 
 Elegir un pais distinto de la empresa no debe copiar su identidad, resolucion

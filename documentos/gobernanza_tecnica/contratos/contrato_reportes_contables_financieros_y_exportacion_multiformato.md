@@ -1,7 +1,15 @@
 # Contrato tecnico: reportes contables, financieros y exportacion multiformato
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El catálogo real se consulta por action=catalogo; la lista de este documento describe familias y no una enumeración inmutable de cada versión.
+- xls es TSV compatible y PDF puede truncar; no confundirlos con un libro XLSX o un detalle completo. Programación persistida no demuestra envío ni ejecución del worker.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -215,3 +223,8 @@ Mensajes relevantes:
 - `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md`
 - `ADR-0001-frontera-multiempresa-empresa-id.md`
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+## Fuentes y aceptación de la revisión
+
+[reportes.go](../../../backend/handlers/reportes.go), [reportes_globales.go](../../../backend/handlers/reportes_globales.go), [reportes_programacion.go](../../../backend/handlers/reportes_programacion.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

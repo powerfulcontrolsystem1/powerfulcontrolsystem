@@ -1,7 +1,15 @@
 # Runbook: reconciliacion documental fiscal y contable externa
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- reconciliar_estados puede procesar envíos. Para reflejar únicamente acuses ya aceptados existe reconciliar_aceptados_local; no intercambiar ambos flujos.
+- Enviado/no_aplica no son aceptación fiscal. Un rechazo final no se reenvía automáticamente y un TrackId pendiente conserva XML original.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Sintomas cubiertos
 
@@ -60,7 +68,7 @@ Aplica al frente documental empresarial compuesto por:
 3. Si facturación quedó con `estado_envio=fallido`, listar `action=reintentos` y confirmar si el item está vencido o listo para reproceso.
 4. Ejecutar `procesar_reintentos` cuando la causa ya haya sido corregida; no reprocesar en bucle si la configuración o el proveedor siguen fallando.
 5. Consultar `action=reconciliacion` para obtener el resumen antes de aplicar cambios automáticos.
-6. Ejecutar `action=reconciliar_estados&aplicar=true` solo cuando el equipo quiera reflejar el ajuste en el estado documental persistido.
+6. Para reparar solo acuses aceptados usar el POST autorizado `action=reconciliar_aceptados_local&aplicar=1`. El POST general `reconciliar_estados` puede despachar; verificar alcance y permiso antes de ejecutarlo.
 7. Si el problema es de acceso, usar `action=acceso` con `id` o `modulo` para confirmar si el bloqueo es por rol y no por ausencia del documento.
 8. Si hay duda sobre la evidencia vigente, revisar `action=versiones` y confirmar que la última versión tenga `estado_documento=vigente`.
 9. Si el flujo declara firma externa o exporte regulatorio, reconciliar además `hash_archivo`, `hash_firma`, fecha de firma y dataset exportado antes de dar por cerrado el incidente.
@@ -86,7 +94,7 @@ Aplica al frente documental empresarial compuesto por:
 ## Indicadores de salida sana
 
 - `validacion_documental_estado=validada`
-- `estado_envio=enviado` o `no_aplica` cuando corresponda por ambiente/configuración
+- `estado_envio=aceptado` o reconciliación desde acuse oficial cuando se requiere aceptación fiscal; `enviado` y `no_aplica` no bastan
 - `cola_reintentos` vacía o sin items vencidos críticos
 - `acceso_permitido=true` para el rol esperado
 - versión vigente visible en historial documental
@@ -102,3 +110,8 @@ Aplica al frente documental empresarial compuesto por:
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md`
 - `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md`
+## Fuentes y aceptación de la revisión
+
+[contrato_facturacion_electronica_y_documentos_transaccionales.md](../contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md), [facturacion_electronica.go](../../../backend/handlers/facturacion_electronica.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

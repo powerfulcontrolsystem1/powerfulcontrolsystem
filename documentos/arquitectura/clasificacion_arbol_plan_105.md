@@ -1,3 +1,7 @@
+> Estado documental: histórico. Clasificación de un árbol de julio; no describe el árbol actual.
+> Fuentes actuales: [incorporacion.md](../desarrollo/incorporacion.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Clasificacion del arbol de trabajo - P105-001
 
 Fecha: 2026-07-22.

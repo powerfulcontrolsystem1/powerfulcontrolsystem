@@ -1,30 +1,19 @@
-# Paquete documental ERP multiempresa
+# Antecedentes del diseño ERP
 
-Fecha: 2026-04-14
-Version: 1.0
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
 
-Este directorio contiene la estructura estandar de documentacion ERP multiempresa del proyecto.
+## Alcance revisado y límites
 
-## Contenido
+- Se retira la presentación de un borrador antiguo como alcance oficial; se preservan IDs y documentos para reconciliación de requisitos.
 
-1. `01_alcance_erp_multiempresa.md`
-   - define alcance, objetivos, actores, reglas base e integraciones.
-2. `02_diseno_tecnico_erp_multiempresa.md`
-   - define arquitectura, modelo de datos, seguridad e integraciones tecnicas.
-3. `03_especificaciones_funcionales_erp_multiempresa.md`
-   - define requisitos funcionales (RF), reglas de negocio (RB) y trazabilidad por proceso.
-4. `04_guia_implementacion_erp_multiempresa.md`
-   - define plan de implementacion por fases, pruebas, despliegue y operacion continua.
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
 
-## Orden recomendado de lectura
+Este paquete conserva los borradores de abril (alcance, diseño, requisitos y fases). No es la entrada vigente ni una aprobación de sus propuestas.
 
-1. Alcance.
-2. Diseno tecnico.
-3. Especificaciones funcionales.
-4. Guia de implementacion.
+Consultar [requisitos actuales](../requisitos/especificacion_y_trazabilidad.md), [arquitectura](../arquitectura/descripcion_arquitectura.md), [contratos](../gobernanza_tecnica/contratos/README.md) y [estado](../estado_actual.md).
 
-## Uso sugerido en comite de revision
+## Fuentes y aceptación de la revisión
 
-- Negocio: validar alcance, procesos y reglas.
-- Tecnologia: validar diseno, seguridad e integraciones.
-- QA/Operacion: validar criterios de prueba, salida y continuidad.
+[especificacion_y_trazabilidad.md](../requisitos/especificacion_y_trazabilidad.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../requisitos/especificacion_y_trazabilidad.md)).

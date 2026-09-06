@@ -10,13 +10,22 @@ import (
 	"github.com/you/pos-backend/secure"
 )
 
-func TestAdminTOTPLoginRequiredForAdminDependsOnGlobalSwitch(t *testing.T) {
-	admin := &dbpkg.Admin{TOTPEnabled: 1, TOTPSecret: strings.Repeat("A", 16)}
-	if adminTOTPLoginRequiredForAdmin(admin, false) {
-		t.Fatal("2FA no debe exigirse cuando el switch global esta apagado")
+func TestAdminTOTPLoginRequiredForAdminMakesGlobalRolesMandatory(t *testing.T) {
+	admin := &dbpkg.Admin{Role: "super_administrador", TOTPEnabled: 1, TOTPSecret: strings.Repeat("A", 16)}
+	if !adminTOTPLoginRequiredForAdmin(admin, false) {
+		t.Fatal("2FA debe exigirse a cuentas globales aunque el switch general este apagado")
 	}
 	if !adminTOTPLoginRequiredForAdmin(admin, true) {
 		t.Fatal("2FA debe exigirse cuando el switch global esta encendido y la cuenta tiene TOTP")
+	}
+}
+
+func TestAdminTOTPConfigurationRequiredForGlobalRoles(t *testing.T) {
+	if !adminTOTPConfigurationRequired(&dbpkg.Admin{Role: "super_administrador"}) {
+		t.Fatal("una cuenta global sin TOTP debe quedar bloqueada hasta configurarlo")
+	}
+	if adminTOTPConfigurationRequired(&dbpkg.Admin{Role: "super_administrador", TOTPEnabled: 1, TOTPSecret: strings.Repeat("A", 16)}) {
+		t.Fatal("una cuenta global con TOTP confirmado no debe requerir configuracion")
 	}
 }
 

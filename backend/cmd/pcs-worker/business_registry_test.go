@@ -31,9 +31,28 @@ func TestProductionRegistryContainsOnlyBusinessHandlers(t *testing.T) {
 }
 
 func TestBusinessSchedulesAreAcceptedByWorkerScheduler(t *testing.T) {
-	for _, schedule := range businessSchedules() {
+	schedules := businessSchedules()
+	fiscalShards := map[string]bool{}
+	for _, schedule := range schedules {
 		if err := platformworker.ValidateScheduleSpec(schedule); err != nil {
 			t.Fatalf("business schedule %s is invalid: %v", schedule.Kind, err)
+		}
+		if schedule.Kind == jobFacturacionRetries {
+			t.Fatal("el trabajo fiscal global no debe programarse porque puede causar inanicion entre empresas")
+		}
+		for i := 0; i < facturacionRetryShardCount(); i++ {
+			if schedule.Kind == facturacionRetryShardKind(i) {
+				fiscalShards[schedule.Kind] = true
+			}
+		}
+	}
+	if len(fiscalShards) != facturacionRetryShardCount() {
+		t.Fatalf("shards fiscales programados: got %d want %d", len(fiscalShards), facturacionRetryShardCount())
+	}
+	registry := businessRegistry(nil, nil)
+	for kind := range fiscalShards {
+		if _, ok := registry[kind]; !ok {
+			t.Fatalf("falta handler para shard fiscal %s", kind)
 		}
 	}
 }

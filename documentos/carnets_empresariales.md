@@ -1,7 +1,16 @@
 # Modulo de carnets empresariales
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La administración y sus tablas se identifican en código y registro HTTP. La presencia del wrapper no sustituye pruebas negativas con usuario, carnet y plantilla de otro tenant.
+- QR, nivel de acceso y estado del carnet son datos de aplicación; no acreditan autorización efectiva de un controlador de acceso físico.
+- Documento, salud/contacto de emergencia y fotos requieren minimización, acceso y retención definidos por la organización.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-05
-Estado: implementado como modulo empresarial profesional
 
 ## Alcance
 
@@ -29,7 +38,7 @@ El modulo permite emitir carnets modernos para empleados, usuarios internos, con
 
 ## Aislamiento multiempresa
 
-Todas las tablas usan `empresa_id` y la ruta administrativa pasa por `WithEmpresaCarnetsPermissions`. El wrapper central valida que el `empresa_id` de URL, cabecera, formulario/multipart y JSON no se contradiga.
+El contrato exige `empresa_id` en los datos; la ruta administrativa pasa por `WithEmpresaCarnetsPermissions`. El wrapper central valida que el `empresa_id` de URL, cabecera, formulario/multipart y JSON no se contradiga.
 
 ## Base de datos
 
@@ -46,3 +55,9 @@ Para produccion se recomienda:
 - Usar vencimiento obligatorio para contratistas y visitantes.
 - Revisar permisos de `carnets` por rol en super administrador.
 - Incluir `carnets` en `licencias.modulos_habilitados` cuando el plan debe controlar este modulo explicitamente.
+
+## Fuentes y aceptación de la revisión
+
+[carnets.html](../web/administrar_empresa/carnets.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

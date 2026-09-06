@@ -1,5 +1,14 @@
 # Email corporativo Mailu
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Los diagnósticos DNS/correo y requisitos de marca fechados en julio/agosto son evidencia histórica; no se ha consultado DNS ni enviado correo en esta revisión.
+- SSO temporal y API interna deben validarse en el stack efectivo. Las menciones a Plan 108 no constituyen un bloqueo global vigente ni una instrucción de compra.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 ## Objetivo
 
 Permitir que cada empresa tenga un correo corporativo propio bajo el dominio
@@ -271,3 +280,9 @@ Antes de activar correo real:
   a la autoridad. Un CMC exige demostrar al menos 12 meses de uso previo; un VMC
   exige que el logo este registrado como marca. El certificado queda ligado a
   ese logo, por lo que no se debe sustituir despues sin reemitirlo.
+
+## Fuentes y aceptación de la revisión
+
+[docker-compose.platform.yml](../deploy/docker-compose.platform.yml), [main.go](../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

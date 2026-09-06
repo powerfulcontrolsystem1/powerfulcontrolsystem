@@ -1,3 +1,7 @@
+> Estado documental: histórico de planificación. No es una hoja de ruta global
+> vigente ni una orden de ejecución. Consultar [estado actual](estado_actual.md)
+> y el contrato del módulo; se conserva el contenido como trazabilidad.
+
 # Plan 102 - Cierre tecnico de preproduccion
 
 Fecha de corte: 2026-07-16  

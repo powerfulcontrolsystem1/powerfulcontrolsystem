@@ -1457,6 +1457,7 @@
         box.innerHTML = state.raspberryPis.map(function (pi) {
           var inactive = String(pi.estado || 'activo').toLowerCase() !== 'activo';
           var online = tunnelOnline(pi);
+          var isDoorSensor = String(pi.uso_tipo || 'domotica').toLowerCase() === 'sensor_puertas';
           var assignedRelays = state.reles.filter(function (rele) {
             return Number(rele.raspberry_id || 0) === Number(pi.id || 0) && String(rele.estado || 'activo').toLowerCase() === 'activo';
           });

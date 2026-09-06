@@ -1,5 +1,14 @@
 # Portal de Terceros y Certificados Tributarios
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La consulta pública usa token y estado permitido; el token concede acceso al documento y debe tratarse como dato restringido, sin copiar URLs completas a logs/tickets.
+- Un certificado emitido localmente no acredita validez legal, firma verificable ni conciliación de todas las retenciones. La aceptación exige origen de valores, integridad y revocación cuando aplique.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
 
 ## Objetivo
@@ -50,3 +59,9 @@ El modulo `portal_terceros_certificados` permite administrar terceros y emitir c
 
 - `cd backend; go test ./... -count=1`
 - Verificacion estatica de HTML y rutas principales.
+
+## Fuentes y aceptación de la revisión
+
+[portal_terceros_certificados.go](../backend/handlers/portal_terceros_certificados.go), [portal_terceros_certificados.go](../backend/db/portal_terceros_certificados.go), [portal_terceros_certificados.html](../web/administrar_empresa/portal_terceros_certificados.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-009, PCS-REQ-013, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

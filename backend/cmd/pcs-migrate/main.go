@@ -86,6 +86,21 @@ func main() {
 	if err := dbpkg.EnsureRuntimeDatabaseRole(ctx, super, runtimeDBUser, runtimeDBPassword); err != nil {
 		log.Fatalf("superadministrador runtime role: %v", err)
 	}
+	backupDBUser := strings.TrimSpace(os.Getenv("PCS_BACKUP_DB_USER"))
+	backupDBPassword := os.Getenv("PCS_BACKUP_DB_PASSWORD")
+	if backupDBUser == "" || backupDBPassword == "" {
+		log.Fatal("PCS_BACKUP_DB_USER and PCS_BACKUP_DB_PASSWORD are required")
+	}
+	if strings.EqualFold(backupDBUser, runtimeDBUser) {
+		log.Fatal("PCS_BACKUP_DB_USER must differ from PCS_RUNTIME_DB_USER")
+	}
+	if err := dbpkg.EnsureBackupDatabaseRole(ctx, empresas, backupDBUser, backupDBPassword); err != nil {
+		log.Fatalf("empresas backup role: %v", err)
+	}
+	if err := dbpkg.EnsureBackupDatabaseRole(ctx, super, backupDBUser, backupDBPassword); err != nil {
+		log.Fatalf("superadministrador backup role: %v", err)
+	}
 	log.Printf("runtime database role verified without DDL privileges: %s", runtimeDBUser)
+	log.Printf("backup database role verified read-only: %s", backupDBUser)
 	log.Print("migrations completed: checksummed platform foundation")
 }

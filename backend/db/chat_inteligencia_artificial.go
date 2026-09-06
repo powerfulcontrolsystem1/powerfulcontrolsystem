@@ -1752,12 +1752,13 @@ func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 // BuildEmpresaAIContextoForQuestion amplía el contexto base con resultados de consultas seguras
 // resueltas por intención, sin permitir SQL libre generado por IA.
 type EmpresaAIContextoPreguntaOptions struct {
-	Modelo            string
-	DBQueryEnabled    bool
-	DBQueryEnabledSet bool
-	DBQueryMaxTables  int
-	DBQueryRows       int
-	DBQueryMaxChars   int
+	DBQueryAllowedTables map[string]bool
+	Modelo               string
+	DBQueryEnabled       bool
+	DBQueryEnabledSet    bool
+	DBQueryMaxTables     int
+	DBQueryRows          int
+	DBQueryMaxChars      int
 }
 
 func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta string, usuarioCreador string, paginaContexto string, modelo ...string) (string, error) {
@@ -1906,6 +1907,9 @@ func buildEmpresaAIFullReadDBContext(dbConn *sql.DB, empresaID int64, pregunta s
 	terms := aiFullReadTerms(pregunta)
 	tables := make([]empresaAIFullReadTable, 0, len(tableNames))
 	for _, name := range tableNames {
+		if opts.DBQueryAllowedTables != nil && !opts.DBQueryAllowedTables[name] {
+			continue
+		}
 		if !isSafePostgresUnquotedIdent(name) {
 			continue
 		}

@@ -1,5 +1,24 @@
 # Estructura del Base de Datos
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Capacidad de colas multiempresa 2026-09-06
+
+Las migraciones ledger `20260906-001-queue-capacity-super-v1` y
+`20260906-001-queue-capacity-business-v1` agregan respectivamente:
+
+- `super_queue_capacity_config`, una fila por carril (`printing`,
+  `product_add`, `fiscal`) con limites por empresa y umbrales de alerta;
+- `pcs_queue_tenant_state`, clave `(queue_name, empresa_id)` para rotar empresas
+  atendidas sin mezclar payloads ni propiedad;
+- indices operativos de estado/fecha/empresa sobre impresion y reintentos
+  fiscales.
+
+La cola de impresion serializa la comprobacion de cupo con un advisory lock por
+`empresa_id`; la cola fiscal conserva leases por documento y selecciona tenants
+por shard. El detalle esta en
+`arquitectura/capacidad_colas_multiempresa.md`.
+
 ## Frontera fiscal 2026-09-05
 
 Sin migraciones: `facturacion_electronica_pais` mantiene empresa+pais;

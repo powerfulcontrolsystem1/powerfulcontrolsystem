@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,6 +29,10 @@ func parsePrinterIDQuery(r *http.Request) (int64, error) {
 
 // EmpresaImpresorasHandler administra impresoras de empresa, asignación por funcionalidad y por producto.
 func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return EmpresaImpresorasHandlerWithCapacity(dbEmp, nil)
+}
+
+func EmpresaImpresorasHandlerWithCapacity(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := dbpkg.EmpresaImpresorasSchemaReady(dbEmp); err != nil {
 			log.Printf("[empresa_impresoras] schema unavailable error: %v", err)
@@ -523,9 +528,18 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				payload.EmpresaID = empresaID
 				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-				id, err := dbpkg.CrearEmpresaImpresoraTrabajo(dbEmp, payload)
+				maxPending := int64(0)
+				if cfg, cfgErr := getQueueCapacityConfigCached(dbSuper, dbpkg.QueueLanePrinting); cfgErr == nil {
+					maxPending = cfg.MaxPendingPerTenant
+				}
+				id, err := dbpkg.CrearEmpresaImpresoraTrabajoConCapacidad(dbEmp, payload, maxPending)
 				if err != nil {
 					log.Printf("[empresa_impresoras] crear trabajo empresa_id=%d error: %v", empresaID, err)
+					if errors.Is(err, dbpkg.ErrEmpresaPrinterQueueCapacity) {
+						w.Header().Set("Retry-After", "30")
+						http.Error(w, "La cola de impresion de esta empresa alcanzo su capacidad; espera a que el agente procese trabajos pendientes", http.StatusTooManyRequests)
+						return
+					}
 					http.Error(w, productosPublicError(err, "Solicitud de impresora inválida."), http.StatusBadRequest)
 					return
 				}

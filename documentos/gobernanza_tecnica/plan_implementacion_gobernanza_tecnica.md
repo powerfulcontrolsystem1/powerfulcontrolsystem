@@ -1,3 +1,7 @@
+> Estado documental: histórico. Hoja de ruta de abril; marco, contratos y runbooks actuales gobiernan cambios nuevos.
+> Fuentes actuales: [marco_documental.md](marco_documental.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan de implementacion de gobernanza tecnica
 
 Fecha: 2026-04-18

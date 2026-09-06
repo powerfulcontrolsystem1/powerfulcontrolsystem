@@ -1,7 +1,15 @@
 # Contrato tecnico: conciliacion bancaria y cierre de periodo contable
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Finanzas valida periodos cerrados en las mutaciones citadas; este control es distinto del módulo cierre_fiscal y no demuestra cobertura automática de todos los módulos.
+- Una coincidencia de extracto y movimiento es conciliación local; no ejecuta transferencia ni sustituye comprobación bancaria.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -196,3 +204,8 @@ Mensajes observables relevantes:
 
 - `ADR-0001-frontera-multiempresa-empresa-id.md`
 - `ADR-0002-postgresql-runtime-canonico-vps.md`
+## Fuentes y aceptación de la revisión
+
+[finanzas.go](../../../backend/handlers/finanzas.go), [finanzas.go](../../../backend/db/finanzas.go), [finanzas_conciliacion_bancaria.go](../../../backend/db/finanzas_conciliacion_bancaria.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

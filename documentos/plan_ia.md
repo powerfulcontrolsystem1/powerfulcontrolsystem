@@ -1,3 +1,7 @@
+> Estado documental: histórico. Planificación de julio con ampliaciones fechadas; pendientes de UAT no se cierran por esta clasificación.
+> Fuentes actuales: [ia_orquestador_empresarial.md](ia_orquestador_empresarial.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan IA
 
 Estado: **planificacion terminada; NO-GO para activar modo agente o ampliar

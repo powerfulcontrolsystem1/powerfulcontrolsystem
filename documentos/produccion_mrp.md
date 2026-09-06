@@ -1,7 +1,16 @@
 # Produccion / MRP
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La reparación local incorpora transacciones, locks y validación de IDs; falta evidencia concurrente PostgreSQL del candidato.
+- El generador MRP usa demanda estimada y stock_actual=0 en las filas generadas; no es una disponibilidad real de inventario. Las sugerencias deben conciliarse con existencias antes de compra/fabricación.
+- La opción de consumir inventario no demuestra que ese descuento esté integrado: consumos registrados y movimiento Kardex son responsabilidades diferentes.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-06-11
-Estado: modulo operativo reforzado
 
 ## Alcance
 
@@ -64,3 +73,9 @@ Todas las tablas del modulo tienen `empresa_id` y las consultas lo filtran de fo
 ## Notas de integracion
 
 Esta primera entrega no descuenta inventario real automaticamente para evitar movimientos contables o de stock sin reglas de costeo confirmadas. El modulo deja listos los campos de producto, lote, costo y cantidades para una siguiente fase de integracion con Kardex, compras y asientos contables.
+
+## Fuentes y aceptación de la revisión
+
+[produccion_mrp.go](../backend/handlers/produccion_mrp.go), [produccion_mrp.go](../backend/db/produccion_mrp.go), [produccion_mrp_test.go](../backend/db/produccion_mrp_test.go), [produccion_mrp.html](../web/administrar_empresa/produccion_mrp.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go), [cierre_reparaciones_produccion_seguridad_2026-09-05.md](cierre_reparaciones_produccion_seguridad_2026-09-05.md).
+
+Requisitos aplicables: PCS-REQ-001 a PCS-REQ-004, PCS-REQ-010, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

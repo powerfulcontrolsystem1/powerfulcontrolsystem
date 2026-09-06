@@ -61,3 +61,14 @@ func TestSuperVPSSnapshotFailureMessageIsGeneric(t *testing.T) {
 		t.Fatalf("snapshot public error must not expose an internal diagnostic: %q", message)
 	}
 }
+
+func TestNormalizeSuperVPSSnapshotCloudProvider(t *testing.T) {
+	for _, provider := range []string{"google_drive", "mega", "onedrive", "dropbox", "box", "pcloud", "backblaze_b2", "s3", "rclone"} {
+		if got := normalizeSuperVPSSnapshotCloudProvider(provider); got != provider {
+			t.Fatalf("provider %q normalized as %q", provider, got)
+		}
+	}
+	if got := normalizeSuperVPSSnapshotCloudProvider("shell;command"); got != "rclone" {
+		t.Fatalf("unexpected provider must fall back to rclone, got %q", got)
+	}
+}

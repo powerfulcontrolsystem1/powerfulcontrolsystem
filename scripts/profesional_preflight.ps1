@@ -302,14 +302,47 @@ try {
     Invoke-Captured -Title "Go test backend completo" -Required -Script {
       Push-Location backend
       try {
-        & go test ./...
+		$testJSON = Join-Path $reportRoot "go-test-full.jsonl"
+		& go test -json ./... 2>&1 | Tee-Object -FilePath $testJSON
         if ($LASTEXITCODE -ne 0) { throw "go test fallo con codigo $LASTEXITCODE" }
+		$skipped = @(Select-String -LiteralPath $testJSON -SimpleMatch '"Action":"skip"')
+		if ($skipped.Count -gt 0) { throw "go test completo omitio $($skipped.Count) pruebas; el candidato no tiene evidencia completa" }
       } finally {
         Pop-Location
       }
     }
+
+	Invoke-Captured -Title "Go race detector" -Required:$Strict -Script {
+	  $goOS = (& go env GOOS).Trim()
+	  if ($goOS -ne "linux") {
+		if ($Strict) { throw "el race detector del candidato debe ejecutarse en Linux; GOOS actual: $goOS" }
+		"Race detector pendiente en Linux"
+		return
+	  }
+	  Push-Location backend
+	  try {
+		& go test -race ./...
+		if ($LASTEXITCODE -ne 0) { throw "go test -race fallo con codigo $LASTEXITCODE" }
+	  } finally {
+		Pop-Location
+	  }
+	}
   } else {
     Add-Section -Title "Go test backend completo" -Body "Omitido en modo rapido. Ejecuta ``.\\scripts\\profesional_preflight.ps1 -Full`` para incluirlo."
+  }
+
+  if ($Strict -or $Full) {
+	Invoke-Captured -Title "Govulncheck backend" -Required -Script {
+	  $govulncheck = Get-Command govulncheck -ErrorAction SilentlyContinue
+	  if ($null -eq $govulncheck) { throw "govulncheck no esta instalado en el entorno de validacion" }
+	  Push-Location backend
+	  try {
+		& $govulncheck.Source ./...
+		if ($LASTEXITCODE -ne 0) { throw "govulncheck encontro vulnerabilidades alcanzables" }
+	  } finally {
+		Pop-Location
+	  }
+	}
   }
 
   Invoke-Captured -Title "git diff --check" -Required -Script {

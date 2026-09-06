@@ -1,5 +1,14 @@
 # Compras avanzadas
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La ruta incorpora EmpresaPurchasesIdempotentMutation además del wrapper de Compras. El handler vigente contiene requisición, cotización, aprobación y recepción; no publica seed_demo.
+- La recepción descrita requiere validación SQL/concurrente del documento completo y de cada ID secundario; los controles locales no equivalen a aceptación sobre una base productiva.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Modulo empresarial integrado al permiso `compras`. No duplica compras/proveedores: amplifica el ciclo existente con requisiciones internas, cotizaciones, aprobaciones y recepcion.
 
 ## Alcance
@@ -45,6 +54,12 @@ demostracion.
 
 ## QA
 
-La prueba operativa en la empresa PCS crea una requisicion real de QA, registra
+El caso de aceptación, sobre datos y entorno autorizados, crea una requisición controlada, registra
 una cotizacion y aprobacion, recibe uno o varios items y valida stock, lotes,
 Kardex e indicadores hasta el estado `recibida_total`.
+
+## Fuentes y aceptación de la revisión
+
+[compras_avanzadas.go](../backend/handlers/compras_avanzadas.go), [compras_avanzadas.go](../backend/db/compras_avanzadas.go), [compras_avanzadas_test.go](../backend/db/compras_avanzadas_test.go), [compras_avanzadas.html](../web/administrar_empresa/compras_avanzadas.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001 a PCS-REQ-004, PCS-REQ-009, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

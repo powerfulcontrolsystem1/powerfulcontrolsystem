@@ -1,8 +1,10 @@
 # SLO/SLA operativo de Powerful Control System
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
 ## Objetivo
 
-Este contrato define las metas minimas para operar la plataforma con calidad empresarial en produccion, staging y procesos de soporte.
+Este documento conserva los objetivos operativos internos del proyecto. No constituye un SLA contractual ni demuestra disponibilidad o recuperabilidad medidas. Su adopción comercial exige responsable, alcance, medición y aprobación específica.
 
 ## SLO principales
 
@@ -32,3 +34,24 @@ Antes de sincronizar o desplegar cambios importantes se debe ejecutar `scripts/r
 ## Escalamiento
 
 Las alertas del sistema deben enviar correo a `powerfulcontrolsystem@gmail.com` para capacidad, disponibilidad, trafico, usuarios/conexiones y errores criticos.
+
+## Definición de medición
+
+- Disponibilidad: minutos de servicio utilizable en el mes divididos por minutos
+  del período observado; registrar zona horaria, rutas/sondas y cualquier
+  exclusión acordada. No deducirla de una sola respuesta de readiness.
+- Latencia: p95 por ruta crítica y ventana, con tamaño de muestra y carga
+  declarados; no mezclar percentiles de rutas distintas sin metodología.
+- Error rate: respuestas 5xx sobre solicitudes observadas de la misma ventana
+  y alcance. Registrar fallos de proveedor y timeouts por separado.
+- RTO: tiempo desde la interrupción declarada hasta recuperación funcional
+  comprobada; RPO: distancia entre incidente y último dato recuperado íntegro.
+- La meta RPO de una hora es condicional al respaldo incremental implementado
+  y ensayado; no se considera disponible por figurar en este documento.
+- Las metas y umbrales se validan en staging/operación. El responsable registra
+  evidencia, ventana y decisión ante incumplimiento; no se publica cumplimiento
+  mensual sin telemetría de ese período.
+
+Ver [incidentes y continuidad](../operacion/incidentes_y_continuidad.md),
+[QA](../calidad/estrategia_verificacion.md) y
+[recuperación](runbooks/runbook_recuperacion_desastre_docker_vps.md).

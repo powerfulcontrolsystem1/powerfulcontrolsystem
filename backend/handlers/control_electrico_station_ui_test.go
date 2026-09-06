@@ -263,6 +263,9 @@ func TestDomoticaConfigurationExposesSafeRaspberryOperations(t *testing.T) {
 			t.Fatalf("domotica configuration missing raspberry operation marker %q", marker)
 		}
 	}
+	if !strings.Contains(string(content), "var isDoorSensor = String(pi.uso_tipo || 'domotica').toLowerCase() === 'sensor_puertas';") {
+		t.Fatal("la tarjeta de controlador debe inicializar el tipo antes de renderizar sus indicadores")
+	}
 }
 
 func TestDomoticaRaspberryConfigHasSafeGPIODiagnostic(t *testing.T) {

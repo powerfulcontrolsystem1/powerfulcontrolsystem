@@ -1,3 +1,7 @@
+> Estado documental: histórico. Línea base y plan de autenticación. Los pendientes siguen como evidencia/aceptación del módulo; no es una instrucción global de ejecución.
+> Fuentes actuales: [contrato_autenticacion_administrativa_y_usuarios_empresa.md](gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan de revisión y reparación del login para producción
 
 Fecha de creación: 2026-08-21  

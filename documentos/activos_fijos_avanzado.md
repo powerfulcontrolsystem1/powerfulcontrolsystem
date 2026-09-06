@@ -1,5 +1,14 @@
 # Activos fijos avanzado
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La vista avanzada y el módulo NIIF/fiscal reutilizan las tablas de activos, depreciaciones y eventos; no son dos libros independientes.
+- La generación mensual y los eventos requieren verificar duplicados por activo/período, precisión monetaria y pertenencia empresarial antes de aceptar operación real.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
 
 ## Alcance
@@ -34,3 +43,11 @@ La fase amplia el submodulo de activos fijos dentro de `contabilidad_colombia_av
 
 - Pruebas unitarias: `go test ./db -run 'TestCalcularEmpresaActivo|TestNormalizeActivoEvento' -count=1`.
 - QA Calipso: registra activo, genera depreciacion del periodo, registra mantenimiento y valida resumen avanzado.
+
+## Fuentes y aceptación de la revisión
+
+[contabilidad_colombia_avanzada.go](../backend/handlers/contabilidad_colombia_avanzada.go), [contabilidad_colombia_avanzada.go](../backend/db/contabilidad_colombia_avanzada.go), [contabilidad_colombia_avanzada_test.go](../backend/db/contabilidad_colombia_avanzada_test.go), [contabilidad_colombia_avanzada.html](../web/administrar_empresa/contabilidad_colombia_avanzada.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).
+
+La prueba sobre otra empresa citada en la guía es histórica; las nuevas pruebas deben usar el entorno y empresa autorizados por el usuario.

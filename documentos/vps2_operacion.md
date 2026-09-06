@@ -1,5 +1,14 @@
 # VPS2 operacion
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Dirección, usuario, fingerprint y estado son inventario histórico de ese equipo; revalidar por canal confiable antes de conexión.
+- SkipDeploy todavía permite otros efectos según flags: sincronización, modo gráfico, contenedores y publicación de snapshot se revisan separadamente. El snapshot no es lectura en vivo.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Documento operativo para el servidor VPS2 local de pruebas.
 
 ## Conexion conocida
@@ -90,3 +99,9 @@ o archivos, ejecutar:
 - No se encontro repositorio en `/home/admin1/powerfulcontrolsystem`; para el
   primer despliegue se debe configurar `PcsVps2RepoUrl` o clonar el proyecto en
   esa ruta.
+
+## Fuentes y aceptación de la revisión
+
+[sync_to_vps2.ps1](../scripts/sync_to_vps2.ps1), [pcs_deployment.local.ps1.example](../scripts/pcs_deployment.local.ps1.example).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

@@ -1,3 +1,13 @@
+## [2026-09-06] Capacidad de colas multiempresa
+
+- [Aislamiento] Impresion, altas de producto y emision fiscal reciben controles
+  por empresa; la presion de un tenant no consume el presupuesto de otro.
+- [Escalabilidad] Worker concurrente y facturacion en shards con rotacion justa.
+- [Operacion] Nuevo panel Super, configuracion persistente, metricas agregadas y
+  alerta de saturacion con el canal y cooldown existentes.
+- [Evidencia] Candidato local. Falta prueba controlada de 1000 empresas en el
+  VPS objetivo, despliegue, proveedor fiscal e impresora fisica.
+
 ## [2026-09-06] Worker: idempotencia estable de tareas programadas
 
 - [Operación] Las tareas periódicas conservan un payload determinista dentro
@@ -3764,3 +3774,12 @@
 - [Seguridad] La modificación no altera datos, permisos, endpoints ni la
   idempotencia de movimientos; refuerza la retención de la auditoría automática
   ya aislada por `empresa_id`.
+
+## [2026-09-06] Seguridad VPS y control de abuso
+
+- Limites HTTP contra abuso, saneamiento de IP y host reenviados, SSH efectivo,
+  HSTS, CSP de Webmail conservada y TLS de venta digital reparados en el VPS.
+- Chat publico: presupuesto adicional por IP y contadores con memoria acotada;
+  auditoria, certificados y Domotica comparten resolucion de IP verificada.
+- [Evidencia y riesgos pendientes](seguridad/revision_vps_2026-09-06.md): el cierre
+  integral permanece abierto por imagenes auxiliares, wildcard, MFA y reinicio.

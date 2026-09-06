@@ -60,6 +60,10 @@
 
   var state = {
     proposals: [],
+	conversationHistory: [],
+	conversationID: createChatConversationID(),
+	historyItems: [],
+	historyScope: 'usuario',
     exportables: [],
     loading: false,
     selectedAttachment: null,
@@ -492,6 +496,19 @@
     var form = document.getElementById(FORM_ID);
     if (!drawer || !form) return;
     drawer.classList.add('ai-chat-simple');
+	var messages = document.getElementById(MESSAGES_ID);
+	if (messages) { messages.setAttribute('role', 'log'); messages.setAttribute('aria-label', 'Conversación con Agente PCS'); messages.setAttribute('aria-live', 'polite'); }
+	var notice = document.getElementById(NOTICE_ID); if (notice) { notice.setAttribute('role', 'status'); notice.setAttribute('aria-live', 'polite'); }
+	var send = form.querySelector('button[type="submit"]');
+	if (send) { send.setAttribute('aria-label', 'Enviar mensaje'); send.title = 'Enviar mensaje'; send.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="m12 3 8 8-1.4 1.4-5.6-5.6V21h-2V6.8l-5.6 5.6L4 11z"/></svg>'; }
+	if (!document.getElementById('aiChatComposerHint')) {
+		var hint = document.createElement('small'); hint.id = 'aiChatComposerHint'; hint.className = 'ai-chat-composer-hint'; hint.textContent = 'Escribe o dicta. Revisa las acciones antes de confirmar.'; form.appendChild(hint);
+	}
+	if (!document.getElementById('aiChatHelpPrompt')) {
+		var help = document.createElement('button'); help.id = 'aiChatHelpPrompt'; help.type = 'button'; help.className = 'ai-chat-help-prompt'; help.textContent = 'Explícame paso a paso';
+		help.addEventListener('click', function () { var input = document.getElementById(INPUT_ID); if (input) { input.value = 'Explícame paso a paso cómo '; input.focus(); } });
+		var body = drawer.querySelector('.ai-chat-body-scroll'); if (body) body.insertBefore(help, body.firstChild);
+	}
 
     if (isEnterpriseAIContext()) {
       var title = document.getElementById('aiChatTitle');
@@ -590,7 +607,7 @@
     messagesEl.innerHTML = '';
     state.proposals = [];
     state.exportables = [];
-    state.conversationID = group.id.indexOf('legacy-') === 0 ? createChatConversationID() : group.id;
+    state.conversationID = state.historyScope === 'empresa' || group.id.indexOf('legacy-') === 0 ? createChatConversationID() : group.id;
     state.conversationHistory = [];
     group.rows.slice().reverse().forEach(function (row) {
       var question = normalize(row.pregunta);
@@ -606,7 +623,7 @@
     });
     var panel = document.getElementById(HISTORY_PANEL_ID);
     if (panel) panel.hidden = true;
-    setNotice('Conversación restaurada. Puedes continuar desde aquí.');
+    setNotice(state.historyScope === 'empresa' ? 'Historial consultado. Si escribes, se guardará un nuevo chat a tu nombre.' : 'Conversación restaurada. Puedes continuar desde aquí.');
   }
 
   function renderChatHistory(data) {
@@ -3166,7 +3183,7 @@
           finalText += updatedFinalText;
         }
         var dictatedFinal = String(finalText || '').trim();
-        var sendCommand = stripSendVoiceCommand(dictatedFinal);
+        var sendCommand = state.conversationMode ? stripSendVoiceCommand(dictatedFinal) : { shouldSend: false, text: dictatedFinal };
         if (sendCommand.shouldSend) {
           finalText = sendCommand.text;
           interimText = '';
@@ -3203,6 +3220,7 @@
       instance.onend = function () {
         setListening(false);
         finalText = '';
+		if (!state.conversationMode && !state.loading) setNotice('Dictado listo. Puedes corregir el texto antes de enviarlo.');
       };
 
       return instance;
@@ -3227,6 +3245,7 @@
       try {
         recognition.start();
         setListening(true);
+		setNotice('Escuchando… tu voz se convierte en texto. Pulsa el micrófono para detener.');
         if (isRobotMic) {
           setNotice('Escuchando desde el micrófono del robot...');
         }
@@ -3470,7 +3489,19 @@
     section.innerHTML = '<div class="ai-enterprise-card-head"><strong>Plan listo para confirmar</strong><span>Riesgo ' + esc(normalize(proposal.risk_level || 'medium')) + '</span></div><p>' + esc(normalize(proposal.resumen)) + '</p><div class="ai-enterprise-state"><div><b>Estado actual</b><span>' + esc(normalize(before.nombre || 'Estacion seleccionada')) + ' · ' + esc(normalize(before.tipo || 'sin tipo')) + '</span></div><div><b>Cambio propuesto</b><span>' + esc(normalize(expected.nombre || '')) + ' · ' + esc(normalize(expected.tipo_estacion || 'hotel')) + '</span></div></div><div class="ai-enterprise-sources"><b>Fuentes</b><span>' + esc(Array.isArray(sources) ? sources.map(normalize).filter(Boolean).join(' · ') : 'Reglas empresariales validadas') + '</span></div><div class="ai-enterprise-actions"><button class="btn primary" type="button" data-enterprise-confirm>Confirmar configuracion</button><button class="btn secondary" type="button" data-enterprise-cancel>Cancelar</button></div>';
     section.dataset.proposalId = normalize(proposal.proposal_id);
     section.dataset.planHash = normalize(proposal.plan_hash);
+	section.dataset.idempotencyKey = enterpriseOpaqueID('idempotency');
+	var stateBlock = section.querySelector('.ai-enterprise-state');
+	if (proposal.tool_name !== 'hotel.configure_room_station' && stateBlock) stateBlock.remove();
+	var confirm = section.querySelector('[data-enterprise-confirm]');
+	if (confirm) confirm.textContent = 'Confirmar acción';
+	var risk = section.querySelector('.ai-enterprise-card-head span');
+	if (risk) risk.textContent = proposal.risk_level === 'high' ? 'Impacto alto' : 'Requiere revisión';
     return section;
+  }
+
+  function isExplanationOnlyQuery(query) {
+	var text = String(query || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+	return /^[¿?¡! ]*como |explica|como puedo|como se |como crear|como agregar|paso a paso|ensename|no se como|como hago/.test(text);
   }
 
   function requestEnterpriseProposal(form) {
@@ -3488,7 +3519,8 @@
   function confirmEnterpriseProposal(section) {
     var button = section.querySelector('[data-enterprise-confirm]');
     if (button) button.disabled = true;
-    return fetch(enterpriseEndpoint('confirm'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-AI-Mode': 'assisted', 'X-PCS-Source': 'ai_drawer_enterprise' }, body: JSON.stringify({ proposal_id: section.dataset.proposalId, plan_hash: section.dataset.planHash, idempotency_key: enterpriseOpaqueID('idempotency') }) }).then(function (res) { if (!res.ok) return parseErrorResponse(res); return res.json(); }).then(function (data) { section.classList.add('is-completed'); section.querySelector('.ai-enterprise-actions').innerHTML = '<span class="ai-enterprise-result">Configuracion aplicada y verificada.</span>'; return data; }).catch(function (err) { if (button) button.disabled = false; throw err; });
+	if (!section.dataset.idempotencyKey) section.dataset.idempotencyKey = enterpriseOpaqueID('idempotency');
+    return fetch(enterpriseEndpoint('confirm'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-AI-Mode': 'assisted', 'X-PCS-Source': 'ai_drawer_enterprise' }, body: JSON.stringify({ proposal_id: section.dataset.proposalId, plan_hash: section.dataset.planHash, idempotency_key: section.dataset.idempotencyKey }) }).then(function (res) { if (!res.ok) return parseErrorResponse(res); return res.json(); }).then(function (data) { section.classList.add('is-completed'); section.querySelector('.ai-enterprise-actions').innerHTML = '<span class="ai-enterprise-result">Acción completada y verificada.</span>'; return data; }).catch(function (err) { if (button) button.disabled = false; throw err; });
   }
 
   function cancelEnterpriseProposal(section) {
@@ -3904,6 +3936,10 @@
     if (!messagesEl || !text) return;
     var item = document.createElement('div');
     item.className = 'ai-chat-message ' + author;
+	var authorLabel = document.createElement('span');
+	authorLabel.className = 'ai-chat-author';
+	authorLabel.textContent = author === 'user' ? 'Tú' : 'Agente PCS';
+	item.appendChild(authorLabel);
     if (messageType === 'error') {
       item.classList.add('error');
     }
@@ -4278,7 +4314,7 @@
     });
   }
 
-  function sendQuery(query, attachment, callbacks) {
+  async function sendQuery(query, attachment, callbacks) {
     var signal = callbacks && callbacks.signal ? callbacks.signal : null;
     var useDocumentMode = isDocumentMode() || (!attachment && shouldAutoUseDocumentMode(query));
     if (useDocumentMode) {
@@ -4466,6 +4502,7 @@
         extracted.meta = normalizeResponseModelMeta(data);
         extracted.usage = data.usage || null;
         extracted.conversationID = normalize(data.conversation_id);
+		extracted.enterpriseProposals = Array.isArray(data.enterprise_proposals) ? data.enterprise_proposals : [];
         return extracted;
       });
   }
@@ -5118,7 +5155,12 @@
       } else {
         appendMessage('assistant', result.clean, result && result.document ? 'document' : null, result.proposal, result && result.meta ? result.meta : null);
       }
-      if (!isPublicPortalContext() && !isSuperContext() && (looksLikeHotelConfiguration(query) || looksLikeProductCreation(query))) {
+	  if (result && result.enterpriseProposals && result.enterpriseProposals.length) {
+		var proposalHost = document.getElementById(MESSAGES_ID);
+		result.enterpriseProposals.forEach(function (proposal) { if (proposalHost) proposalHost.appendChild(createEnterpriseProposalCard(proposal)); });
+		scrollChatToBottom();
+	  }
+      if (!(result && result.enterpriseProposals && result.enterpriseProposals.length) && !isExplanationOnlyQuery(query) && !isPublicPortalContext() && !isSuperContext() && (looksLikeHotelConfiguration(query) || looksLikeProductCreation(query))) {
         var enterpriseMessages = document.getElementById(MESSAGES_ID);
         if (enterpriseMessages) {
           enterpriseMessages.appendChild(looksLikeHotelConfiguration(query) ? createEnterpriseHotelForm(query) : createEnterpriseProductForm(query));

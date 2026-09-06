@@ -1,7 +1,15 @@
 # Estandares de cambio seguro
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- AGENTS.md establece la lectura inicial y PostgreSQL único. Compatibilidad legacy no permite DDL en handlers ni reintroducir otro motor.
+- La validación se acredita con herramientas y pruebas reproducibles; disponer de editor gráfico no es requisito para el cambio.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: obligatorio
 
 ## Principios base
 
@@ -86,19 +94,19 @@ Leer ademas:
 
 ### Cambio de backend
 
-- diagnostico del editor sin errores en archivos tocados.
+- validación estática de los archivos afectados sin errores en archivos tocados.
 - pruebas focalizadas del modulo si existen.
 - compilacion o smoke test del conjunto afectado.
 
 ### Cambio de base de datos
 
-- diagnostico del editor sin errores.
+- validación estática de los archivos afectados sin errores.
 - prueba de lectura/escritura del modulo afectado.
 - validacion de compatibilidad con PostgreSQL cuando aplique.
 
 ### Cambio de frontend critico
 
-- diagnostico del editor sin errores.
+- validación estática de los archivos afectados sin errores.
 - validacion de navegacion y parametros minimos.
 - si el flujo depende de backend, confirmar contrato o pruebas del backend correspondiente.
 
@@ -111,7 +119,7 @@ Cuando el cambio crea o modifica un flujo tecnico, actualizar en la misma iterac
 3. `documentos/matriz_roles_permisos_pos_multiempresa.md` si cambia permisos o visibilidad.
 4. `documentos/descripcion_de_archivos` si se crean, cambian o eliminan archivos.
 5. `documentos/historial_de_cambios`.
-6. `CHANGELOG.md`.
+6. `documentos/CHANGELOG.md`; el changelog raíz puede remitir al detalle.
 
 ## Guardrails especificos para Codex
 
@@ -120,3 +128,19 @@ Cuando el cambio crea o modifica un flujo tecnico, actualizar en la misma iterac
 - no introducir dependencias externas en Go sin autorizacion explicita y justificacion.
 - no mover logica critica a `main.go`; mantener el arranque conciso.
 - no documentar una ruta como estable si aun no esta registrada o validada.
+
+## Gobierno documental vigente
+
+Leer primero el [contexto general](../contexto_general_del_sistema.md), después
+el contexto específico y las fuentes del área. Aplicar el
+[marco documental](marco_documental.md) y
+[requisitos/aceptación](../requisitos/especificacion_y_trazabilidad.md).
+Los planes e informes históricos no autorizan ejecución. Actualizar las fuentes
+principales, regenerar el catálogo y revisar enlaces; no acumular cada cambio
+en los contextos de entrada. El catálogo no sustituye la revisión semántica.
+
+## Fuentes y aceptación de la revisión
+
+[AGENTS.md](../../AGENTS.md), [estrategia_verificacion.md](../calidad/estrategia_verificacion.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../requisitos/especificacion_y_trazabilidad.md)).

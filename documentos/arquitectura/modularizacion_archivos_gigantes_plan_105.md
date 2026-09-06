@@ -1,3 +1,7 @@
+> Estado documental: histórico. Medición y propuesta de modularización de julio; repetir medición al planificar una extracción.
+> Fuentes actuales: [descripcion_arquitectura.md](descripcion_arquitectura.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Inventario de modularizacion - P105-018
 
 Fecha de linea base: 2026-07-22. Medicion: lineas fisicas de Go bajo

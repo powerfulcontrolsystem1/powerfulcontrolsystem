@@ -1,127 +1,85 @@
-# Contrato tecnico: checkout publico de licencias
+# Contrato técnico: checkout público de licencias
 
-Fecha: 2026-04-30
-Estado: vigente
+Estado: Vigente. Responsable: Ingeniería de pagos y QA. Revisión documental: 2026-09-05.
 
-## Alcance
+## Alcance revisado y límites
 
-Este contrato cubre el flujo publico de checkout de licencias administrativas por Epayco y Wompi, incluyendo creacion de transaccion, retorno, polling, webhook, activacion de licencia y correo de activacion.
+- Se corrigió el fallback real classic_js después de comprobar el handler y el consumidor HTML; se retiró la instrucción obsoleta de POST a checkout.php.
 
-Para Epayco, el flujo preferido es Smart Checkout v2. Si Smart Checkout no devuelve token y la configuracion tiene `epayco.customer_id` mas `epayco.checkout_key`/`epayco.p_key`, el backend puede entregar un formulario clasico firmado para POST directo a `https://secure.payco.co/checkout.php`.
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
 
-Las credenciales no son intercambiables: Smart Checkout v2 usa `PUBLIC_KEY` + `PRIVATE_KEY` API de Apify, mientras que el checkout estandar usa `P_CUST_ID_CLIENTE` + `P_KEY`. El backend no debe tratar una `P_KEY` clasica como `private_key` API.
+## Alcance y rutas
 
-Para Wompi en pago de licencias, el flujo preferido es Web Checkout hospedado mediante formulario GET a `https://checkout.wompi.co/p/`, con referencia unica, monto en centavos, moneda `COP` y `signature:integrity` SHA256 construida como `reference + amount_in_cents + currency + integrity_key`. El flujo directo Nequi se conserva como compatibilidad, pero la pantalla publica de licencia debe presentar Wompi como checkout general para que el cliente elija Nequi, PSE o tarjeta dentro de Wompi.
+Licencias administrativas por Epayco/Wompi. La venta pública empresarial tiene
+su [contrato propio](contrato_venta_publica_empresarial_por_empresa.md).
 
-## Rutas implicadas
+| Entrada | Propósito |
+| --- | --- |
+| GET /api/public/licencias/payment_methods | Disponibilidad calculada desde configuración |
+| GET /api/public/licencias/checkout_summary | Resumen calculado en servidor |
+| POST /epayco/create_transaction | Smart Checkout o fallback estándar |
+| POST /wompi/create_checkout | Web Checkout hospedado |
+| POST /wompi/create_transaction_nequi | Compatibilidad con pago Nequi directo |
+| GET /epayco/transaction_status y /wompi/transaction_status | Consulta y reconciliación del pago esperado |
+| POST /epayco/webhook y /wompi/webhook | Confirmación validada del proveedor |
 
-- `GET /api/public/licencias/payment_methods`
-- `POST /epayco/create_transaction`
-- `GET /epayco/transaction_status`
-- `POST /epayco/webhook`
-- `POST /wompi/create_checkout`
-- `POST /wompi/create_transaction_nequi`
-- `GET /wompi/transaction_status`
-- `POST /wompi/webhook`
-- frontend de apoyo: `web/pagar_licencia.html`, `web/epayco/respuesta.html`, `web/epayco/pago_exitoso.html`
+## Entrada, autoridad e idempotencia
 
-## Entradas obligatorias
+`licencia_id` identifica el producto. `empresa_id`, cuando aplica, debe coincidir
+con el contexto de la orden. Descuento, asesor, bundle y adicionales pasan por
+las reglas comerciales del servidor. El navegador no decide importe, vigencia,
+moneda ni estado aprobado. El flujo de creación usa el mecanismo durable
+`beginPaymentCheckoutIdempotency`; ante resultado incierto se consulta la
+operación original antes de generar otro cobro.
 
-### Creacion de transaccion
+`cantidad` vale uno por defecto y respeta el máximo global (cinco inicial,
+configurable entre uno y 24). Solo aplica a la licencia individual; bundles,
+adicionales y licencias gratuitas/de prueba mantienen una unidad. `quantity`
+y `duration_total_days` del resumen describen lo que se cobra y activa.
 
-- `licencia_id`: obligatorio.
-- `empresa_id`: obligatorio cuando el checkout esta asociado a una empresa concreta.
+## Respuestas por proveedor
 
-### Polling de estado
+Epayco intenta Smart Checkout v2. Si no está listo o falla y el estándar está
+configurado, devuelve `checkout_type=classic_js`, `checkout_script_url`,
+`checkout_config` y `checkout_data`. El navegador carga el script permitido y
+abre el checkout con esos objetos. La ruta actual no devuelve `classic_form`:
+el helper heredado de formulario no demuestra uso en la ruta activa. `P_KEY`
+permanece en backend para validar la confirmación; no se publica en el formulario.
+Las credenciales API de Smart Checkout no son la contraseña de la cuenta ni
+la clave clásica de confirmación.
 
-- `id` o `reference`: al menos uno para identificar el pago.
-- `licencia_id`: obligatorio cuando el frontend conoce el checkout esperado.
-- `empresa_id`: obligatorio cuando el frontend conoce la empresa esperada.
+Wompi devuelve formulario GET hospedado, referencia única, COP, importe en
+centavos y firma de integridad calculada en servidor. El estado del navegador
+no activa una licencia. Llaves, modo y consulta deben corresponder al mismo
+ambiente. No usar el contrato Nequi de venta pública como especificación de
+este checkout general.
 
-## Entradas opcionales
+## Estados, efectos y fallos
 
-- `customer_email`
-- `discount_code`
-- `asesor_id` (codigo de asesor comercial)
+`PENDING`, `APPROVED`, `DECLINED` y `ERROR` describen el pago; aprobación es
+monótona frente a callbacks tardíos. La confirmación valida firma, referencia,
+importe, moneda y ambiente contra el registro de `pagos_epayco`/`pagos_wompi`.
+Webhook y consulta pueden reconciliar licencia/notificación, por lo que la
+consulta de estado no es una lectura sin efectos locales.
 
-## Salidas y estados
+Un error de configuración puede devolver 409; un pago inexistente 404 y un
+contexto empresarial/licencia incompatible 409. No convertir un timeout o
+error externo en aprobación. El correo fallido se reconcilia sin cobrar otra vez.
+Las URLs de retorno provienen de la configuración canónica, no de Host/Origin
+aportados por el cliente. El esquema se prepara mediante `pcs-migrate`.
 
-Estados funcionales esperados:
+## Aceptación
 
-- `PENDING`
-- `APPROVED`
-- `DECLINED`
-- `ERROR`
+Validar creación y replay, callback duplicado y tardío, firmas inválidas,
+importes/ambientes cruzados, empresa/licencia ajena, cantidad y correo pendiente.
+Guardar candidato, entorno, referencia minimizada y resultado; no payloads
+privados. La [matriz de pagos](contrato_matriz_pagos_reales.md) define la
+aceptación externa y el [runbook](../runbooks/runbook_checkout_licencias.md)
+orienta diagnóstico. Los resultados anteriores permanecen en el
+[antecedente](../../historico/2026-09-05/checkout_licencias_antes_revision.md).
 
-Errores de contrato esperados:
+## Fuentes y aceptación de la revisión
 
-- `400` por parametros insuficientes o invalidos.
-- `404` si el pago no existe.
-- `409` si el pago resuelto no coincide con la `empresa_id` o `licencia_id` esperadas.
-- `409` si Smart Checkout de Epayco falla y el fallback clasico no puede construirse por falta de `epayco.customer_id` o `epayco.checkout_key`/`epayco.p_key`.
+[payments_handlers.go](../../../backend/handlers/payments_handlers.go), [pagar_licencia.html](../../../web/pagar_licencia.html).
 
-### Respuesta Epayco con fallback clasico
-
-Cuando aplica fallback clasico, `POST /epayco/create_transaction` puede responder:
-
-- `checkout_type: "classic_form"`
-- `checkout_url: "https://secure.payco.co/checkout.php"`
-- `checkout_form.action`: URL segura de Epayco para POST.
-- `checkout_form.method`: `POST`.
-- `checkout_form.fields`: campos firmados requeridos por Epayco.
-- `mode`: modo efectivo del fallback clasico.
-- `mode_source`: origen del modo clasico; para credenciales reales debe ser `classic_credentials`.
-
-El frontend debe crear un formulario temporal y enviarlo por POST. No debe abrir esa URL con GET.
-
-## Invariantes
-
-1. Un pago no puede activar ni confirmar una licencia de otra empresa.
-2. El frontend debe reenviar `empresa_id` y `licencia_id` cuando ya conoce el checkout esperado.
-3. El backend debe validar ese contexto esperado antes de dar por bueno el polling.
-4. El correo de activacion debe resolver la empresa por alcance logico, no solo por el id fisico de la fila.
-5. Webhook y polling deben ser idempotentes respecto a activacion de licencia y envio de correo.
-6. El fallback clasico de Epayco debe usar POST firmado a `https://secure.payco.co/checkout.php`.
-7. El sistema no debe redirigir al usuario por GET a `https://checkout.epayco.co/checkout.php`, porque ese flujo puede devolver XML `AccessDenied`.
-8. Los logs o `raw_payload` no deben persistir `p_key` sin enmascarar.
-9. El modo del fallback clasico debe resolverse con las credenciales clasicas (`customer_id` + `P_KEY`) y no heredar automaticamente el modo de Smart Checkout; en produccion debe emitir `p_test_request=FALSE` y en pruebas `p_test_request=TRUE`.
-10. Smart Checkout solo se considera listo cuando existe `public_key` y una `private_key` API valida. El checkout estandar solo se considera listo cuando existe `customer_id` y `checkout_key`/`p_key`.
-11. Wompi Web Checkout solo se considera listo cuando existen `wompi.public_key` y `wompi.integrity_key`; `wompi.private_key` queda reservada para API directa o consultas que la requieran.
-12. El frontend no debe pedir celular Nequi en el checkout publico de licencia; Wompi debe abrirse como checkout hospedado para que el cliente seleccione el medio de pago.
-13. Una pasarela de licencias con credenciales completas queda habilitada por defecto; `epayco.enabled=0` o `wompi.enabled=0` solo actuan como apagado explicito desde super administrador.
-
-## Side effects
-
-- persistencia en `pagos_epayco` o `pagos_wompi`
-- activacion o actualizacion de licencia
-- escritura de marcas de correo en `raw_payload`
-- envio de correo de activacion cuando corresponda
-
-## Reglas de compatibilidad
-
-- los helpers de pagos deben tolerar saneamiento de esquema cuando falten tablas o columnas de la capa de pagos.
-- el flujo debe mantenerse compatible con PostgreSQL como runtime canonico.
-
-## Evidencia tecnica minima
-
-- pruebas focalizadas del handler de pagos del checkout.
-- diagnostico del editor limpio en frontend y backend tocados.
-- validacion de contexto esperado en polling cuando el cambio afecte empresa/licencia.
-- prueba del formulario clasico firmado y saneamiento de `p_key` cuando el cambio afecte Epayco.
-
-## ADRs relacionados
-
-- `ADR-0001-frontera-multiempresa-empresa-id.md`
-- `ADR-0002-postgresql-runtime-canonico-vps.md`
-
-## Runbook relacionado
-
-- `documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md`
-# Cantidad de períodos
-
-Los endpoints `GET /api/public/licencias/checkout_summary`,
-`POST /wompi/create_checkout`, `POST /epayco/create_transaction` y
-`POST /licencias/activar_sin_pago` aceptan `cantidad` opcional. Si falta, su
-valor es `1`. La respuesta `summary` expone `quantity` y
-`duration_total_days`; el backend rechaza valores por encima del límite global,
-cantidades para bundles/adicionales y más de una unidad gratuita.
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

@@ -230,7 +230,7 @@ func (c *SelectorAIChatController) ConsultarHandler(w http.ResponseWriter, r *ht
 		return
 	}
 	system := "Eres el asistente del selector de empresas de PCS. Responde solo lo preguntado, en español claro, usando exclusivamente los resúmenes autorizados. No ejecutes acciones, no inventes empresas ni reveles IDs, NIT, secretos, credenciales o información de empresas no incluidas. Cuando el usuario pida operar una empresa, indícale que debe abrirla primero.\n\n" + buildAIAssistantModeInstruction(payload.ModoAsistente) + "\n\n" + context
-	answer, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPromptContext(r.Context(), model, payload.Pregunta, payload.Historial, system)
+	answer, promptTokens, completionTokens, err := c.base.generateResponseWithSystemPromptContext(r.Context(), model, payload.Pregunta, payload.Historial, system, empresaAISafetyIdentifier(account))
 	if err != nil {
 		http.Error(w, publicAIProviderError(err), http.StatusBadGateway)
 		return

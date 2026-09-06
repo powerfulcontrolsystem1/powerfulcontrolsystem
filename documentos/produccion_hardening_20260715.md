@@ -1,3 +1,7 @@
+> Estado documental: histórico. Registro de controles locales de julio; no prueba configuración del VPS actual.
+> Fuentes actuales: [estado_actual.md](estado_actual.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Endurecimiento de despliegue - 2026-07-15
 
 ## Controles incorporados

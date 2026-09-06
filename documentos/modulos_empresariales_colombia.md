@@ -1,5 +1,14 @@
 # Modulos empresariales Colombia
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Bancos/pagos, KYC, gestión documental, contratos y calidad comparten registros y metadata. Guardar un estado no ejecuta un pago bancario, consulta una lista LAFT ni valida una firma externa.
+- Las fases fechadas son antecedentes de implementación. La eficacia regulatoria, la entrega externa y la aceptación por sector necesitan casos específicos. seed_demo solo corresponde a un entorno aislado autorizado.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
 
 ## Alcance
@@ -230,3 +239,9 @@ Se agregan acciones masivas controladas:
 - Limite de 200 registros por operacion para proteger el backend y evitar cambios accidentales demasiado amplios.
 - Cada registro actualizado deja bitacora `accion_masiva` con estado anterior, estado nuevo, usuario y detalle operativo.
 - La pantalla comun incorpora seleccion por fila, seleccion total visible y contador de registros seleccionados.
+
+## Fuentes y aceptación de la revisión
+
+[modulos_empresariales_colombia.go](../backend/db/modulos_empresariales_colombia.go), [modulos_empresariales_colombia.go](../backend/handlers/modulos_empresariales_colombia.go), [modulo_colombia_admin.js](../web/js/modulo_colombia_admin.js).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

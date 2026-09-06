@@ -1,7 +1,15 @@
 # Logistica avanzada / WMS de bodega, picking, packing y despachos
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El código local incorpora transacciones y locks para órdenes, items, avances y despachos según el cierre de seguridad del 2026-09-05.
+- WMS sigue siendo una capa operativa: el avance picking/packing no demuestra movimiento de existencias ni entrega física. La integración de inventario requiere un contrato y prueba específicos.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
-Estado: implementado
 
 ## Alcance
 
@@ -37,3 +45,9 @@ Todas las tablas incluyen `empresa_id`. La API queda protegida por `WithEmpresaW
 ## Pruebas
 
 Se agregan pruebas unitarias en `backend/db/logistica_wms_test.go` para normalizacion de codigos, calculo de progreso de picking/packing e inferencia de estado de item.
+
+## Fuentes y aceptación de la revisión
+
+[logistica_wms.go](../backend/handlers/logistica_wms.go), [logistica_wms.go](../backend/db/logistica_wms.go), [logistica_wms_test.go](../backend/db/logistica_wms_test.go), [logistica_wms.html](../web/administrar_empresa/logistica_wms.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go), [cierre_reparaciones_produccion_seguridad_2026-09-05.md](cierre_reparaciones_produccion_seguridad_2026-09-05.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

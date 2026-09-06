@@ -49,6 +49,14 @@ groups:
         annotations:
           summary: "Cola durable PCS acumulada"
           description: "El job {{ $labels.job }} mantiene mas de 100 elementos listos durante 10 minutos."
+      - alert: PCSCarrilOperativoSaturado
+        expr: pcs_queue_lane_saturation_percent{job=~"pcs-backend|pcs-staging-backend"} >= 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Carril operativo PCS saturado"
+          description: "El carril {{ $labels.lane }} del job {{ $labels.job }} permanece en {{ $value | printf \"%.1f\" }}% del umbral configurado."
       - alert: PCSLeaseDurableVencido
         expr: pcs_async_jobs_expired_leases_total{job=~"pcs-backend|pcs-staging-backend"} > 0 or pcs_outbox_expired_leases_total{job=~"pcs-backend|pcs-staging-backend"} > 0
         for: 2m

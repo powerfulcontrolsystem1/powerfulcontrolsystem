@@ -1,7 +1,15 @@
 # Contrato tecnico: autenticacion administrativa y usuarios de empresa
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El acceso super exige TOTP confirmado según la política del servidor; identificar un correo reservado no basta para conceder una sesión privilegiada.
+- La recuperación debe evitar enumeración. Los códigos descritos se interpretan por action, sin generalizar 404 a la solicitud pública de recuperación.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -143,7 +151,7 @@ Este contrato cubre el acceso administrativo por Google o correo, el registro y 
 ## Reglas de compatibilidad
 
 - el flujo administrativo debe funcionar igual en local y VPS sin depender de `rememberedEmail`, `login_hint` persistido o diferencias entre `localhost`, dominio raiz y `www`.
-- las columnas de seguridad de `administradores` y `users` deben autorregularizarse cuando falten en esquemas legacy compatibles.
+- las columnas de seguridad deben prepararse con migraciones versionadas mediante `pcs-migrate`; un handler no autorrepara el esquema.
 - las URIs publicas de OAuth deben respetar el host canónico y no mezclar `www.powerfulcontrolsystem.com` con `powerfulcontrolsystem.com`.
 
 ## Evidencia tecnica minima
@@ -161,3 +169,16 @@ Este contrato cubre el acceso administrativo por Google o correo, el registro y 
 ## Runbooks relacionados
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md`
+## Fuentes y aceptación de la revisión
+
+[auth_admin_handlers.go](../../../backend/handlers/auth_admin_handlers.go), [usuarios_empresa.go](../../../backend/handlers/usuarios_empresa.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).
+
+## Defensa HTTP e IP — 2026-09-06
+
+En el VPS con Nginx directamente expuesto, el borde reemplaza cabeceras IP/host
+recibidas del cliente y aplica límites por IP a login, registro y recuperación.
+Backend resuelve la IP desde el socket y recorre únicamente proxies confiables.
+El acceso legítimo se comprobó visualmente; entró sin OTP y por ello el MFA del
+artefacto productivo sigue siendo un hallazgo abierto. [Evidencia](../../seguridad/revision_vps_2026-09-06.md).

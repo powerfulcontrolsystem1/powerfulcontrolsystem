@@ -1,7 +1,16 @@
 # Contrato tecnico: permisos_contexto y wrappers de /api/empresa
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El listado de ocho wrappers y siete módulos es el núcleo original, no el catálogo completo actual; backend/main.go y empresa_permisos.go contienen las ampliaciones.
+- La aprobación trazable se exige en roles_de_usuario y permisos_empresa; usuarios se rige por permisos, tenant y auditoría sin pedir el código adicional.
+- La auditoría genérica posterior al handler no garantiza atomicidad con el negocio. El reporte local de reparaciones es evidencia separada.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -188,7 +197,7 @@ Orden de prioridad:
 
 Aplica solo al modulo `seguridad` cuando la accion efectiva es `C`, `U`, `D` o `A` y se toca:
 
-- `/api/empresa/usuarios`, excepto `action=reenviar_confirmacion` o `action=activar`
+- `/api/empresa/permisos_empresa` en cualquier método distinto de `GET`
 - `/api/empresa/roles_de_usuario` en cualquier metodo distinto de `GET`
 
 ## Side effects obligatorios
@@ -222,3 +231,9 @@ Aplica solo al modulo `seguridad` cuando la accion efectiva es `C`, `U`, `D` o `
 - `documentos/api/ayuda_apis.md`
 - `documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md`
 - `documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md`
+
+## Fuentes y aceptación de la revisión
+
+[empresa_permisos.go](../../../backend/handlers/empresa_permisos.go), [main_empresa_routes_security_test.go](../../../backend/main_empresa_routes_security_test.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

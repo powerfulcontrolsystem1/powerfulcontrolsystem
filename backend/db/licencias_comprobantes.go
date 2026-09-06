@@ -29,9 +29,6 @@ func ListEmpresaLicenciaPagos(dbConn *sql.DB, empresaID int64, limit int) ([]Emp
 	if limit <= 0 || limit > 100 {
 		limit = 50
 	}
-	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
-		return nil, err
-	}
 	rows, err := querySQLCompat(dbConn, `SELECT id, proveedor, licencia_id, licencia_nombre, referencia, transaccion_id, estado, fecha_creacion
 		FROM (
 			SELECT p.id, 'wompi' AS proveedor, COALESCE(p.licencia_id, 0) AS licencia_id,
@@ -79,9 +76,6 @@ func GetEmpresaLicenciaPago(dbConn *sql.DB, empresaID int64, proveedor string, p
 	table, ok := licenciaPaymentTable(proveedor)
 	if !ok {
 		return nil, fmt.Errorf("proveedor no permitido")
-	}
-	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
-		return nil, err
 	}
 	row := queryRowSQLCompat(dbConn, fmt.Sprintf(`SELECT p.id, ?, COALESCE(p.licencia_id, 0),
 		COALESCE(NULLIF(l.nombre, ''), 'Licencia del sistema'), COALESCE(p.reference, ''),

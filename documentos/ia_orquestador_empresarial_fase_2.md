@@ -1,3 +1,7 @@
+> Estado documental: histórico. Diseño de fase anterior: la exclusividad de escritura hotelera fue sustituida por el catálogo cerrado actual; sus controles de minimización se integran en el contrato principal.
+> Fuentes actuales: [ia_orquestador_empresarial.md](ia_orquestador_empresarial.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # IA empresarial - fase 2 de gobierno de datos
 
 Esta fase amplía el contrato definido en `ia_orquestador_empresarial.md` sin

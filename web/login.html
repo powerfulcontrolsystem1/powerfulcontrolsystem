@@ -11,14 +11,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/png" href="/img/pwa-icon-192.png">
   <link rel="apple-touch-icon" href="/img/pwa-icon-192.png">
-  <script>
-    window.__pcsInstallPromptEvent = null;
-    window.addEventListener("beforeinstallprompt", function(event){
-      event.preventDefault();
-      window.__pcsInstallPromptEvent = event;
-      window.dispatchEvent(new CustomEvent("pcs:beforeinstallprompt"));
-    });
-  </script>
+  <script src="/js/login_bootstrap.js?v=20260906-csp"></script>
   <link rel="stylesheet" href="/estilos.css?v=20260610-login-password-dark">
   <script src="/menu.js"></script>
 </head>
@@ -77,7 +70,7 @@
           <div class="form-actions login-form-actions">
             <button id="emailLoginBtn" class="btn login-email-submit" type="submit">Iniciar por correo</button>
           </div>
-          <div id="adminLoginRecaptcha" class="form-help" style="display:none"></div>
+          <div id="adminLoginRecaptcha" class="form-help is-hidden"></div>
           <div class="login-inline-links">
             <a href="/registrar_nuevo_usuario_administrador.html" id="registerLink">Registrarse</a>
             <a href="#" id="forgotLink">¿Olvidó su contraseña?</a>
@@ -97,7 +90,7 @@
             <button id="forgotPasswordBtn" class="btn" type="submit">Enviar recuperación</button>
             <button id="backToLoginLink" class="btn secondary" type="button">Volver al login</button>
           </div>
-          <div id="adminForgotRecaptcha" class="form-help" style="display:none"></div>
+          <div id="adminForgotRecaptcha" class="form-help is-hidden"></div>
           <div id="forgotPasswordMessage" class="form-help auth-message is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         </form>
         <form class="form auth-alt-form is-hidden" id="resetPasswordForm" autocomplete="on" novalidate>
@@ -125,7 +118,7 @@
             <button id="resetPasswordBtn" class="btn" type="submit">Restablecer contraseña</button>
             <button id="backFromResetLink" class="btn secondary" type="button">Volver al login</button>
           </div>
-          <div id="adminResetRecaptcha" class="form-help" style="display:none"></div>
+          <div id="adminResetRecaptcha" class="form-help is-hidden"></div>
           <div id="resetPasswordMessage" class="form-help auth-message is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         </form>
       </div>

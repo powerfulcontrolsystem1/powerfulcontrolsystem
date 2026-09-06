@@ -1,3 +1,19 @@
+# agente_backend_db.agent
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.
+- Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
+> Alcance vigente de coordinación: según [AGENTS](../../AGENTS.md),
+> los frentes se aplican como checklist interno. Toda instrucción de delegar o
+> activar especialistas en este documento solo aplica cuando el usuario pide
+> explícitamente agentes/subagentes. No obliga a crearlos por el tipo de tarea.
+
 ## agente backend db
 
 Rol:
@@ -44,3 +60,9 @@ Regla de rechazo de cierre sin evidencia:
 - `agente_backend_db` no debe devolver un trabajo como cerrado si no puede explicar la causa tecnica concreta.
 - Si no hay archivos, rutas, tablas o contrato afectados claramente identificados, debe devolver el caso a `agente_go` como analisis incompleto.
 - Si existe riesgo residual relevante y no queda explicitado, el trabajo no se considera cerrable.
+
+## Fuentes y aceptación de la revisión
+
+[AGENTS.md](../../AGENTS.md), [contexto_general_del_sistema.md](../../documentos/contexto_general_del_sistema.md), [contexto_codex.md](../../documentos/contexto_codex.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../documentos/requisitos/especificacion_y_trazabilidad.md)).

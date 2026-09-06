@@ -46,6 +46,12 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Documentation validator tests
+        run: node --test tools/docs_catalog.test.mjs
+
+      - name: Documentation catalog and maintained links
+        run: node tools/docs_catalog.mjs --check
+
       - name: Professional preflight
         shell: pwsh
         run: ./scripts/profesional_preflight.ps1 -Full -SkipDockerConfig -SkipOpenAPI

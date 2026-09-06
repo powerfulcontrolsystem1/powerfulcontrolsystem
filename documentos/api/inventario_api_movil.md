@@ -2,7 +2,7 @@
 
 Generado por `tools/auditar_api_movil.mjs`. Es un inventario de rutas registradas; no sustituye las pruebas de autorizacion, tenant y negocio.
 
-Total de rutas detectadas: **368**.
+Total de rutas detectadas: **374**.
 
 ## api_general
 
@@ -18,6 +18,9 @@ Total de rutas detectadas: **368**.
 | `/api/internal/email_corporativo/autologin` | `backend/main.go` |
 | `/api/onlyoffice/callback` | `backend/main.go` |
 | `/api/onlyoffice/file` | `backend/main.go` |
+| `/api/selector/chat_con_ia/consultar` | `backend/main.go` |
+| `/api/selector/chat_con_ia/modelo_preferido` | `backend/main.go` |
+| `/api/selector/chat_con_ia/modelos` | `backend/main.go` |
 | `/api/user/configuracion` | `backend/main.go` |
 | `/api/voice_stream/status` | `backend/main.go` |
 | `/api/voice_stream/tts` | `backend/main.go` |
@@ -52,6 +55,7 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/chat_con_inteligencia_artificial/consultar_con_adjunto` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/chat_con_inteligencia_artificial/consultar_stream` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/chat_con_inteligencia_artificial/historial` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
+| `/api/empresa/chat_con_inteligencia_artificial/memoria` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/chat_con_inteligencia_artificial/modelo_preferido` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/chat_con_inteligencia_artificial/modelos` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/chat_documentos/compartir_email` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
@@ -159,6 +163,7 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/inventario/tendencia` | `backend/main.go` |
 | `/api/empresa/inventario/transferir` | `backend/main.go` |
 | `/api/empresa/licencia_sistema/pdf` | `backend/main.go` |
+| `/api/empresa/licencias/comprobantes` | `backend/main.go` |
 | `/api/empresa/logistica_wms` | `backend/main.go` |
 | `/api/empresa/logistica/envios` | `backend/handlers/modulos_faltantes.go` |
 | `/api/empresa/logistica/rutas` | `backend/handlers/modulos_faltantes.go` |
@@ -221,6 +226,7 @@ Total de rutas detectadas: **368**.
 | `/api/empresa/ventas/cotizaciones` | `backend/handlers/modulos_faltantes.go` |
 | `/api/empresa/ventas/devoluciones` | `backend/handlers/modulos_faltantes.go` |
 | `/api/empresa/ventas/pedidos` | `backend/handlers/modulos_faltantes.go` |
+| `/api/empresa/vida` | `backend/main.go` |
 
 ## movil_v1
 
@@ -235,6 +241,7 @@ Total de rutas detectadas: **368**.
 | `/api/v1/empresa/notificaciones` | `backend/handlers/mobile_api_v1.go` |
 | `/api/v1/empresa/pagos` | `backend/handlers/mobile_api_v1.go` |
 | `/api/v1/empresa/productos` | `backend/handlers/mobile_api_v1.go` |
+| `/api/v1/empresa/ventas` | `backend/handlers/mobile_api_v1.go` |
 | `/api/v1/empresa/ventas/offline/sync` | `backend/handlers/mobile_api_v1.go` |
 | `/api/v1/me` | `backend/handlers/mobile_api_v1.go` |
 
@@ -257,8 +264,10 @@ Total de rutas detectadas: **368**.
 | `/epayco/webhook` | `backend/main.go` |
 | `/favicon.ico` | `backend/main.go` |
 | `/generate` | `backend/main.go` |
+| `/health` | `backend/main.go` |
 | `/licencias/activar_sin_pago` | `backend/main.go` |
 | `/me` | `backend/main.go` |
+| `/metrics` | `backend/main.go` |
 | `/pantalla` | `backend/main.go` |
 | `/super/administradores` | `backend/main.go` |
 | `/super/sesiones` | `backend/main.go` |
@@ -267,6 +276,7 @@ Total de rutas detectadas: **368**.
 | `/wompi/terms` | `backend/main.go` |
 | `/wompi/transaction_status` | `backend/main.go` |
 | `/wompi/webhook` | `backend/main.go` |
+| `` + route + `` | `backend/handlers/empresa_inventory_idempotency_test.go` |
 
 ## publica_webhook
 
@@ -277,6 +287,7 @@ Total de rutas detectadas: **368**.
 | `/api/public/chat_portal_stream` | `backend/main.go` |
 | `/api/public/contrato` | `backend/main.go` |
 | `/api/public/domicilios` | `backend/main.go` |
+| `/api/public/domotica/tunnel` | `backend/main.go` |
 | `/api/public/estacion_vip` | `backend/main.go` |
 | `/api/public/geo` | `backend/main.go` |
 | `/api/public/hotel_tarjetas_acceso` | `backend/main.go` |
@@ -312,6 +323,7 @@ Total de rutas detectadas: **368**.
 | `/super/api/administradores/register` | `backend/main.go` |
 | `/super/api/administradores/restablecer_password` | `backend/main.go` |
 | `/super/api/administradores/solicitar_recuperacion` | `backend/main.go` |
+| `/super/api/administrar_disco_vps` | `backend/main.go` |
 | `/super/api/agentes_mantenimiento` | `backend/main.go` |
 | `/super/api/alertas_sistema` | `backend/main.go` |
 | `/super/api/asesor_comercial` | `backend/main.go` |
@@ -346,6 +358,7 @@ Total de rutas detectadas: **368**.
 | `/super/api/contrato` | `backend/main.go` |
 | `/super/api/correos_masivos` | `backend/main.go` |
 | `/super/api/docker_portabilidad` | `backend/main.go` |
+| `/super/api/domotica_raspberry_trafico` | `backend/main.go` |
 | `/super/api/domotica_storage` | `backend/main.go` |
 | `/super/api/email_corporativo` | `backend/main.go` |
 | `/super/api/empresa_licencias_adicionales` | `backend/main.go` |
@@ -364,7 +377,9 @@ Total de rutas detectadas: **368**.
 | `/super/api/metrics/current` | `backend/main.go` |
 | `/super/api/metrics/history` | `backend/main.go` |
 | `/super/api/noticias` | `backend/main.go` |
+| `/super/api/outbox/recovery` | `backend/main.go` |
 | `/super/api/pagina_principal` | `backend/main.go` |
+| `/super/api/pagos/auditoria` | `backend/main.go` |
 | `/super/api/panel_control/reset` | `backend/main.go` |
 | `/super/api/plantillas_integracion/catalogo` | `backend/main.go` |
 | `/super/api/plantillas_nuevas/catalogo` | `backend/main.go` |

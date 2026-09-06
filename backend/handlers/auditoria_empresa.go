@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -654,11 +653,9 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 		Observaciones:  "auditoria automatica de operacion empresarial",
 	}
 
-	go func(audit dbpkg.EmpresaAuditoriaEvento, eid int64, mod string) {
-		if _, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, audit); err != nil {
-			log.Printf("[auditoria] no se pudo registrar evento empresa_id=%d modulo=%s accion=%s error=%v", eid, mod, audit.Accion, err)
-		}
-	}(auditoria, empresaID, modulo)
+	if _, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, auditoria); err != nil {
+		log.Printf("[auditoria] no se pudo registrar evento empresa_id=%d modulo=%s accion=%s error=%v", empresaID, modulo, auditoria.Accion, err)
+	}
 }
 
 func accionDebeAuditarse(permissionAction string) bool {
@@ -732,23 +729,7 @@ func resolveAuditoriaRequestID(r *http.Request) string {
 }
 
 func resolveAuditoriaIP(r *http.Request) string {
-	if xfwd := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xfwd != "" {
-		parts := strings.Split(xfwd, ",")
-		for _, p := range parts {
-			if ip := strings.TrimSpace(p); ip != "" {
-				return ip
-			}
-		}
-	}
-	remote := strings.TrimSpace(r.RemoteAddr)
-	if remote == "" {
-		return ""
-	}
-	host, _, err := net.SplitHostPort(remote)
-	if err == nil {
-		return host
-	}
-	return remote
+	return utilspkg.ClientIP(r)
 }
 
 func normalizeRetencionDiasForHandler(days int64) int64 {

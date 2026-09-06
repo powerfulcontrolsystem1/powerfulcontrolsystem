@@ -1,16 +1,25 @@
 # Cierre y bloqueo contable/fiscal avanzado
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Existe administración de períodos/políticas/excepciones y un validador explícito. La búsqueda de ValidarEmpresaCierreFiscalOperacion encuentra su uso en el handler de consulta, no una integración general en cada escritura de ventas/compras/caja.
+- La sincronización de períodos contables no equivale a bloqueo transversal. Cada operación debe invocar y probar la regla antes de afirmar que el período impide modificaciones.
+- El simulador es diagnóstico; no autoriza ni ejecuta una operación contable o fiscal.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
-Estado: implementado
 
 ## Objetivo
 
-El modulo `cierre_fiscal` protege la informacion ya cerrada o reportada. Centraliza periodos fiscales, reglas de bloqueo por modulo, excepciones aprobadas, reaperturas con motivo obligatorio y bitacora de intentos permitidos o bloqueados.
+El módulo `cierre_fiscal` administra reglas destinadas a proteger información cerrada; la protección efectiva depende de su integración en cada operación. Centraliza periodos fiscales, reglas de bloqueo por modulo, excepciones aprobadas, reaperturas con motivo obligatorio y bitacora de intentos permitidos o bloqueados.
 
 ## Alcance funcional
 
 - Periodos fiscales por empresa con estados `abierto`, `en_revision`, `cerrado` y `bloqueado`.
-- Bloqueo configurable para ventas, compras, caja, inventario, contabilidad y facturacion.
+- Políticas configurables para ventas, compras, caja, inventario, contabilidad y facturación; no se acredita su aplicación automática en todos esos módulos.
 - Politicas por modulo con dias de edicion retroactiva, bloqueo automatico, excepciones y reapertura aprobada.
 - Excepciones aprobadas por periodo, modulo, accion, documento y fecha de expiracion.
 - Simulador de validacion para saber si una operacion queda permitida o bloqueada.
@@ -76,3 +85,9 @@ La matriz base lo trata como control financiero sensible:
 
 - `go test ./... -count=1` ejecutado en `backend/`.
 - Pruebas unitarias nuevas en `backend/db/cierre_fiscal_test.go`.
+
+## Fuentes y aceptación de la revisión
+
+[cierre_fiscal.go](../backend/handlers/cierre_fiscal.go), [cierre_fiscal.go](../backend/db/cierre_fiscal.go), [cierre_fiscal_test.go](../backend/db/cierre_fiscal_test.go), [cierre_fiscal.html](../web/administrar_empresa/cierre_fiscal.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

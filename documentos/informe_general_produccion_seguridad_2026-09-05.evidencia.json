@@ -1,0 +1,1445 @@
+{
+  "generatedAt": "2026-09-05T20:47:54.284Z",
+  "head": "73cc7dfda1cbb2aaa374e99dc889c4b18dda1077",
+  "scope": "Local working tree under concurrent modification; no deployed SHA equivalence established",
+  "tests": {
+    "testsAndSubtests": {
+      "pass": 1667,
+      "fail": 0,
+      "skip": 18
+    },
+    "topLevel": {
+      "pass": 1287,
+      "fail": 0
+    },
+    "packages": [
+      {
+        "package": "github.com/you/pos-backend/cmd/pcs-migrate",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/internal/platform/httpguard",
+        "action": "pass",
+        "elapsed": 0.313
+      },
+      {
+        "package": "github.com/you/pos-backend/auth",
+        "action": "pass",
+        "elapsed": 0.348
+      },
+      {
+        "package": "github.com/you/pos-backend/cmd/pcs-disk-manager",
+        "action": "pass",
+        "elapsed": 0.352
+      },
+      {
+        "package": "github.com/you/pos-backend/internal/platform/outbox",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/cmd/pcs-worker",
+        "action": "pass",
+        "elapsed": 0.418
+      },
+      {
+        "package": "github.com/you/pos-backend/internal/ventas",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/internal/platform/worker",
+        "action": "pass",
+        "elapsed": 0.24
+      },
+      {
+        "package": "github.com/you/pos-backend/ai",
+        "action": "pass",
+        "elapsed": 0.664
+      },
+      {
+        "package": "github.com/you/pos-backend/internal/platform/runtimeconfig",
+        "action": "pass",
+        "elapsed": 0.351
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/migrate_private_uploads",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/plan107_fixture_manifest",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/plan107_preflight",
+        "action": "skip",
+        "elapsed": 0.001
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/seed_domotica_motel_calipso",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/seed_motel_calipso_tarifas",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/seed_tipo_empresa_preconfiguraciones",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/set_pos80_config",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/vps_security_scan",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/internal/platform/valueutil",
+        "action": "pass",
+        "elapsed": 0.484
+      },
+      {
+        "package": "github.com/you/pos-backend/vpssecurity",
+        "action": "skip",
+        "elapsed": 0.001
+      },
+      {
+        "package": "github.com/you/pos-backend/metrics",
+        "action": "pass",
+        "elapsed": 0.418
+      },
+      {
+        "package": "github.com/you/pos-backend/vpssecurity/logstore",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/vpssecurity/parser",
+        "action": "skip",
+        "elapsed": 0
+      },
+      {
+        "package": "github.com/you/pos-backend/secure",
+        "action": "pass",
+        "elapsed": 0.403
+      },
+      {
+        "package": "github.com/you/pos-backend/vpssecurity/reports",
+        "action": "pass",
+        "elapsed": 0.234
+      },
+      {
+        "package": "github.com/you/pos-backend/tools/code_quality_audit",
+        "action": "pass",
+        "elapsed": 0.567
+      },
+      {
+        "package": "github.com/you/pos-backend/vpssecurity/scanner",
+        "action": "pass",
+        "elapsed": 0.34
+      },
+      {
+        "package": "github.com/you/pos-backend/vpssecurity/config",
+        "action": "pass",
+        "elapsed": 0.551
+      },
+      {
+        "package": "github.com/you/pos-backend/utils",
+        "action": "pass",
+        "elapsed": 1.216
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "action": "pass",
+        "elapsed": 4.853
+      },
+      {
+        "package": "github.com/you/pos-backend/handlers",
+        "action": "pass",
+        "elapsed": 17.711
+      },
+      {
+        "package": "github.com/you/pos-backend",
+        "action": "pass",
+        "elapsed": 18.061
+      }
+    ],
+    "skipped": [
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaCarteraMoneyPrecisionPostgres",
+        "reason": "cartera_money_precision_integration_test.go:15: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaDIANConfigSecretsMigrationEncryptsPlaintextPostgres",
+        "reason": "dian_config_secrets_test.go:86: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaDIANDocumentoSoporteMigrationPostgres",
+        "reason": "dian_documento_soporte_test.go:37: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaDIANDocumentosConfiguracionPostgres",
+        "reason": "dian_documentos_configuracion_test.go:96: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaDIANLocalProductionFlagPostgres",
+        "reason": "dian_local_production_flag_migration_test.go:33: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaDIANNominaElectronicaMigrationPostgresDoesNotInventFiscalData",
+        "reason": "dian_nomina_electronica_test.go:191: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaFacturacionDANECodesPostgresDoesNotInferExistingRows",
+        "reason": "facturacion_dane_codes_test.go:45: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaFacturacionFuenteFiscalPostgresImmutableAndTenantScoped",
+        "reason": "facturacion_fuente_fiscal_test.go:50: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/handlers",
+        "test": "TestDocumentoSoporteXSDOficialOpcional",
+        "reason": "dian_documento_soporte_test.go:163: configure PCS_DIAN_DOCUMENTO_SOPORTE_XSD y PCS_PYTHON para validar la caja de herramientas oficial"
+      },
+      {
+        "package": "github.com/you/pos-backend/handlers",
+        "test": "TestDIANNominaIndividualXSDOficialOpcional",
+        "reason": "dian_nomina_electronica_test.go:260: configure PCS_DIAN_NOMINA_XSD, PCS_DIAN_NOMINA_SCHEMES y PCS_PYTHON para validar la caja oficial"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaProductosInventarioMigrationPostgres",
+        "reason": "productos_inventario_migration_test.go:15: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaProductosInventarioMigrationOnRestoredSchemaPostgres",
+        "reason": "productos_inventario_migration_test.go:101: requires PCS_TEST_POSTGRES_LIVE_SCHEMA=isolated and a disposable restored database"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestEmpresaCatalogosNombreUniqueMigrationPostgres",
+        "reason": "productos_inventario_migration_test.go:188: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestSoporteComprasIAPapeleraPostgres",
+        "reason": "soportes_compras_ia_postgres_test.go:17: PCS_TEST_POSTGRES_DSN is not configured"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestP108OutboxWorkerDurabilityIntegration",
+        "reason": "outbox_worker_integration_test.go:24: requires P108_OUTBOX_TEST_DATABASE=isolated and a disposable PostgreSQL DSN"
+      },
+      {
+        "package": "github.com/you/pos-backend/db",
+        "test": "TestP108CxPPaymentAccountingIntegration",
+        "reason": "outbox_worker_integration_test.go:156: requires P108_OUTBOX_TEST_DATABASE=isolated and a disposable PostgreSQL DSN"
+      },
+      {
+        "package": "github.com/you/pos-backend/handlers",
+        "test": "TestResolveEmpresaPrivateFileRejectsTraversalAndSymlink",
+        "reason": "Symlink test requires an unavailable Windows privilege"
+      },
+      {
+        "package": "github.com/you/pos-backend/handlers",
+        "test": "TestResolveExistingPrivateFileUnderRootRejectsEscapes",
+        "reason": "Symlink test requires an unavailable Windows privilege"
+      }
+    ]
+  },
+  "goVet": {
+    "exit": 0
+  },
+  "goModVerify": "all modules verified",
+  "race": {
+    "executed": false,
+    "reason": "CGO disabled; no C compiler found on PATH"
+  },
+  "vulnerabilityScan": {
+    "config": {
+      "protocol_version": "v1.0.0",
+      "scanner_name": "govulncheck",
+      "scanner_version": "v1.1.4",
+      "db": "https://vuln.go.dev",
+      "db_last_modified": "2026-09-02T19:12:04Z",
+      "go_version": "go1.26.6",
+      "scan_level": "symbol",
+      "scan_mode": "source"
+    },
+    "findings": 7,
+    "issues": [
+      {
+        "id": "GO-2026-5932",
+        "summary": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
+        "details": "The golang.org/x/crypto/openpgp package is unsafe by design, has numerous known security issues, is not maintained, and should not be used.\n\nIf you are required to interoperate with OpenPGP systems and need a maintained package, consider github.com/ProtonMail/go-crypto/openpgp which is a maintained fork that aims to be a drop-in replacement for this package.",
+        "traces": [
+          {
+            "trace": [
+              {
+                "module": "golang.org/x/crypto",
+                "version": "v0.55.0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "GO-2026-6354",
+        "summary": "Prevent DoS on deadlocked undecided channel in golang.org/x/crypto/ssh",
+        "details": "Previously, a channel registered in the mux's chanList is not usable until it is established. A malicious peer was able flood the channel's incomingRequests, deadlocking the entire connection.\n\nNow, we add an atomic established state, set when a channel becomes usable. Until such a time, handlePacket drops every packet other than the open confirmation/failure, without blocking and without tearing down the connection.",
+        "aliases": [
+          "CVE-2026-78662"
+        ],
+        "traces": [
+          {
+            "fixed": "v0.56.0",
+            "trace": [
+              {
+                "module": "golang.org/x/crypto",
+                "version": "v0.55.0"
+              }
+            ]
+          },
+          {
+            "fixed": "v0.56.0",
+            "trace": [
+              {
+                "module": "golang.org/x/crypto",
+                "version": "v0.55.0",
+                "package": "golang.org/x/crypto/ssh"
+              }
+            ]
+          },
+          {
+            "fixed": "v0.56.0",
+            "trace": [
+              {
+                "module": "golang.org/x/crypto",
+                "version": "v0.55.0",
+                "package": "golang.org/x/crypto/ssh",
+                "function": "NewClientConn",
+                "position": {
+                  "filename": "ssh/client.go",
+                  "offset": 1821,
+                  "line": 71,
+                  "column": 6
+                }
+              },
+              {
+                "module": "github.com/you/pos-backend",
+                "package": "github.com/you/pos-backend/handlers",
+                "function": "dialDomoticaSSH",
+                "position": {
+                  "filename": "handlers/control_electrico_ssh_install.go",
+                  "offset": 12179,
+                  "line": 296,
+                  "column": 58
+                }
+              },
+              {
+                "module": "github.com/you/pos-backend",
+                "package": "github.com/you/pos-backend/handlers",
+                "function": "handleDomoticaRaspberrySSHInstall",
+                "position": {
+                  "filename": "handlers/control_electrico_ssh_install.go",
+                  "offset": 2040,
+                  "line": 73,
+                  "column": 60
+                }
+              },
+              {
+                "module": "github.com/you/pos-backend",
+                "package": "github.com/you/pos-backend/handlers",
+                "function": "EmpresaControlElectricoHandler$1",
+                "position": {
+                  "filename": "handlers/control_electrico.go",
+                  "offset": 24877,
+                  "line": 599,
+                  "column": 38
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "ServeHTTP",
+                "receiver": "HandlerFunc",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 71163,
+                  "line": 2284,
+                  "column": 3
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "ServeHTTP",
+                "receiver": "serverHandler",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 109062,
+                  "line": 3309,
+                  "column": 19
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "serve",
+                "receiver": "*conn",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 65160,
+                  "line": 2067,
+                  "column": 36
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "Serve",
+                "receiver": "*Server",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 113897,
+                  "line": 3462,
+                  "column": 3
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "ListenAndServe",
+                "receiver": "*Server",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 110606,
+                  "line": 3358,
+                  "column": 16
+                }
+              },
+              {
+                "module": "github.com/you/pos-backend",
+                "package": "github.com/you/pos-backend",
+                "function": "main",
+                "position": {
+                  "filename": "main.go",
+                  "offset": 124406,
+                  "line": 2115,
+                  "column": 29
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "GO-2026-6355",
+        "summary": "Prevent DoS on deadlocked established channel in golang.org/x/crypto/ssh",
+        "details": "Previously, after a channel has been established, a malicious peer could send crafted messages that would deadlock the entire connection.\n\nNow, we handle all RFC 4254 channel messages; global requests are handled explicitly. Then, treat all other messages as a protocol error and tear the connection down instead of buffering and blocking.",
+        "aliases": [
+          "CVE-2026-56855"
+        ],
+        "traces": [
+          {
+            "fixed": "v0.56.0",
+            "trace": [
+              {
+                "module": "golang.org/x/crypto",
+                "version": "v0.55.0"
+              }
+            ]
+          },
+          {
+            "fixed": "v0.56.0",
+            "trace": [
+              {
+                "module": "golang.org/x/crypto",
+                "version": "v0.55.0",
+                "package": "golang.org/x/crypto/ssh"
+              }
+            ]
+          },
+          {
+            "fixed": "v0.56.0",
+            "trace": [
+              {
+                "module": "golang.org/x/crypto",
+                "version": "v0.55.0",
+                "package": "golang.org/x/crypto/ssh",
+                "function": "NewClientConn",
+                "position": {
+                  "filename": "ssh/client.go",
+                  "offset": 1821,
+                  "line": 71,
+                  "column": 6
+                }
+              },
+              {
+                "module": "github.com/you/pos-backend",
+                "package": "github.com/you/pos-backend/handlers",
+                "function": "dialDomoticaSSH",
+                "position": {
+                  "filename": "handlers/control_electrico_ssh_install.go",
+                  "offset": 12179,
+                  "line": 296,
+                  "column": 58
+                }
+              },
+              {
+                "module": "github.com/you/pos-backend",
+                "package": "github.com/you/pos-backend/handlers",
+                "function": "handleDomoticaRaspberrySSHInstall",
+                "position": {
+                  "filename": "handlers/control_electrico_ssh_install.go",
+                  "offset": 2040,
+                  "line": 73,
+                  "column": 60
+                }
+              },
+              {
+                "module": "github.com/you/pos-backend",
+                "package": "github.com/you/pos-backend/handlers",
+                "function": "EmpresaControlElectricoHandler$1",
+                "position": {
+                  "filename": "handlers/control_electrico.go",
+                  "offset": 24877,
+                  "line": 599,
+                  "column": 38
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "ServeHTTP",
+                "receiver": "HandlerFunc",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 71163,
+                  "line": 2284,
+                  "column": 3
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "ServeHTTP",
+                "receiver": "serverHandler",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 109062,
+                  "line": 3309,
+                  "column": 19
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "serve",
+                "receiver": "*conn",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 65160,
+                  "line": 2067,
+                  "column": 36
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "Serve",
+                "receiver": "*Server",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 113897,
+                  "line": 3462,
+                  "column": 3
+                }
+              },
+              {
+                "module": "stdlib",
+                "version": "v1.26.6",
+                "package": "net/http",
+                "function": "ListenAndServe",
+                "receiver": "*Server",
+                "position": {
+                  "filename": "src/net/http/server.go",
+                  "offset": 110606,
+                  "line": 3358,
+                  "column": 16
+                }
+              },
+              {
+                "module": "github.com/you/pos-backend",
+                "package": "github.com/you/pos-backend",
+                "function": "main",
+                "position": {
+                  "filename": "main.go",
+                  "offset": 124406,
+                  "line": 2115,
+                  "column": 29
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "securityPresenceAudit": {
+    "generated_at": "2026-09-05T20:29:25.004Z",
+    "status": "ok",
+    "checks": [
+      {
+        "name": "cookies_http_only",
+        "ok": true,
+        "severity": "high",
+        "evidence": "Busca HttpOnly:true en cookies de sesion."
+      },
+      {
+        "name": "cookies_same_site",
+        "ok": true,
+        "severity": "high",
+        "evidence": "Busca SameSite Lax o Strict en cookies."
+      },
+      {
+        "name": "cookies_secure_helper",
+        "ok": true,
+        "severity": "high",
+        "evidence": "Usa helper de cookie segura segun request/entorno."
+      },
+      {
+        "name": "session_revocation_logout",
+        "ok": true,
+        "severity": "medium",
+        "evidence": "Logout debe revocar token y limpiar cookie."
+      },
+      {
+        "name": "public_route_allowlist",
+        "ok": true,
+        "severity": "high",
+        "evidence": "Middleware central con rutas publicas explicitas."
+      },
+      {
+        "name": "login_rate_limit_contract",
+        "ok": true,
+        "severity": "high",
+        "recommendation": "Agregar limitador por IP/correo si este chequeo queda en warning."
+      },
+      {
+        "name": "recaptcha_contract",
+        "ok": true,
+        "severity": "medium",
+        "evidence": "Recaptcha o verificacion humana presente en login/flujo publico."
+      },
+      {
+        "name": "super_admin_2fa_readiness",
+        "ok": true,
+        "severity": "medium",
+        "recommendation": "Activar 2FA/TOTP obligatorio para super administrador antes de delegar despliegues automaticos a produccion."
+      },
+      {
+        "name": "cors_not_wildcard_credentials",
+        "ok": true,
+        "severity": "high",
+        "evidence": "No se detecta CORS wildcard directo en Go."
+      },
+      {
+        "name": "empresa_scope_middleware",
+        "ok": true,
+        "severity": "high",
+        "evidence": "Existe middleware/scope multiempresa."
+      },
+      {
+        "name": "secret_files_not_committed",
+        "ok": true,
+        "severity": "critical",
+        "evidence": "Los archivos runtime con secretos no estan versionados; pueden existir localmente si Git los ignora."
+      }
+    ]
+  },
+  "permissionsAudit": {
+    "generated_at": "2026-09-05T20:29:25.547Z",
+    "status": "ok",
+    "modules": [
+      "activos_fijos_niif_fiscal",
+      "aiu_construccion",
+      "alquileres",
+      "asistencia_empleados",
+      "auditoria",
+      "backups",
+      "bancos_pagos",
+      "bolsa",
+      "calidad_procesos",
+      "camaras",
+      "carnets",
+      "centros_costo",
+      "chat_tareas",
+      "cierre_fiscal",
+      "clientes",
+      "cobranza",
+      "compras",
+      "contabilidad_colombia",
+      "contabilidad_colombia_avanzada",
+      "contratos_obligaciones",
+      "control_electrico",
+      "crm_unificado",
+      "cumplimiento_kyc",
+      "declaraciones_tributarias",
+      "documentos_onlyoffice",
+      "domicilios",
+      "energia_solar",
+      "facturacion",
+      "facturacion_ecuador",
+      "facturacion_panama",
+      "finanzas",
+      "gestion_documental",
+      "hoja_vida_operativa",
+      "horarios_trabajadores",
+      "importaciones_costeo",
+      "inventario",
+      "logistica_wms",
+      "nomina_sueldos",
+      "parqueadero",
+      "portal_contador",
+      "portal_terceros_certificados",
+      "produccion_mrp",
+      "reportes",
+      "reservas_hotel",
+      "seguridad",
+      "soportes_compras_ia",
+      "tesoreria_presupuesto",
+      "turnos_atencion",
+      "ubicacion_gps",
+      "vehiculos_registro",
+      "venta_publica",
+      "ventas",
+      "vida"
+    ],
+    "checks": [
+      {
+        "name": "backend_permission_modules",
+        "ok": true,
+        "count": 53
+      },
+      {
+        "name": "permission_wrappers",
+        "ok": true,
+        "count": 55
+      },
+      {
+        "name": "license_module_coverage",
+        "ok": true,
+        "missing": []
+      },
+      {
+        "name": "frontend_permission_coverage",
+        "ok": true,
+        "missing_warning": [],
+        "missing_total": 0
+      }
+    ]
+  },
+  "migrationAudit": {
+    "generated_at": "2026-09-05T20:29:27.225Z",
+    "status": "ok",
+    "base_ref": "origin/main",
+    "checks": [
+      {
+        "name": "checksummed_locked_migration_runner",
+        "ok": true
+      },
+      {
+        "name": "worker_has_no_schema_ddl_calls",
+        "ok": true
+      },
+      {
+        "name": "ensure_bootstrap_inventory",
+        "ok": true
+      },
+      {
+        "name": "schema_touching_files",
+        "ok": true,
+        "count": 159,
+        "examples": [
+          "backend/db/admin_login_throttle_migration.go",
+          "backend/db/admin_principal_delegaciones.go",
+          "backend/db/aiu_construccion.go",
+          "backend/db/ai_empresa_proveedor.go",
+          "backend/db/ai_enterprise.go",
+          "backend/db/ai_usage_uniqueness_migration.go",
+          "backend/db/ai_user_isolation_migration.go",
+          "backend/db/alquileres.go",
+          "backend/db/asesor_comercial.go",
+          "backend/db/asistencia_empleados.go",
+          "backend/db/async_jobs.go",
+          "backend/db/auditoria_empresa.go",
+          "backend/db/auditoria_super.go",
+          "backend/db/backups_empresariales.go",
+          "backend/db/calculadora_operativa.go",
+          "backend/db/camaras.go",
+          "backend/db/carnets_empresa.go",
+          "backend/db/carritos_compras.go",
+          "backend/db/cartera_money_precision.go",
+          "backend/db/centros_costo.go",
+          "backend/db/chat_inteligencia_artificial.go",
+          "backend/db/chat_tareas.go",
+          "backend/db/cierre_fiscal.go",
+          "backend/db/clientes.go",
+          "backend/db/cobranza.go"
+        ]
+      },
+      {
+        "name": "db_tests_present",
+        "ok": true,
+        "count": 118
+      },
+      {
+        "name": "migration_base_ref_available",
+        "ok": true,
+        "base_ref": "origin/main"
+      },
+      {
+        "name": "historical_migration_entries_immutable",
+        "ok": true,
+        "base_ref": "origin/main",
+        "base_available": true,
+        "historical_entries_immutable": true,
+        "base_entries": 55,
+        "current_entries": 55,
+        "new_entries": 0,
+        "modified_historical_files": [],
+        "details": []
+      }
+    ]
+  },
+  "moduleContractAudit": {
+    "generated_at": "2026-09-05T20:36:12.048Z",
+    "status": "ok",
+    "checks": [
+      {
+        "name": "critical_files",
+        "ok": true,
+        "missing": []
+      },
+      {
+        "name": "print_contracts",
+        "ok": true,
+        "detected": [
+          "factura",
+          "recibo",
+          "comprobante"
+        ]
+      },
+      {
+        "name": "e2e_non_mutating_guard",
+        "ok": true
+      },
+      {
+        "name": "inventory_kardex_responsive",
+        "ok": true
+      }
+    ]
+  },
+  "rolesAudit": {
+    "generated_at": "2026-09-05T20:36:12.159Z",
+    "status": "ok",
+    "workflow_ready": true,
+    "roles": [
+      {
+        "role": "super_administrador",
+        "name": "Super administrador",
+        "ok": true,
+        "missing_pages": [],
+        "missing_apis": []
+      },
+      {
+        "role": "admin_empresa",
+        "name": "Administrador de empresa",
+        "ok": true,
+        "missing_pages": [],
+        "missing_apis": []
+      },
+      {
+        "role": "cajero",
+        "name": "Cajero",
+        "ok": true,
+        "missing_pages": [],
+        "missing_apis": []
+      },
+      {
+        "role": "vendedor",
+        "name": "Vendedor",
+        "ok": true,
+        "missing_pages": [],
+        "missing_apis": []
+      },
+      {
+        "role": "asesor_comercial",
+        "name": "Asesor comercial",
+        "ok": true,
+        "missing_pages": [],
+        "missing_apis": []
+      },
+      {
+        "role": "soporte",
+        "name": "Soporte operativo",
+        "ok": true,
+        "missing_pages": [],
+        "missing_apis": []
+      }
+    ],
+    "recommendation": "Para pruebas reales por rol, configurar credenciales PCS_QA_ROLE_MATRIX_JSON en GitHub Actions y ejecutar qa_e2e_buttons por rol."
+  },
+  "quality": {
+    "ok": true,
+    "root": ".",
+    "metrics": {
+      "production_files": 420,
+      "production_functions": 7604,
+      "functions_over_100_lines": 436,
+      "functions_over_200_lines": 118,
+      "largest_function_lines": 2030,
+      "exact_duplicate_body_groups": 0,
+      "db_calls_without_context": 469,
+      "explicit_ignored_results": 736,
+      "largest_functions": [
+        {
+          "file": "handlers/carritos_compras.go",
+          "name": "EmpresaCarritosCompraHandler",
+          "start": 131,
+          "lines": 2030,
+          "statements": 1511
+        },
+        {
+          "file": "handlers/facturacion_electronica.go",
+          "name": "EmpresaFacturacionElectronicaHandler",
+          "start": 413,
+          "lines": 1413,
+          "statements": 1064
+        },
+        {
+          "file": "main.go",
+          "name": "main",
+          "start": 1039,
+          "lines": 1088,
+          "statements": 1082
+        },
+        {
+          "file": "db/modulos_faltantes.go",
+          "name": "EnsureEmpresaModulosFaltantesSchema",
+          "start": 105,
+          "lines": 951,
+          "statements": 344
+        },
+        {
+          "file": "handlers/nomina_sueldos.go",
+          "name": "EmpresaNominaSueldosHandler",
+          "start": 20,
+          "lines": 931,
+          "statements": 851
+        },
+        {
+          "file": "handlers/compras.go",
+          "name": "EmpresaComprasDocumentosHandler",
+          "start": 18,
+          "lines": 775,
+          "statements": 503
+        },
+        {
+          "file": "handlers/empresa_impresoras.go",
+          "name": "EmpresaImpresorasHandler",
+          "start": 30,
+          "lines": 723,
+          "statements": 594
+        },
+        {
+          "file": "db/productos.go",
+          "name": "EnsureEmpresaProductosSchema",
+          "start": 515,
+          "lines": 689,
+          "statements": 541
+        },
+        {
+          "file": "handlers/control_electrico.go",
+          "name": "EmpresaControlElectricoHandler",
+          "start": 322,
+          "lines": 671,
+          "statements": 627
+        },
+        {
+          "file": "handlers/modulos_faltantes.go",
+          "name": "EmpresaDIANColombiaHandler",
+          "start": 7226,
+          "lines": 597,
+          "statements": 509
+        },
+        {
+          "file": "db/carritos_compras.go",
+          "name": "EnsureEmpresaCarritosSchema",
+          "start": 316,
+          "lines": 526,
+          "statements": 481
+        },
+        {
+          "file": "handlers/empresa_compartida_handlers.go",
+          "name": "EmpresaCompartidaHandler",
+          "start": 606,
+          "lines": 506,
+          "statements": 421
+        },
+        {
+          "file": "db/finanzas.go",
+          "name": "EnsureEmpresaFinanzasSchema",
+          "start": 187,
+          "lines": 502,
+          "statements": 430
+        },
+        {
+          "file": "handlers/finanzas.go",
+          "name": "EmpresaFinanzasMovimientosHandler",
+          "start": 397,
+          "lines": 501,
+          "statements": 417
+        },
+        {
+          "file": "handlers/contabilidad_colombia_avanzada.go",
+          "name": "EmpresaContabilidadColombiaAvanzadaHandler",
+          "start": 17,
+          "lines": 485,
+          "statements": 410
+        },
+        {
+          "file": "handlers/comisiones.go",
+          "name": "EmpresaComisionesServicioHandler",
+          "start": 16,
+          "lines": 454,
+          "statements": 336
+        },
+        {
+          "file": "handlers/system_empresas_handlers.go",
+          "name": "EmpresasHandler",
+          "start": 426,
+          "lines": 428,
+          "statements": 392
+        },
+        {
+          "file": "handlers/modulos_faltantes.go",
+          "name": "runDIANSetPruebasEnvio",
+          "start": 12663,
+          "lines": 420,
+          "statements": 283
+        },
+        {
+          "file": "handlers/super_chat_ia_logica.go",
+          "name": "SuperChatIALogicaConfigHandler",
+          "start": 307,
+          "lines": 411,
+          "statements": 260
+        },
+        {
+          "file": "handlers/payments_handlers.go",
+          "name": "LicenciasHandler",
+          "start": 251,
+          "lines": 410,
+          "statements": 375
+        }
+      ],
+      "duplicate_groups": null,
+      "top_debt_files": [
+        {
+          "file": "db/productos.go",
+          "db_calls_without_context": 44,
+          "explicit_ignored_results": 2
+        },
+        {
+          "file": "db/carritos_compras.go",
+          "db_calls_without_context": 31,
+          "explicit_ignored_results": 4
+        },
+        {
+          "file": "db/creditos.go",
+          "db_calls_without_context": 26,
+          "explicit_ignored_results": 8
+        },
+        {
+          "file": "db/db.go",
+          "db_calls_without_context": 19,
+          "explicit_ignored_results": 10
+        },
+        {
+          "file": "db/modulos_empresariales_colombia.go",
+          "db_calls_without_context": 0,
+          "explicit_ignored_results": 24
+        },
+        {
+          "file": "db/contabilidad_colombia.go",
+          "db_calls_without_context": 1,
+          "explicit_ignored_results": 22
+        },
+        {
+          "file": "db/logistica_wms.go",
+          "db_calls_without_context": 0,
+          "explicit_ignored_results": 22
+        },
+        {
+          "file": "db/tarifas_por_minutos.go",
+          "db_calls_without_context": 13,
+          "explicit_ignored_results": 9
+        },
+        {
+          "file": "handlers/modulos_faltantes.go",
+          "db_calls_without_context": 4,
+          "explicit_ignored_results": 18
+        },
+        {
+          "file": "db/contabilidad_colombia_avanzada.go",
+          "db_calls_without_context": 14,
+          "explicit_ignored_results": 7
+        },
+        {
+          "file": "db/reservas_hotel.go",
+          "db_calls_without_context": 17,
+          "explicit_ignored_results": 4
+        },
+        {
+          "file": "db/ubicacion_gps.go",
+          "db_calls_without_context": 10,
+          "explicit_ignored_results": 11
+        },
+        {
+          "file": "handlers/email_corporativo_handlers.go",
+          "db_calls_without_context": 2,
+          "explicit_ignored_results": 17
+        },
+        {
+          "file": "db/tarifas_por_dia.go",
+          "db_calls_without_context": 11,
+          "explicit_ignored_results": 6
+        },
+        {
+          "file": "handlers/licencias_vencimiento_alertas.go",
+          "db_calls_without_context": 1,
+          "explicit_ignored_results": 15
+        },
+        {
+          "file": "handlers/chat_con_inteligencia_artificial_controller.go",
+          "db_calls_without_context": 0,
+          "explicit_ignored_results": 15
+        },
+        {
+          "file": "db/chat_inteligencia_artificial.go",
+          "db_calls_without_context": 4,
+          "explicit_ignored_results": 10
+        },
+        {
+          "file": "db/comisiones_servicio.go",
+          "db_calls_without_context": 14,
+          "explicit_ignored_results": 0
+        },
+        {
+          "file": "db/hoja_vida_operativa.go",
+          "db_calls_without_context": 12,
+          "explicit_ignored_results": 2
+        },
+        {
+          "file": "db/produccion_mrp.go",
+          "db_calls_without_context": 0,
+          "explicit_ignored_results": 14
+        },
+        {
+          "file": "db/soportes_compras_ia.go",
+          "db_calls_without_context": 3,
+          "explicit_ignored_results": 11
+        },
+        {
+          "file": "db/backups_empresariales.go",
+          "db_calls_without_context": 7,
+          "explicit_ignored_results": 6
+        },
+        {
+          "file": "db/nomina_sueldos.go",
+          "db_calls_without_context": 13,
+          "explicit_ignored_results": 0
+        },
+        {
+          "file": "db/propinas.go",
+          "db_calls_without_context": 12,
+          "explicit_ignored_results": 1
+        },
+        {
+          "file": "handlers/dynamic_documents.go",
+          "db_calls_without_context": 0,
+          "explicit_ignored_results": 13
+        },
+        {
+          "file": "handlers/offline_ventas.go",
+          "db_calls_without_context": 0,
+          "explicit_ignored_results": 13
+        },
+        {
+          "file": "handlers/private_files.go",
+          "db_calls_without_context": 2,
+          "explicit_ignored_results": 11
+        },
+        {
+          "file": "handlers/super_chat_ia_logica.go",
+          "db_calls_without_context": 0,
+          "explicit_ignored_results": 13
+        },
+        {
+          "file": "db/codigos_descuento.go",
+          "db_calls_without_context": 10,
+          "explicit_ignored_results": 2
+        },
+        {
+          "file": "db/importaciones_costeo.go",
+          "db_calls_without_context": 0,
+          "explicit_ignored_results": 12
+        }
+      ]
+    },
+    "baseline": {
+      "version": 1,
+      "max": {
+        "production_files": 0,
+        "production_functions": 0,
+        "functions_over_100_lines": 450,
+        "functions_over_200_lines": 124,
+        "largest_function_lines": 2052,
+        "exact_duplicate_body_groups": 0,
+        "db_calls_without_context": 533,
+        "explicit_ignored_results": 762,
+        "largest_functions": null,
+        "duplicate_groups": null
+      }
+    },
+    "regressions": []
+  },
+  "csp": {
+    "totals": {
+      "unprotected_inline_scripts": 206,
+      "unprotected_inline_style_blocks": 152,
+      "style_attributes": 862,
+      "event_attributes": 0,
+      "javascript_urls": 0,
+      "blockers": 1220,
+      "files": 190
+    },
+    "areas": {
+      "administrar_empresa": {
+        "blockers": 900,
+        "files": 119
+      },
+      "super": {
+        "blockers": 198,
+        "files": 39
+      },
+      "publico": {
+        "blockers": 111,
+        "files": 27
+      },
+      "ayuda": {
+        "blockers": 10,
+        "files": 4
+      },
+      "epayco": {
+        "blockers": 1,
+        "files": 1
+      }
+    },
+    "regression": [
+      "areas.super.blockers: 198 > 197"
+    ]
+  },
+  "frontendSyntax": {
+    "jsChecked": 89,
+    "inlineChecked": 206,
+    "moduleScriptsSkipped": 0,
+    "errors": []
+  },
+  "tenantRoutes": {
+    "registered": 197,
+    "wrappersDetected": 197,
+    "manual": 0,
+    "duplicates": 0,
+    "trackedInventoryCheck": "outdated"
+  },
+  "publicHTTP": [
+    {
+      "path": "/login.html",
+      "status": 200,
+      "contentType": "text/html",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https: wss:; frame-src 'self' https://nextcloud.powerfulcontrolsystem.com https://mail.powerfulcontrolsystem.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co",
+      "nosniff": "nosniff",
+      "cacheControl": "no-store, no-cache, must-revalidate, max-age=0",
+      "redirect": false,
+      "hsts": null
+    },
+    {
+      "path": "/api/empresa/productos?empresa_id=12",
+      "status": 401,
+      "contentType": "application/json",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https://api.openai.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://secure.epayco.co https://checkout.wompi.co https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com https://nominatim.openstreetmap.org; frame-src 'self' https://mail.powerfulcontrolsystem.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com; upgrade-insecure-requests",
+      "nosniff": "nosniff",
+      "redirect": false,
+      "hsts": null
+    },
+    {
+      "path": "/super/api/pagos/auditoria",
+      "status": 401,
+      "contentType": "application/json",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https://api.openai.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://secure.epayco.co https://checkout.wompi.co https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com https://nominatim.openstreetmap.org; frame-src 'self' https://mail.powerfulcontrolsystem.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com; upgrade-insecure-requests",
+      "nosniff": "nosniff",
+      "redirect": false,
+      "hsts": null
+    },
+    {
+      "path": "/metrics",
+      "status": 404,
+      "contentType": "text/html",
+      "nosniff": "nosniff",
+      "redirect": false,
+      "hsts": null
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https://api.openai.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://secure.epayco.co https://checkout.wompi.co https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com https://nominatim.openstreetmap.org; frame-src 'self' https://mail.powerfulcontrolsystem.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com; upgrade-insecure-requests",
+      "nosniff": "nosniff",
+      "cacheControl": "no-store",
+      "redirect": false,
+      "hsts": null
+    },
+    {
+      "path": "/.env",
+      "status": 401,
+      "contentType": "text/plain; charset=utf-8",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https://api.openai.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://secure.epayco.co https://checkout.wompi.co https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com https://nominatim.openstreetmap.org; frame-src 'self' https://mail.powerfulcontrolsystem.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://checkout.epayco.co https://checkout.wompi.co https://onlyoffice.powerfulcontrolsystem.com https://nextcloud.powerfulcontrolsystem.com; upgrade-insecure-requests",
+      "nosniff": "nosniff",
+      "redirect": false,
+      "hsts": null
+    }
+  ],
+  "characterization": {
+    "environment": "Go overlay; standard-library SQL capture driver; no PostgreSQL or external HTTP",
+    "log": "=== RUN   TestAuditGenericAcceptsUnverifiedParentAndClientAuthor\r\n    audit_general_characterization_test.go:48: CONFIRMED: INSERT before parent ownership lookup; accepts client author and state. No real database used.\r\n--- PASS: TestAuditGenericAcceptsUnverifiedParentAndClientAuthor (0.25s)\r\n=== RUN   TestAuditRejectedRequestConsumesTenantQuota\r\n    audit_general_characterization_test.go:62: CONFIRMED: rejected request consumes target tenant quota before identity/access validation. Outer authentication middleware was not exercised.\r\n--- PASS: TestAuditRejectedRequestConsumesTenantQuota (0.00s)\r\nPASS\r\nok  \tgithub.com/you/pos-backend/handlers\t0.375s\r\n"
+  },
+  "sourceHashes": [
+    {
+      "path": "backend/go.mod",
+      "sha256": "01a580e36adc1396fd419380cfd6040641ae371965ffc2b8f69aa182bef6370e"
+    },
+    {
+      "path": "backend/handlers/control_electrico_ssh_install.go",
+      "sha256": "7906ed170c676193284b3efb152b84bea3a0afba9372424249fba5b9ca54b53a"
+    },
+    {
+      "path": "backend/handlers/modulos_faltantes.go",
+      "sha256": "d6aa6b8e52c92f52f3ec7c7845eea5d6f7bd93e15d5e9fdd2c93bb2780f83664"
+    },
+    {
+      "path": "backend/db/modulos_faltantes.go",
+      "sha256": "26581ba66bcf636dcc896cd13743730320c9258b33fee904c57cf06be9fc5639"
+    },
+    {
+      "path": "backend/handlers/empresa_permisos.go",
+      "sha256": "48b682b6f03f00365f9f2bec18c902b49e5fe8513839bfb97001f9a4a3b98377"
+    },
+    {
+      "path": "backend/handlers/admin_totp_handlers.go",
+      "sha256": "27823149d8f907c4430f620ecb2cf38fabbc0f53c16ee46ae9a6c17994864549"
+    },
+    {
+      "path": "backend/handlers/auth_admin_handlers.go",
+      "sha256": "e226d2188de0547066b6d641e349f369f2b3a917755d48cf874fa28d7ed4b216"
+    },
+    {
+      "path": "backend/db/produccion_mrp.go",
+      "sha256": "ba912a420650e70b93f46bb58443f2314f65c477441c5aad84c92363d31023bf"
+    },
+    {
+      "path": "backend/db/logistica_wms.go",
+      "sha256": "b3f57f103d5230904583e1f52298808792d86f002adf2d83ff24df6b1d2cc582"
+    },
+    {
+      "path": "backend/db/tesoreria_presupuesto.go",
+      "sha256": "2b2a6453ff5ff1b745268bb90eaea0ee5e2e4b5e0aa34d767980e8c02ab67688"
+    },
+    {
+      "path": "backend/db/sql_compat.go",
+      "sha256": "06e495eca5231276937902dc4d8812700ec10439fd58d268e37d0f42aa49e1a7"
+    },
+    {
+      "path": "backend/db/postgres_pool.go",
+      "sha256": "b5e202f932e26b83a2fb70f3ea35685f83f17ceb6b1ab593f56051ebc89964c5"
+    },
+    {
+      "path": "backend/db/runtime_db_role.go",
+      "sha256": "17b1d123bc96cf28fc7b0a392eac36cabba0edc00161a11c3fbb0d4519ca7f8c"
+    },
+    {
+      "path": "backend/handlers/auditoria_empresa.go",
+      "sha256": "56fb7cc213015e025cb09c9fe0e1073a33919ab07c06a519278877a623b213a4"
+    },
+    {
+      "path": "backend/handlers/auditoria_modulos_especificos.go",
+      "sha256": "2bdf3bead1e0842e061435857103e88501e2776a1b42607d32fe7dcaf79d505f"
+    },
+    {
+      "path": "deploy/docker-compose.platform.yml",
+      "sha256": "8540122e38949f3617dbdc0fb53b02d70cd43cabdb291952127b0f62c634bab9"
+    },
+    {
+      "path": "backend/handlers/private_files.go",
+      "sha256": "d2ac263cf810c149e4a2709a278329ed60d29dc5e26d822d929098708522dca3"
+    },
+    {
+      "path": "backend/db/vida.go",
+      "sha256": "c6b0460d1b9b141d850303c1d6d29d0c08eb93f11f34f7b45a0cc14091c1a7e0"
+    }
+  ],
+  "commands": [
+    "go test ./... -json -count=1 -timeout 5m",
+    "go vet ./...",
+    "go mod verify",
+    "GOTOOLCHAIN=go1.26.6 go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 -json ./...",
+    "node tools/security_audit.mjs --strict --out .gotmp/auditoria_general_20260905",
+    "node tools/permissions_license_audit.mjs --strict --out .gotmp/auditoria_general_20260905",
+    "node tools/migration_audit.mjs --strict --out .gotmp/auditoria_general_20260905",
+    "node tools/tenant_route_inventory.mjs --check",
+    "node tools/qa_csp_inline_inventory.mjs web .gotmp/auditoria_general_20260905/csp documentos/seguridad/csp_inline_baseline.json",
+    "go run ./tools/code_quality_audit -root . -baseline ../documentos/calidad/code_quality_baseline.json -out ../.gotmp/auditoria_general_20260905/code_quality.json",
+    "go test -overlay ../.gotmp/auditoria_general_20260905/overlay.json ./handlers -run ^TestAudit(Generic|Rejected) -v -count=1"
+  ]
+}

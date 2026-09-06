@@ -1,3 +1,7 @@
+> Estado documental: histórico. Plan y evidencia de inventario con alcance fechado; preservar las pruebas pendientes sin inferir certificación ni autoridad de despliegue.
+> Fuentes actuales: [estrategia_verificacion.md](calidad/estrategia_verificacion.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan de preparación para producción: Productos, Servicios e Inventario
 
 Fecha de creación: 2026-08-21  

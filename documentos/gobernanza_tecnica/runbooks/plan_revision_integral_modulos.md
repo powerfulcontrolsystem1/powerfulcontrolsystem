@@ -1,3 +1,7 @@
+> Estado documental: histórico. Plan y resultados de abril con una secuencia histórica; la aceptación del candidato se gobierna por requisitos y estrategia de verificación actuales.
+> Fuentes actuales: [estrategia_verificacion.md](../../calidad/estrategia_verificacion.md), [estado_actual.md](../../estado_actual.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan de revision integral de modulos
 
 Fecha de inicio: 2026-04-29

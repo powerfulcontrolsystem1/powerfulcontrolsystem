@@ -1,7 +1,15 @@
 # Contrato tecnico: estaciones, sensores y carrito unificado por estacion
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La venta pagada y su documento comercial no acreditan aceptación DIAN ni entrega física impresa.
+- El heartbeat legado y la entrada por túnel son superficies diferentes; la identidad de dispositivo debe verificarse en su contrato. Una luz verde es estado reportado, no prueba física de puerta.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Alcance
 
@@ -110,7 +118,7 @@ Respuestas exitosas esperadas:
 - `403` cuando el metodo de pago no esta habilitado para la empresa o rol efectivo.
 - `404` cuando el carrito no existe en la empresa indicada.
 - `409` cuando la transicion de estado no es valida, la venta ya fue pagada o la sesion ya estaba activa sin `reset_items=1`.
-- `500` cuando falla la sincronizacion de carritos, el registro de venta, la generacion documental o una autorreparacion de esquema necesaria para la operacion.
+- `500` cuando falla la sincronizacion de carritos, el registro de venta, la generacion documental o la ausencia del esquema requerido; la reparación corresponde al migrador.
 
 ## Reglas de compatibilidad
 
@@ -133,3 +141,10 @@ Respuestas exitosas esperadas:
 ## Runbook relacionado
 
 - `documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md`
+## Fuentes y aceptación de la revisión
+
+[sensor_puertas.go](../../../backend/handlers/sensor_puertas.go), [domotica_raspberry_tunnel.md](../../domotica_raspberry_tunnel.md), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).
+
+Implementación POS: [handler](../../../backend/handlers/carritos_compras.go) y [transacciones](../../../backend/db/carritos_compras.go).

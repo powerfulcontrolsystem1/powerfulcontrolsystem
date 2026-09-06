@@ -1,3 +1,7 @@
+> Estado documental: histórico. Plan y prueba de una empresa en mayo; no autoriza repetir ventas/borrados en esa empresa.
+> Fuentes actuales: [estrategia_verificacion.md](calidad/estrategia_verificacion.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan QA extremo a extremo - Motel Calipso
 
 Fecha: 2026-05-06

@@ -1,0 +1,4579 @@
+{
+  "schema_version": 1,
+  "policy": "documentos/gobernanza_tecnica/politica_catalogo.json",
+  "scope": "Documentos de texto versionados o nuevos no ignorados por Git; metadatos técnicos bajo documentos. Excluye datos privados ignorados y binarios. Sin auditoría semántica ni validación de URLs externas.",
+  "total": 506,
+  "counts": {
+    "vigente": 140,
+    "historico": 62,
+    "generado": 20,
+    "contrato_maquina": 1,
+    "referencia_por_validar": 2,
+    "evidencia": 278,
+    "control_documental": 2,
+    "referencia_externa": 1
+  },
+  "issues": [],
+  "duplicates": [
+    [
+      "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/test_runs/qa_e2e_buttons_2026-08-26T13-05-10/reporte.md",
+      "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/test_runs/qa_e2e_buttons_2026-08-26T13-34-30/reporte.md"
+    ]
+  ],
+  "documents": [
+    {
+      "path": ".cursor/AGENTS.md",
+      "title": "Contexto de trabajo para Cursor",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cdd62526f91d3f714fca0ca9bfa052a2ed646520e2ff20b08f88e402f97b5320"
+    },
+    {
+      "path": ".cursor/README.md",
+      "title": "Compatibilidad de contexto con Cursor",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "660a5971329ca7392a75c5c454bc4207b07ebca8d9b348a7e75f3b86972cf9ed"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-backend-db/SKILL.md",
+      "title": "PCS Agente Backend DB",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ab0613306d4ad78dc94569e816c42e920d699e84a25bf840ac348d36ffc849c5"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-frontend-ux/SKILL.md",
+      "title": "PCS Agente Frontend UX",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "2cd173fdf4876a67f296039207abd3aa2ecfa03ff5d71f200cda3222b4e1f256"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-go/SKILL.md",
+      "title": "PCS Agente Go (coordinador)",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "41653fbe7bdc266fe13e83dcdabe17dc5c89b4470736c8c30a22c94b177a0859"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-qa-operacion/SKILL.md",
+      "title": "PCS Agente QA Operacion",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "9f73d55db38e442b0625d9bea6efba1f9cc54ebbcca8e75899f0c46147ac03c1"
+    },
+    {
+      "path": ".cursor/skills/pcs-protocolo-por-modulo/SKILL.md",
+      "title": "PCS Protocolo Por Modulo",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "37c9d530126878191af46591060f33591c622f3e7875eb61e9cbdba5945d6e9c"
+    },
+    {
+      "path": ".github/SECRETOS_REQUERIDOS.md",
+      "title": "Secretos requeridos en GitHub Actions",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d56b09da9363b67d3d5bec1c9b9aee4ceea2c8e0e28df93251a50c070510f710"
+    },
+    {
+      "path": ".github/agents/README.md",
+      "title": "Perfiles de trabajo del repositorio",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "98b094140845768e795a4927115999cc5ef68bee5c5a44bcd73e94d690421644"
+    },
+    {
+      "path": ".github/agents/agente_backend_db.agent.md",
+      "title": "agente_backend_db.agent",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4a212b4d7fbcdedaa8fe294231a84ac53db83679844ea951d108ebeb80d830b3"
+    },
+    {
+      "path": ".github/agents/agente_frontend_ux.agent.md",
+      "title": "agente_frontend_ux.agent",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7d3b5931fdbbaa1d4c15a107e11feece47b14dcc5cd8f7842b7caaa6d5030c2f"
+    },
+    {
+      "path": ".github/agents/agente_go.agent.md",
+      "title": "agente_go: coordinación técnica",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "3c30533e1476546856756e7402912a79932d0a16c2a34d6872bbab805d98bbe6"
+    },
+    {
+      "path": ".github/agents/agente_qa_operacion.agent.md",
+      "title": "agente_qa_operacion.agent",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "91299c8b1fc2ae6c62a1a7ac345bc5684c0fd0377bd4b3074096f3f830ec9409"
+    },
+    {
+      "path": ".github/agents/plantilla_trabajo_por_modulo.md",
+      "title": "Plantilla de trabajo por módulo",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cf32529c51937428f7c8186d392496c90514ecd63ec7deee0a25686eb38a6ec3"
+    },
+    {
+      "path": ".github/agents/protocolo_delegacion.md",
+      "title": "Protocolo de coordinación y delegación",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5172b2235b7ec9fc8f730a8f4deaf151cb53b3952ff2888cba97e0fb01c17c5a"
+    },
+    {
+      "path": "AGENTS.md",
+      "title": "AGENTS.md",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5f995a7c0d8f7669db8b69df9f4dc5c0c4eda71f9c35bb1fdef4ea5226b8b7c7"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "title": "CHANGELOG",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8972842a52acff182b9d3d302021b77e9dad426ea039b7c2370f5e52b24d209a"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "title": "Guía de contribución",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6eb4100e1c12acc89b884fe8a8e2365b8887efeb54f529b8395419e369735f73"
+    },
+    {
+      "path": "README.md",
+      "title": "Powerful Control System",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "38cd60ceec74fe24c0e370004e3d67b3539b8b8b479ed018cf0f4e2dd880d41e"
+    },
+    {
+      "path": "RESUMEN_DEL_PROYECTO.md",
+      "title": "Resumen del proyecto",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "fc3ec59c3f3df6104d2d5ebc7152a3b9967893d8358d410f988b5fc3684a2f21"
+    },
+    {
+      "path": "SECURITY.md",
+      "title": "Politica de seguridad",
+      "state": "vigente",
+      "owner": "Seguridad",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "3832e43713461eb1e5a2c68462f4bf22428d0d5515e99a31f560290e3bb71987"
+    },
+    {
+      "path": "deploy/README-compose-platform.md",
+      "title": "Docker Compose de PCS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "67d7524e20c1c189b6953622a23901f306dc32824670fa85ea04e1274daaac0c"
+    },
+    {
+      "path": "documentos/CHANGELOG.md",
+      "title": "2026-07-16",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "911bd2f5ac93a2d07b05e482c96ff66cb23d0094288be41ef451533d05d930e7"
+    },
+    {
+      "path": "documentos/README.md",
+      "title": "Portal de documentación de PCS",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e22a056ff966d9cb372e86c5b26d1f0fca6eaa18c4ea6c621fa78b7b806ffd24"
+    },
+    {
+      "path": "documentos/activos_fijos_avanzado.md",
+      "title": "Activos fijos avanzado",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cc0a2a75ff2b6cd231c9d4641af93b5afdbcbda325e905277284570f4481681f"
+    },
+    {
+      "path": "documentos/activos_fijos_niif_fiscal.md",
+      "title": "Activos Fijos e Intangibles NIIF / Fiscal",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e3335c82c31516164e86ad43703ccb981deeed59f8f280337c84741581bc0e20"
+    },
+    {
+      "path": "documentos/actualizaciones_del_repositorio.md",
+      "title": "Actualizaciones del repositorio",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2e517cdff96db804c23008908b3d05721cc5447e8e8377795d3f838b992564ea"
+    },
+    {
+      "path": "documentos/aiu_construccion.md",
+      "title": "AIU construccion y contratos de obra",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "083057e3d10ef50f6afd40754795eb56d6266390d994e12f41a61106a0420ae6"
+    },
+    {
+      "path": "documentos/alquileres.md",
+      "title": "Alquileres / Renta universal de activos",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "170e632093753a855c5520e1aad7af8c534370bcdc70f99989a0ef77d3c1e990"
+    },
+    {
+      "path": "documentos/api/README.md",
+      "title": "Contratos e inventarios API",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e89e7a396c1646a4d80531d772c58c010bec7cf22de9196a007dde74d34fcf33"
+    },
+    {
+      "path": "documentos/api/ayuda_apis.md",
+      "title": "Ayuda de APIs",
+      "state": "vigente",
+      "owner": "Ingeniería de API",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "71a0c56b53a98af5ccfa83c44f3ecf885a30c6e1c4bfe98b493f696d46c86d21"
+    },
+    {
+      "path": "documentos/api/inventario_api_movil.md",
+      "title": "Inventario de APIs para migracion movil",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "78691cb3fcc5f70c5c641a9f72c496c2e064c23ccaf1d169ad328bf09fcba88b"
+    },
+    {
+      "path": "documentos/api/mobile_api_v1.md",
+      "title": "API movil v1",
+      "state": "vigente",
+      "owner": "Ingeniería de API",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4331803afb412b794d7c37c7b14b5ab328d4a26fc52486d34ef8644e4d2e9bbc"
+    },
+    {
+      "path": "documentos/api/openapi.generated.yaml",
+      "title": "openapi.generated.yaml",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1c2b42f50e38b09b982a229087316fbe10b711984e167292b2b94aaad6120ba4"
+    },
+    {
+      "path": "documentos/api/openapi.mobile.v1.yaml",
+      "title": "openapi.mobile.v1.yaml",
+      "state": "contrato_maquina",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d56fd8db23f3ca8e9693d350daf4215e84ad2fc298c7d7a2ecbf84d2053679f0"
+    },
+    {
+      "path": "documentos/arquitectura/adr_106_cxp_fuente_canonica.md",
+      "title": "ADR 106 - fuente canonica de cuentas por pagar de proveedores",
+      "state": "vigente",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5d208009bc2b98538421bea12e1ec5fce1781d6bcc816fa31e05caf3e1680c86"
+    },
+    {
+      "path": "documentos/arquitectura/capacidad_colas_multiempresa.md",
+      "title": "Capacidad de colas multiempresa",
+      "state": "referencia_por_validar",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "049efd2c8b70d004ffde64654aaab8c7f992607d003bb9925ad1586207535f0c"
+    },
+    {
+      "path": "documentos/arquitectura/clasificacion_arbol_plan_105.md",
+      "title": "Clasificacion del arbol de trabajo - P105-001",
+      "state": "historico",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f98cf2d845416c7126e8b40a74dcf61143b4bae4aebf95fa6f3f8fac4246afb9"
+    },
+    {
+      "path": "documentos/arquitectura/descripcion_arquitectura.md",
+      "title": "Descripción de arquitectura de PCS",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d6eb7a9c8ec759b301c083ab7f38a9c9f2916b39bb56b6fcac9c50205a074b0c"
+    },
+    {
+      "path": "documentos/arquitectura/gobierno_datos.md",
+      "title": "Gobierno de datos y evolución del esquema",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5bb617dd6b7917fc44f77085423255ec1c39620ca9971d88c59c69afe6781c9a"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_bootstrap_ensure.md",
+      "title": "Inventario de bootstrap Ensure",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1d4e46d8d5c688ba53df0624669e11033aa7e93b6e6eb3108669b26a5630495f"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
+      "title": "Inventario de cliente movil - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c6afdeb0d86b6e4a85d0a77954123a55d9cdd63c92d6de9cb36749906b407063"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_errores_publicos_plan_105.md",
+      "title": "Inventario de errores publicos - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3cf5c01d8883d44add1ce848c0ed68bdbb7033d8188211ea8b3d8f80088995d4"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_goroutines_plan_105.md",
+      "title": "Inventario de goroutines - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8bd36aa61a5f749e438e4940ebdb4d134a8c442f9afa53ad0e34980d1fde75f4"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_impresiones_plan_106.md",
+      "title": "Inventario inicial de impresiones y vistas previas - Plan 106",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c2046d3686b51a96d818fb9de0146e3673d246db546e85166a2b4bb558ae4f23"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_runtime_ensure.md",
+      "title": "Inventario de llamadas Ensure en procesos ejecutables",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5b1313b6370f63ffb3f620c3e7bc4d62e5d62814a53a9f4163fb2f0b118bca19"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_storage_plan_105.md",
+      "title": "Inventario de almacenamiento - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "cc8bf5fb4a55862138c541c219f766a9705471c47b6f8a083ea0a86a59e62dd4"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_supply_chain_plan_105.md",
+      "title": "Inventario de supply chain - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "73b8c7f56ae31cc3f080b9e70da70113a22cf58f2e17f05ef75cd84796f0da54"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_ui_plan_106.md",
+      "title": "Inventario estático de interfaz - Plan 106",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "033724dc55dc9821b939e2055f715b0efda194e59aa1733efdc9273e4ad53a33"
+    },
+    {
+      "path": "documentos/arquitectura/matriz_pruebas_tenant_ab_plan_105.md",
+      "title": "Matriz de pruebas tenant A/B - Plan 105",
+      "state": "historico",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a2c0fbcf26ffcadd019e56d88aca95e468151c76ddef13cdd3c960f7fa9b2956"
+    },
+    {
+      "path": "documentos/arquitectura/matriz_rutas_multiempresa.md",
+      "title": "Matriz de rutas multiempresa",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "080f50817d341db31ff94e43e02196bf2f15430701df228de8a7ff4557511c27"
+    },
+    {
+      "path": "documentos/arquitectura/modularizacion_archivos_gigantes_plan_105.md",
+      "title": "Inventario de modularizacion - P105-018",
+      "state": "historico",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a55d5859203efc8efbbc3ff64ebaaec368960ce9e990d21456c93de1172dce37"
+    },
+    {
+      "path": "documentos/arquitectura/normalizacion_documental_plan_105.md",
+      "title": "Normalizacion documental por lotes - P105-019",
+      "state": "historico",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "72e52fde01482472af94aa9e58466f2f9575d6e74bc83628c2b1850760f407d6"
+    },
+    {
+      "path": "documentos/arquitectura_modulos_universales.md",
+      "title": "Arquitectura de modulos universales",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ebc958be72e0abd040b9ea896842449cbf15552c4179c4c1c1133b8f54e2d9e4"
+    },
+    {
+      "path": "documentos/auditoria_facturacion_seguridad_20260905.md",
+      "title": "Auditoría de facturación electrónica: seguridad y separación fiscal",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7d692ba75f6ead60620aff3e6981710ba6935d6a09ce6e09ac6342aa992aa754"
+    },
+    {
+      "path": "documentos/auditoria_idempotencia_punta_a_punta_2026-08-26.md",
+      "title": "Auditoria de idempotencia punta a punta",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "969069c5c98fa8eb259cf71f4a73b0343289dd7a69faea493473b31de6d7004c"
+    },
+    {
+      "path": "documentos/auditoria_pagos_colombia_datafonos_breb_nequi_bascula_2026-08-25.md",
+      "title": "Auditoria de pagos Colombia, datafonos, Bre-B, Nequi y bascula",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e24256baabc0f78ac1c18785e74ac9a8ae5ed85964d0ace5471978a9aca691e4"
+    },
+    {
+      "path": "documentos/backup_restore_report.md",
+      "title": "Reporte de backup y restauracion",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6d14bbf0d499dcd103c671b409e1b661dca11b82f2cb365d1ab8aa1642ddebdf"
+    },
+    {
+      "path": "documentos/calidad/code_quality_baseline.json",
+      "title": "code_quality_baseline.json",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e9c86339925b243959e68308380a3779b6e93ba5fdc71823428f4d5066a2372b"
+    },
+    {
+      "path": "documentos/calidad/estrategia_verificacion.md",
+      "title": "Estrategia de verificación y aceptación",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "95840233b53d7cf660d9bd44d29b5866306a806ecf1a11e3164a2603a06286f1"
+    },
+    {
+      "path": "documentos/carnets_empresariales.md",
+      "title": "Modulo de carnets empresariales",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "17287dd6d8483aed793d9411f9fa9ad12aab5f42939bf0580db648ac4515b4ba"
+    },
+    {
+      "path": "documentos/carta_publica_productos.md",
+      "title": "Carta publica de productos y precios",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "b43e1eab241775dcb0909a1927b47217c8c1d1c449b76c342e4bbafe55593f9b"
+    },
+    {
+      "path": "documentos/catalogo_documental.json",
+      "title": "Catálogo documental generado",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": null
+    },
+    {
+      "path": "documentos/catalogo_documental.md",
+      "title": "Catálogo documental generado",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": null
+    },
+    {
+      "path": "documentos/centros_costo.md",
+      "title": "Centros de costo y rentabilidad",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "0ab0b1d3743d6b884f78a29aa61e8ba707867c6c505c160d04b35603fbdb0857"
+    },
+    {
+      "path": "documentos/chat_ia_capacidades_2026-09-06.md",
+      "title": "Chat IA: capacidades y verificación local",
+      "state": "referencia_por_validar",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e182b38413f34fb06b185cc6800dc212e02ca9b5be171b9dc5677185674cb8f5"
+    },
+    {
+      "path": "documentos/checklist_seguridad_endpoint_multiempresa.md",
+      "title": "Checklist de seguridad por endpoint multiempresa",
+      "state": "vigente",
+      "owner": "Seguridad e ingeniería",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "0b41de091f08a71e278e0f17340a4c3b97d1ac307ef0cb7d208551f21e48e4f3"
+    },
+    {
+      "path": "documentos/cierre_fiscal.md",
+      "title": "Cierre y bloqueo contable/fiscal avanzado",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d885c0e748961d9159049e315a9c4f0815110bdf53edb72a3b956eaf82cda9e7"
+    },
+    {
+      "path": "documentos/cierre_reparaciones_produccion_seguridad_2026-09-05.md",
+      "title": "Cierre de reparaciones del informe general de producción y seguridad",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c6c4af98bb4880dcfb0453b8d9a4206024f968f653e656486c6d430d2e5855ed"
+    },
+    {
+      "path": "documentos/cobranza.md",
+      "title": "Gestion de cobranza",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "88bb0c9d2616d0a395d0158d771fc8868d42a3c9a970c3d83a79f10f6ae2c573"
+    },
+    {
+      "path": "documentos/comandos_codex.md",
+      "title": "Comandos para Codex",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f634de66c1df64008f6917c4385c0ee6c338a1bd877afea6635dd0910beee9b4"
+    },
+    {
+      "path": "documentos/compras_avanzadas.md",
+      "title": "Compras avanzadas",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d0d8cb9f5b219e13275520bb7d0cfe12340e49b58e7364ae4022d13bed3cba30"
+    },
+    {
+      "path": "documentos/contabilidad_colombia.md",
+      "title": "Módulo Contabilidad Colombia",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "2f19969418d3a4545facd1de61af8d73ede308200c5a9bec04d3f62ee023eeaa"
+    },
+    {
+      "path": "documentos/contabilidad_colombia_avanzada.md",
+      "title": "Suite Contable Colombia Avanzada",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5791982750495c833bb4272752acb6ea7e58789c727eabc54e039ff871055da3"
+    },
+    {
+      "path": "documentos/contexto_codex.md",
+      "title": "Contexto operativo para agentes de IA",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d331bcc84780f0cd16748d167ee404cacbe76709f0355b895266f588851c235d"
+    },
+    {
+      "path": "documentos/contexto_especifico_del_sistema.md",
+      "title": "Contexto especifico del sistema",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "bf888295178afd5bef81d02c9582515dcce601b0bb627b8cb9733885420021d5"
+    },
+    {
+      "path": "documentos/contexto_general_del_sistema.md",
+      "title": "Contexto general del sistema",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d4bbefdaba879a35e072717f773b14daca33e7f59407d87c6db3106e23553cce"
+    },
+    {
+      "path": "documentos/crm_ventas_avanzadas.md",
+      "title": "CRM y ventas avanzadas",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "55a094188501bbfacf027dd9a19f5ce21d34416476cdaeca1881b42ecf5505fc"
+    },
+    {
+      "path": "documentos/decisiones_tecnicas.md",
+      "title": "Decisiones tecnicas permanentes",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7927d8035d8d47b103dfb4505597591a3e94d03a6d3c26829d261d0c7dda1708"
+    },
+    {
+      "path": "documentos/declaraciones_tributarias.md",
+      "title": "Declaraciones Tributarias y Motor de Impuestos Colombia",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "63023f40f262ecd18ee562d7f2843dcf13868a2923a65a4bcd199d68db59056d"
+    },
+    {
+      "path": "documentos/deploy_nginx_reverse_proxy_vps.md",
+      "title": "Nginx y terminación TLS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "42acfa2831c0de0ad171679c4c968c93f5af380c97ac92944681abb92cac3b78"
+    },
+    {
+      "path": "documentos/desarrollo/configuracion_y_entornos.md",
+      "title": "Configuración y separación de entornos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "8d7a75dce68e1ff618bc73892f53c9e3101a9be099202f8f6e1430c7d232cf13"
+    },
+    {
+      "path": "documentos/desarrollo/incorporacion.md",
+      "title": "Incorporación de ingeniería y entorno de desarrollo",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1dbf2a48c9fee1aa6cfe7086b65918bf0960ad5a58b0c0184d9ac8c3d6445986"
+    },
+    {
+      "path": "documentos/descripcion_de_archivos",
+      "title": "Descripción de archivos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "fcb8235e86bda8b191301128103999dfa21f00c288da133dcb3e6376f921a800"
+    },
+    {
+      "path": "documentos/descripcion_de_modulos",
+      "title": "Descripción de módulos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "bb3108ab5b3af97d580b4ede656c8a9d749fb4216670ded0aae1a7a6647950f0"
+    },
+    {
+      "path": "documentos/descripcion_del_proyecto",
+      "title": "Descripción del proyecto PCS",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "67182330356c3a069d5d452085c475bbb19c6769c1fc10ed79b5ff9f3e2c168c"
+    },
+    {
+      "path": "documentos/diagramas/diagrama_entidad_relacion.md",
+      "title": "Diagrama Entidad Relacion",
+      "state": "vigente",
+      "owner": "Ingeniería de arquitectura",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e0f4026d645e96ae6a7887183fa6452ee8f7622749c6543d68c922b2e64091bd"
+    },
+    {
+      "path": "documentos/diagramas/diagramas_sistema_pcs.md",
+      "title": "Diagramas del sistema PCS para super administrador y Codex",
+      "state": "vigente",
+      "owner": "Ingeniería de arquitectura",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cbc450d9563a0a2d5ad3c06e64989eab7f52d12bcb8cccc17ca29d7f5d9a8ca2"
+    },
+    {
+      "path": "documentos/diagramas/diagramas_sistema_pcs_manifest.json",
+      "title": "diagramas_sistema_pcs_manifest.json",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d78146e8f1de7cef4e63805331285fa363b36c79c3b62004b9b848b6328e1c60"
+    },
+    {
+      "path": "documentos/diagramas/documentacion_tecnica_completa.md",
+      "title": "Documentacion tecnica completa con diagramas PCS",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fb3d5efdd01fff010afb32c7cc473be130725121b22b9ff522c3c07ef690ce96"
+    },
+    {
+      "path": "documentos/diagramas/documentacion_tecnica_completa_manifest.json",
+      "title": "documentacion_tecnica_completa_manifest.json",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "53aa196e31c88318e04b84bc5579194e9be7181584c32aa300373ad8328eec73"
+    },
+    {
+      "path": "documentos/diagramas/estructura_del_codigo.md",
+      "title": "Estructura del codigo",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "03b510fd291f1916c1e25ac57dfa706385f7247da2623574e6fa62f4df331af2"
+    },
+    {
+      "path": "documentos/docker_vps_operacion.md",
+      "title": "Operación Docker, release y recuperación",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "65c36ba4c18aefc270971edeb1180cbbeb0deb57493b29867fd42b473789edc3"
+    },
+    {
+      "path": "documentos/domicilios_profesional.md",
+      "title": "Modulo profesional de domicilios",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f94b7d73c34481b9bfc9e114442c22f7f32f063556f903e218665d43e96f9916"
+    },
+    {
+      "path": "documentos/domotica_raspberry_tunnel.md",
+      "title": "Domotica Raspberry Pi por tunel HTTPS saliente",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "71eb0ffe08f94171a9e002b059c65d5721d1a83534c55346e40036596a370147"
+    },
+    {
+      "path": "documentos/email_corporativo_mailu.md",
+      "title": "Email corporativo Mailu",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e31dd4318e07dd3f71e0585b1f81d8432e877c06c363bbea32f437ec980d87d0"
+    },
+    {
+      "path": "documentos/endurecimiento_seguridad_2026_07_11.md",
+      "title": "Endurecimiento de seguridad 2026-07-11",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f3a31effffef5269a685da77aade3ca2ed6c5cf36df8890133477efdae3008b3"
+    },
+    {
+      "path": "documentos/energia_solar.md",
+      "title": "Modulo energia solar",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d669733da128650c532aeadf9a2c65024e607eaa4cb762972c5d69eefa8557a3"
+    },
+    {
+      "path": "documentos/erp_multiempresa/01_alcance_erp_multiempresa.md",
+      "title": "Documento de alcance ERP multiempresa",
+      "state": "historico",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "df3fc0d37a9d520c92b72fe16ca14719d0b04dfa73b2a0807e73ce2f2539bd24"
+    },
+    {
+      "path": "documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md",
+      "title": "Diseno tecnico ERP multiempresa",
+      "state": "historico",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "09a05a7ce033613254883f41459676baeaa5d3da596484dabf45541806913ce1"
+    },
+    {
+      "path": "documentos/erp_multiempresa/03_especificaciones_funcionales_erp_multiempresa.md",
+      "title": "Especificaciones funcionales ERP multiempresa",
+      "state": "historico",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "26f98e6776fce1cadc0c69c250b635fcde3fc99b90b5ee7472d0d604ae431742"
+    },
+    {
+      "path": "documentos/erp_multiempresa/04_guia_implementacion_erp_multiempresa.md",
+      "title": "Guia de implementacion ERP multiempresa",
+      "state": "historico",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0c35ab14f037ca591d27c88b25b06f84f949fa78b46ec9d1e9dc429710f5de99"
+    },
+    {
+      "path": "documentos/erp_multiempresa/README.md",
+      "title": "Antecedentes del diseño ERP",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e989fe4d9991d6242357f38469ea48c759ee5e660239ab86d58bb2e1fb1be56c"
+    },
+    {
+      "path": "documentos/estado_actual.md",
+      "title": "Estado de entrega y evidencia",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-06",
+      "review_due": "2026-12-05",
+      "sha256_lf": "67060b21f1f23c21e47e5dea8a2809dbff14134f17626edd0cee2b54abed82bd"
+    },
+    {
+      "path": "documentos/estado_documentacion_2026-05-13.md",
+      "title": "Estado documental vigente - 2026-05-13",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f79efaf7cd67bb45f8efae75a6c4010e4572e59b6f1f17cb01e92c4e40a054f1"
+    },
+    {
+      "path": "documentos/estructura_bd.md",
+      "title": "Estructura del Base de Datos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ba0c80e33984ed393c179b628603be68dedfb48cfaac966930bbffe13e31c828"
+    },
+    {
+      "path": "documentos/evidencia_login_produccion_2026-08-21.md",
+      "title": "Evidencia de endurecimiento del login - 2026-08-21",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "590e272a04b8b967ff805c807a36fb266a13cc6fd74aadad185b28e3006ceab8"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-000/manifest.md",
+      "title": "P108-000 - manifiesto del candidato inicial",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "107388aad183375af46b1c1464c2c1db1e54754128a8485f797fbfbefe4bb37c"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-001/resultados.md",
+      "title": "P108-001 - calidad y cadena de suministro local",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3e492f7c309dd71bb76f0b6d4123c7875d88697c244bab4c649da18152000399"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-002/resultados.md",
+      "title": "P108-002 - migraciones y runtime sin DDL",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "14b798c51b75b3d50493ee2a39c179d38899f9ed1fd469f8dd240ca56492f548"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-003/resultados.md",
+      "title": "P108-003 - outbox, worker e idempotencia",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "62cc9a033e352248e8fbf96f76a29247782fc3f952f2c4f615aa28c981fe7889"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-004/resultados.md",
+      "title": "P108-004 - aislamiento multiempresa y autorización efectiva",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f7637ffdd66ce5a3924d1c86d5ffcb144752a19dc368d457443882873e2cde0f"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-005/resultados.md",
+      "title": "P108-005 - CxP: catálogo operativo y abono controlado en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0acfa1a611b924fcc0956eca72a1f3ff7a98a8f4c7de9824c279dcd3966b0236"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-006/captura_cxp_ia_visual_staging_20260729.md",
+      "title": "P108-006 - Visualización de captura CxP/IA en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "90fe9152c62758646a19b7534bde349c7968d612fc21d559bdb386f67b5eaffc"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-006/resultados.md",
+      "title": "P108-006 - Comprobación inicial de carga IA de proveedor",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c6f726fa45420357171c9a589e8582d9ef964f0fd9aa0fc3525674ba79425911"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-006/staging_carga_ia_20260728.md",
+      "title": "P108-006 - Carga IA de factura de proveedor en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f4f1bc78650fc3ca22289252f468e7d24ab4a19a80576dbcb3d6cedab264f355"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-007/resultados.md",
+      "title": "P108-007 - consistencia financiera y contable",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9d4a6fc35a4af6ad0d556eb44d4a7847eb6b82e1059663f5d6b29f6eb183fbba"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-009/resultados_staging_20260728.md",
+      "title": "P108-009 - ReportSpec IA: prueba autenticada en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a128a1aee9b6f4b7be117406943569a10e96e6b8c8030d71044c8a904ad97eb9"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-010/resultados.md",
+      "title": "P108-010 - Centro IA: permiso efectivo y validacion visual",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "b8d42b16a37ddeba9801174442e51747c72478f510d80ea87b2733049659369e"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-011/barrido_integral_20260730.md",
+      "title": "P108-011 - barrido integral autenticado",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a2313c5c90fe49a9cd461f4fa01ac8dbdfd724db7dda46894c56fec9def8e726"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-011/finanzas_panel_autenticado_20260729.md",
+      "title": "P108-011 - Panel y Finanzas autenticados en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "86390cee7aa7b540a5a145e14bbc1cbcb96ab5f358e7f9c90210ce419140c1c5"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-011/regresion_critica_20260728.md",
+      "title": "P108-011 - regresión autenticada de módulos críticos",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fd1c9067de9cb17f6b643bf627a90c2b93920395ed6721c013c5dbf670ef099a"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-011/staging_solo_lectura.md",
+      "title": "P108-011 - línea base visual autenticada de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6c0b4303d676b5d6816f14ecfe4d2d5a94730a5f8a3499491e922c44f3dde3c4"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-012/finanzas_cxp_responsive_20260728.md",
+      "title": "P108-012 - Finanzas y CxP responsive en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a44f62edc206f040337c85828b821d2d92dfb521901052987a42f181a99c2f79"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-012/finanzas_responsive_candidato_20260729.md",
+      "title": "P108-012 - Finanzas responsive sobre candidato de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f60004a5181174409c5fb9face73f9cce76dc5860687ffe11b7382c182b6a87f"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-012/resultados.md",
+      "title": "P108-012 - QA visual y responsive del candidato staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9b777a4843564829e9483ae83e44049da2bd766d73d632ff4cc0d803363bea36"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-013/resultados.md",
+      "title": "P108-013 - Impresiones y vistas previas",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "50c42670311c4a0251bae3b1da36b126e22db062df117de544a4b12510a75a93"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-014/preflight_roles_20260729.md",
+      "title": "P108-014 - Preflight de permisos para cajas concurrentes",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "51482beaeead3796b8134d9cb5e7bc30a2c6338b592f37f5992853d83fe518ac"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-015/comandos.txt",
+      "title": "comandos.txt",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a6a9b8da7c58f4d2790343353c626ed72a5fa84a962f59c7965c6736d8f6804f"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-015/dian_preflight_produccion_20260726.md",
+      "title": "P108-015 - Preflight DIAN autorizado de PCS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8758e21d5f119ce40aebcb9808c3bc3379782435217241f77ef4e066a95a400d"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-015/manifest.md",
+      "title": "P108-015 - Correo corporativo e identidad visual",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fe4c50ecaa8214ddbd1c8797ee8bd5270313c0941567b12309707fcb5c88554e"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-015/resultados.md",
+      "title": "Resultados P108-015",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f508723047f45f3f6834c5d33630a080e061eecb599b69f258d5cbc814509cf7"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-015/riesgos.md",
+      "title": "Riesgos P108-015",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ad7f75c73f903996039fb7bc3d221854e4943a61ca452f7dfce77a1bf413278a"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-016/resultados.md",
+      "title": "P108-016 - almacenamiento privado y ciclo de archivos",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5a4c99d22c4e31cbe0c73cb5c5c44a6ceea1b5874f1256af6720676572058a63"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-017/cabeceras_y_acceso_no_autenticado_20260728.md",
+      "title": "P108-017 - Cabeceras y acceso no autenticado en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3d49b3f9463a017f80350623f9ff4b13a149855934df214c95163faf42817561"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-017/seguridad_dinamica_staging_tls_20260729.md",
+      "title": "P108-017 - Seguridad dinámica no autenticada en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d461d5b1919eb9f830d573feb4a57cb84d4811d44e4a8bb476c7e475ecad39d3"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-018/alertmanager_simulacro_20260729.md",
+      "title": "P108-018 - Simulacro del circuito de alertas en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "728c7b5d7cb7bfb04d2ee351bba02eea336885b0fcbf4566062747c75ae72e97"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-018/linea_base_observabilidad_20260729.md",
+      "title": "P108-018 - Línea base de observabilidad en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9d75f833b71693be5fd5e5ccea79eb015755546a2c58fe4e1c8fe8124ce18b44"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-019/backpressure_rate_limit_staging_20260729.md",
+      "title": "P108-019 - Backpressure autenticado en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "531bf3ebbb9a365549929a604afc5c374c0707d9784d82cde4150735e6c3a467"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-019/carga_autenticada_20260729.md",
+      "title": "P108-019 - Smoke autenticado de capacidad en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3d81859a1887a5121877b00921a50a22c9671b59748db6f21c8b96c9d413fba0"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-019/carga_autenticada_500_staging_20260729.md",
+      "title": "P108-019 - Carga autenticada ampliada en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0d7432a8a5a2817303f546c6d65b7ceba32f1e28dc10a3202d744a3c5442ae47"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-019/smoke_publico_staging_20260728.md",
+      "title": "P108-019 - Smoke de capacidad pública en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6f59807a796cb1c565f74cb007598bbc01004121b0ac1ea015132d208b8c1853"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-020/restore_drill_completo_snapshot_20260729.md",
+      "title": "P108-020 - Restore drill aislado de snapshot operativo",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fcd95862110ef7dda63455f722ee4df0536dd40a31a5df6f1fa30a7ff421aa25"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-020/snapshot_integridad_20260729.md",
+      "title": "P108-020 - Integridad de snapshot VPS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "61e7837697f4153313ce889b26496f3bd33e3b6f4f51f95b1c760b6db19e286f"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-021/resultados.md",
+      "title": "P108-021 - Decisión formal de alcance móvil",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "24b360342fbb229d8353c1022f0dc69b311f8bf958c311049a65c1da57997ee2"
+    },
+    {
+      "path": "documentos/evidencia_plan_108/P108-022/higiene_documental_20260730.md",
+      "title": "P108-022 - normalización documental",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ae7a6554f39003aacf2f13b44ed589eee6328041302698c8ea22753c2d0458d2"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-01_release_6da6c134_staging.md",
+      "title": "P109-000 - Candidato 6da6c134 promovido por digest",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "96b6ad84edb7956f21ebe75c1247c187756f8d2d70c782a50d971e0a8a32409f"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-01_release_8847288b_staging.md",
+      "title": "P109-000 - Candidato fusionado 8847288b en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "768cf8f15562b1531d07a27c8af387b69878a1ceafd5907392128c99bf527794"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-01_release_89d6e042_staging.md",
+      "title": "P109-000 - Candidato final 89d6e042 en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ea8d9066518886359f6d9037a139ec239d72ff9aa83c5bd4e14c72bcdd59cce4"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-01_release_d4e613e2_staging.md",
+      "title": "P109-000 - Candidato final d4e613e2 promovido por digest",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "78c292b3598d269fc1b186e5ba83cf61f9a86bdb798a3e2317c9f7a2010d27ad"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-01_release_eb853788_staging.md",
+      "title": "P109-000 - Release inmutable y promoción controlada",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7e50b729fb5bd2760a65d578343c9509d8fc60e46078a3bec609bc060ff5cb0c"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-09_candidato_17c55dd8_migracion_dian.md",
+      "title": "P109-000/P109-005/P109-007 - candidato  en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "dbfca61732ecf40b166725116e45c671fb50ecef2ed5195ced3944bcbf7a72eb"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-09_candidato_bb285968_centro_ia_staging.md",
+      "title": "P109-000 - Candidato staging bb285968 y compuerta reproducible",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a887242f73f608f7215cc4a913b782e4e4bdd5402688868cb294084e3a4c624e"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-09_drills_migracion_34cfd852.md",
+      "title": "P109-000 - drills exactos de migración de 34cfd852",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c5fba42d106e6e288bd1e4d5a295cae899cd08614e7fe0122baffbb70a4d797d"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-09_release_inmutable_31915619_staging.md",
+      "title": "P109-000 - Release inmutable  promovido a staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e227506ef79578d72c19952db107d23f5dc73301f592e5663a9e08fea8125ad5"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-09_release_inmutable_3676cc02_staging.md",
+      "title": "P109-000 - SHA actual  por digest en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4ad45c7b18668c5ec4b9abce73101db86e60f1aca441a22400b337df81a648f5"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-000/2026-08-09_verificacion_candidato_34cfd852.md",
+      "title": "P109-000 - verificación parcial del candidato 34cfd852",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "06d19d716b6b131cd97d99db28f6355bb5ebbf927d87e66bd292ac111bdeb536"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-001/2026-07-31_recuperacion_cxp_staging.md",
+      "title": "P109-001 - Recuperación CxP controlada en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "912151518a0641c14d59c7e0546d936477b74225cba626228f1f3fedf9d6ea33"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-001/2026-08-01_negativos_runtime_cxp.md",
+      "title": "P109-001 - Negativos autenticados del recuperador CxP",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "cabfbebcc44b18576cda1b27d7d5f0c9e759f5b24992a8d2607fc420e8d9217a"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-001/2026-08-01_pago_minimo_precision.md",
+      "title": "P109-001 - Pago mínimo CxP y precisión monetaria",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fe2f188363a91dd3ea9babd6c2885837cfdcbf9b4df0ee4e91b7b68056c6e36a"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-001/2026-08-08_cxp_staging_invariantes_c8094f5b.md",
+      "title": "P109-001 - invariantes CxP canónica en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fb9f02525c896ef7671a8bf36262df64d697ef1121db7f7d354b822d8d12428b"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-001/2026-08-09_aislamiento_y_concurrencia_cxp_staging.md",
+      "title": "P109-001 - Aislamiento A/B y concurrencia CxP en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5d2e774527890684e80ab60ae283d7be3787cd6d29d576c2208ee36e8ce0d000"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-07-31_contratos_ia_y_bloqueo_proveedor.md",
+      "title": "P109-002 - Contratos IA y bloqueo de proveedor",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7583e9c3b79d02f5171ba9c67e9d9ab065032e7ec758d0431e671d0497c600a7"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-07-31_dialogo_plantilla_reporte_ia.md",
+      "title": "P109-002 - diálogo accesible para guardar plantillas de reportes IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1db89962620b59990338d87911fdb8111aa7269d1f26db07cdb2e553f9c582b6"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-01_cierre_soporte_89d6e042.md",
+      "title": "P109-002 - Revision y rechazo real del soporte CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c5a13830335fa40c31ce5d06453847a2f80f973ae8cb808fa436466e549ac099"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-01_confirmacion_idempotencia_evals.md",
+      "title": "P109-002 - Confirmación, idempotencia y evals CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f13037513804c3633af993e76e801b3fe9ff2f30382a37e3eff56ae0866857e3"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-01_extraccion_real_cxp_ia.md",
+      "title": "P109-002 - Extracción real y edición CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3372deec64ae955d803e83112e995553ce0a9a974195620b3bedc42bf0a9f069"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-01_preflight_ia_staging.md",
+      "title": "P109-002 - Preflight autenticado de IA y CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9caa6924bb6785197d5109b86efc28ce34e50165ba61f413dc36c360ef2d4c42"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-08_cancelacion_y_validacion_adjuntos_local.md",
+      "title": "P109-002 - cancelacion IA y validacion de adjuntos",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f1c4459bf6b7bac39f3d8a7f4ebc8fa1b0da91bf4c9a49180e55c86f7f8ceb91"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-08_extraccion_edicion_duplicado_pcs.md",
+      "title": "P109-002 - extracción, edición y duplicado reales en PCS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "349c508d43fa414bdc54ed6391c045f050991cec64ecd16275b25165f7c14ab8"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-08_ia_soportes_contratos_humanos.md",
+      "title": "P109-002 - contratos IA y soportes de compras",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3e8b89f3149cf11bb4630502f247c4afd1556ffe07a4d567a0cb8ac4b5cc5af6"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-09_centro_ia_visual_y_modo_agente_34cfd852.md",
+      "title": "P109-002 - Centro IA empresarial, visual y modo agente",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1a97f106efab436e96a8f04a6777c57f99254d14f534b05671280f76e3efcf88"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-09_cxp_ia_staging_17c55dd8.md",
+      "title": "P109-002 - flujo CxP/IA autenticado en el candidato 17c55dd8",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ab9cb95f921fae8659254e787a24218d824359cd4565a1f270d34b1aa1933e61"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-09_evals_adversariales_telemetria_local.md",
+      "title": "P109-002 - Evals adversariales y telemetria de extracción IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "95c54ca72dcdb2ecc96c45532f651a431e12a5f71d249459d9026045c8a5b422"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-002/2026-08-11_extraccion_ia_real_staging.md",
+      "title": "P109-002 - extracción IA real y revisión humana en PCS staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8dadc066d4ef59c3710bd34bc252a3469a1ccf5ee0c3d2a84488be19e86349d5"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-003/2026-07-31_contratos_reportes_contables.md",
+      "title": "P109-003 - Contratos base de reportes contables",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "b4af0ffe8979cdc2f14a6fc8cd4e576c9b4c12a6f5088f98a7918647e71ccbfc"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-003/2026-07-31_reportes_staging_visual.md",
+      "title": "P109-003 - Centro de reportes en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e69259d575cca3954cb8f9cc65f3b65d9f4df578f1d3db579cb0512a17315a64"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-003/UAT_contador_pendiente.md",
+      "title": "UAT contable y fiscal P109",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9924e301329a90b79e73a9ad570141a51fe8475bf7cd70dce431176b9c422917"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-07-31_auditoria_finanzas_staging.md",
+      "title": "P109-004 - Auditoría autenticada limitada de Finanzas en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2eee2159c734b83dfccb00c234ece78623b3a159674fb03d9c97a9e599648746"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-07-31_inventario_estatico_controles.md",
+      "title": "P109-004 - Inventario estático de controles",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d23430b08dc3c47ecc319ed53dbbfc1854c18b8c4c5fc8d60c9b2421637b0cb1"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_8847288b.md",
+      "title": "P109-004 - Barrido global del candidato 8847288b",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "b7ec4837ee5ee306549e8e005d1b6298975e317166afe08c5b3eb4aa55f795e0"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_99348ff4_y_cierre_edd2bdac.md",
+      "title": "P109-004 - Barrido global 99348ff4 y cierre dirigido edd2bdac",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "42cc1c2ee2284cbe7d3293a972c2fa1028e1c348be6f180616f4dd25609c2fac"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_completo_89d6e042.md",
+      "title": "P109-004 - Barrido completo del candidato 89d6e042",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e0c42c1655ee5956960c3908e0bffed083938ed8a9958c9ac87f013442530fed"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_dirigido_89d6e042.md",
+      "title": "P109-004 - Barrido dirigido de Finanzas y CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4331ea4295274fe645bd5d4cffd4c74fac5f819058603a038a5218bf1dd80808"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-01_barrido_final_d4e613e2.md",
+      "title": "P109-004 - Barrido global protegido del candidato d4e613e2",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e08cb49cc34879149908407219f9d2b439c07e7ea1943c7967166d406ceea824"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-01_guardia_no_mutacion_e2e.md",
+      "title": "P109-004 - Guardia de no mutacion del barrido E2E",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fa9062cb50c5398c03aea1cb405628afbb31fcfb0f6ea574ab714463c2cfeaab"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-01_repeticion_y_hallazgo_postgres.md",
+      "title": "P109-004 - Repetición del barrido y hallazgo PostgreSQL",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "bdf9d6f756522c8a0e7c26c0097452872d992e3cf1c7cab0a8cfab42584e75fb"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-09_auditorias_y_carga_autenticada.md",
+      "title": "P109-004 - Auditorías y carga autenticada",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "244cc3ce46965fe3196a0698d0d9a9a2ae4cca80e94d4df633f7771d6783ce78"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-09_barrido_e2e_lotes_618.md",
+      "title": "P109-004 - Barrido E2E autenticado por lotes",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c3194abe0fffb3026a61e56c751687f9ce15c41c75ca4e8691ff410a40a5de81"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/2026-08-09_e2e_parcial_y_regresion_dirigida_bb285968.md",
+      "title": "P109-004 - E2E parcial y regresión dirigida bb285968",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "bd681c3a525f95625afec9ff0eea399502f9779bcc621eeaae6a6823aa101c24"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-004/matriz_mutaciones_por_rol_pendiente.md",
+      "title": "Matriz de mutaciones por rol P109",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5fd780efbc8c3ee7426a19839c3c8f62c35af68e84c4d0da0ac6d2384fa8fe34"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-005/2026-07-31_formatos_impresos_sinteticos.md",
+      "title": "P109-005 - Formatos impresos sintéticos",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a94fcc5d5a4af180f7657c072ae917ebdd07fd20e8453027ede06a633ac403ff"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-005/2026-08-08_revision_visual_facturas_staging_c8094f5b.md",
+      "title": "P109-005 - Revision visual autenticada de facturas en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f647dbb736f93791d51ce4d7e1300f666ead9a72ac7b95fe21123a3492b96502"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-005/2026-08-09_factura_pdf_real_y_buzon_pcs.md",
+      "title": "P109-005/P109-006 - PDF real y prerrequisito de cuatro usuarios PCS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "b053cbe660b0b4440899b558001ed4da97de6478df68a2e3844d780530d9ac67"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-005/2026-08-09_finanzas_cxp_responsive_staging.md",
+      "title": "P109-005 - Revisión visual responsive de Finanzas y CxP",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "bdc42bc29b1782a379e8865879e7c789bd211b95ed737921b0707f00c09f6964"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-005/2026-08-09_pruebas_reales_pcs.md",
+      "title": "P109-005/P109-007 - pruebas reales visuales y operativas PCS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d7ccd574ab1bf325ea760d2b6ea9e608794d7f05a4c79790dedce1b9a0bb3975"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-005/2026-08-09_qa_impresion_20_formatos_candidato_actual.md",
+      "title": "P109-005 - QA sintético de impresión del candidato actual",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9c0d9a877c55a614851211881f497a337f09b7b4e64279d2b07a225fa42ad1b3"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-005/protocolo_impresion_y_accesibilidad_pendiente.md",
+      "title": "Protocolo de impresión y accesibilidad P109",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "32f41ffc784946c7e009aebf1ea35c91c8f09695bfe4d4e810d5d99b7752605f"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-006/2026-08-01_identidades_cajero_staging.md",
+      "title": "P109-006 - Estado de identidades para cuatro cajas",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f7038e0e027de71991c20aa24188ce1bc06677986e403d70db273af59600de42"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-006/2026-08-02_cuatro_cajas_reales_staging.md",
+      "title": "P109-006 - Cuatro cajas reales y carga transaccional",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "13617ef25dfbebca87680c7ea22f910c102eb7fb94d728b00677dadf8c5c1cf4"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-006/2026-08-09_cuatro_cajas_digest_349712fb.md",
+      "title": "P109-006 - Repeticion de cuatro cajas sobre el digest 349712fb",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "848d70839e3e6a9329a84e11ff9047a1f2011d80489912eb94326c60ff293810"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-006/protocolo_cuatro_cajas_pendiente.md",
+      "title": "Protocolo de cuatro cajas P109",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5ba48aca7f5d4e9c28658c5f9c7568f4b095cc91fbeecac6407e654c3f7bd74a"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-007/2026-07-31_dian_configuracion_pendiente.md",
+      "title": "P109-007 - Diagnóstico DIAN de staging PCS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "64af820f5a122c56f3391fa2356e4664791ad4d94fe6c47a1b68ff325726f751"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-007/2026-08-01_dns_mail_y_bimi.md",
+      "title": "P109-007 - DNS de correo y límite BIMI",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ca18207d77e83b1d5de380115c63fa236308878343a6042fedb794a1a6a5bf5f"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-007/2026-08-08_diagnostico_autenticado_dian_staging.md",
+      "title": "P109-007 - Diagnostico autenticado DIAN de PCS en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6a4f70c6cd1d6937e49aba552f0def8d09613c09529f242a1cbeb1cc1e4cd302"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-007/2026-08-09_acuse_sincronico_sin_trackid.md",
+      "title": "P109-007 - Persistencia segura de acuse síncrono DIAN",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "aa437bd5cd2f9c0b9cd3615be71629c7f941668e61299f3e0eb2d699a2de51a3"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-007/2026-08-09_prueba_fiscal_produccion_pcs.md",
+      "title": "P109-007 - Prueba fiscal controlada y reverso oficial en PCS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "86b965b0d3fca1b0565ec6c7c847a9b5c7f0815a2958165e3ab55013dd02d608"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-07-31_restore_aislado_y_auditoria_critica.md",
+      "title": "P109-008 - Restore aislado y auditoría crítica",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "138c172a91d4e3db1046550879d84c4a3266a6ac8c8a9cd3390915a57aaf5765"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-08_cuota_soportes_ia_local.md",
+      "title": "P109-008 - Cuota empresarial para soportes CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "95bb08183673d629096c8c81db9cddc6a4d593228838da17460ea95124e97a3d"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-08_papelera_soportes_ia_local.md",
+      "title": "P109-008 - papelera recuperable de soportes CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "aa8c99fe0d6393dd9d3cfe81c3f13af9d02fb3b3f7a3b2892b7fe7cd07efd6bd"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-08_restore_replicas_rollback_c8094f5b.md",
+      "title": "P109-008 - Restore, replicas y rollback coordinado de ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "590ee43442d7094cbc097c9e6350ae5557ae77a2aefc1186853780e10b497643"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-09_dialogo_papelera_staging_34cfd852.md",
+      "title": "P109-008 - papelera y recuperación visual en 34cfd852",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d93684fcd81675877a89d3928e0461449b2927292417fe7fdae4d3911429dab7"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-09_postgres_papelera_integridad_71984cb5.md",
+      "title": "P109-008 - Integración PostgreSQL de papelera e integridad CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "856dec574325a77e7ddbe1761df6e3326e1de887379df303615be853935b05f9"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-09_purga_segura_soportes_ia_local.md",
+      "title": "P109-008 - depuracion segura de soportes CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "bce3a46b149bbe5719a94696e82d251a873b5633acfe88ce33a6602bfe6a2c96"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-09_replicas_autenticadas_y_rollback.md",
+      "title": "P109-008 - Réplicas autenticadas y rollback coordinado",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e114e9635f57b9718ebc4f4c15fd0da6c30b4679b2437ddf77dd8d880115e929"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-09_restore_aplicacion_digest_actual_staging.md",
+      "title": "P109-008 - Restore de aplicación del candidato activo de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "19a28344df745e1bcf7dd2061c610f2f37a478716a3ba9067a08446b79edddcd"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-09_restore_integral_snapshot_20260809_031501.md",
+      "title": "P109-008 - Restore integral aislado del snapshot vigente",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "dd05f2f8f0d904cd649e1e3a743b593a525c6058a2110bbe9c0e2cc6a87d00d8"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-008/2026-08-09_retencion_papelera_staging_34cfd852.md",
+      "title": "P109-008 - retención real de papelera en 34cfd852",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7c067d3cf8a0d3ddd04c05bce12fd78536f46699554f34ba010b2d6c4abb7878"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-07-31_cabeceras_y_aislamiento_staging.md",
+      "title": "P109-009 - Cabeceras y aislamiento básico de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9e4077e3098316c7ccf8eb3a2139fb7129a8693e1d1834b7afb86bc3dfd63bb7"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-07-31_inventario_csp_inline.md",
+      "title": "P109-009 - Inventario CSP inline",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2d12c38a757fea4b02e3bfeb835d210adae4ee3c8080bfaec340783643c82674"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-01_cadena_y_cabeceras_staging.md",
+      "title": "P109-009 - Cadena de suministro y cabeceras del candidato",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "07d4f59d5333e10838ffbe3ce7b3e94b6197e851243686f5dd4db5962b79ea85"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-01_hardening_host.md",
+      "title": "P109-009 - Escaneo y hardening del host VPS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4a7750e61f9c272dd0c44c495952b588dd3c66617bbdf708c1de558d57458c76"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_csp_report_only_estricto_preparado.md",
+      "title": "P109-009 - CSP estricta en modo Report-Only preparada",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "aea096fd25eaf906b0476878c8e2476250610dc3532962789759b07cafe1957c"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_csp_static_report_only_fix.md",
+      "title": "P109-009 - correccion de CSP Report-Only para recursos estaticos",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2b62d5356ebfeebb8520a33467a47c0722dd7c8d4319c7b6a65905991c90005e"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_csp_strict_staging_a408bb62.md",
+      "title": "P109-009 - CSP estricta Report-Only validada en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5c532d4242ce2246abe5c2b33fa396b4c7b0e04b628edacca122c3dc7d03fc89"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_dast_autenticado_staging.md",
+      "title": "P109-009 - DAST autenticado seguro en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4777c6d9864fbafc9a14d2c554e597de362391984dd092d03cb34bc6c8ce1efe"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_descarga_privada_y_redirect_ssrf.md",
+      "title": "P109-009 - descarga privada y redirecciones SSRF",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3271fea5b2dcc23eb47aef91ae2d305a0b364e44f7266afe24b2396c80120eb7"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_menu_mutation_observer_guard.md",
+      "title": "P109-009 - guardia para observador dinamico del menu",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2eb74819a872f5aaa8b173e87dbf3af92829025139a98b1bbdbf4131cfc1c477"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_menu_observer_defense_in_depth.md",
+      "title": "P109-009 - defensa completa de observadores del menu",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "15094e2cd04374e6edf4602cef03c823af9a83499c860f221ed8b65926c2fc8f"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_menu_observer_staging_c8094f5b.md",
+      "title": "P109-009 - observadores del menu validados en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2d29c48023da79811723b79135cf53998f5e21c1e7bd8d638ec98b55c34750db"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_salidas_http_dian_ssrf.md",
+      "title": "P109-009 - salidas HTTP DIAN e integraciones protegidas contra SSRF",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "11a9f717ae2f5675dfef1bdede8c958e2b9d321e32b42885b9dd09fbf286c345"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-08_subida_hostil_xss_ia_pcs.md",
+      "title": "P109-009 - subida hostil y XSS en extracción IA de PCS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "78adad925b7d08e6e23e7312e9947b78561bb296e73f507414f4fbd42408ab6e"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-09_aislamiento_ab_identidad_no_global_34cfd852.md",
+      "title": "P109-009 - Aislamiento A/B con identidad empresarial no global",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1b594346dd98e0a91cacb0a9b22fbfb94818580786e7ffba270836c3bdad35a0"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-09_capacidad_docker_y_qa_finanzas.md",
+      "title": "P109-009 - Capacidad Docker y QA visual de Finanzas/CxP",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0bbbf0fc51f50bbf169f1394225defe585517df0e38502de35d8fb5e65aba624"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-09_integridad_descarga_soportes_local.md",
+      "title": "P109-009 - Integridad y descarga segura de soportes",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5bfde69735496333401dee2b8f424a41ef9eb88e1a1b0a29e6e973a712ab916f"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-009/2026-08-09_sondeo_publico_staging_cabeceras.md",
+      "title": "P109-009 - Sondeo público de salud y cabeceras en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1099aca87eccec4edec9e6c99021d1f4218e451c76edad1cb307fd8facccd12a"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-07-31_salud_y_metricas_staging.md",
+      "title": "P109-010 - Salud y métricas de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "42dcf6af62a920c2df45812a7f8ce320d5cbe4488ed48fdbf8a3e29d80f9e5d6"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-01_carga_89d6e042.md",
+      "title": "P109-010 - Carga, salud y alerta del candidato 89d6e042",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "57a1c6d25762ddf55eba1adb45ab96715f995b759c18b818f3f1d9f02b6f44b4"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-01_carga_alerta_8847288b.md",
+      "title": "P109-010 - Carga y alerta sintética del candidato final",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "cf5b238aa75441c77f2f430ede1e01cd32afcf6f157a747e07d2949dfc3c9fdb"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-01_carga_salud_y_disco.md",
+      "title": "P109-010 - Carga, colas, salud y capacidad de disco",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "685cb447bfc9ec1caaa634c2eb7384dce9f7d4ac53cdaf9f9e10098cd410d2f1"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-01_limpieza_imagenes.md",
+      "title": "P109-010 - Recuperacion de capacidad por imagenes antiguas",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fe8838e20357b6c2daefa15a79dc0ad3a4d7bb97d105a4d235f957532e8babc4"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-08_carga_lectura_autenticada_c8094f5b.md",
+      "title": "P109-010 - carga autenticada de lectura sobre candidato ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "51b575072df2dfb4174001ed6dc6b2461dc467df330f8afad549bb2fba2640ed"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-09_antivirus_staging_34cfd852.md",
+      "title": "P109-010 - estado real del antivirus en staging 34cfd852",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7753b570220e04986e226f0125b9725ce6519a40f366704e59bb86bf325b8d81"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-09_clamav_staging_candidate.md",
+      "title": "P109-010 - candidato ClamAV exclusivo de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2b35e20890372bde2fe565268214eae5ed815632193a947069bd56aeb79c5934"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-09_observabilidad_antivirus_soportes_local.md",
+      "title": "P109-010 - Observabilidad local del antivirus de soportes",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4e70e774be0438ce241057dc918be34ef48bc63695eff991b389cd017afeab0d"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-09_observabilidad_depuracion_soportes_ia_local.md",
+      "title": "P109-010 - Observabilidad local de depuracion de soportes IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "329d07cea5de0a449ce4cbbfd8ce73349d2af713763af65f597b677c5c1ab558"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-010/2026-08-09_outbox_lease_dead_recovery_postgres.md",
+      "title": "P109-010 - Durabilidad de outbox y jobs en PostgreSQL real aislado",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2efa541f71dfc838f610acad880da886fddda1bbbcf606f780a4e18ebf2f9403"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-011/2026-07-31_migraciones_y_guardias.md",
+      "title": "P109-011 - Migraciones y guardias de runtime",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f55b3ef92a010a7227b9d5361815d42fd3ccee7ec97d885c96c9f09b28835e05"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-011/2026-08-08_migracion_restore_c8094f5b.md",
+      "title": "P109-011 - Migracion y restore aislados del candidato ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6e2a06c84a317d7d62d2af77fa21341797fa44f5dfbe4c428ba9518c1fb7b693"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-012/2026-07-31_documentacion_y_auditoria_local.md",
+      "title": "P109-012 - Documentación y auditoría local",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f4ff0e2dc47ddb840e5ca878b0c69262d1c23dafb3812fc0555708541485091f"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-012/2026-08-08_preflight_c8094f5b.md",
+      "title": "P109-012 - preflight profesional completo del candidato ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9b47a32d91c1d5e75ceb0365ed9046454491ec3ef6cf978bbc801f9d02f9f7fa"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-012/2026-08-08_preflight_full_candidato_local.md",
+      "title": "P109-012 - Preflight profesional completo del candidato local",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5f744b5f30a561d3e8f5e0fbc6ef4179e78c1da7fd7a3c6362983a55ed42b19c"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-012/2026-08-09_compilacion_total_y_vet_candidato_08272c56.md",
+      "title": "P109-012 - Compilación total y vet del candidato",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2d662ebed41c84de8796aaca9f655462814495a960c8750584d9c2367928c9ff"
+    },
+    {
+      "path": "documentos/evidencia_plan_109/P109-013/acta_piloto_go_no_go_pendiente.md",
+      "title": "Acta de piloto y decisión GO/NO-GO P109",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d372e9d728ee4b62fae8d5dd8cdf24f65cd65cc10a7da88633e83cdaa20bd4cb"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-000/2026-08-11_auditoria_integracion_y_alcance.md",
+      "title": "P110-000 - Auditoría inicial de integración y alcance",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "20acb91a4f14eb0b9ebaff5995caefed06a70e6b2f522afc66df2e57c7a4a4de"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-000/2026-08-11_compuerta_preproduccion_integrada.md",
+      "title": "P110-000 — compuerta automática de preproducción",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a140b28a3fb982d2b2e027c98d9df50f777de50a3ab287a5e77af50db7983aa2"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-000/2026-08-12_compuerta_actualizada_dian_alertas.md",
+      "title": "P110-000 — Compuerta automática actualizada",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "60085f5aa0da608de01414c04cd28bdb46254ecde9af7df5983a29c2d7c6cc4f"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-000/2026-08-12_compuerta_automatica_actualizada.md",
+      "title": "P110-000 — Compuerta automática actualizada",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "cc5ce262cdca2e8b3a46d4ec58efad0fb971112e6d0928c9160ecbe340830dbf"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-000/2026-08-12_compuerta_automatica_repetida_post_cxp_ia.md",
+      "title": "P110-000 — Repetición de compuerta automática post CxP/IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2ef032c532ce91d5486c9f593bdab845c795091128854415445b84041730e4ac"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-001/2026-08-11_fuente_cxp_canonica_y_guardia_persistencia.md",
+      "title": "P110-001 - Fuente CxP canónica y guardia de persistencia",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e2d0cc9826c577d0bc4e33c37e384691111934376e31417817cd1f833d938bc2"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-001/2026-08-12_invariantes_cxp_candidato_e308ca4b.md",
+      "title": "P110-001 — Invariantes CxP en candidato e308ca4b",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "28bcce3f7cb4a008123a2499111d1c783528b3fe13f5e5408db5ba390b9419b8"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-001/2026-08-12_migracion_vacia_y_upgrade_e308ca4b.md",
+      "title": "P110-001 — migración vacía y upgrade aislado de ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "abab5aaf3158da5f47f98b4d5b6794e8f1989cb36abbd862aba8e74d753a37c6"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-001/2026-08-13_auditoria_integral_duplicacion_calidad.md",
+      "title": "P110-001 - Auditoría integral de duplicación y calidad",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "91e385343bf782231dd9eca78727bf1f72253016b029ccf833d7ee9666e3d1ea"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-001/2026-08-13_compuerta_calidad_y_cancelacion_ia.md",
+      "title": "P110-001A - Compuerta de calidad y cancelación IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "562dc74e30e054875248ac41b9ac6ab37077d0450c2b910504ae5fc5d23b12bd"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-002/2026-08-11_conciliacion_candidato_516936c7.md",
+      "title": "P110-002 - Conciliación del candidato 516936c7",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c322c5aadc1c2fce0b32537e07c6b592bedde48f730052c43b994dbdf5ed7732"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-002/2026-08-11_cxp_concurrencia_candidato_6bed2315.md",
+      "title": "P110-002 - CxP concurrente en el candidato 6bed2315",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "74429a583da3474b0f697d7848f4abdf3592aecd3cef9736c058d63a3af6687d"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-002/2026-08-11_eventos_operativos_contables_21a4f2cf.md",
+      "title": "P110-002 - Eventos operativos sin partida doble",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "96ca7f4da86d030a77c1e84f9a3b15427074728017918446d73c052b2a713960"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-003/2026-08-11_asistente_ia_no_operativo_21a4f2cf.md",
+      "title": "P110-003 - Asistente IA no operativo",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4d662b063bf5e1c7157a573ee06d7cf70b84332e5183fc3914ff788d952804cb"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-003/2026-08-11_repeticion_asistente_ia_sin_error.md",
+      "title": "P110-003 — repetición controlada del asistente IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ae4522871687711bf881dedad470c2ca2a828aff769a5a1931f325dac5d6b98b"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-003/2026-08-12_acciones_catalogo_ia_canonicas.md",
+      "title": "P110-003 — Corrección de acciones canónicas del Centro IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7a51db0082f454839cd69df78a30772969e405febfdea3e43d5c34b4619ab059"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-003/2026-08-12_adjunto_ia_real_revision_humana_945d1751.md",
+      "title": "P110-003 - Adjunto IA real y revisión humana en ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "86ccf265b59f1bc4588fd5f7e5e0bebdb1bcfccdc9dbf50d9d0c7525bfa2a655"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-003/2026-08-12_asistente_ia_real_y_modo_agente_staging.md",
+      "title": "P110-003 — Asistente IA real y propuesta sin ejecución",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "975327a81d9bb5dba0eb5b157503f6eb26bdcbdae0b04673644260d970d6b77a"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-003/2026-08-12_contratos_ia_revision_humana.md",
+      "title": "P110-003 — Contratos de IA y revisión humana",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f8850169b4698eae1375d82299c40b846229ff01b2aa58cbddf3c736b72a4a00"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-003/2026-08-12_cxp_ia_demo_y_papelera_staging.md",
+      "title": "P110-003 — Flujo visual controlado de CxP/IA en PCS staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "902ca1d14eb1fab203e01a6086f6cbb1a17b1b0fd9e19bfdcfe8a1b297fae5ff"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-003/2026-08-12_matriz_ia_timeout_y_productos_945d1751.md",
+      "title": "P110-003 - matriz IA, cancelacion y boton de Productos",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "85667c13968afe916827e22a79b8073e390ded06865c89d7f040417c16cabc01"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-11_matriz_roles_estatica_y_contratos.md",
+      "title": "P110-004 — matriz estática de roles y contratos de aislamiento",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8df1cf7970752e9b15c8ed83b7b9f739004e0633a5e4f55aaf5e7d66080bd542"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_administrativo_lote_000_staging.md",
+      "title": "P110-004 — barrido administrativo autenticado, lote 000",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5a1bd642d6eac2c2a68296b40644479efd07c8dc5d19075b71ba7dd2fb274f95"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_administrativo_lote_012_staging.md",
+      "title": "P110-004 — barrido administrativo autenticado, lote 012",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f29d78a2a7fd8a7254f1b33d417e7cc0ede54c2fd6fed52abefa7f71418ae522"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_administrativo_lote_024_staging.md",
+      "title": "P110-004 — barrido administrativo autenticado, lote 024",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a47c998f5ffbc5fc7e1b854883166e7372771b608443faa2b67bccfe31204bdb"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_administrativo_lote_036_staging.md",
+      "title": "P110-004 — barrido administrativo autenticado, lote 036",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4f0a58f9fc31414d1a4ade1d15ec76eed0e1b430f3b73c0728b7b6091487b77c"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_autenticado_critico_staging.md",
+      "title": "P110-004 — barrido autenticado crítico de PCS en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "79efa638926507707290ec013c2e0dab049d5508df722b51ae6f4572a4ca29f5"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_operativo_final_staging.md",
+      "title": "P110-004 — barrido operativo y contratos de aislamiento",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1eb03625f41e9d03ff0ae45ea0f46ff28a0697de7224562fe669e326888d5819"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_superadministrador_staging.md",
+      "title": "P110-004 — barrido autenticado del panel superadministrador",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0ccda8a61cb0c6814d83d3928d47e80fcd9d14816faa3e66aea221f83dd5d484"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barrido_visual_critico_y_domotica.md",
+      "title": "P110-004 — barrido visual crítico y domótica",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "16e10a664de0f6f248ff3b2a4b92173ec32a1d903ddf6de5b8fbaf45b9e82d74"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_048_060_staging.md",
+      "title": "P110-004 — barridos administrativos autenticados 048 y 060",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1ed4d7105382052478f23214fc8ae03af8d8ad48ee26da39b534c305771863f8"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_072_084_staging.md",
+      "title": "P110-004 — barridos administrativos autenticados 072 y 084",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "84af65cff7aee8effb927e9f6f69ee97879609236b4d9e2c128e46b93b987574"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_096_108_staging.md",
+      "title": "P110-004 — barridos administrativos autenticados 096 y 108",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "13fc8221f1504df54868945c0057dcdd435a71eb31413b336194d7c7501f74af"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_barridos_administrativos_120_136_staging.md",
+      "title": "P110-004 — barridos administrativos autenticados 120 y 136",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f521699aa5b5ac1806d956fcbf88fbc61ac6741fb7ebb50f1c5104d7bcf01eab"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_regresion_permisos_tenant_cxp_ia.md",
+      "title": "P110-004 — Regresión enfocada de permisos, tenant, CxP e IA",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "bb08cefc84bd344acde4a34170a17154fb7d79c3a4bfc29099b795f481df9bc1"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_regresion_roles_domotica_focalizada.md",
+      "title": "P110-004 — regresión focalizada de permisos y domótica",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0e4e1a500161195e83397c8e60d77029a803ba75f610a2c38ce676824c78216f"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-12_roles_reales_y_cuatro_cajas.md",
+      "title": "P110-004 — roles reales y cuatro cajas PCS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8d4b295459df7dd00a953e5942e4ee0fd12a7ae5359cbb93a2df7bfc68d59b88"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-004/2026-08-13_barrido_pcs_finanzas_dian_domotica.md",
+      "title": "P110-004 - Barrido autenticado PCS de superficies P0",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6a43812af2696387b72e873bb4c5228375d55953b3523842b17d8bdb9042d674"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-005/2026-08-11_qa_impresion_y_responsive_129dcaef.md",
+      "title": "P110-005 — QA de impresión y responsive",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a141d4f3c85fdc3b885490a1d8096fbc89224eda5239b0c0974133960938cd44"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-005/2026-08-11_revision_visual_finanzas_cxp_6bed2315.md",
+      "title": "P110-005 - Revisión visual de finanzas y CxP",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "76c57d7507b12e5a56f448dfe54dd0c72b497f64c05b500e49c156e907e641ab"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-005/2026-08-12_impresion_virtual_20_formatos_945d1751.md",
+      "title": "P110-005 — impresión virtual y revisión visual de 20 formatos",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f9deb83319bcf534c110d457f6b5da37fc90da10a80a889fcdf4ffca1969c0dd"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-11_auditoria_paridad_dian_vps.md",
+      "title": "P110-006 — auditoría de paridad DIAN en VPS",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "df2bff0746f7686b68f9833330aa072ecb16bb8148b17b7637d828a4c23619ef"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-11_bloqueo_configuracion_dian_pcs.md",
+      "title": "P110-006 — bloqueo de configuración DIAN en PCS/staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1c213764846f9e09fc630580cbba6e56f9ccdd96ed43a5621d03b4a5b86040ac"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-11_dian_lectura_candidato_6bed2315.md",
+      "title": "P110-006 - Diagnóstico DIAN de solo lectura",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "080ce665acca15ccf8407f4a5cd089ddb43ff47e8a1548774cc73f77b6c3921f"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-12_dns_mailu_y_bimi.md",
+      "title": "P110-006 — DNS corporativo, Mailu y BIMI",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "23d79d934071dd9fe08b75428dd88eab3e27fde2872e2ca397a015841600b568"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-12_envio_unico_habilitacion_y_clasificacion.md",
+      "title": "P110-006 — Envío único DIAN de habilitación y clasificación de acuse",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f942d47193fbce48bf15d6399fea71ff0491bfd5f54d02e6b286ae24b323a2a8"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-12_factura_1pcs7_nota_credito_nc113.md",
+      "title": "P110-006 - Factura real  y nota crédito ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "aaafa2b1500e069a9d2dc01ab0f1ef38c95ec8c05821bfe48f5a3f8ee8c1d534"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-12_reconciliacion_mailu_buzon_pcs.md",
+      "title": "P110-006 - reconciliacion verificable del buzon Mailu",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "793098b099148f621f2e9a85a5f4aa2054ed56b7e1b24f037f694b6f210c5b65"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-12_replicacion_dian_staging_pcs.md",
+      "title": "P110-006 — Réplica DIAN aislada de PCS en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3b6ed1903dc0852c49009b2be506b0b54eb6487577fa1434804fe256cf9ddc78"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-006/2026-08-12_validacion_visual_dian_staging.md",
+      "title": "P110-006 — Validación visual autenticada DIAN en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6890a2bf62f1f30003a41b44cc4d22e589c9495544c461fadcd403fe0b72803b"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-11_clamav_http_candidato_final.md",
+      "title": "P110-007 - ClamAV HTTP del candidato final",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c0aad38ee64d955b31f9e6890743bfffc22c7c137274c19509fec698532b5e64"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-11_dast_autenticado_candidato_9ee2fe9a.md",
+      "title": "P110-007 - DAST autenticado del candidato 9ee2fe9a",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5c05be1dab1b3af64df1b5fec5f72c9348f270bfba47b269a9164217ee08b2fb"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-12_auditorias_estaticas_candidato_d3d21414.md",
+      "title": "P110-007 — auditorías estáticas del candidato actual",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8ce5e0235022fd664f0018415e8055b5af0a38ede8534fdabed53beab6c52294"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-12_cabeceras_hardening_y_acceso_anonimo.md",
+      "title": "P110-007 — cabeceras, acceso anónimo y hardening de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7f52cb06e0705471f3b15d5fbfdd9fe79ab77da8fbdcafa5f59be5a60d10b50a"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-12_csp_report_only_estricta_por_defecto.md",
+      "title": "P110-007 - CSP estricta de observacion por defecto",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5208707af878914c5c9ed86a5c07a0266197c8bbf64411a84f76dd1ae84769a4"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-12_fail_closed_clamav_staging.md",
+      "title": "P110-007 — Fail-closed de ClamAV en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a62c60c9672f4f44db4ade90e21721c973ee83196c51fd97041a5d6f63ea7b9c"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-12_linea_base_csp_y_grafologia_sin_inline.md",
+      "title": "P110-007 - linea base CSP y Grafologia sin inline",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0faf6cce32e1ed64505fe196a3c77c85e0c7e4e4399453c6e3fb8f54c0c4ff8e"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-13_lote_css_23_paginas.md",
+      "title": "P110-007 - Lote CSS externo en 23 páginas",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ac26ee126eb1184ed0c66192149ef27f2c5a500439f226942b9fcb9c658f9f85"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-007/2026-08-13_lote_scripts_14_paginas.md",
+      "title": "P110-007 - Lote de scripts externos en 14 páginas",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "afa0c57e0707b076913b2a1508ffb74bcd4abb2ddd1edda8d0a7dd2bef1738bf"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-008/2026-08-11_aislamiento_upload_permissions_staging.md",
+      "title": "P110-008 - Aislamiento de upload-permissions en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0119bddf6812e8bf473713b7782634fce8a11fda9208deb33773eb07f82d07eb"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-008/2026-08-11_candidato_restore_final.md",
+      "title": "P110-008 - Candidato final y restore efímero",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "510ccf87bb13bac235f359e231fa175034244b9b2d4b5bb7232696c59f880de7"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-008/2026-08-12_candidato_1a6dc4fa_staging.md",
+      "title": "P110-008 — Candidato inmutable  en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2dd020acf8efe8bad5f4374f607cbbb78c7b786ee1913e56c16cbf74b47a5e36"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-008/2026-08-12_candidato_d3d21414_staging.md",
+      "title": "P110-008 — Candidato inmutable  en staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6eb241e6f9515b9af9e78728591cb00e1fab7ba8cb86f3bf39f29b60f4d93a70"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-008/2026-08-12_restore_aislado_1a6dc4fa.md",
+      "title": "P110-008 — Restore aislado del candidato ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "138eb8bc67b99ec3ab7a2568b22a6e56cbdb4e547eafd2117308d97877b9f378"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-008/2026-08-12_restore_automatico_y_despliegue_domotica.md",
+      "title": "P110-008 — restore automático y despliegue Domótica",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5dc78dabb1f09c5f2685c287a8a96d4b27c69bbf09f5fb466dfda6c6df73a40f"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-008/2026-08-12_restore_replicas_rollback_e308ca4b.md",
+      "title": "P110-008 — réplica autenticada y rollback coordinado de ",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6fd942c931e3507d3489fdaef0cc3d31a263acc7af20a3f7f769c6208e85ed0b"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-009/2026-08-11_auditoria_alertmanager_entrega.md",
+      "title": "P110-009 — auditoría de entrega Alertmanager",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0286791180fc12d742e1b50b289b50b652cfea35cf57a73dc9c63b4473922caa"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-009/2026-08-11_hallazgos_operativos_visuales_staging.md",
+      "title": "P110-009 - Hallazgos operativos visuales de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a07975c77b8457b0a3782e8f073b8dd173a6e334e54cb7c0b5aee49b09078adf"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-009/2026-08-12_alertmanager_deduplicacion_y_resolucion.md",
+      "title": "P110-009 — Deduplicación y resolución de Alertmanager",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "13fd9d46b200f1319ab1aea5c8cad8ab9e32f5810784813238b002a89b06c6d6"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-009/2026-08-12_alertmanager_mailu_entrega_controlada.md",
+      "title": "P110-009 — Entrega controlada de Alertmanager por Mailu",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d2471766d00864febc54433bd3bce43aaf43cd554632cdde86f5a7563ee0f784"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-009/2026-08-12_auditoria_observabilidad_y_compuerta.md",
+      "title": "P110-009 — auditoría de observabilidad y compuerta automática",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e682e16915c94f5208afd60b47a4634d12cab5a54267b503b3fe455619f92b60"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-009/2026-08-12_carga_autenticada_candidato_e308ca4b.md",
+      "title": "P110-009 — Carga autenticada del candidato e308ca4b",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6289a7ce09137605c8356822984c10e28e409d3081dac2c21bda94873dfdb65a"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-009/2026-08-12_carga_autenticada_readonly.md",
+      "title": "P110-009 — carga autenticada de solo lectura",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3c260513fa7ea294b150c5ec7b79e4fb88234760c97ce1830b7fbffb021c9259"
+    },
+    {
+      "path": "documentos/evidencia_plan_110/P110-009/2026-08-12_lectura_operativa_outbox_candidato_d3d21414.md",
+      "title": "P110-009 — lectura operativa de worker y outbox del candidato actual",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "0a0281252162b88e286726dc9b185b19ba39e7a8e1ddaee66534d31f815891fb"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/MANIFIESTO.md",
+      "title": "Manifiesto de evidencia PSI-000",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c1e7b38571f5a887080852a8155c012bc2f38d4effc2b9fd5d8797c65367b93e"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/REPORTE_FINAL.md",
+      "title": "Cierre PSI-000: Productos, Servicios, Compras e Inventario",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "488873235462191195c4650536a7da15e863a7ebd483be9e15f673ee8c25b2aa"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32940533286/documentos/reportes_profesionales/payment_matrix_audit_20260826_070001.json",
+      "title": "payment_matrix_audit_20260826_070001.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4fba1d7543821729108f73ba5f81b414dc6fe80c3cb8a69d41e6417aebe527bb"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32940533286/documentos/reportes_profesionales/payment_matrix_audit_20260826_070001.md",
+      "title": "Matriz de pagos y comprobantes",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4766179b257ff9bba6e0fc351aba2182f515999f2ff343af3a10d8de95dcf3a0"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32940533286/documentos/reportes_profesionales/qa_roles_matrix_20260826_065956.json",
+      "title": "qa_roles_matrix_20260826_065956.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e9b986a07afc8f259b56c6e27779bf44791c8f24a33f5dfb537b0f6d59c110b9"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32940533286/documentos/reportes_profesionales/qa_roles_matrix_20260826_065956.md",
+      "title": "QA por roles",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2fa88534c9c800a6e2c79a569386c2e7a35eddf8901674f8126c0d8409a46a47"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32940533286/test_runs/qa_e2e_buttons_2026-08-26T06-59-25/reporte.md",
+      "title": "QA E2E botones y visual",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2d3950b06025a8438aaef578467fb6a4b77bc456c4d5f711934c4e7687ad0006"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32940533286/test_runs/qa_e2e_buttons_2026-08-26T06-59-25/results.json",
+      "title": "results.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "41884e77c2248695a2ec44d0d315cdb20f12873e1996f604a677e03041ad74c9"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32940533286/test_runs/qa_print_formats_2026-08-26T06-59-57/reporte.md",
+      "title": "QA visual de impresion",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3df770c8f91428e05757fb91c6aec46b5206d5fc8cf932fd87a46b031076f7ce"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32940533286/test_runs/qa_print_formats_2026-08-26T06-59-57/results.json",
+      "title": "results.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "85a07ce89b6c5099aafd1235a995e1e9d07b65c01a5e0e8f04a23317107ad2ce"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/documentos/reportes_profesionales/payment_matrix_audit_20260826_130625.json",
+      "title": "payment_matrix_audit_20260826_130625.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a26d4fe02c5645ac120017e95270ccd206f874f8f415dad48e462b8373102fc1"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/documentos/reportes_profesionales/payment_matrix_audit_20260826_130625.md",
+      "title": "Matriz de pagos y comprobantes",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2752bb996da6044292aa659c3e37f12c1b9f20e6fa1a9395d2f4ac30717c041a"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/documentos/reportes_profesionales/qa_roles_matrix_20260826_130620.json",
+      "title": "qa_roles_matrix_20260826_130620.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5776e5e5cb51cbbc6178f59dcb83751881b0f63e675acbb66b69dc6cc65ce2b5"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/documentos/reportes_profesionales/qa_roles_matrix_20260826_130620.md",
+      "title": "QA por roles",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "17435805dd2090fd11a4fe9dec6e9a5be9ee0eec988e723771c2ac85e6bc5cf9"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/test_runs/qa_e2e_buttons_2026-08-26T13-05-10/reporte.md",
+      "title": "QA E2E botones y visual",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "60feb357916c950116ac551ce496bb097298e2e800345fac0546109f5e0c3a32"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/test_runs/qa_print_formats_2026-08-26T13-06-20/reporte.md",
+      "title": "QA visual de impresion",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "af3e0ff451f2c964a66012cdaab7a0d3a1889a33eb304272e80c0538fc9c5151"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32972077549/test_runs/qa_print_formats_2026-08-26T13-06-20/results.json",
+      "title": "results.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3ff91debff69edb4240e9cbe1d2288c1bf9cb211eb1835c4c1e1c4818ba51c2c"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/documentos/reportes_profesionales/payment_matrix_audit_20260826_133554.json",
+      "title": "payment_matrix_audit_20260826_133554.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7f862d1257447ba14ba6a49b2ab7709cce05b990a498268198d5a6ce53b64d5c"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/documentos/reportes_profesionales/payment_matrix_audit_20260826_133554.md",
+      "title": "Matriz de pagos y comprobantes",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "b5f9c19fbca090ed52c5dec741bcee9f6b1c81acb818e95f1d5212ac16395b3b"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/documentos/reportes_profesionales/qa_roles_matrix_20260826_133550.json",
+      "title": "qa_roles_matrix_20260826_133550.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3dcb002e26c8c1b69601d93980ea467a4a63edd7d5a65ae6c51c2bdd894e9a2b"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/documentos/reportes_profesionales/qa_roles_matrix_20260826_133550.md",
+      "title": "QA por roles",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e333bf097d2776a9c9241c4d8c531b508e375171f0d812752bc8b0d2874a4cae"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/test_runs/qa_e2e_buttons_2026-08-26T13-34-30/reporte.md",
+      "title": "QA E2E botones y visual",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "60feb357916c950116ac551ce496bb097298e2e800345fac0546109f5e0c3a32"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/test_runs/qa_print_formats_2026-08-26T13-35-50/reporte.md",
+      "title": "QA visual de impresion",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2f2563bf9b67210821347bc45be1de1c2557d2d5991478065efe65dbac45a030"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/github-e2e-32974846684/test_runs/qa_print_formats_2026-08-26T13-35-50/results.json",
+      "title": "results.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "35ffbc4dd4d4f3bdaccb2c67c76b17c2b723bf5e319d298f3f6576e63fa688e1"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario/PSI-000/validacion_operativa_final_9eba6b12.json",
+      "title": "validacion_operativa_final_9eba6b12.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6269ddac86cf86003379e94039c9219f8100b57c575d91c5fa28b5951d80a9e4"
+    },
+    {
+      "path": "documentos/evidencia_productos_inventario_2026-08-25.md",
+      "title": "Evidencia de preparación de Productos, Servicios e Inventario",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "105e1b4ee7d6f54cf6dfecb87701155f2462643bd7a63ac252531fc99d157e7f"
+    },
+    {
+      "path": "documentos/evidencia_qa_autenticada_pcs_2026-09-06.md",
+      "title": "Evidencia de QA autenticada en la empresa PCS",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1b7c663b0b47c52a5b0defd7d4830ee5aa078002ee7b9e1e506dac85db163e9d"
+    },
+    {
+      "path": "documentos/flujos_operativos.md",
+      "title": "Flujos operativos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "b7d9a993fca43ba8e3efbf6a18ceaf9ac3e3b9e78807ebf629327ce3fb29a1b6"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/README.md",
+      "title": "Gobernanza técnica de PCS",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "0b05ae4bbd6805f7b27912ed5b5dfa7db35b5a6180bbee2857faefb7a61056e2"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md",
+      "title": "ADR-0001:  como frontera obligatoria multiempresa",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "fb38080d321ead120b3b15f52c13d39dd5ac379aa861d204e42ec6b024ec64b9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md",
+      "title": "ADR-0002: PostgreSQL en VPS como runtime productivo canonico",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f01b214732108d6a12392200dc40070b95c5fa1a39338920c2dbc640eac619d9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/adr/ADR-0003-gobierno-documental-y-fuentes-canonicas.md",
+      "title": "ADR-0003 — Gobierno documental y fuentes principales",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "a5c3476e888896e4d51ece959f856b2cf70b978b27f1a69f2802a0c664831f61"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/README.md",
+      "title": "Catalogo de contratos tecnicos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5f1bd95617973fbba38d363d4fd9939ff4e643a1ed6d1cdd671a4674959e1ad6"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md",
+      "title": "Contrato tecnico: autenticacion administrativa y usuarios de empresa",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "34f7c9e9df41e18da2f11e7e8dfb9231d9eedd453d0d10134dfb5c3348b8e781"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md",
+      "title": "Contrato del centro de soporte",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6a98209064912991c40522c2e19ccdf4431d65e3c9d26a4fe7e2371dd783aa47"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md",
+      "title": "Contrato técnico: checkout público de licencias",
+      "state": "vigente",
+      "owner": "Ingeniería de pagos y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "3caa36bed54704b0104d76d23293e205856ae9f2c1c85cb114ddb04231999e06"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md",
+      "title": "Contrato tecnico: conciliacion bancaria y cierre de periodo contable",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "c4fb9bab76e00796125db9ac6406802470592ea7592c69bd1a3187fb59aaa41d"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_documentos_dinamicos_ia_exportacion.md",
+      "title": "Contrato tecnico: documentos dinamicos con IA y exportacion multiformato",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7d1c8b51a073480c89e30743e9f8cf29fc577c6c8af611b8abc651d0f106b53b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md",
+      "title": "Contrato tecnico: estaciones, sensores y carrito unificado por estacion",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "943e929a30fccdeaeca7f321801b7730b422789ba928d54e41b9429815b8c0b1"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md",
+      "title": "Contrato tecnico: facturacion electronica y documentos transaccionales",
+      "state": "vigente",
+      "owner": "Ingeniería fiscal y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7df0ae6d30d48d4df0582848d794807f5976222469762c1f4fd79b10c0c24229"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md",
+      "title": "Contrato tecnico: integraciones bancarias y conectores externos",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "96d5341fff3455b3efab7dbf747cc2d529c6b8c5a3245ce39d3928d31f1b1280"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md",
+      "title": "Contrato tecnico: interoperabilidad documental contable y fiscal externa",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "215aa3a369f37d39130d0768ec5b13036bf82c9bff732ce7109f99e7bc8b1899"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_matriz_pagos_reales.md",
+      "title": "Contrato de pruebas reales de pagos y comprobantes",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ac901415d2f9654f61c3a67e8cad2d82e2fc6ad6abcc69f0a977304abd1b1083"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md",
+      "title": "Contrato tecnico: permisos_contexto y wrappers de /api/empresa",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6b73041df6ecd12517a898e885897631b8d36a751d1c74dbcd4a20656f3e9d29"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md",
+      "title": "Contrato tecnico: reportes contables, financieros y exportacion multiformato",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "dafea3eab47639ab02858a90006289499ee2db264de6b114ac873ee3f0dbf115"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md",
+      "title": "Contrato tecnico: repositorio documental y firmas externas",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1f9f12a0adb0995b080c84b5e79a09dd5d76f1b4e67254b76bdd94e7f4c545e8"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md",
+      "title": "Contrato tecnico: soporte remoto por empresa y mesa tecnica central",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ec52372453bbfbb095c146c47999cb1a6dcdf4505305e4f7e21dacdd8ce23fe4"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md",
+      "title": "Contrato tecnico: venta publica empresarial por empresa",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "84d43419d9657d64317221435fa31feefd48c39978a5d9eaaca42d3d3b37ae19"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/estandares_de_cambio_seguro.md",
+      "title": "Estandares de cambio seguro",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d7f1fa39582656b7818ff2fd9a58ca5edba6e31a3e2e68140baf4e3fb5ee283a"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/marco_documental.md",
+      "title": "Marco de gobierno documental",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "01b06e6a14c4c877fd61d466ec8895f83e3ad06f79a09fbc47dadc2d1e620152"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/matriz_revision_semantica_2026-09-06.json",
+      "title": "matriz_revision_semantica_2026-09-06.json",
+      "state": "control_documental",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "bf218811002546802243e85b027d65efb71d76e6b5b3c5f9f9372b0e74709138"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md",
+      "title": "Plan de implementacion de gobernanza tecnica",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "497fe4771ca7f46fef921977754aa6a9672b6ecddb1ee5b31cf96ed8bc5e2e0d"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/plantillas_documentales.md",
+      "title": "Plantillas de información técnica",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6458f53acea0a728db57290b1d92344621b7dd3be0b33e40135ea3fb771194bb"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/politica_catalogo.json",
+      "title": "politica_catalogo.json",
+      "state": "control_documental",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5be9da4c6ef4d4df80e807402edf6adba2315e663fd348c8ccee3b3bf48de7c3"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/revision_documental_2026-09-05.md",
+      "title": "Revisión y reorganización documental del 2026-09-05",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5e64a1d80f8b067b5dc5e75b270c88225e211eb55276ef3a50be9b4aff5fb27b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/revision_semantica_2026-09-06.md",
+      "title": "Revisión semántica y cierre del lote documental",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-06",
+      "review_due": "2026-12-05",
+      "sha256_lf": "3000660ef7fe8c7f5c796bea7c6434460b4812f192eb3f6e0f4296213db617df"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/riesgos_y_brechas.md",
+      "title": "Registro de riesgos y brechas de documentación",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ea8ee6f30b4259dfc70ab652240fe4e72b3dff4f843c8a1674b3513f970cc081"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/README.md",
+      "title": "Catalogo de runbooks operativos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7da2c05160d33061944df5afdfca23a66c26b01371432b14734e5244624c3bc5"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md",
+      "title": "Checklist operativa: evidencia documental para QA y soporte",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6e38ee01eff3da402d5846ab406ab2d809f645d03693f0d608a881a011157706"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/plan_revision_integral_modulos.md",
+      "title": "Plan de revision integral de modulos",
+      "state": "historico",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "10239189aee0097974aca5592028ba16c560bb8cce005b9cd4054d8843de84ad"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md",
+      "title": "Runbook: alertas de reinicio y monitoreo Gmail SMTP",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1ec376e1a18c40fe00fdc35284ab80481172802bd650abfbf22caef5314d7b14"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md",
+      "title": "Runbook: arranque backend PostgreSQL por tunel local",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "9cd07f2eb7929f67bd39f490f62657df5539db277020df07169d94dc30f67832"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md",
+      "title": "Runbook: diagnóstico de checkout de licencias",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1135d6e7fd0b2adcf58ca215a60ca08eb832432cdd43878eb81ea6719ef15f5c"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md",
+      "title": "Runbook: cierre de periodo y conciliacion bancaria",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "061b8ffd4deaf5b61d0494c86a1c700a5773c4be44fd9ef3ee4985a7dce3eaed"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md",
+      "title": "Runbook: contingencias de integraciones bancarias y conectores externos",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "99cafe11714dc3d27e99067a8d461346e3b362a09bae89da688497c37f15fa0e"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_depuracion_soportes_ia_y_cuarentena.md",
+      "title": "Runbook: depuracion de soportes IA y cuarentena privada",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "9bf86bdc75c24fb450ad8a9e1c54f21ec24039a07a08ec17085823e0074832ad"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md",
+      "title": "Runbook: DIAN set de pruebas y diagnostico oficial",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "8fe93c4966ed1a85c16eeb56608698a4fbe9c72d5d4f70bce83f0a1281dab7ff"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md",
+      "title": "Runbook: estaciones, sensores y carrito unificado por estacion",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "170657975cc9a9e5d3a51dd7676a438ed07a6f216af41f593a4614e7ed1ee45b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_hardening_vps.md",
+      "title": "Runbook de hardening VPS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "b0faef7406afc95a550b97bc8eb74bc47242091102d951d853cf955738dfe0ae"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md",
+      "title": "Runbook de madurez empresarial - 12 pasos",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5f1a45ceceff84b7abc72d27c6338a88bbbf5de0609bebd99121d972009d7df2"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md",
+      "title": "Runbook: reconciliacion documental fiscal y contable externa",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f8bae12c5c8d18f6949448b17ad6677f11214dbc3704e2879d76534d4a222286"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_recuperacion_desastre_docker_vps.md",
+      "title": "Runbook de recuperacion ante desastre Docker/VPS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "b5f7e02a1bbd9cbc089254ba33787c27bdab243c2bae5acec74ab40261e56fd9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_release_profesional.md",
+      "title": "Runbook de release, despliegue y rollback",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d984c6ca7cc16d19b539b772de6152d2a654e2bc9c475a4312b2f30c5a6d008b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md",
+      "title": "Runbook: reportes programados y exportaciones contables",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "9c2441fe94111662dc0d78dbceab7d8fb3c4d0247cdec42936a48e5e524cdd2a"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md",
+      "title": "Runbook: soporte remoto, sesiones y dispositivos",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ae00bae4a4d2d4f062c0a59f4430e15877c334a3aa37f7f896c94fa3557a4d50"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_staging_ci_e2e.md",
+      "title": "Runbook staging, CI y E2E visual",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "89045632a5939f0633cc26be3f429b6faf842ce7f9a2c68fa71545832e042b8b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_tls_staging_y_servicios_plan_105.md",
+      "title": "Runbook: recuperacion TLS de staging y servicios externos - Plan 105",
+      "state": "historico",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ea0a2308dc4a84c89821420ad1da6c85e31e06e6c1c1d31835cd74097fe55803"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md",
+      "title": "Runbook: versionado documental y firmas externas",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "451852c1c3837103ddafb24c4b159c8974192c398edbdda11143288e45d09e34"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/slo_sla_operativo.md",
+      "title": "SLO/SLA operativo de Powerful Control System",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d0736f44865e71bf2561afef74ed02ea54ed314515198615ba116a33661e398e"
+    },
+    {
+      "path": "documentos/historial_de_cambios",
+      "title": "2026-07-13 - Chat IA: catalogo administrable y preferencias por usuario",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "26e6a9926cb523ee70c055723c4a4aedd2ccfb9d747e269a91e06cd6729901ca"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/README.md",
+      "title": "Indice documental del proyecto",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "28ceb4097c3e3f88589364c81e822098121547f2b4c487068fe36da3b8e6f28d"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/RESUMEN_DEL_PROYECTO.md",
+      "title": "Resumen del proyecto Powerful Control System",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2d1f734576d240e68f92745f03132731b8058d07cf146b7062c4f8fbda7db962"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/checkout_licencias_antes_revision.md",
+      "title": "Contrato tecnico: checkout publico de licencias",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "829661fad7361d4b158c487839128f1930c25d62538d75f34a1e4c9f9c6ecd29"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/contexto_codex.md",
+      "title": "Contexto rapido para Codex",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6f765300f7b98767bb07873a461eefffef0b45d591266268391c200b93949bf8"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/contexto_general_del_sistema.md",
+      "title": "Contexto general del sistema",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ee00d8ecce62498cfac1f21fb92b0593689a8c25c9a0737c6b670bc88fd21844"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/contrato_fiscal_antes_revision.md",
+      "title": "Contrato tecnico: facturacion electronica y documentos transaccionales",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e270d438bbce5da6560c37a7de97a832ad6aa154097059168b431948febbf4b3"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/deploy_nginx_reverse_proxy_vps_referencia_acumulada.md",
+      "title": "Guia operativa: Nginx reverse proxy para dominio en VPS",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "cde0d59389f84d00bab0ef1ad9633efeb6922567b99526d2e8c0cfa92b1694d6"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/descripcion_de_modulos_referencia_acumulada.md",
+      "title": "Centro IA empresarial - 2026-06-07",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3d5ba2330294f378e26e96b8b0f30431b75aad23cd86fed0cc46f65f3e488b52"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/descripcion_del_proyecto_referencia_acumulada.md",
+      "title": "descripcion_del_proyecto_referencia_acumulada.md",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "b7b51be2a83bfc1db8ae3c517ae042612509f4f36d15fe2e3da908e904587aec"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/docker_vps_operacion_referencia_acumulada.md",
+      "title": "Docker en VPS - Operacion y migracion",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fb040a2cd9ae54d5b10421176a3ad8cc16590c317ee40c53ad8dc913262be69c"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/estructura_bd_referencia_acumulada.md",
+      "title": "Estructura del Base de Datos",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "72c35f770bbe2a7e4bc2d112e2416969b5109ad0497c7c7a0e958c434153a379"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/estructura_del_codigo_referencia_acumulada.md",
+      "title": "Estructura del codigo",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "60a748a0ad6f0258ee241de0521861b4c0ff0cd81950cf1db7aa1f7fa80b5d00"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/flujos_operativos_referencia_acumulada.md",
+      "title": "Flujos operativos",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "43d71c6be0c567fcc1a08149bc474adf92be49f23f8ec099e2c9f1c7a374a86a"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/gobernanza_tecnica_README.md",
+      "title": "Gobernanza tecnica del proyecto",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "349389c4d8794834b8e41ae31ea88e755bdc7f5d0050070109a71ccfa37e2f90"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/manual_de_instalacion_referencia_acumulada.md",
+      "title": "Manual de instalacion",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4dece6801b9eec578da80ceb53ec742175ec8fe06ec6175f53a4185955f19d21"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/mapa_modulos_referencia_acumulada.md",
+      "title": "Mapa de modulos",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "eec1494c2a23fb5a61190fcac16736fd1f58bc4afcf514a473ca37479af69558"
+    },
+    {
+      "path": "documentos/historico/2026-09-05/matriz_roles_permisos_pos_multiempresa_referencia_acumulada.md",
+      "title": "Matriz base de roles y permisos POS multiempresa",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e9bc4ad00379a52c245536fca332362249f9b99773ad8792edf3c873abb42780"
+    },
+    {
+      "path": "documentos/ia_orquestador_empresarial.md",
+      "title": "Orquestador IA empresarial",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "a9afcd2e5ebb7c3f299e31b4adce5c81e9821a4300ba455230d3bb37c443419d"
+    },
+    {
+      "path": "documentos/ia_orquestador_empresarial_fase_2.md",
+      "title": "IA empresarial - fase 2 de gobierno de datos",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ce5543165842ac4b9cfc34ce1da07e24b2b15523e02e2f08c8d147404eeebb82"
+    },
+    {
+      "path": "documentos/importaciones_costeo.md",
+      "title": "Importaciones y costeo de nacionalizacion",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4b80563d39ab21a4b9e4dfadfa7dc2380200ff53245c1f214bda2232d2dd8277"
+    },
+    {
+      "path": "documentos/informe_general_produccion_seguridad_2026-09-05.evidencia.json",
+      "title": "informe_general_produccion_seguridad_2026-09-05.evidencia.json",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ea8f80fab16fade7f09c87fe07fe824780bad4784523d1b29d2424262d1a5579"
+    },
+    {
+      "path": "documentos/informe_general_produccion_seguridad_2026-09-05.md",
+      "title": "Revisión general de producción, seguridad y aislamiento multiempresa",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c938c76d3293f10e8a8a73e3d5856b7d4ec10bf22b0e8eebc652cdd423dc3c89"
+    },
+    {
+      "path": "documentos/informe_modulo_domotica_2026-08-09.md",
+      "title": "Informe completo — módulo de Domótica Raspberry Pi",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c99e5e8dba6c5ea1bbf5cba8044f7eb8a75373be910d14e943d3b6f19031a654"
+    },
+    {
+      "path": "documentos/informe_tecnico_compacto_domotica_2026-08-09.md",
+      "title": "Informe técnico compacto — Domótica Raspberry Pi",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6d6f13c190f24fc9b3a1dea1f7b7eecc8864e4572226a3924ce65d47f8ecf7e3"
+    },
+    {
+      "path": "documentos/integration_validation_report.md",
+      "title": "Reporte de integraciones",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7dd1dbd2be8382488c38cf9605e0d8ad796d427f403b2f673dd4201b4f6701dc"
+    },
+    {
+      "path": "documentos/inventario_avanzado.md",
+      "title": "Inventario avanzado",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d7b982580e9f9a880dfd4b4e16c646c7ac76162fb8b5c25c41669e3376843f82"
+    },
+    {
+      "path": "documentos/load_test_report.md",
+      "title": "Reporte de carga y escalado",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a939c57af04dfd89261e06927b44340afebd2476716cbe8c3ca2eb39efa70eab"
+    },
+    {
+      "path": "documentos/logistica_wms.md",
+      "title": "Logistica avanzada / WMS de bodega, picking, packing y despachos",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "2f59045b0dbd695dbc58ccff3f94fc951d053e7201fa414c7f49836f55972f9c"
+    },
+    {
+      "path": "documentos/manual_de_instalacion.md",
+      "title": "Manual de instalación y arranque controlado",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "047708511548e28cc34eace9cf55969d296bd37ace1d152b754368b60e37b14c"
+    },
+    {
+      "path": "documentos/manual_vps_seguridad.md",
+      "title": "Manual operativo del modulo de seguridad VPS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "fd2825e312b530a1a1d112cc07e223a1923f2cf72c900a42eb310a74c46aa930"
+    },
+    {
+      "path": "documentos/mapa_modulos.md",
+      "title": "Mapa de modulos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "62cc4ac6b742bc22b3817482750fcafc173f4ea87da78a6dfc7d70c8d3c61c92"
+    },
+    {
+      "path": "documentos/matriz_alcance_piloto_plan_105.md",
+      "title": "Matriz de alcance de piloto - Plan 105",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "dba971b55621d145bfc422d736bc547a08c18fe71aedcfb6b56921c521116ac7"
+    },
+    {
+      "path": "documentos/matriz_integracion_plantillas.md",
+      "title": "Matriz de integracion de plantillas",
+      "state": "vigente",
+      "owner": "Ingeniería de módulos",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d927877a27289982b0070da67d0e910d7ade967eafe0235379b97664e5ada884"
+    },
+    {
+      "path": "documentos/matriz_roles_permisos_pos_multiempresa.md",
+      "title": "Roles, permisos y licencias",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4e91c5615d52bdcc35088c4d9a239f92284ab9f1a359d367cf579062fe705fad"
+    },
+    {
+      "path": "documentos/migration_validation_report.md",
+      "title": "Validacion de migraciones",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e55c0c85734ef0061a5d071fd250b1b0073dfaf9d64c59d9d3bb2dbf0e375fa4"
+    },
+    {
+      "path": "documentos/modulos_empresariales_colombia.md",
+      "title": "Modulos empresariales Colombia",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f199cd15fd78bfedad412ee20785656d9c1a262e9c99369080785b5751a2de50"
+    },
+    {
+      "path": "documentos/nextcloud_empresarial.md",
+      "title": "Nextcloud empresarial",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "315d9e79d002d8a85056b0c49fd3a90cd288ea510f9a86c4cdf6fd490de51a56"
+    },
+    {
+      "path": "documentos/nomina_colombia_avanzada.md",
+      "title": "Nomina Colombia avanzada",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f5dd71a0e3046186aa10477ce6b2a0f7dfaed522108270d7f248165ed198b666"
+    },
+    {
+      "path": "documentos/observability_runbook.md",
+      "title": "Runbook de observabilidad",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "944e212edbf5f4de634c5dcaef204fd3d2f5e6af9fed0baf73eb8dbf2cd6319b"
+    },
+    {
+      "path": "documentos/operacion/incidentes_y_continuidad.md",
+      "title": "Gestión de incidentes y continuidad",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f195e609f2c4a53e862da3ef4e3ae8a94fd7584e46ffdb3b5ccde8a1e381c7de"
+    },
+    {
+      "path": "documentos/operacion/plan_107_fixtures.md",
+      "title": "P107 - contrato de fixtures contables",
+      "state": "historico",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "eead417b866fc3ed2c0fe1b6292bd822fe9e6a0d49b77d8c761b64ff9b70f3f0"
+    },
+    {
+      "path": "documentos/operacion/plan_107_preflight.md",
+      "title": "Preflight Plan 107",
+      "state": "historico",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d0845083802ce6cb70a38981934b8af25190e6ec2725f911e5a6e8a83cc15e4e"
+    },
+    {
+      "path": "documentos/parqueadero_tickets_qr.md",
+      "title": "Modulo Parqueadero: tickets QR y cobro automatico",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7f0610824acace3e6d4a280439d71205a9fcc965c3406db1fbb7f55c05147bf5"
+    },
+    {
+      "path": "documentos/plan_101_arquitectura_modular.md",
+      "title": "Plan 101 - Arquitectura modular y evolucion sostenible",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2836d783332ed4b9cba502961b9ba3956f6a6f9a8a1bb2c315da2dab9dcae932"
+    },
+    {
+      "path": "documentos/plan_102_cierre_produccion.md",
+      "title": "Plan 102 - Cierre tecnico de preproduccion",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "24f6babfdb7dbc5eb0898d833058dd8dec0a7d219e0452fd8ece2e80b4c03011"
+    },
+    {
+      "path": "documentos/plan_103_cierre_produccion.md",
+      "title": "Plan 103 - Cierre verificable de preproduccion",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "cd86e971ab94eb7980860b164e8b326af6436370c13bcff08fe4fe573eda568a"
+    },
+    {
+      "path": "documentos/plan_104.md",
+      "title": "Plan 104 - Cierre verificable para produccion",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fe53104b1ffcd53b019ae8a7f96cc5191f8050237aef3e506ee818dddb6200a5"
+    },
+    {
+      "path": "documentos/plan_105.md",
+      "title": "Plan 105 - cierre verificable para produccion general",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ab03a5cab5be808bd228e97fdd1fe9f6175114385a09a52bc9a913fb4f23dd0e"
+    },
+    {
+      "path": "documentos/plan_106.md",
+      "title": "Plan 106 - certificación integral para entrada en producción",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "b8382ff97cdc0e68961704c01388f96302ec5cf0430ab302a44e62a2ea18f11c"
+    },
+    {
+      "path": "documentos/plan_107_contador_profesional.md",
+      "title": "Plan 107 - certificacion profesional del contador y reportes IA",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4385c7c30fe24c346b53907d1fbfd2a044291dd35f712accacc7302b1a397a7b"
+    },
+    {
+      "path": "documentos/plan_108.md",
+      "title": "Plan 108 - cierre integral y certificación para producción",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "cb4f5f87b2ec424fb6ed92c997195458139e4bb54eb802367242cce0e30966c3"
+    },
+    {
+      "path": "documentos/plan_109.md",
+      "title": "Plan 109 - cierre ejecutivo de producción de Powerful Control System",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "eaa9623e92a84edd8f7d4aa06faa4302b07db354ea67855cfa652f032ff9da0d"
+    },
+    {
+      "path": "documentos/plan_110.md",
+      "title": "Plan 110 - cierre verificable para entrada en producción",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "b12e232a8f8f1c1d3e4bf57a37c976fe3ec9eaac1c141f87fd9ae563b61c0d1a"
+    },
+    {
+      "path": "documentos/plan_20_modulos_plantillas_2026-05-10.md",
+      "title": "Plan e implementacion de 20 modulos plantillas",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2929269f01c4770688ff013e9292c795ee10ec6c09a2d1aa1a215b305067614b"
+    },
+    {
+      "path": "documentos/plan_final_para_produccion.md",
+      "title": "Plan final para produccion",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5ca112f47cde4e7b75db08d2ab156585a9faa89e666f7d6e3fd1c065785502c9"
+    },
+    {
+      "path": "documentos/plan_ia.md",
+      "title": "Plan IA",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5de48f3976b6c69c16c0bb7bbcc141c64ef17d65898f673d342cf1561115fea8"
+    },
+    {
+      "path": "documentos/plan_login_autenticacion_produccion_2026-08-21.md",
+      "title": "Plan de revisión y reparación del login para producción",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5b210673038231b0bc817d02335d2567cd089555ff0c71fcd88652d8a03e6ae2"
+    },
+    {
+      "path": "documentos/plan_modulos_faltantes_colombia_2026-05-06.md",
+      "title": "Plan de modulos importantes faltantes",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e20a797ca18048af8a6d3287571c36a599b824538b35b24aded0bfbcd7fa3df0"
+    },
+    {
+      "path": "documentos/plan_plantillas_produccion_masiva_2026-05-11.md",
+      "title": "Plan de plantillas para produccion masiva",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "50a8cbdb20e4990aa707dcec72d485f562cfa82e0ac3b7664a684e8f69f0cc00"
+    },
+    {
+      "path": "documentos/plan_productos_servicios_inventario_produccion_2026-08-21.md",
+      "title": "Plan de preparación para producción: Productos, Servicios e Inventario",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f5d19aaf667160480858beb5bdd49417f75460488155e30905511dfab2c7c0ae"
+    },
+    {
+      "path": "documentos/plan_profesional_12_puntos.md",
+      "title": "Plan profesional de 12 puntos",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "aeb03ead46c6ae001304a6476e4a1780fe84333f5f0345adb02e13e17e5c672e"
+    },
+    {
+      "path": "documentos/plan_profesionalizacion_plataforma.md",
+      "title": "Plan de profesionalizacion de la plataforma",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "1d11161cc0c951dfaf708bbb3ce2539a3b27ab95ddff8e8a8a4c0ba6bb218a57"
+    },
+    {
+      "path": "documentos/plan_qa_e2e_motel_calipso_2026-05-06.md",
+      "title": "Plan QA extremo a extremo - Motel Calipso",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "f6df3c697fe655a7007f5b4cd0a73d925d2b8b3ed5dcc2a51f84ae31b312ede3"
+    },
+    {
+      "path": "documentos/plan_siigo_profesional_2026-06-12.md",
+      "title": "Plan profesional PCS tipo Siigo - 2026-06-12",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "4f071e5273416fc8519f5a94558559461682bbf6dde719fb2e7e76301fa6ad90"
+    },
+    {
+      "path": "documentos/portal_contador.md",
+      "title": "Portal contador / Oficina virtual para contadores",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "bb2cd9e5f22310ca60cc1b8774b063382bfcb2c84039c8752f6dd52193c80452"
+    },
+    {
+      "path": "documentos/portal_terceros_certificados.md",
+      "title": "Portal de Terceros y Certificados Tributarios",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6782001445e46708e817276423db119c583a2e2e044e40a26c2eaa4f4b27bf91"
+    },
+    {
+      "path": "documentos/preparacion_produccion_y_app_movil.md",
+      "title": "Preparacion para produccion y aplicacion movil",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "03227d9080a511d1e98f98b11948f81463422dfd2b9a5bdf0cec96e97c9bca1f"
+    },
+    {
+      "path": "documentos/produccion_hardening_20260715.md",
+      "title": "Endurecimiento de despliegue - 2026-07-15",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "dca49f218c19293fcbf10a4993759e019eef574bfc531977a2bd039cd4d66deb"
+    },
+    {
+      "path": "documentos/produccion_mrp.md",
+      "title": "Produccion / MRP",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "153b74c5a2ec5fce6dcf44357e96de63d6fd2f637ce5fdf9eb0075055ca6c689"
+    },
+    {
+      "path": "documentos/production_readiness_2026_07_13.md",
+      "title": "Preparacion para produccion - 2026-07-13",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "669392032e5afa72c81711a73f7ccba0b70203bb7102ced74ee8e792e91f9d07"
+    },
+    {
+      "path": "documentos/production_readiness_final.md",
+      "title": "Estado final de preproduccion",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e9db23f208fb4672b5e2dd325c0903ae80af8d3354b41355b18b9eded54bd577"
+    },
+    {
+      "path": "documentos/promocion_asesor_licencias.md",
+      "title": "Promocion de licencias por codigo de asesor",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "838e11673c2f962bf13345a373de9594e7ec6039c968687647c0be66fbe0634a"
+    },
+    {
+      "path": "documentos/referencias/dian/README.md",
+      "title": "Referencias DIAN Colombia",
+      "state": "referencia_externa",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ee16bbe18f51db073620002290268e2069df5ecf9c19a05424fc25a65138427f"
+    },
+    {
+      "path": "documentos/release_checklist.md",
+      "title": "Checklist de release",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cd670ffd97e76a7a24a64870e9914cc4100f4f20d9a4aa91b7f66846574c25f7"
+    },
+    {
+      "path": "documentos/releases/README.md",
+      "title": "Releases",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "855186cd95e86cd3fbcc47509b821f45e1e6fd95c9fbcf709b2e66df6f145222"
+    },
+    {
+      "path": "documentos/releases/release_2026.07.22.json",
+      "title": "release_2026.07.22.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "690f241d63c8c70b2e014a8f3c3715f1ee678180dca633aa99ad77d70524acb7"
+    },
+    {
+      "path": "documentos/releases/release_2026.07.22.md",
+      "title": "Release 2026.07.22",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "25339e69b019e757f42d4cd60bce10d561bbe961bc55a120d63a41ceee1dbfd9"
+    },
+    {
+      "path": "documentos/releases/release_2026.08.09.json",
+      "title": "release_2026.08.09.json",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a1720d6dea88dfc7522f744723dbe5fca9ae0ad37c34e0307cfee1f348ca1658"
+    },
+    {
+      "path": "documentos/releases/release_2026.08.09.md",
+      "title": "Release 2026.08.09",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "44e2ace306019720ba075fc276a1393f2093b1fae69d1e3f25f6dfc2eab9a01c"
+    },
+    {
+      "path": "documentos/reporte_estado_modulos_2026-05-02.md",
+      "title": "Reporte compacto de estado de modulos - Powerful Control System",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d01ffed684c700f1f97efb848bbc04602d87044843689883f0721dbec8980ec6"
+    },
+    {
+      "path": "documentos/reporte_estado_modulos_2026-05-03.md",
+      "title": "Reporte compacto de estado de modulos - Powerful Control System",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "9724ee17056998bce6e2fea64db714e8685bc6e97af78fb9236123dd0155241f"
+    },
+    {
+      "path": "documentos/reporte_estado_modulos_2026-05-05.md",
+      "title": "Reporte de estado de modulos - 2026-05-05",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "6f913407477437efaa1ebbbf9f06130114320253480dc4c7d779774aa9ae8cda"
+    },
+    {
+      "path": "documentos/reporte_qa_modulos_2026-05-06.md",
+      "title": "Reporte QA de modulos empresariales 2026-05-06",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8442c915241dc7c425cef2f06462f8766329e7913c80943a07e9616e1b1ad5cb"
+    },
+    {
+      "path": "documentos/reporte_roles_ayuda_super_2026-05-10.md",
+      "title": "Reporte de roles, permisos y ayuda privada super",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "bf6c879ba78c823f74ccec67e44e86a2a2ecd6cc39f62de9b991d22f6d575e1a"
+    },
+    {
+      "path": "documentos/requisitos/especificacion_y_trazabilidad.md",
+      "title": "Especificación transversal y trazabilidad de requisitos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "415904effdf585795a29ed7fd1123b86c43b6c265a6620c23775909dba03c06d"
+    },
+    {
+      "path": "documentos/rollback_production_2026_07_13.md",
+      "title": "Procedimiento de rollback para futura produccion - 2026-07-13",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "187d69cabc13fdb51fca8baa8df47d79d3bcaaf8d168a7635d216f564aaef2de"
+    },
+    {
+      "path": "documentos/seguridad/csp_inline_baseline.json",
+      "title": "csp_inline_baseline.json",
+      "state": "generado",
+      "owner": "Seguridad",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "78c4e07b37f4744294d96b7415ab9b06fd921e06a81882a49a131282fc1ec4a3"
+    },
+    {
+      "path": "documentos/seguridad/modelo_amenazas_y_privacidad.md",
+      "title": "Modelo de amenazas y protección de datos",
+      "state": "vigente",
+      "owner": "Seguridad",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6ad4857e072c2198c334281ed7d4203d12a0f3c7c1a6f8467473d8a6a4c36abb"
+    },
+    {
+      "path": "documentos/seguridad/revision_vps_2026-09-06.md",
+      "title": "Revisión de seguridad del VPS y de PCS",
+      "state": "evidencia",
+      "owner": "Seguridad",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "a3acaa8292bec9242a3d4400efb1a6729f6043c25989756e01c90960543ce6ee"
+    },
+    {
+      "path": "documentos/seguridad/revision_vps_2026-09-06_imagenes.json",
+      "title": "revision_vps_2026-09-06_imagenes.json",
+      "state": "evidencia",
+      "owner": "Seguridad",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "71d4934d5d740c6d2e5c35f624c93d26a35c6c7124b2e64f00ef31e1baa6a695"
+    },
+    {
+      "path": "documentos/soportes_compras_ia.md",
+      "title": "Captura inteligente de compras y gastos con IA GPT-5.5",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "173e4fff572207c126eee6cf9bd06f128d7d0d7b555977f33ddb727bbc065c31"
+    },
+    {
+      "path": "documentos/staging_execution_report.md",
+      "title": "Reporte de ejecucion de staging",
+      "state": "evidencia",
+      "owner": "QA/operación",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2ec6e82a3828e228cb1974d5d4fcc1e2a93dc67aacb2420ecdcc6d0295a11bf0"
+    },
+    {
+      "path": "documentos/staging_validation_checklist_2026_07_13.md",
+      "title": "Checklist de validacion controlada de staging - 2026-07-13",
+      "state": "evidencia",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "69368dcea24b479146d31f0a71e0a5e7f7155ec29eb77edf80b7a370a8c29913"
+    },
+    {
+      "path": "documentos/tesoreria_presupuesto.md",
+      "title": "Tesoreria y presupuesto",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "fd712956dd673388c84e83f33cfd3ac815106b37d4559339681e942ce22dc800"
+    },
+    {
+      "path": "documentos/validacion_preproduccion_pcs.md",
+      "title": "Validacion preproduccion - Powerful Control System",
+      "state": "historico",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c53a01c19dcd91aca595d7ab34db9957ba486998c4a4627a6b917da87069281b"
+    },
+    {
+      "path": "documentos/vida.md",
+      "title": "Modulo Vida",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "c0c80af29cb73a31dd5449f8dcfee9f90caf2004abaf1e123223d35749e722b9"
+    },
+    {
+      "path": "documentos/vps2_operacion.md",
+      "title": "VPS2 operacion",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6290861425b41f6db3dd07831353800db7d662ac28addb2ad34d716e61234a92"
+    },
+    {
+      "path": "services/voice_stream_server/README.md",
+      "title": "Servidor de voz natural para IA",
+      "state": "vigente",
+      "owner": "Ingeniería y operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "caeb44b699bfcdb375ada30b8a4ef9930462c67d738192248f7f82c4f519ee20"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import (
 
 const empresaVidaSchemaFingerprint = "empresa-vida:v1:personal-expenses-private-receipts-subscriptions-user-isolation"
 const empresaVidaPriceHistorySchemaFingerprint = "empresa-vida:v2:personal-price-history-barcode-ai-invoices-user-isolation"
+const empresaVidaReportsNotificationsSchemaFingerprint = "empresa-vida:v3:filtered-reports-user-opt-in-email-whatsapp-reminders-idempotent"
 
 var ErrEmpresaVidaIdempotencyConflict = errors.New("vida idempotency key reused with different payload")
 
@@ -93,6 +94,48 @@ type EmpresaVidaResumen struct {
 	SuscripcionesAnual   float64                     `json:"suscripciones_anual"`
 	AlertasProximas      int64                       `json:"alertas_proximas"`
 	PorCategoria         []EmpresaVidaCategoriaTotal `json:"por_categoria"`
+}
+
+// EmpresaVidaReporteFiltro is deliberately scoped by the caller; EmpresaID and
+// UsuarioID never come from a browser-supplied filter.
+type EmpresaVidaReporteFiltro struct {
+	Desde      string
+	Hasta      string
+	Categoria  string
+	Comercio   string
+	MetodoPago string
+}
+
+type EmpresaVidaReporteFila struct {
+	Clave    string  `json:"clave"`
+	Total    float64 `json:"total"`
+	Cantidad int64   `json:"cantidad"`
+}
+
+type EmpresaVidaReporte struct {
+	Desde         string                   `json:"desde"`
+	Hasta         string                   `json:"hasta"`
+	Total         float64                  `json:"total"`
+	Cantidad      int64                    `json:"cantidad"`
+	Promedio      float64                  `json:"promedio"`
+	PorCategoria  []EmpresaVidaReporteFila `json:"por_categoria"`
+	PorComercio   []EmpresaVidaReporteFila `json:"por_comercio"`
+	PorMetodoPago []EmpresaVidaReporteFila `json:"por_metodo_pago"`
+	PorDia        []EmpresaVidaReporteFila `json:"por_dia"`
+}
+
+type EmpresaVidaNotificacionConfiguracion struct {
+	EmpresaID        int64  `json:"empresa_id"`
+	UsuarioID        string `json:"-"`
+	EmailActiva      bool   `json:"email_activa"`
+	WhatsAppActiva   bool   `json:"whatsapp_activa"`
+	WhatsAppTelefono string `json:"whatsapp_telefono,omitempty"`
+	HoraLocal        string `json:"hora_local"`
+}
+
+type EmpresaVidaRecordatorioPendiente struct {
+	Suscripcion EmpresaVidaSuscripcion
+	Config      EmpresaVidaNotificacionConfiguracion
 }
 
 func applyEmpresaVidaSchemaTx(_ context.Context, tx *sql.Tx) error {
@@ -207,11 +250,60 @@ func empresaVidaPriceHistorySchemaStatements() []string {
 	}
 }
 
+func applyEmpresaVidaReportsNotificationsSchemaTx(_ context.Context, tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("migration transaction is required")
+	}
+	for _, statement := range empresaVidaReportsNotificationsSchemaStatements() {
+		if _, err := tx.Exec(statement); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func empresaVidaReportsNotificationsSchemaStatements() []string {
+	return []string{
+		`CREATE TABLE IF NOT EXISTS empresa_vida_notificacion_configuracion (
+			empresa_id BIGINT NOT NULL,
+			usuario_id TEXT NOT NULL,
+			email_activa BOOLEAN NOT NULL DEFAULT FALSE,
+			whatsapp_activa BOOLEAN NOT NULL DEFAULT FALSE,
+			whatsapp_telefono TEXT NOT NULL DEFAULT '',
+			hora_local VARCHAR(5) NOT NULL DEFAULT '09:00',
+			fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (empresa_id, usuario_id),
+			CHECK (char_length(usuario_id) BETWEEN 3 AND 320),
+			CHECK (hora_local ~ '^[0-2][0-9]:[0-5][0-9]$')
+		)`,
+		`CREATE TABLE IF NOT EXISTS empresa_vida_notificaciones (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT NOT NULL,
+			usuario_id TEXT NOT NULL,
+			suscripcion_id BIGINT NOT NULL REFERENCES empresa_vida_suscripciones(id) ON DELETE CASCADE,
+			proxima_renovacion DATE NOT NULL,
+			canal TEXT NOT NULL,
+			estado TEXT NOT NULL DEFAULT 'procesando',
+			intentos INTEGER NOT NULL DEFAULT 1,
+			fecha_ultimo_intento TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			fecha_envio TIMESTAMPTZ,
+			error_publico TEXT NOT NULL DEFAULT '',
+			fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			CHECK (canal IN ('email','whatsapp')),
+			CHECK (estado IN ('procesando','enviado','error','omitido')),
+			CHECK (intentos BETWEEN 1 AND 5),
+			UNIQUE (empresa_id, usuario_id, suscripcion_id, proxima_renovacion, canal)
+		)`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_vida_notificaciones_estado ON empresa_vida_notificaciones(estado, fecha_ultimo_intento)`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_vida_notificaciones_usuario ON empresa_vida_notificaciones(empresa_id, usuario_id, fecha_creacion DESC)`,
+	}
+}
+
 func VerifyEmpresaVidaSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return fmt.Errorf("database not available")
 	}
-	for _, table := range []string{"empresa_vida_gastos", "empresa_vida_suscripciones", "empresa_vida_precios"} {
+	for _, table := range []string{"empresa_vida_gastos", "empresa_vida_suscripciones", "empresa_vida_precios", "empresa_vida_notificacion_configuracion", "empresa_vida_notificaciones"} {
 		var name sql.NullString
 		if err := QueryRowCompat(dbConn, `SELECT to_regclass(?)`, table).Scan(&name); err != nil {
 			return err
@@ -604,6 +696,161 @@ func EmpresaVidaSubscriptionProjection(costo float64, periodicidad string, inter
 	}
 	anual := costo * cyclesPerYear
 	return anual / 12, anual
+}
+
+func GetEmpresaVidaReporte(dbConn *sql.DB, empresaID int64, usuarioID string, filter EmpresaVidaReporteFiltro) (*EmpresaVidaReporte, error) {
+	if empresaID <= 0 || normalizeVidaUsuario(usuarioID) == "" {
+		return nil, fmt.Errorf("contexto de Vida invalido")
+	}
+	desde, hasta, err := normalizeVidaReportDates(filter.Desde, filter.Hasta)
+	if err != nil {
+		return nil, err
+	}
+	where, args := vidaReportWhere(empresaID, usuarioID, desde, hasta, filter)
+	out := &EmpresaVidaReporte{Desde: desde, Hasta: hasta, PorCategoria: []EmpresaVidaReporteFila{}, PorComercio: []EmpresaVidaReporteFila{}, PorMetodoPago: []EmpresaVidaReporteFila{}, PorDia: []EmpresaVidaReporteFila{}}
+	if err := QueryRowCompat(dbConn, `SELECT COALESCE(SUM(monto),0), COUNT(*), COALESCE(AVG(monto),0) FROM empresa_vida_gastos WHERE `+where, args...).Scan(&out.Total, &out.Cantidad, &out.Promedio); err != nil {
+		return nil, err
+	}
+	for _, group := range []struct {
+		column string
+		target *[]EmpresaVidaReporteFila
+	}{
+		{"categoria", &out.PorCategoria}, {"COALESCE(NULLIF(comercio,''),'Sin comercio')", &out.PorComercio}, {"metodo_pago", &out.PorMetodoPago}, {"TO_CHAR(fecha_gasto,'YYYY-MM-DD')", &out.PorDia},
+	} {
+		rows, queryErr := ExecQueryCompat(dbConn, `SELECT `+group.column+`, COALESCE(SUM(monto),0), COUNT(*) FROM empresa_vida_gastos WHERE `+where+` GROUP BY `+group.column+` ORDER BY `+group.column, args...)
+		if queryErr != nil {
+			return nil, queryErr
+		}
+		for rows.Next() {
+			var row EmpresaVidaReporteFila
+			if err := rows.Scan(&row.Clave, &row.Total, &row.Cantidad); err != nil {
+				_ = rows.Close()
+				return nil, err
+			}
+			*group.target = append(*group.target, row)
+		}
+		if err := rows.Close(); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+func normalizeVidaReportDates(rawDesde, rawHasta string) (string, string, error) {
+	today := time.Now().Format("2006-01-02")
+	desde, hasta := strings.TrimSpace(rawDesde), strings.TrimSpace(rawHasta)
+	if hasta == "" {
+		hasta = today
+	}
+	if desde == "" {
+		desde = time.Now().AddDate(0, -1, 0).Format("2006-01-02")
+	}
+	start, err := time.Parse("2006-01-02", desde)
+	if err != nil {
+		return "", "", fmt.Errorf("fecha desde invalida")
+	}
+	end, err := time.Parse("2006-01-02", hasta)
+	if err != nil {
+		return "", "", fmt.Errorf("fecha hasta invalida")
+	}
+	if start.After(end) || end.Sub(start).Hours() > 366*24 {
+		return "", "", fmt.Errorf("el periodo debe estar entre 1 y 366 dias")
+	}
+	return desde, hasta, nil
+}
+
+func vidaReportWhere(empresaID int64, usuarioID, desde, hasta string, filter EmpresaVidaReporteFiltro) (string, []interface{}) {
+	clauses := []string{"empresa_id=?", "usuario_id=?", "fecha_gasto>=CAST(? AS DATE)", "fecha_gasto<=CAST(? AS DATE)"}
+	args := []interface{}{empresaID, normalizeVidaUsuario(usuarioID), desde, hasta}
+	if value := strings.TrimSpace(filter.Categoria); value != "" {
+		clauses, args = append(clauses, "categoria=?"), append(args, value)
+	}
+	if value := strings.TrimSpace(filter.Comercio); value != "" {
+		clauses, args = append(clauses, "LOWER(comercio) LIKE LOWER(?)"), append(args, "%"+value+"%")
+	}
+	if value := strings.TrimSpace(filter.MetodoPago); value != "" {
+		clauses, args = append(clauses, "metodo_pago=?"), append(args, value)
+	}
+	return strings.Join(clauses, " AND "), args
+}
+
+func GetEmpresaVidaNotificacionConfiguracion(dbConn *sql.DB, empresaID int64, usuarioID string) (*EmpresaVidaNotificacionConfiguracion, error) {
+	item := &EmpresaVidaNotificacionConfiguracion{EmpresaID: empresaID, UsuarioID: normalizeVidaUsuario(usuarioID), HoraLocal: "09:00"}
+	err := QueryRowCompat(dbConn, `SELECT email_activa, whatsapp_activa, COALESCE(whatsapp_telefono,''), hora_local FROM empresa_vida_notificacion_configuracion WHERE empresa_id=? AND usuario_id=?`, empresaID, item.UsuarioID).Scan(&item.EmailActiva, &item.WhatsAppActiva, &item.WhatsAppTelefono, &item.HoraLocal)
+	if errors.Is(err, sql.ErrNoRows) {
+		return item, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
+func SaveEmpresaVidaNotificacionConfiguracion(dbConn *sql.DB, item EmpresaVidaNotificacionConfiguracion) error {
+	if item.EmpresaID <= 0 || normalizeVidaUsuario(item.UsuarioID) == "" {
+		return fmt.Errorf("contexto de Vida invalido")
+	}
+	if _, err := time.Parse("15:04", strings.TrimSpace(item.HoraLocal)); err != nil {
+		return fmt.Errorf("hora local invalida")
+	}
+	_, err := ExecCompat(dbConn, `INSERT INTO empresa_vida_notificacion_configuracion (empresa_id, usuario_id, email_activa, whatsapp_activa, whatsapp_telefono, hora_local) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (empresa_id, usuario_id) DO UPDATE SET email_activa=EXCLUDED.email_activa, whatsapp_activa=EXCLUDED.whatsapp_activa, whatsapp_telefono=EXCLUDED.whatsapp_telefono, hora_local=EXCLUDED.hora_local, fecha_actualizacion=CURRENT_TIMESTAMP`, item.EmpresaID, normalizeVidaUsuario(item.UsuarioID), item.EmailActiva, item.WhatsAppActiva, strings.TrimSpace(item.WhatsAppTelefono), strings.TrimSpace(item.HoraLocal))
+	return err
+}
+
+func ListEmpresaVidaRecordatoriosPendientes(dbConn *sql.DB, now time.Time, limit int) ([]EmpresaVidaRecordatorioPendiente, error) {
+	if limit < 1 || limit > 500 {
+		limit = 200
+	}
+	_ = now // PostgreSQL evaluates CURRENT_DATE consistently for every candidate in this cycle.
+	rows, err := ExecQueryCompat(dbConn, `SELECT s.id, s.empresa_id, s.usuario_id, s.nombre, COALESCE(s.proveedor,''), COALESCE(s.costo,0), COALESCE(s.moneda,'COP'), s.periodicidad, s.intervalo, TO_CHAR(s.fecha_inicio,'YYYY-MM-DD'), TO_CHAR(s.proxima_renovacion,'YYYY-MM-DD'), s.recordatorio_dias, s.tipo_recordatorio, s.auto_renovacion, s.estado, COALESCE(s.notas,''), (s.proxima_renovacion-CURRENT_DATE), COALESCE(s.client_request_id,''), COALESCE(s.request_hash,''), CAST(s.fecha_creacion AS TEXT), CAST(s.fecha_actualizacion AS TEXT), c.email_activa, c.whatsapp_activa, COALESCE(c.whatsapp_telefono,''), c.hora_local FROM empresa_vida_suscripciones s JOIN empresa_vida_notificacion_configuracion c ON c.empresa_id=s.empresa_id AND c.usuario_id=s.usuario_id WHERE s.estado='activa' AND (c.email_activa=TRUE OR c.whatsapp_activa=TRUE) AND CURRENT_DATE >= (s.proxima_renovacion - s.recordatorio_dias) ORDER BY s.proxima_renovacion, s.id LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]EmpresaVidaRecordatorioPendiente, 0)
+	for rows.Next() {
+		var sub EmpresaVidaSuscripcion
+		var cfg EmpresaVidaNotificacionConfiguracion
+		if err := rows.Scan(&sub.ID, &sub.EmpresaID, &sub.UsuarioID, &sub.Nombre, &sub.Proveedor, &sub.Costo, &sub.Moneda, &sub.Periodicidad, &sub.Intervalo, &sub.FechaInicio, &sub.ProximaRenovacion, &sub.RecordatorioDias, &sub.TipoRecordatorio, &sub.AutoRenovacion, &sub.Estado, &sub.Notas, &sub.DiasRestantes, &sub.ClientRequestID, &sub.RequestHash, &sub.FechaCreacion, &sub.FechaActualizacion, &cfg.EmailActiva, &cfg.WhatsAppActiva, &cfg.WhatsAppTelefono, &cfg.HoraLocal); err != nil {
+			return nil, err
+		}
+		cfg.EmpresaID, cfg.UsuarioID = sub.EmpresaID, sub.UsuarioID
+		out = append(out, EmpresaVidaRecordatorioPendiente{Suscripcion: sub, Config: cfg})
+	}
+	return out, rows.Err()
+}
+
+// ClaimEmpresaVidaNotificacion reserves one channel. A failed notification can
+// be retried at most five times, while a successful one is immutable for that
+// subscription renewal date.
+func ClaimEmpresaVidaNotificacion(dbConn *sql.DB, sub EmpresaVidaSuscripcion, canal string) (bool, error) {
+	if canal != "email" && canal != "whatsapp" {
+		return false, fmt.Errorf("canal de Vida invalido")
+	}
+	result, err := ExecCompat(dbConn, `INSERT INTO empresa_vida_notificaciones (empresa_id, usuario_id, suscripcion_id, proxima_renovacion, canal, estado, intentos) VALUES (?, ?, ?, CAST(? AS DATE), ?, 'procesando', 1) ON CONFLICT DO NOTHING`, sub.EmpresaID, normalizeVidaUsuario(sub.UsuarioID), sub.ID, sub.ProximaRenovacion, canal)
+	if err != nil {
+		return false, err
+	}
+	if affected, _ := result.RowsAffected(); affected == 1 {
+		return true, nil
+	}
+	result, err = ExecCompat(dbConn, `UPDATE empresa_vida_notificaciones SET estado='procesando', intentos=intentos+1, fecha_ultimo_intento=CURRENT_TIMESTAMP, error_publico='' WHERE empresa_id=? AND usuario_id=? AND suscripcion_id=? AND proxima_renovacion=CAST(? AS DATE) AND canal=? AND estado='error' AND intentos<5 AND fecha_ultimo_intento < CURRENT_TIMESTAMP - INTERVAL '30 minutes'`, sub.EmpresaID, normalizeVidaUsuario(sub.UsuarioID), sub.ID, sub.ProximaRenovacion, canal)
+	if err != nil {
+		return false, err
+	}
+	affected, _ := result.RowsAffected()
+	return affected == 1, nil
+}
+
+func CompleteEmpresaVidaNotificacion(dbConn *sql.DB, sub EmpresaVidaSuscripcion, canal, estado, publicError string) error {
+	if estado != "enviado" && estado != "error" && estado != "omitido" {
+		return fmt.Errorf("estado de Vida invalido")
+	}
+	if len(publicError) > 240 {
+		publicError = publicError[:240]
+	}
+	_, err := ExecCompat(dbConn, `UPDATE empresa_vida_notificaciones SET estado=?, fecha_ultimo_intento=CURRENT_TIMESTAMP, fecha_envio=CASE WHEN ?='enviado' THEN CURRENT_TIMESTAMP ELSE fecha_envio END, error_publico=? WHERE empresa_id=? AND usuario_id=? AND suscripcion_id=? AND proxima_renovacion=CAST(? AS DATE) AND canal=?`, estado, estado, strings.TrimSpace(publicError), sub.EmpresaID, normalizeVidaUsuario(sub.UsuarioID), sub.ID, sub.ProximaRenovacion, canal)
+	return err
 }
 
 func normalizeVidaUsuario(value string) string {

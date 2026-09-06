@@ -124,6 +124,8 @@ func enterpriseAIWriteToolEnabled(tool string) bool {
 		return strings.EqualFold(strings.TrimSpace(os.Getenv("AI_HOTEL_TOOLS_ENABLED")), "true")
 	case aipkg.ToolCatalogCreateProduct:
 		return strings.EqualFold(strings.TrimSpace(os.Getenv("AI_CATALOG_TOOLS_ENABLED")), "true")
+	case aipkg.ToolSalesAddStationProduct:
+		return strings.EqualFold(strings.TrimSpace(os.Getenv("AI_SALES_TOOLS_ENABLED")), "true")
 	default:
 		return false
 	}
@@ -151,7 +153,7 @@ func enterpriseAIExecutionContext(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	}
 	permissions := make([]string, 0, len(snapshot.RoleModuleActions))
 	for permission, allowed := range snapshot.RoleModuleActions {
-		if allowed {
+		if allowed && isModuloPermitidoByLicencia(strings.SplitN(permission, ":", 2)[0], snapshot.AllowedModules) {
 			permissions = append(permissions, permission)
 		}
 	}
@@ -427,6 +429,10 @@ func enterpriseAIConfirmProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 			return
 		}
 		writeJSON(w, http.StatusConflict, map[string]interface{}{"ok": false, "proposal_id": p.ProposalID, "status": p.Estado, "error": "La ejecucion anterior sigue en curso o requiere reconciliacion; no se repetira automaticamente."})
+		return
+	}
+	if p.ToolName == aipkg.ToolSalesAddStationProduct {
+		enterpriseAIConfirmStationProduct(w, r, dbEmp, ctx, p)
 		return
 	}
 	if p.ToolName != aipkg.ToolHotelConfigureRoomStation {

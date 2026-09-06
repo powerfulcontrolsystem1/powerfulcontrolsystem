@@ -56,6 +56,7 @@ func defaultWhatsAppNotificationEvents() []whatsAppEventConfig {
 		{Key: "alerta_sistema", Nombre: "Alertas del sistema", Descripcion: "Alertas operativas, seguridad y mantenimiento.", EmailEnabled: true, WhatsAppEnabled: false},
 		{Key: "agente_mantenimiento_dian", Nombre: "Agente DIAN", Descripcion: "Noticias o cambios DIAN detectados por agentes.", EmailEnabled: true, WhatsAppEnabled: false},
 		{Key: cobranzaClienteNotificationType, Nombre: "Cobranza a clientes", Descripcion: "Recordatorios de cartera configurados por cada empresa.", EmailEnabled: true, WhatsAppEnabled: false},
+		{Key: "vida_suscripcion", Nombre: "Vida: suscripciones personales", Descripcion: "Avisos personales de renovacion o cancelacion configurados por cada usuario.", EmailEnabled: true, WhatsAppEnabled: false},
 	}
 }
 

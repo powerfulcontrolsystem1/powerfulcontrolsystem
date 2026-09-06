@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 )
 
 func EmpresaPortalTercerosCertificadosHandler(dbEmp *sql.DB) http.HandlerFunc {
@@ -137,16 +138,5 @@ func PublicCertificadosTributariosHandler(dbEmp *sql.DB) http.HandlerFunc {
 }
 
 func clientIPForCertificados(r *http.Request) string {
-	if r == nil {
-		return ""
-	}
-	for _, header := range []string{"X-Forwarded-For", "X-Real-IP"} {
-		if v := strings.TrimSpace(r.Header.Get(header)); v != "" {
-			if idx := strings.Index(v, ","); idx >= 0 {
-				return strings.TrimSpace(v[:idx])
-			}
-			return v
-		}
-	}
-	return strings.TrimSpace(r.RemoteAddr)
+	return utils.ClientIP(r)
 }

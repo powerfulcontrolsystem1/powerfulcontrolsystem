@@ -1,9 +1,18 @@
 # Diagrama Entidad Relacion
 
+Estado: Vigente. Responsable: Ingeniería de arquitectura. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Vistas conceptuales ilustrativas: relaciones lógicas no garantizan FK físicas, cardinalidad del esquema desplegado ni eficacia del flujo.
+- Los visores existentes y manifiestos mantienen sus rutas; la arquitectura actual y el catálogo de migraciones prevalecen sobre estados/tecnologías de dibujos históricos.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Actualizacion: 2026-05-13
 
 Este DER resume el nucleo relacional vigente del proyecto.
-No reemplaza el detalle fisico de [estructura_bd.md](/D:/powerfulcontrolsystem/documentos/estructura_bd.md), pero si fija una vista canonica y visual de las relaciones principales entre `pcs_empresas` y `pcs_superadministrador`.
+No reemplaza el detalle fisico de [estructura_bd.md](../estructura_bd.md), pero si fija una vista canonica y visual de las relaciones principales entre `pcs_empresas` y `pcs_superadministrador`.
 
 ## Alcance
 
@@ -255,3 +264,9 @@ erDiagram
 - `licencias` vive en `pcs_superadministrador`, pero se relaciona con `empresas.id` para gobernar capacidades efectivas por compania.
 - `super_tickets_ayuda` y `super_correos_masivos_destinatarios` tambien enlazan con `empresa_id`, porque forman parte de la operacion SaaS transversal.
 - Las plantillas empresariales reutilizan este nucleo y agregan tablas especializadas documentadas en `documentos/estructura_bd.md`.
+
+## Fuentes y aceptación de la revisión
+
+[descripcion_arquitectura.md](../arquitectura/descripcion_arquitectura.md), [platform_migrations.go](../../backend/db/platform_migrations.go), [super_diagramas_data.js](../../web/js/super_diagramas_data.js).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../requisitos/especificacion_y_trazabilidad.md)).

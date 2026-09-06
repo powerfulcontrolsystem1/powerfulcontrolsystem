@@ -1,7 +1,14 @@
 # Checklist operativa: evidencia documental para QA y soporte
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Verde significa consistencia documental de este caso; una firma declarada, un hash o un exporte no certifican validez criptográfica ni cumplimiento normativo.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: vigente
 
 ## Objetivo
 
@@ -45,3 +52,8 @@ Checklist corta para validar incidentes o UAT sobre documentos empresariales, fi
 - `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md`
 - `documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md`
 - `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md`
+## Fuentes y aceptación de la revisión
+
+[contrato_repositorio_documental_y_firmas_externas.md](../contratos/contrato_repositorio_documental_y_firmas_externas.md), [estrategia_verificacion.md](../../calidad/estrategia_verificacion.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

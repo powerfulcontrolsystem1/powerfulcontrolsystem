@@ -112,3 +112,42 @@ func TestVidaAIInvoiceExtractionValidation(t *testing.T) {
 		t.Fatal("non-numeric barcode was accepted")
 	}
 }
+
+func TestVidaReportsAndPersonalDeliveryContracts(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "vida.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{`data-tab="reportes"`, `id="vidaReportFilterBtn"`, `id="vidaReminderDialog"`, `id="vidaReminderWhatsApp"`} {
+		if !strings.Contains(string(page), marker) {
+			t.Fatalf("Vida page is missing %q", marker)
+		}
+	}
+	script, err := os.ReadFile(filepath.Join("..", "..", "web", "js", "vida.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{"loadReport", "notificaciones", "saveReminderConfig", "vidaReportMerchant"} {
+		if !strings.Contains(string(script), marker) {
+			t.Fatalf("Vida script is missing %q", marker)
+		}
+	}
+	config := &dbpkg.EmpresaVidaNotificacionConfiguracion{WhatsAppActiva: true, WhatsAppTelefono: "+57 300 123 4567", HoraLocal: "09:00"}
+	if err := normalizeAndValidateVidaNotificationConfig(config); err != nil || config.WhatsAppTelefono != "573001234567" {
+		t.Fatalf("valid WhatsApp configuration failed: %#v, %v", config, err)
+	}
+	if err := normalizeAndValidateVidaNotificationConfig(&dbpkg.EmpresaVidaNotificacionConfiguracion{WhatsAppActiva: true, HoraLocal: "09:00"}); err == nil {
+		t.Fatal("WhatsApp opt-in without a phone was accepted")
+	}
+	response := vidaNotificationConfigResponse(config)
+	if response["whatsapp_telefono"] == config.WhatsAppTelefono {
+		t.Fatal("notification API exposed the raw phone number")
+	}
+}
+
+func TestVidaSubscriptionReminderMessageDoesNotExposePrivateNotes(t *testing.T) {
+	subject, body := vidaSubscriptionReminderMessage(dbpkg.EmpresaVidaSuscripcion{Nombre: "Video", ProximaRenovacion: "2026-09-09", Costo: 25, Moneda: "COP", TipoRecordatorio: "cancelar", Notas: "dato privado"})
+	if !strings.Contains(subject, "Vida") || !strings.Contains(body, "cancelar") || strings.Contains(body, "dato privado") {
+		t.Fatalf("unexpected reminder text: %q / %q", subject, body)
+	}
+}

@@ -1,5 +1,7 @@
 # Decisiones tecnicas permanentes
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
 Este archivo evita rediscutir reglas ya decididas por el proyecto. Si una tarea
 necesita cambiar una de estas reglas, debe pedir autorizacion explicita y dejar
 trazabilidad en `documentos/historial_de_cambios`.
@@ -65,8 +67,9 @@ trazabilidad en `documentos/historial_de_cambios`.
 - Usar `carrito_ui_global` como base global del carrito y overrides por estacion
   solo cuando sea necesario.
 - POS 80mm es el formato predeterminado para reportes de turno y documentos POS.
-- Las empresas nuevas y antiguas de preproduccion pueden recibir defaults
-  globales si el usuario lo solicita, porque el sistema aun no esta en produccion.
+- Los defaults masivos requieren alcance explícito y verificación del entorno
+  y datos afectados. No asumir que una empresa carece de operación real por
+  una descripción histórica de preproducción.
 
 ## Documentos imprimibles
 
@@ -176,9 +179,10 @@ trazabilidad en `documentos/historial_de_cambios`.
 
 ## Compatibilidad historica
 
-- El proyecto aun no esta en produccion. No es obligatorio conservar rutas
-  antiguas o paginas duplicadas si el usuario pide unificar o limpiar, salvo que
-  exista una razon tecnica concreta para mantenerlas.
+- Antes de retirar rutas o páginas, identificar consumidores y operación real.
+  Una solicitud de limpieza permite consolidar redundancias, preservando datos,
+  contratos y trazabilidad. El estado del entorno debe verificarse; no inferir
+  ausencia de producción a partir de una nota histórica.
 # 2026-07-28 - Separación del propietario PostgreSQL y roles runtime
 
 - `pcs-migrate` conserva la conexión propietaria para DDL y catálogo.

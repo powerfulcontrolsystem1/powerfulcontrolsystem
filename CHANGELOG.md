@@ -1,3 +1,6 @@
+- 2026-09-06: `Capacidad de colas multiempresa` separa impresion, altas de producto y emision fiscal con limites por empresa, admission atomica para imprimir, ocho shards fiscales justos, worker concurrente y un panel Super configurable con metricas y alertas. Es candidato local; la prueba de 1000 empresas en el VPS sigue pendiente.
+- 2026-09-06: Chat IA: primer envío y botón móvil reparados; colores por autor/tema, dictado editable y ayuda por pasos. Herramientas por rol para consumo en cuenta abierta y reportes, propuestas confirmables e historial con propiedad validada. Candidato local; pendiente PostgreSQL/UAT y activación.
+- 2026-09-06: `Backup externo y capacidad VPS` separa copias de base de datos, sistema PCS y VPS; añade verificación remota por checksum y los proveedores rclone más usados. La auditoría operativa retiró 17 candidatos staging inactivos y redujo el uso de disco de 58% a 36%, conservando el candidato activo y los datos persistentes. El scheduler del worker usa ahora un payload estable por intervalo para que la cola idempotente no bloquee los backups automáticos.
 - 2026-08-26: `Compras IA adaptable dentro del submenu` permite que paneles y tablas reduzcan su ancho minimo dentro del iframe real de Compras. El documento deja de producir desplazamiento horizontal global en anchos intermedios; solo la tabla ancha conserva scroll interno.
 - 2026-08-26: `Menu de Compras con una sola carga` difiere el destino inicial del iframe hasta resolver `empresa_id`; elimina la navegación sin tenant que el navegador cancelaba antes de cargar la vista correcta. El estado de última página queda aislado por empresa e iframe para que Productos y Compras no restauren la vista del otro submenu.
 - 2026-08-26: `Soportes de compras IA sin semillas productivas` retira el boton Cargar demo, su JavaScript, la accion HTTP, la clasificacion de permiso y la funcion que insertaba un soporte ficticio en la empresa activa. Una regresion impide reintroducir cualquiera de esas superficies.
@@ -5010,8 +5013,23 @@
 
 - `actualizar_repositorio.ps1` respeta `.gitignore` durante `git add -A` y valida despues el indice para impedir artefactos operativos versionados.
 - Se elimina el uso de pathspec negativos sobre carpetas ignoradas, que hacia fallar Git aunque no hubiera cambios publicables.
+## 2026-09-05 - Vida: reportes y recordatorios personales
 
-## 2026-09-06 - Higiene Git y trabajo paralelo
+- Vida incorpora reportes filtrables por fechas, categoría, comercio y medio de pago, con totales y agrupaciones personales.
+- Cada usuario puede optar por recordatorios de suscripciones en su email autenticado y/o su propio WhatsApp, con teléfono enmascarado en la API, deduplicación y reintentos controlados del worker.
+- La migración `20260905-001-vida-reports-reminders-v1` es exclusiva de `pcs-migrate`; no se ejecutó migración, despliegue ni envío real en esta entrega local.
+
+## 2026-09-05 — Documentación empresarial
+
+Portada e índices, contextos separados de historia, requisitos, arquitectura,
+QA/seguridad/operación y catálogo verificable. Detalle y límites en
+[revisión documental](documentos/gobernanza_tecnica/revision_documental_2026-09-05.md).
+
+## 2026-09-06 — Reconciliación documental empresarial
+
+Se resolvió la disposición de 138 referencias pendientes: fuentes temáticas revisadas, historia separada y contratos manuales identificados. Entradas de proyecto/módulos/código/BD/permisos/flujos y operación consolidadas; corregidos Epayco classic_js, alcance fiscal por familia, catálogo de plantillas y límites de integraciones. Detalle y brechas en `documentos/gobernanza_tecnica/revision_semantica_2026-09-06.md`; matriz por archivo en el mismo directorio. Sin despliegue ni pruebas comerciales en esta revisión.
+
+## 2026-09-06 — Higiene Git y trabajo paralelo
 
 - GitHub borra automáticamente las ramas después de fusionar una PR; las ramas
   ya integradas se podan solo con evidencia de la PR exacta.

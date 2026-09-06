@@ -1,3 +1,19 @@
+# agente_frontend_ux.agent
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Lectura inicial: contexto_general_del_sistema.md, contexto_codex.md y fuente del módulo según AGENTS.md.
+- Los frentes son responsabilidades de análisis. Crear subagentes solo cuando el usuario lo solicita; el perfil no altera autorización, dependencias ni evidencia exigida.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
+> Alcance vigente de coordinación: según [AGENTS](../../AGENTS.md),
+> los frentes se aplican como checklist interno. Toda instrucción de delegar o
+> activar especialistas en este documento solo aplica cuando el usuario pide
+> explícitamente agentes/subagentes. No obliga a crearlos por el tipo de tarea.
+
 ## agente frontend ux
 
 Rol:
@@ -44,3 +60,9 @@ Regla de rechazo de cierre sin evidencia:
 - `agente_frontend_ux` no debe devolver un trabajo como cerrado si no puede mostrar cual es el cambio visible o de interaccion.
 - Si el flujo sigue dependiendo de mock, placeholder o persistencia local donde deberia haber backend real, debe reportarse como no cerrado.
 - Si el riesgo de usabilidad o consistencia visual no queda explicitado, el trabajo no se considera cerrable.
+
+## Fuentes y aceptación de la revisión
+
+[AGENTS.md](../../AGENTS.md), [contexto_general_del_sistema.md](../../documentos/contexto_general_del_sistema.md), [contexto_codex.md](../../documentos/contexto_codex.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../documentos/requisitos/especificacion_y_trazabilidad.md)).

@@ -1179,7 +1179,7 @@ func extraerSoporteComprasIAGPT55(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	pregunta := "Extrae y normaliza este soporte de compra o gasto de Colombia. Responde solo JSON valido, sin explicaciones."
 	providerCtx, cancelProvider := context.WithTimeout(r.Context(), soporteComprasIAExtractionTimeout)
 	defer cancelProvider()
-	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(providerCtx, model, pregunta, nil, systemPrompt, att, nil, nil)
+	respuesta, promptTokens, completionTokens, err := ctrl.callOpenAIResponsesWithSystemPromptContext(providerCtx, model, pregunta, nil, systemPrompt, att, nil, nil, empresaAISafetyIdentifier(usuario))
 	if err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			outcome := "canceled"

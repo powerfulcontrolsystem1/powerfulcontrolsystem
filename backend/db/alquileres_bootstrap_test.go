@@ -10,7 +10,7 @@ func TestDefaultAlquileresLicenciaPlans(t *testing.T) {
 	if len(plans) != 8 {
 		t.Fatalf("planes alquileres = %d, want 8", len(plans))
 	}
-	expectedValues := []float64{0, 1000, 60000, 110000, 200000, 600000, 1100000, 2200000}
+	expectedValues := []float64{0, 5000, 60000, 110000, 200000, 600000, 1100000, 2200000}
 	expectedDocs := []int{250, 250, 1000, 2000, 4000, 12000, 24000, 36000}
 	for i, plan := range plans {
 		if plan.Valor != expectedValues[i] {

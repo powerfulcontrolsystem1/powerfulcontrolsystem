@@ -1,3 +1,18 @@
+2026-09-06: Capacidad de colas multiempresa (candidato local).
+- Se separan los presupuestos operativos de impresion, altas de producto y
+  emision fiscal por empresa; una empresa que excede su admision no bloquea a
+  las demas.
+- Impresion limita trabajos activos por tenant dentro de una seccion critica
+  PostgreSQL. Facturacion programa ocho shards configurables y rota por ultima
+  empresa atendida; un fallo empresarial no corta el resto del lote.
+- `pcs-worker` procesa trabajos durables con concurrencia acotada configurable.
+- Super administrador incorpora `Capacidad de colas`, umbrales editables,
+  evaluacion manual, correo con cooldown, metricas agregadas y alerta
+  `PCSCarrilOperativoSaturado`.
+- QA local valida contratos y compilacion enfocada. La certificacion de 1000
+  empresas, PostgreSQL/VPS, impresion fisica, despliegue y emision real quedan
+  como compuertas separadas.
+
 2026-09-05: Seguridad y separacion fiscal de paises (candidato).
 - Evita heredar NIT/resolucion/ambiente de un pais distinto y rechaza codigos
   desconocidos. La numeracion CO no se reserva para otros paises.
@@ -9442,7 +9457,7 @@ Archivos modificados:
      - Descripcion: Se fuerza que el men lateral y los mens de pgina muestren botones apilados en una nica columna en pantallas pequeas (un botn por fila, ancho completo). Se actualiza el formulario de login para administradores para usar las clases de formulario globales (`.form`, `.form-input`) mejorando alineacin y estilos. Tambin se ajust la pgina de juegos para lista mvil apilada.
      - Verificacion tecnica:
          - Abrir una pgina administrativa en dispositivo mvil o emulacin y verificar que el men muestra botones uno por fila ocupando todo el ancho.
-         - Abrir [web/login.html](web/login.html) en mvil y escritorio y confirmar que los campos `Correo` y `Contrasea` estn alineados, con estilos aplicados y que los botones funcionan (Iniciar por correo / Registrarse).
+         - Abrir [web/login.html](../web/login.html) en mvil y escritorio y confirmar que los campos `Correo` y `Contrasea` estn alineados, con estilos aplicados y que los botones funcionan (Iniciar por correo / Registrarse).
 
 
  - 2026-04-16: Pgina de configuracin de cuenta y endpoints de perfil
@@ -9455,7 +9470,7 @@ Archivos modificados:
          - web/administrar_empresa/calculadora.html (reemplazada por calculadora cliente simple sin persistencia)
      - Descripcion: Se crea la pgina de `configuracion_de_la_cuenta` para que administradores vean y editen su correo, nombre y telfono, y puedan cambiar su contrasea desde la sesin activa. Se aadieron handlers backend para actualizar perfil y cambiar contrasea, y se aadi la columna `telefono` en el esquema de `administradores` (se asegura en el arranque). Se sustituy la calculadora operativa por una versin puramente cliente que no guarda nada en la base de datos.
      - Verificacion tecnica:
-         - Iniciar servidor y acceder a [web/configuracion_de_la_cuenta.html](web/configuracion_de_la_cuenta.html) con sesin activa.
+         - Iniciar servidor y acceder a [web/configuracion_de_la_cuenta.html](../web/configuracion_de_la_cuenta.html) con sesin activa.
          - POST /api/account/update_profile debe retornar {ok:true} y reflejar cambios en DB.
          - POST /api/account/change_password debe validar la contrasea actual y actualizar el hash almacenado.
 
@@ -9465,14 +9480,14 @@ Archivos modificados:
          - web/seleccionar_empresa.html
      - Descripcion: Se restaur el estilo previo (`warm`) para las tarjetas de seleccin de empresa y se aumentaron dimensiones (min-width, iconos, paddings y tipografas) en un 20% mediante overrides en `web/estilos.css`. La lgica de generacin de tarjetas en `web/js/seleccionar_empresa.js` se mantiene sin cambios.
      - Verificacion tecnica:
-         - Abrir la pgina [web/seleccionar_empresa.html](web/seleccionar_empresa.html) y verificar que las tarjetas muestran el estilo clido/redondeado y dimensiones un 20% mayores respecto a la versin previa.
+         - Abrir la pgina [web/seleccionar_empresa.html](../web/seleccionar_empresa.html) y verificar que las tarjetas muestran el estilo clido/redondeado y dimensiones un 20% mayores respecto a la versin previa.
 
  - 2026-04-16: Aadidos botones de prueba en configuracin avanzada
      - Archivos modificados:
          - web/super/configuracion_avanzada.html
      - Descripcion: Se agregan botones "Probar..." en cada tarjeta de la pgina de configuracin avanzada (Venta digital, Epayco, Nequi/Wompi, Gmail SMTP, Inteligencia Artificial y Respaldo). Cada botn realiza comprobaciones no destructivas (GET) a los endpoints de configuracin correspondientes y muestra el resultado en la UI sin ejecutar acciones que modifiquen estado en el servidor.
      - Verificacion tecnica:
-         - Abrir la pgina [web/super/configuracion_avanzada.html](web/super/configuracion_avanzada.html) y pulsar los botones `Probar *` para observar resultados `OK` o `ERROR` en cada tarjeta.
+         - Abrir la pgina [web/super/configuracion_avanzada.html](../web/super/configuracion_avanzada.html) y pulsar los botones `Probar *` para observar resultados `OK` o `ERROR` en cada tarjeta.
          - No se han aadido endpoints backend; las pruebas usan las rutas pblicas/administrativas ya existentes.
 
  - 2026-04-16: arcade publico con countdown en Patito y refuerzo movil de los cinco juegos
@@ -43837,6 +43852,54 @@ Archivos modificados:
 - Pruebas: `go test ./internal/platform/worker -count=1` y `go vet
   ./internal/platform/worker`; regresión para dos instantes del mismo minuto y
   otro del minuto siguiente.
+
+2026-09-06: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/cmd/pcs-worker/business_registry.go
+- backend/db/queue_capacity.go
+- backend/handlers/client_ip_security_test.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_rate_limit_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/public_chat_portal.go
+- backend/main_metrics_test.go
+- backend/utils/security_headers_test.go
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/nginx/edge-http-only.conf.template
+- deploy/nginx/edge.conf.template
+- deploy/scripts/vps-configure-mailu-host-nginx.sh
+- deploy/scripts/vps-configure-staging-nginx.sh
+- deploy/scripts/vps-hardening-audit.sh
+- deploy/scripts/vps-http-hardening.py
+- deploy/scripts/vps-ssh-hardening.sh
+- documentos/CHANGELOG.md
+- documentos/arquitectura/capacidad_colas_multiempresa.md
+- documentos/arquitectura/descripcion_arquitectura.md
+- documentos/catalogo_documental.json
+- documentos/catalogo_documental.md
+- documentos/contexto_general_del_sistema.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/observability_runbook.md
+- tools/qa_queue_capacity_ui.cjs
+- tools/vps_hardening_audit.mjs
+
+2026-09-06 - Revision de seguridad del VPS y PCS.
+- Produccion: Nginx limita frecuencia/conexiones y sanea cabeceras; SSH aplica su politica real; HSTS activo; Webmail conserva CSP del proveedor; certificado propio renovable para venta digital.
+- Codigo: IP validada segun proxy, limite adicional por IP para chat publico y memoria acotada. Auditor host deja de aprobar UFW inactivo y distingue SSH efectivo; verificador Node declara alcance documental.
+- go test -p 1 ./..., go vet -p 1 ./... y go mod verify aprobados; govulncheck sin vulnerabilidades alcanzables. Login real y bloqueos HTTP 429 comprobados.
+- Sigue abierto por imagenes auxiliares vulnerables, wildcard vencido para slugs empresariales, MFA publicado pendiente y reinicio del host. No se certifica el sistema completo.
+- Evidencia: documentos/seguridad/revision_vps_2026-09-06.md.
 
 2026-09-06 - Higiene de ramas y coordinación de agentes.
 - GitHub elimina automáticamente la rama de una PR tras fusionarla. Se retiraron

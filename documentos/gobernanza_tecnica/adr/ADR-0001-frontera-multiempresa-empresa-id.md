@@ -1,7 +1,14 @@
 # ADR-0001: `empresa_id` como frontera obligatoria multiempresa
 
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Se ratifica la decisión aceptada de aislamiento por empresa; Vida añade usuario. El contexto público identifica alcance, no concede permisos.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-18
-Estado: aceptada
 
 ## Contexto
 
@@ -39,3 +46,9 @@ Este ADR aplica como minimo a:
 - venta publica por empresa
 - usuarios y permisos por empresa
 - facturacion y documentos transaccionales
+
+## Fuentes y aceptación de la revisión
+
+[AGENTS.md](../../../AGENTS.md), [tenant_context.go](../../../backend/handlers/tenant_context.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

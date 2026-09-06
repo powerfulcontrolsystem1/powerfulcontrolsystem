@@ -1,6 +1,6 @@
 # Contexto especifico del sistema
 
-Estado: vigente. Ultima actualizacion: 2026-08-13.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
 
 Este documento amplia el
 [`Contexto general del sistema`](contexto_general_del_sistema.md). No se debe
@@ -8,8 +8,10 @@ leer completo por defecto: usar la seccion relacionada con la tarea.
 
 ## Inicio de cualquier cambio
 
-- Hoja de ruta activa de producción: `plan_110.md`; Planes 106 a 109 son
-  antecedentes y no órdenes vigentes.
+- Estado de entrega: [estado actual](estado_actual.md). No hay una hoja global
+  activa inferida de planes históricos; aplicar alcance y contrato del módulo.
+- Incorporación y navegación: [portal documental](README.md),
+  [guía de ingeniería](desarrollo/incorporacion.md) y [arquitectura](arquitectura/descripcion_arquitectura.md).
 - Vision y alcance: `descripcion_del_proyecto`.
 - Ubicacion de paginas, APIs, tablas y pruebas: `mapa_modulos.md`.
 - Flujos de negocio: `flujos_operativos.md`.
@@ -66,11 +68,11 @@ forzadas aunque el boton se oculte en frontend.
   El recuadro distingue `super` (visión global exclusiva del rol super),
   `selector` (resúmenes de empresas autorizadas del usuario, sin IDs técnicos
   ni mutaciones) y `empresa` (una única empresa validada por permisos).
-- Arquitectura modular, migraciones/worker y API movil:
-  `plan_final_para_produccion.md`, `plan_101_arquitectura_modular.md`,
-  `plan_103_cierre_produccion.md`, `plan_104.md`,
-  `preparacion_produccion_y_app_movil.md`, `api/mobile_api_v1.md` y
-  `api/openapi.mobile.v1.yaml`.
+- Arquitectura modular, migraciones/worker y API móvil:
+  [arquitectura](arquitectura/descripcion_arquitectura.md),
+  [gobierno de datos](arquitectura/gobierno_datos.md),
+  [contratos API](api/README.md), `api/mobile_api_v1.md` y
+  `api/openapi.mobile.v1.yaml`. Los planes 101–110 y el plan final son historia.
 - Para pagos, licencias y facturacion que toquen esquema: consultar tambien
   `arquitectura/inventario_runtime_ensure.md`. Los handlers deben usar
   verificadores `*SchemaReady`; la autoridad de DDL es `pcs-migrate`.
@@ -108,3 +110,11 @@ funcional se registra en `descripcion_de_modulos` e `historial_de_cambios`, y
 cuando aplica en `CHANGELOG.md`, matriz de roles, estructura de datos y
 diagramas. Para una tarea transversal, el cierre incluye evidencia de backend,
 frontend y operacion.
+
+## Gobierno documental
+
+Aplicar el [marco documental](gobernanza_tecnica/marco_documental.md),
+[requisitos](requisitos/especificacion_y_trazabilidad.md) y
+[estrategia de QA](calidad/estrategia_verificacion.md).
+El [catálogo](catalogo_documental.md) incluye estados y responsables;
+las referencias heredadas requieren cotejo contextual antes de actuar.

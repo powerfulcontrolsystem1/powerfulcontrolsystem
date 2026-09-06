@@ -1,5 +1,15 @@
 # Captura inteligente de compras y gastos con IA GPT-5.5
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- El extractor todavía busca EmpresaSoporteComprasIAModeloDefault (GPT-5.5) dentro del catálogo empresarial. Si el modelo global publicado es otro, puede devolver modelo no disponible: es una incompatibilidad pendiente de código, no un selector libre documentado.
+- La revisión humana y la contabilización son pasos separados de la extracción; el JSON no acredita corrección tributaria.
+- Papelera, cuarentena y purga tienen permisos y confirmación propios. Los comandos de borrado no son pruebas de lectura.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 ## Alcance
 
 Modulo empresarial para radicar soportes de compras y gastos por `empresa_id` desde foto, PDF o XML. Usa la capa IA existente del sistema con el modelo recomendado `openai:gpt-5.5` para extraer datos contables, tributarios y operativos, dejando auditoria de eventos y registro de consumo IA.
@@ -118,3 +128,9 @@ mismo hash o numero de documento.
 - `go test ./... -count=1`.
 - `git diff --check`.
 - QA 2026-05-06: pagina y dashboard validados con HTTP 200 en Motel Calipso (`empresa_id=7`); ver `documentos/reporte_qa_modulos_2026-05-06.md`.
+
+## Fuentes y aceptación de la revisión
+
+[soportes_compras_ia.go](../backend/handlers/soportes_compras_ia.go), [soportes_compras_ia.go](../backend/db/soportes_compras_ia.go), [soportes_compras_ia_test.go](../backend/db/soportes_compras_ia_test.go), [soportes_compras_ia.html](../web/administrar_empresa/soportes_compras_ia.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go), [super_chat_ia_logica.go](../backend/handlers/super_chat_ia_logica.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

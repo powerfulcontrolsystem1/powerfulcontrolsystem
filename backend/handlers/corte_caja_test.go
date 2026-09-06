@@ -114,3 +114,39 @@ func TestCorteCajaVentasReadsImmutableTenantScopedHistory(t *testing.T) {
 		t.Fatalf("cash report must not depend on the mutable reusable cart")
 	}
 }
+
+func TestCorteCajaOfflineReportUsesImmutableOperationAndCashScope(t *testing.T) {
+	raw, err := os.ReadFile("corte_caja.go")
+	if err != nil {
+		t.Fatalf("read corte_caja.go: %v", err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func listCorteCajaVentasOffline(")
+	end := strings.Index(source, "func listCorteCajaVentasAnuladas(")
+	if start < 0 || end <= start {
+		t.Fatal("could not isolate offline cash report query")
+	}
+	body := source[start:end]
+	for _, required := range []string{
+		"FROM empresa_ventas_offline_sync o",
+		"WHERE o.empresa_id = ?",
+		"o.operacion_codigo",
+		"o.cierre_caja_id",
+		"o.caja_codigo",
+		"o.usuario_cajero",
+	} {
+		if !strings.Contains(body, required) {
+			t.Errorf("offline cash report query is missing %q", required)
+		}
+	}
+	if strings.Contains(body, "JOIN empresa_ventas_estacion_metricas") {
+		t.Fatal("offline report must not infer sale identity from a reusable carrito_id")
+	}
+}
+
+func TestNormalizeCorteCajaReportesAcceptsOfflineSelection(t *testing.T) {
+	got := normalizeCorteCajaReportes([]string{"ventas", "ventas_offline"})
+	if strings.Join(got, ",") != "ventas,offline" {
+		t.Fatalf("unexpected report selection: %#v", got)
+	}
+}

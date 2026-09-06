@@ -1,5 +1,14 @@
 # Diagramas del sistema PCS para super administrador y Codex
 
+Estado: Vigente. Responsable: Ingeniería de arquitectura. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Vistas conceptuales ilustrativas: relaciones lógicas no garantizan FK físicas, cardinalidad del esquema desplegado ni eficacia del flujo.
+- Los visores existentes y manifiestos mantienen sus rutas; la arquitectura actual y el catálogo de migraciones prevalecen sobre estados/tecnologías de dibujos históricos.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Actualizacion: 2026-07-07
 
 Este documento concentra los 15 diagramas solicitados para que el super administrador los vea en paginas propias y para que Codex pueda leer la fuente tecnica en texto. La fuente visual del panel vive en `web/js/super_diagramas_data.js` y cada pagina estatica esta en `web/super/diagramas/`.
@@ -29,7 +38,9 @@ Codex vive en `documentos/diagramas/documentacion_tecnica_completa_manifest.json
 - [Diagrama de integraciones externas](#integraciones) -> `/super/diagramas/integraciones.html`
 - [Diagrama de agentes automaticos](#agentes) -> `/super/diagramas/agentes_automaticos.html`
 
-## Diagrama de modulos del sistema {#modulos}
+<a id="modulos"></a>
+
+## Diagrama de modulos del sistema
 
 Agrupa las areas principales del POS multiempresa para ubicar cambios, permisos y documentacion por modulo.
 
@@ -48,7 +59,9 @@ flowchart TB
   Finanzas --> Agentes["Agentes automaticos y mantenimiento"]
 ```
 
-## Diagrama de base de datos / ERD {#erd}
+<a id="erd"></a>
+
+## Diagrama de base de datos / ERD
 
 Resume las tablas principales y relaciones por dominio. El detalle fisico completo sigue en documentos/estructura_bd.md.
 
@@ -71,7 +84,9 @@ erDiagram
   EMPRESAS ||--o{ LICENCIAS : empresa_id
 ```
 
-## Diagrama multiempresa / multi-tenant {#multiempresa}
+<a id="multiempresa"></a>
+
+## Diagrama multiempresa / multi-tenant
 
 Muestra como cada tabla operativa debe filtrar por empresa_id y como el super administrador gobierna configuraciones globales.
 
@@ -90,7 +105,9 @@ flowchart TB
   class D1,D2,DN rule
 ```
 
-## Diagrama general de arquitectura {#arquitectura}
+<a id="arquitectura"></a>
+
+## Diagrama general de arquitectura
 
 Conecta navegador, frontend estatico, API Go, PostgreSQL, servicios externos y despliegue Docker/VPS.
 
@@ -109,7 +126,9 @@ flowchart LR
   VPS --> DB
 ```
 
-## Diagrama de flujo de ventas POS {#ventas-pos}
+<a id="ventas-pos"></a>
+
+## Diagrama de flujo de ventas POS
 
 Describe el flujo operativo desde seleccion de empresa hasta inventario, caja, impresion y factura electronica si aplica.
 
@@ -126,7 +145,9 @@ flowchart LR
   FE --> DIAN["Enviar a DIAN"]
 ```
 
-## Diagrama de flujo de facturacion electronica DIAN {#dian}
+<a id="dian"></a>
+
+## Diagrama de flujo de facturacion electronica DIAN
 
 Ordena la emision DIAN Colombia: validacion, UBL, firma, envio, acuse, CUFE/PDF y correo al cliente.
 
@@ -143,7 +164,9 @@ flowchart LR
   Respuesta --> Reintentos["Cola de reintentos si falla"]
 ```
 
-## Diagrama de flujo de inventario {#inventario}
+<a id="inventario"></a>
+
+## Diagrama de flujo de inventario
 
 Relaciona entradas, salidas, traslados, kardex y reportes de existencias por empresa y bodega.
 
@@ -159,7 +182,9 @@ flowchart LR
   Kardex --> Reporte["Reporte de existencias"]
 ```
 
-## Diagrama de usuarios, roles y permisos {#roles-permisos}
+<a id="roles-permisos"></a>
+
+## Diagrama de usuarios, roles y permisos
 
 Ubica roles super y empresariales. La autorizacion final vive en backend, wrappers y matriz por modulo.
 
@@ -179,7 +204,9 @@ flowchart TB
   Bodeguero2 --> Permisos
 ```
 
-## Diagrama de API / endpoints {#api-endpoints}
+<a id="api-endpoints"></a>
+
+## Diagrama de API / endpoints
 
 Organiza las rutas por familias para ubicar handlers, wrappers de permisos y validaciones de empresa_id.
 
@@ -196,7 +223,9 @@ flowchart TB
   API --> Super["Super API: licencias, VPS, portal, alertas"]
 ```
 
-## Diagrama de despliegue / infraestructura {#despliegue}
+<a id="despliegue"></a>
+
+## Diagrama de despliegue / infraestructura
 
 Muestra dominio, proxy, Docker, base de datos, correo, backups y flujo GitHub hacia VPS.
 
@@ -213,7 +242,9 @@ flowchart LR
   VPS --> Backups["Backups locales y nube"]
 ```
 
-## Diagrama de seguridad {#seguridad}
+<a id="seguridad"></a>
+
+## Diagrama de seguridad
 
 Resume autenticacion, sesiones, roles, aislamiento por empresa, auditoria, HTTPS y proteccion de secretos.
 
@@ -229,7 +260,9 @@ flowchart LR
   Datos --> Backups["Backups sin secretos"]
 ```
 
-## Diagrama de auditoria y logs {#auditoria-logs}
+<a id="auditoria-logs"></a>
+
+## Diagrama de auditoria y logs
 
 Estandariza quien hizo que, en que empresa, modulo, fecha, IP y con que resultado.
 
@@ -242,7 +275,9 @@ flowchart LR
   Log --> Reporte["Consulta o exportacion de auditoria"]
 ```
 
-## Diagrama de reportes {#reportes}
+<a id="reportes"></a>
+
+## Diagrama de reportes
 
 Mapa los reportes principales que consumen ventas, compras, inventario, caja, fiscalidad y utilidad.
 
@@ -260,7 +295,9 @@ flowchart TB
   Reportes --> Productos["Productos mas vendidos"]
 ```
 
-## Diagrama de integraciones externas {#integraciones}
+<a id="integraciones"></a>
+
+## Diagrama de integraciones externas
 
 Lista dependencias externas y equipos que el sistema puede usar sin mezclar secretos con documentacion.
 
@@ -279,7 +316,9 @@ flowchart TB
   PCS --> IA["Proveedor IA controlado"]
 ```
 
-## Diagrama de agentes automaticos {#agentes}
+<a id="agentes"></a>
+
+## Diagrama de agentes automaticos
 
 Ubica agentes internos de soporte, monitoreo y programacion asistida. Codex usa estos diagramas como referencia del repo, no como permiso para ejecutar acciones externas.
 
@@ -293,3 +332,9 @@ flowchart TB
   Agentes --> Programador["Agente programador: sugerencias para Codex"]
   Agentes --> Secretaria["Agente secretaria: notificaciones"]
 ```
+
+## Fuentes y aceptación de la revisión
+
+[descripcion_arquitectura.md](../arquitectura/descripcion_arquitectura.md), [platform_migrations.go](../../backend/db/platform_migrations.go), [super_diagramas_data.js](../../web/js/super_diagramas_data.js).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../requisitos/especificacion_y_trazabilidad.md)).

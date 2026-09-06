@@ -1,3 +1,7 @@
+> Estado documental: histórico. Plan inicial de mayo; no usar opciones de escape como aprobación del release.
+> Fuentes actuales: [runbook_release_profesional.md](gobernanza_tecnica/runbooks/runbook_release_profesional.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan de profesionalizacion de la plataforma
 
 Fecha: 2026-05-11

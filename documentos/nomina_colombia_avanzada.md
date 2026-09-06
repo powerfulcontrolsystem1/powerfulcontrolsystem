@@ -1,7 +1,15 @@
 # Nomina Colombia avanzada
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Se conserva el alcance de nómina electrónica desde fuente mensual pagada y numeración específica. Un CUNE calculado o documento local no acredita aceptación oficial.
+- Ajustes, habilitación automatizada y distribución dedicada permanecen fuera del alcance declarado; no crear fuentes laborales ficticias para probar.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-08-26
-Estado: candidato local pendiente de PR, despliegue y prueba fiscal controlada
 
 ## Alcance
 
@@ -163,3 +171,9 @@ consecutivo.
   prueba PostgreSQL opcional usa `PCS_TEST_POSTGRES_DSN`.
 - Esta evidencia es local. PR, CI, aprobacion, merge, despliegue, migracion VPS
   y QA autenticado se registran como compuertas separadas.
+
+## Fuentes y aceptación de la revisión
+
+[dian_nomina_electronica.go](../backend/handlers/dian_nomina_electronica.go), [dian_nomina_electronica.go](../backend/db/dian_nomina_electronica.go), [dian_nomina_electronica_migration.go](../backend/db/dian_nomina_electronica_migration.go), [nomina_sueldos.go](../backend/handlers/nomina_sueldos.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

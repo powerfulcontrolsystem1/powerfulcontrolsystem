@@ -1,3 +1,7 @@
+> Estado documental: histórico. Plan de veinte plantillas anterior a la reducción del catálogo; consultar la matriz actual de trece.
+> Fuentes actuales: [matriz_integracion_plantillas.md](matriz_integracion_plantillas.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Plan e implementacion de 20 modulos plantillas
 
 Fecha: 2026-05-10

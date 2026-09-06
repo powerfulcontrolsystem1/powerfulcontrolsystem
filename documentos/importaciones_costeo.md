@@ -1,5 +1,14 @@
 # Importaciones y costeo de nacionalizacion
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Se mantienen importación, items, costos y distribución; el costo aterrizado es cálculo interno según TRM y entradas registradas.
+- Registrar arancel, IVA o incoterm no acredita nacionalización ni validación aduanera. Verificar sumas distribuidas, redondeo y pertenencia del producto antes de aceptación.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-05-06
 
 ## Alcance
@@ -37,3 +46,9 @@ Modulo empresarial para compras internacionales: embarques, proveedor, pais de o
 
 - Pruebas unitarias: `go test ./db -run TestNormalizeImportacion -count=1`.
 - QA Calipso: crea importacion, items, costos, distribucion y dashboard.
+
+## Fuentes y aceptación de la revisión
+
+[importaciones_costeo.go](../backend/handlers/importaciones_costeo.go), [importaciones_costeo.go](../backend/db/importaciones_costeo.go), [importaciones_costeo_test.go](../backend/db/importaciones_costeo_test.go), [importaciones_costeo.html](../web/administrar_empresa/importaciones_costeo.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

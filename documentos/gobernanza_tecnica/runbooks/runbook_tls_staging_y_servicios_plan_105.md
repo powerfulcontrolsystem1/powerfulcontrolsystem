@@ -1,3 +1,7 @@
+> Estado documental: histórico. Registro del incidente TLS de julio y su recuperación; hostnames, certificados, nombres de contenedor y estado E2E deben inventariarse nuevamente.
+> Fuentes actuales: [incidentes_y_continuidad.md](../../operacion/incidentes_y_continuidad.md), [manual_vps_seguridad.md](../../manual_vps_seguridad.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Runbook: recuperacion TLS de staging y servicios externos - Plan 105
 
 Fecha: 2026-07-21  

@@ -1,36 +1,38 @@
 # Orquestador IA empresarial
 
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Se reconciliaron modelo global, identidad permanente y flags separados de hotel/catálogo; ninguna respuesta del modelo concede autoridad.
+- El registro de fuentes y memoria con consentimiento no implementa RAG; las categorías y la minimización de fase 2 permanecen aplicables.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 ## Estado de activacion
 
-La primera entrega esta implementada pero desactivada por defecto. Ninguna
-empresa puede recibir cambios desde IA hasta configurar simultaneamente:
+Ampliación local del 2026-09-06: [capacidades y evidencia](chat_ia_capacidades_2026-09-06.md).
+El chat integra búsqueda de catálogo, búsqueda de estaciones, propuesta de
+consumo y seis familias de reportes. Ventas requiere `AI_SALES_TOOLS_ENABLED`.
+La nueva escritura no se considera habilitada ni validada en PostgreSQL real.
 
-```text
-AI_ENTERPRISE_ORCHESTRATOR_ENABLED=true
-AI_WRITE_TOOLS_ENABLED=true
-AI_HOTEL_TOOLS_ENABLED=true
-```
-
-`AI_RAG_ENABLED`, `AI_AGENT_MODE_ENABLED` y `AI_INVENTORY_TOOLS_ENABLED` se
-mantienen apagados hasta que su catalogo, permisos, evaluaciones y controles de
-coste tengan evidencia de aprobacion. No se activa ninguna herramienta por la
-sola respuesta textual de un modelo.
+El orquestador exige `AI_ENTERPRISE_ORCHESTRATOR_ENABLED=true`. Las escrituras
+requieren además `AI_WRITE_TOOLS_ENABLED=true` y el flag específico:
+`AI_HOTEL_TOOLS_ENABLED` para hotel o `AI_CATALOG_TOOLS_ENABLED` para productos.
+La ejecución en modo agente exige también `AI_AGENT_MODE_ENABLED=true`.
+La identidad de interfaz `agente_pcs` no activa estos permisos operativos.
+RAG semántico sigue siendo una ampliación pendiente; un catálogo de fuentes no
+implementa recuperación por fragmento. Los flags no sustituyen autorización,
+confirmación ni evaluación de una herramienta.
 
 ## Contrato de seguridad
 
 ### Modelos, adjuntos y preferencias
 
-- El catalogo empresarial contempla `openai:gpt-5.4-mini`, `openai:gpt-5.5` y
-  `openai:gpt-5.6-luna`. Super Administrador habilita los modelos permitidos y
-  define uno para operaciones y otro para adjuntos o analisis avanzado.
-- La eleccion de modelo, modo y agente realizada en el chat se conserva por
-  usuario autenticado. La
-  conversacion, los permisos, el contexto, el consumo y los datos siguen
-  aislados estrictamente por `empresa_id`; una preferencia nunca concede acceso
-  entre empresas.
-- El selector informa el uso y saldo diario de la empresa activa. El backend
-  vuelve a validar el modelo habilitado, incluso si el navegador manipula la
-  solicitud.
+- Super Administrador define un modelo global; la API empresarial solo expone
+  el seleccionado. Las preferencias del navegador no conceden otra selección,
+  permisos ni acceso a empresas. El catálogo técnico permite cambiar la
+  configuración, sujeto a disponibilidad real del proveedor.
 - Se aceptan imagenes, PDF, TXT, CSV, DOCX y XLSX de hasta 8 MB. El nombre del
   archivo no se utiliza como ruta ni se publica desde este flujo.
 
@@ -92,8 +94,8 @@ la propuesta temporal. El boton Confirmar realiza otra peticion independiente;
 revalida usuario, empresa, licencia, permisos, hash, vencimiento y uso unico.
 
 El modo agente permanece bloqueado salvo `AI_AGENT_MODE_ENABLED=true` y un
-contexto acotado por servidor. La interfaz actual solo usa modo asistido para
-la herramienta hotelera.
+contexto acotado por servidor. El chat usa la identidad permanente `agente_pcs`; la ejecución de herramientas
+sigue acotada por servidor y por los flags anteriores.
 
 `catalog.search_products` es una consulta de bajo riesgo que devuelve un
 catalogo acotado de productos, categorias y bodegas exclusivamente de la
@@ -172,13 +174,16 @@ Cada solicitud de OpenAI Responses incluye `safety_identifier` estable y
 pseudonimo, derivado con SHA-256 de una identidad autenticada o del alcance
 operativo cuando no existe usuario final. Nunca se transmite correo, IP ni otro
 identificador original; las solicitudes conservan `store=false`.
+El cliente interno exige este valor en su firma y valida el formato `pcs-`
+seguido por 32 caracteres hexadecimales antes de abrir la conexion. Una llamada
+sin seudonimo o con identidad cruda falla cerrada y no llega al proveedor.
 
 ## Modelos y esfuerzo de razonamiento
 
 Super Administrador selecciona un solo modelo principal para todas las
-empresas, usuarios, preguntas y adjuntos. El valor inicial es GPT-5.6 Terra con
-esfuerzo `medium`: cubre texto e imagen de entrada y usa Responses API para
-archivos, herramientas y salidas estructuradas. La disponibilidad efectiva
+empresas, usuarios, preguntas y adjuntos. El código configura inicialmente `openai:gpt-5.6-terra` con
+esfuerzo `medium` y cliente Responses. Esto describe la configuración local,
+no acredita disponibilidad ni capacidades contratadas con el proveedor. La disponibilidad efectiva
 depende de la cuenta y permisos vigentes del proveedor.
 
 El catálogo técnico conserva modelos alternativos para que Super Administrador
@@ -194,10 +199,11 @@ agente identifica el módulo según la intención y el contexto autorizado; no
 recibe `empresa_id`, rol, permiso ni confirmación desde el modelo como campos de
 autoridad.
 
-Mantener el agente activo no implica por sí solo otra tarifa: el consumo se
-mide por tokens y herramientas realmente usadas. El historial enviado queda
-acotado, el razonamiento inicial es `medium`, `MaxOperations` permanece en uno
-y la cuota ligera de agente se reserva al invocar una herramienta, no al
+La contabilidad local registra tokens y herramientas usadas; la facturación
+externa debe reconciliarse con el proveedor y no se deduce de un flag. El historial enviado queda
+acotado y el razonamiento inicial es `medium`. El chat general permite hasta
+cuatro llamadas secuenciales y una propuesta de escritura por mensaje;
+la cuota ligera de agente se reserva al invocar una herramienta, no al
 responder una pregunta normal. Toda herramienta conserva flags, permiso
 efectivo y confirmación independiente.
 
@@ -209,3 +215,9 @@ alcance `empresa` se permite solo a roles administrativos autorizados y nunca
 omite el tenant. Fotos, PDF, DOCX, XLSX, CSV y texto validado se envían como
 datos no confiables al modelo para generar un borrador; toda escritura real
 continúa requiriendo una herramienta cerrada, permisos y confirmación humana.
+
+## Fuentes y aceptación de la revisión
+
+[enterprise.go](../backend/ai/enterprise.go), [ai_enterprise.go](../backend/db/ai_enterprise.go), [ai_enterprise_orchestrator.go](../backend/handlers/ai_enterprise_orchestrator.go), [super_chat_ia_logica.go](../backend/handlers/super_chat_ia_logica.go), [chat_con_inteligencia_artificial_controller.go](../backend/handlers/chat_con_inteligencia_artificial_controller.go).
+
+Requisitos aplicables: PCS-REQ-002, PCS-REQ-012, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

@@ -1,35 +1,27 @@
-# Equipo de agentes del repositorio
+# Perfiles de trabajo del repositorio
 
-Este repositorio opera con un equipo base de cuatro agentes coordinados.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
 
-- `agente_go`: agente principal, seleccionado por defecto para el trabajo diario y responsable de dirigir al resto del equipo.
-- `agente_backend_db`: agente especialista en backend Go, PostgreSQL, modelos, handlers, seguridad, migraciones y rendimiento.
-- `agente_frontend_ux`: agente especialista en interfaces HTML/CSS/JavaScript, experiencia operativa y consistencia visual.
-- `agente_qa_operacion`: agente especialista en pruebas, validacion end to end, runbooks, despliegue, incidentes y verificacion operativa.
+## Alcance revisado y límites
 
-## Regla de coordinacion
+- Se elimina la delegación automática contradictoria y se mantiene una única autoridad en AGENTS.md.
 
-- Toda tarea entra primero por `agente_go`.
-- `agente_go` decide si resuelve directamente o si divide el trabajo entre especialistas.
-- Los agentes especialistas no redefinen arquitectura por su cuenta; devuelven hallazgos, cambios o validaciones a `agente_go`.
-- `agente_go` integra resultados, valida conflictos entre areas y cierra con trazabilidad documental completa.
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
 
-## Regla de mejora continua
+La autoridad operativa reside en [AGENTS.md](../../AGENTS.md). Los perfiles
+representan responsabilidades para la revisión integrada, no procesos que deban
+iniciarse automáticamente.
 
-- Si una tarea toca backend, frontend y operacion, `agente_go` debe pedir colaboracion cruzada y consolidar una salida unica.
-- Si una tarea solo afecta un area, `agente_go` puede delegar la ejecucion tecnica y luego validar documentacion, pruebas y riesgos.
-- Toda mejora debe respetar `empresa_id`, trazabilidad operativa, documentacion vigente y reglas de exportacion/interoperabilidad del proyecto.
+- [Coordinación](agente_go.agent.md): arquitectura, integración y cierre.
+- [Backend y datos](agente_backend_db.agent.md): Go, PostgreSQL, permisos y negocio.
+- [Frontend y UX](agente_frontend_ux.agent.md): interfaz y flujo operativo.
+- [QA y operación](agente_qa_operacion.agent.md): evidencia, runtime y recuperación.
 
-## Protocolo operativo
+Usar el [protocolo](protocolo_delegacion.md) y la
+[plantilla](plantilla_trabajo_por_modulo.md). Solo delegar cuando el usuario pide agentes.
 
-- El protocolo detallado de delegacion vive en `.github/agents/protocolo_delegacion.md`.
-- La plantilla base de ejecucion por modulo vive en `.github/agents/plantilla_trabajo_por_modulo.md`.
-- `agente_go` debe usar ambos documentos para repartir trabajo y exigir la misma disciplina de salida a todos los especialistas.
+## Fuentes y aceptación de la revisión
 
-## Uso rapido
+[AGENTS.md](../../AGENTS.md).
 
-- Si necesitas decidir rapido a quien activar, usa primero la tabla rapida por modulo del protocolo.
-- Si necesitas decidir todavia mas rapido, usa el semaforo ejecutivo del protocolo para saber si el modulo exige uno, dos o tres frentes.
-- Si el cambio es critico en `pagos`, `licencias`, `venta_publica`, `estaciones`, `ventas_simple` o `carritos`, `agente_go` debe activar a los tres especialistas sin excepcion ordinaria.
-- Si dudas sobre el flujo, usa los ejemplos reales del protocolo y la plantilla por modulo antes de cerrar la tarea.
-- Si un especialista no devuelve evidencia minima suficiente, `agente_go` no debe aceptar ese frente como cerrado.
+Requisitos aplicables: PCS-REQ-016 ([matriz transversal](../../documentos/requisitos/especificacion_y_trazabilidad.md)).

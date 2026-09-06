@@ -1,7 +1,15 @@
 # Runbook: depuracion de soportes IA y cuarentena privada
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La vigencia del procedimiento no certifica la implementación en staging. Conserva los pendientes A/B, caída, dos réplicas y restore.
+- Depurar es irreversible para el archivo: exige alcance autorizado, permiso D, motivo y código exacto.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-08-09
-Estado: candidato local; requiere certificacion en staging
 
 ## Sintomas cubiertos
 
@@ -90,3 +98,9 @@ autenticado: diagnostico exige Read y depuracion exige Delete.
 - `documentos/plan_109.md` - P109-008 y P109-010
 - `documentos/gobernanza_tecnica/runbooks/runbook_recuperacion_desastre_docker_vps.md`
 - `documentos/evidencia_plan_109/P109-008/2026-08-09_purga_segura_soportes_ia_local.md`
+
+## Fuentes y aceptación de la revisión
+
+[soportes_compras_ia.go](../../../backend/handlers/soportes_compras_ia.go), [soportes_compras_ia.md](../../soportes_compras_ia.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

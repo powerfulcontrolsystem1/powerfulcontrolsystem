@@ -101,13 +101,14 @@ func main() {
 	dispatcherEmp := &outbox.Dispatcher{SourceDB: dbEmp, QueueDB: dbSuper, DispatcherID: workerID + "-outbox-empresas", Batch: 20, Lease: 5 * time.Minute, AllowedKinds: worker.Kinds(registry)}
 	scheduler := &worker.Scheduler{DB: dbSuper, Specs: businessSchedules()}
 	runner := &worker.Runner{
-		DB:       dbSuper,
-		WorkerID: workerID,
-		Poll:     2 * time.Second,
-		Batch:    20,
-		Lease:    5 * time.Minute,
-		Handlers: registry,
-		Health:   health,
+		DB:          dbSuper,
+		WorkerID:    workerID,
+		Poll:        2 * time.Second,
+		Batch:       20,
+		Concurrency: envInt("PCS_WORKER_CONCURRENCY", 4),
+		Lease:       5 * time.Minute,
+		Handlers:    registry,
+		Health:      health,
 		BeforeBatch: func(ctx context.Context) error {
 			if err := scheduler.EnqueueDue(ctx); err != nil {
 				return err

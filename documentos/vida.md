@@ -1,6 +1,13 @@
 # Modulo Vida
 
-Estado: candidato local. Ultima actualizacion: 2026-08-31.
+Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Datos privados por empresa y usuario, sin integración comercial automática.
+- La migración inicial crea gastos/suscripciones; la de precios añade empresa_vida_precios. Recordatorios y entregas requieren evidencia separada de la programación local.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
 
 ## Proposito
 
@@ -22,6 +29,9 @@ Casos principales:
   extraer sus datos y productos, y crear el gasto personal en una transaccion;
 - consultar por producto o codigo el historial de precio unitario pagado;
 - consultar resumen mensual, promedio diario y distribucion por categoria;
+- consultar reportes filtrables por periodo (hasta 366 dias), categoria,
+  comercio y medio de pago, con totales y agrupaciones por dia, categoria,
+  comercio y medio de pago;
 - registrar suscripciones semanales, mensuales, trimestrales, semestrales,
   anuales o personalizadas;
 - recordar renovacion, cancelacion o ambas antes de la fecha configurada.
@@ -67,6 +77,8 @@ Acciones:
 | `GET` | `gastos` | Lista personal filtrable por fecha y categoria |
 | `GET` | `suscripciones` | Lista personal y alertas vigentes |
 | `GET` | `precios` | Historial personal filtrable por codigo de barras o producto |
+| `GET` | `reporte` | Totales y agrupaciones personales filtrables por fecha, categoria, comercio y medio de pago |
+| `GET` | `notificaciones` | Preferencias privadas de aviso, con telefono enmascarado |
 | `GET` | `recibo&id=<id>` | Descarga privada del comprobante propio |
 | `POST` | `gasto` | Crea gasto; acepta JSON o `multipart/form-data` con `recibo` |
 | `POST` | `factura_ia` | Lee imagen/PDF y crea atomicamente gasto, recibo privado y productos |
@@ -74,6 +86,7 @@ Acciones:
 | `DELETE` | `gasto` | Elimina el gasto propio y su comprobante privado |
 | `POST` | `suscripcion` | Crea una suscripcion personal |
 | `PUT` | `suscripcion` | Actualiza la suscripcion propia |
+| `PUT` | `notificaciones` | Activa/desactiva email y WhatsApp propios, numero privado y hora local |
 | `POST` | `renovar&id=<id>` | Avanza la proxima fecha con cierre correcto de fin de mes |
 | `DELETE` | `suscripcion` | Elimina la suscripcion propia |
 
@@ -85,7 +98,7 @@ original; reutilizar la clave con otro contenido produce conflicto.
 
 La migracion `20260831-001-vida-personal-v1`, ejecutada exclusivamente por
 `pcs-migrate`, crea gastos y suscripciones. La migracion aditiva
-`20260831-003-vida-price-history-ai-v1` crea:
+`20260831-003-vida-price-history-ai-v1` añade precios. Distribución de tablas:
 
 - `empresa_vida_gastos`, con fecha, categoria, comercio, descripcion, monto,
   moneda, medio de pago y referencia privada del comprobante;
@@ -93,6 +106,14 @@ La migracion `20260831-001-vida-personal-v1`, ejecutada exclusivamente por
   renovacion, anticipacion, tipo de recordatorio, autorrenovacion y estado.
 - `empresa_vida_precios`, con gasto de origen, fecha, codigo de barras, nombre,
   comercio, cantidad, precio unitario/total, moneda y origen manual, lector o IA.
+
+La migracion aditiva `20260905-001-vida-reports-reminders-v1` crea
+`empresa_vida_notificacion_configuracion` y `empresa_vida_notificaciones`.
+La primera mantiene opt-in por `empresa_id + usuario_id`, canal, hora local y
+telefono WhatsApp privado; la segunda registra un unico intento por
+suscripcion, fecha de renovacion y canal, y permite hasta cinco reintentos
+espaciados para errores de entrega. No se guardan destinatarios duplicados en
+el historial de envios.
 
 Los indices comienzan por `empresa_id, usuario_id`; el producto personal no
 referencia `productos` ni inventario de la empresa. Gasto y lineas de precio se
@@ -117,9 +138,18 @@ permiso de notificaciones al navegador, emite una notificacion deduplicada por
 empresa, suscripcion y fecha de renovacion. El boton `Activar alarmas` solicita
 ese permiso de forma explicita.
 
-Estas alarmas del navegador requieren que PCS este abierto. No se implementa en
-esta version envio por correo, SMS, WhatsApp ni una renovacion o cancelacion
-automatica con el proveedor.
+Estas alarmas del navegador requieren que PCS este abierto. Adicionalmente,
+cada usuario puede activar email a su propia cuenta autenticada y/o WhatsApp a
+un numero que registra expresamente, y escoger la hora local de revision. El
+`pcs-worker` ejecuta el envio durable; respeta el interruptor global del evento
+`vida_suscripcion`, el modo de pruebas de correo/WhatsApp y la preferencia
+individual. El API nunca retorna el telefono completo. Desactivar un canal
+detiene futuros avisos, sin afectar suscripciones ni gastos.
+
+WhatsApp depende de que Super Administrador haya configurado el proveedor Meta
+Cloud y habilitado el evento `vida_suscripcion`; si no lo esta, el intento queda
+registrado como omitido y el usuario no recibe un envio ficticio. Vida no
+ejecuta renovaciones, cancelaciones ni cobros con proveedores externos.
 
 ## Activacion y validacion pendiente
 
@@ -130,6 +160,16 @@ El candidato permanece local. Antes de habilitarlo en un entorno se debe:
 3. probar dos usuarios de una misma empresa y otra empresa distinta;
 4. probar foto real, PDF, lectura IA, reintento idempotente, limites, descarga y borrado;
 5. probar camara y fallback manual en movil compatible y no compatible;
-6. verificar recordatorios con permisos concedidos y denegados.
+6. verificar reportes filtrados con dos usuarios de la misma empresa y otra
+   empresa, sin datos cruzados;
+7. verificar email y WhatsApp en modo de pruebas, opt-in/opt-out, numero
+   enmascarado, deduplicacion y reintento; usar un dispositivo/servicio real
+   antes de afirmar entrega productiva.
 
 Esta documentacion no autoriza migracion, despliegue ni cambios de produccion.
+
+## Fuentes y aceptación de la revisión
+
+[vida.go](../backend/handlers/vida.go), [vida.go](../backend/db/vida.go), [vida_test.go](../backend/db/vida_test.go), [vida.html](../web/administrar_empresa/vida.html), [main.go](../backend/main.go), [empresa_permisos.go](../backend/handlers/empresa_permisos.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

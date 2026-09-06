@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="es">
+<html lang="es" data-login-theme-bootstrap>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -11,43 +11,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/png" href="/img/pwa-icon-192.png">
   <link rel="apple-touch-icon" href="/img/pwa-icon-192.png">
-  <script>
-    window.__pcsInstallPromptEvent = null;
-    window.addEventListener("beforeinstallprompt", function(event){
-      event.preventDefault();
-      window.__pcsInstallPromptEvent = event;
-      window.dispatchEvent(new CustomEvent("pcs:beforeinstallprompt"));
-    });
-  </script>
-  <script>
-    (function(){
-      var allowed = {light:1,"light-rose":1,"light-gold":1,"light-wood":1,dark:1,"dark-violet":1,"dark-emerald":1,"dark-corporate":1,"dark-absolute":1,"dark-obsidian":1,"dark-neon":1};
-      function cookieTheme(){
-        var match = String(document.cookie || "").match(/(?:^|;\s*)pcs_theme=([^;]+)/);
-        return match ? decodeURIComponent(match[1] || "") : "";
-      }
-      function normalize(theme){
-        var value = String(theme || "").trim().toLowerCase();
-        if (value === "dark-protect") value = "dark";
-        return allowed[value] ? value : "light";
-      }
-      function storedTheme(){
-        var value = cookieTheme();
-        try { value = value || localStorage.getItem("theme") || ""; } catch (_) {}
-        return normalize(value);
-      }
-      function apply(theme){
-        var normalized = normalize(theme);
-        var root = document.documentElement;
-        root.setAttribute("data-theme", normalized);
-        root.classList.toggle("theme-light", normalized.indexOf("light") === 0);
-        root.classList.toggle("theme-dark", normalized.indexOf("light") !== 0);
-        return normalized;
-      }
-      window.__pcsLoginTheme = { normalize: normalize, apply: apply, current: storedTheme };
-      apply(storedTheme());
-    })();
-  </script>
+  <script src="/js/login_bootstrap.js?v=20260906-csp"></script>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
@@ -102,7 +66,7 @@
           <div class="form-actions login-form-actions">
             <button id="btnIngresar" type="submit" class="btn login-email-submit">Ingresar</button>
           </div>
-          <div id="empresaLoginRecaptcha" class="form-help" style="display:none"></div>
+          <div id="empresaLoginRecaptcha" class="form-help is-hidden"></div>
           <div class="login-inline-links">
             <a href="#" id="linkGoRecovery">¿Olvidó su contraseña?</a>
             <a href="#" id="linkGoInviteRecovery">Recuperar email de invitación</a>
@@ -141,11 +105,11 @@
             <div class="login-usuario-contract-head">
               <div>
                 <p class="login-usuario-contract-label">Contrato de registro</p>
-                <h3 id="contractTitle" style="margin:0 0 6px;font-size:1rem;">Cargando contrato...</h3>
-                <p id="contractSummary" class="form-help is-hidden" style="margin:0;"></p>
+                <h3 id="contractTitle" class="login-usuario-contract-title">Cargando contrato...</h3>
+                <p id="contractSummary" class="form-help login-usuario-contract-summary is-hidden"></p>
               </div>
             </div>
-            <p id="contractNote" class="form-help is-hidden" style="margin-top:10px;"></p>
+            <p id="contractNote" class="form-help login-usuario-contract-note is-hidden"></p>
             <div class="remember-row login-usuario-contract-acceptance">
               <label class="remember-label" for="contractAcceptCheckbox">
                 <input id="contractAcceptCheckbox" type="checkbox">
@@ -161,7 +125,7 @@
             <button id="btnCrearPassword" type="submit" class="btn">Crear contraseña y entrar</button>
             <button id="btnVolverLogin" type="button" class="btn secondary">Volver</button>
           </div>
-          <div id="empresaSetupRecaptcha" class="form-help" style="display:none"></div>
+          <div id="empresaSetupRecaptcha" class="form-help is-hidden"></div>
           <div id="setupMsg" class="form-help auth-message is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         </form>
 
@@ -178,7 +142,7 @@
             <button id="btnIrAReset" type="button" class="btn secondary">Ya tengo token</button>
             <button id="btnVolverDesdeRecuperacion" type="button" class="btn secondary">Volver</button>
           </div>
-          <div id="empresaRecoveryRecaptcha" class="form-help" style="display:none"></div>
+          <div id="empresaRecoveryRecaptcha" class="form-help is-hidden"></div>
           <div id="recoveryMsg" class="form-help auth-message is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         </form>
 
@@ -195,7 +159,7 @@
             <button id="btnRecuperarInvitacion" type="submit" class="btn">Reenviar invitación</button>
             <button id="btnVolverDesdeInvitacion" type="button" class="btn secondary">Volver</button>
           </div>
-          <div id="empresaInviteRecoveryRecaptcha" class="form-help" style="display:none"></div>
+          <div id="empresaInviteRecoveryRecaptcha" class="form-help is-hidden"></div>
           <div id="inviteRecoveryMsg" class="form-help auth-message is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         </form>
 
@@ -229,7 +193,7 @@
             <button id="btnRestablecerPassword" type="submit" class="btn">Restablecer y entrar</button>
             <button id="btnVolverDesdeReset" type="button" class="btn secondary">Volver</button>
           </div>
-          <div id="empresaResetRecaptcha" class="form-help" style="display:none"></div>
+          <div id="empresaResetRecaptcha" class="form-help is-hidden"></div>
           <div id="resetMsg" class="form-help auth-message is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
         </form>
 
@@ -279,7 +243,7 @@
 
   <div id="contractDialog" class="modal login-usuario-modal" hidden aria-hidden="true">
     <div class="modal__backdrop" data-close-contract></div>
-    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="contractDialogTitle" style="max-width:900px;">
+    <div class="modal__panel login-usuario-contract-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="contractDialogTitle">
       <div class="modal__header">
         <div>
           <h2 id="contractDialogTitle">Contrato vigente</h2>
@@ -287,7 +251,7 @@
         </div>
         <button id="contractDialogClose" type="button" class="btn secondary">Cerrar</button>
       </div>
-      <div id="contractDialogContent" class="modal__body contract-preview-body" style="max-height:65vh;overflow:auto;white-space:pre-wrap;line-height:1.6;"></div>
+      <div id="contractDialogContent" class="modal__body contract-preview-body"></div>
     </div>
   </div>
 

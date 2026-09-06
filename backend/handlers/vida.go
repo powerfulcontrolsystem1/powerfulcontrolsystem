@@ -114,6 +114,29 @@ func handleEmpresaVidaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB,
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{"empresa_id": empresaID, "items": items})
+	case "reporte":
+		filter := dbpkg.EmpresaVidaReporteFiltro{Desde: strings.TrimSpace(r.URL.Query().Get("desde")), Hasta: strings.TrimSpace(r.URL.Query().Get("hasta")), Categoria: normalizeVidaCategory(r.URL.Query().Get("categoria")), Comercio: trimWithLimit(r.URL.Query().Get("comercio"), 160), MetodoPago: strings.ToLower(strings.TrimSpace(r.URL.Query().Get("metodo_pago")))}
+		if filter.Categoria != "" && !vidaCategorias[filter.Categoria] {
+			http.Error(w, "categoria no valida", http.StatusBadRequest)
+			return
+		}
+		if filter.MetodoPago != "" && !vidaMetodosPago[filter.MetodoPago] {
+			http.Error(w, "metodo de pago no valido", http.StatusBadRequest)
+			return
+		}
+		reporte, err := dbpkg.GetEmpresaVidaReporte(dbEmp, empresaID, usuarioID, filter)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"empresa_id": empresaID, "reporte": reporte})
+	case "notificaciones":
+		cfg, err := dbpkg.GetEmpresaVidaNotificacionConfiguracion(dbEmp, empresaID, usuarioID)
+		if err != nil {
+			writeVidaPersistenceError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, vidaNotificationConfigResponse(cfg))
 	case "recibo":
 		id, err := parseVidaID(r)
 		if err != nil {
@@ -292,6 +315,27 @@ func handleEmpresaVidaPut(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB,
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	case "notificaciones":
+		var item dbpkg.EmpresaVidaNotificacionConfiguracion
+		if err := decodeJSON(r, &item); err != nil {
+			http.Error(w, "configuracion de avisos invalida", http.StatusBadRequest)
+			return
+		}
+		item.EmpresaID, item.UsuarioID = empresaID, usuarioID
+		if item.WhatsAppActiva && strings.TrimSpace(item.WhatsAppTelefono) == "" {
+			if existing, err := dbpkg.GetEmpresaVidaNotificacionConfiguracion(dbEmp, empresaID, usuarioID); err == nil {
+				item.WhatsAppTelefono = existing.WhatsAppTelefono
+			}
+		}
+		if err := normalizeAndValidateVidaNotificationConfig(&item); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := dbpkg.SaveEmpresaVidaNotificacionConfiguracion(dbEmp, item); err != nil {
+			writeVidaPersistenceError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, vidaNotificationConfigResponse(&item))
 	default:
 		http.Error(w, "accion no valida", http.StatusBadRequest)
 	}
@@ -778,6 +822,108 @@ func vidaAlertasFromSubscriptions(items []dbpkg.EmpresaVidaSuscripcion) []map[st
 		out = append(out, map[string]interface{}{"suscripcion_id": item.ID, "tipo": kind, "mensaje": message, "dias_restantes": item.DiasRestantes, "fecha": item.ProximaRenovacion})
 	}
 	return out
+}
+
+func normalizeAndValidateVidaNotificationConfig(item *dbpkg.EmpresaVidaNotificacionConfiguracion) error {
+	if item == nil {
+		return fmt.Errorf("configuracion de avisos requerida")
+	}
+	item.HoraLocal = strings.TrimSpace(item.HoraLocal)
+	if item.HoraLocal == "" {
+		item.HoraLocal = "09:00"
+	}
+	if _, err := time.Parse("15:04", item.HoraLocal); err != nil {
+		return fmt.Errorf("hora local invalida")
+	}
+	item.WhatsAppTelefono = normalizeWhatsAppPhone(item.WhatsAppTelefono)
+	if item.WhatsAppActiva && item.WhatsAppTelefono == "" {
+		return fmt.Errorf("indica tu numero de WhatsApp en formato internacional")
+	}
+	if !item.WhatsAppActiva {
+		item.WhatsAppTelefono = ""
+	}
+	return nil
+}
+
+func vidaNotificationConfigResponse(item *dbpkg.EmpresaVidaNotificacionConfiguracion) map[string]interface{} {
+	if item == nil {
+		return map[string]interface{}{"email_activa": false, "whatsapp_activa": false, "hora_local": "09:00", "whatsapp_telefono": ""}
+	}
+	phone := normalizeWhatsAppPhone(item.WhatsAppTelefono)
+	masked := ""
+	if phone != "" {
+		masked = safeWhatsAppPhoneForLog(phone)
+	}
+	return map[string]interface{}{"email_activa": item.EmailActiva, "whatsapp_activa": item.WhatsAppActiva, "hora_local": item.HoraLocal, "whatsapp_telefono": masked, "whatsapp_configurado": phone != ""}
+}
+
+// RunEmpresaVidaRecordatoriosScheduled is invoked by pcs-worker. It only sends
+// opt-in notices for the authenticated user's own Vida subscriptions; email
+// always targets that account and the phone never leaves the private config API.
+func RunEmpresaVidaRecordatoriosScheduled(dbEmp, dbSuper *sql.DB) error {
+	if dbEmp == nil || dbSuper == nil {
+		return fmt.Errorf("bases de Vida no disponibles")
+	}
+	items, err := dbpkg.ListEmpresaVidaRecordatoriosPendientes(dbEmp, time.Now(), 200)
+	if err != nil {
+		return err
+	}
+	for _, pending := range items {
+		configured, parseErr := time.Parse("15:04", pending.Config.HoraLocal)
+		if parseErr != nil || time.Now().Hour() != configured.Hour() {
+			continue
+		}
+		sub := pending.Suscripcion
+		subject, message := vidaSubscriptionReminderMessage(sub)
+		if pending.Config.EmailActiva {
+			runEmpresaVidaReminderChannel(dbEmp, dbSuper, sub, "email", sub.UsuarioID, subject, message)
+		}
+		if pending.Config.WhatsAppActiva {
+			runEmpresaVidaReminderChannel(dbEmp, dbSuper, sub, "whatsapp", pending.Config.WhatsAppTelefono, subject, message)
+		}
+	}
+	return nil
+}
+
+func runEmpresaVidaReminderChannel(dbEmp, dbSuper *sql.DB, sub dbpkg.EmpresaVidaSuscripcion, channel, destination, subject, message string) {
+	claimed, err := dbpkg.ClaimEmpresaVidaNotificacion(dbEmp, sub, channel)
+	if err != nil || !claimed {
+		return
+	}
+	status, publicError := "enviado", ""
+	if channel == "email" {
+		if !isPCSEmailEventEnabled(dbSuper, "vida_suscripcion") {
+			status = "omitido"
+		} else {
+			err = sendPCSSystemEmail(dbSuper, destination, "", subject, message, "", "vida_suscripcion", fmt.Sprintf(`{"empresa_id":%d,"suscripcion_id":%d}`, sub.EmpresaID, sub.ID), "sistema:pcs-worker")
+		}
+	} else {
+		if !isPCSWhatsAppEventEnabled(dbSuper, "vida_suscripcion") {
+			status = "omitido"
+		} else {
+			providerStatus, sendErr := sendPCSWhatsAppNotification(dbSuper, "vida_suscripcion", destination, subject+"\n\n"+message, fmt.Sprintf(`{"empresa_id":%d,"suscripcion_id":%d}`, sub.EmpresaID, sub.ID), "sistema:pcs-worker")
+			err = sendErr
+			if providerStatus == "disabled" {
+				status = "omitido"
+			}
+		}
+	}
+	if err != nil {
+		status, publicError = "error", "No se pudo entregar el aviso; se reintentara automaticamente."
+	}
+	_ = dbpkg.CompleteEmpresaVidaNotificacion(dbEmp, sub, channel, status, publicError)
+}
+
+func vidaSubscriptionReminderMessage(sub dbpkg.EmpresaVidaSuscripcion) (string, string) {
+	action := "Renueva"
+	if sub.TipoRecordatorio == "cancelar" {
+		action = "Revisa si debes cancelar"
+	} else if sub.TipoRecordatorio == "ambos" {
+		action = "Renueva o cancela"
+	}
+	subject := "Vida: recordatorio de suscripcion"
+	message := fmt.Sprintf("%s %s antes del %s. Valor: %.2f %s.", action, strings.TrimSpace(sub.Nombre), sub.ProximaRenovacion, sub.Costo, strings.ToUpper(sub.Moneda))
+	return subject, message
 }
 
 func nextVidaRenewalDate(item dbpkg.EmpresaVidaSuscripcion, now time.Time) (string, error) {

@@ -1,5 +1,13 @@
 # Matriz de integracion de plantillas
 
+Estado: Vigente. Responsable: Ingeniería de módulos. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- La matriz describe trece plantillas del catálogo; las integraciones centrales son requisitos verificables por flujo, no pruebas de aceptación del sector.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Actualizacion: 2026-08-23
 
 ## Regla vigente
@@ -68,3 +76,9 @@ Las empresas de drogueria o farmacia pueden conservar un tipo de empresa y datos
 - La configuracion persistida de pagina principal se normaliza en backend y se
   vuelve a filtrar en frontend para impedir que anuncios historicos retirados
   reaparezcan en el portal.
+
+## Fuentes y aceptación de la revisión
+
+[empresa_plantillas_integracion.go](../backend/handlers/empresa_plantillas_integracion.go), [empresa_plantillas_integracion_test.go](../backend/handlers/empresa_plantillas_integracion_test.go), [modulos_plantillas_nuevas.go](../backend/db/modulos_plantillas_nuevas.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

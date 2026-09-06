@@ -384,7 +384,19 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 		},
 	}
 	resultBytes, _ := json.Marshal(result)
-	_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "sincronizado", carritoPagado.ID, documentoCodigo, string(resultBytes), "")
+	_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "sincronizado", carritoPagado.ID, documentoCodigo, string(resultBytes), "", dbpkg.EmpresaVentaOfflineSaleContext{
+		OperacionCodigo: dbpkg.BuildCarritoSaleOperationCode(carritoPagado.Codigo, empresaID, carritoPagado.ID, carritoPagado.PagadoEn),
+		CierreCajaID:    caja.ID,
+		CajaCodigo:      caja.CajaCodigo,
+		CajaTurno:       caja.Turno,
+		CajaSucursalID:  caja.SucursalID,
+		MetodoPago:      metodoPago,
+		Moneda:          carritoPagado.Moneda,
+		MontoTotal:      totalPagado,
+		FechaVenta:      carritoPagado.PagadoEn,
+		EstacionNombre:  estacionNombre,
+		UsuarioCajero:   usuario,
+	})
 	return result, nil
 }
 
@@ -525,23 +537,33 @@ func carritoOfflineFacturacionHabilitada(dbEmp *sql.DB, empresaID int64) bool {
 		return false
 	}
 	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
-	if err != nil || pref == nil || strings.TrimSpace(pref.Valor) == "" {
+	if err != nil {
 		return false
+	}
+	if pref == nil || strings.TrimSpace(pref.Valor) == "" {
+		return true
 	}
 	root := carritoParseConfigJSON(pref.Valor)
 	if root == nil {
 		return false
 	}
+	return carritoOfflineFacturacionHabilitadaDesdeRoot(root)
+}
+
+func carritoOfflineFacturacionHabilitadaDesdeRoot(root map[string]interface{}) bool {
 	for _, key := range []string{"carrito_ui_global", "carrito", "carrito_configuracion_global"} {
 		cfg, ok := root[key].(map[string]interface{})
 		if !ok {
 			continue
 		}
-		if carritoBoolFromConfigValue(cfg["facturacion_offline_habilitada"]) || carritoBoolFromConfigValue(cfg["permitir_facturacion_offline"]) {
-			return true
+		if value, exists := cfg["facturacion_offline_habilitada"]; exists {
+			return carritoBoolFromConfigValue(value)
+		}
+		if value, exists := cfg["permitir_facturacion_offline"]; exists {
+			return carritoBoolFromConfigValue(value)
 		}
 	}
-	return false
+	return true
 }
 
 func normalizeOfflineSyncKey(value string) string {

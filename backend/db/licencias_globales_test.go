@@ -10,7 +10,7 @@ func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 
 	seenCodes := map[string]bool{}
 	expectedDocs := []int{250, 250, 1000, 2000, 4000, 12000, 24000, 36000}
-	expectedValues := []float64{0, 1000, 60000, 110000, 200000, 600000, 1100000, 2200000}
+	expectedValues := []float64{0, 5000, 60000, 110000, 200000, 600000, 1100000, 2200000}
 	expectedNames := []string{
 		"Prueba gratis 15 dias",
 		"1 dia de prueba",
@@ -48,7 +48,7 @@ func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 	if plans[0].Valor != 0 {
 		t.Fatalf("valor prueba gratis = %.2f, want 0", plans[0].Valor)
 	}
-	if plans[1].DuracionDias != 1 || plans[1].Valor != 1000 {
+	if plans[1].DuracionDias != 1 || plans[1].Valor != 5000 {
 		t.Fatalf("prueba de 1 dia invalida: %+v", plans[1])
 	}
 	for _, idx := range []int{5, 6, 7} {

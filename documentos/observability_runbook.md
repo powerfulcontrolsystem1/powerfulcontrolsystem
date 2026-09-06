@@ -1,5 +1,14 @@
 # Runbook de observabilidad
 
+Estado: Vigente. Responsable: QA/operación. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Revisar solo servicios realmente desplegados; Redis/Nextcloud son perfiles o stacks separados, no dependencias universales.
+- Alertas locales configuradas no prueban receptor de guardia ni entrega; ensayar la cadena de notificación con autorización.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 1. Confirmar healthchecks de backend, PostgreSQL, Redis, Nginx, correo,
    Nextcloud y servicios opcionales desde una red administrativa.
 2. Revisar errores agregados, latencia, saturacion, colas y fallos de webhook.
@@ -9,6 +18,12 @@
    cuando aplique y conservar auditoria minimizada.
 5. Escalar si se pierde aislamiento empresarial, se detecta acceso a archivos
    privados, fallan backups o se supera un limite operacional.
+   Ante `PCSCarrilOperativoSaturado`, abrir `Super administrador > Capacidad de
+   colas`, identificar el carril y comparar pendientes, antiguedad, empresa con
+   mayor presion, CPU, memoria y conexiones. No elevar replicas, concurrencia ni
+   pools simultaneamente: aislar primero el tenant ruidoso, confirmar drenaje y
+   ajustar un parametro por vez conforme a
+   `arquitectura/capacidad_colas_multiempresa.md`.
 6. Ante `PCSSoporteIAPurgaVencida`, abrir primero el diagnostico de cuarentena
    empresarial y aplicar
    `gobernanza_tecnica/runbooks/runbook_depuracion_soportes_ia_y_cuarentena.md`.
@@ -36,3 +51,9 @@
 
 Los paneles y alertas deben validarse en staging antes de usarse como evidencia
 de produccion.
+
+## Fuentes y aceptación de la revisión
+
+[prometheus.yml](../deploy/monitoring/prometheus.yml), [incidentes_y_continuidad.md](operacion/incidentes_y_continuidad.md).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

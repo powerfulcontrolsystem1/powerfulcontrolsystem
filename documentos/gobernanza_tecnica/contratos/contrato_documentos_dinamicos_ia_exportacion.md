@@ -1,7 +1,16 @@
 # Contrato tecnico: documentos dinamicos con IA y exportacion multiformato
 
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Una exportación cuyo document_type sea factura es contenido documental; no crea una factura fiscal aceptada.
+- dynamic_documents.go conserva un modelo específico y exportadores propios; no asumir que todos los consumidores adoptaron la política global del chat.
+- Las descargas requieren comprobar identidad y alcance además de un ID no predecible. Los formatos reales y fallback se aceptan leyendo el archivo generado.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
 Fecha: 2026-04-30
-Estado: vigente
 
 ## Alcance
 
@@ -93,3 +102,9 @@ Este contrato cubre la generacion de documentos dinamicos a partir de contenido 
 - `documentos/diagramas/estructura_del_codigo.md`
 - `documentos/estructura_bd.md`
 - `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md`
+
+## Fuentes y aceptación de la revisión
+
+[dynamic_documents.go](../../../backend/handlers/dynamic_documents.go), [main.go](../../../backend/main.go).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).

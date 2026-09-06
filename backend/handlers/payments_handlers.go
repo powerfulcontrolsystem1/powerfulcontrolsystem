@@ -3313,6 +3313,86 @@ func validateWompiPaymentEvidence(rec *dbpkg.WompiPaymentRecord, evidence wompiP
 	return nil
 }
 
+type epaycoPaymentEvidence struct {
+	TransactionID string
+	GatewayRef    string
+	InvoiceRef    string
+	Status        string
+	Currency      string
+	Amount        float64
+	Environment   string
+}
+
+func extractEpaycoPaymentEvidence(payload map[string]interface{}) epaycoPaymentEvidence {
+	amountRaw := strings.TrimSpace(pickEpaycoField(payload, "x_amount", "amount"))
+	amount, err := strconv.ParseFloat(amountRaw, 64)
+	if err != nil || math.IsNaN(amount) || math.IsInf(amount, 0) {
+		amount = 0
+	}
+	testRequest := strings.ToLower(strings.TrimSpace(pickEpaycoField(payload, "x_test_request", "test_request")))
+	environment := ""
+	if testRequest == "true" || testRequest == "1" {
+		environment = "sandbox"
+	} else if testRequest == "false" || testRequest == "0" {
+		environment = "production"
+	}
+	return epaycoPaymentEvidence{
+		TransactionID: strings.TrimSpace(pickEpaycoField(payload, "x_transaction_id", "transaction_id", "id", "tx_id")),
+		GatewayRef:    strings.TrimSpace(pickEpaycoField(payload, "x_ref_payco", "ref_payco")),
+		InvoiceRef:    strings.TrimSpace(pickEpaycoField(payload, "x_id_invoice", "invoice", "reference")),
+		Status:        strings.ToUpper(strings.TrimSpace(parseEpaycoPaymentStatus(payload))),
+		Currency:      strings.ToUpper(strings.TrimSpace(pickEpaycoField(payload, "x_currency_code", "currency", "p_currency_code"))),
+		Amount:        amount,
+		Environment:   environment,
+	}
+}
+
+func validateEpaycoPaymentEvidence(rec *dbpkg.EpaycoPaymentRecord, evidence epaycoPaymentEvidence, mode string, requireEnvironment bool) error {
+	if rec == nil {
+		return errors.New("pago Epayco no registrado previamente")
+	}
+	if rec.Reference.Valid && strings.TrimSpace(rec.Reference.String) != "" && strings.TrimSpace(rec.Reference.String) != evidence.InvoiceRef {
+		return errors.New("referencia Epayco no coincide con la orden")
+	}
+	if rec.TransactionID.Valid {
+		storedTransactionID := strings.TrimSpace(rec.TransactionID.String)
+		if storedTransactionID != "" && storedTransactionID != strings.TrimSpace(rec.Reference.String) && evidence.TransactionID != "" && storedTransactionID != evidence.TransactionID {
+			return errors.New("transaccion Epayco no coincide con el registro")
+		}
+	}
+	expectedAmount := 0.0
+	if rec.RawPayload.Valid {
+		expectedAmount = paymentPayloadAmount(rec.RawPayload.String)
+	}
+	if expectedAmount <= 0 || evidence.Amount <= 0 || int64(math.Round(expectedAmount*100)) != int64(math.Round(evidence.Amount*100)) {
+		return errors.New("monto Epayco no coincide con la orden")
+	}
+	if evidence.Currency != "COP" {
+		return errors.New("moneda Epayco debe ser COP")
+	}
+	if requireEnvironment && normalizeEpaycoMode(mode) != evidence.Environment {
+		return errors.New("ambiente Epayco no coincide con la configuracion")
+	}
+	return nil
+}
+
+func epaycoAuditPayload(payload map[string]interface{}) string {
+	evidence := extractEpaycoPaymentEvidence(payload)
+	audit := map[string]interface{}{
+		"provider":          "epayco",
+		"transaction_id":    evidence.TransactionID,
+		"gateway_reference": evidence.GatewayRef,
+		"invoice":           evidence.InvoiceRef,
+		"status":            evidence.Status,
+		"amount":            evidence.Amount,
+		"currency":          evidence.Currency,
+		"response_code":     strings.TrimSpace(pickEpaycoField(payload, "x_cod_response", "x_cod_transaction_state", "cod_response", "status_code")),
+		"test_request":      strings.TrimSpace(pickEpaycoField(payload, "x_test_request", "test_request")),
+	}
+	raw, _ := json.Marshal(audit)
+	return string(raw)
+}
+
 func wompiAuditPayload(obj map[string]interface{}) string {
 	evidence := extractWompiPaymentEvidence(obj)
 	payload := map[string]interface{}{
@@ -3357,6 +3437,18 @@ func looksLikeWompiPublicKey(publicKey string) bool {
 	return strings.HasPrefix(publicKey, "pub_test_") || strings.HasPrefix(publicKey, "pub_prod_")
 }
 
+func wompiIntegrityKeyMode(integrityKey string) string {
+	value := strings.ToLower(strings.TrimSpace(integrityKey))
+	switch {
+	case strings.HasPrefix(value, "test_integrity_"):
+		return "sandbox"
+	case strings.HasPrefix(value, "prod_integrity_"):
+		return "production"
+	default:
+		return ""
+	}
+}
+
 func resolveWompiMode(dbSuper *sql.DB, publicKey, privateKey string) (string, string) {
 	inferred := wompiModeFromKeys(publicKey, privateKey)
 	if configuredMode, _, err := dbpkg.GetConfigValue(dbSuper, "wompi.mode"); err == nil {
@@ -3397,7 +3489,7 @@ func fetchWompiAcceptanceInfo(baseURL, publicKey string) (string, string, string
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
-		return "", "", "", "", fmt.Errorf("wompi merchants error %s: %s", resp.Status, string(body))
+		return "", "", "", "", fmt.Errorf("wompi merchants request rejected with status %d", resp.StatusCode)
 	}
 	var obj map[string]interface{}
 	if err := json.Unmarshal(body, &obj); err != nil {
@@ -3449,12 +3541,16 @@ func epaycoModeFromKeys(custID, key string) string {
 }
 
 func resolveEpaycoMode(dbSuper *sql.DB, custID, key string) (string, string) {
+	inferred := epaycoModeFromKeys(custID, key)
 	if configuredMode, _, err := dbpkg.GetConfigValue(dbSuper, "epayco.mode"); err == nil {
 		if normalized := normalizeEpaycoMode(configuredMode); normalized != "" {
+			if inferred != "" && normalized != inferred {
+				return inferred, "keys_conflict_override"
+			}
 			return normalized, "manual"
 		}
 	}
-	if inferred := epaycoModeFromKeys(custID, key); inferred != "" {
+	if inferred != "" {
 		return inferred, "keys"
 	}
 	return "sandbox", "default"
@@ -3540,7 +3636,7 @@ func looksLikeEpaycoCheckoutKey(raw string) bool {
 }
 
 func epaycoSmartCheckoutReady(publicKey, privateKey string) bool {
-	return strings.TrimSpace(publicKey) != "" && looksLikeEpaycoAPIPrivateKey(privateKey)
+	return looksLikeEpaycoPublicKey(publicKey) && looksLikeEpaycoAPIPrivateKey(privateKey)
 }
 
 func epaycoClassicCheckoutReady(customerID, checkoutKey string) bool {
@@ -3552,7 +3648,7 @@ func epaycoCustomCheckoutReady(publicKey, customerID, checkoutKey string) bool {
 }
 
 func epaycoCheckoutJSReady(publicKey string) bool {
-	return strings.TrimSpace(publicKey) != ""
+	return looksLikeEpaycoPublicKey(publicKey)
 }
 
 func resolveEpaycoCredentialSet(dbSuper *sql.DB) (epaycoCredentialSet, error) {
@@ -3714,7 +3810,12 @@ func defaultCountryPaymentProviderEnabled(paisCodigo, providerID string) bool {
 }
 
 func wompiWebCheckoutReady(publicKey, integrityKey string) bool {
-	return looksLikeWompiPublicKey(publicKey) && strings.TrimSpace(integrityKey) != ""
+	if !looksLikeWompiPublicKey(publicKey) {
+		return false
+	}
+	publicMode := wompiModeFromKeys(publicKey, "")
+	integrityMode := wompiIntegrityKeyMode(integrityKey)
+	return publicMode != "" && integrityMode != "" && publicMode == integrityMode
 }
 
 func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]licenciaPaymentMethodStatus, error) {
@@ -3981,36 +4082,28 @@ func resolvePaymentBaseURL(r *http.Request, dbSuper *sql.DB) (string, error) {
 			return normalized, nil
 		}
 	}
-
-	if r != nil {
-		for _, headerName := range []string{"Origin", "Referer"} {
-			if normalized := normalizeConfiguredBaseURL(strings.TrimSpace(r.Header.Get(headerName))); normalized != "" {
-				return normalized, nil
-			}
-		}
-
-		host := strings.TrimSpace(resolveRequestHost(r))
-		hostOnly := strings.ToLower(splitHostPortLoose(host))
-		if hostOnly != "" {
-			if hostOnly == "www.powerfulcontrolsystem.com" {
-				host = "powerfulcontrolsystem.com"
-			}
-			scheme := resolveRequestScheme(r)
-			if scheme != "https" {
-				scheme = "https"
-			}
-			if normalized := normalizeConfiguredBaseURL(scheme + "://" + host); normalized != "" {
-				return normalized, nil
-			}
-		}
-	}
-
+	// Los callbacks de pago nunca se derivan de Host, Origin o Referer: esas
+	// cabeceras son controlables por el cliente y permitirian redirecciones a un
+	// dominio ajeno. Solo se admite la URL publica configurada o el dominio
+	// canonico del servicio.
+	_ = r
 	return canonicalPaymentPublicBaseURL, nil
 }
 
 func looksLikeEpaycoPublicKey(raw string) bool {
 	v := strings.ToLower(strings.TrimSpace(raw))
-	return strings.HasPrefix(v, "pub_")
+	if strings.HasPrefix(v, "pub_test_") || strings.HasPrefix(v, "pub_prod_") {
+		return true
+	}
+	if len(v) != 32 {
+		return false
+	}
+	for _, char := range v {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 func maskConfigValue(raw string, visiblePrefix, visibleSuffix int) string {
@@ -4311,7 +4404,7 @@ func fetchEpaycoApifyToken(publicKey, privateKey string) (string, string, error)
 	body, _ := io.ReadAll(resp.Body)
 	rawBody := string(body)
 	if resp.StatusCode >= http.StatusBadRequest {
-		return "", rawBody, fmt.Errorf("epayco login error: %s", rawBody)
+		return "", rawBody, fmt.Errorf("epayco login rejected request with status %d", resp.StatusCode)
 	}
 
 	payload := map[string]interface{}{}
@@ -4348,7 +4441,7 @@ func createEpaycoSmartCheckoutSession(apifyToken string, sessionPayload map[stri
 	respBody, _ := io.ReadAll(resp.Body)
 	rawBody := string(respBody)
 	if resp.StatusCode >= http.StatusBadRequest {
-		return "", rawBody, fmt.Errorf("epayco session create error: %s", rawBody)
+		return "", rawBody, fmt.Errorf("epayco session creation rejected with status %d", resp.StatusCode)
 	}
 
 	payload := map[string]interface{}{}
@@ -4526,17 +4619,7 @@ func hasStrongEpaycoApprovedReturnEvidence(payload map[string]interface{}, signa
 	if !isApprovedPaymentStatus(parseEpaycoPaymentStatus(payload)) {
 		return false
 	}
-	if signatureVerified {
-		return true
-	}
-	transactionID := strings.TrimSpace(pickEpaycoField(payload, "x_transaction_id", "transaction_id", "id", "tx_id"))
-	gatewayReference := strings.TrimSpace(pickEpaycoField(payload, "x_ref_payco", "ref_payco"))
-	invoiceReference := strings.TrimSpace(pickEpaycoField(payload, "invoice", "x_id_invoice", "reference"))
-	code := strings.ToUpper(strings.TrimSpace(pickEpaycoField(payload, "x_cod_response", "cod_response", "x_cod_transaction_state", "cod_transaction_state", "status_code")))
-	responseText := strings.ToLower(strings.TrimSpace(pickEpaycoField(payload, "x_response", "x_transaction_state", "x_respuesta", "response", "status", "state")))
-	hasApprovedCode := code == "1" || code == "APPROVED" || code == "ACCEPTED" || code == "ACEPTADA" || code == "APROBADA"
-	hasApprovedText := strings.Contains(responseText, "acept") || strings.Contains(responseText, "aprobad") || strings.Contains(responseText, "approved") || strings.Contains(responseText, "accredited")
-	return transactionID != "" && gatewayReference != "" && invoiceReference != "" && (hasApprovedCode || hasApprovedText)
+	return signatureVerified
 }
 
 func shouldPreservePendingEpaycoStatus(storedStatus string, payload map[string]interface{}) bool {
@@ -4609,6 +4692,10 @@ func extractEpaycoPaymentInfo(payload map[string]interface{}) (string, string, s
 // WompiConfigHandler gestiona credenciales de Wompi para pagos alternativos con Nequi.
 func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		if r.Body != nil {
+			r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+		}
 		switch r.Method {
 		case http.MethodGet:
 			pub, _, _, pubUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.public_key")
@@ -4715,20 +4802,29 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			if payload.PublicKey != "" && !strings.HasPrefix(payload.PublicKey, "pub_") {
-				http.Error(w, "public_key inválida: debe iniciar con pub_", http.StatusBadRequest)
+			if payload.PublicKey != "" && !looksLikeWompiPublicKey(payload.PublicKey) {
+				http.Error(w, "public_key inválida: debe corresponder a sandbox o producción", http.StatusBadRequest)
 				return
 			}
-			if payload.PrivateKey != "" && !strings.HasPrefix(payload.PrivateKey, "prv_") {
-				http.Error(w, "private_key inválida: debe iniciar con prv_", http.StatusBadRequest)
+			if payload.PrivateKey != "" && wompiModeFromKeys("", payload.PrivateKey) == "" {
+				http.Error(w, "private_key inválida: debe corresponder a sandbox o producción", http.StatusBadRequest)
 				return
 			}
-			if payload.IntegrityKey != "" && !strings.Contains(payload.IntegrityKey, "integrity") {
-				http.Error(w, "integrity_key inválida: prefijo esperado *_integrity_*", http.StatusBadRequest)
+			if payload.IntegrityKey != "" && wompiIntegrityKeyMode(payload.IntegrityKey) == "" {
+				http.Error(w, "integrity_key inválida: debe corresponder a sandbox o producción", http.StatusBadRequest)
 				return
 			}
 			if payload.EventsSecret != "" && (len(strings.TrimSpace(payload.EventsSecret)) < 16 || len(payload.EventsSecret) > 256 || strings.ContainsAny(payload.EventsSecret, " \t\r\n")) {
 				http.Error(w, "events_secret invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.PublicKey != "" && payload.IntegrityKey != "" && !wompiWebCheckoutReady(payload.PublicKey, payload.IntegrityKey) {
+				http.Error(w, "las llaves pública e integridad de Wompi pertenecen a ambientes distintos", http.StatusBadRequest)
+				return
+			}
+			keyMode := wompiModeFromKeys(payload.PublicKey, payload.PrivateKey)
+			if normalizedMode != "" && keyMode != "" && normalizedMode != keyMode {
+				http.Error(w, "el modo Wompi no coincide con las llaves suministradas", http.StatusBadRequest)
 				return
 			}
 
@@ -4802,6 +4898,10 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 // EpaycoConfigHandler gestiona credenciales de Epayco (public/private key y customer ID opcional) y flag de activación.
 func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		if r.Body != nil {
+			r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+		}
 		switch r.Method {
 		case http.MethodGet:
 			publicKeyRaw, _, _, publicKeyUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.public_key")
@@ -5003,8 +5103,8 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			if publicKey != "" {
-				if strings.ContainsAny(publicKey, " \t\r\n") {
-					http.Error(w, "public_key invalida: no puede contener espacios", http.StatusBadRequest)
+				if !looksLikeEpaycoPublicKey(publicKey) || strings.ContainsAny(publicKey, " \t\r\n") {
+					http.Error(w, "public_key invalida: debe ser una llave pública de Epayco", http.StatusBadRequest)
 					return
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "epayco.public_key", publicKey, false); err != nil {
@@ -5110,6 +5210,7 @@ func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 // WompiTermsHandler devuelve links de términos y autorizaciones para cumplimiento de aceptación.
 func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -5243,10 +5344,12 @@ func completePaymentCheckoutAndWrite(w http.ResponseWriter, dbSuper *sql.DB, cla
 // WompiCreateCheckoutHandler prepara Web Checkout hospedado de Wompi para licencias.
 func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 
 		var payload struct {
 			LicenciaID       int64   `json:"licencia_id"`
@@ -5442,10 +5545,12 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 // WompiCreateNequiTransactionHandler crea una transacción Wompi usando método de pago NEQUI.
 func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 
 		var payload struct {
 			LicenciaID       int64   `json:"licencia_id"`
@@ -5673,8 +5778,8 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		respBody, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode >= 400 {
 			_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
-			log.Println("Wompi API error:", resp.Status, string(respBody))
-			http.Error(w, "wompi API error: "+string(respBody), http.StatusBadGateway)
+			log.Println("Wompi API rejected transaction:", resp.Status)
+			http.Error(w, "Wompi rechazo la solicitud de pago", http.StatusBadGateway)
 			return
 		}
 
@@ -5715,7 +5820,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"created_at":         time.Now().Format(time.RFC3339),
 		}
 		rawBytes, _ := json.Marshal(rawMap)
-		rawPayload := mergePaymentPayloadJSON(string(respBody), string(rawBytes))
+		rawPayload := mergePaymentPayloadJSON(wompiAuditPayload(wompiResp), string(rawBytes))
 
 		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, transactionStatus, rawPayload, payload.DiscountCode, payload.AsesorID); err != nil {
 			_ = dbpkg.MarkPaymentCheckoutIdempotencyUncertain(dbSuper, checkoutClaim)
@@ -5733,7 +5838,9 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"asesor_id":               payload.AsesorID,
 			"acceptance_permalink":    acceptancePermalink,
 			"personal_data_permalink": personalPermalink,
-			"data":                    data,
+			"data": map[string]interface{}{
+				"id": transactionID, "reference": respReference, "status": transactionStatus,
+			},
 		}
 		completePaymentCheckoutAndWrite(w, dbSuper, checkoutClaim, response)
 	}
@@ -5984,6 +6091,7 @@ func paymentPayloadAmount(raw string) float64 {
 // WompiTransactionStatusHandler consulta estado de la transacción y activa licencia si quedó APPROVED.
 func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -6093,7 +6201,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 		if statusCode >= 400 {
-			http.Error(w, "wompi API error: "+string(respBody), http.StatusBadGateway)
+			http.Error(w, "Wompi no permitio consultar la transaccion", http.StatusBadGateway)
 			return
 		}
 
@@ -6264,11 +6372,12 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 // WompiWebhookHandler procesa notificaciones servidor-servidor de Wompi.
 func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -6457,11 +6566,12 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 // EpaycoCreateTransactionHandler prepara checkout de Epayco y registra transaccion pendiente.
 func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 
 		var payload struct {
 			LicenciaID       int64   `json:"licencia_id"`
@@ -6820,6 +6930,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 // EpaycoTransactionStatusHandler consulta estado por referencia y activa licencia si aplica.
 func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -6834,6 +6945,10 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			reference = strings.TrimSpace(r.URL.Query().Get("ref"))
 		}
 		expectedLicenciaID, expectedEmpresaID, hasExpectedContext := expectedPaymentContextFromRequest(r)
+		if !hasExpectedContext {
+			http.Error(w, "licencia_id y empresa_id son obligatorios para consultar el pago", http.StatusBadRequest)
+			return
+		}
 		originalTransactionID := transactionID
 		originalReference := reference
 		queryPayload := map[string]interface{}{}
@@ -6917,7 +7032,6 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		status := ""
 		validationPayload := map[string]interface{}{}
-		rawValidation := ""
 		gatewayTransactionID := ""
 		gatewayReference := queryGatewayReference
 		invoiceReference := queryInvoiceReference
@@ -6931,7 +7045,6 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if reqErr == nil {
 					defer resp.Body.Close()
 					body, _ := io.ReadAll(resp.Body)
-					rawValidation = string(body)
 					if resp.StatusCode < 400 {
 						if err := json.Unmarshal(body, &validationPayload); err == nil {
 							status = parseEpaycoPaymentStatus(validationPayload)
@@ -6963,12 +7076,9 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		if strings.TrimSpace(status) == "" && strings.TrimSpace(queryStatus) != "" && !isApprovedPaymentStatus(queryStatus) {
+		if strings.TrimSpace(status) == "" && querySignatureVerified && strings.TrimSpace(queryStatus) != "" && !isApprovedPaymentStatus(queryStatus) {
 			status = queryStatus
 			validationPayload = queryPayload
-			if rawBytes, err := json.Marshal(queryPayload); err == nil {
-				rawValidation = string(rawBytes)
-			}
 			if transactionID == "" {
 				transactionID = strings.TrimSpace(pickEpaycoField(queryPayload, "x_transaction_id", "transaction_id", "id", "tx_id"))
 			}
@@ -7030,12 +7140,26 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			} else {
 				validationPayload = mergePaymentPayloadMaps(validationPayload, queryPayload)
 			}
-			if rawBytes, err := json.Marshal(validationPayload); err == nil {
-				rawValidation = string(rawBytes)
+		}
+		if isApprovedPaymentStatus(status) {
+			evidencePayload := validationPayload
+			if len(evidencePayload) == 0 && querySignatureVerified {
+				evidencePayload = queryPayload
+			}
+			publicKey, _, privateKey, _ := resolveEpaycoCredentials(dbSuper)
+			mode, _ := resolveEpaycoMode(dbSuper, publicKey, privateKey)
+			if err := validateEpaycoPaymentEvidence(rec, extractEpaycoPaymentEvidence(evidencePayload), mode, true); err != nil {
+				http.Error(w, "la confirmacion Epayco no coincide con la orden registrada", http.StatusConflict)
+				return
 			}
 		}
 
-		payloadToSave := rawValidation
+		payloadToSave := ""
+		if len(validationPayload) > 0 {
+			payloadToSave = epaycoAuditPayload(validationPayload)
+		} else if querySignatureVerified && len(queryPayload) > 0 {
+			payloadToSave = epaycoAuditPayload(queryPayload)
+		}
 		if strings.TrimSpace(payloadToSave) == "" {
 			fallbackPayload, _ := json.Marshal(map[string]interface{}{
 				"provider":       "epayco",
@@ -7102,7 +7226,6 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"empresa_id":           empresaID,
 				"expected_licencia_id": expectedLicenciaID,
 				"expected_empresa_id":  expectedEmpresaID,
-				"data":                 validationPayload,
 			})
 			return
 		}
@@ -7188,18 +7311,18 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		encodeJSONResponse(w, map[string]interface{}{
-			"provider":         "epayco",
-			"mode":             mode,
-			"mode_source":      modeSource,
-			"transaction_id":   firstNonEmptyString(transactionID, recordTransactionID, originalTransactionID),
-			"reference":        firstNonEmptyString(reference, recordReference, invoiceReference, originalReference),
-			"status":           status,
-			"context_found":    hasContext,
-			"licencia_id":      licenciaID,
-			"empresa_id":       empresaID,
-			"activated":        activated,
-			"discount_blocked": discountBlocked,
-			"data":             validationPayload,
+			"provider":          "epayco",
+			"mode":              mode,
+			"mode_source":       modeSource,
+			"transaction_id":    firstNonEmptyString(transactionID, recordTransactionID, originalTransactionID),
+			"reference":         firstNonEmptyString(reference, recordReference, invoiceReference, originalReference),
+			"status":            status,
+			"context_found":     hasContext,
+			"licencia_id":       licenciaID,
+			"empresa_id":        empresaID,
+			"activated":         activated,
+			"discount_blocked":  discountBlocked,
+			"evidence_verified": isApprovedPaymentStatus(status),
 		})
 	}
 }
@@ -7207,14 +7330,14 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 // EpaycoWebhookHandler procesa confirmaciones de Epayco por formulario o JSON.
 func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodPost && r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
 		payload := map[string]interface{}{}
-		rawPayload := ""
-		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 		contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
 
 		if strings.Contains(contentType, "application/json") {
@@ -7223,7 +7346,6 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to read body", http.StatusBadRequest)
 				return
 			}
-			rawPayload = string(body)
 			if len(body) > 0 {
 				if err := json.Unmarshal(body, &payload); err != nil {
 					http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -7251,12 +7373,6 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 			}
 		}
 
-		if strings.TrimSpace(rawPayload) == "" {
-			if rawBytes, err := json.Marshal(payload); err == nil {
-				rawPayload = string(rawBytes)
-			}
-		}
-
 		creds, credErr := resolveEpaycoCredentialSet(dbSuper)
 		if credErr != nil || !validateEpaycoWebhookSignature(creds, payload) {
 			// Do not leak configuration state or signature material to callers.
@@ -7273,11 +7389,24 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 
 		rec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
 		if recErr != nil {
-			log.Println("warning: failed to load Epayco webhook record before update:", recErr)
+			http.Error(w, "no se pudo verificar el pago Epayco", http.StatusServiceUnavailable)
+			return
 		}
-		payloadToSave := rawPayload
+		if rec == nil {
+			http.Error(w, "pago Epayco no registrado", http.StatusNotFound)
+			return
+		}
+		if isApprovedPaymentStatus(status) {
+			publicKey, _, privateKey, _ := resolveEpaycoCredentials(dbSuper)
+			mode, _ := resolveEpaycoMode(dbSuper, publicKey, privateKey)
+			if err := validateEpaycoPaymentEvidence(rec, extractEpaycoPaymentEvidence(payload), mode, true); err != nil {
+				http.Error(w, "epayco payment evidence mismatch", http.StatusConflict)
+				return
+			}
+		}
+		payloadToSave := epaycoAuditPayload(payload)
 		if rec != nil && rec.RawPayload.Valid {
-			payloadToSave = mergePaymentPayloadJSON(rec.RawPayload.String, rawPayload)
+			payloadToSave = mergePaymentPayloadJSON(rec.RawPayload.String, payloadToSave)
 		}
 
 		if transactionID != "" {

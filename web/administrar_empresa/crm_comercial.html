@@ -100,7 +100,7 @@
               <form id="leadForm" class="crm-form-grid">
                 <input type="hidden" id="leadId">
                 <label>Codigo<input id="leadCodigo" class="form-input" type="text" placeholder="Automatico" disabled></label>
-                <label>Estado<select id="leadEstado" class="form-input"><option>nuevo</option><option>contactado</option><option>calificado</option><option>propuesta</option><option>negociacion</option><option>ganado</option><option>perdido</option><option>descalificado</option><option>reactivado</option><option>postventa</option><option>cerrado</option></select></label>
+                <label>Estado actual (usa Acciones)<select id="leadEstado" class="form-input" disabled><option>nuevo</option><option>contactado</option><option>calificado</option><option>propuesta</option><option>negociacion</option><option>ganado</option><option>perdido</option><option>descalificado</option><option>reactivado</option><option>postventa</option><option>cerrado</option></select></label>
                 <label>Prospecto<input id="leadNombre" class="form-input" type="text" required></label>
                 <label>Empresa origen<input id="leadEmpresaOrigen" class="form-input" type="text"></label>
                 <label>Email<input id="leadEmail" class="form-input" type="email"></label>
@@ -137,7 +137,7 @@
               <form id="interaccionForm" class="crm-form-grid">
                 <input type="hidden" id="interaccionId">
                 <label>Codigo<input id="interaccionCodigo" class="form-input" type="text" placeholder="Automatico" disabled></label>
-                <label>Estado<select id="interaccionEstado" class="form-input"><option>abierta</option><option>en_progreso</option><option>cerrada</option><option>reabierta</option><option>cancelada</option></select></label>
+                <label>Estado actual (usa Acciones)<select id="interaccionEstado" class="form-input" disabled><option>abierta</option><option>en_progreso</option><option>cerrada</option><option>reabierta</option><option>cancelada</option></select></label>
                 <label class="full">Lead asociado<select id="interaccionLeadId" class="form-input"></select></label>
                 <label>Cliente ID<input id="interaccionClienteId" class="form-input" type="number" min="0"></label>
                 <label>Tipo<select id="interaccionTipo" class="form-input"><option>seguimiento</option><option>llamada</option><option>correo</option><option>reunion</option><option>whatsapp</option><option>visita</option></select></label>
@@ -172,7 +172,7 @@
               <form id="cotizacionForm" class="crm-form-grid">
                 <input type="hidden" id="cotizacionId">
                 <label>Codigo<input id="cotizacionCodigo" class="form-input" type="text" placeholder="Automatico"></label>
-                <label>Estado<select id="cotizacionEstado" class="form-input"><option>borrador</option><option>emitida</option><option>aprobada</option><option>rechazada</option><option>vencida</option><option>convertida</option><option>anulada</option></select></label>
+                <label>Estado actual (usa Acciones)<select id="cotizacionEstado" class="form-input" disabled><option>borrador</option><option>emitida</option><option>aprobada</option><option>rechazada</option><option>vencida</option><option>convertida</option><option>anulada</option></select></label>
                 <label>Cliente<input id="cotizacionClienteNombre" class="form-input" type="text" required></label>
                 <label>Cliente ID<input id="cotizacionClienteId" class="form-input" type="number" min="0"></label>
                 <label>Fecha<input id="cotizacionFecha" class="form-input" type="date"></label>
@@ -210,7 +210,7 @@
               <form id="campanaForm" class="crm-form-grid">
                 <input type="hidden" id="campanaId">
                 <label>Codigo<input id="campanaCodigo" class="form-input" type="text" placeholder="Automatico" disabled></label>
-                <label>Estado<select id="campanaEstado" class="form-input"><option>planificada</option><option>activa</option><option>pausada</option><option>finalizada</option><option>archivada</option><option>cancelada</option></select></label>
+                <label>Estado actual (usa Acciones)<select id="campanaEstado" class="form-input" disabled><option>planificada</option><option>activa</option><option>pausada</option><option>finalizada</option><option>archivada</option><option>cancelada</option></select></label>
                 <label class="full">Nombre<input id="campanaNombre" class="form-input" type="text" required></label>
                 <label>Canal<select id="campanaCanal" class="form-input"><option>email</option><option>whatsapp</option><option>redes</option><option>llamadas</option><option>evento</option><option>mixto</option></select></label>
                 <label>Presupuesto<input id="campanaPresupuesto" class="form-input" type="number" min="0" step="1000"></label>

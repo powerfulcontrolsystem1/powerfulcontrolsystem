@@ -1,3 +1,7 @@
+> Estado documental: histórico. Fundación de julio sustituida por arquitectura, API móvil y gates actuales; plan_final_para_produccion es histórico.
+> Fuentes actuales: [mobile_api_v1.md](api/mobile_api_v1.md).
+> Se conserva como antecedente; no autoriza ejecutar acciones ni acredita el candidato actual.
+
 # Preparacion para produccion y aplicacion movil
 
 Estado: base operativa implementada el 2026-07-14. Este documento describe la
