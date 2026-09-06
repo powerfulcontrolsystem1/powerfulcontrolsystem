@@ -5,21 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Capacidad de colas</title>
   <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/super/capacidad_colas.css?v=20260906">
   <script src="/menu.js"></script>
-  <style>
-    .queue-shell{max-width:1240px;margin:0 auto;padding:16px}
-    .queue-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
-    .queue-head h1{margin:0;color:var(--text);font-size:1.5rem}.queue-head p{max-width:780px;margin:5px 0 0;color:var(--muted);line-height:1.4}
-    .queue-actions{display:flex;gap:8px;flex-wrap:wrap}.queue-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
-    .queue-card{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:14px}.queue-card h2{margin:0 0 4px;font-size:1.05rem;color:var(--text)}
-    .queue-badge{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:.72rem;font-weight:900}.queue-badge.ok{background:#dcfce7;color:#166534}.queue-badge.warn{background:#fef3c7;color:#92400e}.queue-badge.err{background:#fee2e2;color:#991b1b}
-    .queue-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0}.queue-kpi{padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
-    .queue-kpi span{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase;font-weight:850}.queue-kpi strong{display:block;color:var(--text);font-size:1.15rem;margin-top:3px}
-    .queue-meter{height:9px;border-radius:999px;background:color-mix(in srgb,var(--border) 75%,transparent);overflow:hidden}.queue-meter span{display:block;height:100%;background:#16a34a;width:0}.queue-meter.warn span{background:#f59e0b}.queue-meter.err span{background:#dc2626}
-    .queue-config{display:grid;gap:9px;margin-top:12px}.queue-config-row{display:grid;grid-template-columns:1fr 140px;gap:10px;align-items:center}.queue-config-row label{color:var(--text);font-size:.82rem;font-weight:750}
-    .queue-help{font-size:.75rem;color:var(--muted);line-height:1.35}.queue-status{margin-top:12px;min-height:22px}.queue-summary{margin-top:14px;overflow:auto}.queue-summary table{min-width:900px}
-    @media(max-width:960px){.queue-grid{grid-template-columns:1fr}}@media(max-width:560px){.queue-config-row{grid-template-columns:1fr}.queue-actions .btn{flex:1 1 auto}}
-  </style>
 </head>
 <body class="super-page">
   <main class="queue-shell">
@@ -34,77 +21,18 @@
         <button id="saveBtn" class="btn" type="button">Guardar configuración</button>
       </div>
     </header>
-
     <div id="queueCards" class="queue-grid" aria-live="polite"></div>
     <p class="queue-help">La alerta usa el correo y el tiempo de enfriamiento configurados en “Alertas sistema”. Para determinar el máximo real del VPS todavía se requiere una prueba de carga controlada con el hardware, las réplicas y PostgreSQL del entorno objetivo.</p>
     <div id="statusMsg" class="form-help queue-status"></div>
-
     <section class="card form queue-summary">
-      <h2 style="margin-top:0">Diagnóstico consolidado</h2>
+      <h2 class="queue-summary-title">Diagnóstico consolidado</h2>
       <table class="table">
         <thead><tr><th>Carril</th><th>Pendientes / solicitudes</th><th>Procesando</th><th>Fallidos</th><th>Empresas activas</th><th>Mayor presión</th><th>Antigüedad</th><th>Estado</th></tr></thead>
         <tbody id="summaryRows"><tr><td colspan="8" class="muted">Cargando…</td></tr></tbody>
       </table>
     </section>
   </main>
-
-  <script>
-    (function(){
-      const API='/super/api/capacidad_colas';
-      const cards=document.getElementById('queueCards');
-      const rows=document.getElementById('summaryRows');
-      const status=document.getElementById('statusMsg');
-      let configs=[];
-      let snapshots=[];
-      const esc=(v)=>String(v==null?'':v).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-      const num=(v)=>{const n=Number(v);return Number.isFinite(n)?n:0};
-      const int=(v)=>Math.max(0,Math.round(num(v)));
-      function setStatus(message,error){status.textContent=message||'';status.className=error?'form-help error queue-status':'form-help muted queue-status'}
-      function byLane(list,lane){return (Array.isArray(list)?list:[]).find((item)=>item&&item.lane===lane)||{}}
-      function laneDescription(lane){
-        if(lane==='printing')return 'Cola durable por empresa y agente de impresión.';
-        if(lane==='product_add')return 'Admisión síncrona para crear productos o agregarlos al carrito.';
-        return 'Reintentos durables, fragmentados y aislados por empresa.';
-      }
-      function render(){
-        cards.innerHTML=configs.map((cfg)=>{
-          const snap=byLane(snapshots,cfg.lane);const pct=Math.max(0,num(snap.saturation_percent));
-          const tone=!snap.query_ok?'err':pct>=100?'err':pct>=75?'warn':'ok';
-          const state=!snap.query_ok?'Sin medición':pct>=100?'Saturada':pct>=75?'Alta':'Normal';
-          const product=cfg.lane==='product_add';
-          return '<article class="queue-card" data-lane="'+esc(cfg.lane)+'">'+
-            '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><h2>'+esc(cfg.label)+'</h2><div class="queue-help">'+esc(laneDescription(cfg.lane))+'</div></div><span class="queue-badge '+tone+'">'+state+'</span></div>'+
-            '<div class="queue-kpis"><div class="queue-kpi"><span>'+(product?'Solicitudes/min':'Pendientes')+'</span><strong>'+esc(product?snap.requests_current_minute||0:snap.pending||0)+'</strong></div><div class="queue-kpi"><span>Mayor empresa</span><strong>'+esc(snap.busiest_tenant_pending||0)+'</strong></div><div class="queue-kpi"><span>Procesando</span><strong>'+esc(snap.processing||0)+'</strong></div><div class="queue-kpi"><span>Antigüedad</span><strong>'+esc(Math.round(num(snap.oldest_seconds)))+' s</strong></div></div>'+
-            '<div class="queue-meter '+tone+'"><span style="width:'+Math.min(100,pct)+'%"></span></div><div class="queue-help" style="margin-top:4px">Presión: '+pct.toFixed(1)+'%</div>'+
-            '<div class="queue-config">'+
-              '<label style="font-weight:800"><input class="alerts-enabled" type="checkbox" '+(cfg.alerts_enabled?'checked':'')+'> Alertar por saturación</label>'+
-              field('rate','Límite por empresa / minuto',cfg.rate_limit_per_minute,1)+
-              field('pending','Alerta por pendientes globales',cfg.pending_alert_threshold,0,product)+
-              field('tenant','Máximo pendiente por empresa',cfg.max_pending_per_tenant,0,product)+
-              field('oldest','Alerta por antigüedad (segundos)',cfg.oldest_alert_seconds,0,product)+
-            '</div></article>';
-        }).join('');
-        rows.innerHTML=snapshots.map((snap)=>{
-          const pct=num(snap.saturation_percent);const tone=!snap.query_ok?'err':pct>=100?'err':pct>=75?'warn':'ok';
-          const value=snap.lane==='product_add'?(snap.requests_current_minute||0)+' solicitudes/min':(snap.pending||0)+' trabajos';
-          return '<tr><td>'+esc(snap.label||snap.lane)+'</td><td>'+esc(value)+'</td><td>'+esc(snap.processing||0)+'</td><td>'+esc(snap.failed||0)+'</td><td>'+esc(snap.active_tenants||0)+'</td><td>Empresa '+esc(snap.busiest_tenant_id||'-')+': '+esc(snap.busiest_tenant_pending||0)+'</td><td>'+Math.round(num(snap.oldest_seconds))+' s</td><td><span class="queue-badge '+tone+'">'+(!snap.query_ok?'Error':pct>=100?'Saturada':pct>=75?'Alta':'Normal')+'</span></td></tr>';
-        }).join('')||'<tr><td colspan="8" class="muted">Sin mediciones disponibles.</td></tr>';
-      }
-      function field(cls,label,value,min,disabled){return '<div class="queue-config-row"><label>'+esc(label)+'</label><input class="form-input '+cls+'" type="number" min="'+min+'" step="1" value="'+esc(value||0)+'" '+(disabled?'disabled':'')+'></div>'}
-      async function load(){
-        setStatus('Consultando capacidad…',false);const res=await fetch(API,{credentials:'same-origin'});const data=await res.json().catch(()=>null);
-        if(!data)throw new Error('Respuesta inválida del servidor');configs=Array.isArray(data.configs)?data.configs:[];snapshots=Array.isArray(data.snapshots)?data.snapshots:[];render();
-        if(!res.ok||data.ok===false)throw new Error(data.error||('HTTP '+res.status));setStatus('Capacidad actualizada.',false);
-      }
-      function readConfigs(){return Array.from(cards.querySelectorAll('.queue-card')).map((card)=>{const previous=byLane(configs,card.dataset.lane);return {lane:card.dataset.lane,label:previous.label||card.dataset.lane,alerts_enabled:card.querySelector('.alerts-enabled').checked,rate_limit_per_minute:Math.max(1,int(card.querySelector('.rate').value)),pending_alert_threshold:int(card.querySelector('.pending').value),oldest_alert_seconds:int(card.querySelector('.oldest').value),max_pending_per_tenant:int(card.querySelector('.tenant').value)}})}
-      async function save(){setStatus('Guardando configuración…',false);const res=await fetch(API,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({configs:readConfigs()})});const data=await res.json().catch(()=>null);if(!res.ok||!data||data.ok===false)throw new Error((data&&data.error)||('HTTP '+res.status));configs=data.configs||configs;await load();setStatus('Configuración guardada. Los procesos la aplican en pocos segundos.',false)}
-      async function evaluate(){setStatus('Evaluando y enviando alertas activas…',false);const res=await fetch(API+'?action=evaluate',{method:'POST',credentials:'same-origin'});const data=await res.json().catch(()=>null);if(data){configs=data.configs||configs;snapshots=data.snapshots||snapshots;render()}if(!res.ok||!data||data.ok===false)throw new Error((data&&data.error)||('HTTP '+res.status));setStatus('Evaluación completada. Solo se envían alertas cuando un umbral está superado.',false)}
-      document.getElementById('reloadBtn').addEventListener('click',()=>load().catch((e)=>setStatus(e.message,true)));
-      document.getElementById('saveBtn').addEventListener('click',()=>save().catch((e)=>setStatus(e.message,true)));
-      document.getElementById('evaluateBtn').addEventListener('click',()=>evaluate().catch((e)=>setStatus(e.message,true)));
-      load().catch((e)=>setStatus(e.message,true));
-    })();
-  </script>
+  <script src="/js/super_capacidad_colas.js?v=20260906"></script>
   <script src="/js/super_page_tools.js?v=20260707"></script>
 </body>
 </html>

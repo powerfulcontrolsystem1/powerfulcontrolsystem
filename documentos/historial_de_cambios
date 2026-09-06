@@ -16,6 +16,8 @@
 - Super administrador incorpora `Capacidad de colas`, umbrales editables,
   evaluacion manual, correo con cooldown, metricas agregadas y alerta
   `PCSCarrilOperativoSaturado`.
+- La pantalla mueve sus estilos y su logica a recursos externos; el inventario
+  CSP conserva el limite de bloqueos inline del area Super sin excepciones.
 - QA local valida contratos y compilacion enfocada. La certificacion de 1000
   empresas, PostgreSQL/VPS, impresion fisica, despliegue y emision real quedan
   como compuertas separadas.

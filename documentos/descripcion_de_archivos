@@ -4,7 +4,11 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 
 2026-09-06 - Capacidad de colas multiempresa
 - `documentos/arquitectura/capacidad_colas_multiempresa.md`: contrato de aislamiento, configuracion, metricas, alertas, paralelismo y compuerta de carga para 1000 empresas.
-- `backend/db/queue_capacity.go`, `backend/handlers/super_queue_capacity.go` y `web/super/capacidad_colas.html`: configuracion persistente, diagnostico agregado y nueva opcion protegida del Super administrador.
+- `backend/db/queue_capacity.go`, `backend/handlers/super_queue_capacity.go`,
+  `web/super/capacidad_colas.html`, `web/super/capacidad_colas.css` y
+  `web/js/super_capacidad_colas.js`: configuracion persistente, diagnostico
+  agregado y nueva opcion protegida del Super administrador sin ampliar la
+  superficie CSP inline.
 - `backend/db/empresa_impresoras.go`: admission por empresa con maximo configurable y bloqueo asesor transaccional para la cola de impresion.
 - `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go` y `backend/cmd/pcs-worker/business_registry.go`: shards fiscales disjuntos, rotacion justa y continuidad cuando falla una empresa.
 - `backend/internal/platform/worker/worker.go`: concurrencia acotada y configurable para trabajos durables.
