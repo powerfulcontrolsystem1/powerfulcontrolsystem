@@ -13456,3 +13456,5 @@ backend/db/dian_config_secrets.go: cifra con proposito y empresa las credenciale
 - `scripts/profesional_preflight.ps1`: conserva el fallo ante pruebas Go fallidas e informa las omisiones declaradas por pruebas opcionales sin tratarlas como fallo del candidato.
 - `backend/db/legacy_schema_catalog_manifest_generated.go` y `documentos/arquitectura/inventario_bootstrap_ensure.md`: inventario Ensure regenerado.
 - `.github/workflows/professional-ci.yml`: fija `govulncheck` 1.7.0 antes del preflight y reutiliza ese mismo análisis de vulnerabilidades alcanzables.
+- `backend/db/payment_audit.go` y `backend/db/produccion_mrp.go`: manejan el error de cierre de filas en las rutas de error.
+- `backend/handlers/super_vps_snapshots.go`: usa únicamente argumentos literales permitidos al generar el respaldo PostgreSQL.

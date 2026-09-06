@@ -1258,13 +1258,17 @@ func materializeProduccionConsumosFromRecetaTx(ctx context.Context, tx *sql.Tx, 
 	for rows.Next() {
 		var c component
 		if err := rows.Scan(&c.productID, &c.name, &c.quantity, &c.cost, &c.wastePct); err != nil {
-			rows.Close()
+			if closeErr := rows.Close(); closeErr != nil {
+				return closeErr
+			}
 			return err
 		}
 		components = append(components, c)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil {
+			return closeErr
+		}
 		return err
 	}
 	if err := rows.Close(); err != nil {

@@ -43919,3 +43919,4 @@ Archivos modificados:
 - El preflight continúa fallando cuando `go test` falla; sus pruebas opcionales que se omiten por falta de integración se registran como evidencia, sin invalidar un resultado exitoso.
 - Se regeneraron el inventario Ensure y el catálogo documental requeridos por la auditoría de migraciones.
 - CI actualiza `govulncheck` a 1.7.0 antes del preflight. El escáner sigue cerrando ante símbolos alcanzables, pero no rechaza el aviso de `openpgp`, paquete no importado por PCS.
+- Se repararon nueve hallazgos del análisis estático: errores de cierre de filas ahora se propagan y los argumentos de `pg_dump` provienen de una lista literal cerrada.

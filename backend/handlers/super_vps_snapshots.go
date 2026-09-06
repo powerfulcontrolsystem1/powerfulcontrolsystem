@@ -462,8 +462,11 @@ func superVPSSnapshotCreatePostgresDump(tempDir string) (string, string) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 		var combined bytes.Buffer
-		for _, databaseName := range []string{"pcs_superadministrador", "pcs_empresas"} {
-			cmd := exec.CommandContext(ctx, "pg_dump", "--create", "--clean", "--if-exists", "--no-owner", "--no-privileges", "--dbname="+databaseName)
+		commands := []*exec.Cmd{
+			exec.CommandContext(ctx, "pg_dump", "--create", "--clean", "--if-exists", "--no-owner", "--no-privileges", "--dbname=pcs_superadministrador"),
+			exec.CommandContext(ctx, "pg_dump", "--create", "--clean", "--if-exists", "--no-owner", "--no-privileges", "--dbname=pcs_empresas"),
+		}
+		for _, cmd := range commands {
 			data, err := cmd.Output()
 			if err != nil || len(data) == 0 {
 				return "", "No se genero respaldo PostgreSQL con el rol de solo lectura"

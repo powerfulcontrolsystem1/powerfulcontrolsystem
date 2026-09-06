@@ -136,13 +136,17 @@ func ListSuperPaymentAudit(dbConn *sql.DB, filters SuperPaymentAuditFilters) (*S
 	for rows.Next() {
 		var item SuperPaymentTransaction
 		if err := rows.Scan(&item.Provider, &item.ID, &item.EmpresaID, &item.LicenciaID, &item.TransactionID, &item.Reference, &item.Status, &item.ActivationStatus, &item.ActivationAttempts, &item.CreatedAt, &item.UpdatedAt); err != nil {
-			rows.Close()
+			if closeErr := rows.Close(); closeErr != nil {
+				return nil, closeErr
+			}
 			return nil, err
 		}
 		out.Transactions = append(out.Transactions, item)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil {
+			return nil, closeErr
+		}
 		return nil, err
 	}
 	if err := rows.Close(); err != nil {
@@ -164,13 +168,17 @@ func ListSuperPaymentAudit(dbConn *sql.DB, filters SuperPaymentAuditFilters) (*S
 	for rows.Next() {
 		var item SuperPaymentCheckoutAttempt
 		if err := rows.Scan(&item.Provider, &item.EmpresaID, &item.Reference, &item.Status, &item.ResponseCode, &item.CreatedAt, &item.UpdatedAt); err != nil {
-			rows.Close()
+			if closeErr := rows.Close(); closeErr != nil {
+				return nil, closeErr
+			}
 			return nil, err
 		}
 		out.CheckoutAttempts = append(out.CheckoutAttempts, item)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil {
+			return nil, closeErr
+		}
 		return nil, err
 	}
 	if err := rows.Close(); err != nil {
@@ -198,13 +206,17 @@ func ListSuperPaymentAudit(dbConn *sql.DB, filters SuperPaymentAuditFilters) (*S
 	for rows.Next() {
 		var item SuperPaymentPostEffect
 		if err := rows.Scan(&item.Provider, &item.PaymentRecordID, &item.EmpresaID, &item.LicenciaID, &item.Effect, &item.Status, &item.Attempts, &item.CreatedAt, &item.UpdatedAt); err != nil {
-			rows.Close()
+			if closeErr := rows.Close(); closeErr != nil {
+				return nil, closeErr
+			}
 			return nil, err
 		}
 		out.PostEffects = append(out.PostEffects, item)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		if closeErr := rows.Close(); closeErr != nil {
+			return nil, closeErr
+		}
 		return nil, err
 	}
 	if err := rows.Close(); err != nil {
