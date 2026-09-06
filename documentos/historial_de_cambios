@@ -43852,3 +43852,44 @@ Archivos modificados:
 - Pruebas: `go test ./internal/platform/worker -count=1` y `go vet
   ./internal/platform/worker`; regresión para dos instantes del mismo minuto y
   otro del minuto siguiente.
+
+2026-09-06: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/cmd/pcs-worker/business_registry.go
+- backend/db/queue_capacity.go
+- backend/handlers/client_ip_security_test.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_rate_limit_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/public_chat_portal.go
+- backend/main_metrics_test.go
+- backend/utils/security_headers_test.go
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/nginx/edge-http-only.conf.template
+- deploy/nginx/edge.conf.template
+- deploy/scripts/vps-configure-mailu-host-nginx.sh
+- deploy/scripts/vps-configure-staging-nginx.sh
+- deploy/scripts/vps-hardening-audit.sh
+- deploy/scripts/vps-http-hardening.py
+- deploy/scripts/vps-ssh-hardening.sh
+- documentos/CHANGELOG.md
+- documentos/arquitectura/capacidad_colas_multiempresa.md
+- documentos/arquitectura/descripcion_arquitectura.md
+- documentos/catalogo_documental.json
+- documentos/catalogo_documental.md
+- documentos/contexto_general_del_sistema.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/observability_runbook.md
+- tools/qa_queue_capacity_ui.cjs
+- tools/vps_hardening_audit.mjs
