@@ -1,10 +1,10 @@
 # Contrato tecnico: autenticacion administrativa y usuarios de empresa
 
-Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-07.
 
 ## Alcance revisado y límites
 
-- El acceso super exige TOTP confirmado según la política del servidor; identificar un correo reservado no basta para conceder una sesión privilegiada.
+- PCS no exige ni expone 2FA administrativo. El acceso super depende de sesión válida, rol persistido y las defensas de autenticación descritas en este contrato; identificar un correo reservado no basta para conceder una sesión privilegiada.
 - La recuperación debe evitar enumeración. Los códigos descritos se interpretan por action, sin generalizar 404 a la solicitud pública de recuperación.
 
 Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
@@ -64,6 +64,8 @@ Este contrato cubre el acceso administrativo por Google o correo, el registro y 
 
 - `email`
 - `password`
+
+No se acepta `otp_code` ni otro segundo factor en el contrato vigente.
 
 ### Recuperacion administrativa
 
@@ -129,6 +131,7 @@ Este contrato cubre el acceso administrativo por Google o correo, el registro y 
 10. La aceptacion del contrato vigente es obligatoria para login, primer password, restablecimiento y cambio de contraseña de usuario de empresa.
 11. El login de usuario de empresa debe registrar intentos fallidos y puede bloquear temporalmente el acceso; un login exitoso debe limpiar el contador de fallos.
 12. La cookie real de autenticacion debe seguir siendo `session_token` con `HttpOnly`; la UI solo puede apoyarse en cookies auxiliares visibles para estado de navegador.
+13. No debe existir un bloqueo, campo, endpoint ni configuración 2FA. Una futura validación opcional por WhatsApp será otro contrato y no se presume implementada por este retiro.
 
 ## Side effects obligatorios
 
@@ -139,6 +142,7 @@ Este contrato cubre el acceso administrativo por Google o correo, el registro y 
 - persistencia de aceptacion contractual por version vigente
 - actualizacion de password hash y salt para administradores o usuarios de empresa
 - registro y limpieza de fallos de login para usuarios de empresa
+- al aplicar la migración de retiro 2FA, eliminación del material autenticador anterior y revocación de sesiones administrativas activas
 
 ## Errores de contrato esperados
 
@@ -180,5 +184,6 @@ Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversa
 En el VPS con Nginx directamente expuesto, el borde reemplaza cabeceras IP/host
 recibidas del cliente y aplica límites por IP a login, registro y recuperación.
 Backend resuelve la IP desde el socket y recorre únicamente proxies confiables.
-La aceptación debe comprobar el acceso legítimo y el MFA sobre el artefacto
-publicado; una ejecución anterior no acredita el candidato actual.
+La aceptación debe comprobar el acceso legítimo, las defensas de sesión y la
+ausencia de superficies 2FA sobre el artefacto publicado; una ejecución anterior
+no acredita el candidato actual.

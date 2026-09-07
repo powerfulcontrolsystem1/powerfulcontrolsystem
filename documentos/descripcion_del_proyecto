@@ -20,7 +20,7 @@ que todas las integraciones ni requisitos sectoriales estén completos.
 
 | Actor | Alcance |
 | --- | --- |
-| Administrador de plataforma | Gobierno global y funciones super autorizadas, con TOTP |
+| Administrador de plataforma | Gobierno global y funciones super autorizadas mediante sesión administrativa validada |
 | Administrador/operador de empresa | Empresa, rol efectivo, licencia y permisos de la operación |
 | Cliente público | Catálogo y operación pública delimitada; no recibe permisos administrativos |
 | Worker/dispositivo/proveedor | Identidad técnica y contrato cerrado; no elige libremente tenant |

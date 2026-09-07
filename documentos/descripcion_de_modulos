@@ -2434,12 +2434,12 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 - `preconfiguracion_tipos_empresa`: la activacion de licencia reaplica plantillas de forma idempotente y sincroniza plantillas clasicos con el nucleo cuando existe funcion historica.
 - `administrar_empresa`: el menu empresarial queda limpio por tipo de empresa; los modulos universales siguen dependiendo de licencia y rol, no del vertical.
 
-2026-05-11: 2FA del login desde configuracion avanzada
-- Modulos afectados: `autenticacion`, `super_administrador`, `configuracion_avanzada`, `seguridad`.
-- Cambio funcional: `login.html` ya no muestra el campo `Codigo 2FA` de forma permanente; lo habilita con `ADMIN_2FA_LOGIN_ENABLED` publicado por `/config.js`.
-- Seguridad: el backend exige OTP solo cuando la configuracion global `security.admin_2fa.enabled` esta activa y la cuenta administrativa tiene TOTP confirmado.
-- Operacion: Configuracion avanzada agrega una tarjeta `2FA login` para activar/desactivar la exigencia global; la pantalla legacy `2FA super` fue retirada del panel y no debe volver a enlazarse.
-- QA: se agregan pruebas puras para fijar que el switch global gobierna la exigencia de OTP.
+Autenticacion administrativa sin 2FA
+- Modulos afectados: `autenticacion`, `super_administrador`, `configuracion_avanzada` y `seguridad`.
+- El login administrativo acepta correo/contraseña o Google OAuth y no solicita, acepta ni valida códigos OTP.
+- Se retiraron las APIs, la tarjeta, el menú y la página de configuración 2FA. `/config.js` publica únicamente la configuración pública de reCAPTCHA.
+- La migración `20260907-001-retire-admin-2fa-v1` vacía secretos y códigos de recuperación anteriores y revoca sesiones administrativas activas. Las columnas legacy permanecen inertes durante la ventana de rollback.
+- Una futura validación opcional por WhatsApp no forma parte del contrato actual y debe diseñarse como capacidad independiente antes de habilitarse.
 
 2026-05-11: Catalogos publicos de plantillas sin sesion
 - Modulos afectados: `plantillas_nuevas`, `plantillas_integracion`, `portal_publico`, `autenticacion`.

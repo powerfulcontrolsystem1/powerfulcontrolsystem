@@ -416,7 +416,7 @@ if [ -n "$P109_QA_EMAIL" ] || [ -n "$P109_QA_PASSWORD" ]; then
     fail "La prueba autenticada requiere correo y clave juntos."
   cookie_jar="$workdir/session.cookies"
   login_response="$workdir/login.response"
-  login_payload="{\"email\":\"$(json_escape "$P109_QA_EMAIL")\",\"password\":\"$(json_escape "$P109_QA_PASSWORD")\",\"otp_code\":\"\",\"recaptcha_token\":\"\"}"
+  login_payload="{\"email\":\"$(json_escape "$P109_QA_EMAIL")\",\"password\":\"$(json_escape "$P109_QA_PASSWORD")\",\"recaptcha_token\":\"\"}"
   login_status="$(curl -sS -o "$login_response" -w '%{http_code}' \
     -c "$cookie_jar" \
     -H 'Content-Type: application/json' \

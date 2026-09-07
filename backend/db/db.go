@@ -15,7 +15,6 @@ import (
 	"unicode"
 
 	"github.com/you/pos-backend/internal/platform/valueutil"
-	"github.com/you/pos-backend/secure"
 )
 
 var (
@@ -164,10 +163,6 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_set INTEGER DEFAULT 0`,
 		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_token TEXT`,
 		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_expira TEXT`,
-		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_enabled INTEGER DEFAULT 0`,
-		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_secret TEXT`,
-		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_confirmado_en TEXT`,
-		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_last_counter BIGINT DEFAULT -1`,
 	}
 	for _, stmt := range statements {
 		if _, err := execSQLCompat(dbConn, stmt); err != nil {
@@ -175,19 +170,6 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 		}
 	}
 	if err := EnsureAdminPrincipalDelegacionesSchema(dbConn); err != nil {
-		return err
-	}
-	if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS administrador_totp_recovery_codes (
-		id BIGSERIAL PRIMARY KEY,
-		administrador_email TEXT NOT NULL,
-		code_hash VARCHAR(64) NOT NULL,
-		created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP::text,
-		used_at TEXT,
-		batch_id TEXT NOT NULL
-	)`); err != nil {
-		return err
-	}
-	if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_admin_totp_recovery_code_hash ON administrador_totp_recovery_codes(administrador_email, code_hash)`); err != nil {
 		return err
 	}
 	return nil
@@ -672,10 +654,6 @@ type Admin struct {
 	PasswordSalt        string `json:"-"`
 	PasswordResetToken  string `json:"-"`
 	PasswordResetExpira string `json:"-"`
-	TOTPEnabled         int    `json:"totp_enabled,omitempty"`
-	TOTPSecret          string `json:"-"`
-	TOTPConfirmadoEn    string `json:"totp_confirmado_en,omitempty"`
-	TOTPLastCounter     int64  `json:"-"`
 	InvitationStatus    string `json:"invitation_status,omitempty"`
 }
 
@@ -1465,7 +1443,7 @@ func GetSesiones(dbConn *sql.DB) ([]Session, error) {
 
 // GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt)
 func getAdminByEmailFullCore(dbConn *sql.DB, email string) (*Admin, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(pais, ''), COALESCE(ciudad, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, ''), COALESCE(totp_enabled, 0), COALESCE(totp_secret, ''), COALESCE(totp_confirmado_en, ''), COALESCE(totp_last_counter, -1) FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
+	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(pais, ''), COALESCE(ciudad, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, '') FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
 	var a Admin
 	var photo sql.NullString
 	var usuarioCreador sql.NullString
@@ -1482,11 +1460,7 @@ func getAdminByEmailFullCore(dbConn *sql.DB, email string) (*Admin, error) {
 	var passwordSalt sql.NullString
 	var passwordResetToken sql.NullString
 	var passwordResetExpira sql.NullString
-	var totpEnabled sql.NullInt64
-	var totpSecret sql.NullString
-	var totpConfirmadoEn sql.NullString
-	var totpLastCounter sql.NullInt64
-	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &pais, &ciudad, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira, &totpEnabled, &totpSecret, &totpConfirmadoEn, &totpLastCounter); err != nil {
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &pais, &ciudad, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira); err != nil {
 		return nil, err
 	}
 	if photo.Valid {
@@ -1512,18 +1486,14 @@ func getAdminByEmailFullCore(dbConn *sql.DB, email string) (*Admin, error) {
 	a.PasswordSalt = passwordSalt.String
 	a.PasswordResetToken = passwordResetToken.String
 	a.PasswordResetExpira = passwordResetExpira.String
-	a.TOTPEnabled = int(totpEnabled.Int64)
-	a.TOTPSecret = totpSecret.String
-	a.TOTPConfirmadoEn = totpConfirmadoEn.String
-	a.TOTPLastCounter = totpLastCounter.Int64
 	return &a, nil
 }
 
-// GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt, TOTP).
+// GetAdminByEmailFull devuelve el administrador por email incluyendo campos de seguridad (tokens, hash y salt).
 func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 	// El esquema se aplica exclusivamente durante la fase de migracion. Un
 	// request de autenticacion no debe ejecutar DDL ni degradar a una consulta
-	// legacy que omita estado, tokens o controles de segundo factor.
+	// legacy que omita estado o tokens.
 	return getAdminByEmailFullCore(dbConn, email)
 }
 
@@ -1682,44 +1652,6 @@ func SetAdministradorPassword(dbConn *sql.DB, email, hash, salt string) error {
 	return err
 }
 
-// SetAdministradorTOTPSecret guarda el secreto TOTP pendiente de confirmacion.
-func SetAdministradorTOTPSecret(dbConn *sql.DB, email, secret string) error {
-	encrypted, err := secure.EncryptStringForPurpose(secure.TOTPEncryptionPurpose, strings.TrimSpace(secret))
-	if err != nil {
-		return err
-	}
-	nowExpr := sqlNowExpr()
-	_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_secret = ?, totp_enabled = 0, totp_confirmado_en = '', totp_last_counter = -1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", encrypted, strings.TrimSpace(email))
-	return err
-}
-
-func EnableAdministradorTOTP(dbConn *sql.DB, email string) error {
-	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 1, totp_confirmado_en = "+nowExpr+", fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND COALESCE(totp_secret, '') <> ''", strings.TrimSpace(email))
-	return err
-}
-
-// ConsumeAdministradorTOTPCounter records the accepted moving counter only if
-// it is newer than the last accepted value. This makes a valid six-digit code
-// single-use even when concurrent requests arrive within the same time window.
-func ConsumeAdministradorTOTPCounter(dbConn *sql.DB, email string, counter int64) (bool, error) {
-	if dbConn == nil || strings.TrimSpace(email) == "" || counter < 0 {
-		return false, fmt.Errorf("invalid TOTP counter input")
-	}
-	result, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_last_counter = ?, fecha_actualizacion = "+sqlNowExpr()+" WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND ? > COALESCE(totp_last_counter, -1)", counter, strings.TrimSpace(email), counter)
-	if err != nil {
-		return false, err
-	}
-	changed, err := result.RowsAffected()
-	return changed == 1, err
-}
-
-func DisableAdministradorTOTP(dbConn *sql.DB, email string) error {
-	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 0, totp_secret = '', totp_confirmado_en = '', totp_last_counter = -1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(email))
-	return err
-}
-
 func hashOneTimeSecret(value string) string {
 	sum := sha256.Sum256([]byte(strings.TrimSpace(value)))
 	return fmt.Sprintf("%x", sum[:])
@@ -1736,108 +1668,6 @@ func isSHA256Hex(value string) bool {
 		}
 	}
 	return true
-}
-
-// DecryptAdministradorTOTPSecret decrypts only values written by the TOTP
-// envelope. Plaintext values are intentionally rejected so callers cannot
-// accidentally keep using a legacy secret after the migration is available.
-func DecryptAdministradorTOTPSecret(payload string) (string, error) {
-	return secure.DecryptStringForPurpose(secure.TOTPEncryptionPurpose, payload)
-}
-
-func isAdministradorTOTPSecretEncrypted(payload string) bool {
-	return strings.HasPrefix(strings.TrimSpace(payload), "v1:"+secure.TOTPEncryptionPurpose+":")
-}
-
-// MigrateAdministradorTOTPSecrets encrypts legacy plaintext authenticator
-// secrets. With dryRun=true it only returns the number of rows that would be
-// changed; no database row is modified.
-func MigrateAdministradorTOTPSecrets(dbConn *sql.DB, dryRun bool) (int, error) {
-	if dbConn == nil {
-		return 0, fmt.Errorf("database not available")
-	}
-	if err := EnsureAdministradoresAuthSchema(dbConn); err != nil {
-		return 0, err
-	}
-	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(totp_secret, '') FROM administradores WHERE COALESCE(totp_secret, '') <> ''")
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-	type legacySecret struct {
-		id     int64
-		secret string
-	}
-	legacy := make([]legacySecret, 0)
-	for rows.Next() {
-		var item legacySecret
-		if err := rows.Scan(&item.id, &item.secret); err != nil {
-			return 0, err
-		}
-		if !isAdministradorTOTPSecretEncrypted(item.secret) {
-			legacy = append(legacy, item)
-		}
-	}
-	if err := rows.Err(); err != nil || dryRun {
-		return len(legacy), err
-	}
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return 0, err
-	}
-	defer func() { _ = tx.Rollback() }()
-	for _, item := range legacy {
-		encrypted, err := secure.EncryptStringForPurpose(secure.TOTPEncryptionPurpose, item.secret)
-		if err != nil {
-			return 0, err
-		}
-		if _, err := tx.Exec(rebindCompatQuery("UPDATE administradores SET totp_secret = ? WHERE id = ? AND totp_secret = ?"), encrypted, item.id, item.secret); err != nil {
-			return 0, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return 0, err
-	}
-	return len(legacy), nil
-}
-
-// ReplaceAdministradorTOTPRecoveryCodes invalidates all previous recovery
-// codes and writes only SHA-256 verifiers for the replacement batch.
-func ReplaceAdministradorTOTPRecoveryCodes(dbConn *sql.DB, email, batchID string, codes []string) error {
-	if dbConn == nil || strings.TrimSpace(email) == "" || strings.TrimSpace(batchID) == "" || len(codes) == 0 {
-		return fmt.Errorf("recovery codes require email, batch and values")
-	}
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.Exec(rebindCompatQuery("DELETE FROM administrador_totp_recovery_codes WHERE LOWER(administrador_email) = LOWER(?)"), strings.TrimSpace(email)); err != nil {
-		return err
-	}
-	for _, code := range codes {
-		if strings.TrimSpace(code) == "" {
-			return fmt.Errorf("empty recovery code")
-		}
-		if _, err := tx.Exec(rebindCompatQuery("INSERT INTO administrador_totp_recovery_codes (administrador_email, code_hash, batch_id) VALUES (?, ?, ?)"), strings.TrimSpace(email), hashOneTimeSecret(code), strings.TrimSpace(batchID)); err != nil {
-			return err
-		}
-	}
-	return tx.Commit()
-}
-
-// ConsumeAdministradorTOTPRecoveryCode marks a recovery code as used in one
-// statement. A replay returns false without revealing why it failed.
-func ConsumeAdministradorTOTPRecoveryCode(dbConn *sql.DB, email, code string) (bool, error) {
-	if dbConn == nil {
-		return false, fmt.Errorf("database not available")
-	}
-	result, err := execSQLCompat(dbConn, "UPDATE administrador_totp_recovery_codes SET used_at = "+sqlNowExpr()+" WHERE LOWER(administrador_email) = LOWER(?) AND code_hash = ? AND COALESCE(used_at, '') = ''", strings.TrimSpace(email), hashOneTimeSecret(code))
-	if err != nil {
-		return false, err
-	}
-	changed, err := result.RowsAffected()
-	return changed == 1, err
 }
 
 // SetAdministradorPasswordResetToken guarda token de recuperación para el administrador.

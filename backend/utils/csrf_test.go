@@ -84,7 +84,6 @@ func TestCSRFMiddlewareRotatesAfterCredentialAndSecondFactorChanges(t *testing.T
 	for _, path := range []string{
 		"/api/account/change_password",
 		"/api/account/set_google_password",
-		"/super/api/administradores/2fa",
 	} {
 		h := CSRFMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)

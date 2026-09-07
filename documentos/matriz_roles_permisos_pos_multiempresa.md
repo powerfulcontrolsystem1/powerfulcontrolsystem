@@ -26,7 +26,7 @@ acción del módulo. No copiar una matriz estática antigua como autorización.
 | --- | --- |
 | R/C/U/D/A | Lectura, creación, actualización, borrado y aprobación; ciertas actions cambian el permiso esperado |
 | Contexto empresarial | Validar empresa contra sesión y todos los IDs secundarios |
-| Super | Privilegios de plataforma autorizados y TOTP confirmado; no confiar en rol enviado |
+| Super | Privilegios de plataforma autorizados por sesión y rol persistido; no confiar en rol enviado |
 | admin_empresa y roles operativos | Permisos efectivos publicados por el servidor; la etiqueta del rol no basta |
 | Página visible | Ayuda de navegación; no concede acceso al endpoint |
 | Licencia | Restringe módulos y límites; no sustituye autorización de usuario |

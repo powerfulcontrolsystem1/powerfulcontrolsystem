@@ -923,10 +923,10 @@ Actualizacion 2026-05-12 (visibilidad comercial de licencias)
 - Se reutiliza `pcs_superadministrador.licencias.activo`: `1` significa visible para clientes y habilitada para checkout; `0` significa oculta para clientes y bloqueada en compras/activaciones publicas nuevas.
 - Los filtros publicos de licencias usan `COALESCE(activo, 1) = 1` para compatibilidad con registros antiguos.
 
-Actualizacion 2026-05-11 (2FA login global)
-- No se agregan tablas ni columnas fisicas.
-- Se reutiliza `pcs_superadministrador.configuraciones` con la clave `security.admin_2fa.enabled` para activar/desactivar globalmente la exigencia de OTP en login de administradores.
-- Las credenciales TOTP por cuenta permanecen en `administradores.totp_enabled`, `administradores.totp_secret` y `administradores.totp_confirmado_en`.
+Retiro del 2FA administrativo
+- La migración super `20260907-001-retire-admin-2fa-v1` fija `totp_enabled=0`, vacía `totp_secret` y `totp_confirmado_en`, reinicia `totp_last_counter` y elimina todos los códigos de recuperación.
+- También elimina las claves `security.admin_2fa.enabled*` de `configuraciones` y revoca las sesiones administrativas activas para forzar un nuevo login.
+- Las columnas y la tabla legacy se conservan vacías e inertes durante la ventana de rollback; no existe código runtime que las consulte o modifique.
 
 Actualizacion 2026-05-11 (integracion profesional de plantillas)
 - La primera tanda de matriz/visibilidad no agrego tablas ni columnas.

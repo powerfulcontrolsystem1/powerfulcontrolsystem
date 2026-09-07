@@ -273,7 +273,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "78691cb3fcc5f70c5c641a9f72c496c2e064c23ccaf1d169ad328bf09fcba88b"
+      "sha256_lf": "138ce5f15be87eaf51369f0b3ce220a1d773ebb2caad71218adb19557edf7679"
     },
     {
       "path": "documentos/api/mobile_api_v1.md",
@@ -282,7 +282,7 @@
       "owner": "Ingeniería de API",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "4331803afb412b794d7c37c7b14b5ab328d4a26fc52486d34ef8644e4d2e9bbc"
+      "sha256_lf": "06564fac63fc341cf19c7451174cbb27c5b9c7ac544e436923b19f47a46a5145"
     },
     {
       "path": "documentos/api/openapi.generated.yaml",
@@ -291,7 +291,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "afe6f026ae366f6c77fdafbc504cbd5841fea3a743f0fd91bc5bede3648824d8"
+      "sha256_lf": "24c048493e90818bda09c7b65cfcf94bcf3fb0162a668d8cfaf6f69a5402099c"
     },
     {
       "path": "documentos/api/openapi.mobile.v1.yaml",
@@ -345,7 +345,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "90721ddeb2db220d19db02475c1a41c326bfbf5fe1c19f0357d07fc3afa90ac5"
+      "sha256_lf": "562378a2799a108448419fdd6a137bd3176f9c37844359b1a8de17b7fd6ccd48"
     },
     {
       "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
@@ -390,7 +390,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "5b1313b6370f63ffb3f620c3e7bc4d62e5d62814a53a9f4163fb2f0b118bca19"
+      "sha256_lf": "e77e09ccbdfb05d1fcf25ce50ca8c5479c91123b6f054ed0e587f6691206b1a8"
     },
     {
       "path": "documentos/arquitectura/inventario_storage_plan_105.md",
@@ -417,7 +417,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "033724dc55dc9821b939e2055f715b0efda194e59aa1733efdc9273e4ad53a33"
+      "sha256_lf": "68b8e9674efeff513692e7bb934c9cd1ed5f77a50dfbe136ecb31c0f18475a9d"
     },
     {
       "path": "documentos/arquitectura/matriz_rutas_multiempresa.md",
@@ -426,7 +426,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "fffafdebdb0e793da7ae9ea4bef0ac652c01bffd11dd0f60ff5dbbdd06d8b7c8"
+      "sha256_lf": "a90d2b4cc655d09e053589d60ef81b0661b95b17d0a70be50ac012a56e91b97c"
     },
     {
       "path": "documentos/arquitectura_modulos_universales.md",
@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "3098d38531dc6247bcba7d07d0e193f017ae82741616f6afe88f1017ae0be216"
+      "sha256_lf": "deeff244f4f22a4ffd46cab89456b089f3d9167ee4cbfcd8ff5c5593786a8f18"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -669,7 +669,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "f0124d71bd4d6329a7e61201184f4c7ec885154d4b929e9579bd1eff5a9fb796"
+      "sha256_lf": "405a15811830079fdeaf18ee99de37e60c1bc749c7c40c0de1c7b840e18654c5"
     },
     {
       "path": "documentos/diagramas/diagrama_entidad_relacion.md",
@@ -723,7 +723,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "ee59f9664cbb67cd1d2467d7765f0102a85a5753ce1e01e4116a2215e4e2a3c2"
+      "sha256_lf": "3cc5621a3d9da87e31dd5115abd5df46991dc90972d7939de64d1f7e421a1308"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -784,9 +784,9 @@
       "title": "Estado actual del sistema",
       "state": "vigente",
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-06",
-      "review_due": "2026-12-05",
-      "sha256_lf": "2d8cdca8895845e2fedf8b807b746b7404ad3342be4c42a08d618a7cb5c3f766"
+      "reviewed": "2026-09-07",
+      "review_due": "2026-12-06",
+      "sha256_lf": "51876186a300d7585088d29a1414e489d33f1c42510912d134f6540a0a728f8b"
     },
     {
       "path": "documentos/estructura_bd.md",
@@ -795,7 +795,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "feda3a6797150e8d8e6c8588228aaf5382c4e38590200284528cb4c7cdc6177d"
+      "sha256_lf": "6c6936ffc5bcf44befa6189f0c2100ac328211fa8a043cf248500e691ed40c5a"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -856,9 +856,9 @@
       "title": "Contrato tecnico: autenticacion administrativa y usuarios de empresa",
       "state": "vigente",
       "owner": "Ingeniería backend y QA",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "5ad8c40bf249f38142656f8f39b58a4630d877acf39bd33f62d9da4b3d0c3058"
+      "reviewed": "2026-09-07",
+      "review_due": "2026-12-06",
+      "sha256_lf": "f8fbe48a053e8e68073070772a49ff95952bef3ad11340d6a76edb3a433e8059"
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md",
@@ -1020,7 +1020,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "2b3f34dc033df963f20c568e01c3ae23032946ed68b028bb71ce7655035c3f75"
+      "sha256_lf": "028c02d1df9477556b4afe530812618298108c5df561de19a180c7b197786f6c"
     },
     {
       "path": "documentos/gobernanza_tecnica/riesgos_y_brechas.md",
@@ -1137,7 +1137,7 @@
       "owner": "QA/operación",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "5f1a45ceceff84b7abc72d27c6338a88bbbf5de0609bebd99121d972009d7df2"
+      "sha256_lf": "99c72a10a627baf9d30c8f0d2c7f686bee4382275afae05071ff0f101ca91f15"
     },
     {
       "path": "documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md",
@@ -1272,7 +1272,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "62cc4ac6b742bc22b3817482750fcafc173f4ea87da78a6dfc7d70c8d3c61c92"
+      "sha256_lf": "5bb10dc4ba4bca36504e03b46e77d461fd70a50c14be67850b4a288cc9bddea1"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
@@ -1290,7 +1290,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "e784a7bc1bbfebe23b2ea0d93b8cdd6fb0c5fc68dda25dc0c578a0c2aff8504a"
+      "sha256_lf": "4aa2479a52c02995c91c606739492736dee1e12006eca88ab7179d342a6d2b69"
     },
     {
       "path": "documentos/modulos_empresariales_colombia.md",
