@@ -570,14 +570,14 @@ services:
       - /var/run:rw,noexec,nosuid,size=4m
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8081}:8080"
     volumes:
       - pcs_web_uploads:/usr/share/nginx/html/uploads:ro
       - pcs_downloads:/usr/share/nginx/html/descargas:ro
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/ready"]
       interval: 30s
       timeout: 5s
       retries: 5

@@ -160,6 +160,7 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
 
 echo "[sidecar] Probando frontend Docker en http://127.0.0.1:$http_port"
 ready=0
+frontend_reloaded=0
 attempts=$(( HEALTH_TIMEOUT_SECONDS / 5 ))
 if [ "$attempts" -lt 6 ]; then
   attempts=6
@@ -180,16 +181,28 @@ for attempt in $(seq 1 "$attempts"); do
     done <<< "$backend_ids"
   fi
   frontend_status="$(docker inspect -f '{{.State.Status}}' pcs-frontend 2>/dev/null || true)"
-  if [ "$backend_status" = "healthy" ] && [ "$frontend_status" = "running" ] && curl -fsS "http://127.0.0.1:$http_port/" >/dev/null 2>&1; then
-    ready=1
-    break
+  if [ "$backend_status" = "healthy" ] && [ "$frontend_status" = "running" ]; then
+    if [ "$frontend_reloaded" != "1" ]; then
+      # Nginx resuelve el upstream al cargar su configuracion. Tras recrear el
+      # backend debe recargarse para no conservar la IP del contenedor anterior.
+      echo "[sidecar] Recargando frontend para resolver el backend saludable actual."
+      docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart frontend >/dev/null
+      frontend_reloaded=1
+      sleep 2
+      continue
+    fi
+    if curl -fsS "http://127.0.0.1:$http_port/health" >/dev/null 2>&1 \
+      && curl -fsS "http://127.0.0.1:$http_port/ready" >/dev/null 2>&1; then
+      ready=1
+      break
+    fi
   fi
   echo "[sidecar] Esperando Docker... intento $attempt/$attempts backend=$backend_status frontend=$frontend_status"
   sleep 5
 done
 
 if [ "$ready" != "1" ]; then
-  echo "[sidecar] ERROR: el frontend Docker no respondio a tiempo en http://127.0.0.1:$http_port" >&2
+  echo "[sidecar] ERROR: health/ready no respondieron a tiempo en http://127.0.0.1:$http_port" >&2
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps >&2 || true
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail 80 backend >&2 || true
   docker logs --tail 80 pcs-frontend >&2 || true

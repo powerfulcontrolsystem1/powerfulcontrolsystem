@@ -665,6 +665,21 @@ upsert_compose_env(){
   printf '%s=%s\n' "$key" "$value" >> "$compose_env_file";
   chmod 600 "$compose_env_file" 2>/dev/null || true;
 };
+get_compose_env_value(){
+  grep -E "^$1=" "$compose_env_file" | tail -n1 | cut -d= -f2- | tr -d '\r' || true;
+};
+generate_compose_secret(){
+  generated_secret="";
+  if command -v openssl >/dev/null 2>&1; then
+    generated_secret="$(openssl rand -hex 24 2>/dev/null || true)";
+  elif command -v od >/dev/null 2>&1 && [ -r /dev/urandom ]; then
+    generated_secret="$(od -An -N32 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)";
+  fi;
+  if ! printf '%s' "$generated_secret" | grep -Eq '^[A-Za-z0-9._~-]{32,}$'; then
+    fail "SECRET_GENERATION_FAILED no se pudo generar un secreto URL-safe para el rol de respaldo";
+  fi;
+  printf '%s' "$generated_secret";
+};
 current_dbdialect="$(get_env_value DB_DIALECT)";
 current_dbemp="$(get_env_value DB_EMPRESAS_DSN)";
 current_dbsuper="$(get_env_value DB_SUPERADMIN_DSN)";
@@ -698,6 +713,33 @@ log "sincronizando backend/.env.local remoto";
 upsert_env SERVER_PORT "$server_port";
 ok "SERVER_PORT actualizado a $server_port";
 if [ -f "$compose_env_file" ]; then
+  current_runtime_db_user="$(get_compose_env_value PCS_RUNTIME_DB_USER)";
+  current_backup_db_user="$(get_compose_env_value PCS_BACKUP_DB_USER)";
+  current_backup_db_password="$(get_compose_env_value PCS_BACKUP_DB_PASSWORD)";
+  if [ -z "$current_backup_db_user" ]; then
+    current_backup_db_user=pcs_backup;
+    upsert_compose_env PCS_BACKUP_DB_USER "$current_backup_db_user";
+    ok "PCS_BACKUP_DB_USER inicializado en deploy/.env.platform";
+  elif ! printf '%s' "$current_backup_db_user" | grep -Eq '^[A-Za-z_][A-Za-z0-9_]{0,62}$'; then
+    fail "INVALID_BACKUP_DB_USER PCS_BACKUP_DB_USER no cumple el formato PostgreSQL permitido";
+  else
+    ok "PCS_BACKUP_DB_USER existente conservado en deploy/.env.platform";
+  fi;
+  normalized_runtime_db_user="$(printf '%s' "$current_runtime_db_user" | tr '[:upper:]' '[:lower:]')";
+  normalized_backup_db_user="$(printf '%s' "$current_backup_db_user" | tr '[:upper:]' '[:lower:]')";
+  if [ -n "$normalized_runtime_db_user" ] && [ "$normalized_backup_db_user" = "$normalized_runtime_db_user" ]; then
+    fail "BACKUP_DB_ROLE_COLLISION PCS_BACKUP_DB_USER debe diferir de PCS_RUNTIME_DB_USER";
+  fi;
+  if [ -z "$current_backup_db_password" ]; then
+    current_backup_db_password="$(generate_compose_secret)";
+    upsert_compose_env PCS_BACKUP_DB_PASSWORD "$current_backup_db_password";
+    ok "PCS_BACKUP_DB_PASSWORD generado y guardado sin exponer su valor";
+  elif ! printf '%s' "$current_backup_db_password" | grep -Eq '^[A-Za-z0-9._~-]{32,}$'; then
+    fail "INVALID_BACKUP_DB_PASSWORD PCS_BACKUP_DB_PASSWORD debe tener al menos 32 caracteres URL-safe";
+  else
+    ok "PCS_BACKUP_DB_PASSWORD existente conservado sin exponer su valor";
+  fi;
+  unset current_backup_db_password generated_secret normalized_runtime_db_user normalized_backup_db_user;
   current_schema_bootstrap="$(grep -E '^PCS_RUNTIME_SCHEMA_BOOTSTRAP=' "$compose_env_file" | tail -n1 | cut -d= -f2- || true)";
   case "$current_schema_bootstrap" in
     '' )
